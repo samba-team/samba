@@ -47,7 +47,7 @@ compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
 }
 
 int
-kt_copy (void *opt, int argc, char **argv)
+kt_copy (struct copy_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;
@@ -106,11 +106,18 @@ kt_copy (void *opt, int argc, char **argv)
 			   "already exists for %s, keytype %s, kvno %d",
 			   name_str, etype_str, entry.vno);
 	    }
-	    krb5_kt_free_entry(context, &dummy);
-	    krb5_kt_free_entry (context, &entry);
-	    free(name_str);
-	    free(etype_str);
-	    continue;
+            if (!opt->copy_duplicates_flag) {
+                krb5_kt_free_entry(context, &dummy);
+                krb5_kt_free_entry (context, &entry);
+                free(name_str);
+                free(etype_str);
+                continue;
+            }
+            /*
+             * Because we can end up trying all keys that match the enctype,
+             * copying entries with duplicate principal, vno, and enctype, but
+             * different keys, can be useful.
+             */
 	} else if(ret != KRB5_KT_NOTFOUND) {
 	    krb5_warn (context, ret, "%s: fetching %s/%s/%u",
 		       to, name_str, etype_str, entry.vno);

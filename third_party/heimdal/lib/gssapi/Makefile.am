@@ -264,10 +264,6 @@ dist_libgssapi_la_SOURCES  = \
 	$(sanonsrc)
 
 nodist_libgssapi_la_SOURCES  = \
-	gkrb5_err.c \
-	gkrb5_err.h \
-	negoex_err.c \
-	negoex_err.h \
 	$(BUILT_SOURCES)
 
 libgssapi_la_DEPENDENCIES = version-script.map
@@ -333,7 +329,13 @@ $(test_context_OBJECTS): $(BUILTHEADERS)
 
 $(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 
-BUILT_SOURCES = $(spnego_files) $(gssapi_files)
+BUILT_SOURCES = \
+	$(spnego_files) \
+	$(gssapi_files) \
+	gkrb5_err.c \
+	gkrb5_err.h \
+	negoex_err.c \
+	negoex_err.h
 
 $(libgssapi_la_OBJECTS): gkrb5_err.h negoex_err.h
 gkrb5_err.h: $(srcdir)/krb5/gkrb5_err.et

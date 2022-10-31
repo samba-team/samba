@@ -223,10 +223,9 @@ hdb_get_entry(krb5_context context,
                          HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
                          0, 0, kvno, &ent);
 
-    if(ret == HDB_ERR_NOENTRY) {
+    if (ret == HDB_ERR_WRONG_REALM || ret == HDB_ERR_NOENTRY)
 	ret = KRB5_KT_NOTFOUND;
-	goto out;
-    }else if(ret)
+    if (ret)
 	goto out;
 
     if(kvno && (krb5_kvno)ent.kvno != kvno) {

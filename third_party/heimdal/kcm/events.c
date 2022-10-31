@@ -220,7 +220,7 @@ kcm_ccache_make_default_event(krb5_context context,
 	event->fire_time = time(NULL); /* right away */
 	event->action = KCM_EVENT_ACQUIRE_CREDS;
     } else if (is_primary_credential_p(context, ccache, newcred)) {
-	if (newcred->flags.b.renewable) {
+	if (automatic_renewal && newcred->flags.b.renewable) {
 	    event->action = KCM_EVENT_RENEW_CREDS;
 	    ccache->flags |= KCM_FLAGS_RENEWABLE;
 	} else {

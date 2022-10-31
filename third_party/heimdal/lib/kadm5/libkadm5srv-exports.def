@@ -15,6 +15,7 @@ EXPORTS
         kadm5_delete_policy
 	kadm5_delete_principal
 	kadm5_destroy
+	kadm5_dup_context
 	kadm5_flush
 	kadm5_free_key_data
 	kadm5_free_name_list
@@ -32,6 +33,7 @@ EXPORTS
 	kadm5_init_with_password_ctx
 	kadm5_init_with_skey
 	kadm5_init_with_skey_ctx
+	kadm5_iter_principals
         kadm5_lock
         kadm5_modify_policy
 	kadm5_modify_principal

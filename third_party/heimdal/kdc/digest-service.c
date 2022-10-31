@@ -179,7 +179,7 @@ ntlm_service(void *ctx, const heim_idata *req,
 	    goto failed;
 
 	if (ntq.ntChallengeResponce.length != answer.length ||
-	    memcmp(ntq.ntChallengeResponce.data, answer.data, answer.length) != 0) {
+	    ct_memcmp(ntq.ntChallengeResponce.data, answer.data, answer.length) != 0) {
 	    free(answer.data);
 	    ret = EINVAL;
 	    goto failed;

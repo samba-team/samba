@@ -275,8 +275,7 @@ acc_flags(uint64_t res, int64_t val, uint64_t mult)
 }
 
 ROKEN_LIB_FUNCTION uint64_t ROKEN_LIB_CALL
-parse_flags (const char *s, const struct units *units,
-	     int orig)
+parse_flags(const char *s, const struct units *units, uint64_t orig)
 {
     return parse_something_unsigned (s, units, NULL, acc_flags, orig, 1);
 }

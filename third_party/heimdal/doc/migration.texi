@@ -16,6 +16,10 @@ To load the MIT Kerberos dump file, use the following command:
 kadmin can dump in MIT Kerberos format.  Simply run:
 @samp{kadmin -l dump -f MIT}.
 
+There are some limitations in this functionality.  Users should check
+the input dump and a native dump after loading to check for
+differences.
+
 The Heimdal KDC and kadmind, as well as kadmin -l and the libkadm5srv
 library can read and write MIT KDBs, and can read MIT stash files.  To
 build with KDB support requires having a standalone libdb from MIT
@@ -34,8 +38,6 @@ an MIT KDB over time as those entries are changed.  Or you can use hprop
 and hpropd.
 
 @section General issues
-
-When migrating from a Kerberos 4 KDC.
 
 @section Order in what to do things:
 
@@ -63,11 +65,5 @@ you can also check the kdc-log to check what ticket are checked out.
 
 @item Burn the bridge and change the master.
 @item Let all users use the Kerberos 5 tools by default.
-@item Turn off services that do not need Kerberos 4 authentication.
-
-Things that might be hard to get away is old programs with support for
-Kerberos 4. Example applications are old Eudora installations using
-KPOP, and Zephyr. Eudora can use the Kerberos 4 kerberos in the Heimdal
-kdc.
 
 @end itemize

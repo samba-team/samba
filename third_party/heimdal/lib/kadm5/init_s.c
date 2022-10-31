@@ -109,6 +109,21 @@ kadm5_s_init_with_context(krb5_context context,
 }
 
 kadm5_ret_t
+kadm5_s_dup_context(void *vin, void **out)
+{
+    kadm5_server_context *in = vin;
+    kadm5_ret_t ret;
+    char *p = NULL;
+
+    ret = krb5_unparse_name(in->context, in->caller, &p);
+    if (ret == 0)
+        ret = kadm5_s_init_with_context(in->context, p, NULL,
+                                        &in->config, 0, 0, out);
+    free(p);
+    return ret;
+}
+
+kadm5_ret_t
 kadm5_s_init_with_password_ctx(krb5_context context,
 			       const char *client_name,
 			       const char *password,

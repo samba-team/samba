@@ -45,6 +45,7 @@ static int debug_flag;
 static int readonly_flag;
 static char *port_str;
 char *realm;
+int list_chunk_size = -1;
 
 static int detach_from_console = -1;
 int daemon_child = -1;
@@ -71,6 +72,9 @@ static struct getargs args[] = {
 #endif
     {	"debug",	'd',	arg_flag,   &debug_flag,
 	"enable debugging", NULL
+    },
+    {   "list-chunk-size", 0,   arg_integer,&list_chunk_size,
+        "set the LIST streaming count of names per chunk", "NUMBER"
     },
     {
         "detach",       0 ,      arg_flag, &detach_from_console,

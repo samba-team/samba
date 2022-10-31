@@ -66,7 +66,7 @@ jobs:
                 echo "bison, flex, ncurses, texinfo, and unzip are in the base OS."
                 echo "berkeley-db, perl, python, curl, and jq are installed in the"
                 echo "base image already."
-                brew install autoconf automake libtool cpanm
+                brew install autoconf automake libtool cpanm texinfo texi2html
                 sudo cpanm install JSON
             - name: Clone repository
               uses: actions/checkout@v1
@@ -79,8 +79,10 @@ jobs:
                 /bin/sh ./autogen.sh
                 mkdir build
                 cd build
-                ../configure --srcdir=`dirname "$PWD"` --disable-afs-support --enable-maintainer-mode --enable-developer $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="-Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" CFLAGS="-O0 -g -ggdb3"
+                ../configure --srcdir=`dirname "$PWD"` --disable-heimdal-documentation --disable-afs-support --enable-maintainer-mode --enable-developer $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="-Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" CFLAGS="-O0 -g -ggdb3"
                 ulimit -c unlimited
+                PATH=/usr/local/opt/texinfo/bin:$PATH
+                export PATH
                 make -j4
             #- name: Setup upterm session
             #  uses: lhotari/action-upterm@v1

@@ -32,7 +32,6 @@
  */
 
 #include "krb5_locl.h"
-#include "krb5-v4compat.h"
 
 #ifndef HEIMDAL_SMALLER
 
@@ -58,7 +57,6 @@ krb524_convert_creds_kdc(krb5_context context,
 			 struct credentials *v4creds)
     KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
-    memset(v4creds, 0, sizeof(*v4creds));
     krb5_set_error_message(context, EINVAL,
 			   N_("krb524_convert_creds_kdc not supported", ""));
     return EINVAL;
@@ -86,7 +84,6 @@ krb524_convert_creds_kdc_ccache(krb5_context context,
 				struct credentials *v4creds)
     KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
-    memset(v4creds, 0, sizeof(*v4creds));
     krb5_set_error_message(context, EINVAL,
 			   N_("krb524_convert_creds_kdc_ccache not supported", ""));
     return EINVAL;

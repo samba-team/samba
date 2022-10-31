@@ -1,0 +1,207 @@
+.\" Copyright (c) 2022 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd February 22, 2022
+.Dt HXTOOL 1
+.Os HEIMDAL
+.Sh NAME
+.Nm hxtool
+.Nd PKIX command-line utility
+.Sh SYNOPSIS
+.Nm
+.Bk -words
+.Oo Fl Fl version Oc
+.Oo Fl Fl help Oc
+.Op Ar sub-command
+.Ek
+.Sh DESCRIPTION
+.Nm
+is a utility for making certificate sigining requests (CSRs),
+displaying CSRs, signing certificates, etc.
+are given, then the value will be parsed and displayed using just
+the self-describing nature of DER.
+.Pp
+All sub-commands have their own help message, shown when invoked
+with the
+.Fl Fl help
+or
+.Fl h
+option.
+.Pp
+Supported commands:
+.Bl -tag -width Ds -offset indent
+.It help
+.It list-oids
+.It verify
+.It print
+.It validate
+.It certificate-copy, cc
+.It ocsp-fetch
+.It ocsp-verify
+.It ocsp-print
+.It revoke-print
+.It generate-key
+.It request-create
+.It request-print
+.It query
+.It info
+.It random-data
+.It crypto-available
+.It crypto-select
+.It hex
+.It certificate-sign, cert-sign, issue-certificate, ca
+.It crl-sign
+.El
+Other sub-commands reported by the
+.Nm help
+sub-command are not stable or fully supported at this time.
+.Sh CERTIFICATE STORES
+Stores of certificates and/or keys have string names that can be
+used with
+.Nm 's
+commands.
+Sub-commands use these certificate store names to refer to files
+and tokens where keys and/or certificates are to be found or
+written.
+For example,
+.Sq FILE:/path/to/some/file .
+.Pp
+Use the
+.Nm certificate-copy
+command to copy certificates from one store to another.
+This is useful for, e.g., converting DER files to PEM or
+vice-versa.
+.Pp
+Heimdal supports a variety of certificate and key store types:
+.Bl -tag -width Ds -offset indent
+.It PEM-FILE:/path
+If writing, PEM will be written.
+If reading, PEM will be expected.
+.It DER-FILE:/path
+If writing, DER will be written.
+If reading, DER will be expected.
+.It FILE:/path
+If writing, PEM will be written.
+If reading, PEM or DER will be detected.
+.It PKCS12:/path
+Barely supported at this time.
+.It DIR:/path
+OpenSSL-style hashed directory of trust anchors.
+.It MEMORY:name
+An in-memory only store, usually never used in
+.NM 's
+commands.
+.It KEYCHAIN:system-anchors
+On OS X this refers to the system's trust anchors.
+.It KEYCHAIN:FILE:/path
+On OS X this refers to an OS X keychain at the given path.
+.It NULL:
+An empty store.
+.It PKCS11:/path/to/shared/object,slot=NUMBER
+Loads the given PKCS#11 provider object and uses the token at the
+given slot number.
+.El
+.Sh CERTIFICATES
+You can validate a certificate with the
+.Nm validate
+sub-command, or verify a certificate and its certification path
+with the
+.Nm verify
+sub-command.
+.Pp
+You can display a certificate using the
+.Nm print 
+sub-command:
+.Pp
+.Nm print
+.Oo options Oc
+.Ar STORE
+.Pp
+Options:
+.Bl -tag -width Ds -offset indent
+.Op Fl Fl content
+.Op Fl Fl info
+.Op Fl Fl never-fail
+.Op Fl Fl pass=password
+.Op Fl Fl raw-json
+.El
+.Pp
+The
+.Fl Fl pass=password
+option is for PKCS#12 and PKCS#11 stores, and if needed and not
+given, will be prompted for.
+Note that it's not secure to pass passwords as command-line
+arguments on multi-tenant systems.
+.Pp
+The
+.Fl Fl raw-json
+option prints the certificate(s) in the given
+.Ar STORE
+as a JSON dump of their DER using an experimental (i.e.,
+unstable) schema.
+.Sh KEYS
+The
+.Nm generate-key
+sub-command will generate a key.
+.Sh CERTIFICATE SIGNING REQUESTS
+The
+.Nm request-create
+sub-command will create a CSR.
+The
+.Nm request-print
+sub-command will display a CSR.
+.Sh CERTIFICATE ISSUANCE / CERTIFICATION AUTHORITY
+The
+.Nm certificate-sign
+sub-command will issue a certificate.
+See its usage message.
+.Sh ONLINE CERTIFICATE STATUS PROTOCOL
+The
+.Nm ocsp-fetch
+sub-command will fetch OCSP Responses for the given
+certificates.
+.Pp
+The
+.Nm ocsp-verify
+sub-command will verify OCSP Responses.
+.Pp
+The
+.Nm ocsp-print
+sub-command will display OCSP Responses.
+.Sh CERTIFICATE REVOCATION LIST
+The
+.Nm crl-sign
+sub-command will add certificates to a certificate revocation
+list.
+.Sh SEE ALSO
+.Xr openssl 1

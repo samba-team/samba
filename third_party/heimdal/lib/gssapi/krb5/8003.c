@@ -259,7 +259,7 @@ _gsskrb5_verify_8003_checksum(
     }
 
     if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS
-	&& (memcmp(p, zeros, sizeof(zeros)) != 0 || client_asserted_cb)) {
+	&& (ct_memcmp(p, zeros, sizeof(zeros)) != 0 || client_asserted_cb)) {
 	if(hash_input_chan_bindings(input_chan_bindings, hash) != 0) {
 	    *minor_status = 0;
 	    return GSS_S_BAD_BINDINGS;

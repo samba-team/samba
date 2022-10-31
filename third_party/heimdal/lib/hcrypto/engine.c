@@ -87,7 +87,7 @@ ENGINE_finish(ENGINE *engine)
     if (engine->dso_handle)
 	dlclose(engine->dso_handle);
 
-    memset(engine, 0, sizeof(*engine));
+    memset_s(engine, sizeof(*engine), 0, sizeof(*engine));
     engine->references = -1;
 
 

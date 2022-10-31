@@ -188,7 +188,7 @@ get_null (const struct addrinfo *hints,
     struct addrinfo *first = NULL;
     struct addrinfo **current = &first;
     int family = PF_UNSPEC;
-    int ret;
+    int ret = EAI_FAMILY;
 
     if (hints != NULL)
 	family = hints->ai_family;
@@ -216,7 +216,7 @@ get_null (const struct addrinfo *hints,
 		       &current, const_v4, &v4_addr, NULL);
     }
     *res = first;
-    return 0;
+    return ret;
 }
 
 static int

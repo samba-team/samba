@@ -112,6 +112,8 @@ set_funcs(kadm5_server_context *c)
     SET(c, lock);
     SET(c, unlock);
     SET(c, setkey_principal_3);
+    SET(c, iter_principals);
+    SET(c, dup_context);
 }
 
 #ifndef NO_UNIX_SOCKETS
@@ -250,6 +252,8 @@ _kadm5_s_init_context(kadm5_server_context **ctx,
     krb5_add_et_list (context, initialize_kadm5_error_table_r);
 
 #define is_set(M) (params && params->mask & KADM5_CONFIG_ ## M)
+    if (params)
+        (*ctx)->config.mask = params->mask;
     if (is_set(REALM)) {
 	(*ctx)->config.realm = strdup(params->realm);
         if ((*ctx)->config.realm == NULL)
@@ -275,9 +279,9 @@ _kadm5_s_init_context(kadm5_server_context **ctx,
 	    return krb5_enomem(context);
     }
 
-    find_db_spec(*ctx);
-
-    ret = _kadm5_s_init_hooks(*ctx);
+    ret = find_db_spec(*ctx);
+    if (ret == 0)
+        ret = _kadm5_s_init_hooks(*ctx);
     if (ret != 0) {
 	kadm5_s_destroy(*ctx);
 	*ctx = NULL;

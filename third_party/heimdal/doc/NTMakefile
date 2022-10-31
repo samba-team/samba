@@ -40,7 +40,6 @@ heimdal_TEXINFOS = \
 	$(OBJ)\heimdal.texi \
 	$(OBJ)\install.texi \
 	$(OBJ)\intro.texi \
-	$(OBJ)\kerberos4.texi \
 	$(OBJ)\migration.texi \
 	$(OBJ)\misc.texi \
 	$(OBJ)\programming.texi \

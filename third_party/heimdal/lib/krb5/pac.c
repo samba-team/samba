@@ -882,6 +882,7 @@ verify_logonname(krb5_context context,
     }
     ret = krb5_storage_read(sp, s, len);
     if (ret != len) {
+	free(s);
 	krb5_storage_free(sp);
 	krb5_set_error_message(context, EINVAL, "Failed to read PAC logon name");
 	return EINVAL;
@@ -894,8 +895,10 @@ verify_logonname(krb5_context context,
 	unsigned int flags = WIND_RW_LE;
 
 	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
-	if (ucs2 == NULL)
+	if (ucs2 == NULL) {
+	    free(s);
 	    return krb5_enomem(context);
+	}
 
 	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
 	free(s);

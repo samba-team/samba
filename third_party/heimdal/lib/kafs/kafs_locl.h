@@ -96,7 +96,6 @@
 #endif
 #ifdef KRB5
 #include "crypto-headers.h"
-#include <krb5-v4compat.h>
 typedef struct credentials CREDENTIALS;
 #endif /* KRB5 */
 #ifndef NO_AFS

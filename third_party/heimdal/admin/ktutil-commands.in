@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004-2022 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -151,11 +151,17 @@ command = {
 }
 command = {
 	name = "copy"
+	name = "merge"
 	function = "kt_copy"
+	option = {
+		long = "copy-duplicates"
+		type = "flag"
+		help = "copy entries for the same principal and kvno, but different keys"
+	}
 	argument = "source destination"
 	min_args = "2"
 	max_args = "2"
-	help = "Copies one keytab to another."
+	help = "Merges one keytab into another."
 }
 command = {
 	name = "get"
@@ -165,6 +171,16 @@ command = {
 		type = "string"
 		help = "admin principal"
 		argument = "principal"
+	}
+	option = {
+		long = "create"
+		type = "-flag"
+		help = "do not create the principal"
+	}
+	option = {
+		long = "change-keys"
+		type = "-flag"
+		help = "do not change the principal's keys"
 	}
 	option = {
 		long = "enctypes"
@@ -215,6 +231,14 @@ command = {
 	help = "Change keys for specified principals, and add them to the keytab."
 }
 command = {
+	name = "import"
+	function = "kt_import"
+	help = "Imports a keytab from JSON output of ktutil list --json --keys."
+        min_args = "0"
+        max_args = "1"
+	argument = "JSON-FILE"
+}
+command = {
 	name = "list"
 	option = {
 		long = "keys"
@@ -225,6 +249,11 @@ command = {
 		long = "timestamp"
 		type = "flag"
 		help = "show timestamps"
+	}
+	option = {
+		long = "json"
+		type = "flag"
+		help = "output JSON representation"
 	}
 	max_args = "0"
 	function = "kt_list"

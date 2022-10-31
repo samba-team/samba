@@ -43,6 +43,10 @@
 .Op Fl Fl daemon-child
 .Op Fl Fl reverse-proxied
 .Op Fl p Ar port number (default: 443)
+.Op Fl Fl allow-GET
+.Op Fl Fl no-allow-GET
+.Op Fl Fl GET-with-csrf-token
+.Op Fl Fl csrf-header= Ns Ar HEADER-NAME
 .Op Fl Fl temp-dir= Ns Ar DIRECTORY
 .Op Fl Fl cert=HX509-STORE
 .Op Fl Fl private-key=HX509-STORE
@@ -64,15 +68,23 @@
 .Xc
 .Oc
 .Sh DESCRIPTION
-Serves the following resources:
+Serves the following resources over HTTP:
 .Ar /get-keys and
 .Ar /get-config .
 .Pp
 The
 .Ar /get-keys
-end-point allows callers to get keytab content for named
-principals, possibly performing write operations such as creating
-a non-existent principal, or rotating its keys, if requested.
+end-point allows callers to get a principal's keys in
+.Dq keytab
+format for named principals, possibly performing write operations
+such as creating a non-existent principal, or rotating its keys,
+if requested.
+Note that this end-point can cause KDC HDB principal entries to
+be modified or created incidental to fetching the principal's
+keys.
+The use of the HTTP POST method is required when this end-point
+writes to the KDC's HDB.
+See below.
 .Pp
 The
 .Ar /get-config
@@ -96,7 +108,87 @@ end-point accepts a single query parameter:
 .Bl -tag -width Ds -offset indent
 .It Ar princ=PRINCIPAL .
 .El
+.Sh HTTP APIS
+All HTTP APIs served by this program accept POSTs, with all
+request parameters given as either URI query parameters, and/or
+as form data in the POST request body, in either
+.Ar application/x-www-form-urlencoded
+or
+.Ar multipart/formdata .
+If GETs are enabled, then request parameters must be supplied as
+URI query parameters.
 .Pp
+Note that requests that cause changes to the HDB must always be
+done via POST, never GET.
+.Pp
+URI query parameters must be of the form
+.Ar param0=value&param1=value...
+Some parameters can be given multiple values -- see the
+descriptions of the end-points.
+.Sh CROSS-SITE REQUEST FORGERY PROTECTION
+.Em None
+of the resources service by this service are intended to be
+executed by web pages.
+.Pp
+Most of the resources provided by this service are
+.Dq safe
+in the sense that they do not change server-side state besides
+logging, and in that they are idempotent, but they are
+only safe to execute
+.Em if and only if
+the requesting party is trusted to see the response.
+Since none of these resources are intended to be used from web
+pages, it is important that web pages not be able to execute them
+.Em and
+observe the responses.
+.Pp
+Some of the resources provided by this service do change
+server-side state, specifically principal entries in the KDC's
+HDB.
+Those always require the use of POST, not GET.
+.Pp
+In a web browser context, pages from other origins will be able
+to attempt requests to this service, but should never be able to
+see the responses because browsers normally wouldn't allow that.
+Nonetheless, anti cross site request forgery (CSRF) protection
+may be desirable.
+.Pp
+This service provides the following CSRF protection features:
+.Bl -tag -width Ds -offset indent
+.It requests are rejected if they have a
+.Dq Referer
+(except the experimental /get-negotiate-token end-point)
+.It the service can be configured to require a header that would make the
+request not Dq simple
+.It GETs can be disabled (see options), thus requiring POSTs
+.It GETs can be required to have a CSRF token (see below)
+.It POSTs can be required to have a CSRF token
+.El
+.Pp
+The experimental
+.Ar /get-negotiate-token
+end-point, however, always accepts
+.Dq Referer
+requests.
+.Pp
+To obtain a CSRF token, first execute the request without the
+CSRF token, and the resulting error
+response will include a
+.Ar X-CSRF-Token
+response header.
+.Pp
+To execute a request with a CSRF token, first obtain a CSRF token
+as described above, then copy the token to the request as the
+value of the request's
+.Ar X-CSRF-Token
+header.
+.Pp
+The key for keying the CSRF token HMAC is that of the first
+current key for the
+.Sq WELLKNOWN/CSRFTOKEN
+principal for the realm being used.
+Every realm served by this service must have this principal.
+.Sh GETTING KEYTABS
 The
 .Ar /get-keys
 end-point accepts various parameters:
@@ -140,6 +232,14 @@ If the named principal(s) is (are) virtual, this will cause it
 .It Ar create=true
 If the named principal(s) does not (do not) exist, this will
 cause it (them) to be created.
+The default attributes for new principals created this way will
+be taken (except for the disabled attribute) from any containing
+virtual host-based service principal namespace that include a
+leading
+.Sq .
+in the hostname component, or from
+.Nm krb5.conf(5)
+(see the CONFIGURATION section).
 .It Ar rotate=true
 This will cause the keys of concrete principals to be rotated.
 .It Ar revoke=true
@@ -149,6 +249,31 @@ This means that extant service tickets with those principals as
 the target will not be able to be decrypted by the caller as it
 will not have the necessary keys.
 .El
+.Pp
+The HTTP
+.Nm Cache-Control
+header will be set on
+.Nm get-keys
+responses to
+.Dq Nm no-store ,
+and the
+.Nm max-age
+cache control parameter will be set to the least number of
+seconds until before any of the requested principal's keys could
+change.
+For virtual principals this will be either the time left until a
+quarter of the rotation period before the next rotation, or the
+time left until a
+quarter of the rotation period after the next rotation.
+For concrete principals this will be the time left to the first
+such principal's password expiration, or, if none of them have a
+configured password expiration time, then half of the
+.Nm new_service_key_delay
+configured in the
+.Nm [hdb]
+section of the
+.Nm krb5.conf(5)
+file.
 .Pp
 Authorization is handled via the same mechanism as in
 .Nm bx509d(8)
@@ -160,9 +285,10 @@ but using
 .Nm [ext_keytab]
 as the
 .Nm krb5.conf(5) section.
-Clients with host-based principals for the the host service can
-create and extract keys for their own service name, but otherwise
-a number of service names are not denied:
+Clients with host-based principals for the
+.Dq host
+service can create and extract keys for their own service name,
+but otherwise a number of service names are denied:
 .Bl -tag -width Ds -offset indent
 .It Dq host
 .It Dq root
@@ -206,6 +332,51 @@ Serves HTTP instead of HTTPS, accepting only looped-back connections.
 .Fl p Ar port number (default: 443)
 .Xc
 PORT
+.It Xo
+.Fl Fl allow-GET
+.Xc
+If given, then HTTP GET will be allowed for the various end-points
+other than
+.Ar /health .
+Otherwise only HEAD and POST will be allowed.
+By default GETs are allowed, but this will change soon.
+.It Xo
+.Fl Fl no-allow-GET
+.Xc
+If given then HTTP GETs will be rejected for the various
+end-points other than
+.Ar /health .
+.It Xo
+.Fl Fl csrf-protection-type= Ns Ar CSRF-PROTECTION-TYPE
+.Xc
+Possible values of
+.Ar CSRF-PROTECTION-TYPE
+are
+.Bl -bullet -compact -offset indent
+.It
+.Li GET-with-header
+.It
+.Li GET-with-token
+.It
+.Li POST-with-header
+.It
+.Li POST-with-token
+.El
+This may be given multiple times.
+The default is to require CSRF tokens for POST requests, and to
+require neither a non-simple header nor a CSRF token for GET
+requests.
+.Pp
+See
+.Sx CROSS-SITE REQUEST FORGERY PROTECTION .
+.It Xo
+.Fl Fl csrf-header= Ns Ar HEADER-NAME
+.Xc
+If given, then all requests other than to the
+.Ar /health
+service must have the given request
+.Ar HEADER-NAME
+set (the value is irrelevant).
 .It Xo
 .Fl Fl temp-dir= Ns Ar DIRECTORY
 .Xc
@@ -361,11 +532,69 @@ Authorizer configuration goes in
 in
 .Nm krb5.conf(5).  For example:
 .Pp
+.Bd -literal -offset indent
 [ext_keytab]
   simple_csr_authorizer_directory = /etc/krb5/simple_csr_authz
   ipc_csr_authorizer = {
     service = UNIX:/var/heimdal/csr_authorizer_sock
   }
+.Ed
+.Pp
+Configuration parameters specific to
+.Nm httpkadmind :
+.Bl -tag -width Ds -offset indent
+.It csr_authorizer_handles_svc_names = BOOL
+.It new_hostbased_service_principal_attributes = ...
+.El
+.Pp
+The
+.Nm [ext_keytab]
+.Nm get_keys_max_spns = NUMBER
+parameter can be used to specify a maximum number of principals whose
+keys can be retrieved in one
+.Nm GET
+of the
+.Nm /get-keys
+end-point.
+Defaults to 400.
+.Pp
+The
+.Nm [ext_keytab]
+.Nm new_hostbased_service_principal_attributes
+parameter may be used instead of virtual host-based service
+namespace principals to specify the attributes of new principals
+created by
+.Nm httpkadmind ,
+and its value is a hive with a service name then a hostname or
+namespace, and whose value is a set of attributes as given in the
+.Nm kadmin(1) modify
+command.
+For example:
+.Bd -literal -offset indent
+[ext_keytab]
+  new_hostbased_service_principal_attributes = {
+    host = {
+        a-particular-hostname.test.h5l.se = ok-as-delegate
+        .prod.test.h5l.se = ok-as-delegate
+    }
+  }
+.Ed
+.Pp
+which means that
+.Dq host/a-particular-hostname.test.h5l.se ,
+if created via
+.Nm httpkadmind ,
+will be allowed to get delegated credentials (ticket forwarding),
+and that hostnames matching the glob pattern
+.Dq host/*.prod.test.h5l.se ,
+if created via
+.Nm httpkadmind ,
+will also allowed to get delegated credentials.
+All host-based service principals created via
+.Nm httpkadmind
+not matchining any
+.Nm new_hostbased_service_principal_attributes
+service namespaces will have the empty attribute set.
 .Sh EXAMPLES
 To start
 .Nm httpkadmind

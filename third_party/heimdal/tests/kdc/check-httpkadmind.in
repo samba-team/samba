@@ -133,9 +133,11 @@ fi
 
 # HTTP curl-opts
 HTTP() {
-    curl -g --resolve ${server}:${restport2}:127.0.0.1                  \
-            --resolve ${server}:${restport}:127.0.0.1                   \
-         -u: --negotiate $verbose "$@"
+    curl -g --resolve ${server}:${restport2}:127.0.0.1  \
+            --resolve ${server}:${restport}:127.0.0.1   \
+         -u: --negotiate $verbose                       \
+         -D response-headers                            \
+         "$@"
 }
 
 # get_config QPARAMS curl-opts
@@ -143,6 +145,23 @@ get_config() {
     url="http://${server}:${restport}/get-config?$1"
     shift
     HTTP $verbose "$@" "$url"
+}
+
+check_age() {
+    set -- $(grep -i ^Cache-Control: response-headers)
+    if [ $# -eq 0 ]; then
+        return 1
+    fi
+    shift
+    for param in "$@"; do
+        case "$param" in
+        no-store) true;;
+        max-age=0) return 1;;
+        max-age=*) true;;
+        *) return 1;;
+        esac
+    done
+    return 0;
 }
 
 # get_keytab QPARAMS curl-opts
@@ -163,9 +182,9 @@ get_keytab_POST() {
 
     get_keytab "$q" -X POST --data-binary @/dev/null -f "$@" && 
         { echo "POST succeeded w/o CSRF token!"; return 1; }
-    get_keytab "$q" -X POST --data-binary @/dev/null -D response-headers "$@"
+    get_keytab "$q" -X POST --data-binary @/dev/null "$@"
     grep ^X-CSRF-Token: response-headers >/dev/null || return 1
-    get_keytab "$q" -X POST --data-binary @/dev/null -D response-headers \
+    get_keytab "$q" -X POST --data-binary @/dev/null \
         -H "$(sed -e 's/\r//' response-headers | grep ^X-CSRF-Token:)" "$@"
     grep '^HTTP/1.1 200' response-headers >/dev/null || return $?
     return 0
@@ -174,7 +193,7 @@ get_keytab_POST() {
 get_keytab_POST_redir() {
     url="http://${server}:${restport}/get-keys?$1"
     shift
-    HTTP -X POST --data-binary @/dev/null -D response-headers "$@" "$url"
+    HTTP -X POST --data-binary @/dev/null "$@" "$url"
     grep ^X-CSRF-Token: response-headers >/dev/null ||
         { echo "POST w/o CSRF token had response w/o CSRF token!"; return 1; }
     HTTP -X POST --data-binary @/dev/null  -f                           \
@@ -218,6 +237,9 @@ ${kadmin} add -r --use-defaults HTTP/xyz.${domain}@${R} || exit 1
 ${kadmin} add_ns --key-rotation-epoch=-1d --key-rotation-period=5m  \
                  --max-ticket-life=1d --max-renewable-life=5d       \
                  --attributes= HTTP/ns.${domain}@${R} || exit 1
+${kadmin} add_ns --key-rotation-epoch=-1d --key-rotation-period=5m  \
+                 --max-ticket-life=1d --max-renewable-life=5d       \
+                 --attributes=ok-as-delegate host/.ns2.${domain}@${R} || exit 1
 ${kadmin} add -r --use-defaults HTTP/${server}@${R} || exit 1
 ${kadmin} ext_keytab -r -k $keytab  kadmin/admin@${R} || exit 1
 ${kadmin} ext_keytab -r -k $keytab  httpkadmind/admin@${R} || exit 1
@@ -292,6 +314,8 @@ ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin 
     { echo "Failed to list keytab for $p"; exit 1; }
 get_keytab "dNSName=${hn}" -sf -o "${objdir}/extracted_keytab" ||
     { echo "Failed to get a keytab for $p with curl"; exit 1; }
+check_age
+grep -i ^Cache-Control response-headers
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.rest ||
     { echo "Failed to list keytab for $p"; exit 1; }
 cmp extracted_keytab.kadmin extracted_keytab.rest ||
@@ -416,7 +440,6 @@ ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin 
 cmp extracted_keytab.kadmin extracted_keytab.rest ||
     { echo "Keytabs for $p don't match!"; exit 1; }
 
-if false; then
 hn=bar.ns.${domain}
 p=HTTP/$hn
 echo "Checking materialization of virtual principal ($p)"
@@ -435,7 +458,6 @@ ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin 
     { echo "Failed to list keytab for $p"; exit 1; }
 cmp extracted_keytab.kadmin extracted_keytab.rest ||
     { echo "Keytabs for $p don't match!"; exit 1; }
-fi
 
 echo "Starting secondary httpkadmind to test HTTP redirection"
 ${httpkadmind2} --primary-server-uri=http://localhost:$restport         \
@@ -622,22 +644,21 @@ cmp extracted_keytab.rest1 extracted_keytab.rest2 > /dev/null &&
 test "$(grep $p extracted_keytab.rest2 | wc -l)" -eq 3 ||
     { echo "Wrong number of new keys!"; exit 1; }
 
-echo "Checking that host services as clients can self-serve"
+echo "Checking that host services as clients can self-create"
 hn=synthesized.${domain}
 p=host/$hn
-KRB5CCNAME=$admincache ${kadmin} get -s $p &&
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null &&
     { echo "Internal error -- $p exists too soon"; exit 1; }
 ${kinit2} -C "FILE:${objdir}/pkinit-synthetic.crt,${keyfile2}" ${p}@${R} || \
     { echo "Failed to kinit with PKINIT client cert"; exit 1; }
 ${kgetcred2} HTTP/localhost@$R || echo WAT
-${klist2}
 rm -f extracted_keytab*
 KRB5CCNAME=$cache2 \
 get_keytab_POST "spn=$p&create=true" -s -o "${objdir}/extracted_keytab" ||
     { echo "Failed to create and extract host keys for self"; exit 1; }
-${ktutil} -k "${objdir}/extracted_keytab" list ||
+${ktutil} -k "${objdir}/extracted_keytab" list > /dev/null ||
     { echo "Failed to create and extract host keys for self (bogus keytab)"; exit 1; }
-KRB5CCNAME=$admincache ${kadmin} get -s $p ||
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null ||
     { echo "Failed to create and extract host keys for self"; exit 1; }
 
 echo "Checking that host services can't get other host service principals"
@@ -646,8 +667,8 @@ p=host/$hn
 KRB5CCNAME=$cache2 \
 get_keytab_POST "spn=$p&create=true" -s -o "${objdir}/extracted_keytab2" &&
     { echo "Failed to fail to create and extract host keys for other!"; exit 1; }
-${ktutil} -k "${objdir}/extracted_keytab2" list || true
-KRB5CCNAME=$admincache ${kadmin} get -s $p &&
+${ktutil} -k "${objdir}/extracted_keytab2" list > /dev/null || true
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null &&
     { echo "Failed to fail to create and extract host keys for other!"; exit 1; }
 
 echo "Checking that host services can't get keys for themselves and others"
@@ -657,14 +678,134 @@ p2=host/nonexistent.${domain}
 ${kinit2} -C "FILE:${objdir}/pkinit-synthetic.crt,${keyfile2}" ${p}@${R} || \
     { echo "Failed to kinit with PKINIT client cert"; exit 1; }
 ${kgetcred2} HTTP/localhost@$R || echo WAT
-${klist2}
 rm -f extracted_keytab*
 KRB5CCNAME=$cache2 \
 get_keytab_POST "spn=$p&spn=$p2&create=true" -s -o "${objdir}/extracted_keytab" &&
     { echo "Failed to fail to create and extract host keys for other!"; exit 1; }
-${ktutil} -k "${objdir}/extracted_keytab2" list || true
-KRB5CCNAME=$admincache ${kadmin} get -s $p2 &&
+${ktutil} -k "${objdir}/extracted_keytab2" list > /dev/null || true
+KRB5CCNAME=$admincache ${kadmin} get -s $p2 >/dev/null &&
     { echo "Failed to fail to create and extract host keys for other!"; exit 1; }
+
+echo "Checking that attributes for new principals can be configured"
+hn=a-particular-hostname.test.h5l.se
+p=host/$hn
+${hxtool} issue-certificate \
+          --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
+          --type="pkinit-client" \
+          --pk-init-principal="$p@$R" \
+          --req="PKCS10:req-pkinit.der" \
+          --lifetime=7d \
+          --certificate="FILE:pkinit-synthetic.crt" ||
+         { echo "Failed to make PKINIT client cert"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null 2>&1 &&
+    { echo "Internal error -- $p exists too soon"; exit 1; }
+${kinit2} -C "FILE:${objdir}/pkinit-synthetic.crt,${keyfile2}" ${p}@${R} || \
+    { echo "Failed to kinit with PKINIT client cert"; exit 1; }
+${kgetcred2} HTTP/localhost@$R || echo WAT
+rm -f extracted_keytab*
+KRB5CCNAME=$cache2 \
+get_keytab_POST "spn=$p&create=true" -s -o "${objdir}/extracted_keytab" ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+${ktutil} -k "${objdir}/extracted_keytab" list > /dev/null ||
+    { echo "Failed to create and extract host keys for self (bogus keytab)"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*ok-as-delegate' > /dev/null ||
+    { echo "Failed to create with configured attributes"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*no-auth-data-reqd' > /dev/null ||
+    { echo "Failed to create with configured attributes"; exit 1; }
+
+hn=other-hostname.test.h5l.se
+p=host/$hn
+${hxtool} issue-certificate \
+          --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
+          --type="pkinit-client" \
+          --pk-init-principal="$p@$R" \
+          --req="PKCS10:req-pkinit.der" \
+          --lifetime=7d \
+          --certificate="FILE:pkinit-synthetic.crt" ||
+         { echo "Failed to make PKINIT client cert"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null 2>&1 &&
+    { echo "Internal error -- $p exists too soon"; exit 1; }
+${kinit2} -C "FILE:${objdir}/pkinit-synthetic.crt,${keyfile2}" ${p}@${R} || \
+    { echo "Failed to kinit with PKINIT client cert"; exit 1; }
+${kgetcred2} HTTP/localhost@$R || echo WAT
+rm -f extracted_keytab*
+KRB5CCNAME=$cache2 \
+get_keytab_POST "spn=$p&create=true" -s -o "${objdir}/extracted_keytab" ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+${ktutil} -k "${objdir}/extracted_keytab" list > /dev/null ||
+    { echo "Failed to create and extract host keys for self (bogus keytab)"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*ok-as-delegate' > /dev/null &&
+    { echo "Create with unexpected attributes"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*no-auth-data-reqd' > /dev/null &&
+    { echo "Create with unexpected attributes"; exit 1; }
+
+hn=a-server.prod.test.h5l.se
+p=host/$hn
+${hxtool} issue-certificate \
+          --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
+          --type="pkinit-client" \
+          --pk-init-principal="$p@$R" \
+          --req="PKCS10:req-pkinit.der" \
+          --lifetime=7d \
+          --certificate="FILE:pkinit-synthetic.crt" ||
+         { echo "Failed to make PKINIT client cert"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null 2>&1 &&
+    { echo "Internal error -- $p exists too soon"; exit 1; }
+${kinit2} -C "FILE:${objdir}/pkinit-synthetic.crt,${keyfile2}" ${p}@${R} || \
+    { echo "Failed to kinit with PKINIT client cert"; exit 1; }
+${kgetcred2} HTTP/localhost@$R || echo WAT
+rm -f extracted_keytab*
+KRB5CCNAME=$cache2 \
+get_keytab_POST "spn=$p&create=true" -s -o "${objdir}/extracted_keytab" ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+${ktutil} -k "${objdir}/extracted_keytab" list > /dev/null ||
+    { echo "Failed to create and extract host keys for self (bogus keytab)"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*ok-as-delegate' > /dev/null ||
+    { echo "Failed to create with configured attributes"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*no-auth-data-reqd' > /dev/null ||
+    { echo "Failed to create with configured attributes"; exit 1; }
+
+hn=a-host.ns2.test.h5l.se
+p=host/$hn
+${hxtool} issue-certificate \
+          --ca-certificate=FILE:$objdir/ca.crt,${keyfile} \
+          --type="pkinit-client" \
+          --pk-init-principal="$p@$R" \
+          --req="PKCS10:req-pkinit.der" \
+          --lifetime=7d \
+          --certificate="FILE:pkinit-synthetic.crt" ||
+         { echo "Failed to make PKINIT client cert"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null 2>&1 &&
+    { echo "Internal error -- $p exists too soon"; exit 1; }
+${kinit2} -C "FILE:${objdir}/pkinit-synthetic.crt,${keyfile2}" ${p}@${R} || \
+    { echo "Failed to kinit with PKINIT client cert"; exit 1; }
+${kgetcred2} HTTP/localhost@$R || echo WAT
+rm -f extracted_keytab*
+KRB5CCNAME=$cache2 \
+get_keytab_POST "spn=$p&create=true" -s -o "${objdir}/extracted_keytab" ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+${ktutil} -k "${objdir}/extracted_keytab" list > /dev/null ||
+    { echo "Failed to create and extract host keys for self (bogus keytab)"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get -s $p >/dev/null ||
+    { echo "Failed to create and extract host keys for self"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*ok-as-delegate' > /dev/null ||
+    { echo "Failed to create with namespace attributes"; exit 1; }
+KRB5CCNAME=$admincache ${kadmin} get $p |
+    grep 'Attributes:.*no-auth-data-reqd' > /dev/null &&
+    { echo "Create with unexpected attributes"; exit 1; }
 
 grep 'Internal error' messages.log &&
     { echo "Internal errors in log"; exit 1; }

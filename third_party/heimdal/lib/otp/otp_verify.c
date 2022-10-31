@@ -49,7 +49,7 @@ otp_verify_user_1 (OtpContext *ctx, const char *passwd)
   }
   memcpy (key2, key1, sizeof(key1));
   ctx->alg->next (key2);
-  if (memcmp (ctx->key, key2, sizeof(key2)) == 0) {
+  if (ct_memcmp (ctx->key, key2, sizeof(key2)) == 0) {
     --ctx->n;
     memcpy (ctx->key, key1, sizeof(key1));
     return 0;

@@ -39,6 +39,9 @@ static const char *config_name = "ipropd-slave";
 
 static int verbose;
 static int async_hdb = 0;
+static int no_keytab_flag;
+static char *ccache_str;
+static char *keytab_str;
 
 static krb5_log_facility *log_facility;
 static char five_min[] = "5 min";
@@ -115,8 +118,7 @@ connect_to_master (krb5_context context, const char *master,
 }
 
 static void
-get_creds(krb5_context context, const char *keytab_str,
-	  krb5_ccache *cache, const char *serverhost)
+get_creds(krb5_context context, krb5_ccache *cache, const char *serverhost)
 {
     krb5_keytab keytab;
     krb5_principal client;
@@ -127,12 +129,32 @@ get_creds(krb5_context context, const char *keytab_str,
     char keytab_buf[256];
     int aret;
 
+    if (no_keytab_flag) {
+        /* We're using an externally refreshed ccache */
+        if (*cache == NULL) {
+            if (ccache_str == NULL)
+                ret = krb5_cc_default(context, cache);
+            else
+                ret = krb5_cc_resolve(context, ccache_str, cache);
+            if (ret)
+                krb5_err(context, 1, ret, "Could not resolve the default cache");
+        }
+        return;
+    }
+
     if (keytab_str == NULL) {
 	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_kt_default_name");
-	keytab_str = keytab_buf;
+	if (ret == 0) {
+            keytab_str = keytab_buf;
+        } else {
+	    krb5_warn(context, ret, "Using HDBGET: as the default keytab");
+            keytab_str = "HDBGET:";
+        }
     }
+
+    if (*cache)
+        krb5_cc_destroy(context, *cache);
+    *cache = NULL;
 
     ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if(ret)
@@ -690,7 +712,6 @@ static char *status_file;
 static char *config_file;
 static int version_flag;
 static int help_flag;
-static char *keytab_str;
 static char *port_str;
 static int detach_from_console;
 static int daemon_child = -1;
@@ -699,8 +720,12 @@ static struct getargs args[] = {
     { "config-file", 'c', arg_string, &config_file, NULL, NULL },
     { "realm", 'r', arg_string, &realm, NULL, NULL },
     { "database", 'd', arg_string, &database, "database", "file"},
+    { "no-keytab", 0, arg_flag, &no_keytab_flag,
+      "use externally refreshed cache", NULL },
+    { "ccache", 0, arg_string, &ccache_str,
+      "client credentials", "CCACHE" },
     { "keytab", 'k', arg_string, &keytab_str,
-      "keytab to get authentication from", "kspec" },
+      "client credentials keytab", "KEYTAB" },
     { "time-lost", 0, arg_string, &server_time_lost,
       "time before server is considered lost", "time" },
     { "status-file", 0, arg_string, &status_file,
@@ -740,7 +765,7 @@ main(int argc, char **argv)
     kadm5_server_context *server_context;
     kadm5_config_params conf;
     int master_fd;
-    krb5_ccache ccache;
+    krb5_ccache ccache = NULL;
     krb5_principal server;
     char **files;
     int optidx = 0;
@@ -858,7 +883,7 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "db->close");
 
-    get_creds(context, keytab_str, &ccache, master);
+    get_creds(context, &ccache, master);
 
     ret = krb5_sname_to_principal (context, master, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &server);
@@ -923,8 +948,7 @@ main(int argc, char **argv)
 	if (auth_context) {
 	    krb5_auth_con_free(context, auth_context);
 	    auth_context = NULL;
-	    krb5_cc_destroy(context, ccache);
-	    get_creds(context, keytab_str, &ccache, master);
+	    get_creds(context, &ccache, master);
 	}
         if (verbose)
             krb5_warnx(context, "authenticating to master");

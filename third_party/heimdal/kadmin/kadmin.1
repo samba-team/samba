@@ -150,14 +150,34 @@ This command has the following aliases:
 .Bd -ragged -offset indent
 Adds one or more aliases to the given principal.
 .Pp
-When a client requests a service ticket for a service principal
-name that is an alias of a principal in a different realm, the
-TGS will return a referral to that realm.
-This compares favorably to using
+There are two types of aliases: hard, and soft.
+A soft alias is an alias of a principal of the form
+.Ar WELLKNOWN/REFERRALS/TARGET@target_realm
+or
+.Ar WELLKNOWN/REFERRALS/TARGET/arbitrary-component@target_realm .
+A hard alias is an alias of any normal principal, even if in a
+different realm.
+.Pp
+Hard aliases are treated as distinct principals sharing
+attributes and keys with their canonical principals.
+If a client requests canonicalization of a hard alias name, the
+KDC will use the canonical name in the ticket issued as long as
+the alias and canonical names are in the same realm.
+Conversely, if a client does not request canonicalization, or if
+the hard alias and the canonical name have different realms, then
+the KDC will issue a ticket for the alias name.
+.Pp
+Soft aliases can only be used to configure the production of
+referrals by the KDC.
+When a client requests a ticket for a principal that turns out to
+be a soft alias, the KDC will respond with a referral to the
+alias' canonical name's realm.
+.Pp
+Soft aliasing compares favorably to using
 .Ar [domain_realm]
 entries in the KDC's
-.Ar krb5.conf ,
-but may be managed via the
+.Ar krb5.conf :
+soft aliases may be managed via the
 .Nm kadmin
 command and its
 .Nm add_alias
@@ -166,9 +186,9 @@ and
 sub-commands rather than having to edit the KDC's configuration
 file and having to restart the KDC.
 .Pp
-There are two methods for issuing referrals for entire namespaces
-of hostnames.
-An alias of the form
+There are two methods for configuring the issuance of referrals
+for entire namespaces of hostnames.
+A soft alias of the form
 .Ar  WELLKNOWN/HOSTBASED-NAMESPACE/service/namespace-fqdn@REALM
 (see
 .Nm add_namespace
@@ -402,11 +422,15 @@ only change the ones specified.
 .Pp
 The
 .Fl Fl alias= Ns Ar alias-name
-option may be given multiple times, which will set the complete
-list of aliases for the principal.
+option may be given multiple times.
+If this option is used at all, the complete list of aliases must
+be given, with one option per-alias.
+If the list given has fewer aliases than the principal had prior
+to the modification, then the missing aliases will be deleted.
+.Pp
 Use the
 .Nm add_alias
-command instead to add an alias without having to list all
+command instead to add an alias to avoid having to list all
 existing aliases to keep.
 .Pp
 The

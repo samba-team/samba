@@ -38,7 +38,7 @@
 #include "heimtools-commands.h"
 #undef HC_DEPRECATED_CRYPTO
 
-static char*
+static const char *
 printable_time_internal(time_t t, int x)
 {
     static char s[128];
@@ -52,13 +52,13 @@ printable_time_internal(time_t t, int x)
     return s;
 }
 
-static char*
+static const char *
 printable_time(time_t t)
 {
     return printable_time_internal(t, 20);
 }
 
-static char*
+static const char *
 printable_time_long(time_t t)
 {
     return printable_time_internal(t, 20);
@@ -136,17 +136,172 @@ print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
 }
 
 static void
-print_cred_verbose(krb5_context context, krb5_creds *cred, int do_json)
+cred2json(krb5_context context, krb5_creds *cred, heim_array_t tix)
+{
+    heim_dict_t t = heim_dict_create(10); /* ticket top-level */
+    heim_dict_t e = heim_dict_create(10); /* ticket times */
+    heim_dict_t f = heim_dict_create(20); /* flags */
+    heim_object_t o;
+    char buf[16], *sp = buf;
+    char *str;
+    krb5_error_code ret;
+    krb5_timestamp sec;
+
+    heim_array_append_value(tix, t);
+    krb5_timeofday(context, &sec);
+
+    /*
+     * JSON object names (keys) that start with capitals are for compatibility
+     * with the JSON we used to output.  The others are new.
+     */
+    heim_dict_set_value(t, HSTR("times"), e);
+    heim_dict_set_value(t, HSTR("flags"), f);
+
+    heim_dict_set_value(e, HSTR("authtime"),
+                        o = heim_number_create(cred->times.authtime));
+    heim_release(o);
+    heim_dict_set_value(t, HSTR("Issued"),
+                        o = heim_string_create(printable_time(cred->times.authtime)));
+    heim_release(o);
+        heim_dict_set_value(e, HSTR("starttime"), heim_null_create());
+    if (cred->times.starttime) {
+        heim_dict_set_value(e, HSTR("starttime"),
+                            o = heim_number_create(cred->times.starttime));
+        heim_release(o);
+        heim_dict_set_value(t, HSTR("Starttime"),
+                            o = heim_string_create(printable_time(cred->times.starttime)));
+        heim_release(o);
+    }
+
+    if (cred->times.renew_till) {
+        heim_dict_set_value(e, HSTR("renew_till"),
+                            o = heim_number_create(cred->times.starttime));
+        heim_release(o);
+        heim_dict_set_value(t, HSTR("Renew till"),
+                            o = heim_string_create(printable_time(cred->times.starttime)));
+        heim_release(o);
+    }
+
+    heim_dict_set_value(e, HSTR("endtime"),
+                        o = heim_number_create(cred->times.endtime));
+    heim_release(o);
+
+    if (cred->times.endtime > sec) {
+        heim_dict_set_value(t, HSTR("Expires"),
+                            o = heim_string_create(printable_time(cred->times.endtime)));
+        heim_release(o);
+        heim_dict_set_value(t, HSTR("expired"), heim_bool_create(0));
+    } else {
+        heim_dict_set_value(t, HSTR("Expires"), HSTR(">>>Expired<<<"));
+        heim_dict_set_value(t, HSTR("expired"), heim_bool_create(1));
+    }
+
+    ret = krb5_unparse_name(context, cred->server, &str);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_unparse_name");
+    heim_dict_set_value(t, HSTR("Principal"), o = heim_string_create(str));
+    heim_release(o);
+
+    if (cred->flags.b.forwardable) {
+        heim_dict_set_value(f, HSTR("forwardable"), heim_bool_create(1));
+        *sp++ = 'F';
+    } else {
+        heim_dict_set_value(f, HSTR("forwardable"), heim_bool_create(0));
+    }
+    if (cred->flags.b.forwarded) {
+        heim_dict_set_value(f, HSTR("forwarded"), heim_bool_create(1));
+        *sp++ = 'f';
+    } else {
+        heim_dict_set_value(f, HSTR("forwarded"), heim_bool_create(0));
+    }
+    if (cred->flags.b.proxiable) {
+        heim_dict_set_value(f, HSTR("proxiable"), heim_bool_create(1));
+        *sp++ = 'P';
+    } else {
+        heim_dict_set_value(f, HSTR("proxiable"), heim_bool_create(0));
+    }
+    if (cred->flags.b.proxy) {
+        heim_dict_set_value(f, HSTR("proxy"), heim_bool_create(1));
+        *sp++ = 'p';
+    } else {
+        heim_dict_set_value(f, HSTR("proxy"), heim_bool_create(0));
+    }
+    if (cred->flags.b.may_postdate) {
+        heim_dict_set_value(f, HSTR("may_postdate"), heim_bool_create(1));
+        *sp++ = 'D';
+    } else {
+        heim_dict_set_value(f, HSTR("may_postdate"), heim_bool_create(0));
+    }
+    if (cred->flags.b.postdated) {
+        heim_dict_set_value(f, HSTR("postdated"), heim_bool_create(1));
+        *sp++ = 'd';
+    } else {
+        heim_dict_set_value(f, HSTR("postdated"), heim_bool_create(0));
+    }
+    if (cred->flags.b.renewable) {
+        heim_dict_set_value(f, HSTR("renewable"), heim_bool_create(1));
+        *sp++ = 'R';
+    } else {
+        heim_dict_set_value(f, HSTR("renewable"), heim_bool_create(0));
+    }
+    if (cred->flags.b.initial) {
+        heim_dict_set_value(f, HSTR("initial"), heim_bool_create(1));
+        *sp++ = 'I';
+    } else {
+        heim_dict_set_value(f, HSTR("initial"), heim_bool_create(0));
+    }
+    if (cred->flags.b.invalid) {
+        heim_dict_set_value(f, HSTR("invalid"), heim_bool_create(1));
+        *sp++ = 'i';
+    } else {
+        heim_dict_set_value(f, HSTR("invalid"), heim_bool_create(0));
+    }
+    if (cred->flags.b.pre_authent) {
+        heim_dict_set_value(f, HSTR("pre_authent"), heim_bool_create(1));
+        *sp++ = 'A';
+    } else {
+        heim_dict_set_value(f, HSTR("pre_authent"), heim_bool_create(0));
+    }
+    if (cred->flags.b.hw_authent) {
+        heim_dict_set_value(f, HSTR("hw_authent"), heim_bool_create(1));
+        *sp++ = 'H';
+    } else {
+        heim_dict_set_value(f, HSTR("hw_authent"), heim_bool_create(0));
+    }
+    if (cred->flags.b.transited_policy_checked) {
+        heim_dict_set_value(f, HSTR("transited_policy_checked"), heim_bool_create(1));
+        *sp++ = 'T';
+    } else {
+        heim_dict_set_value(f, HSTR("transited_policy_checked"), heim_bool_create(0));
+    }
+    if (cred->flags.b.ok_as_delegate) {
+        heim_dict_set_value(f, HSTR("ok_as_delegate"), heim_bool_create(1));
+        *sp++ = 'O';
+    } else {
+        heim_dict_set_value(f, HSTR("ok_as_delegate"), heim_bool_create(0));
+    }
+    if (cred->flags.b.anonymous) {
+        heim_dict_set_value(f, HSTR("anonymous"), heim_bool_create(1));
+        *sp++ = 'a';
+    } else {
+        heim_dict_set_value(f, HSTR("anonymous"), heim_bool_create(0));
+    }
+    *sp = '\0';
+    heim_dict_set_value(t, HSTR("Flags"), o = heim_string_create(sp));
+    heim_release(e);
+    heim_release(f);
+    heim_release(t);
+    heim_release(o);
+    free(str);
+}
+
+static void
+print_cred_verbose(krb5_context context, krb5_creds *cred)
 {
     size_t j;
     char *str;
     krb5_error_code ret;
     krb5_timestamp sec;
-
-    if (do_json) { /* XXX support more json formating later */
-	printf("{ \"verbose-supported\" : false }");
-	return;
-    }
 
     krb5_timeofday (context, &sec);
 
@@ -252,6 +407,74 @@ print_cred_verbose(krb5_context context, krb5_creds *cred, int do_json)
     printf("\n\n");
 }
 
+static void
+cache2json(krb5_context context,
+	   krb5_ccache ccache,
+	   krb5_principal principal,
+	   heim_dict_t dict)
+{
+    heim_array_t tix = heim_array_create();
+    heim_object_t o;
+    char *str, *fullname;
+    char *name = NULL;
+    krb5_error_code ret;
+    krb5_cc_cursor cursor;
+    krb5_creds creds;
+    krb5_deltat sec;
+
+    ret = krb5_unparse_name(context, principal, &str);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_unparse_name");
+
+    ret = krb5_cc_get_full_name(context, ccache, &fullname);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_get_full_name");
+
+    heim_dict_set_value(dict, HSTR("cache"),
+                        o = heim_string_create(fullname));
+    heim_release(o);
+    heim_dict_set_value(dict, HSTR("principal"),
+                        o = heim_string_create(str));
+    heim_release(o);
+    heim_dict_set_value(dict, HSTR("cache_version"),
+                        o = heim_number_create(krb5_cc_get_version(context,
+                                                                   ccache)));
+    heim_release(o);
+    free(str);
+	
+    ret = krb5_cc_get_friendly_name(context, ccache, &name);
+    if (ret == 0) {
+        heim_dict_set_value(dict, HSTR("friendly_name"),
+                            o = heim_string_create(name));
+        heim_release(o);
+    }
+    free(name);
+
+    ret = krb5_cc_get_kdc_offset(context, ccache, &sec);
+    if (ret == 0) {
+        heim_dict_set_value(dict, HSTR("kdc_offset"),
+                            o = heim_number_create(sec));
+        heim_release(o);
+    }
+
+    heim_dict_set_value(dict, HSTR("tickets"), tix);
+    ret = krb5_cc_start_seq_get(context, ccache, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_start_seq_get");
+
+    while ((ret = krb5_cc_next_cred(context, ccache, &cursor, &creds)) == 0) {
+        cred2json(context, &creds, tix);
+	krb5_free_cred_contents(context, &creds);
+    }
+    if (ret != KRB5_CC_END)
+	krb5_err(context, 1, ret, "krb5_cc_get_next");
+    ret = krb5_cc_end_seq_get(context, ccache, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_end_seq_get");
+    heim_release(tix);
+    free(fullname);
+}
+
 /*
  * Print all tickets in `ccache' on stdout, verbosely if do_verbose.
  */
@@ -262,8 +485,7 @@ print_tickets(krb5_context context,
 	      krb5_principal principal,
 	      int do_verbose,
 	      int do_flags,
-	      int do_hidden,
-	      int do_json)
+	      int do_hidden)
 {
     char *str, *name, *fullname;
     krb5_error_code ret;
@@ -271,7 +493,6 @@ print_tickets(krb5_context context,
     krb5_creds creds;
     krb5_deltat sec;
     rtbl_t ct = NULL;
-    int print_comma = 0;
 
     ret = krb5_unparse_name (context, principal, &str);
     if (ret)
@@ -281,27 +502,26 @@ print_tickets(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_get_full_name");
 
-    if (!do_json) {
-	printf ("%17s: %s\n", N_("Credentials cache", ""), fullname);
-	printf ("%17s: %s\n", N_("Principal", ""), str);
+    printf ("%17s: %s\n", N_("Credentials cache", ""), fullname);
+    printf ("%17s: %s\n", N_("Principal", ""), str);
 	
-	ret = krb5_cc_get_friendly_name(context, ccache, &name);
-	if (ret == 0) {
-	    if (strcmp(name, str) != 0)
-		printf ("%17s: %s\n", N_("Friendly name", ""), name);
-	    free(name);
-	}
+    ret = krb5_cc_get_friendly_name(context, ccache, &name);
+    if (ret == 0) {
+        if (strcmp(name, str) != 0) {
+            printf ("%17s: %s\n", N_("Friendly name", ""), name);
+        }
+        free(name);
+    }
+
+    if(do_verbose) {
+        printf ("%17s: %d\n", N_("Cache version", ""),
+                krb5_cc_get_version(context, ccache));
+    }
 	
-	if(do_verbose) {
-	    printf ("%17s: %d\n", N_("Cache version", ""),
-		    krb5_cc_get_version(context, ccache));
-	} else {
-	    krb5_cc_set_flags(context, ccache, KRB5_TC_NOTICKET);
-	}
+    ret = krb5_cc_get_kdc_offset(context, ccache, &sec);
+    if (ret == 0) {
+        if (do_verbose && sec != 0) {
 	
-	ret = krb5_cc_get_kdc_offset(context, ccache, &sec);
-	
-	if (ret == 0 && do_verbose && sec != 0) {
 	    char buf[BUFSIZ];
 	    int val;
 	    int sig;
@@ -317,18 +537,16 @@ print_tickets(krb5_context context,
 
 	    printf ("%17s: %s%s\n", N_("KDC time offset", ""),
 		    sig == -1 ? "-" : "", buf);
-	}
-	printf("\n");
-    } else {
-	printf ("{ \"cache\" : \"%s\", \"principal\" : \"%s\", ", fullname, str);
+        }
     }
+    printf("\n");
     free(str);
 
     ret = krb5_cc_start_seq_get (context, ccache, &cursor);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_start_seq_get");
 
-    if(!do_verbose) {
+    if (!do_verbose) {
 	ct = rtbl_create();
 	rtbl_add_column(ct, COL_ISSUED, 0);
 	rtbl_add_column(ct, COL_EXPIRES, 0);
@@ -336,21 +554,12 @@ print_tickets(krb5_context context,
 	    rtbl_add_column(ct, COL_FLAGS, 0);
 	rtbl_add_column(ct, COL_PRINCIPAL, 0);
 	rtbl_set_separator(ct, "  ");
-	if (do_json) {
-	    rtbl_set_flags(ct, RTBL_JSON);
-	    printf("\"tickets\" : ");
-	}
     }
-    if (do_verbose && do_json)
-	printf("\"tickets\" : [");
     while ((ret = krb5_cc_next_cred(context, ccache, &cursor, &creds)) == 0) {
 	if (!do_hidden && krb5_is_config_principal(context, creds.server)) {
 	    ;
 	} else if (do_verbose) {
-            if (do_json && print_comma)
-                printf(",");
-	    print_cred_verbose(context, &creds, do_json);
-            print_comma = 1;
+	    print_cred_verbose(context, &creds);
 	} else {
 	    print_cred(context, &creds, ct, do_flags);
 	}
@@ -365,11 +574,6 @@ print_tickets(krb5_context context,
     if(!do_verbose) {
 	rtbl_format(ct, stdout);
 	rtbl_destroy(ct);
-    }
-    if (do_json) {
-	if (do_verbose)
-	    printf("]");
-	printf("}");
     }
     free(fullname);
 }
@@ -475,10 +679,10 @@ display_tokens(int do_verbose)
  */
 
 static int
-display_v5_ccache (krb5_context context, krb5_ccache ccache,
-		   int do_test, int do_verbose,
-		   int do_flags, int do_hidden,
-		   int do_json)
+display_v5_ccache(krb5_context context, krb5_ccache ccache,
+		  int do_test, int do_verbose,
+		  int do_flags, int do_hidden,
+		  heim_dict_t dict)
 {
     krb5_error_code ret;
     krb5_principal principal;
@@ -487,10 +691,8 @@ display_v5_ccache (krb5_context context, krb5_ccache ccache,
 
     ret = krb5_cc_get_principal (context, ccache, &principal);
     if (ret) {
-	if (do_json) {
-	    printf("{}");
+	if (dict)
 	    return 0;
-	}
 	if(ret == ENOENT) {
 	    if (!do_test)
 		krb5_warnx(context, N_("No ticket file: %s", ""),
@@ -499,11 +701,18 @@ display_v5_ccache (krb5_context context, krb5_ccache ccache,
 	} else
 	    krb5_err (context, 1, ret, "krb5_cc_get_principal");
     }
-    if (do_test)
-	exit_status = check_expiration(context, ccache, NULL);
-    else
-	print_tickets (context, ccache, principal, do_verbose,
-		       do_flags, do_hidden, do_json);
+    exit_status = check_expiration(context, ccache, NULL);
+    if (!do_test) {
+        if (dict) {
+            heim_dict_set_value(dict, HSTR("expired"),
+                                heim_bool_create(!!exit_status));
+            cache2json(context, ccache, principal, dict);
+        } else {
+            print_tickets(context, ccache, principal, do_verbose,
+                          do_flags, do_hidden);
+        }
+        exit_status = 0;
+    }
 
     ret = krb5_cc_close (context, ccache);
     if (ret)
@@ -512,6 +721,87 @@ display_v5_ccache (krb5_context context, krb5_ccache ccache,
     krb5_free_principal (context, principal);
 
     return exit_status;
+}
+
+static int
+caches2json(krb5_context context)
+{
+    krb5_cccol_cursor cursor;
+    const char *cdef_name = krb5_cc_default_name(context);
+    char *def_name;
+    heim_object_t o;
+    heim_array_t a = heim_array_create();
+    krb5_error_code ret;
+    krb5_ccache id;
+
+    if ((def_name = krb5_cccol_get_default_ccname(context)) == NULL)
+        cdef_name = krb5_cc_default_name(context);
+    if (!def_name && cdef_name && (def_name = strdup(cdef_name)) == NULL)
+        krb5_err(context, 1, ENOMEM, "Out of memory");
+
+    ret = krb5_cccol_cursor_new(context, &cursor);
+    if (ret == KRB5_CC_NOSUPP) {
+        free(def_name);
+	return 0;
+    }
+    else if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_cache_get_first");
+
+    while (krb5_cccol_cursor_next(context, cursor, &id) == 0 && id != NULL) {
+        heim_dict_t dict = heim_dict_create(10);
+	int expired = 0;
+	char *name;
+	time_t t;
+
+	expired = check_expiration(context, id, &t);
+	ret = krb5_cc_get_friendly_name(context, id, &name);
+	if (ret == 0) {
+	    char *fname;
+
+            heim_dict_set_value(dict, HSTR("Name"),
+                                o = heim_string_create(name));
+            heim_release(o);
+	    free(name);
+
+	    if (expired)
+		o = heim_string_create(N_(">>> Expired <<<", ""));
+	    else
+		o = heim_string_create(printable_time(t));
+            heim_dict_set_value(dict, HSTR("Expires"), o);
+            heim_release(o);
+
+	    ret = krb5_cc_get_full_name(context, id, &fname);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_cc_get_full_name");
+
+            heim_dict_set_value(dict, HSTR("Cache Name"),
+                                o = heim_string_create(fname));
+            heim_release(o);
+
+	    if (def_name && strcmp(fname, def_name) == 0)
+                heim_dict_set_value(dict, HSTR("is_default_cache"),
+                                    heim_bool_create(1));
+	    else
+                heim_dict_set_value(dict, HSTR("is_default_cache"),
+                                    heim_bool_create(0));
+            heim_array_append_value(a, dict);
+            heim_release(dict);
+
+	    krb5_xfree(fname);
+	}
+	krb5_cc_close(context, id);
+    }
+
+    krb5_cccol_cursor_free(context, &cursor);
+    free(def_name);
+
+    o = heim_json_copy_serialize(a, HEIM_JSON_F_STRICT | HEIM_JSON_F_INDENT2,
+                                 NULL);
+    printf("%s", heim_string_get_utf8(o));
+    heim_release(a);
+    heim_release(o);
+
+    return 0;
 }
 
 /*
@@ -550,8 +840,6 @@ list_caches(krb5_context context, struct klist_options *opt)
     rtbl_set_prefix(ct, "   ");
     rtbl_set_column_prefix(ct, COL_DEFCACHE, "");
     rtbl_set_column_prefix(ct, COL_NAME, " ");
-    if (opt->json_flag)
-	rtbl_set_flags(ct, RTBL_JSON);
 
     while (krb5_cccol_cursor_next(context, cursor, &id) == 0 && id != NULL) {
 	int expired = 0;
@@ -579,9 +867,7 @@ list_caches(krb5_context context, struct klist_options *opt)
 		krb5_err (context, 1, ret, "krb5_cc_get_full_name");
 
 	    rtbl_add_column_entry(ct, COL_CACHENAME, fname);
-	    if (opt->json_flag)
-		;
-	    else if (def_name && strcmp(fname, def_name) == 0)
+	    if (def_name && strcmp(fname, def_name) == 0)
 		rtbl_add_column_entry(ct, COL_DEFCACHE, "*");
 	    else
 		rtbl_add_column_entry(ct, COL_DEFCACHE, "");
@@ -597,9 +883,6 @@ list_caches(krb5_context context, struct klist_options *opt)
     rtbl_format(ct, stdout);
     rtbl_destroy(ct);
 
-    if (opt->json_flag)
-	printf("\n");
-
     return 0;
 }
 
@@ -611,6 +894,7 @@ int
 klist(struct klist_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
+    heim_object_t o = NULL;
     int exit_status = 0;
 
     int do_verbose =
@@ -627,7 +911,10 @@ klist(struct klist_options *opt, int argc, char **argv)
     }
 
     if (opt->list_all_flag) {
-	exit_status = list_caches(heimtools_context, opt);
+        if (opt->json_flag)
+            exit_status = caches2json(heimtools_context);
+        else
+            exit_status = list_caches(heimtools_context, opt);
 	return exit_status;
     }
 
@@ -635,32 +922,28 @@ klist(struct klist_options *opt, int argc, char **argv)
 	krb5_ccache id;
 
 	if (opt->all_content_flag) {
+            heim_array_t a = opt->json_flag ? heim_array_create() : NULL;
 	    krb5_cc_cache_cursor cursor;
-	    int first = 1;
 
 	    ret = krb5_cc_cache_get_first(heimtools_context, NULL, &cursor);
 	    if (ret)
 		krb5_err(heimtools_context, 1, ret, "krb5_cc_cache_get_first");
 
-	    if (opt->json_flag)
-		printf("[");
 	    while (krb5_cc_cache_next(heimtools_context, cursor, &id) == 0) {
-		if (opt->json_flag && !first)
-		    printf(",");
+                heim_dict_t dict = opt->json_flag ? heim_dict_create(10) : NULL;
 
 		exit_status |= display_v5_ccache(heimtools_context, id, do_test,
 						 do_verbose, opt->flags_flag,
                                                  opt->hidden_flag,
-                                                 opt->json_flag);
-		if (!opt->json_flag)
-		    printf("\n\n");
-
-		first = 0;
+                                                 dict);
+                if (a)
+                    heim_array_append_value(a, dict);
+                heim_release(dict);
 	    }
 	    krb5_cc_cache_end_seq_get(heimtools_context, cursor);
-	    if (opt->json_flag)
-		printf("]");
+            o = a;
 	} else {
+            heim_dict_t dict = opt->json_flag ? heim_dict_create(10) : NULL;
 	    if(opt->cache_string) {
 		ret = krb5_cc_resolve(heimtools_context, opt->cache_string, &id);
 		if (ret)
@@ -672,8 +955,23 @@ klist(struct klist_options *opt, int argc, char **argv)
 	    }
 	    exit_status = display_v5_ccache(heimtools_context, id, do_test,
 					    do_verbose, opt->flags_flag,
-                                            opt->hidden_flag, opt->json_flag);
+                                            opt->hidden_flag, dict);
+            o = dict;
 	}
+    }
+
+    if (o) {
+        heim_string_t s = heim_json_copy_serialize(o,
+                                                   HEIM_JSON_F_STRICT |
+                                                   HEIM_JSON_F_INDENT2,
+                                                   NULL);
+        
+        if (s == NULL)
+            errx(1, "Could not format JSON text");
+
+        printf("%s", heim_string_get_utf8(s));
+        heim_release(o);
+        heim_release(s);
     }
 
     if (!do_test) {

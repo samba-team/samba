@@ -2549,7 +2549,9 @@ _asn1_print(const struct asn1_template *t,
         }
         default: break;
         }
-        if (nnames)
+        if (nnames &&
+            (t->tt & A1_OP_MASK) != A1_OP_TYPE_DECORATE_EXTERN &&
+            (t->tt & A1_OP_MASK) != A1_OP_TYPE_DECORATE)
             r = rk_strpoolprintf(r, ",%s\"%s\":",
                                  indents ? indents : "",
                                  (const char *)(tnames++)->ptr);

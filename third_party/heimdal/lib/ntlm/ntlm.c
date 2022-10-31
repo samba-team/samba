@@ -682,7 +682,7 @@ heim_ntlm_decode_type1(const struct ntlm_buf *buf, struct ntlm_type1 *data)
     krb5_storage_set_byteorder(in, KRB5_STORAGE_BYTEORDER_LE);
 
     CHECK_SIZE(krb5_storage_read(in, sig, sizeof(sig)), sizeof(sig));
-    CHECK(memcmp(ntlmsigature, sig, sizeof(ntlmsigature)), 0);
+    CHECK(ct_memcmp(ntlmsigature, sig, sizeof(ntlmsigature)), 0);
     CHECK(krb5_ret_uint32(in, &type), 0);
     CHECK(type, 1);
     CHECK(krb5_ret_uint32(in, &data->flags), 0);
@@ -844,7 +844,7 @@ heim_ntlm_decode_type2(const struct ntlm_buf *buf, struct ntlm_type2 *type2)
     krb5_storage_set_byteorder(in, KRB5_STORAGE_BYTEORDER_LE);
 
     CHECK_SIZE(krb5_storage_read(in, sig, sizeof(sig)), sizeof(sig));
-    CHECK(memcmp(ntlmsigature, sig, sizeof(ntlmsigature)), 0);
+    CHECK(ct_memcmp(ntlmsigature, sig, sizeof(ntlmsigature)), 0);
     CHECK(krb5_ret_uint32(in, &type), 0);
     CHECK(type, 2);
 
@@ -1001,7 +1001,7 @@ heim_ntlm_decode_type3(const struct ntlm_buf *buf,
     krb5_storage_set_byteorder(in, KRB5_STORAGE_BYTEORDER_LE);
 
     CHECK_SIZE(krb5_storage_read(in, sig, sizeof(sig)), sizeof(sig));
-    CHECK(memcmp(ntlmsigature, sig, sizeof(ntlmsigature)), 0);
+    CHECK(ct_memcmp(ntlmsigature, sig, sizeof(ntlmsigature)), 0);
     CHECK(krb5_ret_uint32(in, &type), 0);
     CHECK(type, 3);
     CHECK(ret_sec_buffer(in, &lm), 0);
@@ -1825,7 +1825,7 @@ verify_ntlm2(const void *key, size_t len,
     if (ret)
         goto out;
 
-    if (memcmp(serveranswer, clientanswer, 16) != 0) {
+    if (ct_memcmp(serveranswer, clientanswer, 16) != 0) {
 	heim_ntlm_free_buf(infotarget);
 	return HNTLM_ERR_AUTH;
     }

@@ -77,11 +77,11 @@ pwd_dialog(char *buf, int size)
     {
     case IDOK:
 	strlcpy(buf, passwd, size);
-	memset (passwd, 0, sizeof(passwd));
+	memset_s (passwd, sizeof(passwd), 0, sizeof(passwd));
 	return 0;
     case IDCANCEL:
     default:
-	memset (passwd, 0, sizeof(passwd));
+	memset_s (passwd, sizeof(passwd), 0, sizeof(passwd));
 	return 1;
     }
 }

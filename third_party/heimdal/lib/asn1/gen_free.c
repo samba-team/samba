@@ -56,7 +56,7 @@ free_type (const char *name, const Type *t, int preserve)
 	    free_primitive ("heim_integer", name);
 	    break;
 	}
-        /* fallthrough; */
+        /* HEIM_FALLTHROUGH; */
     case TBoolean:
     case TEnumerated :
     case TNull:

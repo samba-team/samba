@@ -17,7 +17,9 @@ endif
 BUILT_SOURCES = \
 	$(gen_files_hdb)	\
 	hdb_err.c \
-	hdb_err.h
+	hdb_err.h \
+	$(srcdir)/hdb-protos.h \
+	$(srcdir)/hdb-private.h
 
 gen_files_hdb = \
 	asn1_Event.c \

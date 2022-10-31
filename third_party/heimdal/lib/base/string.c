@@ -153,7 +153,8 @@ heim_string_create_with_bytes(const void *data, size_t len)
 
     s = _heim_alloc_object(&_heim_string_object, len + 1);
     if (s) {
-	memcpy(s, data, len);
+        if (len)
+            memcpy(s, data, len);
 	((char *)s)[len] = '\0';
     }
     return s;
@@ -238,7 +239,7 @@ heim_string_t
 __heim_string_constant(const char *_str)
 {
     static HEIMDAL_MUTEX mutex = HEIMDAL_MUTEX_INITIALIZER;
-    static heim_base_once_t once;
+    static heim_base_once_t once = HEIM_BASE_ONCE_INIT;
     static heim_dict_t dict = NULL;
     heim_string_t s, s2;
 

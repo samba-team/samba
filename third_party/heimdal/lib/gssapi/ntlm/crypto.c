@@ -230,7 +230,7 @@ v2_verify_message(gss_buffer_t in,
     if (ret)
 	return ret;
 
-    if (memcmp(checksum, out, 16) != 0)
+    if (ct_memcmp(checksum, out, 16) != 0)
 	return GSS_S_BAD_MIC;
 
     return GSS_S_COMPLETE;

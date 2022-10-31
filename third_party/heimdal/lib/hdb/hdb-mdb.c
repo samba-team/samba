@@ -146,7 +146,7 @@ my_mdb_env_create_and_open(krb5_context context,
 {
     struct keep_it_open *p, *n;
     MDB_txn *txn = NULL;
-    unsigned int flags = MDB_NOSUBDIR;
+    unsigned int flags = MDB_NOSUBDIR | MDB_NOTLS;
     struct stat st;
     size_t mapsize = 0;
     int max_readers;

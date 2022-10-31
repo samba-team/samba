@@ -48,10 +48,10 @@
  * <ext> is one of:
  *
  *  - pkinit        (SAN)
- *  - xmpt          (SAN)
- *  - emailt        (SAN)
- *  - ms-upt        (SAN)
- *  - dnsnamt       (SAN)
+ *  - xmpp          (SAN)
+ *  - email         (SAN)
+ *  - ms-upn        (SAN)
+ *  - dnsname       (SAN)
  *  - eku           (EKU OID)
  *
  * and <value> is a display form of the SAN or EKU OID, with SANs URL-encoded

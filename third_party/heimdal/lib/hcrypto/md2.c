@@ -133,6 +133,6 @@ MD2_Final (void *res, struct md2 *m)
     MD2_Update(m, pad, 16);
 
     memcpy(res, m->state, MD2_DIGEST_LENGTH);
-    memset(m, 0, sizeof(*m));
+    memset_s(m, sizeof(*m), 0, sizeof(*m));
     return 1;
 }

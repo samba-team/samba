@@ -588,7 +588,7 @@ _netlogon_unwrap_iov(OM_uint32 *minor_status,
 
     /* [MS-NRPC] 3.3.4.2.2.10: verify signature */
     _netlogon_digest(ctx, sig, iov, iov_count, checksum);
-    if (memcmp(sig->Checksum, checksum, _netlogon_checksum_length(sig)) != 0)
+    if (ct_memcmp(sig->Checksum, checksum, _netlogon_checksum_length(sig)) != 0)
         return GSS_S_BAD_SIG;
 
     HEIMDAL_MUTEX_lock(&ctx->Mutex);

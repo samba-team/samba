@@ -68,6 +68,8 @@ struct kadm_func {
 				       int, krb5_key_salt_tuple *,
 				       krb5_keyblock *, int);
     kadm5_ret_t (*prune_principal) (void *, krb5_principal, int);
+    kadm5_ret_t (*iter_principals) (void*, const char*, int (*)(void *, const char *), void *);
+    kadm5_ret_t (*dup_context) (void*, void **);
 };
 
 typedef struct kadm5_hook_context {

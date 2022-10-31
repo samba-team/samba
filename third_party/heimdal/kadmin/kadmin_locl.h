@@ -98,6 +98,7 @@
 
 extern krb5_context context;
 extern void * kadm_handle;
+extern int list_chunk_size;
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))

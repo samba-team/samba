@@ -235,10 +235,9 @@ write_and_free_token(gss_buffer_t out, int negotiate)
 			printf("\n");
 		if (len < inc)
 			inc = len;
-		ret = rk_base64_encode(p, inc, &outstr);
-		if (ret < 0) {
+		if (rk_base64_encode(p, inc, &outstr) < 0) {
 			fprintf(stderr, "Out of memory.\n");
-			ret = 1;
+			ret = errno;
 			goto bail;
 		}
                 ret = 0;
@@ -247,6 +246,7 @@ write_and_free_token(gss_buffer_t out, int negotiate)
 		p   += inc;
 		len -= inc;
 	} while (len > 0);
+        ret = 0;
 
 bail:
 	gss_release_buffer(&min, out);

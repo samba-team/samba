@@ -197,23 +197,27 @@ kt_get(struct get_options *opt, int argc, char **argv)
 		break;
 	}
 
-	ret = kadm5_create_principal(kadm_handle, &princ, mask, "thisIs_aUseless.password123");
-	if(ret == 0)
-	    created = 1;
-	else if(ret != KADM5_DUP) {
-	    krb5_warn(context, ret, "kadm5_create_principal(%s)", argv[a]);
-	    krb5_free_principal(context, princ_ent);
-	    failed++;
-	    continue;
-	}
-        ret = kadm5_randkey_principal_3(kadm_handle, princ_ent, keep, nks, ks,
-                                        &keys, &n_keys);
-	if (ret) {
-	    krb5_warn(context, ret, "kadm5_randkey_principal(%s)", argv[a]);
-	    krb5_free_principal(context, princ_ent);
-	    failed++;
-	    continue;
-	}
+        if (opt->create_flag) {
+            ret = kadm5_create_principal(kadm_handle, &princ, mask, "thisIs_aUseless.password123");
+            if(ret == 0)
+                created = 1;
+            else if(ret != KADM5_DUP) {
+                krb5_warn(context, ret, "kadm5_create_principal(%s)", argv[a]);
+                krb5_free_principal(context, princ_ent);
+                failed++;
+                continue;
+            }
+        }
+        if (opt->change_keys_flag) {
+            ret = kadm5_randkey_principal_3(kadm_handle, princ_ent, keep, nks, ks,
+                                            &keys, &n_keys);
+            if (ret) {
+                krb5_warn(context, ret, "kadm5_randkey_principal(%s)", argv[a]);
+                krb5_free_principal(context, princ_ent);
+                failed++;
+                continue;
+            }
+        }
 
 	ret = kadm5_get_principal(kadm_handle, princ_ent, &princ,
 			      KADM5_PRINCIPAL | KADM5_KVNO | KADM5_ATTRIBUTES);

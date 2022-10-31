@@ -68,6 +68,8 @@
 .Oo Fl r Ar string \*(Ba Xo Fl Fl realm= Ns Ar string Xc Oc
 .Oo Fl d Ar file \*(Ba Xo Fl Fl database= Ns Ar file Xc Oc
 .Oo Fl k Ar kspec \*(Ba Xo Fl Fl keytab= Ns Ar kspec Xc Oc
+.Oo Xo Fl Fl no-keytab Xc Oc
+.Oo Xo Fl Fl cache= Ns Ar cspec Xc Oc
 .Op Fl Fl statusfile= Ns Ar file
 .Op Fl Fl hostname= Ns Ar hostname
 .Op Fl Fl port= Ns Ar port
@@ -125,10 +127,40 @@ This should normally be defined as
 in
 .Pa /etc/services
 or another source of the services database.
-The master and slaves
-must each have access to a keytab with keys for the
-.Nm iprop
-service principal on the local host.
+.Pp
+The
+.Nm ipropd-master
+and
+.Nm ipropd-slave
+programs require acceptor and initiator credentials,
+respectively, for host-based principals for the
+.Ar iprop
+service and the fully-qualified hostnames of the hosts on which
+they run.
+.Pp
+The
+.Nm ipropd-master
+program uses, by default, the HDB-backed keytab
+.Ar HDBGET: ,
+though a file-based keytab can also be specified.
+.Pp
+The
+.Nm ipropd-slave
+program uses the default keytab, which is specified by the
+.Ev KRB5_KTNAME
+environment variable, or the value of the
+.Ar default_keytab_name
+configuration parameter in the
+.Ar [libdefaults]
+section.
+However, if the
+.Fl Fl no-keytab
+option is given, then
+.Nm ipropd-slave
+will use the given or default credentials cache, and it will
+expect that cache to be kept fresh externally (such as by the
+.Nm kinit
+program).
 .Pp
 There is a keep-alive feature logged in the master's
 .Pa slave-stats
@@ -150,6 +182,11 @@ Supported options for
 Keytab for authenticating
 .Nm ipropd-slave
 clients.
+.It Fl Fl cache= Ns Ar cspec
+If the keytab given is the empty string then credentials will be
+used from the default credentials cache, or from the
+.Ar cspec
+if given.
 .It Fl d Ar file , Fl Fl database= Ns Ar file
 Database (default per KDC)
 .It Fl Fl slave-stats-file= Ns Ar file
@@ -201,6 +238,7 @@ in the database directory, or in the directory named by the
 .Ev HEIM_PIDFILE_DIR
 environment variable.
 .Sh SEE ALSO
+.Xr kinit 1 ,
 .Xr krb5.conf 5 ,
 .Xr hprop 8 ,
 .Xr hpropd 8 ,

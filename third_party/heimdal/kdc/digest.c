@@ -1314,7 +1314,7 @@ _kdc_do_digest(krb5_context context,
 	    }
 
 	    if (ireq.u.ntlmRequest.ntlm.length != answer.length ||
-		memcmp(ireq.u.ntlmRequest.ntlm.data, answer.data, answer.length) != 0)
+		ct_memcmp(ireq.u.ntlmRequest.ntlm.data, answer.data, answer.length) != 0)
 		{
 		    free(answer.data);
 		    ret = EINVAL;

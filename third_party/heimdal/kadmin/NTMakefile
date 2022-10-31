@@ -119,17 +119,17 @@ $(OBJ)\add_random_users.exe: $(OBJ)\add_random_users.obj $(LIBKADM5SRV) $(LIBKAD
 	$(EXECONLINK) Secur32.lib Shell32.lib
 	$(EXEPREP_NODIST)
 
-TEST_BINARIES=$(OBJ)\test_util.exe
-
-$(OBJ)\test_util.exe: $(OBJ)\test_util.obj $(OBJ)\util.obj $(KADMIN_LIBS)
-	$(EXECONLINK) Secur32.lib Shell32.lib
-	$(EXEPREP_NODIST)
-
-test-binaries: $(TEST_BINARIES)
-
-test-run:
-	cd $(OBJ)
-	test_util.exe
-	cd $(SRCDIR)
-
-test:: test-binaries test-run
+#TEST_BINARIES=$(OBJ)\test_util.exe
+#
+#$(OBJ)\test_util.exe: $(OBJ)\test_util.obj $(OBJ)\util.obj $(KADMIN_LIBS)
+#	$(EXECONLINK) Secur32.lib Shell32.lib
+#	$(EXEPREP_NODIST)
+#
+#test-binaries: $(TEST_BINARIES)
+#
+#test-run:
+#	cd $(OBJ)
+#	test_util.exe
+#	cd $(SRCDIR)
+#
+test:: #test-binaries test-run

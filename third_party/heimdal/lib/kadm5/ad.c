@@ -1066,6 +1066,33 @@ kadm5_ad_get_principals(void *server_handle,
 }
 
 static kadm5_ret_t
+kadm5_ad_iter_principals(void *server_handle,
+			 const char *expression,
+			 int (*cb)(void *, const char *),
+			 void *cbdata)
+{
+    kadm5_ad_context *context = server_handle;
+
+#ifdef OPENLDAP
+    kadm5_ret_t ret;
+
+    ret = ad_get_cred(context, NULL);
+    if (ret)
+	return ret;
+
+    ret = _kadm5_ad_connect(server_handle);
+    if (ret)
+	return ret;
+
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
+    return KADM5_RPC_ERROR;
+#else
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
+    return KADM5_RPC_ERROR;
+#endif
+}
+
+static kadm5_ret_t
 kadm5_ad_get_privs(void *server_handle, uint32_t*privs)
 {
     kadm5_ad_context *context = server_handle;
@@ -1169,7 +1196,7 @@ kadm5_ad_modify_principal(void *server_handle,
 	if (entry->attributes & KRB5_KDB_REQUIRES_HW_AUTH)
 	    i |= UF_SMARTCARD_REQUIRED;
 	else
-	    i &= UF_SMARTCARD_REQUIRED;
+	    i &= ~UF_SMARTCARD_REQUIRED;
 	if (entry->attributes & KRB5_KDB_DISALLOW_SVR)
 	    i &= ~UF_WORKSTATION_TRUST_ACCOUNT;
 	else
@@ -1388,6 +1415,9 @@ set_funcs(kadm5_ad_context *c)
     SET(c, lock);
     SET(c, unlock);
     SETNOTIMP(c, setkey_principal_3);
+    SETNOTIMP(c, prune_principal);
+    SET(c, iter_principals);
+    SET(c, dup_context);
 }
 
 kadm5_ret_t
@@ -1453,6 +1483,12 @@ kadm5_ad_init_with_password_ctx(krb5_context context,
 
     *server_handle = ctx;
     return 0;
+}
+
+kadm5_ret_t
+kadm5_ad_dup_context(void *in, void **out)
+{
+    return ENOTSUP;
 }
 
 kadm5_ret_t

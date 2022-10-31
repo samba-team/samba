@@ -686,7 +686,7 @@ gen_wrapper(struct assignment *as)
 	(*th->free)(s);
 	free(s);
     }
-    cprint(1, "return 0;\n");
+    cprint(1, "return 1;\n");
     cprint(0, "}\n");
     cprint(0, "\n");
     free(n);

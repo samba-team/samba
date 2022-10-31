@@ -37,7 +37,7 @@
 static int
 do_del_entry(krb5_principal principal, void *data)
 {
-    return kadm5_delete_principal(kadm_handle, principal);
+    return kadm5_delete_principal(data, principal);
 }
 
 int
@@ -45,12 +45,15 @@ del_entry(void *opt, int argc, char **argv)
 {
     int i;
     krb5_error_code ret = 0;
+    void *dup_kadm_handle = NULL;
 
-    for(i = 0; i < argc; i++) {
-	ret = foreach_principal(argv[i], do_del_entry, "del", NULL);
-	if (ret)
-	    break;
-    }
+    ret = kadm5_dup_context(kadm_handle, &dup_kadm_handle);
+
+    for (i = 0; ret == 0 && i < argc; i++)
+	ret = foreach_principal(argv[i], do_del_entry, "del", dup_kadm_handle);
+
+    if (dup_kadm_handle)
+        kadm5_destroy(dup_kadm_handle);
     return ret != 0;
 }
 
@@ -91,12 +94,14 @@ del_namespace(void *opt, int argc, char **argv)
 {
     int i;
     krb5_error_code ret = 0;
+    void *dup_kadm_handle = NULL;
 
-    for(i = 0; i < argc; i++) {
-	ret = foreach_principal(argv[i], do_del_ns_entry, "del_ns", NULL);
-	if (ret)
-	    break;
-    }
+    ret = kadm5_dup_context(kadm_handle, &dup_kadm_handle);
+    for (i = 0; ret == 0 && i < argc; i++)
+        ret = foreach_principal(argv[i], do_del_ns_entry, "del_ns",
+                                dup_kadm_handle);
+    if (dup_kadm_handle)
+        kadm5_destroy(dup_kadm_handle);
     return ret != 0;
 }
 

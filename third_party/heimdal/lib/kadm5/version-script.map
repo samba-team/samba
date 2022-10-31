@@ -16,6 +16,7 @@ HEIMDAL_KAMD5_SERVER_1.0 {
 		kadm5_create_principal_3;
 		kadm5_delete_principal;
 		kadm5_destroy;
+		kadm5_dup_context;
 		kadm5_decrypt_key;
 		kadm5_delete_policy;
 		kadm5_flush;
@@ -35,6 +36,7 @@ HEIMDAL_KAMD5_SERVER_1.0 {
 		kadm5_init_with_password_ctx;
 		kadm5_init_with_skey;
 		kadm5_init_with_skey_ctx;
+		kadm5_iter_principals;
 		kadm5_lock;
 		kadm5_modify_principal;
 		kadm5_modify_policy;

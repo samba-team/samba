@@ -169,6 +169,7 @@ extern sig_atomic_t exit_flag;
 extern int name_constraints;
 extern int detach_from_console;
 extern int daemon_child;
+extern int automatic_renewal;
 extern int launchd_flag;
 extern int disallow_getting_krbtgt;
 

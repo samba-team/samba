@@ -10,9 +10,7 @@
 @end macro
 
 
-@node  Copyrights and Licenses, , Acknowledgments, Top
 @comment  node-name,  next,  previous,  up
-@appendix Copyrights and Licenses
 
 @heading Kungliga Tekniska Högskolan
 

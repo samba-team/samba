@@ -409,7 +409,15 @@ main(int argc, char **argv)
         sz = 2;
 
 	while (fgets(buf, sizeof(buf), opt) != NULL) {
+            size_t buflen, ws;
+
 	    buf[strcspn(buf, "\n\r")] = '\0';
+
+            buflen = strlen(buf);
+            if ((ws = strspn(buf, " \t")))
+                memmove(buf, buf + ws, buflen -= ws);
+            if (buf[0] == '\0' || buf[0] == '#')
+                continue;
 
             if (len + 1 >= sz) {
                 arg = realloc(arg, (sz + (sz>>1) + 2) * sizeof(arg[0]));

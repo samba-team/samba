@@ -70,7 +70,7 @@ DSA_free(DSA *dsa)
     free_if(dsa->r);
 #undef free_if
 
-    memset(dsa, 0, sizeof(*dsa));
+    memset_s(dsa, sizeof(*dsa), 0, sizeof(*dsa));
     free(dsa);
 
 }

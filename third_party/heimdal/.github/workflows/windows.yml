@@ -4,6 +4,7 @@ on:
     push:
       branches:
          - 'master'
+         - 'windows-build'
          - 'heimdal-7-1-branch'
       paths:
          - '!docs/**'
@@ -76,6 +77,7 @@ jobs:
                 pacman --noconfirm -S bison
                 pacman --noconfirm -S perl
                 pacman --noconfirm -S perl-JSON
+                pacman --noconfirm -S texinfo
                 set PATH=%PATH%;%wix%bin
                 title Heimdal Build %CPU% %dbg__type%
                 set "PATH=%PATH%;C:\Perl64\bin;C:\tools\cygwin\bin;C:\Program Files (x86)\HTML Help Workshop"

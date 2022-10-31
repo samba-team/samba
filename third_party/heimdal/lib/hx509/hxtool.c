@@ -2076,39 +2076,33 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     }
 
     if (opt->generate_key_string) {
-	struct hx509_generate_private_context *keyctx;
-
-	ret = _hx509_generate_private_key_init(context,
-					       &asn1_oid_id_pkcs1_rsaEncryption,
-					       &keyctx);
-	if (ret)
-	    hx509_err(context, 1, ret, "generate private key");
-
-	if (opt->issue_ca_flag)
-	    _hx509_generate_private_key_is_ca(context, keyctx);
-
-	if (opt->key_bits_integer)
-	    _hx509_generate_private_key_bits(context, keyctx,
-					     opt->key_bits_integer);
-
-	ret = _hx509_generate_private_key(context, keyctx,
-					  &cert_key);
-	_hx509_generate_private_key_free(&keyctx);
-	if (ret)
-	    hx509_err(context, 1, ret, "generate private key");
+        /*
+         * Note that we used to set isCA in the key gen context.  Now that we
+         * use get_key() we no longer set isCA in the key gen context.  But
+         * nothing uses that field of the key gen context.
+         */
+        get_key(opt->certificate_private_key_string,
+                opt->generate_key_string,
+                opt->key_bits_integer,
+                &cert_key);
 
 	ret = hx509_private_key2SPKI(context, cert_key, &spki);
 	if (ret)
 	    errx(1, "hx509_private_key2SPKI: %d\n", ret);
 
-	if (opt->self_signed_flag)
-	    private_key = cert_key;
-    }
-
-    if (opt->certificate_private_key_string) {
+        if (opt->self_signed_flag)
+            private_key = cert_key;
+    } else if (opt->certificate_private_key_string) {
 	ret = read_private_key(opt->certificate_private_key_string, &cert_key);
 	if (ret)
 	    err(1, "read_private_key for certificate");
+
+	ret = hx509_private_key2SPKI(context, cert_key, &spki);
+	if (ret)
+	    errx(1, "hx509_private_key2SPKI: %d\n", ret);
+
+        if (opt->self_signed_flag)
+            private_key = cert_key;
     }
 
     if (opt->subject_string) {
@@ -2319,7 +2313,31 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	    hx509_err(context, 1, ret, "hx509_ca_sign");
     }
 
-    if (cert_key) {
+    /* Copy the private key to the output store, maybe */
+    if (cert_key && opt->generate_key_string &&
+        !opt->certificate_private_key_string) {
+        /*
+         * Yes: because we're generating the key and --certificate-private-key
+         * was not given.
+         */
+	ret = _hx509_cert_assign_key(cert, cert_key);
+	if (ret)
+	    hx509_err(context, 1, ret, "_hx509_cert_assign_key");
+    } else if (opt->certificate_private_key_string && opt->certificate_string &&
+               strcmp(opt->certificate_private_key_string,
+                      opt->certificate_string) == 0) {
+        /*
+         * Yes: because we're re-writing the store whence the private key.  We
+         * would lose the key otherwise.
+         */
+	ret = _hx509_cert_assign_key(cert, cert_key);
+	if (ret)
+	    hx509_err(context, 1, ret, "_hx509_cert_assign_key");
+    } else if (opt->self_signed_flag && opt->ca_private_key_string &&
+               opt->certificate_string &&
+               strcmp(opt->ca_private_key_string,
+                      opt->certificate_string) == 0) {
+        /* Yes: same as preceding */
 	ret = _hx509_cert_assign_key(cert, cert_key);
 	if (ret)
 	    hx509_err(context, 1, ret, "_hx509_cert_assign_key");

@@ -48,8 +48,8 @@ apply () {
 
 try_patch() {
     commit="$1"
-    git format-patch --stdout $commit -1 source4/heimdal > "$commit".patch
-    sed -i 's|/source4/heimdal/|/|g' "$commit".patch
+    git format-patch --stdout $commit -1 third_party/heimdal > "$commit".patch
+    sed -i 's|/third_party/heimdal/|/|g' "$commit".patch
     sed -i "s|^---$|(cherry picked from Samba commit $commit)\n---|g" "$commit".patch
     pushd $LORIKEET_PATH || exit 1
     git reset --hard
@@ -68,7 +68,7 @@ try_patch() {
     popd || exit 1
 }
 
-commits="$(git log --pretty=oneline --reverse $IMPORT_HASH..HEAD -- source4/heimdal | cut -d' ' -f1)"
+commits="$(git log --pretty=oneline --reverse $IMPORT_HASH..HEAD -- third_party/heimdal | cut -d' ' -f1)"
 for c in $commits; do
     git log $c -1
     echo -n "Try apply? [Y/n] "

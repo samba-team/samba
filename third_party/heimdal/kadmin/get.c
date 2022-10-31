@@ -83,7 +83,9 @@ struct get_entry_data {
     uint32_t extra_mask;
     struct field_info *chead, **ctail;
     const char *krb5_config_fname;
+    void *kadm_handle;
     uint32_t n;
+    int upto;
 };
 
 static int
@@ -478,13 +480,18 @@ do_get_entry(krb5_principal principal, void *data)
     krb5_error_code ret;
     struct get_entry_data *e = data;
 
+    if (e->upto == 0)
+        return EINTR;
+    if (e->upto > 0)
+        e->upto--;
+
     memset(&princ, 0, sizeof(princ));
-    ret = kadm5_get_principal(kadm_handle, principal,
+    ret = kadm5_get_principal(e->kadm_handle, principal,
 			      &princ,
 			      e->mask | e->extra_mask);
     if (ret == 0) {
         (e->format)(e, &princ);
-        kadm5_free_principal_ent(kadm_handle, &princ);
+        kadm5_free_principal_ent(e->kadm_handle, &princ);
     }
 
     e->n++;
@@ -534,7 +541,13 @@ static int
 do_list_entry(krb5_principal principal, void *data)
 {
     char buf[1024];
+    int *upto = data;
     krb5_error_code ret;
+
+    if (*upto == 0)
+        return EINTR;
+    if (*upto > 0)
+        (*upto)--;
 
     ret = krb5_unparse_name_fixed_short(context, principal, buf, sizeof(buf));
     if (ret != 0)
@@ -544,13 +557,13 @@ do_list_entry(krb5_principal principal, void *data)
 }
 
 static int
-listit(const char *funcname, int argc, char **argv)
+listit(const char *funcname, int upto, int argc, char **argv)
 {
     int i;
     krb5_error_code ret, saved_ret = 0;
 
     for (i = 0; i < argc; i++) {
-	ret = foreach_principal(argv[i], do_list_entry, funcname, NULL);
+	ret = foreach_principal(argv[i], do_list_entry, funcname, &upto);
         if (saved_ret == 0 && ret != 0)
             saved_ret = ret;
     }
@@ -577,14 +590,19 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
 	opt->short_flag = 1;
 
     if (opt->terse_flag)
-        return listit(name, argc, argv);
+        return listit(name, opt->upto_integer, argc, argv);
 
+    data.kadm_handle = NULL;
+    ret = kadm5_dup_context(kadm_handle, &data.kadm_handle);
+    if (ret)
+        krb5_err(context, 1, ret, "Could not duplicate kadmin connection");
     data.table = NULL;
     data.chead = NULL;
     data.ctail = &data.chead;
     data.mask = 0;
     data.extra_mask = 0;
     data.krb5_config_fname = opt->krb5_config_file_string;
+    data.upto = opt->upto_integer;
     data.n = 0;
 
     if(opt->short_flag) {
@@ -609,6 +627,8 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
 
     for(i = 0; i < argc; i++)
 	ret = foreach_principal(argv[i], do_get_entry, name, &data);
+
+    kadm5_destroy(data.kadm_handle);
 
     if(data.table != NULL) {
 	rtbl_format(data.table, stdout);
@@ -638,5 +658,6 @@ list_princs(struct list_options *opt, int argc, char **argv)
     get_opt.short_flag = opt->short_flag;
     get_opt.terse_flag = opt->terse_flag;
     get_opt.column_info_string = opt->column_info_string;
+    get_opt.upto_integer = opt->upto_integer;
     return getit(&get_opt, "list", argc, argv);
 }

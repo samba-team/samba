@@ -7,9 +7,7 @@
 @afourpaper
 @end iftex
 @c some sensible characters, please?
-@tex
-\input latin1.tex
-@end tex
+@documentencoding UTF-8
 @setchapternewpage on
 @syncodeindex pg cp
 @c %**end of header
@@ -39,12 +37,14 @@
 @def@copyrightstart{}
 @def@copyrightend{}
 @end iftex
+@ifnottex
 @macro copynext
 @end macro
 @macro copyrightstart
 @end macro
 @macro copyrightend
 @end macro
+@end ifnottex
 
 @page
 @copyrightstart

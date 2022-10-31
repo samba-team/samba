@@ -47,6 +47,7 @@ get_response(const char *prompt, const char *def, char *buf, size_t len);
  */
 
 struct units kdb_attrs[] = {
+    { "no-auth-data-reqd",	KRB5_KDB_NO_AUTH_DATA_REQUIRED },
     { "disallow-client",	KRB5_KDB_DISALLOW_CLIENT },
     { "virtual",		KRB5_KDB_VIRTUAL },
     { "virtual-keys",		KRB5_KDB_VIRTUAL_KEYS },
@@ -69,7 +70,6 @@ struct units kdb_attrs[] = {
     { "disallow-tgt-based",	KRB5_KDB_DISALLOW_TGT_BASED },
     { "disallow-forwardable",	KRB5_KDB_DISALLOW_FORWARDABLE },
     { "disallow-postdated",	KRB5_KDB_DISALLOW_POSTDATED },
-    { "no-auth-data-reqd",	KRB5_KDB_NO_AUTH_DATA_REQUIRED },
     { NULL, 0 }
 };
 
@@ -353,7 +353,14 @@ edit_timet (const char *prompt, krb5_timestamp *value, int *mask, int bit)
 void
 deltat2str(unsigned t, char *str, size_t len)
 {
-    if(t == 0 || t == INT_MAX)
+    /*
+     * A time delta in kadmin context is a positive number, and there's no
+     * point to it being possibly as large as 2^64 -1, so we use unsigned
+     * instead of a more generally appropriate type for time deltas (which
+     * conceptually can be negative, which in kadmin context there's no need
+     * for).
+     */
+    if (t == 0 || t > INT_MAX)
 	snprintf(str, len, "unlimited");
     else
 	unparse_time(t, str, len);
@@ -370,6 +377,15 @@ str2deltat(const char *str, krb5_deltat *delta)
     int res;
 
     if(strcasecmp(str, "unlimited") == 0) {
+        /*
+         * Using zero to mean "unlimited" is unfortunate.  We should use
+         * `UINT_MAX'.  However, we've had this assumption that zero means
+         * unlimited, so there are HDB entries with present-but-zero max-life
+         * and max-renew-life.
+         *
+         * We could switch to using `UINT_MAX' or `UINT64_MAX' for "unlimited",
+         * but we'd have to continue to treat `0' as special for some time.
+         */
 	*delta = 0;
 	return 0;
     }
@@ -589,6 +605,32 @@ is_expression(const char *string)
     return 0;
 }
 
+struct foreach_principal_data {
+    const char *funcname;
+    int (*func)(krb5_principal, void *);
+    void *data;
+};
+
+static int
+foreach_principal_cb(void *data, const char *p)
+{
+    struct foreach_principal_data *d = data;
+    krb5_principal princ;
+    krb5_error_code ret;
+
+    ret = krb5_parse_name(context, p, &princ);
+    if (ret)
+        return ret;
+
+    ret = d->func(princ, d->data);
+    krb5_free_principal(context, princ);
+    if (ret) {
+        krb5_warn(context, ret, "%s %s", d->funcname, p);
+        krb5_clear_error_message(context);
+    }
+    return ret;
+}
+
 /*
  * Loop over all principals matching exp.  If any of calls to `func'
  * failes, the first error is returned when all principals are
@@ -600,52 +642,66 @@ foreach_principal(const char *exp_str,
 		  const char *funcname,
 		  void *data)
 {
-    char **princs = NULL;
-    int num_princs = 0;
-    int i;
-    krb5_error_code saved_ret = 0, ret = 0;
-    krb5_principal princ_ent;
+    struct foreach_principal_data d;
+    krb5_error_code ret;
+    krb5_principal p;
     int is_expr;
+    int go_slow =
+        secure_getenv("KADMIN_USE_GET_PRINCIPALS") != NULL &&
+        *secure_getenv("KADMIN_USE_GET_PRINCIPALS") != '\0';
 
     /* if this isn't an expression, there is no point in wading
        through the whole database looking for matches */
     is_expr = is_expression(exp_str);
-    if(is_expr)
-	ret = kadm5_get_principals(kadm_handle, exp_str, &princs, &num_princs);
-    if(!is_expr || ret == KADM5_AUTH_LIST) {
-	/* we might be able to perform the requested opreration even
-           if we're not allowed to list principals */
-	num_princs = 1;
-	princs = malloc(sizeof(*princs));
-	if(princs == NULL)
-	    return ENOMEM;
-	princs[0] = strdup(exp_str);
-	if(princs[0] == NULL){
-	    free(princs);
-	    return ENOMEM;
-	}
-    } else if(ret) {
-	krb5_warn(context, ret, "kadm5_get_principals");
-	return ret;
+
+    d.funcname = funcname;
+    d.func = func;
+    d.data = data;
+
+    if (is_expr && !go_slow) {
+	ret = kadm5_iter_principals(kadm_handle, exp_str,
+                                    foreach_principal_cb, &d);
+        if (ret == 0)
+            return 0;
+        if (ret != KADM5_AUTH_LIST) {
+            krb5_warn(context, ret, "kadm5_iter_principals");
+            return ret;
+        }
+    } else if (is_expr) {
+        char **princs = NULL;
+        int count = 0;
+
+        /*
+         * This is just for testing, and maybe in case there are HDB backends
+         * that are not re-entrant (LDAP?).
+         */
+        ret = kadm5_get_principals(kadm_handle, exp_str, &princs, &count);
+        if (ret == 0 && count > 0) {
+            int i;
+
+            for (i = 0; ret == 0 && i < count; i++)
+                ret = foreach_principal_cb(&d, princs[i]);
+            kadm5_free_name_list(kadm_handle, princs, &count);
+            return ret;
+        }
+        if (ret != KADM5_AUTH_LIST) {
+            krb5_warn(context, ret, "kadm5_iter_principals");
+            return ret;
+        }
     }
-    for(i = 0; i < num_princs; i++) {
-	ret = krb5_parse_name(context, princs[i], &princ_ent);
-	if(ret){
-	    krb5_warn(context, ret, "krb5_parse_name(%s)", princs[i]);
-	    continue;
-	}
-	ret = (*func)(princ_ent, data);
-	if(ret) {
-	    krb5_warn(context, ret, "%s %s", funcname, princs[i]);
-	    krb5_clear_error_message(context);
-	    if (saved_ret == 0)
-		saved_ret = ret;
-	}
-	krb5_free_principal(context, princ_ent);
+    /* we might be able to perform the requested opreration even
+       if we're not allowed to list principals */
+    ret = krb5_parse_name(context, exp_str, &p);
+    if (ret) {
+        krb5_warn(context, ret, "krb5_parse_name(%s)", exp_str);
+        return ret;
     }
-    if (ret == 0 && saved_ret != 0)
-	ret = saved_ret;
-    kadm5_free_name_list(kadm_handle, princs, &num_princs);
+    ret = (*func)(p, data);
+    if (ret) {
+        krb5_warn(context, ret, "%s %s", funcname, exp_str);
+        krb5_clear_error_message(context);
+    }
+    krb5_free_principal(context, p);
     return ret;
 }
 

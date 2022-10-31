@@ -238,11 +238,11 @@ ${kadmin} ext -k ${keytab} ${rps} || exit 1
 
 ${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
 ${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
-${kadmin} add -p foo  --use-defaults referral-placeholder@${R5} || exit 1
-${kadmin} add_alias referral-placeholder@${R5} ${server3}@${R} || exit 1
+${kadmin} add -p foo  --use-defaults WELLKNOWN/REFERRALS/TARGET@${R5} || exit 1
+${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R5} ${server3}@${R} || exit 1
 ${kadmin5} add -p kaka --use-defaults ${server3}@${R5} || exit 1
 ${kadmin5} ext -k ${keytab} ${server3}@${R5} || exit 1
-${kadmin} add_alias referral-placeholder@${R5} ${namespace}@${R} || exit 1
+${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R5} ${namespace}@${R} || exit 1
 ${kadmin5} add -p kaka --use-defaults ${server5}@${R5} || exit 1
 ${kadmin5} ext -k ${keytab} ${server5}@${R5} || exit 1
 ${kadmin} add -p kaka --use-defaults ${serverip}@${R} || exit 1

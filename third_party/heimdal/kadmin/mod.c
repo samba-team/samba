@@ -308,16 +308,24 @@ add_krb5_config(kadm5_principal_ent_rec *princ, const char *fname)
     add_tl(princ, KRB5_TL_EXTENSION, &buf);
 }
 
+struct mod_data {
+    struct modify_namespace_key_rotation_options *opt_ns_kr;
+    struct modify_namespace_options *opt_ns;
+    struct modify_options *opt;
+    void *kadm_handle;
+};
+
 static int
 do_mod_entry(krb5_principal principal, void *data)
 {
     krb5_error_code ret;
     kadm5_principal_ent_rec princ;
     int mask = 0;
-    struct modify_options *e = data;
+    struct mod_data *m = data;
+    struct modify_options *e = m->opt;
 
     memset (&princ, 0, sizeof(princ));
-    ret = kadm5_get_principal(kadm_handle, principal, &princ,
+    ret = kadm5_get_principal(m->kadm_handle, principal, &princ,
 			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES |
 			      KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
 			      KADM5_PRINC_EXPIRE_TIME |
@@ -382,12 +390,12 @@ do_mod_entry(krb5_principal principal, void *data)
     } else
 	ret = edit_entry(&princ, &mask, NULL, 0);
     if(ret == 0) {
-	ret = kadm5_modify_principal(kadm_handle, &princ, mask);
+	ret = kadm5_modify_principal(m->kadm_handle, &princ, mask);
 	if(ret)
 	    krb5_warn(context, ret, "kadm5_modify_principal");
     }
 
-    kadm5_free_principal_ent(kadm_handle, &princ);
+    kadm5_free_principal_ent(m->kadm_handle, &princ);
     return ret;
 }
 
@@ -395,13 +403,19 @@ int
 mod_entry(struct modify_options *opt, int argc, char **argv)
 {
     krb5_error_code ret = 0;
+    struct mod_data data;
     int i;
 
-    for(i = 0; i < argc; i++) {
-	ret = foreach_principal(argv[i], do_mod_entry, "mod", opt);
-	if (ret)
-	    break;
-    }
+    data.kadm_handle = NULL;
+    data.opt_ns_kr = NULL;
+    data.opt_ns = NULL;
+    data.opt = opt;
+
+    ret = kadm5_dup_context(kadm_handle, &data.kadm_handle);
+    for (i = 0; ret == 0 && i < argc; i++)
+	ret = foreach_principal(argv[i], do_mod_entry, "mod", &data);
+    if (data.kadm_handle)
+        kadm5_destroy(data.kadm_handle);
     return ret != 0;
 }
 
@@ -411,10 +425,11 @@ do_mod_ns_entry(krb5_principal principal, void *data)
     krb5_error_code ret;
     kadm5_principal_ent_rec princ;
     int mask = 0;
-    struct modify_namespace_options *e = data;
+    struct mod_data *m = data;
+    struct modify_namespace_options *e = m->opt_ns;
 
     memset (&princ, 0, sizeof(princ));
-    ret = kadm5_get_principal(kadm_handle, principal, &princ,
+    ret = kadm5_get_principal(m->kadm_handle, principal, &princ,
 			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES |
 			      KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
 			      KADM5_PRINC_EXPIRE_TIME |
@@ -441,12 +456,12 @@ do_mod_ns_entry(krb5_principal principal, void *data)
     } else
 	ret = edit_entry(&princ, &mask, NULL, 0);
     if(ret == 0) {
-	ret = kadm5_modify_principal(kadm_handle, &princ, mask);
+	ret = kadm5_modify_principal(m->kadm_handle, &princ, mask);
 	if(ret)
 	    krb5_warn(context, ret, "kadm5_modify_principal");
     }
 
-    kadm5_free_principal_ent(kadm_handle, &princ);
+    kadm5_free_principal_ent(m->kadm_handle, &princ);
     return ret;
 }
 
@@ -454,13 +469,19 @@ int
 modify_namespace(struct modify_namespace_options *opt, int argc, char **argv)
 {
     krb5_error_code ret = 0;
+    struct mod_data data;
     int i;
 
-    for(i = 0; i < argc; i++) {
-	ret = foreach_principal(argv[i], do_mod_ns_entry, "mod_ns", opt);
-	if (ret)
-	    break;
-    }
+    data.kadm_handle = NULL;
+    data.opt_ns_kr = NULL;
+    data.opt_ns = opt;
+    data.opt = NULL;
+
+    ret = kadm5_dup_context(kadm_handle, &data.kadm_handle);
+    for (i = 0; ret == 0 && i < argc; i++)
+	ret = foreach_principal(argv[i], do_mod_ns_entry, "mod_ns", &data);
+    if (data.kadm_handle)
+        kadm5_destroy(data.kadm_handle);
     return ret != 0;
 }
 
@@ -672,15 +693,20 @@ modify_ns_kr(struct modify_namespace_key_rotation_options *opt,
              char **argv)
 {
     krb5_error_code ret = 0;
+    struct mod_data data;
     int i;
 
-    for(i = 0; i < argc; i++) {
+    data.kadm_handle = NULL;
+    data.opt_ns_kr = opt;
+    data.opt_ns = NULL;
+    data.opt = NULL;
+
+    ret = kadm5_dup_context(kadm_handle, &data.kadm_handle);
+    for (i = 0; ret == 0 && i < argc; i++)
 	ret = foreach_principal(argv[i], do_mod_ns_kr, "mod_ns", opt);
-	if (ret)
-	    break;
-    }
+    if (data.kadm_handle)
+        kadm5_destroy(data.kadm_handle);
     return ret != 0;
-    return 0;
 }
 
 #define princ_realm(P) ((P)->realm)

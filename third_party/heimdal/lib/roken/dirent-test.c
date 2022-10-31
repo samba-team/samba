@@ -148,7 +148,7 @@ int teardown_test(void)
 
         strcmp(dirname + len + 1 - sizeof(TESTDIR)/sizeof(char), TESTDIR) == 0) {
 
-        fallthrough;
+        HEIM_FALLTHROUGH;
 
     } else {
         /* did we create the directory? */
@@ -162,7 +162,7 @@ int teardown_test(void)
                     fprintf(stderr, "Can't change to test directory. Aborting cleanup.\n");
                     return -1;
                 } else {
-                    fallthrough;
+                    HEIM_FALLTHROUGH;
                 }
             } else {
                 return -1;

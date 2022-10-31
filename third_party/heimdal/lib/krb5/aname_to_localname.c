@@ -420,6 +420,7 @@ an2ln_def_plug_an2ln(void *plug_ctx, krb5_context context,
 	heim_dict_set_value(db_options, HSTR("read-only"),
 			    heim_number_create(1));
     dbh = heim_db_create(NULL, an2ln_db_fname, db_options, &error);
+    heim_release(db_options);
     if (dbh == NULL) {
 	krb5_set_error_message(context, heim_error_get_code(error),
 			       N_("Couldn't open aname2lname-text-db", ""));

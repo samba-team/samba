@@ -6,15 +6,19 @@
 
 A
 @cindex realm
-realm is an administrative domain.  The name of a Kerberos realm is
-usually the Internet domain name in uppercase.  Call your realm the same
-as your Internet domain name if you do not have strong reasons for not
+realm is an administrative domain containing any number of Kerberos
+principals and namespaces.  The name of a Kerberos realm is
+usually a domain name in uppercase.  Call your realm the same
+as your site's domain name if you do not have strong reasons for not
 doing so.  It will make life easier for you and everyone else.
 
 @menu
 * Configuration file::
 * Creating the database::
 * Modifying the database::
+* Using namespaces and synthetic principals to keep the database small::
+* Using hard aliases for realm migration::
+* Using soft aliases for configuring referrals::
 * Checking the setup::
 * keytabs::
 * Remote administration::
@@ -40,7 +44,8 @@ To setup a realm you will first have to create a configuration file:
 @file{/etc/krb5.conf}. The @file{krb5.conf} file can contain many
 configuration options, some of which are described here.
 
-There is a sample @file{krb5.conf} supplied with the distribution.
+There is a sample @file{krb5.conf} supplied with the distribution, and
+a page for it in section 5 of the system manual.
 
 The configuration file is a hierarchical structure consisting of
 sections, each containing a list of bindings (either variable
@@ -84,11 +89,9 @@ are briefly described here.
 The @samp{libdefaults} section contains a list of library configuration
 parameters, such as the default realm and the timeout for KDC
 responses. The @samp{realms} section contains information about specific
-realms, such as where they hide their KDC@. This section serves the same
-purpose as the Kerberos 4 @file{krb.conf} file, but can contain more
-information. Finally the @samp{domain_realm} section contains a list of
-mappings from domains to realms, equivalent to the Kerberos 4
-@file{krb.realms} file.
+realms, such as where they hide their KDC@.
+Finally the @samp{domain_realm} section contains a list of
+mappings from domains to realms.
 
 To continue with the realm setup, you will have to create a configuration file,
 with contents similar to the following.
@@ -108,14 +111,17 @@ with contents similar to the following.
 
 @end example
 
-If you use a realm name equal to your domain name, you can omit the
-@samp{libdefaults}, and @samp{domain_realm}, sections. If you have a DNS
-SRV-record for your realm, or your Kerberos server has DNS CNAME
-@samp{kerberos.my.realm}, you can omit the @samp{realms} section too.
+When realm names correspond to domain names, one can avoid having to
+configure @samp{domain_realm} mappings, and one can avoid having to
+configure a @samp{default_realm} in the @samp{libdefaults} section.
+DNS SRV resource records can be used for KDC discovery, obviating the
+need list KDCs in the @samp{realms} section of the @samp{krb5.conf}
+file.
 
 @cindex KRB5_CONFIG
-If you want to use a different configuration file then the default you
-can point a file with the environment variable @samp{KRB5_CONFIG}.
+The Heimdal libraries and commands (and the MIT ones too), support the
+use of the environment variable @samp{KRB5_CONFIG} for using an
+alternative configuration.
 
 @example
 env KRB5_CONFIG=$HOME/etc/krb5.conf kinit user@@REALM
@@ -124,15 +130,16 @@ env KRB5_CONFIG=$HOME/etc/krb5.conf kinit user@@REALM
 @cindex GSS_MECH_CONFIG
 The GSS-API mechanism configuration file can also be changed from the
 default with the enviornment variable @samp{GSS_MECH_CONFIG}. Note that
-this file only configures additional plugin mechanisms: Kerberos, NTLM
-and SPNEGO are built in to the Heimdal GSS-API library.
+this file can only configure additional plugin mechanisms: Kerberos,
+NTLM and SPNEGO are built in to the Heimdal GSS-API library.
 
 @node Creating the database, Modifying the database, Configuration file, Setting up a realm
 @section Creating the database
 
-The database library will look for the database in the directory
-@file{@value{dbdir}}, so you should probably create that directory.
-Make sure the directory has restrictive permissions.
+The Heimdal database library, @code{libhdb}, will look for the
+database in the directory @file{@value{dbdir}}, so you should probably
+create that directory.  Make sure the directory has restrictive
+permissions.
 
 @example
 # mkdir /var/heimdal
@@ -141,8 +148,8 @@ Make sure the directory has restrictive permissions.
 
 Heimdal supports various database backends: lmdb (LMDB), db3 (Berkeley
 DB 3.x, 4.x, or 5.x), db1 (Berkeley DB 2.x), sqlite (SQLite3), and ldap
-(LDAP).  The default is @value{dbtype}, and is selected at build time
-from one of lmdb, db3, or db1.
+(LDAP).  The default is @value{dbtype}, and is selected at configure
+time from one of lmdb, db3, or db1.
 
 These defaults can be overriden in the 'database' key in the @samp{kdc}
 section of the configuration.
@@ -178,6 +185,11 @@ on which attackers can't do a dictionary attack.
 
 If you have a master key, make sure you make a backup of your master
 key file; without it backups of the database are of no use.
+
+Note that encryption of the keys in the database is only useful when
+the database is stored on external storage media that is easy to
+steal. Thus for the most part there is no need to encrypt the keys in
+the database.
 
 To initialise the database use the @command{kadmin} program, with the
 @kbd{-l} option (to enable local database mode). First issue a
@@ -233,7 +245,7 @@ krbtgt/MY.REALM@@MY.REALM 1:0:1:52b53b61c875ce16:-:0:7:c8943be ...
 kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 @end smallexample
 
-@node Modifying the database, Checking the setup, Creating the database, Setting up a realm
+@node Modifying the database, Using namespaces and synthetic principals to keep the database small, Creating the database, Setting up a realm
 @section Modifying the database
 
 All modifications of principals are done with with kadmin.
@@ -295,7 +307,101 @@ R second
 
 @c Describe more of kadmin commands here...
 
-@node Checking the setup, keytabs, Modifying the database, Setting up a realm
+@node Using namespaces and synthetic principals to keep the database small, Checking the setup, Modifying the database, Setting up a realm
+@section Using namespaces and synthetic principals to keep the database small
+
+Keeping a Kerberos database small is useful for several reasons:
+
+@itemize @bullet
+@item to avoid low write transaction rates
+@item to avoid replication latency
+@item to keep re-keying costs down
+@end itemize
+
+To avoid needing database entries for client principals, configure and
+enable PKINIT and synthetic principals. Alternatively, configure and
+enable the use of GSS-API pre-authentication, though this is currently
+experimental.
+
+With synthetic client principals enabled, client principals will be
+deemed to exist if they can pre-authenticate using a method that
+yields an authenticated principal name, and if the client principal
+does not already exist.
+
+To lock out or disable a specific synthetic client principal, create
+it in the database with the desired attributes.
+
+To avoid needing database entries for host-based service principals,
+create virtual host-based service principal namespaces using the
+@command{add_ns} sub-command of the @command{kadmin} command. Virtual
+host-based service principals will exist for every possible hostname
+under a containing namespace, with keys derived from the namespace's
+based keys and the current key rotation period. The long-term keys of
+virtual host-based service principals rotate on a hard schedule as
+configured for their namespaces, so hosts and applications using them
+must keep re-fetching their @samp{keytabs}. See the manual pages for
+@file{krb5.conf}, @command{kadmin}, and @command{httpkadmind} for more
+details.
+
+Using these features one can end up with a database that contains just
+@code{krbtgt} principals, principals for locked users, and principals
+that are neither @code{krbtgt}, user, nor host-based services.
+
+@node Using hard aliases for realm migration, Using soft aliases for configuring referrals, Using namespaces and synthetic principals to keep the database small, Setting up a realm
+@section Using hard aliases for realm migration
+
+The Heimdal @command{kadmin} command can be used to add aliases to
+principal entries in the Heimdal database.  Aliases of principals of
+the form @samp{WELLKNOWN/REFERRALS/TARGET} or
+@samp{WELLKNOWN/REFERRALS/TARGET/anything} are "soft" aliases.
+Aliases of principals of other forms are "hard" aliases.
+
+When a client makes a request for a principal's alias, and it does not
+use the KDC request "canonicalize" option flag, the Heimdal KDC will
+treat the alias as a distinct principal that happens to share
+attributes and long-term symmetric keys and salts with the principal
+it is an alias of.
+
+This is useful for, for example, ensuring that host-based principals
+can be referred to by any aliases.
+
+This can also be very useful for renaming realms: add new
+@code{krbtgt} principals for the new realms, then add aliases to
+existing principals in their new realms. For example, a user with a
+principal @code{joe@@A} can be given an alias of
+@code{joes@@B}, and
+then they can @code{kinit joes@@B} and get Kerberos tickets for
+@code{joes@@B}. Similarly, a service principal such as
+@code{HTTP/foo.bar.baz.example@@BAZ.EXAMPLE} can be given an alias such as
+@code{HTTP/foo.bar.baz.example@@BAR.BAZ.EXAMPLE}, or even
+@code{HTTP/foobar.new-domain.example@@NEW-DOMAIN.EXAMPLE}, and
+requesting tickets with those aliases as the service names will work.
+
+@node Using soft aliases for configuring referrals, Checking the setup, Using hard aliases for realm migration, Setting up a realm
+@section Using soft aliases for configuring referrals
+
+Soft aliases, which are aliases of principals of the form
+@code{WELLKNOWN/REFERRALS/TARGET} or
+@code{WELLKNOWN/REFERRALS/TARGET/anything}, are used to generate
+referrals to other realms. Specifically, the realm of a soft alias'
+canonical name is the realm to issue referrals to.
+
+Soft aliases can be used to configure individual referrals, but also
+of entire namespaces of hostnames. To configure the issuance of
+referrals for entire namespaces, make a soft alias of the form
+@code{WELLKNOWN/HOSTBASED-NAMESPACE/service/namespace-fqdn@@REALM} to
+have the TGS for that @samp{REALM} issue referrals for all principals
+of the form @code{service/hostname@@REALM} where the hostname component
+is a sub-domain of the namespace component of the alias name.
+
+For example, a soft alias name
+@code{WELLKNOWN/HOSTBASED-NAMESPACE/host/cloud.bar.example@@BAR.EXAMPLE}
+to a realm @samp{B} will cause the KDC to issue referrals to @samp{B}
+for any principals such as
+@samp{host/foo.cloud.bar.example@@BAR.EXAMPLE}, and
+@samp{host/baz.cloud.bar.example@@BAR.EXAMPLE}, and so on.
+
+@node Checking the setup, keytabs, Using namespaces and synthetic principals to keep the database small, Setting up a realm
 @section Checking the setup
 
 There are two tools that can check the consistency of the Kerberos
@@ -674,10 +780,6 @@ fixed size encryption key.
 In Kerberos 5 the salt is determined by the encryption type, except in
 some special cases.
 
-In @code{des} there is the Kerberos 4 salt
-(none at all) or the afs-salt (using the cell (realm in
-AFS lingo)).
-
 In @code{arcfour} (the encryption type that Microsoft Windows 2000 uses)
 there is no salt. This is to be compatible with NTLM keys in Windows
 NT 4.
@@ -696,12 +798,6 @@ no salt at all).
 Common types of salting include
 
 @itemize @bullet
-@item @code{v4} (or @code{des:pw-salt:})
-
-The Kerberos 4 salting is using no salt at all. Reason there is colon
-at the end of the salt string is that it makes the salt the empty
-string (same as no salt).
-
 @item @code{v5} (or @code{pw-salt})
 
 @code{pw-salt} uses the default salt for each encryption type is

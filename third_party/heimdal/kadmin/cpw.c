@@ -40,18 +40,19 @@ struct cpw_entry_data {
     int random_password;
     char *password;
     krb5_key_data *key_data;
+    void *kadm_handle;
 };
 
 static int
-set_random_key (krb5_principal principal, int keepold)
+set_random_key(void *dup_kadm_handle, krb5_principal principal, int keepold)
 {
     krb5_error_code ret;
     int i;
     krb5_keyblock *keys;
     int num_keys;
 
-    ret = kadm5_randkey_principal_3(kadm_handle, principal, keepold, 0, NULL,
-				    &keys, &num_keys);
+    ret = kadm5_randkey_principal_3(dup_kadm_handle, principal, keepold, 0,
+                                    NULL, &keys, &num_keys);
     if(ret)
 	return ret;
     for(i = 0; i < num_keys; i++)
@@ -61,7 +62,9 @@ set_random_key (krb5_principal principal, int keepold)
 }
 
 static int
-set_random_password (krb5_principal principal, int keepold)
+set_random_password(void *dup_kadm_handle,
+                    krb5_principal principal,
+                    int keepold)
 {
     krb5_error_code ret;
     char pw[128];
@@ -72,7 +75,8 @@ set_random_password (krb5_principal principal, int keepold)
 	return ret;
 
     random_password(pw, sizeof(pw));
-    ret = kadm5_chpass_principal_3(kadm_handle, principal, keepold, 0, NULL, pw);
+    ret = kadm5_chpass_principal_3(dup_kadm_handle, principal, keepold, 0,
+                                   NULL, pw);
     if (ret == 0)
 	printf ("%s's password set to \"%s\"\n", princ_name, pw);
     free(princ_name);
@@ -81,7 +85,10 @@ set_random_password (krb5_principal principal, int keepold)
 }
 
 static int
-set_password (krb5_principal principal, char *password, int keepold)
+set_password(void *dup_kadm_handle,
+             krb5_principal principal,
+             char *password,
+             int keepold)
 {
     krb5_error_code ret = 0;
     char pwbuf[128];
@@ -108,18 +115,21 @@ set_password (krb5_principal principal, char *password, int keepold)
 	password = pwbuf;
     }
     if(ret == 0)
-	ret = kadm5_chpass_principal_3(kadm_handle, principal, keepold, 0, NULL,
-				       password);
+        ret = kadm5_chpass_principal_3(dup_kadm_handle, principal, keepold, 0,
+                                       NULL, password);
     memset_s(pwbuf, sizeof(pwbuf), 0, sizeof(pwbuf));
     return ret;
 }
 
 static int
-set_key_data (krb5_principal principal, krb5_key_data *key_data, int keepold)
+set_key_data(void *dup_kadm_handle,
+             krb5_principal principal,
+             krb5_key_data *key_data,
+             int keepold)
 {
     krb5_error_code ret;
 
-    ret = kadm5_chpass_principal_with_key_3(kadm_handle, principal, keepold,
+    ret = kadm5_chpass_principal_with_key_3(dup_kadm_handle, principal, keepold,
 					    3, key_data);
     return ret;
 }
@@ -130,13 +140,13 @@ do_cpw_entry(krb5_principal principal, void *data)
     struct cpw_entry_data *e = data;
 
     if (e->random_key)
-	return set_random_key (principal, e->keepold);
+	return set_random_key(e->kadm_handle, principal, e->keepold);
     else if (e->random_password)
-	return set_random_password (principal, e->keepold);
+	return set_random_password(e->kadm_handle, principal, e->keepold);
     else if (e->key_data)
-	return set_key_data (principal, e->key_data, e->keepold);
+	return set_key_data(e->kadm_handle, principal, e->key_data, e->keepold);
     else
-	return set_password (principal, e->password, e->keepold);
+	return set_password(e->kadm_handle, principal, e->password, e->keepold);
 }
 
 int
@@ -148,6 +158,10 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
     int num;
     krb5_key_data key_data[3];
 
+    data.kadm_handle = NULL;
+    ret = kadm5_dup_context(kadm_handle, &data.kadm_handle);
+    if (ret)
+        krb5_err(context, 1, ret, "Could not duplicate kadmin connection");
     data.random_key = opt->random_key_flag;
     data.random_password = opt->random_password_flag;
     data.password = opt->password_string;
@@ -205,6 +219,8 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 
     for(i = 0; i < argc; i++)
 	ret = foreach_principal(argv[i], do_cpw_entry, "cpw", &data);
+
+    kadm5_destroy(data.kadm_handle);
 
     if (data.key_data) {
 	int16_t dummy;

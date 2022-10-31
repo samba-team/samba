@@ -3,3 +3,7 @@
 --sequence=HDB-Ext-KeySet
 --sequence=Keys
 --decorate=HDB_entry:void:context?:::
+# The `aliased` field is for indicating whether a name used in an HDB
+# lookup was an alias.  This could be useful to applications when hard
+# aliasing is implemented in an HDB backend, as it should be.
+--decorate=HDB_entry:int:aliased:::

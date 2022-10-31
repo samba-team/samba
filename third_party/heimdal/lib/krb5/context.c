@@ -545,7 +545,7 @@ copy_etypes (krb5_context context,
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_copy_context(krb5_context context, krb5_context *out)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     krb5_context p;
 
     *out = NULL;
@@ -554,81 +554,80 @@ krb5_copy_context(krb5_context context, krb5_context *out)
     if (p == NULL)
 	return krb5_enomem(context);
 
-    if ((p->hcontext = heim_context_init()) == NULL) {
+    p->cc_ops = NULL;
+    p->etypes = NULL;
+    p->kt_types = NULL;
+    p->cfg_etypes = NULL;
+    p->etypes_des = NULL;
+    p->default_realms = NULL;
+    p->extra_addresses = NULL;
+    p->ignore_addresses = NULL;
+
+    if ((p->hcontext = heim_context_init()) == NULL)
         ret = ENOMEM;
-        goto out;
+
+    if (ret == 0) {
+        heim_context_set_log_utc(p->hcontext, context->log_utc);
+        ret = _krb5_config_copy(context, context->cf, &p->cf);
+    }
+    if (ret == 0)
+        ret = init_context_from_config_file(p);
+    if (ret == 0 && context->default_cc_name) {
+        free(p->default_cc_name);
+        if ((p->default_cc_name = strdup(context->default_cc_name)) == NULL)
+            ret = ENOMEM;
+    }
+    if (ret == 0 && context->default_cc_name_env) {
+        free(p->default_cc_name_env);
+        if ((p->default_cc_name_env =
+             strdup(context->default_cc_name_env)) == NULL)
+            ret = ENOMEM;
+    }
+    if (ret == 0 && context->configured_default_cc_name) {
+        free(context->configured_default_cc_name);
+        if ((p->configured_default_cc_name =
+             strdup(context->configured_default_cc_name)) == NULL)
+            ret = ENOMEM;
     }
 
-    heim_context_set_log_utc(p->hcontext, context->log_utc);
-
-    if (context->default_cc_name &&
-	(p->default_cc_name = strdup(context->default_cc_name)) == NULL) {
-        ret = ENOMEM;
-        goto out;
-    }
-    if (context->default_cc_name_env &&
-	(p->default_cc_name_env =
-            strdup(context->default_cc_name_env)) == NULL) {
-        ret = ENOMEM;
-        goto out;
-    }
-    if (context->configured_default_cc_name &&
-	(p->configured_default_cc_name =
-            strdup(context->configured_default_cc_name)) == NULL) {
-        ret = ENOMEM;
-        goto out;
-    }
-
-    if (context->etypes) {
+    if (ret == 0 && context->etypes) {
+        free(p->etypes);
 	ret = copy_etypes(context, context->etypes, &p->etypes);
-	if (ret)
-	    goto out;
     }
-    if (context->cfg_etypes) {
+    if (ret == 0 && context->cfg_etypes) {
+        free(p->cfg_etypes);
 	ret = copy_etypes(context, context->cfg_etypes, &p->cfg_etypes);
-	if (ret)
-	    goto out;
     }
-    if (context->etypes_des) {
+    if (ret == 0 && context->etypes_des) {
+        free(p->etypes_des);
 	ret = copy_etypes(context, context->etypes_des, &p->etypes_des);
-	if (ret)
-	    goto out;
     }
 
-    if (context->default_realms) {
+    if (ret == 0 && context->default_realms) {
+        krb5_free_host_realm(context, p->default_realms);
 	ret = krb5_copy_host_realm(context,
 				   context->default_realms, &p->default_realms);
-	if (ret)
-	    goto out;
     }
 
-    ret = _krb5_config_copy(context, context->cf, &p->cf);
-    if (ret)
-	goto out;
-
     /* XXX should copy */
-    _krb5_init_ets(p);
+    if (ret == 0)
+        _krb5_init_ets(p);
 
-    cc_ops_copy(p, context);
-    kt_ops_copy(p, context);
+    if (ret == 0)
+        ret = cc_ops_copy(p, context);
+    if (ret == 0)
+        ret = kt_ops_copy(p, context);
+    if (ret == 0)
+        ret = krb5_set_extra_addresses(p, context->extra_addresses);
+    if (ret == 0)
+        ret = krb5_set_extra_addresses(p, context->ignore_addresses);
+    if (ret == 0)
+        ret = _krb5_copy_send_to_kdc_func(p, context);
 
-    ret = krb5_set_extra_addresses(p, context->extra_addresses);
-    if (ret)
-	goto out;
-    ret = krb5_set_extra_addresses(p, context->ignore_addresses);
-    if (ret)
-	goto out;
-
-    ret = _krb5_copy_send_to_kdc_func(p, context);
-    if (ret)
-	goto out;
-
-    *out = p;
-
-    return 0;
-
- out:
-    krb5_free_context(p);
+    if (ret == 0)
+        *out = p;
+    else
+        krb5_free_context(p);
     return ret;
 }
 

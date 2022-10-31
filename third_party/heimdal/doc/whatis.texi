@@ -133,8 +133,10 @@ It would be possible to add a @dfn{replay cache}
 to the server side.  The idea is to save the authenticators sent during
 the last few minutes, so that @var{B} can detect when someone is trying
 to retransmit an already used message. This is somewhat impractical
-(mostly regarding efficiency), and is not part of Kerberos 4; MIT
-Kerberos 5 contains it.
+(mostly regarding performance); MIT Kerberos 5 has a replay cache,
+while Heimdal does not.
+
+However, most GSS-API applicatons do not need a replay cache at all.
 
 To authenticate @var{B}, @var{A} might request that @var{B} sends
 something back that proves that @var{B} has access to the session

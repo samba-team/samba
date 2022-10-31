@@ -330,6 +330,11 @@ to form the names of the files generated.
 .It Fl Fl option-file=FILE
 Take additional command-line options from
 .Ar FILE .
+The options file must have one command-line option per-line, but
+leading whitespace is ignored, and lines that start with a hash
+symbol 
+.Sq ( # )
+are comments and are ignored.
 .It Fl Fl original-order
 Attempt to preserve the original order of type definition in the
 ASN.1 module.

@@ -851,7 +851,7 @@ DES_string_to_key(const char *str, DES_cblock *key)
 	k[7] ^= 0xF0;
     DES_set_key(key, &ks);
     DES_cbc_cksum(s, key, len, &ks, key);
-    memset(&ks, 0, sizeof(ks));
+    memset_s(&ks, sizeof(ks), 0, sizeof(ks));
     DES_set_odd_parity(key);
     if (DES_is_weak_key(key))
 	k[7] ^= 0xF0;

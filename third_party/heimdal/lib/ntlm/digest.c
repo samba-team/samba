@@ -471,7 +471,7 @@ heim_digest_generate_challenge(heim_digest_t context)
 	    break;
 	case HEIM_DIGEST_TYPE_AUTO:
 	    context->type = HEIM_DIGEST_TYPE_RFC2831;
-            fallthrough;
+            HEIM_FALLTHROUGH;
 	case HEIM_DIGEST_TYPE_RFC2831:
 	    asprintf(&challenge, "realm=\"%s\",nonce=\"%s\",qop=\"%s\",algorithm=md5-sess,charset=utf-8,maxbuf=%s",
 		     context->serverRealm, context->serverNonce, context->serverQOP, context->serverMaxbuf);

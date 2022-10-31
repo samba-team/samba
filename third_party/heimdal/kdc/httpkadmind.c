@@ -128,6 +128,12 @@ typedef enum MHD_Result heim_mhd_result;
  *        here.
  */
 
+struct free_tend_list {
+    void *freeme1;
+    void *freeme2;
+    struct free_tend_list *next;
+};
+
 /* Our request description structure */
 typedef struct kadmin_request_desc {
     HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
@@ -165,6 +171,8 @@ typedef struct kadmin_request_desc {
      * be damned.
      */
     hx509_request req;          /* For authz only */
+    struct free_tend_list *free_list;
+    struct MHD_PostProcessor *pp;
     heim_array_t service_names;
     heim_array_t hostnames;
     heim_array_t spns;
@@ -176,7 +184,11 @@ typedef struct kadmin_request_desc {
     char *keytab_name;
     char *freeme1;
     char *enctypes;
+    char *cache_control;
+    char *csrf_token;
     const char *method;
+    krb5_timestamp pw_end;
+    size_t post_data_size;
     unsigned int response_set:1;
     unsigned int materialize:1;
     unsigned int rotate_now:1;
@@ -305,8 +317,18 @@ get_krb5_context(krb5_context *contextp)
     return ret;
 }
 
+typedef enum {
+    CSRF_PROT_UNSPEC            = 0,
+    CSRF_PROT_GET_WITH_HEADER   = 1,
+    CSRF_PROT_GET_WITH_TOKEN    = 2,
+    CSRF_PROT_POST_WITH_HEADER  = 8,
+    CSRF_PROT_POST_WITH_TOKEN   = 16,
+} csrf_protection_type;
+
+static csrf_protection_type csrf_prot_type = CSRF_PROT_UNSPEC;
 static int port = -1;
 static int help_flag;
+static int allow_GET_flag = -1;
 static int daemonize;
 static int daemon_child_fd = -1;
 static int local_hdb;
@@ -317,6 +339,8 @@ static int version_flag;
 static int reverse_proxied_flag;
 static int thread_per_client_flag;
 struct getarg_strings audiences;
+static getarg_strings csrf_prot_type_strs;
+static const char *csrf_header = "X-CSRF";
 static const char *cert_file;
 static const char *priv_key_file;
 static const char *cache_dir;
@@ -425,7 +449,7 @@ out:
 
 static krb5_error_code resp(kadmin_request_desc, int, krb5_error_code,
                             enum MHD_ResponseMemoryMode, const char *,
-                            const void *, size_t, const char *, const char *);
+                            const void *, size_t, const char *);
 static krb5_error_code bad_req(kadmin_request_desc, krb5_error_code, int,
                                const char *, ...)
                                HEIMDAL_PRINTF_ATTRIBUTE((__printf__, 4, 5));
@@ -434,7 +458,7 @@ static krb5_error_code bad_enomem(kadmin_request_desc, krb5_error_code);
 static krb5_error_code bad_400(kadmin_request_desc, krb5_error_code, const char *);
 static krb5_error_code bad_401(kadmin_request_desc, const char *);
 static krb5_error_code bad_403(kadmin_request_desc, krb5_error_code, const char *);
-static krb5_error_code bad_404(kadmin_request_desc, const char *);
+static krb5_error_code bad_404(kadmin_request_desc, krb5_error_code, const char *);
 static krb5_error_code bad_405(kadmin_request_desc, const char *);
 /*static krb5_error_code bad_500(kadmin_request_desc, krb5_error_code, const char *);*/
 static krb5_error_code bad_503(kadmin_request_desc, krb5_error_code, const char *);
@@ -635,8 +659,7 @@ resp(kadmin_request_desc r,
      const char *content_type,
      const void *body,
      size_t bodylen,
-     const char *token,
-     const char *csrf)
+     const char *token)
 {
     struct MHD_Response *response;
     int mret = MHD_YES;
@@ -657,8 +680,35 @@ resp(kadmin_request_desc r,
                                                rmmode);
     if (response == NULL)
         return -1;
-    mret = MHD_add_response_header(response, MHD_HTTP_HEADER_CACHE_CONTROL,
-                                   "no-store, max-age=0");
+    mret = MHD_add_response_header(response, MHD_HTTP_HEADER_AGE, "0");
+    if (mret == MHD_YES && http_status_code == MHD_HTTP_OK) {
+        krb5_timestamp now;
+
+        free(r->cache_control);
+        r->cache_control = NULL;
+        krb5_timeofday(r->context, &now);
+        if (r->pw_end && r->pw_end > now) {
+            if (asprintf(&r->cache_control, "no-store, max-age=%lld",
+                         (long long)r->pw_end - now) == -1 ||
+                r->cache_control == NULL)
+                /* Soft handling of ENOMEM here */
+                mret = MHD_add_response_header(response,
+                                               MHD_HTTP_HEADER_CACHE_CONTROL,
+                                               "no-store, max-age=3600");
+            else
+                mret = MHD_add_response_header(response,
+                                               MHD_HTTP_HEADER_CACHE_CONTROL,
+                                               r->cache_control);
+
+        } else
+            mret = MHD_add_response_header(response,
+                                           MHD_HTTP_HEADER_CACHE_CONTROL,
+                                           "no-store, max-age=0");
+    } else {
+        /* Shouldn't happen */
+        mret = MHD_add_response_header(response, MHD_HTTP_HEADER_CACHE_CONTROL,
+                                       "no-store, max-age=0");
+    }
     if (mret == MHD_YES && http_status_code == MHD_HTTP_UNAUTHORIZED) {
         size_t i;
 
@@ -680,10 +730,10 @@ resp(kadmin_request_desc r,
             http_status_code = MHD_HTTP_SERVICE_UNAVAILABLE;
     }
 
-    if (mret == MHD_YES && csrf)
+    if (mret == MHD_YES && r->csrf_token)
         mret = MHD_add_response_header(response,
                                        "X-CSRF-Token",
-                                       csrf);
+                                       r->csrf_token);
 
     if (mret == MHD_YES && content_type) {
         mret = MHD_add_response_header(response,
@@ -722,7 +772,7 @@ bad_reqv(kadmin_request_desc r,
         if (context)
             krb5_log_msg(context, logfac, 1, NULL, "Out of memory");
         return resp(r, http_status_code, code, MHD_RESPMEM_PERSISTENT,
-                    NULL, fmt, BODYLEN_IS_STRLEN, NULL, NULL);
+                    NULL, fmt, BODYLEN_IS_STRLEN, NULL);
     }
 
     if (code) {
@@ -749,11 +799,11 @@ bad_reqv(kadmin_request_desc r,
             krb5_log_msg(context, logfac, 1, NULL, "Out of memory");
         return resp(r, MHD_HTTP_SERVICE_UNAVAILABLE, ENOMEM,
                     MHD_RESPMEM_PERSISTENT, NULL,
-                    "Out of memory", BODYLEN_IS_STRLEN, NULL, NULL);
+                    "Out of memory", BODYLEN_IS_STRLEN, NULL);
     }
 
     ret = resp(r, http_status_code, code, MHD_RESPMEM_MUST_COPY,
-               NULL, msg, BODYLEN_IS_STRLEN, NULL, NULL);
+               NULL, msg, BODYLEN_IS_STRLEN, NULL);
     free(formatted);
     free(msg);
     return ret == -1 ? -1 : code;
@@ -801,9 +851,9 @@ bad_403(kadmin_request_desc r, krb5_error_code ret, const char *reason)
 }
 
 static krb5_error_code
-bad_404(kadmin_request_desc r, const char *name)
+bad_404(kadmin_request_desc r, krb5_error_code ret, const char *name)
 {
-    return bad_req(r, ENOENT, MHD_HTTP_NOT_FOUND,
+    return bad_req(r, ret, MHD_HTTP_NOT_FOUND,
                    "Resource not found: %s", name);
 }
 
@@ -812,6 +862,13 @@ bad_405(kadmin_request_desc r, const char *method)
 {
     return bad_req(r, EPERM, MHD_HTTP_METHOD_NOT_ALLOWED,
                    "Method not supported: %s", method);
+}
+
+static krb5_error_code
+bad_413(kadmin_request_desc r)
+{
+    return bad_req(r, E2BIG, MHD_HTTP_METHOD_NOT_ALLOWED,
+                   "POST request body too large");
 }
 
 static krb5_error_code
@@ -859,7 +916,7 @@ good_ext_keytab(kadmin_request_desc r)
         return bad_503(r, ret, "Could not recover keytab from temp file");
 
     ret = resp(r, MHD_HTTP_OK, 0, MHD_RESPMEM_MUST_COPY,
-               "application/octet-stream", body, bodylen, NULL, NULL);
+               "application/octet-stream", body, bodylen, NULL);
     free(body);
     return ret;
 }
@@ -1215,6 +1272,93 @@ make_kstuple(krb5_context context,
     return *kstuple ? 0 :krb5_enomem(context);
 }
 
+/* Copied from kadmin/util.c */
+struct units kdb_attrs[] = {
+    { "no-auth-data-reqd",      KRB5_KDB_NO_AUTH_DATA_REQUIRED },
+    { "disallow-client",        KRB5_KDB_DISALLOW_CLIENT },
+    { "virtual",                KRB5_KDB_VIRTUAL },
+    { "virtual-keys",           KRB5_KDB_VIRTUAL_KEYS },
+    { "allow-digest",           KRB5_KDB_ALLOW_DIGEST },
+    { "allow-kerberos4",        KRB5_KDB_ALLOW_KERBEROS4 },
+    { "trusted-for-delegation", KRB5_KDB_TRUSTED_FOR_DELEGATION },
+    { "ok-as-delegate",         KRB5_KDB_OK_AS_DELEGATE },
+    { "new-princ",              KRB5_KDB_NEW_PRINC },
+    { "support-desmd5",         KRB5_KDB_SUPPORT_DESMD5 },
+    { "pwchange-service",       KRB5_KDB_PWCHANGE_SERVICE },
+    { "disallow-svr",           KRB5_KDB_DISALLOW_SVR },
+    { "requires-pw-change",     KRB5_KDB_REQUIRES_PWCHANGE },
+    { "requires-hw-auth",       KRB5_KDB_REQUIRES_HW_AUTH },
+    { "requires-pre-auth",      KRB5_KDB_REQUIRES_PRE_AUTH },
+    { "disallow-all-tix",       KRB5_KDB_DISALLOW_ALL_TIX },
+    { "disallow-dup-skey",      KRB5_KDB_DISALLOW_DUP_SKEY },
+    { "disallow-proxiable",     KRB5_KDB_DISALLOW_PROXIABLE },
+    { "disallow-renewable",     KRB5_KDB_DISALLOW_RENEWABLE },
+    { "disallow-tgt-based",     KRB5_KDB_DISALLOW_TGT_BASED },
+    { "disallow-forwardable",   KRB5_KDB_DISALLOW_FORWARDABLE },
+    { "disallow-postdated",     KRB5_KDB_DISALLOW_POSTDATED },
+    { NULL, 0 }
+};
+
+/*
+ * Determine the default/allowed attributes for some new principal.
+ */
+static krb5_flags
+create_attributes(kadmin_request_desc r, krb5_const_principal p)
+{
+    krb5_error_code ret;
+    const char *srealm = krb5_principal_get_realm(r->context, p);
+    const char *svc;
+    const char *hn;
+
+    /* Has to be a host-based service principal (for now) */
+    if (krb5_principal_get_num_comp(r->context, p) != 2)
+        return 0;
+
+    hn = krb5_principal_get_comp_string(r->context, p, 1);
+    svc = krb5_principal_get_comp_string(r->context, p, 0);
+
+    while (hn && strchr(hn, '.') != NULL) {
+        kadm5_principal_ent_rec nsprinc;
+        krb5_principal nsp;
+        uint64_t a = 0;
+        const char *as;
+
+        /* Try finding a virtual host-based service principal namespace */
+        memset(&nsprinc, 0, sizeof(nsprinc));
+        ret = krb5_make_principal(r->context, &nsp, srealm,
+                                  KRB5_WELLKNOWN_NAME, HDB_WK_NAMESPACE,
+                                  svc, hn, NULL);
+        if (ret == 0)
+            ret = kadm5_get_principal(r->kadm_handle, nsp, &nsprinc,
+                                      KADM5_PRINCIPAL | KADM5_ATTRIBUTES);
+        krb5_free_principal(r->context, nsp);
+        if (ret == 0) {
+            /* Found one; use it even if disabled, but drop that attribute */
+            a = nsprinc.attributes & ~KRB5_KDB_DISALLOW_ALL_TIX;
+            kadm5_free_principal_ent(r->kadm_handle, &nsprinc);
+            return a;
+        }
+
+        /* Fallback on krb5.conf */
+        as = krb5_config_get_string(r->context, NULL, "ext_keytab",
+                                    "new_hostbased_service_principal_attributes",
+                                    svc, hn, NULL);
+        if (as) {
+            a = parse_flags(as, kdb_attrs, 0);
+            if (a == (uint64_t)-1) {
+                krb5_warnx(r->context, "Invalid value for [ext_keytab] "
+                           "new_hostbased_service_principal_attributes");
+                return 0;
+            }
+            return a;
+        }
+
+        hn = strchr(hn + 1, '.');
+    }
+
+    return 0;
+}
+
 /*
  * Get keys for one principal.
  *
@@ -1229,7 +1373,8 @@ get_keys1(kadmin_request_desc r, const char *pname)
     krb5_principal p = NULL;
     uint32_t mask =
         KADM5_PRINCIPAL | KADM5_KVNO | KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
-        KADM5_ATTRIBUTES | KADM5_KEY_DATA | KADM5_TL_DATA;
+        KADM5_PW_EXPIRATION | KADM5_ATTRIBUTES | KADM5_KEY_DATA |
+        KADM5_TL_DATA;
     uint32_t create_mask = mask & ~(KADM5_KEY_DATA | KADM5_TL_DATA);
     size_t nkstuple = 0;
     int change = 0;
@@ -1270,6 +1415,9 @@ get_keys1(kadmin_request_desc r, const char *pname)
     if (ret == KADM5_UNK_PRINC && r->create) {
         char pw[128];
 
+        memset(&princ, 0, sizeof(princ));
+        princ.attributes = create_attributes(r, p);
+
         if (read_only)
             ret = KADM5_READ_ONLY;
         else
@@ -1281,7 +1429,6 @@ get_keys1(kadmin_request_desc r, const char *pname)
             ret = get_kadm_handle(r->context, r->realm, 1 /* want_write */,
                                   &r->kadm_handle);
         }
-        memset(&princ, 0, sizeof(princ));
         /*
          * Some software is allergic to kvno 1, assuming that kvno 1 implies
          * half-baked service principal.  We've some vague recollection of
@@ -1304,9 +1451,6 @@ get_keys1(kadmin_request_desc r, const char *pname)
     } else if (ret == 0 && r->materialize &&
                (princ.attributes & KRB5_KDB_VIRTUAL)) {
 
-#ifndef MATERIALIZE_NOTYET
-        ret = ENOTSUP;
-#else
         if (read_only)
             ret = KADM5_READ_ONLY;
         else
@@ -1335,7 +1479,6 @@ get_keys1(kadmin_request_desc r, const char *pname)
         if (ret == 0)
             ret = kadm5_create_principal(r->kadm_handle, &princ, mask, "");
         refetch = 1;
-#endif
     } /* else create/materialize q-params are superfluous */
 
     /* Handle rotate / revoke options */
@@ -1384,6 +1527,36 @@ get_keys1(kadmin_request_desc r, const char *pname)
 
     if (ret == 0)
         ret = write_keytab(r, &princ, pname);
+
+    if (ret == 0) {
+        /*
+         * We will use the principal's password expiration to work out the
+         * value for the max-age Cache-Control.
+         *
+         * Virtual service principals will have their `pw_expiration' set to a
+         * time when the client should refetch keys.
+         *
+         * Concrete service principals will generally not have a non-zero
+         * `pw_expiration', but if we have a new_service_key_delay, then we'll
+         * use half of it as the max-age Cache-Control.
+         */
+        if (princ.pw_expiration == 0) {
+            krb5_timestamp nskd =
+                krb5_config_get_time_default(r->context, NULL, 0, "hdb",
+                                             "new_service_key_delay", NULL);
+            if (nskd)
+                princ.pw_expiration = time(NULL) + (nskd >> 1);
+        }
+
+        /*
+         * This service can be used to fetch more than one principal's keys, so
+         * the max-age Cache-Control should be derived from the soonest-
+         * "expiring" principal.
+         */
+        if (r->pw_end == 0 ||
+            (princ.pw_expiration < r->pw_end && princ.pw_expiration > time(NULL)))
+            r->pw_end = princ.pw_expiration;
+    }
     if (freeit)
         kadm5_free_principal_ent(r->kadm_handle, &princ);
     krb5_free_principal(r->context, p);
@@ -1398,7 +1571,7 @@ static krb5_error_code check_csrf(kadmin_request_desc);
  * When this returns a response will have been set.
  */
 static krb5_error_code
-get_keysN(kadmin_request_desc r, const char *method)
+get_keysN(kadmin_request_desc r)
 {
     krb5_error_code ret;
     size_t nhosts;
@@ -1411,11 +1584,17 @@ get_keysN(kadmin_request_desc r, const char *method)
     if (ret)
         return ret; /* authorize_req() calls bad_req() on error */
 
+    /*
+     * If we have a r->kadm_handle already it's because we validated a CSRF
+     * token.  It may not be a handle to a realm we wanted though.
+     */
+    if (r->kadm_handle)
+        kadm5_destroy(r->kadm_handle);
+    r->kadm_handle = NULL;
     ret = get_kadm_handle(r->context, r->realm ? r->realm : realm,
                           0 /* want_write */, &r->kadm_handle);
-
-    if (strcmp(method, "POST") == 0 && (ret = check_csrf(r)))
-        return ret; /* check_csrf() calls bad_req() on error */
+    if (ret)
+        return bad_404(r, ret, "Could not connect to realm");
 
     nhosts = heim_array_get_length(r->hostnames);
     nsvcs = heim_array_get_length(r->service_names);
@@ -1436,8 +1615,9 @@ get_keysN(kadmin_request_desc r, const char *method)
             return bad_503(r, ret, "Out of memory");
     }
 
-    /* FIXME: Make this configurable */
-    if (nspns + nsvcs * nhosts > 40)
+    if (nspns + nsvcs * nhosts >
+        krb5_config_get_int_default(r->context, NULL, 400,
+                                    "ext_keytab", "get_keys_max_spns", NULL))
         return bad_403(r, EINVAL, "Requested keys for too many principals");
 
     ret = make_keytab(r);
@@ -1485,7 +1665,7 @@ get_keysN(kadmin_request_desc r, const char *method)
             krb5_log_msg(r->context, logfac, 1, NULL,
                          "Redirect %s to primary server", r->cname);
             return resp(r, MHD_HTTP_TEMPORARY_REDIRECT, KADM5_READ_ONLY,
-                        MHD_RESPMEM_PERSISTENT, NULL, "", 0, NULL, NULL);
+                        MHD_RESPMEM_PERSISTENT, NULL, "", 0, NULL);
         } else {
             krb5_log_msg(r->context, logfac, 1, NULL, "HDB is read-only");
             return bad_403(r, ret, "HDB is read-only");
@@ -1518,25 +1698,33 @@ addr_to_string(krb5_context context,
         snprintf(str, len, "<family=%d>", addr->sa_family);
 }
 
+static void clean_req_desc(kadmin_request_desc);
+
 static krb5_error_code
 set_req_desc(struct MHD_Connection *connection,
              const char *method,
              const char *url,
-             kadmin_request_desc r)
+             kadmin_request_desc *rp)
 {
     const union MHD_ConnectionInfo *ci;
+    kadmin_request_desc r;
     const char *token;
     krb5_error_code ret;
 
-    memset(r, 0, sizeof(*r));
-    (void) gettimeofday(&r->tv_start, NULL);
+    *rp = NULL;
+    if ((r = calloc(1, sizeof(*r))) == NULL)
+        return ENOMEM;
 
-    if ((ret = get_krb5_context(&r->context)))
+    (void) gettimeofday(&r->tv_start, NULL);
+    if ((ret = get_krb5_context(&r->context))) {
+        free(r);
         return ret;
+    }
     /* HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS fields */
     r->request.data = "<HTTP-REQUEST>";
     r->request.length = sizeof("<HTTP-REQUEST>");
     r->from = r->frombuf;
+    r->free_list = NULL;
     r->config = NULL;
     r->logf = logfac;
     r->reqtype = url;
@@ -1546,6 +1734,7 @@ set_req_desc(struct MHD_Connection *connection,
     r->cname = NULL;
     r->addr = NULL;
     r->kv = heim_dict_create(10);
+    r->pp = NULL;
     r->attributes = heim_dict_create(1);
     /* Our fields */
     r->connection = connection;
@@ -1556,6 +1745,7 @@ set_req_desc(struct MHD_Connection *connection,
     r->spns = heim_array_create();
     r->keytab_name = NULL;
     r->enctypes = NULL;
+    r->cache_control = NULL;
     r->freeme1 = NULL;
     r->method = method;
     r->cprinc = NULL;
@@ -1590,6 +1780,10 @@ set_req_desc(struct MHD_Connection *connection,
         krb5_log_msg(r->context, logfac, 1, NULL, "Out of memory");
         ret = r->error_code = ENOMEM;
     }
+    if (ret == 0)
+        *rp = r;
+    else
+        clean_req_desc(r);
     return ret;
 }
 
@@ -1605,32 +1799,49 @@ clean_req_desc(kadmin_request_desc r)
         (void) unlink(strchr(r->keytab_name, ':') + 1);
     if (r->kadm_handle)
         kadm5_destroy(r->kadm_handle);
+    if (r->pp)
+        MHD_destroy_post_processor(r->pp);
     hx509_request_free(&r->req);
     heim_release(r->service_names);
+    heim_release(r->attributes);
     heim_release(r->hostnames);
     heim_release(r->reason);
     heim_release(r->spns);
     heim_release(r->kv);
     krb5_free_principal(r->context, r->cprinc);
+    free(r->cache_control);
     free(r->keytab_name);
+    free(r->csrf_token);
     free(r->enctypes);
     free(r->freeme1);
     free(r->cname);
     free(r->sname);
+    free(r->realm);
+    free(r);
+}
+
+static void
+cleanup_req(void *cls,
+            struct MHD_Connection *connection,
+            void **con_cls,
+            enum MHD_RequestTerminationCode toe)
+{
+    kadmin_request_desc r = *con_cls;
+
+    (void)cls;
+    (void)connection;
+    (void)toe;
+    clean_req_desc(r);
+    *con_cls = NULL;
 }
 
 /* Implements GETs of /get-keys */
 static krb5_error_code
-get_keys(kadmin_request_desc r, const char *method)
+get_keys(kadmin_request_desc r)
 {
-    krb5_error_code ret;
-
-    if ((ret = validate_token(r)))
-        return ret; /* validate_token() calls bad_req() */
     if (r->cname == NULL || r->cprinc == NULL)
-        return bad_403(r, EINVAL,
-                       "Could not extract principal name from token");
-    return get_keysN(r, method); /* Sets an HTTP response */
+        return bad_401(r, "Could not extract principal name from token");
+    return get_keysN(r); /* Sets an HTTP response */
 }
 
 /* Implements GETs of /get-config */
@@ -1649,11 +1860,8 @@ get_config(kadmin_request_desc r)
     void *body = "include /etc/krb5.conf\n";
     int freeit = 0;
 
-    if ((ret = validate_token(r)))
-        return ret; /* validate_token() calls bad_req() */
     if (r->cname == NULL || r->cprinc == NULL)
-        return bad_403(r, EINVAL,
-                       "Could not extract principal name from token");
+        return bad_401(r, "Could not extract principal name from token");
     /*
      * No authorization needed -- configs are public.  Though we do require
      * authentication (above).
@@ -1686,7 +1894,7 @@ get_config(kadmin_request_desc r)
             }
         } else {
             r->error_code = ret;
-            return bad_404(r, "/get-config");
+            return bad_404(r, ret, "/get-config");
         }
     }
 
@@ -1694,7 +1902,7 @@ get_config(kadmin_request_desc r)
         krb5_log_msg(r->context, logfac, 1, NULL,
                      "Returned krb5.conf contents to %s", r->cname);
         ret = resp(r, MHD_HTTP_OK, 0, MHD_RESPMEM_MUST_COPY,
-                   "application/text", body, bodylen, NULL, NULL);
+                   "application/text", body, bodylen, NULL);
     } else {
         ret = bad_503(r, ret, "Could not retrieve principal configuration");
     }
@@ -1720,7 +1928,9 @@ mac_csrf_token(kadmin_request_desc r, krb5_storage *sp)
     memset(&princ, 0, sizeof(princ));
     ret = krb5_storage_to_data(sp, &data);
     if (r->kadm_handle == NULL)
-        ret = get_kadm_handle(r->context, r->realm, 0 /* want_write */,
+        ret = get_kadm_handle(r->context,
+                              r->realm ? r->realm : realm,
+                              0 /* want_write */,
                               &r->kadm_handle);
     if (ret == 0)
         ret = krb5_make_principal(r->context, &p,
@@ -1776,7 +1986,6 @@ make_csrf_token(kadmin_request_desc r,
                 char **token,
                 int64_t *age)
 {
-    static HEIMDAL_THREAD_LOCAL char tokenbuf[128]; /* See below, be sad */
     krb5_error_code ret = 0;
     unsigned char given_decoded[128];
     krb5_storage *sp = NULL;
@@ -1827,17 +2036,6 @@ make_csrf_token(kadmin_request_desc r,
     if (ret == 0 &&
         (dlen = rk_base64_encode(data.data, data.length, token)) < 0)
         ret = errno;
-    if (ret == 0 && dlen >= sizeof(tokenbuf))
-        ret = ERANGE;
-    if (ret == 0) {
-        /*
-         * Work around for older versions of libmicrohttpd do not strdup()ing
-         * response header values.
-         */
-        memcpy(tokenbuf, *token, dlen);
-        free(*token);
-        *token = tokenbuf;
-    }
     krb5_storage_free(sp);
     krb5_data_free(&data);
     return ret;
@@ -1854,11 +2052,28 @@ check_csrf(kadmin_request_desc r)
     const char *given;
     int64_t age;
     size_t givenlen, expectedlen;
-    char *expected = NULL;
+
+    if ((((csrf_prot_type & CSRF_PROT_GET_WITH_HEADER) &&
+          strcmp(r->method, "GET") == 0) ||
+         ((csrf_prot_type & CSRF_PROT_POST_WITH_HEADER) &&
+          strcmp(r->method, "POST") == 0)) &&
+        MHD_lookup_connection_value(r->connection, MHD_HEADER_KIND,
+                                    csrf_header) == NULL) {
+        ret = bad_req(r, EACCES, MHD_HTTP_FORBIDDEN,
+                      "Request must have header \"%s\"", csrf_header);
+        return ret == -1 ? MHD_NO : MHD_YES;
+    }
+
+    if (strcmp(r->method, "GET") == 0 &&
+        !(csrf_prot_type & CSRF_PROT_GET_WITH_TOKEN))
+        return 0;
+    if (strcmp(r->method, "POST") == 0 &&
+        !(csrf_prot_type & CSRF_PROT_POST_WITH_TOKEN))
+        return 0;
 
     given = MHD_lookup_connection_value(r->connection, MHD_HEADER_KIND,
                                         "X-CSRF-Token");
-    ret = make_csrf_token(r, given, &expected, &age);
+    ret = make_csrf_token(r, given, &r->csrf_token, &age);
     if (ret)
         return bad_503(r, ret, "Could not create a CSRF token");
     /*
@@ -1868,15 +2083,14 @@ check_csrf(kadmin_request_desc r)
     if (given == NULL) {
         (void) resp(r, MHD_HTTP_FORBIDDEN, ENOSYS, MHD_RESPMEM_PERSISTENT,
                     NULL, "CSRF token needed; copy the X-CSRF-Token: response "
-                    "header to your next POST", BODYLEN_IS_STRLEN, NULL,
-                    expected);
+                    "header to your next POST", BODYLEN_IS_STRLEN, NULL);
         return ENOSYS;
     }
 
     /* Validate the CSRF token for this request */
     givenlen = strlen(given);
-    expectedlen = strlen(expected);
-    if (givenlen != expectedlen || ct_memcmp(given, expected, givenlen)) {
+    expectedlen = strlen(r->csrf_token);
+    if (givenlen != expectedlen || ct_memcmp(given, r->csrf_token, givenlen)) {
         (void) bad_403(r, EACCES, "Invalid CSRF token");
         return EACCES;
     }
@@ -1892,15 +2106,60 @@ health(const char *method, kadmin_request_desc r)
 {
     if (strcmp(method, "HEAD") == 0) {
         return resp(r, MHD_HTTP_OK, 0, MHD_RESPMEM_PERSISTENT, NULL, "", 0,
-                    NULL, NULL);
+                    NULL);
     }
     return resp(r, MHD_HTTP_OK, 0, MHD_RESPMEM_PERSISTENT, NULL,
                 "To determine the health of the service, use the /get-config "
-                "end-point.\n", BODYLEN_IS_STRLEN, NULL, NULL);
+                "end-point.\n", BODYLEN_IS_STRLEN, NULL);
 
 }
 
-/* Implements the entirety of this REST service */
+static heim_mhd_result
+ip(void *cls,
+   enum MHD_ValueKind kind,
+   const char *key,
+   const char *content_name,
+   const char *content_type,
+   const char *transfer_encoding,
+   const char *val,
+   uint64_t off,
+   size_t size)
+{
+    kadmin_request_desc r = cls;
+    struct free_tend_list *ftl = calloc(1, sizeof(*ftl));
+    char *keydup = strdup(key);
+    char *valdup = strndup(val, size);
+
+    (void)content_name;         /* MIME attachment name */
+    (void)content_type;
+    (void)transfer_encoding;
+    (void)off;                  /* Offset in POST data */
+
+    /* We're going to MHD_set_connection_value(), but we need copies */
+    if (ftl == NULL || keydup == NULL || valdup == NULL) {
+        free(ftl);
+        free(keydup);
+        return MHD_NO;
+    }
+    ftl->freeme1 = keydup;
+    ftl->freeme2 = valdup;
+    ftl->next = r->free_list;
+    r->free_list = ftl;
+
+    return MHD_set_connection_value(r->connection, MHD_GET_ARGUMENT_KIND,
+                                    keydup, valdup);
+}
+
+typedef krb5_error_code (*handler)(struct kadmin_request_desc *);
+
+struct route {
+    const char *local_part;
+    handler h;
+} routes[] = {
+    { "/get-keys", get_keys },
+    { "/get-config", get_config },
+};
+
 static heim_mhd_result
 route(void *cls,
       struct MHD_Connection *connection,
@@ -1911,50 +2170,131 @@ route(void *cls,
       size_t *upload_data_size,
       void **ctx)
 {
-    static int aptr = 0;
-    struct kadmin_request_desc r;
+    struct kadmin_request_desc *r = *ctx;
+    size_t i;
     int ret;
 
-    if (*ctx == NULL) {
+    if (r == NULL) {
         /*
          * This is the first call, right after headers were read.
          *
          * We must return quickly so that any 100-Continue might be sent with
-         * celerity.
+         * celerity.  We want to make sure to send any 401s early, so we check
+         * WWW-Authenticate now, not later.
          *
-         * We'll get called again to really do the processing.  If we handled
-         * POSTs then we'd also get called with upload_data != NULL between the
-         * first and last calls.  We need to keep no state between the first
-         * and last calls, but we do need to distinguish first and last call,
-         * so we use the ctx argument for this.
+         * We'll get called again to really do the processing.  If we're
+         * handling a POST then we'll also get called with upload_data != NULL,
+         * possibly multiple times.
          */
-        *ctx = &aptr;
+        if ((ret = set_req_desc(connection, method, url, &r))) {
+            return
+                bad_503(r, ret, "Could not initialize request state") == -1
+                    ? MHD_NO : MHD_YES;
+        }
+        *ctx = r;
+
+        /*
+         * All requests other than /health require authentication and CSRF
+         * protection.
+         */
+        if (strcmp(url, "/health") == 0)
+            return MHD_YES;
+
+        /* Authenticate and do CSRF protection */
+        ret = validate_token(r);
+        if (ret == 0)
+            ret = check_csrf(r);
+
+        /*
+         * As this is the initial call to this handler, we must return now.
+         *
+         * If authentication or CSRF protection failed then we'll already have
+         * enqueued a 401, 403, or 5xx response and then we're done.
+         *
+         * If both authentication and CSRF protection succeeded then no
+         * response has been queued up and we'll get called again to finally
+         * process the request, then this entire if block will not be executed.
+         */
+        return ret == -1 ? MHD_NO : MHD_YES;
+    }
+
+    /* Validate HTTP method */
+    if (strcmp(method, "GET") != 0 &&
+        strcmp(method, "POST") != 0 &&
+        strcmp(method, "HEAD") != 0) {
+        return bad_405(r, method) == -1 ? MHD_NO : MHD_YES;
+    }
+
+    if ((strcmp(method, "HEAD") == 0 || strcmp(method, "GET") == 0) &&
+        (strcmp(url, "/health") == 0 || strcmp(url, "/") == 0)) {
+        /* /health end-point -- no authentication, no CSRF, no nothing */
+        return health(method, r) == -1 ? MHD_NO : MHD_YES;
+    }
+
+    if (strcmp(method, "POST") == 0 && *upload_data_size != 0) {
+        /*
+         * Consume all the POST body and set form data as MHD_GET_ARGUMENT_KIND
+         * (as if they had been URI query parameters).
+         *
+         * We have to do this before we can MHD_queue_response() as MHD will
+         * not consume the rest of the request body on its own, so it's an
+         * error to MHD_queue_response() before we've done this, and if we do
+         * then MHD just closes the connection.
+         *
+         * 4KB should be more than enough buffer space for all the keys we
+         * expect.
+         */
+        if (r->pp == NULL)
+            r->pp = MHD_create_post_processor(connection, 4096, ip, r);
+        if (r->pp == NULL) {
+            ret = bad_503(r, errno ? errno : ENOMEM,
+                          "Could not consume POST data");
+            return ret == -1 ? MHD_NO : MHD_YES;
+        }
+        if (r->post_data_size + *upload_data_size > 1UL<<17) {
+            return bad_413(r) == -1 ? MHD_NO : MHD_YES;
+        }
+        r->post_data_size += *upload_data_size;
+        if (MHD_post_process(r->pp, upload_data,
+                             *upload_data_size) == MHD_NO) {
+            ret = bad_503(r, errno ? errno : ENOMEM,
+                          "Could not consume POST data");
+            return ret == -1 ? MHD_NO : MHD_YES;
+        }
+        *upload_data_size = 0;
         return MHD_YES;
     }
 
     /*
-     * Note that because we attempt to connect to the HDB in set_req_desc(),
-     * this early 503 if we fail to serves to do all of what /health should do.
+     * Either this is a HEAD, a GET, or a POST whose request body has now been
+     * received completely and processed.
      */
-    if ((ret = set_req_desc(connection, method, url, &r)))
-        return bad_503(&r, ret, "Could not initialize request state");
-    if ((strcmp(method, "HEAD") == 0 || strcmp(method, "GET") == 0) &&
-        (strcmp(url, "/health") == 0 || strcmp(url, "/") == 0)) {
-        ret = health(method, &r);
-    } else if (strcmp(method, "GET") != 0 && strcmp(method, "POST") != 0) {
-        ret = bad_405(&r, method);
-    } else if (strcmp(url, "/get-keys") == 0) {
-        ret = get_keys(&r, method);
-    } else if (strcmp(url, "/get-config") == 0) {
-        if (strcmp(method, "GET") != 0)
-            ret = bad_405(&r, method);
-        else
-            ret = get_config(&r);
-    } else {
-        ret = bad_404(&r, url);
+
+    /* Allow GET? */
+    if (strcmp(method, "GET") == 0 && !allow_GET_flag) {
+        /* No */
+        return bad_405(r, method) == -1 ? MHD_NO : MHD_YES;
     }
 
-    clean_req_desc(&r);
+    for (i = 0; i < sizeof(routes)/sizeof(routes[0]); i++) {
+        if (strcmp(url, routes[i].local_part) != 0)
+            continue;
+        if (MHD_lookup_connection_value(r->connection,
+                                        MHD_HEADER_KIND,
+                                        "Referer") != NULL) {
+            ret = bad_req(r, EACCES, MHD_HTTP_FORBIDDEN,
+                          "GET from browser not allowed");
+            return ret == -1 ? MHD_NO : MHD_YES;
+        }
+        if (strcmp(method, "HEAD") == 0)
+            ret = resp(r, MHD_HTTP_OK, 0, MHD_RESPMEM_PERSISTENT, NULL, "", 0,
+                       NULL);
+        else
+            ret = routes[i].h(r);
+        return ret == -1 ? MHD_NO : MHD_YES;
+    }
+
+    ret = bad_404(r, ENOENT, url);
     return ret == -1 ? MHD_NO : MHD_YES;
 }
 
@@ -1963,6 +2303,10 @@ static struct getargs args[] = {
     { "version", '\0', arg_flag, &version_flag, "Print version", NULL },
     { NULL, 'H', arg_strings, &audiences,
         "expected token audience(s) of the service", "HOSTNAME" },
+    { "allow-GET", 0, arg_negative_flag,
+        &allow_GET_flag, NULL, NULL },
+    { "csrf-header", 0, arg_string, &csrf_header,
+        "required request header", "HEADER-NAME" },
     { "daemon", 'd', arg_flag, &daemonize, "daemonize", "daemonize" },
     { "daemon-child", 0, arg_flag, &daemon_child_fd, NULL, NULL }, /* priv */
     { "reverse-proxied", 0, arg_flag, &reverse_proxied_flag,
@@ -2076,6 +2420,67 @@ load_plugins(krb5_context context)
 #endif
 }
 
+static void
+get_csrf_prot_type(krb5_context context)
+{
+    char * const *strs = csrf_prot_type_strs.strings;
+    size_t n = csrf_prot_type_strs.num_strings;
+    size_t i;
+    char **freeme = NULL;
+
+    if (csrf_header == NULL)
+        csrf_header = krb5_config_get_string(context, NULL, "bx509d",
+                                             "csrf_protection_csrf_header",
+                                             NULL);
+
+    if (n == 0) {
+        char * const *p;
+
+        strs = freeme = krb5_config_get_strings(context, NULL, "bx509d",
+                                                "csrf_protection_type", NULL);
+        for (p = strs; p && p; p++)
+            n++;
+    }
+
+    for (i = 0; i < n; i++) {
+        if (strcmp(strs[i], "GET-with-header") == 0)
+            csrf_prot_type |= CSRF_PROT_GET_WITH_HEADER;
+        else if (strcmp(strs[i], "GET-with-token") == 0)
+            csrf_prot_type |= CSRF_PROT_GET_WITH_TOKEN;
+        else if (strcmp(strs[i], "POST-with-header") == 0)
+            csrf_prot_type |= CSRF_PROT_POST_WITH_HEADER;
+        else if (strcmp(strs[i], "POST-with-token") == 0)
+            csrf_prot_type |= CSRF_PROT_POST_WITH_TOKEN;
+    }
+    free(freeme);
+
+    /*
+     * For GETs we default to no CSRF protection as our GETable resources are
+     * safe and idempotent and we count on the browser not to make the
+     * responses available to cross-site requests.
+     *
+     * But, really, we don't want browsers even making these requests since, if
+     * the browsers behave correctly, then there's no point, and if they don't
+     * behave correctly then that could be catastrophic.  Of course, there's no
+     * guarantee that a browser won't have other catastrophic bugs, but still,
+     * we should probably change this default in the future:
+     *
+     *  if (!(csrf_prot_type & CSRF_PROT_GET_WITH_HEADER) &&
+     *      !(csrf_prot_type & CSRF_PROT_GET_WITH_TOKEN))
+     *      csrf_prot_type |= <whatever-the-new-default-should-be>;
+     */
+
+    /*
+     * For POSTs we default to CSRF protection with anti-CSRF tokens even
+     * though out POSTable resources are safe and idempotent when POSTed and we
+     * could count on the browser not to make the responses available to
+     * cross-site requests.
+     */
+    if (!(csrf_prot_type & CSRF_PROT_POST_WITH_HEADER) &&
+        !(csrf_prot_type & CSRF_PROT_POST_WITH_TOKEN))
+        csrf_prot_type |= CSRF_PROT_POST_WITH_TOKEN;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2136,6 +2541,8 @@ main(int argc, char **argv)
     if ((errno = get_krb5_context(&context)))
         err(1, "Could not init krb5 context (config file issue?)");
 
+    get_csrf_prot_type(context);
+
     if (!realm) {
         char *s;
 
@@ -2149,6 +2556,7 @@ main(int argc, char **argv)
                                  &kadm_handle)))
         err(1, "Could not connect to HDB");
     kadm5_destroy(kadm_handle);
+    kadm_handle = NULL;
 
     my_openlog(context, "httpkadmind", &logfac);
     load_plugins(context);
@@ -2273,11 +2681,18 @@ again:
         sin.sin_family = AF_INET;
         sin.sin_port = htons(port);
         current = MHD_start_daemon(flags, port,
+                                   /*
+                                    * This is a connection access callback.  We
+                                    * don't use it.
+                                    */
                                    NULL, NULL,
+                                   /* This is our request handler */
                                    route, (char *)NULL,
                                    MHD_OPTION_SOCK_ADDR, &sin,
                                    MHD_OPTION_CONNECTION_LIMIT, (unsigned int)200,
                                    MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int)10,
+                                   /* This is our request cleanup handler */
+                                   MHD_OPTION_NOTIFY_COMPLETED, cleanup_req, NULL,
                                    MHD_OPTION_END);
     } else if (sock != MHD_INVALID_SOCKET) {
         /*
@@ -2292,6 +2707,7 @@ again:
                                    MHD_OPTION_CONNECTION_LIMIT, (unsigned int)200,
                                    MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int)10,
                                    MHD_OPTION_LISTEN_SOCKET, sock,
+                                   MHD_OPTION_NOTIFY_COMPLETED, cleanup_req, NULL,
                                    MHD_OPTION_END);
         sock = MHD_INVALID_SOCKET;
     } else {
@@ -2302,6 +2718,7 @@ again:
                                    MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
                                    MHD_OPTION_CONNECTION_LIMIT, (unsigned int)200,
                                    MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int)10,
+                                   MHD_OPTION_NOTIFY_COMPLETED, cleanup_req, NULL,
                                    MHD_OPTION_END);
     }
     if (current == NULL)

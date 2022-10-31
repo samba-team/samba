@@ -47,6 +47,7 @@ heimtools_LDADD = \
 	$(top_builddir)/lib/sl/libsl.la \
 	$(kinit_LDADD) \
 	$(LIB_readline) \
+        $(LIB_heimbase) \
 	$(LIB_hx509)
 
 dist_heimtools_SOURCES = heimtools.c klist.c kx509.c kswitch.c copy_cred_cache.c

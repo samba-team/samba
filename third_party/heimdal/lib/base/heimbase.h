@@ -134,6 +134,28 @@ typedef struct heim_config_binding heim_config_section;
  * CF-like, JSON APIs
  */
 
+typedef enum heim_tid_enum {
+    HEIM_TID_NUMBER = 0,
+    HEIM_TID_NULL = 1,
+    HEIM_TID_BOOL = 2,
+    HEIM_TID_TAGGED_UNUSED2 = 3, /* reserved for tagged object types */
+    HEIM_TID_TAGGED_UNUSED3 = 4, /* reserved for tagged object types */
+    HEIM_TID_TAGGED_UNUSED4 = 5, /* reserved for tagged object types */
+    HEIM_TID_TAGGED_UNUSED5 = 6, /* reserved for tagged object types */
+    HEIM_TID_TAGGED_UNUSED6 = 7, /* reserved for tagged object types */
+    HEIM_TID_MEMORY = 128,
+    HEIM_TID_ARRAY = 129,
+    HEIM_TID_DICT = 130,
+    HEIM_TID_STRING = 131,
+    HEIM_TID_AUTORELEASE = 132,
+    HEIM_TID_ERROR = 133,
+    HEIM_TID_DATA = 134,
+    HEIM_TID_DB = 135,
+    HEIM_TID_PA_AUTH_MECH = 136,
+    HEIM_TID_PAC = 137,
+    HEIM_TID_USER = 255
+} heim_tid;
+
 typedef void * heim_object_t;
 typedef unsigned int heim_tid_t;
 typedef heim_object_t heim_bool_t;
@@ -463,7 +485,13 @@ typedef enum heim_json_flags {
 	HEIM_JSON_F_STRICT = 31,
 	HEIM_JSON_F_CNULL2JSNULL = 32,
 	HEIM_JSON_F_TRY_DECODE_DATA = 64,
-	HEIM_JSON_F_ONE_LINE = 128
+	HEIM_JSON_F_ONE_LINE = 128,
+        HEIM_JSON_F_ESCAPE_NON_ASCII = 256,
+        HEIM_JSON_F_NO_ESCAPE_NON_ASCII = 512,
+        /* The default is to indent with one tab */
+	HEIM_JSON_F_INDENT2 = 1024,
+	HEIM_JSON_F_INDENT4 = 2048,
+	HEIM_JSON_F_INDENT8 = 4096,
 } heim_json_flags_t;
 
 heim_object_t heim_json_create(const char *, size_t, heim_json_flags_t,

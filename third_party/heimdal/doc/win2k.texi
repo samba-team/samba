@@ -1,7 +1,7 @@
 @c $Id$
 
 
-@node Windows compatibility, Programming with Kerberos, Kerberos 4 issues, Top
+@node Windows compatibility, Programming with Kerberos, Things in search for a better place, Top
 @comment  node-name,  next,  previous,  up
 @chapter Windows compatibility
 
@@ -126,8 +126,7 @@ You also need to add the inter-realm keys to the Heimdal KDC. But take
 care to the encryption types and salting used for those keys. There should be
 no encryption type stronger than the one configured on Windows side for this
 relationship, itself limited to the ones supported by this specific version of
-Windows, nor any Kerberos 4 salted hashes, as Windows does not seem to
-understand them. Otherwise, the trust will not works.
+Windows. Otherwise, the trust will not works.
 
 Here are the version-specific needed information:
 @enumerate
@@ -235,11 +234,11 @@ analysing the data.
 @comment  node-name,  next,  previous,  up
 @section Quirks of Windows 2000 KDC
 
-There are some issues with salts and Windows 2000.  Using an empty salt---which is the only one that Kerberos 4 supported, and is therefore known
-as a Kerberos 4 compatible salt---does not work, as far as we can tell
-from out experiments and users' reports.  Therefore, you have to make
-sure you keep around keys with all the different types of salts that are
-required.  Microsoft have fixed this issue post Windows 2003.
+There are some issues with salts and Windows 2000.  Using an empty salt does
+not work, as far as we can tell from out experiments and users' reports.
+Therefore, you have to make sure you keep around keys with all the different
+types of salts that are required.  Microsoft have fixed this issue post Windows
+2003.
 
 Microsoft seems also to have forgotten to implement the checksum
 algorithms @samp{rsa-md4-des} and @samp{rsa-md5-des}. This can make Name

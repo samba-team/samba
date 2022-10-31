@@ -42,18 +42,21 @@ testfailed="echo test failed; cat messages.log; exit 1"
 # If there is no useful db support compiled in, disable test
 ${have_db} || exit 77
 
+umask 077
+
 R=TEST.H5L.SE
 DCs="DC=test,DC=h5l,DC=se"
 
 port=@port@
 bx509port=@bx509port@
 
-kadmin="${kadmin} -l -r $R"
-bx509d="${bx509d} --reverse-proxied -p $bx509port"
-kdc="${kdc} --addresses=localhost -P $port"
-
 server=datan.test.h5l.se
 otherserver=other.test.h5l.se
+
+kadmin="${kadmin} -l -r $R"
+bx509d="${bx509d} --allow-GET --reverse-proxied -p $bx509port -H $server --cert=${objdir}/bx509.pem -t"
+kdc="${kdc} --addresses=localhost -P $port"
+
 cachefile="${objdir}/cache.krb5"
 cache="FILE:${cachefile}"
 cachefile2="${objdir}/cache2.krb5"
@@ -129,6 +132,55 @@ get_cert() {
     curl -g --resolve ${server}:${bx509port}:127.0.0.1                  \
          -H "Authorization: Negotiate $token"                           \
          "$@" "$url"
+}
+
+get_with_token() {
+    if [ -n "$csr" ]; then
+        url="http://${server}:${bx509port}/${1}?csr=$csr${2}"
+    else
+        url="http://${server}:${bx509port}/${1}?${2}"
+    fi
+    shift 2
+
+    curl -fg --resolve ${server}:${bx509port}:127.0.0.1                 \
+         -H "Authorization: Negotiate $token"                           \
+         -D response-headers                                            \
+         "$@" "$url"                                                    &&
+        { echo "GET w/o CSRF token succeeded!"; exit 2; }
+    curl -g --resolve ${server}:${bx509port}:127.0.0.1                  \
+         -H "Authorization: Negotiate $token"                           \
+         -D response-headers                                            \
+         "$@" "$url"
+    grep ^X-CSRF-Token: response-headers >/dev/null ||
+        { echo "GET w/o CSRF token did not output a CSRF token!"; exit 2; }
+    curl -fg --resolve ${server}:${bx509port}:127.0.0.1                 \
+         -H "Authorization: Negotiate $token"                           \
+         -H "$(sed -e 's/\r//' response-headers | grep ^X-CSRF-Token:)" \
+         "$@" "$url"                                                    ||
+        { echo "GET w/ CSRF failed"; exit 2; }
+}
+
+get_via_POST() {
+    endpoint=$1
+    shift
+
+    curl -fg --resolve ${server}:${bx509port}:127.0.0.1                 \
+         -H "Authorization: Negotiate $token"                           \
+         -X POST -D response-headers                                    \
+         "$@" "http://${server}:${bx509port}/${endpoint}" &&
+        { echo "POST w/o CSRF token succeeded!"; exit 2; }
+    curl -g --resolve ${server}:${bx509port}:127.0.0.1                  \
+         -H "Authorization: Negotiate $token"                           \
+         -X POST -D response-headers                                    \
+         "$@" "http://${server}:${bx509port}/${endpoint}"
+    grep ^X-CSRF-Token: response-headers >/dev/null ||
+        { echo "POST w/o CSRF token did not output a CSRF token!"; exit 2; }
+    curl -fg --resolve ${server}:${bx509port}:127.0.0.1                 \
+         -H "Authorization: Negotiate $token"                           \
+         -H "$(sed -e 's/\r//' response-headers | grep ^X-CSRF-Token:)" \
+         -X POST                                                        \
+         "$@" "http://${server}:${bx509port}/${endpoint}" ||
+        { echo "POST w/ CSRF failed"; exit 2; }
 }
 
 rm -f $kt $ukt
@@ -292,15 +344,15 @@ ${kadmin} init \
     ${R} || exit 1
 ${kadmin} add -r --use-defaults foo@${R} || exit 1
 ${kadmin} add -r --use-defaults bar@${R} || exit 1
+${kadmin} add -r --use-defaults baz@${R} || exit 1
 ${kadmin} modify --pkinit-acl="CN=foo,DC=test,DC=h5l,DC=se" foo@${R} || exit 1
 
 
 echo "Starting bx509d"
-${bx509d} -H $server --cert=${objdir}/bx509.pem -t --daemon ||
-    { echo "bx509 failed to start"; exit 2; }
+${bx509d} --daemon || { echo "bx509 failed to start"; exit 2; }
 bx509pid=`getpid bx509d`
 
-trap "kill -9 ${bx509pid}; echo signal killing bx509d; exit 1;" EXIT
+trap 'kill -9 ${bx509pid}; echo signal killing bx509d; exit 1;' EXIT
 ec=0
 
 rm -f trivial.pem server.pem email.pem
@@ -310,14 +362,64 @@ csr_revoke
 $hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
                         --key=FILE:"${objdir}/k.der" "${objdir}/req" ||
     { echo "Failed to make a CSR"; exit 2; }
-csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
 
 # XXX Add autoconf check for curl?
 #     Create a barebones bx509 HTTP/1.1 client test program?
 
+echo "Fetching a trivial user certificate (no authentication, must fail)"
+# Encode the CSR in base64, then URL-encode it
+csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
+if (set -vx;
+    curl -g --resolve ${server}:${bx509port}:127.0.0.1                  \
+         -sf -o "${objdir}/trivial.pem"                                 \
+         "http://${server}:${bx509port}/bx509?csr=$csr"); then
+    $hxtool print --content "FILE:${objdir}/trivial.pem"
+    echo 'Got a certificate without authenticating!'
+    exit 1
+fi
+
 echo "Fetching a trivial user certificate"
+# Encode the CSR in base64, then URL-encode it
+csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
 token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
 if (set -vx; get_cert '' -sf -o "${objdir}/trivial.pem"); then
+    $hxtool print --content "FILE:${objdir}/trivial.pem"
+    if $hxtool acert --end-entity                                            \
+                    --expr="%{certificate.subject} == \"CN=foo,$DCs\""  \
+                    -P "foo@${R}" "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    else
+        echo 'FAIL: Obtained a trivial client certificate w/o expected PKINIT SAN)'
+        exit 1
+    fi
+    if $hxtool acert --expr="%{certificate.subject} == \"OU=Users,$DCs\""   \
+                     --has-private-key "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    fi
+else
+    echo 'Failed to get a certificate!'
+    exit 1
+fi
+
+echo "Fetching a trivial user certificate (with POST, no auth, must fail)"
+# Encode the CSR in base64; curl will URL-encode it for us
+csr=$($rkbase64 -- ${objdir}/req)
+if (set -vx;
+    curl -fg --resolve ${server}:${bx509port}:127.0.0.1                 \
+         -X POST -D response-headers                                    \
+         -F csr="$csr" -o "${objdir}/trivial.pem"                       \
+         "http://${server}:${bx509port}/bx509" ); then
+    $hxtool print --content "FILE:${objdir}/trivial.pem"
+    echo 'Got a certificate without authenticating!'
+    exit 1
+fi
+
+echo "Fetching a trivial user certificate (with POST)"
+# Encode the CSR in base64; curl will URL-encode it for us
+csr=$($rkbase64 -- ${objdir}/req)
+token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
+if (set -vx;
+    get_via_POST bx509 -F csr="$csr" -o "${objdir}/trivial.pem"); then
     $hxtool print --content "FILE:${objdir}/trivial.pem"
     if $hxtool acert --end-entity                                            \
                     --expr="%{certificate.subject} == \"CN=foo,$DCs\""  \
@@ -430,10 +532,10 @@ ${kadmin} ext_keytab -r -k $ukeytab foo@${R} || exit 1
 echo "Starting kdc";
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
-trap "kill -9 ${kdcpid} ${bx509pid}; echo signal killing kdc and bx509d; exit 1;" EXIT
+trap 'kill -9 ${kdcpid} ${bx509pid}; echo signal killing kdc and bx509d; exit 1;' EXIT
 
 ${kinit} -kt $ukeytab foo@${R} || exit 1
-$klist || { echo "failed to setup kimpersonate credentials"; exit 2; }
+$klist || { echo "failed to kinit"; exit 2; }
 
 echo "Fetch TGT (not granted for other)"
 token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
@@ -474,7 +576,7 @@ if ! (set -vx;
     exit 2
 fi
 ${kgetcred} -H HTTP/${server}@${R} ||
-    { echo "Trivial offline CA test failed (TGS)"; exit 2; }
+    { echo "Fetched TGT didn't work"; exit 2; }
 ${klist} | grep Addresses:.IPv4:8.8.8.8 ||
     { echo "Failed to get a TGT with /get-tgt end-point with addresses"; exit 2; }
 
@@ -491,7 +593,7 @@ if ! (set -vx;
     exit 2
 fi
 ${kgetcred} -H HTTP/${server}@${R} ||
-    { echo "Trivial offline CA test failed (TGS)"; exit 2; }
+    { echo "Fetched TGT didn't work"; exit 2; }
 ${klist} | grep Addresses:.IPv4:8.8.8.8 ||
     { echo "Failed to get a TGT with /get-tgt end-point with addresses"; exit 2; }
 
@@ -509,7 +611,7 @@ if ! (set -vx;
     exit 2
 fi
 ${kgetcred} -H HTTP/${server}@${R} ||
-    { echo "Trivial offline CA test failed (TGS)"; exit 2; }
+    { echo "Fetched TGT didn't work"; exit 2; }
 if which jq >/dev/null; then
     if ! ${klistjson} | jq -e '
             (reduce (.tickets[0]|(.Issued,.Expires)|
@@ -535,7 +637,7 @@ if ! (set -vx;
     exit 2
 fi
 ${kgetcred} -H HTTP/${server}@${R} ||
-    { echo "Trivial offline CA test failed (TGS)"; exit 2; }
+    { echo "Fetched TGT didn't work"; exit 2; }
 if which jq >/dev/null; then
     if ! ${klistjson} | jq -e '
             (reduce (.tickets[0]|(.Issued,.Expires)|
@@ -561,7 +663,7 @@ if ! (set -vx;
     exit 2
 fi
 ${kgetcred} -H HTTP/${server}@${R} ||
-    { echo "Trivial offline CA test failed (TGS)"; exit 2; }
+    { echo "Fetched TGT didn't work"; exit 2; }
 if which jq >/dev/null; then
     if ! ${klistjson} | jq -e '
             (reduce (.tickets[0]|(.Issued,.Expires)|
@@ -571,6 +673,153 @@ if which jq >/dev/null; then
         echo "Failed to get a TGT with /get-tgt end-point with addresses"
         exit 2
     fi
+fi
+
+echo "Fetch TGTs (batch, authz fail)"
+${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
+(set -vx; csr_grant pkinit bar@${R} foo@${R})
+${kdestroy}
+token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
+if (set -vx;
+    curl -o "${cachefile}.json" -Lgsf                                   \
+         --resolve ${server}:${bx509port}:127.0.0.1                     \
+         -H "Authorization: Negotiate $token"                           \
+         "http://${server}:${bx509port}/get-tgts?cname=bar@${R}&cname=baz@${R}"); then
+    echo "Got TGTs with /get-tgts end-point that should have been denied"
+    exit 2
+fi
+
+echo "Fetch TGTs (batch, authz pass)"
+${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
+(csr_grant pkinit bar@${R} foo@${R})
+(csr_grant pkinit baz@${R} foo@${R})
+${kdestroy}
+token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
+if ! (set -vx;
+    curl -vvvo "${cachefile}.json" -Lgsf                                \
+         --resolve ${server}:${bx509port}:127.0.0.1                     \
+         -H "Authorization: Negotiate $token"                           \
+         "http://${server}:${bx509port}/get-tgts?cname=bar@${R}&cname=baz@${R}"); then
+    echo "Failed to get TGTs batch"
+    exit 2
+fi
+if which jq >/dev/null; then
+    jq -e . "${cachefile}.json" > /dev/null ||
+        { echo "/get-tgts produced non-JSON"; exit 2; }
+
+    # Check bar@$R's tickets:
+    jq -r 'select(.name|startswith("bar@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p bar@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
+
+    # Check baz@$R's tickets:
+    jq -r 'select(.name|startswith("baz@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p baz@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
+fi
+
+echo "Fetch TGTs (batch, authz pass, one non-existent principal)"
+${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
+(csr_grant pkinit bar@${R} foo@${R})
+(csr_grant pkinit baz@${R} foo@${R})
+(csr_grant pkinit not@${R} foo@${R})
+${kdestroy}
+token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
+if ! (set -vx;
+    curl -vvvo "${cachefile}.json" -Lgsf                                \
+         --resolve ${server}:${bx509port}:127.0.0.1                     \
+         -H "Authorization: Negotiate $token"                           \
+         "http://${server}:${bx509port}/get-tgts?cname=not@${R}&cname=bar@${R}&cname=baz@${R}"); then
+    echo "Failed to get TGTs batch including non-existent principal"
+    exit 2
+fi
+if which jq >/dev/null; then
+    set -vx
+    jq -e . "${cachefile}.json" > /dev/null ||
+        { echo "/get-tgts produced non-JSON"; exit 2; }
+    jq -es '.[]|select(.name|startswith("not@"))|(.error_code//empty)' "${cachefile}.json" > /dev/null ||
+        { echo "No error was reported for not@${R}!"; exit 2; }
+
+    # Check bar@$R's tickets:
+    jq -r 'select(.name|startswith("bar@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p bar@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
+
+    # Check baz@$R's tickets:
+    jq -r 'select(.name|startswith("baz@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p baz@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
+fi
+
+echo "killing bx509d (${bx509pid})"
+sh ${leaks_kill} bx509d $bx509pid || ec=1
+
+echo "Starting bx509d (csrf-protection-type=GET-with-token, POST-with-header)"
+${bx509d} --csrf-protection-type=GET-with-token \
+          --csrf-protection-type=POST-with-header --daemon || {
+    echo "bx509 failed to start"
+    exit 2
+}
+bx509pid=`getpid bx509d`
+
+${kinit} -kt $ukeytab foo@${R} || exit 1
+$klist || { echo "failed to kinit"; exit 2; }
+
+echo "Fetching a trivial user certificate (GET with CSRF token)"
+csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
+token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
+if (set -vx; get_with_token get-cert '' -o "${objdir}/trivial.pem"); then
+    $hxtool print --content "FILE:${objdir}/trivial.pem"
+    if $hxtool acert --end-entity                                            \
+                    --expr="%{certificate.subject} == \"CN=foo,$DCs\""  \
+                    -P "foo@${R}" "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    else
+        echo 'FAIL: Obtained a trivial client certificate w/o expected PKINIT SAN)'
+        exit 1
+    fi
+    if $hxtool acert --expr="%{certificate.subject} == \"OU=Users,$DCs\""   \
+                     --has-private-key "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    fi
+else
+    echo 'Failed to get a certificate!'
+    exit 1
+fi
+
+echo "Fetching a trivial user certificate (POST with X-CSRF header, no token)"
+# Encode the CSR in base64, then URL-encode it
+csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
+token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
+if (set -vx; get_cert '' -H 'X-CSRF: junk' -X POST -sf -o "${objdir}/trivial.pem"); then
+    $hxtool print --content "FILE:${objdir}/trivial.pem"
+    if $hxtool acert --end-entity                                            \
+                    --expr="%{certificate.subject} == \"CN=foo,$DCs\""  \
+                    -P "foo@${R}" "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    else
+        echo 'FAIL: Obtained a trivial client certificate w/o expected PKINIT SAN)'
+        exit 1
+    fi
+    if $hxtool acert --expr="%{certificate.subject} == \"OU=Users,$DCs\""   \
+                     --has-private-key "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    fi
+else
+    echo 'Failed to get a certificate!'
+    exit 1
 fi
 
 echo "Fetch negotiate token (pre-test)"
@@ -596,11 +845,9 @@ grep 'REQ.*wrongaddr=true' ${objdir}/messages.log |
 
 echo "Fetching a Negotiate token"
 token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
+csr=
 if (set -vx;
-    curl -o negotiate-token -Lgsf                                       \
-         --resolve ${server}:${bx509port}:127.0.0.1                     \
-         -H "Authorization: Negotiate $token"                           \
-         "http://${server}:${bx509port}/bnegotiate?target=HTTP%40${server}"); then
+    get_with_token get-negotiate-token "target=HTTP%40${server}" -o "${objdir}/negotiate-token"); then
     # bx509 sends us a token w/o a newline for now; we add one because
     # gss-token expects it.
     test -s negotiate-token && echo >> negotiate-token

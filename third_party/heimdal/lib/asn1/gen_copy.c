@@ -62,7 +62,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	    copy_primitive ("heim_integer", from, to);
 	    break;
 	}
-        fallthrough;
+        HEIM_FALLTHROUGH;
     case TBoolean:
     case TEnumerated :
 	fprintf(codefile, "*(%s) = *(%s);\n", to, from);

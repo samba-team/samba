@@ -37,6 +37,7 @@ LDADD = \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/sl/libsl.la \
+	$(LIB_heimbase) \
 	$(LIB_readline) \
 	$(LIB_roken)
 

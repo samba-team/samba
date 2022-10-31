@@ -40,7 +40,11 @@
 .Op Fl Fl version
 .Op Fl H Ar HOSTNAME
 .Op Fl d | Fl Fl daemon
-.Op Fl Fl daemon-child
+.Op Fl Fl allow-GET
+.Op Fl Fl no-allow-GET
+.Op Fl Fl csrf-protection-type= Ns Ar CSRF-PROTECTION-TYPE
+.Op Fl Fl csrf-header= Ns Ar HEADER-NAME
+.Op Fl Fl csrf-key-file= Ns Ar FILE
 .Op Fl Fl reverse-proxied
 .Op Fl p Ar port number (default: 443)
 .Op Fl Fl cache-dir= Ns Ar DIRECTORY
@@ -53,11 +57,24 @@
 .Oc
 .Sh DESCRIPTION
 Serves RESTful (HTTPS) GETs of
-.Ar /bx509 and
-.Ar /bnegotiate ,
-end-points
-performing corresponding kx509 and, possibly, PKINIT requests
-to the KDCs of the requested realms (or just the given REALM).
+.Ar /get-cert ,
+.Ar /get-tgt ,
+.Ar /get-tgts ,
+and
+.Ar /get-negotiate-token ,
+end-points that implement various experimental Heimdal features:
+.Bl -bullet -compact -offset indent
+.It
+.Li an online CA service over HTTPS,
+.It
+.Li a kinit-over-HTTPS service, and
+.It
+.Li a Negotiate token over HTTPS service.
+.El
+.Pp
+As well, a
+.Ar /health
+service can be used for checking service status.
 .Pp
 Supported options:
 .Bl -tag -width Ds
@@ -75,6 +92,64 @@ Print version.
 .Xc
 Expected audience(s) of bearer tokens (i.e., acceptor name).
 .It Xo
+.Fl Fl allow-GET
+.Xc
+If given, then HTTP GET will be allowed for the various
+end-points other than
+.Ar /health .
+Otherwise only HEAD and POST will be allowed.
+By default GETs are allowed, but this will change soon.
+.It Xo
+.Fl Fl no-allow-GET
+.Xc
+If given then HTTP GETs will be rejected for the various
+end-points other than
+.Ar /health .
+.It Xo
+.Fl Fl csrf-protection-type= Ns Ar CSRF-PROTECTION-TYPE
+.Xc
+Possible values of
+.Ar CSRF-PROTECTION-TYPE
+are
+.Bl -bullet -compact -offset indent
+.It
+.Li GET-with-header
+.It
+.Li GET-with-token
+.It
+.Li POST-with-header
+.It
+.Li POST-with-token
+.El
+This may be given multiple times.
+The default is to require CSRF tokens for POST requests, and to
+require neither a non-simple header nor a CSRF token for GET
+requests.
+.Pp
+See
+.Sx CROSS-SITE REQUEST FORGERY PROTECTION .
+.It Xo
+.Fl Fl csrf-header= Ns Ar HEADER-NAME
+.Xc
+If given, then all requests other than to the
+.Ar /health
+service must have the given request
+.Ar HEADER-NAME
+set (the value is irrelevant).
+The
+.Ar HEADER-NAME
+must be a request header name such that a request having it makes
+it not a
+.Dq simple
+request (see the Cross-Origin Resource Sharing specification).
+Defaults to
+.Ar X-CSRF .
+.It Xo
+.Fl Fl csrf-key-file= Ns Ar FILE
+.Xc
+If given, this file must contain a 16 byte binary key for keying
+the HMAC used in CSRF token construction.
+.It Xo
 .Fl d ,
 .Fl Fl daemon
 .Xc
@@ -82,7 +157,8 @@ Detach from TTY and run in the background.
 .It Xo
 .Fl Fl reverse-proxied
 .Xc
-Serves HTTP instead of HTTPS, accepting only looped-back connections.
+Serves HTTP instead of HTTPS, accepting only looped-back
+connections.
 .It Xo
 .Fl p Ar port number (default: 443)
 .Xc
@@ -90,29 +166,106 @@ PORT
 .It Xo
 .Fl Fl cache-dir= Ns Ar DIRECTORY
 .Xc
-Directory for various caches.  If not specified then a temporary directory will
-be made.
+Directory for various caches.
+If not specified then a temporary directory will be made.
 .It Xo
 .Fl Fl cert= Ns Ar HX509-STORE
 .Xc
-Certificate file path (PEM) for HTTPS service.  May contain private key as
-well.
+Certificate file path (PEM) for HTTPS service.
+May contain private key as well.
 .It Xo
 .Fl Fl private-key= Ns Ar HX509-STORE
 .Xc
-Private key file path (PEM), if the private key is not stored along with the
-certificiate.
+Private key file path (PEM), if the private key is not stored
+along with the certificiate.
 .It Xo
 .Fl t ,
 .Fl Fl thread-per-client
 .Xc
-Uses a thread per-client instead of as many threads as there are CPUs.
+Uses a thread per-client instead of as many threads as there are
+CPUs.
 .It Xo
 .Fl v ,
 .Fl Fl verbose= Ns Ar run verbosely
 .Xc
 verbose
 .El
+.Sh HTTP APIS
+All HTTP APIs served by this program accept POSTs, with all
+request parameters given as URI query parameters and/or as
+form data in the POST request body, in either
+.Ar application/x-www-form-urlencoded
+or
+.Ar multipart/formdata .
+If request parameters are given both as URI query parameters
+and as POST forms, then they are merged into a set.
+.Pp
+If GETs are enabled, then request parameters must be supplied
+only as URI query parameters, as GET requests do not have request
+bodies.
+.Pp
+URI query parameters must be of the form
+.Ar param0=value&param1=value...
+.Pp
+Some request parameters can only have one value.
+If multiple values are given for such parameters, then either an
+error will be produced, or only the first URI query parameter
+value will be used, or the first POST form data parameter will be
+used.
+Other request parameters can have multiple values.
+See below.
+.Sh CROSS-SITE REQUEST FORGERY PROTECTION
+.Em None
+of the resources service by this service are intended to be
+executed by web pages.
+.Pp
+All the resources provided by this service are
+.Dq safe
+in the sense that they do not change server-side state besides
+logging, and in that they are idempotent, but they are
+only safe to execute
+.Em if and only if
+the requesting party is trusted to see the response.
+Since none of these resources are intended to be used from web
+pages, it is important that web pages not be able to execute them
+.Em and
+observe the responses.
+.Pp
+In a web browser context, pages from other origins will be able
+to attempt requests to this service, but should never be able to
+see the responses because browsers normally wouldn't allow that.
+Nonetheless, anti cross site request forgery (CSRF) protection
+may be desirable.
+.Pp
+This service provides the following CSRF protection features:
+.Bl -tag -width Ds -offset indent
+.It requests are rejected if they have a
+.Dq Referer
+(except the experimental /get-negotiate-token end-point)
+.It the service can be configured to require a header that would make the
+request not Dq simple
+.It GETs can be disabled (see options), thus requiring POSTs
+.It GETs can be required to have a CSRF token (see below)
+.It POSTs can be required to have a CSRF token
+.El
+.Pp
+The experimental
+.Ar /get-negotiate-token
+end-point, however, always accepts
+.Dq Referer
+requests.
+.Pp
+To obtain a CSRF token, first execute the request without the
+CSRF token, and the resulting error
+response will include a
+.Ar X-CSRF-Token
+response header.
+.Pp
+To execute a request with a CSRF token, first obtain a CSRF token
+as described above, then copy the token to the request as the
+value of the request's
+.Ar X-CSRF-Token
+header.
 .Sh ONLINE CERTIFICATION AUTHORITY HTTP API
 This service provides an HTTP-based Certification Authority (CA).
 CA credentials and configuration are specified in the
@@ -128,8 +281,8 @@ with the base-63 encoding of a DER encoding of a PKCS#10
 .Ar CertificationRequest
 (Certificate Signing Request, or CSR) in a
 .Ar csr
-required query parameter.
-In a successful query, the response body will contain a PEM
+required request parameter.
+In a successful request, the response body will contain a PEM
 encoded end entity certificate and certification chain.
 .Pp
 Or
@@ -146,9 +299,9 @@ Unauthorized requests will elicit a 403 response.
 .Pp
 Subject Alternative Names (SANs) and Extended Key Usage values
 may be requested, both in-band in the CSR as a requested
-extensions attribute, and/or via optional query parameters.
+extensions attribute, and/or via optional request parameters.
 .Pp
-Supported query parameters (separated by ampersands)
+Supported request parameters:
 .Bl -tag -width Ds -offset indent
 .It Li csr = Va base64-encoded-DER-encoded-CSR
 .It Li dNSName = Va hostname
@@ -178,20 +331,20 @@ of
 .Ar /get-negotiate-token
 with a
 .Ar target = Ar service@host
-query parameter.
+request parameter.
 .Pp
-In a successful query, the response body will contain a Negotiate
-token for the authenticated client principal to the requested
-target.
+In a successful request, the response body will contain a
+Negotiate token for the authenticated client principal to the
+requested target.
 .Pp
 Authentication is required.
 Unauthenticated requests will elicit a 401 response.
 .Pp
 Subject Alternative Names (SANs) and Extended Key Usage values
 may be requested, both in-band in the CSR as a requested
-extensions attribute, and/or via optional query parameters.
+extensions attribute, and/or via optional request parameters.
 .Pp
-Supported query parameters (separated by ampersands)
+Supported request parameters:
 .Bl -tag -width Ds -offset indent
 .It Li target = Va service@hostname
 .It Li redirect = Va URI
@@ -221,13 +374,14 @@ The protocol consists of a
 of
 .Ar /get-tgt .
 .Pp
-Supported query parameters (separated by ampersands)
+Supported request parameters:
 .Bl -tag -width Ds -offset indent
 .It Li cname = Va principal-name
 .It Li address = Va IP-address
+.It Li lifetime = Va relative-time
 .El
 .Pp
-In a successful query, the response body will contain a TGT and
+In a successful request, the response body will contain a TGT and
 its session key encoded as a "ccache" file contents.
 .Pp
 Authentication is required.
@@ -239,13 +393,14 @@ same as for
 by the authenticated client principal to get a certificate with
 a PKINIT SAN for itself or the requested principal if a
 .Va cname
-query parameter was included.
+request parameter was included.
 .Pp
 Unauthorized requests will elicit a 403 response.
 .Pp
-Requested IP addresses will be added to the issued TGT if allowed.
-The IP address of the client will be included if address-less TGTs
-are not allowed.
+Requested IP addresses will be added to the issued TGT if
+allowed.
+The IP address of the client will be included if address-less
+TGTs are not allowed.
 See the
 .Va [get-tgt]
 section of
@@ -257,6 +412,48 @@ end-point, but as configured in the
 .Va [get-tgt]
 section of
 .Xr krb5.conf 5 .
+.Sh BATCH TGT HTTP API
+Some sites may have special users that operate batch jobs systems
+and that can impersonate many others by obtaining TGTs for them,
+and which
+.Dq prestash
+credentials for those users in their credentials caches.
+To support these sytems, a
+.Ar GET
+of
+.Ar /get-tgts
+with multiple
+.Ar cname
+request parameters will return those principals' TGTs (if the
+caller is authorized).
+.Pp
+This is similar to the
+.Ar /get-tgt
+end-point, but a) multiple
+.Ar cname
+request parameter values may be given, and b) the caller's
+principal name is not used as a default for the
+.Ar cname
+request parameter.
+The
+.Ar address
+and
+.Ar lifetime
+request parameters are honored.
+.Pp
+For successful
+.Ar GETs
+the response body is a sequence of JSON texts each of which is a
+JSON object with two keys:
+.Bl -tag -width Ds -offset indent
+.It Ar ccache
+with a base64-encoded FILE-type ccache;
+.It Ar name
+the name of the principal whose credentials are in that ccache.
+.El
+.Sh NOTES
+A future release may split all these end-points into separate
+services.
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev KRB5_CONFIG

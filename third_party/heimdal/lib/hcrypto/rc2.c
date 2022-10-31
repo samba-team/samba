@@ -105,7 +105,7 @@ RC2_set_key(RC2_KEY *key, int len, const unsigned char *data, int bits)
 
     for (j = 0; j < 64; j++)
 	key->data[j] = k[(j * 2) + 0] | (k[(j * 2) + 1] << 8);
-    memset(k, 0, sizeof(k));
+    memset_s(k, sizeof(k), 0, sizeof(k));
 }
 
 #define ROT16L(w,n)  ((w<<n)|(w>>(16-n)))

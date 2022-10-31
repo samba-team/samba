@@ -39,6 +39,12 @@ RCSID("$Id$");
 #define __CALLABLE(F) (((kadm5_common_context*)server_handle)->funcs.F != 0)
 
 kadm5_ret_t
+kadm5_dup_context(void *server_handle, void **dup_server_handle)
+{
+    return __CALL(dup_context, (server_handle, dup_server_handle));
+}
+
+kadm5_ret_t
 kadm5_chpass_principal(void *server_handle,
 		       krb5_principal princ,
 		       const char *password)
@@ -220,6 +226,15 @@ kadm5_get_principals(void *server_handle,
 		     int *count)
 {
     return __CALL(get_principals, (server_handle, expression, princs, count));
+}
+
+kadm5_ret_t
+kadm5_iter_principals(void *server_handle,
+		      const char *expression,
+                      int (*cb)(void *, const char *),
+                      void *cbdata)
+{
+    return __CALL(iter_principals, (server_handle, expression, cb, cbdata));
 }
 
 kadm5_ret_t

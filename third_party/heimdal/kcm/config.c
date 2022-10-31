@@ -45,6 +45,7 @@ static char *max_request_str;	/* `max_request' as a string */
 
 int detach_from_console = -1;
 int daemon_child = -1;
+int automatic_renewal = -1;
 
 static const char *system_cache_name = NULL;
 static const char *system_keytab = NULL;
@@ -92,6 +93,10 @@ static struct getargs args[] = {
     {
         "daemon-child",       0 ,      arg_integer, &daemon_child,
         "private argument, do not use", NULL
+    },
+    {
+	"automatic-renewal",	0 , arg_negative_flag, &automatic_renewal,
+	"disable automatic TGT renewal", NULL
     },
     {	"help",		'h',	arg_flag,   &help_flag, NULL, NULL },
     {
@@ -389,6 +394,13 @@ kcm_configure(int argc, char **argv)
 	if (ret)
 	    krb5_err(kcm_context, 1, ret, "initializing system ccache");
     }
+
+    if(automatic_renewal == -1)
+	automatic_renewal = krb5_config_get_bool_default(kcm_context, NULL,
+							 TRUE,
+							 "kcm",
+							 "automatic_renewal",
+							 NULL);
 
     if(detach_from_console == -1)
 	detach_from_console = krb5_config_get_bool_default(kcm_context, NULL,

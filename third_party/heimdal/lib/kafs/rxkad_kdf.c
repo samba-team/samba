@@ -209,7 +209,7 @@ _kafs_derive_des_key(krb5_enctype enctype, void *keydata, size_t keylen,
 	ret = compress_parity_bits(keydata, &keylen);
 	if (ret)
 	    return ret;
-        fallthrough;
+        HEIM_FALLTHROUGH;
     default:
 	if (enctype < 0)
 	    return KRB5_PROG_ETYPE_NOSUPP;

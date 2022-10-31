@@ -50,6 +50,14 @@ get_default(kadm5_server_context *context, krb5_principal princ,
     ret = kadm5_s_get_principal(context, def_principal, def,
 				KADM5_PRINCIPAL_NORMAL_MASK);
     krb5_free_principal (context->context, def_principal);
+
+    if (ret) {
+        /* Copy defaults from kadmin/init.c */
+        memset(def, 0, sizeof(*def));
+        def->max_life = 24 * 60 * 60;
+        def->max_renewable_life = 7 * def->max_life;
+        def->attributes = KRB5_KDB_DISALLOW_ALL_TIX;
+    }
     return ret;
 }
 

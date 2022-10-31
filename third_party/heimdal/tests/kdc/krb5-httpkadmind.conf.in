@@ -85,6 +85,12 @@
  
 [ext_keytab]
         simple_csr_authorizer_directory = @objdir@/simple_csr_authz
+        new_hostbased_service_principal_attributes = {
+            host = {
+                a-particular-hostname.test.h5l.se = ok-as-delegate,no-auth-data-reqd
+                .prod.test.h5l.se = ok-as-delegate no-auth-data-reqd
+            }
+        }
 
 [logging]
 	kdc = 0-/FILE:@objdir@/messages.log

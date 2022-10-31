@@ -500,6 +500,12 @@ command = {
 		type = "string"
 		help = "filename to save the principal's krb5.confg in"
 	}
+	option = {
+		long = "upto"
+		type = "integer"
+                default = "-1"
+		help = "maximum number of principals to get/list"
+	}
 	argument = "principal..."
 	min_args = "1"
 	help = "Shows information about principals matching the expressions."
@@ -674,6 +680,13 @@ command = {
 	option = {
 		long = "krb5-config-file"
 		type = "string"
+                help = "only use this option with the get command"
+	}
+	option = {
+		long = "upto"
+		type = "integer"
+                default = "-1"
+		help = "maximum number of principals to get/list"
 	}
 	argument = "principal..."
 	min_args = "1"

@@ -201,7 +201,7 @@ libroken_la_LIBADD = @LTLIBOBJS@ $(LIB_crypt) $(LIB_pidfile)
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h $(XHEADERS)
 
-BUILT_SOURCES = roken.h $(err_h) $(fnmatch_h) $(ifadds_h) $(search_h) $(vis_h)
+BUILT_SOURCES = roken.h $(err_h) $(fnmatch_h) $(ifaddrs_h) $(search_h) $(vis_h)
 
 ## these are controlled by configure
 XHEADERS = $(err_h) $(fnmatch_h) $(ifaddrs_h) $(search_h) $(vis_h)

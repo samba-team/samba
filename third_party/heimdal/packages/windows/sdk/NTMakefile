@@ -76,7 +76,6 @@ INCFILES=\
 	$(SDKINCDIR)\krb5\k5e1_err.h	\
 	$(SDKINCDIR)\krb5\krb5-protos.h	\
 	$(SDKINCDIR)\krb5\krb5-types.h	\
-	$(SDKINCDIR)\krb5\krb5-v4compat.h	\
 	$(SDKINCDIR)\krb5\krb5.h	\
 	$(SDKINCDIR)\krb5\krb5_asn1.h	\
 	$(SDKINCDIR)\krb5\krb5_ccapi.h	\
@@ -110,7 +109,6 @@ INCFILES=\
 	$(SDKINCDIR)\heimdal\k5e1_err.h	\
 	$(SDKINCDIR)\heimdal\krb5-protos.h	\
 	$(SDKINCDIR)\heimdal\krb5-types.h	\
-	$(SDKINCDIR)\heimdal\krb5-v4compat.h	\
 	$(SDKINCDIR)\heimdal\krb5.h	\
 	$(SDKINCDIR)\heimdal\krb5_asn1.h	\
 	$(SDKINCDIR)\heimdal\krb5_ccapi.h	\

@@ -11,6 +11,7 @@ HEIMDAL_KADM5_CLIENT_1.0 {
 		kadm5_c_create_principal;
 		kadm5_c_delete_principal;
 		kadm5_c_destroy;
+		kadm5_c_dup_context;
 		kadm5_c_flush;
 		kadm5_c_get_principal;
 		kadm5_c_get_principals;
@@ -21,6 +22,8 @@ HEIMDAL_KADM5_CLIENT_1.0 {
 		kadm5_c_init_with_password_ctx;
 		kadm5_c_init_with_skey;
 		kadm5_c_init_with_skey_ctx;
+		kadm5_c_iter_principals;
+		kadm5_c_get_privs;
 		kadm5_c_modify_principal;
 		kadm5_c_prune_principal;
 		kadm5_c_randkey_principal;
@@ -30,6 +33,7 @@ HEIMDAL_KADM5_CLIENT_1.0 {
 		kadm5_create_principal;
 		kadm5_delete_principal;
 		kadm5_destroy;
+		kadm5_dup_context;
 		kadm5_flush;
 		kadm5_free_key_data;
 		kadm5_free_name_list;
@@ -43,6 +47,7 @@ HEIMDAL_KADM5_CLIENT_1.0 {
 		kadm5_init_with_password_ctx;
 		kadm5_init_with_skey;
 		kadm5_init_with_skey_ctx;
+		kadm5_iter_principals;
 		kadm5_modify_principal;
 		kadm5_randkey_principal;
 		kadm5_randkey_principal_3;

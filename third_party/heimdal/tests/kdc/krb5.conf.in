@@ -31,6 +31,9 @@
 	TEST4.H5L.SE = {
 		kdc = localhost:@port@
 	}
+        XTST.HEIM.EXAMPLE = {
+		kdc = localhost:@port@
+        }
 	SOME-REALM5.FR = {
 		kdc = localhost:@port@
 	}

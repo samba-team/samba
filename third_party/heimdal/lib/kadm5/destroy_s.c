@@ -42,10 +42,12 @@ RCSID("$Id$");
 static void
 destroy_config (kadm5_config_params *c)
 {
-    free (c->realm);
-    free (c->dbname);
-    free (c->acl_file);
-    free (c->stash_file);
+    if (!c)
+        return;
+    free(c->realm);
+    free(c->dbname);
+    free(c->acl_file);
+    free(c->stash_file);
 }
 
 /*
@@ -55,6 +57,8 @@ destroy_config (kadm5_config_params *c)
 static void
 destroy_kadm5_log_context (kadm5_log_context *c)
 {
+    if (!c)
+        return;
     free(c->log_file);
     if (c->socket_fd != rk_INVALID_SOCKET)
         rk_closesocket(c->socket_fd);

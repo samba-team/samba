@@ -100,6 +100,11 @@ echo Starting kdc ; > messages.log
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
+echo Starting kadmind
+${kadmind} --detach --list-chunk-size=1 \
+    || { echo "kadmind failed to start"; cat messages.log; exit 1; }
+kadmpid=`getpid kadmind`
+
 trap "kill -9 ${kdcpid} ${kadmpid}" EXIT
 
 #----------------------------------
@@ -107,58 +112,34 @@ echo "kinit (no admin); test mod --alias authorization"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} hasalias@${R} || exit 1
 
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 # Check that one non-permitted alias -> failure
 env KRB5CCNAME=${cache} \
 ${kadmin} -p hasalias@${R} modify --alias=goodalias1@${R} --alias=badalias@${R} hasalias@${R} &&
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
-
-${kadmind} -d &
-kadmpid=$!
-sleep 1
 
 # Check that all permitted aliases -> success
 env KRB5CCNAME=${cache} \
 ${kadmin} -p hasalias@${R} modify --alias=goodalias1@${R} --alias=goodalias2@${R} hasalias@${R} ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
-
-${kadmind} -d &
-kadmpid=$!
-sleep 1
 
 # Check that we can drop aliases
 env KRB5CCNAME=${cache} \
 ${kadmin} -p hasalias@${R} modify --alias=goodalias3@${R} hasalias@${R} ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
 ${kadmin} -l get hasalias@${R} | grep Aliases: > kadmin.tmp
 read junk aliases < kadmin.tmp
 rm kadmin.tmp
 [ "$aliases" != "goodalias3@${R}" ] && { echo "kadmind failed $?"; cat messages.log ; exit 1; }
 
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 env KRB5CCNAME=${cache} \
 ${kadmin} -p hasalias@${R} modify --alias=goodalias1@${R} --alias=goodalias2@${R} --alias=goodalias3@${R} hasalias@${R} ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
 ${kadmin} -l get hasalias@${R} | grep Aliases: > kadmin.tmp
 read junk aliases < kadmin.tmp
 rm kadmin.tmp
 [ "$aliases" != "goodalias1@${R} goodalias2@${R} goodalias3@${R}" ] && { echo "FOO failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} bar@${R} || exit 1
@@ -171,10 +152,6 @@ ${kadmin} -l get kaka2@${R} > /dev/null ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} baz@${R} || exit 1
@@ -184,10 +161,6 @@ ${kadmin} -p baz@${R} get bar@${R} > /dev/null ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} baz@${R} || exit 1
@@ -197,10 +170,6 @@ ${kadmin} -p baz@${R} passwd -p "$foopassword" bar@${R} > /dev/null 2>/dev/null 
 	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} baz@${R} || exit 1
@@ -210,10 +179,6 @@ ${kadmin} -p baz@${R} get bar@${R} > /dev/null ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} bez@${R} || exit 1
@@ -223,10 +188,6 @@ ${kadmin} -p bez@${R} passwd -p "$foopassword" bar@${R} > /dev/null 2>/dev/null 
 	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} fez@${R} || exit 1
@@ -236,10 +197,6 @@ ${kadmin} -p fez@${R} get bar@${R} > /dev/null ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} fez@${R} || exit 1
@@ -249,10 +206,6 @@ ${kadmin} -p fez@${R} passwd -p "$foopassword" bar@${R} > /dev/null 2>/dev/null 
 	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kinit (admin)"
 ${kinit} --password-file=${objdir}/foopassword \
     -S kadmin/admin@${R} foo/admin@${R} || exit 1
@@ -268,10 +221,6 @@ ${kadmin} -p foo/admin@${R} add -p abc --use-defaults kaka@${R} &&
 	{ echo "kadmin succeeded $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin get doesnotexists"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} get -s doesnotexists@${R} \
@@ -286,14 +235,10 @@ mv kadmin2.tmp kadmin.tmp
 grep -v ': connect' kadmin.tmp > kadmin2.tmp
 mv kadmin2.tmp kadmin.tmp
 
-cmp kadmin.tmp ${srcdir}/donotexists.txt || \
+diff kadmin.tmp ${srcdir}/donotexists.txt || \
     { echo "wrong response"; exit 1;}
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin get pkinit-acl"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} get -o pkinit-acl pkinit@${R} \
@@ -301,10 +246,6 @@ ${kadmin} -p foo/admin@${R} get -o pkinit-acl pkinit@${R} \
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin get -o principal"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} get -o principal bar@${R} \
@@ -316,10 +257,6 @@ fi
 
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin get -o kvno"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} get -o kvno bar@${R} \
@@ -331,10 +268,6 @@ fi
 
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin get -o princ_expire_time"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} get -o princ_expire_time bar@${R} \
@@ -345,67 +278,178 @@ if test "`cat kadmin.tmp`" != "Principal expires: never" ; then
 fi
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin get -s -o attributes"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p foo/admin@${R} get -s -o attributes bar@${R} \
-        > kadmin.tmp 2>&1 || \
+        > kadmin.tmp || \
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 if test "`cat kadmin.tmp`" != "Attributes" ; then
    cat kadmin.tmp ; cat messages.log ; exit 1 ;
 fi
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin prune"
 env KRB5CCNAME=${cache} \
 ${kadmin} prune --kvno=2 prune@${R} \
         > kadmin.tmp 2>&1 || \
         { echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
-
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 env KRB5CCNAME=${cache} \
 ${kadmin} get prune@${R} \
         > kadmin.tmp 2>&1 || \
         { echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
-
 cat kadmin.tmp | ${EGREP} Keytypes: | cut -d: -f2 | tr ' ' '
 ' | sed 's/^.*[[]\(.*\)[]].*$/\1/' | grep '[0-9]' | sort -nu | tr -d '
 ' | ${EGREP} '^13$' > /dev/null || \
         { echo "kadmin prune failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
-${kadmind} -d &
-kadmpid=$!
-sleep 1
-
 echo "kadmin pruneall"
 env KRB5CCNAME=${cache} \
 ${kadmin} get pruneall@${R} \
         > kadmin.tmp 2>&1 || \
         { echo "kadmin failed $?"; cat messages.log ; exit 1; }
-wait $kadmpid || { echo "kadmind failed $?"; cat messages.log ; exit 1; }
-
 cat kadmin.tmp | ${EGREP} Keytypes: | cut -d: -f2 | tr ' ' '
 ' | sed 's/^.*[[]\(.*\)[]].*$/\1/' | grep '[0-9]' | sort -nu | tr -d '
 ' | ${EGREP} '^3$' > /dev/null || \
         { echo "kadmin pruneall failed $?"; cat messages.log ; exit 1; }
 
+env KRB5CCNAME=${cache} \
+    ${kadmin} -p foo/admin@${R} list --upto=3 '*' > kadmin.tmp
+[ `wc -l < kadmin.tmp` -eq 3 ] ||
+        { echo "kadmin list --upto 3 produced `wc -l < kadmin.tmp` results!"; exit 1; }
+
+#----------------------------------
+echo "kadmin get '*' (re-entrance)"; > messages.log
+${kadmin} -l get '*' > kadmin.tmp ||
+    { echo "failed to list principals"; cat messages.log ; exit 1; }
+> messages.log
+env KRB5CCNAME=${cache} \
+    ${kadmin} -p foo/admin@${R} get '*' > kadmin.tmp2 ||
+        { echo "failed to list principals"; cat messages.log ; exit 1; }
+diff -u kadmin.tmp kadmin.tmp2 ||
+    { echo "local and remote get all differ"; exit 1; }
+
+#----------------------------------
+# We have 20 principals in the DB.  Test two chunks of 1 (since that's how we
+# started kadmind above.
+> messages.log
+echo "kadmin list all (chunk size 1)"
+# Check that list produces the same output locally and remote.
+env KRB5CCNAME=${cache} \
+    ${kadmin} -p foo/admin@${R} list '*' | sort > kadmin.tmp ||
+        { echo "failed to list principals"; cat messages.log ; exit 1; }
+${kadmin} -l list '*' | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals"; cat messages.log ; exit 1; }
+# kadmin dump does not use kadm5_iter_principals, so this is a good way to
+# double check the above results.  This time we drop the realm part because
+# kadmin doesn't show us the realm for principals in the default realm.
+${kadmin} -l list '*' | cut -d'@' -f1 | sort > kadmin.tmp
+${kadmin} -l dump | cut -d'@' -f1 | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals (dump)"; cat messages.log ; exit 1; }
+${kadmin} -l > kadmin.tmp <<"EOF"
+list *
+get foo/admin
+EOF
+grep Attributes kadmin.tmp > /dev/null ||
+        { echo "failed to execute command after list"; cat messages.log ; exit 1; }
+env KRB5CCNAME=${cache} \
+${kadmin} -p foo/admin@${R} > kadmin.tmp <<"EOF"
+list *
+get foo/admin
+EOF
+grep Attributes kadmin.tmp > /dev/null ||
+        { echo "failed to execute command after list"; cat messages.log ; exit 1; }
+
+#----------------------------------
+# We have 20 principals in the DB.  Test two chunks of 10.
+sh ${leaks_kill} kadmind $kadmpid || exit 1
+${kadmind} --list-chunk-size=10 --detach
+kadmpid=`getpid kadmind`
+
+> messages.log
+echo "kadmin list all (chunk size 10)"
+# Check that list produces the same output locally and remote.
+env KRB5CCNAME=${cache} \
+    ${kadmin} -p foo/admin@${R} list '*' | sort > kadmin.tmp ||
+        { echo "failed to list principals"; cat messages.log ; exit 1; }
+${kadmin} -l list '*' | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals"; cat messages.log ; exit 1; }
+# kadmin dump does not use kadm5_iter_principals, so this is a good way to
+# double check the above results.  This time we drop the realm part because
+# kadmin doesn't show us the realm for principals in the default realm.
+${kadmin} -l list '*' | cut -d'@' -f1 | sort > kadmin.tmp
+${kadmin} -l dump | cut -d'@' -f1 | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals (dump)"; cat messages.log ; exit 1; }
+env KRB5CCNAME=${cache} \
+${kadmin} -p foo/admin@${R} > kadmin.tmp <<"EOF"
+list *
+get foo/admin
+EOF
+grep Attributes kadmin.tmp > /dev/null ||
+        { echo "failed to execute command after list"; cat messages.log ; exit 1; }
+
+#----------------------------------
+# We have 20 principals in the DB.  Test one chunk of 50.
+sh ${leaks_kill} kadmind $kadmpid || exit 1
+${kadmind} --list-chunk-size=50 --detach
+kadmpid=`getpid kadmind`
+
+> messages.log
+echo "kadmin list all (chunk size 50)"
+# Check that list produces the same output locally and remote.
+env KRB5CCNAME=${cache} \
+    ${kadmin} -p foo/admin@${R} list '*' | sort > kadmin.tmp ||
+        { echo "failed to list principals"; cat messages.log ; exit 1; }
+${kadmin} -l list '*' | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals"; cat messages.log ; exit 1; }
+# kadmin dump does not use kadm5_iter_principals, so this is a good way to
+# double check the above results.  This time we drop the realm part because
+# kadmin doesn't show us the realm for principals in the default realm.
+${kadmin} -l list '*' | cut -d'@' -f1 | sort > kadmin.tmp
+${kadmin} -l dump | cut -d'@' -f1 | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals (dump)"; cat messages.log ; exit 1; }
+env KRB5CCNAME=${cache} \
+${kadmin} -p foo/admin@${R} > kadmin.tmp <<"EOF"
+list *
+get foo/admin
+EOF
+grep Attributes kadmin.tmp > /dev/null ||
+        { echo "failed to execute command after list"; cat messages.log ; exit 1; }
+
+#----------------------------------
+# We have 20 principals in the DB.  Test 3 chunks of up to 7.
+sh ${leaks_kill} kadmind $kadmpid || exit 1
+${kadmind} --list-chunk-size=7 --detach
+kadmpid=`getpid kadmind`
+
+> messages.log
+echo "kadmin list all (chunk size 7)"
+# Check that list produces the same output locally and remote.
+env KRB5CCNAME=${cache} \
+    ${kadmin} -p foo/admin@${R} list '*' | sort > kadmin.tmp ||
+        { echo "failed to list principals"; cat messages.log ; exit 1; }
+${kadmin} -l list '*' | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals"; cat messages.log ; exit 1; }
+# kadmin dump does not use kadm5_iter_principals, so this is a good way to
+# double check the above results.  This time we drop the realm part because
+# kadmin doesn't show us the realm for principals in the default realm.
+${kadmin} -l list '*' | cut -d'@' -f1 | sort > kadmin.tmp
+${kadmin} -l dump | cut -d'@' -f1 | sort > kadmin.tmp2
+diff kadmin.tmp kadmin.tmp2 ||
+        { echo "failed to list all principals (dump)"; cat messages.log ; exit 1; }
+
 #----------------------------------
 
 echo "killing kdc (${kdcpid} ${kadmpid})"
 sh ${leaks_kill} kdc $kdcpid || exit 1
+sh ${leaks_kill} kadmind $kadmpid || exit 1
 
 trap "" EXIT
 

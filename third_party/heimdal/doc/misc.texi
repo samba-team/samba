@@ -1,6 +1,6 @@
 @c $Id$
 
-@node Things in search for a better place, Kerberos 4 issues, Applications, Top
+@node Things in search for a better place, Windows compatibility, Applications, Top
 @chapter Things in search for a better place
 
 @section Making things work on Ciscos

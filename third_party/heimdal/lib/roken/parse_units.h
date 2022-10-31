@@ -97,8 +97,8 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 print_units_table (const struct units *units, FILE *f);
 
 ROKEN_LIB_FUNCTION uint64_t ROKEN_LIB_CALL
-parse_flags (const char *s, const struct units *units,
-	     int orig);
+parse_flags(const char *s, const struct units *units,
+	    uint64_t orig);
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 unparse_units(int64_t num, const struct units *units, char *s, size_t len);

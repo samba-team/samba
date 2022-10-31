@@ -238,8 +238,7 @@ kcm_alloc(krb5_context context,
 
     if (residual) {
         /* KCM cache names must start with {UID} or {UID}: */
-        if (residual[0] != '0')
-            plen = strspn(residual, "0123456789");
+        plen = strspn(residual, "0123456789");
         if (plen && residual[plen] != ':' && residual[plen] != '\0')
             plen = 0;
         /*

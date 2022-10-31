@@ -42,10 +42,24 @@ testfailed="echo test failed; cat messages.log; exit 1"
 # If there is no useful db support compiled in, disable test
 ${have_db} || exit 77
 
+d=test.h5l.se
+d2=xtst.heim.example
 R=TEST.H5L.SE
-R2=SUB.TEST.H5L.SE
+R2=XTST.HEIM.EXAMPLE
 
-service=ldap/host.sub.test.h5l.se:389
+# $service1 will be a hard alias of $service2
+service1=ldap/host.${d}:389
+service2=ldap/host.${d2}:389
+# $service3 and $service4 will have soft aliases referrals from each
+# other's realms
+service3=host/foohost.${d}
+service4=host/barhost.${d2}
+# $service5 and $service6 will be hardaliases
+service5=host/thing1.${d}
+service6=host/thing1.${d2}
+# $service7 and $service8 will be hardaliases in the opposite direction
+service7=host/thing2.${d}
+service8=host/thing2.${d2}
 
 port=@port@
 
@@ -63,6 +77,9 @@ keytab="FILE:${keytabfile}"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
+
+KRB5CCNAME=$cache
+export KRB5CCNAME
 
 rm -f ${keytabfile}
 rm -f current-db*
@@ -84,11 +101,34 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R2} || exit 1
 
-${kadmin} add -p foo --use-defaults foo@${R} || exit 1
-${kadmin} modify --alias=alias1 --alias=alias2 foo@${R} || exit 1
-${kadmin} get foo@${R} | grep alias1@${R} >/dev/null || exit 1
+${kadmin} add -r --use-defaults WELLKNOWN/REFERRALS/TARGET@${R} || exit 1
+${kadmin} add -r --use-defaults WELLKNOWN/REFERRALS/TARGET@${R2} || exit 1
 
-${kadmin} add -p foo --use-defaults  ${service}@${R2} || exit 1
+# User 'foo' gets two aliases in the same realm, and one in the other
+${kadmin} add -p foo --use-defaults foo@${R} || exit 1
+${kadmin} add_alias foo@${R} foo@${R2} alias1 alias2 || exit 1
+${kadmin} get foo@${R} | grep alias1@${R} >/dev/null || exit 1
+${kadmin} get foo@${R} | grep alias2@${R} >/dev/null || exit 1
+${kadmin} get foo@${R} | grep foo@${R2} >/dev/null || exit 1
+
+# service1 is an alias of service2, in different realms
+${kadmin} add -p foo --use-defaults    ${service2}@${R2} || exit 1
+${kadmin} add_alias ${service2}@${R2}  ${service1}@${R}  || exit 1
+${kadmin} get ${service2}@${R2} | grep ${service1}@${R} >/dev/null || exit 1
+
+# service3 and service4 get soft aliases in each other's realms
+${kadmin} add -p foo --use-defaults  ${service3}@${R}  || exit 1
+${kadmin} add -p foo --use-defaults  ${service4}@${R2} || exit 1
+${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R2} ${service4}@${R} || exit 1
+${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R}  ${service3}@${R2} || exit 1
+
+# service6 is a hard alias of service5
+${kadmin} add -p foo --use-defaults  ${service5}@${R}  || exit 1
+${kadmin} add_alias ${service5}@${R} ${service6}@${R2} || exit 1
+
+# service8 is a hard alias of service7, but in the opposite direction
+${kadmin} add -p foo --use-defaults  ${service7}@${R2} || exit 1
+${kadmin} add_alias ${service5}@${R} ${service8}@${R}  || exit 1
 
 ${kadmin} add -p foo --use-defaults bar@${R} || exit 1
 ${kadmin} add -p foo --use-defaults 'baz\@realm.foo@'${R} || exit 1
@@ -187,6 +227,31 @@ ${klist} | grep "Principal: alias1@${R}" > /dev/null || \
 echo "checking that we got back right principal inside the PAC"
 ${test_ap_req} krbtgt/${R}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service2}@${R2} || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service1}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Getting client foo@${R2} tickets (non canon case)"; > messages.log
+${kinit} --password-file=${objdir}/foopassword foo@${R2} || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "checking that we got back right principal"
+${klist} | grep "Principal: foo@${R2}" > /dev/null || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "checking that we got back right principal inside the PAC"
+${test_ap_req} krbtgt/${R}@${R} ${keytab} ${cache} || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "Getting various service tickets using foo@${R2} client"
+${kgetcred} ${service2}@${R2} || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service1}@${R}  || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service1}@${R2} || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service2}@${R}  || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service3}@      || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service4}@      || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service5}@      || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service6}@      || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service7}@      || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service8}@${R}  || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
 
 echo "Getting client alias2 tickets (removed)"; > messages.log
 ${kadmin} modify --alias=alias1 foo@${R} || { ec=1 ; eval "${testfailed}"; }
@@ -200,25 +265,30 @@ ${kadmin} modify --alias= foo@${R} || { ec=1 ; eval "${testfailed}"; }
 
 echo "Test server referrals"
 
-echo "Getting client for ${service}@${R} (tgs kdc referral)"
+echo "Getting client for ${service2}@${R} (tgs kdc referral)"
 > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-${kgetcred} --canonicalize ${service}@${R} ||
-	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} --canonicalize ${service2}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service3}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${service4}@ || { ec=1 ; eval "${testfailed}"; }
 echo "checking that we got back right principal"
-${klist} | grep "${service}@${R2}" > /dev/null || \
+${klist} | grep "${service2}@${R2}" > /dev/null || \
+	{ ec=1 ; eval "${testfailed}"; }
+${klist} | grep "${service4}@${R}" > /dev/null && \
+	{ ec=1 ; eval "${testfailed}"; }
+${klist} | grep "${service4}@${R2}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
-echo "Getting client for ${service}@${R2} (tgs client side guessing)"
+echo "Getting client for ${service2}@${R2} (tgs client side guessing)"
 > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-${kgetcred} ${service}@${R2} ||
+${kgetcred} ${service2}@${R2} ||
 	{ ec=1 ; eval "${testfailed}"; }
 echo "checking that we got back right principal"
-${klist} | grep "${service}@${R2}" > /dev/null || \
+${klist} | grep "${service2}@${R2}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 

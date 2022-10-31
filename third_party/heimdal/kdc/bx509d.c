@@ -33,32 +33,19 @@
 
 /*
  * This file implements a RESTful HTTPS API to an online CA, as well as an
- * HTTP/Negotiate token issuer.
+ * HTTP/Negotiate token issuer, as well as a way to get TGTs.
  *
- * Users are authenticated with bearer tokens.
+ * Users are authenticated with Negotiate and/or Bearer.
  *
- * This is essentially a RESTful online CA sharing code with the KDC's kx509
- * online CA, and also a proxy for PKINIT and GSS-API (Negotiate).
+ * This is essentially a RESTful online CA sharing some code with the KDC's
+ * kx509 online CA, and also a proxy for PKINIT and GSS-API (Negotiate).
  *
- * To get a key certified:
- *
- *  GET /bx509?csr=<base64-encoded-PKCS#10-CSR>
- *
- * To get an HTTP/Negotiate token:
- *
- *  GET /bnegotiate?target=<acceptor-principal>
- *
- * which, if authorized, produces a Negotiate token (base64-encoded, as
- * expected, with the "Negotiate " prefix, ready to be put in an Authorization:
- * header).
+ * See the manual page for HTTP API details.
  *
  * TBD:
  *  - rewrite to not use libmicrohttpd but an alternative more appropriate to
  *    Heimdal's license (though libmicrohttpd will do)
- *  - /bx509 should include the certificate chain
- *  - /bx509 should support HTTP/Negotiate
  *  - there should be an end-point for fetching an issuer's chain
- *  - maybe add /bkrb5 which returns a KRB-CRED with the user's TGT
  *
  * NOTES:
  *  - We use krb5_error_code values as much as possible.  Where we need to use
@@ -67,6 +54,49 @@
  *    MHD_NO.
  *
  *    (MHD_NO is an ENOMEM-cannot-even-make-a-static-503-response level event.)
+ */
+
+/*
+ * Theory of operation:
+ *
+ *  - We use libmicrohttpd (MHD) for the HTTP(S) implementation.
+ *
+ *  - MHD has an online request processing model:
+ *
+ *     - all requests are handled via the `dh' and `dh_cls' closure arguments
+ *       of `MHD_start_daemon()'; ours is called `route()'
+ *
+ *     - `dh' is called N+1 times:
+ *        - once to allocate a request context
+ *        - once for every N chunks of request body
+ *        - once to process the request and produce a response
+ *
+ *     - the response cannot begin to be produced before consuming the whole
+ *       request body (for requests that have a body)
+ *       (this seems like a bug in MHD)
+ *
+ *     - the response body can be produced over multiple calls (i.e., in an
+ *       online manner)
+ *
+ *  - Our `route()' processes any POST request body form data / multipart by
+ *    treating all the key/value pairs as if they had been additional URI query
+ *    parameters.
+ *
+ *  - Then `route()' calls a handler appropriate to the URI local-part with the
+ *    request context, and the handler produces a response in one call.
+ *
+ *    I.e., we turn the online MHD request processing into not-online.  Our
+ *    handlers are presented with complete requests and must produce complete
+ *    responses in one call.
+ *
+ *  - `route()' also does any authentication and CSRF protection so that the
+ *    request handlers don't have to.
+ *
+ * This non-online request handling approach works for most everything we want
+ * to do.  However, for /get-tgts with very large numbers of principals, we
+ * might have to revisit this, using MHD_create_response_from_callback() or
+ * MHD_create_response_from_pipe() (and a thread to do the actual work of
+ * producing the body) instead of MHD_create_response_from_buffer().
  */
 
 #define _XOPEN_SOURCE_EXTENDED  1
@@ -128,20 +158,40 @@ typedef enum MHD_Result heim_mhd_result;
 
 enum k5_creds_kind { K5_CREDS_EPHEMERAL, K5_CREDS_CACHED };
 
+/*
+ * This is to keep track of memory we need to free, mainly because we had to
+ * duplicate data from the MHD POST form data processor.
+ */
+struct free_tend_list {
+    void *freeme1;
+    void *freeme2;
+    struct free_tend_list *next;
+};
+
+/* Per-request context data structure */
 typedef struct bx509_request_desc {
+    /* Common elements for Heimdal request/response services */
     HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
 
     struct MHD_Connection *connection;
+    struct MHD_PostProcessor *pp;
+    struct MHD_Response *response;
     krb5_times token_times;
     time_t req_life;
     hx509_request req;
+    struct free_tend_list *free_list;
     const char *for_cname;
     const char *target;
     const char *redir;
+    const char *method;
+    size_t post_data_size;
     enum k5_creds_kind cckind;
     char *pkix_store;
+    char *tgts_filename;
+    FILE *tgts;
     char *ccname;
     char *freeme1;
+    char *csrf_token;
     krb5_addresses tgt_addresses; /* For /get-tgt */
     char frombuf[128];
 } *bx509_request_desc;
@@ -214,7 +264,17 @@ get_krb5_context(krb5_context *contextp)
     return *contextp ? 0 : ENOMEM;
 }
 
+typedef enum {
+    CSRF_PROT_UNSPEC            = 0,
+    CSRF_PROT_GET_WITH_HEADER   = 1,
+    CSRF_PROT_GET_WITH_TOKEN    = 2,
+    CSRF_PROT_POST_WITH_HEADER  = 8,
+    CSRF_PROT_POST_WITH_TOKEN   = 16,
+} csrf_protection_type;
+
+static csrf_protection_type csrf_prot_type = CSRF_PROT_UNSPEC;
 static int port = -1;
+static int allow_GET_flag = -1;
 static int help_flag;
 static int daemonize;
 static int daemon_child_fd = -1;
@@ -223,10 +283,15 @@ static int version_flag;
 static int reverse_proxied_flag;
 static int thread_per_client_flag;
 struct getarg_strings audiences;
+static getarg_strings csrf_prot_type_strs;
+static const char *csrf_header = "X-CSRF";
 static const char *cert_file;
 static const char *priv_key_file;
 static const char *cache_dir;
+static const char *csrf_key_file;
 static char *impersonation_key_fn;
+
+static char csrf_key[16];
 
 static krb5_error_code resp(struct bx509_request_desc *, int,
                             enum MHD_ResponseMemoryMode, const char *,
@@ -243,6 +308,7 @@ static krb5_error_code bad_404(struct bx509_request_desc *, const char *);
 static krb5_error_code bad_405(struct bx509_request_desc *, const char *);
 static krb5_error_code bad_500(struct bx509_request_desc *, krb5_error_code, const char *);
 static krb5_error_code bad_503(struct bx509_request_desc *, krb5_error_code, const char *);
+static heim_mhd_result validate_csrf_token(struct bx509_request_desc *r);
 
 static int
 validate_token(struct bx509_request_desc *r)
@@ -409,16 +475,20 @@ mk_pkix_store(char **pkix_store)
     int ret = ENOMEM;
     int fd;
 
+    if (*pkix_store) {
+        const char *fn = strchr(*pkix_store, ':');
+
+        fn = fn ? fn + 1 : *pkix_store;
+        (void) unlink(fn);
+    }
+
+    free(*pkix_store);
     *pkix_store = NULL;
     if (asprintf(&s, "PEM-FILE:%s/pkix-XXXXXX", cache_dir) == -1 ||
         s == NULL) {
         free(s);
         return ret;
     }
-    /*
-     * This way of using mkstemp() isn't safer than mktemp(), but we want to
-     * quiet the warning that we'd get if we used mktemp().
-     */
     if ((fd = mkstemp(s + sizeof("PEM-FILE:") - 1)) == -1) {
         free(s);
         return errno;
@@ -428,11 +498,6 @@ mk_pkix_store(char **pkix_store)
     return 0;
 }
 
-/*
- * XXX Shouldn't be a body, but a status message.  The body should be
- * configurable to be from a file.  MHD doesn't give us a way to set the
- * response status message though, just the body.
- */
 static krb5_error_code
 resp(struct bx509_request_desc *r,
      int http_status_code,
@@ -442,26 +507,31 @@ resp(struct bx509_request_desc *r,
      size_t bodylen,
      const char *token)
 {
-    struct MHD_Response *response;
     int mret = MHD_YES;
+
+    if (r->response)
+        return MHD_YES;
 
     (void) gettimeofday(&r->tv_end, NULL);
     if (http_status_code == MHD_HTTP_OK ||
         http_status_code == MHD_HTTP_TEMPORARY_REDIRECT)
         audit_trail(r, 0);
 
-    response = MHD_create_response_from_buffer(bodylen, rk_UNCONST(body),
-                                               rmmode);
-    if (response == NULL)
+    r->response = MHD_create_response_from_buffer(bodylen, rk_UNCONST(body),
+                                                  rmmode);
+    if (r->response == NULL)
         return -1;
-    mret = MHD_add_response_header(response, MHD_HTTP_HEADER_CACHE_CONTROL,
-                                   "no-store, max-age=0");
+    if (r->csrf_token)
+        mret = MHD_add_response_header(r->response, "X-CSRF-Token", r->csrf_token);
+    if (mret == MHD_YES)
+        mret = MHD_add_response_header(r->response, MHD_HTTP_HEADER_CACHE_CONTROL,
+                                       "no-store, max-age=0");
     if (mret == MHD_YES && http_status_code == MHD_HTTP_UNAUTHORIZED) {
-        mret = MHD_add_response_header(response,
+        mret = MHD_add_response_header(r->response,
                                        MHD_HTTP_HEADER_WWW_AUTHENTICATE,
                                        "Bearer");
         if (mret == MHD_YES)
-            mret = MHD_add_response_header(response,
+            mret = MHD_add_response_header(r->response,
                                            MHD_HTTP_HEADER_WWW_AUTHENTICATE,
                                            "Negotiate");
     } else if (mret == MHD_YES && http_status_code == MHD_HTTP_TEMPORARY_REDIRECT) {
@@ -470,21 +540,21 @@ resp(struct bx509_request_desc *r,
         /* XXX Move this */
         redir = MHD_lookup_connection_value(r->connection, MHD_GET_ARGUMENT_KIND,
                                             "redirect");
-        mret = MHD_add_response_header(response, MHD_HTTP_HEADER_LOCATION,
+        mret = MHD_add_response_header(r->response, MHD_HTTP_HEADER_LOCATION,
                                        redir);
         if (mret != MHD_NO && token)
-            mret = MHD_add_response_header(response,
+            mret = MHD_add_response_header(r->response,
                                            MHD_HTTP_HEADER_AUTHORIZATION,
                                            token);
     }
     if (mret == MHD_YES && content_type) {
-        mret = MHD_add_response_header(response,
+        mret = MHD_add_response_header(r->response,
                                        MHD_HTTP_HEADER_CONTENT_TYPE,
                                        content_type);
     }
     if (mret == MHD_YES)
-        mret = MHD_queue_response(r->connection, http_status_code, response);
-    MHD_destroy_response(response);
+        mret = MHD_queue_response(r->connection, http_status_code, r->response);
+    MHD_destroy_response(r->response);
     return mret == MHD_NO ? -1 : 0;
 }
 
@@ -520,7 +590,7 @@ bad_reqv(struct bx509_request_desc *r,
             emsg = strerror(code);
     }
 
-    ret = vasprintf(&formatted, fmt, ap) == -1;
+    ret = vasprintf(&formatted, fmt, ap);
     if (code) {
         if (ret > -1 && formatted)
             ret = asprintf(&msg, "%s: %s (%d)", formatted, emsg, (int)code);
@@ -599,6 +669,13 @@ bad_405(struct bx509_request_desc *r, const char *method)
 {
     return bad_req(r, EPERM, MHD_HTTP_METHOD_NOT_ALLOWED,
                    "Method not supported: %s", method);
+}
+
+static krb5_error_code
+bad_413(struct bx509_request_desc *r)
+{
+    return bad_req(r, E2BIG, MHD_HTTP_METHOD_NOT_ALLOWED,
+                   "POST request body too large");
 }
 
 static krb5_error_code
@@ -871,20 +948,28 @@ addr_to_string(krb5_context context,
         snprintf(str, len, "<family=%d>", addr->sa_family);
 }
 
+static void clean_req_desc(struct bx509_request_desc *);
+
 static krb5_error_code
 set_req_desc(struct MHD_Connection *connection,
+             const char *method,
              const char *url,
-             struct bx509_request_desc *r)
+             struct bx509_request_desc **rp)
 {
+    struct bx509_request_desc *r;
     const union MHD_ConnectionInfo *ci;
     const char *token;
     krb5_error_code ret;
 
-    memset(r, 0, sizeof(*r));
+    *rp = NULL;
+    if ((r = calloc(1, sizeof(*r))) == NULL)
+        return ENOMEM;
     (void) gettimeofday(&r->tv_start, NULL);
 
     ret = get_krb5_context(&r->context);
     r->connection = connection;
+    r->response = NULL;
+    r->pp = NULL;
     r->request.data = "<HTTP-REQUEST>";
     r->request.length = sizeof("<HTTP-REQUEST>");
     r->from = r->frombuf;
@@ -893,12 +978,17 @@ set_req_desc(struct MHD_Connection *connection,
     r->hcontext = r->context ? r->context->hcontext : NULL;
     r->config = NULL;
     r->logf = logfac;
+    r->csrf_token = NULL;
+    r->free_list = NULL;
+    r->method = method;
     r->reqtype = url;
     r->target = r->redir = NULL;
     r->pkix_store = NULL;
     r->for_cname = NULL;
     r->freeme1 = NULL;
     r->reason = NULL;
+    r->tgts_filename = NULL;
+    r->tgts = NULL;
     r->ccname = NULL;
     r->reply = NULL;
     r->sname = NULL;
@@ -934,6 +1024,10 @@ set_req_desc(struct MHD_Connection *connection,
 
     }
 
+    if (ret == 0)
+        *rp = r;
+    else
+        clean_req_desc(r);
     return ret;
 }
 
@@ -942,6 +1036,13 @@ clean_req_desc(struct bx509_request_desc *r)
 {
     if (!r)
         return;
+    while (r->free_list) {
+        struct free_tend_list *ftl = r->free_list;
+        r->free_list = r->free_list->next;
+        free(ftl->freeme1);
+        free(ftl->freeme2);
+        free(ftl);
+    }
     if (r->pkix_store) {
         const char *fn = strchr(r->pkix_store, ':');
 
@@ -955,6 +1056,7 @@ clean_req_desc(struct bx509_request_desc *r)
     }
     krb5_free_addresses(r->context, &r->tgt_addresses);
     hx509_request_free(&r->req);
+    heim_release(r->attributes);
     heim_release(r->reason);
     heim_release(r->kv);
     if (r->ccname && r->cckind == K5_CREDS_EPHEMERAL) {
@@ -964,11 +1066,22 @@ clean_req_desc(struct bx509_request_desc *r)
             fn += sizeof("FILE:") - 1;
         (void) unlink(fn);
     }
+    if (r->tgts)
+        (void) fclose(r->tgts);
+    if (r->tgts_filename) {
+        (void) unlink(r->tgts_filename);
+        free(r->tgts_filename);
+    }
+    /* No need to destroy r->response */
+    if (r->pp)
+        MHD_destroy_post_processor(r->pp);
+    free(r->csrf_token);
     free(r->pkix_store);
     free(r->freeme1);
     free(r->ccname);
     free(r->cname);
     free(r->sname);
+    free(r);
 }
 
 /* Implements GETs of /bx509 */
@@ -983,9 +1096,6 @@ bx509(struct bx509_request_desc *r)
                                       "csr");
     if (csr == NULL)
         return bad_400(r, EINVAL, "CSR is missing");
-
-    if ((ret = validate_token(r)))
-        return ret; /* validate_token() calls bad_req() */
 
     if (r->cname == NULL)
         return bad_403(r, EINVAL,
@@ -1424,9 +1534,8 @@ k5_get_creds(struct bx509_request_desc *r, enum k5_creds_kind kind)
     if ((ret = k5_do_CA(r)))
         return ret; /* k5_do_CA() calls bad_req() */
 
-    if (ret == 0 && (ret = do_pkinit(r, kind)))
-        ret = bad_403(r, ret,
-                      "Could not acquire Kerberos credentials using PKINIT");
+    if (ret == 0)
+        ret = do_pkinit(r, kind);
     return ret;
 }
 
@@ -1682,15 +1791,11 @@ bnegotiate(struct bx509_request_desc *r)
     char *nego_tok = NULL;
 
     ret = bnegotiate_get_target(r);
-    if (ret == 0) {
-        heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS, "target", "%s",
-                         r->target ? r->target : "<unknown>");
-        heim_audit_setkv_bool((heim_svc_req_desc)r, "redir", !!r->redir);
-        ret = validate_token(r);
-    }
-    /* bnegotiate_get_target() and validate_token() call bad_req() */
     if (ret)
-        return ret;
+        return ret; /* bnegotiate_get_target() calls bad_req() */
+    heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS, "target", "%s",
+                     r->target ? r->target : "<unknown>");
+    heim_audit_setkv_bool((heim_svc_req_desc)r, "redir", !!r->redir);
 
     /*
      * Make sure we have Kerberos credentials for cprinc.  If we have them
@@ -1702,7 +1807,8 @@ bnegotiate(struct bx509_request_desc *r)
      */
     ret = k5_get_creds(r, K5_CREDS_CACHED);
     if (ret)
-        return ret;
+        return bad_403(r, ret,
+                      "Could not acquire Kerberos credentials using PKINIT");
 
     /* Acquire the Negotiate token and output it */
     if (ret == 0 && r->ccname != NULL)
@@ -1795,10 +1901,17 @@ get_tgt_param_cb(void *d,
 /*
  * Implements /get-tgt end-point.
  *
- * Query parameters (mutually exclusive):
+ * Query parameters:
  *
  *  - cname=<name> (client principal name, if not the same as the authenticated
- *                  name, then this will be impersonated if allowed)
+ *                  name, then this will be impersonated if allowed; may be
+ *                  given only once)
+ *
+ *  - address=<IP> (IP address to add as a ticket address; may be given
+ *                  multiple times)
+ *
+ *  - lifetime=<time> (requested lifetime for the ticket; may be given only
+ *                     once)
  */
 static krb5_error_code
 get_tgt(struct bx509_request_desc *r)
@@ -1812,12 +1925,9 @@ get_tgt(struct bx509_request_desc *r)
                                                MHD_GET_ARGUMENT_KIND, "cname");
     if (r->for_cname && r->for_cname[0] == '\0')
         r->for_cname = NULL;
-    ret = validate_token(r);
-    if (ret == 0)
-        ret = authorize_TGT_REQ(r);
-    /* validate_token() and authorize_TGT_REQ() call bad_req() */
+    ret = authorize_TGT_REQ(r);
     if (ret)
-        return ret;
+        return ret; /* authorize_TGT_REQ() calls bad_req() */
 
     r->error_code = 0;
     (void) MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
@@ -1828,7 +1938,8 @@ get_tgt(struct bx509_request_desc *r)
     if (ret == 0)
         ret = k5_get_creds(r, K5_CREDS_EPHEMERAL);
     if (ret)
-        return ret;
+        return bad_403(r, ret,
+                      "Could not acquire Kerberos credentials using PKINIT");
 
     fn = strchr(r->ccname, ':');
     if (fn == NULL)
@@ -1839,6 +1950,262 @@ get_tgt(struct bx509_request_desc *r)
 
     ret = resp(r, MHD_HTTP_OK, MHD_RESPMEM_MUST_COPY,
                "application/x-krb5-ccache", body, bodylen, NULL);
+    free(body);
+    return ret;
+}
+
+static int
+get_tgts_accumulate_ccache_write_json(struct bx509_request_desc *r,
+                                      krb5_error_code code,
+                                      const char *data,
+                                      size_t datalen)
+{
+    heim_object_t k, v;
+    heim_string_t text;
+    heim_error_t e = NULL;
+    heim_dict_t o;
+    int ret;
+
+    o = heim_dict_create(9);
+    k = heim_string_create("name");
+    v = heim_string_create(r->for_cname);
+    if (o && k && v)
+        ret = heim_dict_set_value(o, k, v);
+    else
+        ret = errno;
+
+    if (ret == 0) {
+        heim_release(v);
+        heim_release(k);
+        k = heim_string_create("error_code");
+        v = heim_number_create(code);
+        if (k && v)
+            ret = heim_dict_set_value(o, k, v);
+    }
+    if (ret == 0 && data != NULL) {
+        heim_release(v);
+        heim_release(k);
+        k = heim_string_create("ccache");
+        v = heim_data_create(data, datalen);
+        if (k && v)
+            ret = heim_dict_set_value(o, k, v);
+    }
+    if (ret == 0 && code != 0) {
+        heim_release(v);
+        heim_release(k);
+        k = heim_string_create("error");
+        v = heim_string_create(krb5_get_error_message(r->context, code));
+        if (k && v)
+            ret = heim_dict_set_value(o, k, v);
+    }
+    heim_release(v);
+    heim_release(k);
+    if (ret) {
+        heim_release(o);
+        return bad_503(r, errno, "Out of memory");
+    }
+
+    text = heim_json_copy_serialize(o,
+                                    HEIM_JSON_F_NO_DATA_DICT |
+                                    HEIM_JSON_F_ONE_LINE,
+                                    &e);
+    if (text) {
+        const char *s = heim_string_get_utf8(text);
+
+        (void) fwrite(s, strlen(s), 1, r->tgts);
+    } else {
+        const char *s = NULL;
+        v = heim_error_copy_string(e);
+        if (v)
+            s = heim_string_get_utf8(v);
+        if (s == NULL)
+            s = "<unknown encoder error>";
+        krb5_log_msg(r->context, logfac, 1, NULL, "Failed to encode JSON text with ccache or error for %s: %s",
+                     r->for_cname, s);
+        heim_release(v);
+    }
+    heim_release(text);
+    heim_release(o);
+    return MHD_YES;
+}
+
+/* Writes one ccache to a response file, as JSON */
+static int
+get_tgts_accumulate_ccache(struct bx509_request_desc *r, krb5_error_code ret)
+{
+    const char *fn;
+    size_t bodylen = 0;
+    void *body = NULL;
+    int res;
+
+    if (r->tgts == NULL) {
+        int fd = -1;
+
+        if (asprintf(&r->tgts_filename,
+                     "%s/tgts-json-XXXXXX", cache_dir) == -1 ||
+            r->tgts_filename == NULL) {
+            free(r->tgts_filename);
+            r->tgts_filename = NULL;
+
+            return bad_enomem(r, r->error_code = ENOMEM);
+        }
+        if ((fd = mkstemp(r->tgts_filename)) == -1)
+            return bad_req(r, errno, MHD_HTTP_SERVICE_UNAVAILABLE,
+                           "%s", strerror(r->error_code = errno));
+        if ((r->tgts = fdopen(fd, "w+")) == NULL) {
+            (void) close(fd);
+            return bad_req(r, errno, MHD_HTTP_SERVICE_UNAVAILABLE,
+                           "%s", strerror(r->error_code = errno));
+        }
+    }
+
+    if (ret == 0) {
+        fn = strchr(r->ccname, ':');
+        if (fn == NULL)
+            return bad_req(r, errno, MHD_HTTP_SERVICE_UNAVAILABLE,
+                           "Internal error (invalid credentials cache name)");
+        fn++;
+        if ((r->error_code = rk_undumpdata(fn, &body, &bodylen)))
+            return bad_req(r, errno, MHD_HTTP_SERVICE_UNAVAILABLE,
+                           "%s", strerror(r->error_code));
+        (void) unlink(fn);
+        free(r->ccname);
+        r->ccname = NULL;
+        if (bodylen > INT_MAX >> 4) {
+            free(body);
+            return bad_req(r, errno, MHD_HTTP_SERVICE_UNAVAILABLE,
+                           "Credentials cache too large!");
+        }
+    }
+
+    res = get_tgts_accumulate_ccache_write_json(r, ret, body, bodylen);
+    free(body);
+    return res;
+}
+
+static heim_mhd_result
+get_tgts_param_authorize_cb(void *d,
+                            enum MHD_ValueKind kind,
+                            const char *key,
+                            const char *val)
+{
+    struct bx509_request_desc *r = d;
+    krb5_error_code ret = 0;
+
+    if (strcmp(key, "cname") != 0 || val == NULL)
+        return MHD_YES;
+
+    if (r->req == NULL) {
+        ret = hx509_request_init(r->context->hx509ctx, &r->req);
+        if (ret == 0)
+            ret = hx509_request_add_eku(r->context->hx509ctx, r->req,
+                                        ASN1_OID_ID_PKEKUOID);
+        if (ret)
+            return bad_500(r, ret, "Out of resources");
+    }
+    heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
+                     "requested_krb5PrincipalName", "%s", val);
+    ret = hx509_request_add_pkinit(r->context->hx509ctx, r->req,
+                                   val);
+    if (ret)
+        return bad_403(r, ret, "Not authorized to requested TGT");
+    return MHD_YES;
+}
+
+/* For each requested principal, produce a ccache */
+static heim_mhd_result
+get_tgts_param_execute_cb(void *d,
+                          enum MHD_ValueKind kind,
+                          const char *key,
+                          const char *val)
+{
+    struct bx509_request_desc *r = d;
+    heim_mhd_result res = MHD_YES;
+    krb5_error_code ret;
+
+    if (strcmp(key, "cname") == 0 && val) {
+        /* Handled upstairs */
+        r->for_cname = val;
+        ret = k5_get_creds(r, K5_CREDS_EPHEMERAL);
+        res = get_tgts_accumulate_ccache(r, ret);
+    } else {
+        /* Handled upstairs */
+    }
+    return res;
+}
+
+/*
+ * Implements /get-tgts end-point.
+ *
+ * Query parameters:
+ *
+ *  - cname=<name> (client principal name, if not the same as the authenticated
+ *                  name, then this will be impersonated if allowed; may be
+ *                  given multiple times)
+ */
+static krb5_error_code
+get_tgts(struct bx509_request_desc *r)
+{
+    krb5_error_code ret;
+    krb5_principal p = NULL;
+    size_t bodylen;
+    void *body;
+    int res = MHD_YES;
+
+    /* Prep to authorize */
+    ret = krb5_parse_name(r->context, r->cname, &p);
+    if (ret)
+        return bad_403(r, ret, "Could not parse caller principal name");
+    if (ret == 0) {
+        /* Extract q-params other than `cname' */
+        r->error_code = 0;
+        res = MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
+                                        get_tgt_param_cb, r);
+        if (r->response || res == MHD_NO)
+            return res;
+
+        ret = r->error_code;
+    }
+    if (ret == 0) {
+        /* Authorize requested client principal names (calls bad_req()) */
+        r->error_code = 0;
+        res = MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
+                                        get_tgts_param_authorize_cb, r);
+        if (r->response || res == MHD_NO)
+            return res;
+
+        ret = r->error_code;
+        if (ret == 0) {
+            ret = kdc_authorize_csr(r->context, "get-tgt", r->req, p);
+            if (ret) {
+                krb5_free_principal(r->context, p);
+                return bad_403(r, ret, "Permission denied");
+            }
+        }
+        hx509_request_free(&r->req);
+    }
+    if (ret == 0) {
+        /* get_tgts_param_execute_cb() calls bad_req() */
+        r->error_code = 0;
+        res = MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
+                                        get_tgts_param_execute_cb, r);
+        if (r->response || res == MHD_NO)
+            return res;
+        ret = r->error_code;
+    }
+    krb5_free_principal(r->context, p);
+
+    /*
+     * get_tgts_param_execute_cb() will write its JSON response to the file
+     * named by r->ccname.
+     */
+    if (fflush(r->tgts) != 0)
+        return bad_503(r, ret, "Could not get TGT");
+    if ((errno = rk_undumpdata(r->tgts_filename, &body, &bodylen)))
+        return bad_503(r, ret, "Could not get TGT");
+
+    ret = resp(r, MHD_HTTP_OK, MHD_RESPMEM_MUST_COPY,
+               "application/x-krb5-ccaches-json", body, bodylen, NULL);
     free(body);
     return ret;
 }
@@ -1856,7 +2223,250 @@ health(const char *method, struct bx509_request_desc *r)
 
 }
 
-/* Implements the entirety of this REST service */
+static krb5_error_code
+mac_csrf_token(struct bx509_request_desc *r, krb5_storage *sp)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    char mac[EVP_MAX_MD_SIZE];
+    unsigned int maclen = sizeof(mac);
+    HMAC_CTX *ctx = NULL;
+
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret == 0 && (ctx = HMAC_CTX_new()) == NULL)
+            ret = krb5_enomem(r->context);
+    /* HMAC the token body and the client principal name */
+    if (ret == 0) {
+        if (HMAC_Init_ex(ctx, csrf_key, sizeof(csrf_key),
+                         EVP_sha256(),
+                         NULL) == 0) {
+            HMAC_CTX_cleanup(ctx);
+            ret = krb5_enomem(r->context);
+        } else {
+            HMAC_Update(ctx, data.data, data.length);
+            if (r->cname)
+                HMAC_Update(ctx, r->cname, strlen(r->cname));
+            HMAC_Final(ctx, mac, &maclen);
+            HMAC_CTX_cleanup(ctx);
+            krb5_data_free(&data);
+            data.length = maclen;
+            data.data = mac;
+            if (krb5_storage_write(sp, mac, maclen) != maclen)
+                ret = krb5_enomem(r->context);
+        }
+    }
+    if (ctx)
+        HMAC_CTX_free(ctx);
+    return ret;
+}
+
+/*
+ * Make a CSRF token.  If one is also given, make one with the same body
+ * content so we can check the HMAC.
+ *
+ * Outputs the token and its age.  Do not use either if the token does not
+ * equal the given token.
+ */
+static krb5_error_code
+make_csrf_token(struct bx509_request_desc *r,
+                const char *given,
+                char **token,
+                int64_t *age)
+{
+    krb5_error_code ret = 0;
+    unsigned char given_decoded[128];
+    krb5_storage *sp = NULL;
+    krb5_data data;
+    ssize_t dlen = -1;
+    uint64_t nonce;
+    int64_t t = 0;
+
+
+    *age = 0;
+    data.data = NULL;
+    data.length = 0;
+    if (given) {
+        size_t len = strlen(given);
+
+        /* Extract issue time and nonce from token */
+        if (len >= sizeof(given_decoded))
+            ret = ERANGE;
+        if (ret == 0 && (dlen = rk_base64_decode(given, &given_decoded)) <= 0)
+            ret = errno;
+        if (ret == 0 &&
+            (sp = krb5_storage_from_mem(given_decoded, dlen)) == NULL)
+            ret = krb5_enomem(r->context);
+        if (ret == 0)
+            ret = krb5_ret_int64(sp, &t);
+        if (ret == 0)
+            ret = krb5_ret_uint64(sp, &nonce);
+        krb5_storage_free(sp);
+        sp = NULL;
+        if (ret == 0)
+            *age = time(NULL) - t;
+    } else {
+        t = time(NULL);
+        krb5_generate_random_block((void *)&nonce, sizeof(nonce));
+    }
+
+    if (ret == 0 && (sp = krb5_storage_emem()) == NULL)
+        ret = krb5_enomem(r->context);
+    if (ret == 0)
+        ret = krb5_store_int64(sp, t);
+    if (ret == 0)
+        ret = krb5_store_uint64(sp, nonce);
+    if (ret == 0)
+        ret = mac_csrf_token(r, sp);
+    if (ret == 0)
+        ret = krb5_storage_to_data(sp, &data);
+    if (ret == 0 && data.length > INT_MAX)
+        ret = ERANGE;
+    if (ret == 0 &&
+        (dlen = rk_base64_encode(data.data, data.length, token)) < 0)
+        ret = errno;
+    krb5_storage_free(sp);
+    krb5_data_free(&data);
+    return ret;
+}
+
+static heim_mhd_result
+validate_csrf_token(struct bx509_request_desc *r)
+{
+    const char *given;
+    int64_t age;
+    krb5_error_code ret;
+
+    if ((((csrf_prot_type & CSRF_PROT_GET_WITH_HEADER) &&
+          strcmp(r->method, "GET") == 0) ||
+         ((csrf_prot_type & CSRF_PROT_POST_WITH_HEADER) &&
+          strcmp(r->method, "POST") == 0)) &&
+        MHD_lookup_connection_value(r->connection, MHD_HEADER_KIND,
+                                    csrf_header) == NULL) {
+        ret = bad_req(r, EACCES, MHD_HTTP_FORBIDDEN,
+                      "Request must have header \"%s\"", csrf_header);
+        return ret == -1 ? MHD_NO : MHD_YES;
+    }
+
+    if (strcmp(r->method, "GET") == 0 &&
+        !(csrf_prot_type & CSRF_PROT_GET_WITH_TOKEN))
+        return 0;
+    if (strcmp(r->method, "POST") == 0 &&
+        !(csrf_prot_type & CSRF_PROT_POST_WITH_TOKEN))
+        return 0;
+
+    given = MHD_lookup_connection_value(r->connection, MHD_HEADER_KIND,
+                                        "X-CSRF-Token");
+    ret = make_csrf_token(r, given, &r->csrf_token, &age);
+    if (ret)
+        return bad_503(r, ret, "Could not make or validate CSRF token");
+    if (given == NULL)
+        return bad_req(r, EACCES, MHD_HTTP_FORBIDDEN,
+                       "CSRF token needed; copy the X-CSRF-Token: response "
+                       "header to your next POST");
+    if (strlen(given) != strlen(r->csrf_token) ||
+        strcmp(given, r->csrf_token) != 0)
+        return bad_403(r, EACCES, "Invalid CSRF token");
+    if (age > 300)
+        return bad_403(r, EACCES, "CSRF token expired");
+    return 0;
+}
+
+/*
+ * MHD callback to free the request context when MHD is done sending the
+ * response.
+ */
+static void
+cleanup_req(void *cls,
+            struct MHD_Connection *connection,
+            void **con_cls,
+            enum MHD_RequestTerminationCode toe)
+{
+    struct bx509_request_desc *r = *con_cls;
+
+    (void)cls;
+    (void)connection;
+    (void)toe;
+    clean_req_desc(r);
+    *con_cls = NULL;
+}
+
+/* Callback for MHD POST form data processing */
+static heim_mhd_result
+ip(void *cls,
+   enum MHD_ValueKind kind,
+   const char *key,
+   const char *content_name,
+   const char *content_type,
+   const char *transfer_encoding,
+   const char *val,
+   uint64_t off,
+   size_t size)
+{
+    struct bx509_request_desc *r = cls;
+    struct free_tend_list *ftl = calloc(1, sizeof(*ftl));
+    char *keydup = strdup(key);
+    char *valdup = strndup(val, size);
+
+    (void)content_name;         /* MIME attachment name */
+    (void)content_type;         /* Don't care -- MHD liked it */
+    (void)transfer_encoding;
+    (void)off;                  /* Offset in POST data */
+
+    /*
+     * We're going to MHD_set_connection_value(), but we need copies because
+     * the MHD POST processor quite naturally keeps none of the chunks
+     * received.
+     */
+    if (ftl == NULL || keydup == NULL || valdup == NULL) {
+        free(ftl);
+        free(keydup);
+        return MHD_NO;
+    }
+    ftl->freeme1 = keydup;
+    ftl->freeme2 = valdup;
+    ftl->next = r->free_list;
+    r->free_list = ftl;
+
+    return MHD_set_connection_value(r->connection, MHD_GET_ARGUMENT_KIND,
+                                    keydup, valdup);
+}
+
+typedef krb5_error_code (*handler)(struct bx509_request_desc *);
+
+struct route {
+    const char *local_part;
+    handler h;
+    unsigned int referer_ok:1;
+} routes[] = {
+    { "/get-cert", bx509, 0 },
+    { "/get-negotiate-token", bnegotiate, 1 },
+    { "/get-tgt", get_tgt, 0 },
+    { "/get-tgts", get_tgts, 0 },
+    /* Lousy old names to be removed eventually */
+    { "/bnegotiate", bnegotiate, 1 },
+    { "/bx509", bx509, 0 },
+};
+
+/*
+ * We should commonalize all of:
+ *
+ *  - route() and related infrastructure
+ *  - including the CSRF functions
+ *  - and Negotiate/Bearer authentication
+ *
+ * so that we end up with a simple framework that our daemons can invoke to
+ * serve simple functions that take a fully-consumed request and send a
+ * response.
+ *
+ * Then:
+ *
+ *  - split out the CA and non-CA bits into separate daemons using that common
+ *    code,
+ *  - make httpkadmind use that common code,
+ *  - abstract out all the MHD stuff.
+ */
+
+/* Routes requests */
 static heim_mhd_result
 route(void *cls,
       struct MHD_Connection *connection,
@@ -1867,46 +2477,137 @@ route(void *cls,
       size_t *upload_data_size,
       void **ctx)
 {
-    static int aptr = 0;
-    struct bx509_request_desc r;
+    struct bx509_request_desc *r = *ctx;
+    size_t i;
     int ret;
 
-    if (*ctx == NULL) {
+    if (r == NULL) {
         /*
          * This is the first call, right after headers were read.
          *
          * We must return quickly so that any 100-Continue might be sent with
-         * celerity.
+         * celerity.  We want to make sure to send any 401s early, so we check
+         * WWW-Authenticate now, not later.
          *
-         * We'll get called again to really do the processing.  If we handled
-         * POSTs then we'd also get called with upload_data != NULL between the
-         * first and last calls.  We need to keep no state between the first
-         * and last calls, but we do need to distinguish first and last call,
-         * so we use the ctx argument for this.
+         * We'll get called again to really do the processing.  If we're
+         * handling a POST then we'll also get called with upload_data != NULL,
+         * possibly multiple times.
          */
-        *ctx = &aptr;
+        if ((ret = set_req_desc(connection, method, url, &r)))
+            return bad_503(r, ret, "Could not initialize request state");
+        *ctx = r;
+
+        /* All requests other than /health require authentication */
+        if (strcmp(url, "/health") == 0)
+            return MHD_YES;
+
+        /*
+         * Authenticate and do CSRF protection.
+         *
+         * If the Referer: header is set in the request, we don't want CSRF
+         * protection as only /get-negotiate-token will accept a Referer:
+         * header (see routes[] and below), so we'll call validate_csrf_token()
+         * for the other routes or reject the request for having Referer: set.
+         */
+        ret = validate_token(r);
+        if (ret == 0 &&
+            MHD_lookup_connection_value(r->connection, MHD_HEADER_KIND, "Referer") == NULL)
+            ret = validate_csrf_token(r);
+
+        /*
+         * As this is the initial call to this handler, we must return now.
+         *
+         * If authentication or CSRF protection failed then we'll already have
+         * enqueued a 401, 403, or 5xx response and then we're done.
+         *
+         * If both authentication and CSRF protection succeeded then no
+         * response has been queued up and we'll get called again to finally
+         * process the request, then this entire if block will not be executed.
+         */
+        return ret == -1 ? MHD_NO : MHD_YES;
+    }
+
+    /* Validate HTTP method */
+    if (strcmp(method, "GET") != 0 &&
+        strcmp(method, "POST") != 0 &&
+        strcmp(method, "HEAD") != 0) {
+        return bad_405(r, method) == -1 ? MHD_NO : MHD_YES;
+    }
+
+    if ((strcmp(method, "HEAD") == 0 || strcmp(method, "GET") == 0) &&
+        (strcmp(url, "/health") == 0 || strcmp(url, "/") == 0)) {
+        /* /health end-point -- no authentication, no CSRF, no nothing */
+        return health(method, r) == -1 ? MHD_NO : MHD_YES;
+    }
+
+    if (r->cname == NULL)
+        return bad_401(r, "Authorization token is missing");
+
+    if (strcmp(method, "POST") == 0 && *upload_data_size != 0) {
+        /*
+         * Consume all the POST body and set form data as MHD_GET_ARGUMENT_KIND
+         * (as if they had been URI query parameters).
+         *
+         * We have to do this before we can MHD_queue_response() as MHD will
+         * not consume the rest of the request body on its own, so it's an
+         * error to MHD_queue_response() before we've done this, and if we do
+         * then MHD just closes the connection.
+         *
+         * 4KB should be more than enough buffer space for all the keys we
+         * expect.
+         */
+        if (r->pp == NULL)
+            r->pp = MHD_create_post_processor(connection, 4096, ip, r);
+        if (r->pp == NULL) {
+            ret = bad_503(r, errno ? errno : ENOMEM,
+                          "Could not consume POST data");
+            return ret == -1 ? MHD_NO : MHD_YES;
+        }
+        if (r->post_data_size + *upload_data_size > 1UL<<17) {
+            return bad_413(r) == -1 ? MHD_NO : MHD_YES;
+        }
+        r->post_data_size += *upload_data_size;
+        if (MHD_post_process(r->pp, upload_data,
+                             *upload_data_size) == MHD_NO) {
+            ret = bad_503(r, errno ? errno : ENOMEM,
+                          "Could not consume POST data");
+            return ret == -1 ? MHD_NO : MHD_YES;
+        }
+        *upload_data_size = 0;
         return MHD_YES;
     }
 
-    if ((ret = set_req_desc(connection, url, &r)))
-        return bad_503(&r, ret, "Could not initialize request state");
-    if ((strcmp(method, "HEAD") == 0 || strcmp(method, "GET") == 0) &&
-        (strcmp(url, "/health") == 0 || strcmp(url, "/") == 0))
-        ret = health(method, &r);
-    else if (strcmp(method, "GET") != 0)
-        ret = bad_405(&r, method);
-    else if (strcmp(url, "/get-cert") == 0 ||
-             strcmp(url, "/bx509") == 0) /* old name */
-        ret = bx509(&r);
-    else if (strcmp(url, "/get-negotiate-token") == 0 ||
-             strcmp(url, "/bnegotiate") == 0) /* old name */
-        ret = bnegotiate(&r);
-    else if (strcmp(url, "/get-tgt") == 0)
-        ret = get_tgt(&r);
-    else
-        ret = bad_404(&r, url);
+    /*
+     * Either this is a HEAD, a GET, or a POST whose request body has now been
+     * received completely and processed.
+     */
 
-    clean_req_desc(&r);
+    /* Allow GET? */
+    if (strcmp(method, "GET") == 0 && !allow_GET_flag) {
+        /* No */
+        return bad_405(r, method) == -1 ? MHD_NO : MHD_YES;
+    }
+
+    for (i = 0; i < sizeof(routes)/sizeof(routes[0]); i++) {
+        if (strcmp(url, routes[i].local_part) != 0)
+            continue;
+        if (!routes[i].referer_ok &&
+            MHD_lookup_connection_value(r->connection,
+                                        MHD_HEADER_KIND,
+                                        "Referer") != NULL) {
+            ret = bad_req(r, EACCES, MHD_HTTP_FORBIDDEN,
+                          "GET from browser not allowed");
+            return ret == -1 ? MHD_NO : MHD_YES;
+        }
+        if (strcmp(method, "HEAD") == 0)
+            ret = resp(r, MHD_HTTP_OK, MHD_RESPMEM_PERSISTENT, NULL, "", 0,
+                       NULL);
+        else
+            ret = routes[i].h(r);
+        return ret == -1 ? MHD_NO : MHD_YES;
+    }
+
+    ret = bad_404(r, url);
     return ret == -1 ? MHD_NO : MHD_YES;
 }
 
@@ -1914,14 +2615,21 @@ static struct getargs args[] = {
     { "help", 'h', arg_flag, &help_flag, "Print usage message", NULL },
     { "version", '\0', arg_flag, &version_flag, "Print version", NULL },
     { NULL, 'H', arg_strings, &audiences,
-        "expected token audience(s) of bx509 service", "HOSTNAME" },
+        "expected token audience(s)", "HOSTNAME" },
     { "daemon", 'd', arg_flag, &daemonize, "daemonize", "daemonize" },
     { "daemon-child", 0, arg_flag, &daemon_child_fd, NULL, NULL }, /* priv */
     { "reverse-proxied", 0, arg_flag, &reverse_proxied_flag,
         "reverse proxied", "listen on 127.0.0.1 and do not use TLS" },
-    { NULL, 'p', arg_integer, &port, "PORT", "port number (default: 443)" },
+    { "port", 'p', arg_integer, &port, "port number (default: 443)", "PORT" },
     { "cache-dir", 0, arg_string, &cache_dir,
         "cache directory", "DIRECTORY" },
+    { "allow-GET", 0, arg_negative_flag, &allow_GET_flag, NULL, NULL },
+    { "csrf-header", 0, arg_flag,
+        &csrf_header, "required request header", "HEADER-NAME" },
+    { "csrf-protection-type", 0, arg_strings, &csrf_prot_type_strs,
+        "Anti-CSRF protection type", "TYPE" },
+    { "csrf-key-file", 0, arg_string, &csrf_key_file,
+        "CSRF MAC key", "FILE" },
     { "cert", 0, arg_string, &cert_file,
         "certificate file path (PEM)", "HX509-STORE" },
     { "private-key", 0, arg_string, &priv_key_file,
@@ -1935,9 +2643,10 @@ static int
 usage(int e)
 {
     arg_printusage(args, sizeof(args) / sizeof(args[0]), "bx509",
-        "\nServes RESTful GETs of /bx509 and /bnegotiate,\n"
-        "performing corresponding kx509 and, possibly, PKINIT requests\n"
-        "to the KDCs of the requested realms (or just the given REALM).\n");
+        "\nServes RESTful GETs of /get-cert, /get-tgt, /get-tgts, and\n"
+        "/get-negotiate-toke, performing corresponding kx509 and, \n"
+        "possibly, PKINIT requests to the KDCs of the requested \n"
+        "realms (or just the given REALM).\n");
     exit(e);
 }
 
@@ -2009,6 +2718,67 @@ load_plugins(krb5_context context)
 #endif
 }
 
+static void
+get_csrf_prot_type(krb5_context context)
+{
+    char * const *strs = csrf_prot_type_strs.strings;
+    size_t n = csrf_prot_type_strs.num_strings;
+    size_t i;
+    char **freeme = NULL;
+
+    if (csrf_header == NULL)
+        csrf_header = krb5_config_get_string(context, NULL, "bx509d",
+                                             "csrf_protection_csrf_header",
+                                             NULL);
+
+    if (n == 0) {
+        char * const *p;
+
+        strs = freeme = krb5_config_get_strings(context, NULL, "bx509d",
+                                                "csrf_protection_type", NULL);
+        for (p = strs; p && p; p++)
+            n++;
+    }
+
+    for (i = 0; i < n; i++) {
+        if (strcmp(strs[i], "GET-with-header") == 0)
+            csrf_prot_type |= CSRF_PROT_GET_WITH_HEADER;
+        else if (strcmp(strs[i], "GET-with-token") == 0)
+            csrf_prot_type |= CSRF_PROT_GET_WITH_TOKEN;
+        else if (strcmp(strs[i], "POST-with-header") == 0)
+            csrf_prot_type |= CSRF_PROT_POST_WITH_HEADER;
+        else if (strcmp(strs[i], "POST-with-token") == 0)
+            csrf_prot_type |= CSRF_PROT_POST_WITH_TOKEN;
+    }
+    free(freeme);
+
+    /*
+     * For GETs we default to no CSRF protection as our GETable resources are
+     * safe and idempotent and we count on the browser not to make the
+     * responses available to cross-site requests.
+     *
+     * But, really, we don't want browsers even making these requests since, if
+     * the browsers behave correctly, then there's no point, and if they don't
+     * behave correctly then that could be catastrophic.  Of course, there's no
+     * guarantee that a browser won't have other catastrophic bugs, but still,
+     * we should probably change this default in the future:
+     *
+     *  if (!(csrf_prot_type & CSRF_PROT_GET_WITH_HEADER) &&
+     *      !(csrf_prot_type & CSRF_PROT_GET_WITH_TOKEN))
+     *      csrf_prot_type |= <whatever-the-new-default-should-be>;
+     */
+
+    /*
+     * For POSTs we default to CSRF protection with anti-CSRF tokens even
+     * though out POSTable resources are safe and idempotent when POSTed and we
+     * could count on the browser not to make the responses available to
+     * cross-site requests.
+     */
+    if (!(csrf_prot_type & CSRF_PROT_POST_WITH_HEADER) &&
+        !(csrf_prot_type & CSRF_PROT_POST_WITH_TOKEN))
+        csrf_prot_type |= CSRF_PROT_POST_WITH_TOKEN;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2039,6 +2809,39 @@ main(int argc, char **argv)
     if (port < 0)
         errx(1, "Port number must be given");
 
+    if ((errno = pthread_key_create(&k5ctx, k5_free_context)))
+        err(1, "Could not create thread-specific storage");
+
+    if ((errno = get_krb5_context(&context)))
+        err(1, "Could not init krb5 context");
+
+    bx509_openlog(context, "bx509d", &logfac);
+    load_plugins(context);
+
+    if (allow_GET_flag == -1)
+        warnx("It is safer to use --no-allow-GET");
+
+    get_csrf_prot_type(context);
+
+    krb5_generate_random_block((void *)&csrf_key, sizeof(csrf_key));
+    if (csrf_key_file == NULL)
+        csrf_key_file = krb5_config_get_string(context, NULL, "bx509d",
+                                               "csrf_key_file", NULL);
+    if (csrf_key_file) {
+        ssize_t bytes;
+        int fd;
+
+        fd = open(csrf_key_file, O_RDONLY);
+        if (fd == -1)
+            err(1, "CSRF key file missing %s", csrf_key_file);
+        bytes = read(fd, csrf_key, sizeof(csrf_key));
+        if (bytes == -1)
+            err(1, "Could not read CSRF key file %s", csrf_key_file);
+        if (bytes != sizeof(csrf_key))
+            errx(1, "CSRF key file too small (should be %lu) %s",
+                 (unsigned long)sizeof(csrf_key), csrf_key_file);
+    }
+
     if (audiences.num_strings == 0) {
         char localhost[MAXHOSTNAMELEN];
 
@@ -2061,15 +2864,6 @@ main(int argc, char **argv)
     argv += optidx;
     if (argc != 0)
         usage(1);
-
-    if ((errno = pthread_key_create(&k5ctx, k5_free_context)))
-        err(1, "Could not create thread-specific storage");
-
-    if ((errno = get_krb5_context(&context)))
-        err(1, "Could not init krb5 context");
-
-    bx509_openlog(context, "bx509d", &logfac);
-    load_plugins(context);
 
     if (cache_dir == NULL) {
         char *s = NULL;
@@ -2191,16 +2985,23 @@ again:
         sin.sin_family = AF_INET;
         sin.sin_port = htons(port);
         current = MHD_start_daemon(flags, port,
+                                   /*
+                                    * This is a connection access callback.  We
+                                    * don't use it.
+                                    */
                                    NULL, NULL,
+                                   /* This is our request handler */
                                    route, (char *)NULL,
                                    MHD_OPTION_SOCK_ADDR, &sin,
                                    MHD_OPTION_CONNECTION_LIMIT, (unsigned int)200,
                                    MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int)10,
+                                   /* This is our request cleanup handler */
+                                   MHD_OPTION_NOTIFY_COMPLETED, cleanup_req, NULL,
                                    MHD_OPTION_END);
     } else if (sock != MHD_INVALID_SOCKET) {
         /*
-         * Certificate/key rollover: reuse the listen socket returned by
-         * MHD_quiesce_daemon().
+         * Restart following a possible certificate/key rollover, reusing the
+         * listen socket returned by MHD_quiesce_daemon().
          */
         current = MHD_start_daemon(flags | MHD_USE_SSL, port,
                                    NULL, NULL,
@@ -2209,10 +3010,17 @@ again:
                                    MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
                                    MHD_OPTION_CONNECTION_LIMIT, (unsigned int)200,
                                    MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int)10,
+                                   MHD_OPTION_NOTIFY_COMPLETED, cleanup_req, NULL,
                                    MHD_OPTION_LISTEN_SOCKET, sock,
                                    MHD_OPTION_END);
         sock = MHD_INVALID_SOCKET;
     } else {
+        /*
+         * Initial MHD_start_daemon(), with TLS.
+         *
+         * Subsequently we'll restart reusing the listen socket this creates.
+         * See above.
+         */
         current = MHD_start_daemon(flags | MHD_USE_SSL, port,
                                    NULL, NULL,
                                    route, (char *)NULL,
@@ -2220,6 +3028,7 @@ again:
                                    MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
                                    MHD_OPTION_CONNECTION_LIMIT, (unsigned int)200,
                                    MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int)10,
+                                   MHD_OPTION_NOTIFY_COMPLETED, cleanup_req, NULL,
                                    MHD_OPTION_END);
     }
     if (current == NULL)

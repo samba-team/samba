@@ -384,7 +384,7 @@ process_reply (krb5_context context,
     ap_rep_data.data = reply + 6;
     ap_rep_data.length  = (reply[4] << 8) | (reply[5]);
 
-    if (reply + len < (u_char *)ap_rep_data.data + ap_rep_data.length) {
+    if (len - 6 < ap_rep_data.length) {
 	str2data (result_string, "client: wrong AP len in reply");
 	*result_code = KRB5_KPASSWD_MALFORMED;
 	return 0;

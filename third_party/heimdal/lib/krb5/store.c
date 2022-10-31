@@ -1002,6 +1002,8 @@ krb5_ret_string(krb5_storage *sp,
 {
     int ret;
     krb5_data data;
+
+    *string = NULL;
     ret = krb5_ret_data(sp, &data);
     if(ret)
 	return ret;

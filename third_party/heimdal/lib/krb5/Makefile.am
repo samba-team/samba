@@ -193,7 +193,6 @@ dist_libkrb5_la_SOURCES =			\
 	keytab_keyfile.c			\
 	keytab_memory.c				\
 	krb5_locl.h				\
-	krb5-v4compat.h				\
 	krcache.c				\
 	krbhst.c				\
 	kuserok.c				\

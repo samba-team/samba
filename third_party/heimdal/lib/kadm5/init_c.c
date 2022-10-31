@@ -78,6 +78,8 @@ set_funcs(kadm5_client_context *c)
     SET(c, lock);
     SET(c, unlock);
     SETNOTIMP(c, setkey_principal_3);
+    SET(c, iter_principals);
+    SET(c, dup_context);
 }
 
 kadm5_ret_t
@@ -190,6 +192,56 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
     if ((*ctx)->readonly_kadmind_port == 0)
 	(*ctx)->readonly_kadmind_port = (*ctx)->kadmind_port;
     return 0;
+}
+
+kadm5_ret_t
+kadm5_c_dup_context(void *vin, void **out)
+{
+    krb5_error_code ret;
+    kadm5_client_context *in = vin;
+    krb5_context context = in->context;
+    kadm5_client_context *ctx;
+
+    *out = NULL;
+    ctx = malloc(sizeof(*ctx));
+    if (ctx == NULL)
+	return krb5_enomem(in->context);
+
+
+    memset(ctx, 0, sizeof(*ctx));
+    set_funcs(ctx);
+    ctx->readonly_kadmind_port = in->readonly_kadmind_port;
+    ctx->kadmind_port = in->kadmind_port;
+
+    ret = krb5_copy_context(context, &(ctx->context));
+    if (ret == 0) {
+        ctx->my_context = TRUE;
+        ret = krb5_add_et_list(ctx->context, initialize_kadm5_error_table_r);
+    }
+    if (ret == 0 && (ctx->realm = strdup(in->realm)) == NULL)
+        ret = krb5_enomem(context);
+    if (ret == 0 &&
+        (ctx->admin_server = strdup(in->admin_server)) == NULL)
+        ret = krb5_enomem(context);
+    if (in->readonly_admin_server &&
+	(ctx->readonly_admin_server = strdup(in->readonly_admin_server)) == NULL)
+        ret = krb5_enomem(context);
+    if (in->keytab && (ctx->keytab = strdup(in->keytab)) == NULL)
+        ret = krb5_enomem(context);
+    if (in->ccache) {
+        char *fullname = NULL;
+
+        ret = krb5_cc_get_full_name(context, in->ccache, &fullname);
+        if (ret == 0)
+            ret = krb5_cc_resolve(context, fullname, &ctx->ccache);
+        free(fullname);
+    }
+    ctx->sock = -1;
+    if (ret == 0)
+        *out = ctx;
+    else
+        kadm5_c_destroy(ctx);
+    return ret;
 }
 
 static krb5_error_code

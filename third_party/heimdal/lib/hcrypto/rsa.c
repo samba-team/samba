@@ -160,7 +160,7 @@ RSA_free(RSA *rsa)
     free_if(rsa->iqmp);
 #undef free_if
 
-    memset(rsa, 0, sizeof(*rsa));
+    memset_s(rsa, sizeof(*rsa), 0, sizeof(*rsa));
     free(rsa);
 }
 
@@ -426,7 +426,7 @@ RSA_verify(int type, const unsigned char *from, unsigned int flen,
 	    return -4;
 	}
 
-	if (flen != di.digest.length || memcmp(di.digest.data, from, flen) != 0) {
+	if (flen != di.digest.length || ct_memcmp(di.digest.data, from, flen) != 0) {
 	    free_DigestInfo(&di);
 	    return -5;
 	}

@@ -145,7 +145,7 @@ DH_free(DH *dh)
     free_if(dh->counter);
 #undef free_if
 
-    memset(dh, 0, sizeof(*dh));
+    memset_s(dh, sizeof(*dh), 0, sizeof(*dh));
     free(dh);
 }
 

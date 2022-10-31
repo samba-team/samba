@@ -515,7 +515,7 @@ xyzprintf (struct snprintf_state *state, const char *char_format, va_list ap)
 	    }
 	    case '\0' :
 		--format;
-                fallthrough;
+                HEIM_FALLTHROUGH;
 	    case '%' :
 		(*state->append_char)(state, c);
 		++len;

@@ -146,7 +146,9 @@ HEIMDAL_BASE_1.0 {
 		heim_json_copy_serialize;
 		heim_json_create;
 		heim_json_create_with_bytes;
+		heim_json_eq;
 		heim_load_plugins;
+		heim_locale_is_utf8;
 		heim_log;
 		heim_log_msg;
 		_heim_make_permanent;

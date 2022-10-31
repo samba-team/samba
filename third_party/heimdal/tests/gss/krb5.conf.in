@@ -45,6 +45,7 @@ include @srcdirabs@/include-krb5.conf
         enable_virtual_hostbased_princs = true
         virtual_hostbased_princ_mindots = 1
         virtual_hostbased_princ_maxdots = 3
+        same_realm_aliases_are_soft = true
 
 [logging]
 	kdc = 0-/FILE:@objdir@/messages.log

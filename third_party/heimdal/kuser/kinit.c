@@ -1321,13 +1321,15 @@ renew_func(void *ptr)
 	ret = get_new_tickets(ctx->context, ctx->principal, ctx->ccache,
 			      ctx->ticket_life, 0, ctx->anonymous_pkinit);
     }
-    expire = ticket_lifetime(ctx->context, ctx->ccache, ctx->principal,
-			     server_str, &renew_expire);
+    if (ret == 0) {
+	expire = ticket_lifetime(ctx->context, ctx->ccache, ctx->principal,
+				 server_str, &renew_expire);
 
 #ifndef NO_AFS
-    if (ret == 0 && server_str == NULL && do_afslog && k_hasafs())
-	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
+	if (server_str == NULL && do_afslog && k_hasafs())
+	    krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
 #endif
+    }
 
     update_siginfo_msg(expire, server_str);
 

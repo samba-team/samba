@@ -59,6 +59,8 @@ HDBFlags ::= BIT STRING {
 	force-canonicalize(30),		-- force the KDC to return the canonical
 					-- principal irrespective of the setting
 					-- of the canonicalize KDC option
+                                        -- (principals cannot have this flag
+                                        -- set when stored into the HDB)
 	do-not-store(31)		-- Not to be modified and stored in HDB
 }
 

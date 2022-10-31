@@ -1051,7 +1051,8 @@ heim_audit_trail(heim_svc_req_desc r, heim_error_code ret, const char *retname)
 	break;
     default:
         /* Wish we had a com_err number->symbolic name function */
-        (void) snprintf(retvalbuf, sizeof(retvalbuf), "UNKNOWN-%d", ret);
+        (void) snprintf(retvalbuf, sizeof(retvalbuf), "UNKNOWN-%d",
+                        ret ? ret : r->error_code);
 	retval = retvalbuf;
 	break;
     }
