@@ -30,6 +30,9 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <wbclient.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <assert.h>
 
 #define RUNTIME 10
 
@@ -46,8 +49,11 @@ static void *query_nss_thread(void *ptr)
 {
 	struct thread_state *state = ptr;
 	char buf[1024];
+	ssize_t nread, nwritten;
+	int p[2];
 	int rc;
 	struct passwd pwd, *result;
+	pid_t pid;
 
 	while (time(NULL) < state->timeout) {
 		rc = getpwnam_r(state->username,
@@ -73,6 +79,82 @@ static void *query_nss_thread(void *ptr)
 		}
 		pthread_mutex_unlock(&state->lock);
 	}
+
+	rc = socketpair(AF_UNIX, SOCK_STREAM, 0, p);
+	if (rc != 0) {
+		state->fail = true;
+		return NULL;
+	}
+
+	/*
+	 * Check getpwnam_r() still works after a fork,
+	 * both in parent and child.
+	 */
+
+	pid = fork();
+	if (pid == -1) {
+		return NULL;
+	}
+	if (pid == 0) {
+		/* Child */
+		rc = getpwnam_r(state->username,
+				&pwd,
+				buf,
+				sizeof(buf),
+				&result);
+		if (rc != 0 || result == NULL) {
+			fprintf(stderr,
+				"getpwnam_r failed with rc='%s' result=%p\n",
+				strerror(rc),
+				result);
+			rc = 1;
+			nwritten = write(p[0], &rc, sizeof(int));
+			assert(nwritten == sizeof(int));
+			exit(1);
+		}
+		printf("child: getpwnam_r in child succeeded\n");
+		rc = 0;
+		nwritten = write(p[0], &rc, sizeof(int));
+		assert(nwritten == sizeof(int));
+		exit(1);
+	}
+
+	/* Parent */
+
+	/* Check result from child */
+	nread = read(p[1], &rc, sizeof(int));
+	if (nread != sizeof(int)) {
+		fprintf(stderr,
+			"read from child failed with errno='%s' nread=%zd\n",
+			strerror(errno),
+			nread);
+		state->fail = true;
+		return NULL;
+	}
+
+	if (rc != 0) {
+		fprintf(stderr,
+			"getpwnam_r failed in the child\n");
+		state->fail = true;
+		return NULL;
+	}
+	printf("parent: getpwnam_r in child succeeded\n");
+
+	/* Verify getpwnam_r() in parent after fork */
+	rc = getpwnam_r(state->username,
+			&pwd,
+			buf,
+			sizeof(buf),
+			&result);
+	if (rc != 0 || result == NULL) {
+		fprintf(stderr,
+			"getpwnam_r failed with rc='%s' result=%p\n",
+			strerror(rc),
+			result);
+		state->fail = true;
+		return NULL;
+	}
+	printf("parent: getpwnam_r in parent succeeded\n");
 	return NULL;
 }
 
@@ -81,6 +163,10 @@ static void *query_wbc_thread(void *ptr)
 	struct thread_state *state = ptr;
 	struct passwd *ppwd;
 	wbcErr wbc_status;
+	pid_t pid;
+	ssize_t nread, nwritten;
+	int p[2];
+	int rc;
 
 	while (time(NULL) < state->timeout) {
 		wbc_status = wbcGetpwnam(state->username, &ppwd);
@@ -102,6 +188,72 @@ static void *query_wbc_thread(void *ptr)
 		}
 		pthread_mutex_unlock(&state->lock);
 	}
+
+	rc = socketpair(AF_UNIX, SOCK_STREAM, 0, p);
+	if (rc != 0) {
+		state->fail = true;
+		return NULL;
+	}
+
+	/*
+	 * Check wbcGetpwnam() still works after a fork,
+	 * both in parent and child.
+	 */
+
+	pid = fork();
+	if (pid == -1) {
+		return NULL;
+	}
+	if (pid == 0) {
+		/* Child */
+		wbc_status = wbcGetpwnam(state->username, &ppwd);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			fprintf(stderr,
+				"wbcGetpwnam failed with %s\n",
+				wbcErrorString(wbc_status));
+			rc = 1;
+			nwritten = write(p[0], &rc, sizeof(int));
+			assert(nwritten == sizeof(int));
+			exit(1);
+		}
+		printf("child: wbcGetpwnam in child succeeded\n");
+		rc = 0;
+		nwritten = write(p[0], &rc, sizeof(int));
+		assert(nwritten == sizeof(int));
+		exit(1);
+	}
+
+	/* Parent */
+
+	/* Check result from child */
+	nread = read(p[1], &rc, sizeof(int));
+	if (nread != sizeof(int)) {
+		fprintf(stderr,
+			"read from child failed with errno='%s' nread=%zd\n",
+			strerror(errno),
+			nread);
+		state->fail = true;
+		return NULL;
+	}
+
+	if (rc != 0) {
+		fprintf(stderr,
+			"wbcGetpwnam failed in the child\n");
+		state->fail = true;
+		return NULL;
+	}
+	printf("parent: wbcGetpwnam in child succeeded\n");
+
+	/* Verify wbcGetpwnam() in parent after fork */
+	wbc_status = wbcGetpwnam(state->username, &ppwd);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		fprintf(stderr,
+			"wbcGetpwnam failed with %s\n",
+			wbcErrorString(wbc_status));
+		state->fail = true;
+		return NULL;
+	}
+	printf("parent: wbcGetpwnam in parent succeeded\n");
 	return NULL;
 }
 
