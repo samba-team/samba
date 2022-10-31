@@ -751,6 +751,8 @@ done:
 
 	while (chunks) {
 		cnk = chunks->next;
+		if (chunks->min_star) free(chunks->min_star);
+		if (chunks->max_star) free(chunks->max_star);
 		free(chunks);
 		chunks = cnk;
 	}
