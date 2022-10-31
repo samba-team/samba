@@ -485,7 +485,8 @@ class KDCBaseTest(RawKerberosTest):
         dns_hostname = samdb.host_dns_name()
         (bind, handle, _) = drsuapi_connect(dns_hostname,
                                             self.get_lp(),
-                                            admin_creds)
+                                            admin_creds,
+                                            ip=self.dc_host)
 
         req = drsuapi.DsGetNCChangesRequest8()
 
