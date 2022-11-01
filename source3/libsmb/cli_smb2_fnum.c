@@ -4971,23 +4971,27 @@ NTSTATUS cli_smb2_fsctl_recv(
 {
 	struct cli_smb2_fsctl_state *state = tevent_req_data(
 		req, struct cli_smb2_fsctl_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
 	}
 
-	/*
-	 * Can't use talloc_move() here, the outblobs from
-	 * smb2cli_ioctl_recv() are not standalone talloc objects but
-	 * just peek into the larger buffers received, hanging off
-	 * "state".
-	 */
-	*out = data_blob_talloc(mem_ctx, state->out.data, state->out.length);
-	if (out->data == NULL) {
-		tevent_req_received(req);
-		return NT_STATUS_NO_MEMORY;
+	if (state->out.length == 0) {
+		*out = (DATA_BLOB) { .data = NULL, };
+	} else {
+		/*
+		 * Can't use talloc_move() here, the outblobs from
+		 * smb2cli_ioctl_recv() are not standalone talloc
+		 * objects but just peek into the larger buffers
+		 * received, hanging off "state".
+		 */
+		*out = data_blob_talloc(
+			mem_ctx, state->out.data, state->out.length);
+		if (out->data == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	tevent_req_received(req);
