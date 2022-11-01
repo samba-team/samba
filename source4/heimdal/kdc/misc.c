@@ -191,8 +191,8 @@ _kdc_get_preferred_key(krb5_context context,
 	}
     }
 
-    krb5_set_error_message(context, EINVAL,
+    krb5_set_error_message(context, ret = KRB5KDC_ERR_ETYPE_NOSUPP,
 			   "No valid kerberos key found for %s", name);
-    return EINVAL; /* XXX */
+    return ret;
 }
 

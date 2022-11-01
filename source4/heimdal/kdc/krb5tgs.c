@@ -1669,10 +1669,8 @@ server_lookup:
 	} else {
 	    Key *skey;
 
-	    ret = _kdc_find_etype(context,
-				  config->tgs_use_strongest_session_key, FALSE,
-				  server, b->etype.val, b->etype.len, &etype,
-				  NULL);
+	    ret = _kdc_find_session_etype(context, b->etype.val, b->etype.len,
+					  server, &etype);
 	    if(ret) {
 		kdc_log(context, config, 0,
 			"Server (%s) has no support for etypes", spn);

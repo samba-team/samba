@@ -123,3 +123,105 @@ struct SDBFlags int2SDBFlags(unsigned n)
 	flags.do_not_store = (n >> 31) & 1;
 	return flags;
 }
+
+/* Set the etypes of an sdb_entry based on its available current keys. */
+krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s)
+{
+	if (s->keys.val != NULL) {
+		unsigned i;
+
+		s->etypes = malloc(sizeof(*s->etypes));
+		if (s->etypes == NULL) {
+			return ENOMEM;
+		}
+
+		s->etypes->len = s->keys.len;
+
+		s->etypes->val = calloc(s->etypes->len, sizeof(*s->etypes->val));
+		if (s->etypes->val == NULL) {
+			return ENOMEM;
+		}
+
+		for (i = 0; i < s->etypes->len; i++) {
+			const struct sdb_key *k = &s->keys.val[i];
+
+			s->etypes->val[i] = KRB5_KEY_TYPE(&(k->key));
+		}
+	}
+
+	return 0;
+}
+
+/*
+ * Set the session etypes of a server sdb_entry based on its etypes, forcing in
+ * strong etypes as desired.
+ */
+krb5_error_code sdb_entry_set_session_etypes(struct sdb_entry *s,
+					     bool add_strong_aes_etypes,
+					     bool force_rc4)
+{
+	if (s->etypes != NULL) {
+		unsigned i;
+		unsigned j = 0;
+		unsigned len = s->etypes->len;
+
+		s->session_etypes = malloc(sizeof(*s->session_etypes));
+		if (s->session_etypes == NULL) {
+			return ENOMEM;
+		}
+
+		if (add_strong_aes_etypes) {
+			/* Reserve space for AES256 and AES128. */
+			len += 2;
+		}
+
+		if (force_rc4) {
+			/* Reserve space for RC4. */
+			len += 1;
+		}
+
+		/* session_etypes must be sorted in order of strength, with preferred etype first. */
+
+		s->session_etypes->val = calloc(len, sizeof(*s->session_etypes->val));
+		if (s->session_etypes->val == NULL) {
+			return ENOMEM;
+		}
+
+		if (add_strong_aes_etypes) {
+			/* Add AES256 and AES128. */
+			s->session_etypes->val[j++] = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+			s->session_etypes->val[j++] = ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+		}
+
+		if (force_rc4) {
+			/* Add RC4. */
+			s->session_etypes->val[j++] = ENCTYPE_ARCFOUR_HMAC;
+		}
+
+		for (i = 0; i < s->etypes->len; ++i) {
+			const krb5_enctype etype = s->etypes->val[i];
+
+			if (add_strong_aes_etypes &&
+			    (etype == (krb5_enctype)ENCTYPE_AES256_CTS_HMAC_SHA1_96 ||
+			     etype == (krb5_enctype)ENCTYPE_AES128_CTS_HMAC_SHA1_96))
+			{
+				/*
+				 * Skip AES256 and AES128, for we've
+				 * already added them.
+				 */
+				continue;
+			}
+
+			if (force_rc4 && etype == (krb5_enctype)ENCTYPE_ARCFOUR_HMAC) {
+				/* Skip RC4, for we've already added it. */
+				continue;
+			}
+
+			s->session_etypes->val[j++] = etype;
+		}
+
+		s->session_etypes->len = j;
+	}
+
+	return 0;
+}
