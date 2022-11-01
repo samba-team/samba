@@ -2212,7 +2212,7 @@ _kdc_as_rep(astgs_request_t r)
      * intersection of the client's requested enctypes and the server's (like a
      * root krbtgt, but not necessarily) etypes from its HDB entry.
      */
-    ret = _kdc_find_etype(r, (is_tgs ?  KFE_IS_TGS:0) | KFE_USE_CLIENT,
+    ret = _kdc_find_etype(r, (is_tgs ?  KFE_IS_TGS:0),
 			  b->etype.val, b->etype.len,
 			  &r->sessionetype, NULL, NULL);
     if (ret) {

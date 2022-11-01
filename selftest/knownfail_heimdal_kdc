@@ -163,8 +163,3 @@
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_given_compression_tgs_req_to_krbtgt.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_given_compression_tgs_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_given_no_compression_tgs_req_to_krbtgt.ad_dc
-#
-# Encryption type tests
-#
-^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_requested.ad_dc
-^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_supported_aes_requested.ad_dc
