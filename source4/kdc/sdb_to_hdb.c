@@ -26,6 +26,7 @@
 #include "sdb.h"
 #include "sdb_hdb.h"
 #include "lib/krb5_wrap/krb5_samba.h"
+#include "librpc/gen_ndr/security.h"
 #include "kdc/samba_kdc.h"
 
 #undef DBGC_CLASS
@@ -273,14 +274,14 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 	sdb_flags_to_hdb_flags(&s->flags, &h->flags);
 
 	h->etypes = NULL;
-	if (h->keys.val != NULL) {
+	if (s->etypes != NULL) {
 		h->etypes = malloc(sizeof(*h->etypes));
 		if (h->etypes == NULL) {
 			rc = ENOMEM;
 			goto error;
 		}
 
-		h->etypes->len = s->keys.len;
+		h->etypes->len = s->etypes->len;
 
 		h->etypes->val = calloc(h->etypes->len, sizeof(int));
 		if (h->etypes->val == NULL) {
@@ -289,9 +290,28 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 		}
 
 		for (i = 0; i < h->etypes->len; i++) {
-			Key k = h->keys.val[i];
+			h->etypes->val[i] = s->etypes->val[i];
+		}
+	}
 
-			h->etypes->val[i] = KRB5_KEY_TYPE(&(k.key));
+	h->session_etypes = NULL;
+	if (s->session_etypes != NULL) {
+		h->session_etypes = malloc(sizeof(*h->session_etypes));
+		if (h->session_etypes == NULL) {
+			rc = ENOMEM;
+			goto error;
+		}
+
+		h->session_etypes->len = s->session_etypes->len;
+
+		h->session_etypes->val = calloc(h->session_etypes->len, sizeof(*h->session_etypes->val));
+		if (h->session_etypes->val == NULL) {
+			rc = ENOMEM;
+			goto error;
+		}
+
+		for (i = 0; i < h->session_etypes->len; ++i) {
+			h->session_etypes->val[i] = s->session_etypes->val[i];
 		}
 	}
 

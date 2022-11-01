@@ -1816,10 +1816,8 @@ server_lookup:
 	} else {
 	    Key *skey;
 
-	    ret = _kdc_find_etype(priv, krb5_principal_is_krbtgt(context, priv->server_princ)
-							     ? KFE_IS_TGS : 0,
-				  b->etype.val, b->etype.len, &etype, NULL,
-				  NULL);
+	    ret = _kdc_find_session_etype(priv, b->etype.val, b->etype.len,
+					  priv->server, &etype);
 	    if(ret) {
 		kdc_log(context, config, 4,
 			"Server (%s) has no support for etypes", spn);

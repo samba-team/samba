@@ -237,7 +237,8 @@ HDB_entry ::= SEQUENCE {
 	flags[10]	HDBFlags,
 	etypes[11]	HDB-EncTypeList OPTIONAL,
 	generation[12]	GENERATION OPTIONAL,
-        extensions[13]  HDB-extensions OPTIONAL
+        extensions[13]  HDB-extensions OPTIONAL,
+	session-etypes[14]	HDB-EncTypeList OPTIONAL
 }
 
 HDB_entry_alias ::= [APPLICATION 0] SEQUENCE {
