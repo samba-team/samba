@@ -44,6 +44,11 @@ struct sdb_event {
 	time_t time;
 };
 
+struct sdb_etypes {
+	unsigned len;
+	krb5_enctype *val;
+};
+
 struct SDBFlags {
 	unsigned int initial:1;
 	unsigned int forwardable:1;
@@ -84,8 +89,10 @@ struct sdb_entry {
 	krb5_principal principal;
 	unsigned int kvno;
 	struct sdb_keys keys;
+	struct sdb_etypes *etypes;
 	struct sdb_keys old_keys;
 	struct sdb_keys older_keys;
+	struct sdb_etypes *session_etypes;
 	struct sdb_event created_by;
 	struct sdb_event *modified_by;
 	time_t *valid_start;
@@ -130,5 +137,9 @@ void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
 void sdb_entry_free(struct sdb_entry *e);
 struct SDBFlags int2SDBFlags(unsigned n);
+krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s);
+krb5_error_code sdb_entry_set_session_etypes(struct sdb_entry *s,
+					     bool add_strong_aes_etypes,
+					     bool force_rc4);
 
 #endif /* _KDC_SDB_H_ */

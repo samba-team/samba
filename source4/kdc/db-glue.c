@@ -446,7 +446,7 @@ static krb5_error_code samba_kdc_fill_user_keys(krb5_context context,
 	/*
 	 * Make sure we'll never reveal DES keys
 	 */
-	uint32_t supported_enctypes = p->supported_enctypes & ENC_ALL_TYPES;
+	uint32_t supported_enctypes = p->supported_enctypes &= ~(ENC_CRC32 | ENC_RSA_MD5);
 	uint32_t _available_enctypes = 0;
 	uint32_t *available_enctypes = p->available_enctypes;
 	uint32_t _returned_kvno = 0;
@@ -840,7 +840,8 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	*supported_enctypes_out |= available_enctypes;
 
 	/* Set FAST support bits */
-	*supported_enctypes_out |= supported_enctypes & (ENC_FAST_SUPPORTED |
+	*supported_enctypes_out |= supported_enctypes & (ENC_HMAC_SHA1_96_AES256_SK |
+							 ENC_FAST_SUPPORTED |
 							 ENC_COMPOUND_IDENTITY_SUPPORTED |
 							 ENC_CLAIMS_SUPPORTED);
 
@@ -1066,13 +1067,18 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	bool is_rodc = false;
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val = data_blob_string_const("computer");
+	uint32_t default_supported_enctypes = lpcfg_kdc_default_domain_supported_enctypes(lp_ctx);
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
-					    0);
+					    default_supported_enctypes);
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
 	ZERO_STRUCTP(entry);
+
+	if (supported_enctypes == 0) {
+		supported_enctypes = default_supported_enctypes;
+	}
 
 	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
 		is_rodc = true;
@@ -1415,6 +1421,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* KDCs (and KDCs on RODCs) use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
 
+		supported_enctypes &= ~ENC_HMAC_SHA1_96_AES256_SK;
+
 		enable_fast = lpcfg_kdc_enable_fast(kdc_db_ctx->lp_ctx);
 		if (enable_fast) {
 			supported_enctypes |= ENC_FAST_SUPPORTED;
@@ -1422,23 +1430,28 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
 		/* DCs and RODCs comptuer accounts use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
+
+		supported_enctypes &= ~ENC_HMAC_SHA1_96_AES256_SK;
 	} else if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT ||
 		   (ent_type == SAMBA_KDC_ENT_TYPE_ANY)) {
-		/* for AS-REQ the client chooses the enc types it
+		/*
+		 * for AS-REQ the client chooses the enc types it
 		 * supports, and this will vary between computers a
-		 * user logs in from.
+		 * user logs in from. Therefore, so that we accept any
+		 * of the client's keys for decrypting padata,
+		 * supported_enctypes should not restrict etype usage.
 		 *
 		 * likewise for 'any' return as much as is supported,
-		 * to export into a keytab */
-		supported_enctypes = ENC_ALL_TYPES;
+		 * to export into a keytab.
+		 */
+		supported_enctypes |= ENC_ALL_TYPES;
 	}
+
+
 
 	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
 	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-		supported_enctypes = 0;
-	} else {
-		/* Otherwise, add in the default enc types */
-		supported_enctypes |= ENC_RC4_HMAC_MD5;
+		supported_enctypes &= ~ENC_ALL_TYPES;
 	}
 
 	if (protected_user) {
@@ -1457,19 +1470,67 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		goto out;
 	}
 
-	if (entry->keys.len == 0) {
-		if (kdc_db_ctx->rodc) {
-			/*
-			 * We are on an RODC, but don't have keys for this
-			 * account.  Signal this to the caller
-			 */
-			auth_sam_trigger_repl_secret(kdc_db_ctx,
-						     kdc_db_ctx->msg_ctx,
-						     kdc_db_ctx->ev_ctx,
-						     msg->dn);
-			return SDB_ERR_NOT_FOUND_HERE;
-		}
+	ret = sdb_entry_set_etypes(entry);
+	if (ret) {
+		goto out;
+	}
 
+	if (entry->flags.server) {
+		bool add_strong_aes_etypes =
+			supported_enctypes & KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK;
+		bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
+		ret = sdb_entry_set_session_etypes(entry,
+						   add_strong_aes_etypes,
+						   force_rc4);
+		if (ret) {
+			goto out;
+		}
+	}
+
+	if (entry->keys.len != 0) {
+		/*
+		 * FIXME: Currently limited to Heimdal so as not to
+		 * break MIT KDCs, for which no fix is available.
+		 */
+#ifdef SAMBA4_USES_HEIMDAL
+		if (is_krbtgt) {
+			/*
+			 * The krbtgt account, having no reason to
+			 * issue tickets encrypted in weaker keys,
+			 * shall only make available its strongest
+			 * key. All weaker keys are stripped out. This
+			 * makes it impossible for an RC4-encrypted
+			 * TGT to be accepted when AES KDC keys exist.
+			 *
+			 * This controls the ticket key and so the PAC
+			 * signature algorithms indirectly, preventing
+			 * a weak KDC checksum from being accepted
+			 * when we verify the signatures for an
+			 * S4U2Proxy evidence ticket. As such, this is
+			 * indispensable for addressing
+			 * CVE-2022-37966.
+			 *
+			 * Being strict here also provides protection
+			 * against possible future attacks on weak
+			 * keys.
+			 */
+			entry->keys.len = 1;
+			if (entry->etypes != NULL) {
+				entry->etypes->len = 1;
+			}
+		}
+#endif
+	} else if (kdc_db_ctx->rodc) {
+		/*
+		 * We are on an RODC, but don't have keys for this
+		 * account.  Signal this to the caller
+		 */
+		auth_sam_trigger_repl_secret(kdc_db_ctx,
+					     kdc_db_ctx->msg_ctx,
+					     kdc_db_ctx->ev_ctx,
+					     msg->dn);
+		return SDB_ERR_NOT_FOUND_HERE;
+	} else {
 		/*
 		 * oh, no password.  Apparently (comment in
 		 * hdb-ldap.c) this violates the ASN.1, but this
@@ -1893,6 +1954,23 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	entry->flags.forwardable = 1;
 
 	samba_kdc_sort_keys(&entry->keys);
+
+	ret = sdb_entry_set_etypes(entry);
+	if (ret) {
+		goto out;
+	}
+
+	{
+		bool add_strong_aes_etypes =
+			supported_enctypes & KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK;
+		bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
+		ret = sdb_entry_set_session_etypes(entry,
+						   add_strong_aes_etypes,
+						   force_rc4);
+		if (ret) {
+			goto out;
+		}
+	}
 
 	p->msg = talloc_steal(p, msg);
 

@@ -384,6 +384,39 @@ _kdc_find_etype(astgs_request_t r, uint32_t flags,
     return ret;
 }
 
+/*
+ * The principal's session_etypes must be sorted in order of strength, with
+ * preferred etype first.
+*/
+krb5_error_code
+_kdc_find_session_etype(astgs_request_t r,
+			krb5_enctype *etypes, size_t len,
+			const hdb_entry *princ,
+			krb5_enctype *ret_enctype)
+{
+    size_t i;
+
+    if (princ->session_etypes == NULL) {
+	/* The principal must have session etypes available. */
+	return KRB5KDC_ERR_ETYPE_NOSUPP;
+    }
+
+    /* Loop over the client's specified etypes. */
+    for (i = 0; i < len; ++i) {
+	size_t j;
+
+	/* Check that the server also supports the etype. */
+	for (j = 0; j < princ->session_etypes->len; ++j) {
+	    if (princ->session_etypes->val[j] == etypes[i]) {
+		*ret_enctype = etypes[i];
+		return 0;
+	    }
+	}
+    }
+
+    return KRB5KDC_ERR_ETYPE_NOSUPP;
+}
+
 krb5_error_code
 _kdc_make_anonymous_principalname (PrincipalName *pn)
 {
@@ -2209,13 +2242,18 @@ _kdc_as_rep(astgs_request_t r)
     }
 
     /*
+     * This has to be here (not later), because we need to have r->sessionetype
+     * set prior to calling pa_pkinit_validate(), which in turn calls
+     * _kdc_pk_mk_pa_reply(), during padata validation.
+     */
+
+    /*
      * Select an enctype for the to-be-issued ticket's session key using the
      * intersection of the client's requested enctypes and the server's (like a
      * root krbtgt, but not necessarily) etypes from its HDB entry.
      */
-    ret = _kdc_find_etype(r, (is_tgs ?  KFE_IS_TGS:0),
-			  b->etype.val, b->etype.len,
-			  &r->sessionetype, NULL, NULL);
+    ret = _kdc_find_session_etype(r, b->etype.val, b->etype.len,
+				  r->server, &r->sessionetype);
     if (ret) {
 	kdc_log(r->context, config, 4,
 		"Client (%s) from %s has no common enctypes with KDC "
