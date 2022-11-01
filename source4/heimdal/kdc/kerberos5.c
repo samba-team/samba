@@ -1164,7 +1164,7 @@ _kdc_as_rep(krb5_context context,
      * decrypt.
      */
     ret = _kdc_find_etype(context, config->as_use_strongest_session_key, FALSE,
-			  client, b->etype.val, b->etype.len, &sessionetype,
+			  server, b->etype.val, b->etype.len, &sessionetype,
 			  NULL);
     if (ret) {
 	kdc_log(context, config, 0,
