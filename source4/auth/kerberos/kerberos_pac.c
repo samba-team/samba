@@ -283,7 +283,7 @@
 }
 
 static krb5_error_code kerberos_pac_buffer_present(krb5_context context,
-						   const krb5_pac pac,
+						   const krb5_const_pac pac,
 						   uint32_t type)
 {
 #ifdef SAMBA4_USES_HEIMDAL
@@ -305,7 +305,7 @@ static krb5_error_code kerberos_pac_buffer_present(krb5_context context,
 }
 
 krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
-					     krb5_pac pac,
+					     krb5_const_pac pac,
 					     krb5_context context,
 					     struct auth_user_info_dc **user_info_dc,
 					     struct PAC_SIGNATURE_DATA *pac_srv_sig,
