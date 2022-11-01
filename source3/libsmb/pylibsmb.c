@@ -2420,6 +2420,57 @@ static PyObject *py_smb_smb1_symlink(
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_cli_fsctl(
+	struct py_cli_state *self, PyObject *args, PyObject *kwds)
+{
+	int fnum, ctl_code;
+	int max_out = 0;
+	char *buf = NULL;
+	Py_ssize_t buflen;
+	DATA_BLOB in = { .data = NULL, };
+	DATA_BLOB out = { .data = NULL, };
+	struct tevent_req *req = NULL;
+	PyObject *result = NULL;
+	static const char *kwlist[] = {
+		"fnum", "ctl_code", "in", "max_out", NULL,
+	};
+	NTSTATUS status;
+	bool ok;
+
+	ok = ParseTupleAndKeywords(
+		    args,
+		    kwds,
+		    "ii" PYARG_BYTES_LEN "i",
+		    kwlist,
+		    &fnum,
+		    &ctl_code,
+		    &buf,
+		    &buflen,
+		    &max_out);
+	if (!ok) {
+		return NULL;
+	}
+
+	in = (DATA_BLOB) { .data = (uint8_t *)buf, .length = buflen, };
+
+	req = cli_fsctl_send(
+		NULL, self->ev, self->cli, fnum, ctl_code, &in, max_out);
+
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+
+	status = cli_fsctl_recv(req, NULL, &out);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	result = PyBytes_FromStringAndSize((char *)out.data, out.length);
+	data_blob_free(&out);
+	return result;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -2515,6 +2566,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	  (PyCFunction)py_smb_smb1_symlink,
 	  METH_VARARGS,
 	  "smb1_symlink(target, newname) -> None",
+	},
+	{ "fsctl",
+	  (PyCFunction)py_cli_fsctl,
+	  METH_VARARGS|METH_KEYWORDS,
+	  "fsctl(fnum, ctl_code, in_bytes, max_out) -> out_bytes",
 	},
 	{ NULL, NULL, 0, NULL }
 };
