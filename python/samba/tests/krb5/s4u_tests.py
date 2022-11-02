@@ -303,6 +303,7 @@ class S4UKerberosTests(KDCBaseTest):
             expected_srealm=realm,
             expected_sname=service_sname,
             expected_account_name=client_name,
+            expected_groups=expected_groups,
             unexpected_groups=unexpected_groups,
             expected_sid=sid,
             expected_flags=expected_flags,
