@@ -1086,7 +1086,7 @@ syscall(SYS_setgroups32, 0, NULL);
 
 #define DATA "ofdtest.fcntl"
 
-int main() {
+int main(void) {
         struct flock lck = {
            .l_whence = SEEK_SET,
            .l_type = F_WRLCK,
@@ -1315,7 +1315,7 @@ syscall(SYS_initgroups, 16, NULL, NULL, 0);
 
     if conf.CHECK_CODE('''
 #include <time.h>
-int main() {
+int main(void) {
         struct tm *tm;
         if (sizeof(time_t) == 8) {
                 time_t max_time = 0x7fffffffffffffffll;
@@ -1346,7 +1346,7 @@ int main() {
 #if defined(HAVE_SYS_SYSMACROS_H)
 #include <sys/sysmacros.h>
 #endif
-int main() { dev_t dev = makedev(1,2); return 0; }
+int main(void) { dev_t dev = makedev(1,2); return 0; }
 ''',
         'HAVE_MAKEDEV',
         addmain=False,
@@ -1362,7 +1362,7 @@ void exit_on_core(int ignored) {
         exit(1);
 }
 
-int main() {
+int main(void) {
         char *newpath;
         signal(SIGSEGV, exit_on_core);
         newpath = realpath("/tmp", NULL);
@@ -1519,7 +1519,7 @@ int main() {
     # Check for getcwd allowing a NULL arg.
     conf.CHECK_CODE('''
 #include <unistd.h>
-int main() {
+int main(void) {
         char *s = getcwd(NULL,0);
         return s != NULL ?  0 : 1;
 }''', 'GETCWD_TAKES_NULL', addmain=False, execute=True,
