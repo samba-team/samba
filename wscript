@@ -354,6 +354,7 @@ def configure(conf):
     conf.RECURSE('lib/socket')
     conf.RECURSE('lib/mscat')
     conf.RECURSE('packaging')
+    conf.RECURSE('lib/krb5_wrap')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 

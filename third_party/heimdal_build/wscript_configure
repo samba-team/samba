@@ -131,7 +131,6 @@ conf.define('HAVE_CHECKSUM_IN_KRB5_CHECKSUM', 1)
 conf.define('HAVE_DECL_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE', 0)
 conf.define('HAVE_DECL_KRB5_GET_CREDENTIALS_FOR_USER', 0)
 conf.define('HAVE_E_DATA_POINTER_IN_KRB5_ERROR', 1)
-conf.define('HAVE_KRB5_CONST_PAC', 1)
 conf.define('HAVE_INITIALIZE_KRB5_ERROR_TABLE', 1)
 conf.define('HAVE_KRB5_ADDRESSES', 1)
 conf.define('HAVE_KRB5_AUTH_CON_SETKEY', 1)
@@ -206,6 +205,8 @@ conf.define('HAVE_KRB5_PROMPT_TYPE', 1)
 
 if conf.CONFIG_SET('USING_EMBEDDED_HEIMDAL'):
     conf.define('HAVE_KRB5_ADDLOG_FUNC_NEED_CONTEXT', 1)
+    conf.define('HAVE_KRB5_CONST_PAC', 1)
+    conf.define('KRB5_CONST_PAC_GET_BUFFER', 1)
 else:
     pass # TODO
 

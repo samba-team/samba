@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+# Check whether we have the krb5_const_pac type, if we aren't sure already.
+if conf.CONFIG_SET('HAVE_KRB5_CONST_PAC') or (
+        conf.CHECK_TYPE('krb5_const_pac',
+                        headers='krb5.h',
+                        lib='krb5')):
+    # If the type is available, check whether krb5_pac_get_buffer() accepts it
+    # as its second parameter, or whether it takes krb5_pac instead.
+    conf.CHECK_C_PROTOTYPE('krb5_pac_get_buffer',
+                           'krb5_error_code krb5_pac_get_buffer('
+                           '    krb5_context context,'
+                           '    krb5_const_pac p,'
+                           '    uint32_t type,'
+                           '    krb5_data *data)',
+                           define='KRB5_CONST_PAC_GET_BUFFER',
+                           headers='krb5.h',
+                           lib='krb5')

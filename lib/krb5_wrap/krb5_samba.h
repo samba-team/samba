@@ -135,7 +135,18 @@ typedef struct {
 #endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
 
 #ifndef HAVE_KRB5_CONST_PAC
-typedef krb5_pac krb5_const_pac;
+#ifdef KRB5_CONST_PAC_GET_BUFFER
+typedef const struct krb5_pac_data *krb5_const_pac;
+#else
+/*
+ * Certain Heimdal versions include a version of krb5_pac_get_buffer() that is
+ * unusable in certain cases, taking a krb5_pac when a krb5_const_pac may be all
+ * that we can supply. Furthermore, MIT Kerberos doesn't declare krb5_const_pac
+ * at all. In such cases, we must declare krb5_const_pac as a non-const typedef
+ * so that the build can succeed.
+ */
+typedef struct krb5_pac_data *krb5_const_pac;
+#endif
 #endif
 
 krb5_error_code smb_krb5_parse_name(krb5_context context,
