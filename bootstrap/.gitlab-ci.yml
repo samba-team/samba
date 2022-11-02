@@ -99,6 +99,9 @@ ubuntu1804-32bit:
 ubuntu2004:
   extends: .build_image_template
 
+ubuntu2204:
+  extends: .build_image_template
+
 debian11:
   extends: .build_image_template
 

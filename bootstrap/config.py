@@ -441,6 +441,13 @@ DEB_DISTS = {
             'liburing-dev': '',   # not available
         }
     },
+    'ubuntu2204': {
+        'docker_image': 'ubuntu:22.04',
+        'vagrant_box': 'ubuntu/jammy64',
+        'replace': {
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+        },
+    }
 }
 
 
