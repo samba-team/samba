@@ -710,11 +710,6 @@ struct foo bar = { .y = 'X', .x = 1 };
                     define="HAVE_VA_COPY",
                     msg="Checking for va_copy")
 
-    conf.CHECK_CODE('''
-                    #define eprintf(...) fprintf(stderr, __VA_ARGS__)
-                    eprintf("bla", "bar")
-                    ''', define='HAVE__VA_ARGS__MACRO')
-
     conf.env.enable_fuzzing = False
 
     conf.env.enable_libfuzzer = Options.options.enable_libfuzzer
