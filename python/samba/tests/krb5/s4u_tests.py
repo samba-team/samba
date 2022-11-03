@@ -30,6 +30,7 @@ from samba.tests import env_get_var_value
 from samba.tests.krb5.kcrypto import Cksumtype, Enctype
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.raw_testcase import (
+    RawKerberosTest,
     RodcPacEncryptionKey,
     ZeroedChecksumKey
 )
@@ -51,11 +52,17 @@ from samba.tests.krb5.rfc4120_constants import (
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
+SidType = RawKerberosTest.SidType
+
 global_asn1_print = False
 global_hexdump = False
 
 
 class S4UKerberosTests(KDCBaseTest):
+
+    default_attrs = (security.SE_GROUP_MANDATORY |
+                     security.SE_GROUP_ENABLED_BY_DEFAULT |
+                     security.SE_GROUP_ENABLED)
 
     def setUp(self):
         super(S4UKerberosTests, self).setUp()
@@ -541,8 +548,15 @@ class S4UKerberosTests(KDCBaseTest):
                 'client_opts': {
                     'not_delegated': False
                 },
-                'expected_groups': [security.SID_SERVICE_ASSERTED_IDENTITY],
-                'unexpected_groups': [security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY]
+                'expected_groups': {
+                    (security.SID_SERVICE_ASSERTED_IDENTITY,
+                     SidType.EXTRA_SID,
+                     self.default_attrs),
+                    ...
+                },
+                'unexpected_groups': {
+                    security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,
+                },
             })
 
     def _run_delegation_test(self, kdc_dict):
@@ -783,8 +797,15 @@ class S4UKerberosTests(KDCBaseTest):
             {
                 'expected_error_mode': 0,
                 'allow_delegation': True,
-                'expected_groups': [security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY],
-                'unexpected_groups': [security.SID_SERVICE_ASSERTED_IDENTITY]
+                'expected_groups': {
+                    (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,
+                     SidType.EXTRA_SID,
+                     self.default_attrs),
+                    ...
+                },
+                'unexpected_groups': {
+                    security.SID_SERVICE_ASSERTED_IDENTITY,
+                },
             })
 
     def test_constrained_delegation_service_asserted_identity(self):
@@ -798,8 +819,15 @@ class S4UKerberosTests(KDCBaseTest):
                 'service1_opts': {
                     'trusted_to_auth_for_delegation': True,
                 },
-                'expected_groups': [security.SID_SERVICE_ASSERTED_IDENTITY],
-                'unexpected_groups': [security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY]
+                'expected_groups': {
+                    (security.SID_SERVICE_ASSERTED_IDENTITY,
+                     SidType.EXTRA_SID,
+                     self.default_attrs),
+                    ...
+                },
+                'unexpected_groups': {
+                    security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,
+                },
             })
 
     def test_constrained_delegation_no_auth_data_required(self):
