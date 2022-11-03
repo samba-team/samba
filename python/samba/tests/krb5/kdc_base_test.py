@@ -28,7 +28,7 @@ from enum import Enum
 from collections import namedtuple
 import ldb
 from ldb import SCOPE_BASE
-from samba import generate_random_password
+from samba import common, generate_random_password
 from samba.auth import system_session
 from samba.credentials import (
     Credentials,
@@ -300,7 +300,7 @@ class KDCBaseTest(RawKerberosTest):
 
         return default_enctypes
 
-    def create_group(self, samdb, name, ou=None):
+    def create_group(self, samdb, name, ou=None, gtype=None):
         if ou is None:
             ou = samdb.get_wellknown_dn(samdb.get_default_basedn(),
                                         DS_GUID_USERS_CONTAINER)
@@ -318,6 +318,8 @@ class KDCBaseTest(RawKerberosTest):
             'dn': dn,
             'objectClass': 'group'
         }
+        if gtype is not None:
+            details['groupType'] = common.normalise_int32(gtype)
         samdb.add(details)
 
         return dn
