@@ -2266,6 +2266,14 @@ static PyObject *py_smb_have_posix(struct py_cli_state *self,
 	Py_RETURN_FALSE;
 }
 
+static PyObject *py_smb_protocol(struct py_cli_state *self,
+				 PyObject *Py_UNUSED(ignored))
+{
+	enum protocol_types proto = smbXcli_conn_protocol(self->cli->conn);
+	PyObject *result = PyLong_FromLong(proto);
+	return result;
+}
+
 static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
 {
 	int fnum;
@@ -2546,6 +2554,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "set_sd", (PyCFunction)py_smb_set_sd, METH_VARARGS,
 	  "set_sd(fnum, security_descriptor[, security_info=0]) -> None\n\n"
 	  "\t\tSet security descriptor for opened file." },
+	{ "protocol",
+	  (PyCFunction)py_smb_protocol,
+	  METH_NOARGS,
+	  "protocol() -> Number"
+	},
 	{ "have_posix",
 	  (PyCFunction)py_smb_have_posix,
 	  METH_NOARGS,
@@ -2636,6 +2649,18 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	PyModule_AddObject(m, "LibsmbCConn", (PyObject *)&py_cli_state_type);
 
 #define ADD_FLAGS(val)	PyModule_AddObject(m, #val, PyLong_FromLong(val))
+
+	ADD_FLAGS(PROTOCOL_NONE);
+	ADD_FLAGS(PROTOCOL_CORE);
+	ADD_FLAGS(PROTOCOL_COREPLUS);
+	ADD_FLAGS(PROTOCOL_LANMAN1);
+	ADD_FLAGS(PROTOCOL_LANMAN2);
+	ADD_FLAGS(PROTOCOL_NT1);
+	ADD_FLAGS(PROTOCOL_SMB2_02);
+	ADD_FLAGS(PROTOCOL_SMB2_10);
+	ADD_FLAGS(PROTOCOL_SMB3_00);
+	ADD_FLAGS(PROTOCOL_SMB3_02);
+	ADD_FLAGS(PROTOCOL_SMB3_11);
 
 	ADD_FLAGS(FILE_ATTRIBUTE_READONLY);
 	ADD_FLAGS(FILE_ATTRIBUTE_HIDDEN);
