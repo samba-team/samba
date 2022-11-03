@@ -54,12 +54,6 @@ global_hexdump = False
 
 
 class ProtectedUsersTests(KDCBaseTest):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls._search_iterator = None
-
     def setUp(self):
         super().setUp()
         self.do_asn1_print = global_asn1_print
