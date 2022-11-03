@@ -811,15 +811,22 @@ class KDCBaseTest(RawKerberosTest):
         elif members is None:
             members = ()
 
-        members = list(members)
-        members.append(account_dn)
+        # Use a set so we can handle the same group being added twice.
+        members = set(members)
+
+        self.assertNotIsInstance(account_dn, ldb.Dn,
+                                 'ldb.MessageElement does not support ldb.Dn')
+
+        if isinstance(account_dn, str):
+            members.add(account_dn)
+        else:
+            members.update(account_dn)
 
         msg = ldb.Message()
         msg.dn = group_dn
-        msg[group_attr] = ldb.MessageElement(members,
+        msg[group_attr] = ldb.MessageElement(list(members),
                                              ldb.FLAG_MOD_REPLACE,
                                              group_attr)
-
         cleanup = samdb.msg_diff(msg, orig_msg)
         self.ldb_cleanups.append(cleanup)
         samdb.modify(msg)
