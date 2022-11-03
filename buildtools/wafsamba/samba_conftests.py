@@ -126,7 +126,7 @@ def CHECK_LARGEFILE(conf, define='HAVE_LARGEFILE'):
 
 
 @conf
-def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None, msg=None):
+def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None, msg=None, lib=None):
     '''verify that a C prototype matches the one on the current system'''
     if not conf.CHECK_DECLS(function, headers=headers):
         return False
@@ -138,7 +138,8 @@ def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None, msg=None)
                            headers=headers,
                            link=False,
                            execute=False,
-                           msg=msg)
+                           msg=msg,
+                           lib=lib)
 
 
 @conf
