@@ -2428,6 +2428,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          unexpected_groups=None,
                          expected_upn_name=None,
                          expected_sid=None,
+                         expected_domain_sid=None,
                          expected_supported_etypes=None,
                          expected_flags=None,
                          unexpected_flags=None,
@@ -2496,6 +2497,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
+            'expected_domain_sid': expected_domain_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
@@ -2560,6 +2562,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           unexpected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
+                          expected_domain_sid=None,
                           expected_supported_etypes=None,
                           expected_flags=None,
                           unexpected_flags=None,
@@ -2629,6 +2632,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
+            'expected_domain_sid': expected_domain_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
@@ -3138,9 +3142,12 @@ class RawKerberosTest(TestCaseInTempDir):
 
         expected_groups = kdc_exchange_dict['expected_groups']
         unexpected_groups = kdc_exchange_dict['unexpected_groups']
+        expected_domain_sid = kdc_exchange_dict['expected_domain_sid']
         expected_sid = kdc_exchange_dict['expected_sid']
 
         domain_sid = logon_info.domain_sid
+        if expected_domain_sid is not None:
+            self.assertEqual(expected_domain_sid, str(domain_sid))
 
         if expected_sid is not None:
             got_sid = f'{domain_sid}-{logon_info.rid}'
@@ -4711,6 +4718,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           unexpected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
+                          expected_domain_sid=None,
                           expected_flags=None,
                           unexpected_flags=None,
                           expected_supported_etypes=None,
@@ -4759,6 +4767,7 @@ class RawKerberosTest(TestCaseInTempDir):
             unexpected_groups=unexpected_groups,
             expected_upn_name=expected_upn_name,
             expected_sid=expected_sid,
+            expected_domain_sid=expected_domain_sid,
             expected_supported_etypes=expected_supported_etypes,
             ticket_decryption_key=ticket_decryption_key,
             generate_padata_fn=generate_padata_fn,
