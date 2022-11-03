@@ -185,7 +185,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             actual_count = len(c.list('',
                                 info_level=libsmb.SMB2_FIND_POSIX_INFORMATION,
                                 posix=True))
-            self.assertEqual(actual_count, expected_count,
+            self.assertEqual(actual_count-2, expected_count,
                              'SMB2_FIND_POSIX_INFORMATION failed to list contents')
 
         finally:
@@ -335,4 +335,28 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             for fname in test_files.keys():
                 self.delete_test_file(c, '\\%s' % fname)
 
+            self.disable_smb3unix()
+
+    def test_share_root_null_sids_fid(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            res = c.list("", info_level=100, posix=True)
+            found_files = {get_string(i['name']): i for i in res}
+            dotdot = found_files['..']
+            self.assertEqual('S-1-0-0', dotdot['owner_sid'],
+                             'The owner sid for .. was not NULL')
+            self.assertEqual('S-1-0-0', dotdot['group_sid'],
+                             'The group sid for .. was not NULL')
+            self.assertEqual(0, dotdot['ino'], 'The ino for .. was not 0')
+            self.assertEqual(0, dotdot['dev'], 'The dev for .. was not 0')
+        finally:
             self.disable_smb3unix()

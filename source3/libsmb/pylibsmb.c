@@ -1901,10 +1901,6 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 	PyObject *size = NULL;
 	int ret;
 
-	/* suppress '.' and '..' in the results we return */
-	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
-		return NT_STATUS_OK;
-	}
 	size = PyLong_FromUnsignedLongLong(finfo->size);
 	/*
 	 * Build a dictionary representing the file info.
