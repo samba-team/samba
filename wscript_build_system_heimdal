@@ -1,4 +1,10 @@
 from waflib import Logs
 
 Logs.info("\tSelected system Heimdal build")
-bld.RECURSE('third_party/heimdal_build')
+
+# Alias subsystem to allow common kerberos code that will
+# otherwise link against MIT's gssapi_krb5 and k5crypto
+#
+# Note: that we also need this if we use system heimdal libraries
+bld.SAMBA_SUBSYSTEM('gssapi_krb5', '', deps='gssapi')
+bld.SAMBA_SUBSYSTEM('k5crypto', '', deps='krb5')
