@@ -370,6 +370,9 @@ class KerberosCredentials(Credentials):
                            security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
                            security.KERB_ENCTYPE_CLAIMS_SUPPORTED)
 
+    non_etype_bits = fast_supported_bits | (
+        security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED)
+
     def __init__(self):
         super(KerberosCredentials, self).__init__()
         all_enc_types = 0
@@ -431,7 +434,7 @@ class KerberosCredentials(Credentials):
                 bits &= ~bit
                 etypes += (etype,)
 
-        bits &= ~cls.fast_supported_bits
+        bits &= ~cls.non_etype_bits
         if bits != 0:
             raise ValueError(f'Unsupported etype bits: {bits}')
 
