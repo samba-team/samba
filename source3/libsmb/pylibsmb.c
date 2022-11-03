@@ -21,6 +21,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+Template code to use this library:
+
+-------------------------
+from samba.samba3 import libsmb_samba_internal as libsmb
+from samba.samba3 import param as s3param
+from samba import (credentials,NTSTATUSError)
+
+lp = s3param.get_context()
+lp.load("/etc/samba/smb.conf");
+
+creds = credentials.Credentials()
+creds.guess(lp)
+creds.set_username("administrator")
+creds.set_password("1234")
+
+c = libsmb.Conn("127.0.0.1",
+                "tmp",
+                lp,
+                creds,
+                multi_threaded=True)
+-------------------------
+*/
+
 #include <Python.h>
 #include "includes.h"
 #include "python/py3compat.h"
