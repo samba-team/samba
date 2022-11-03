@@ -78,3 +78,9 @@ def build(bld):
                      source='test_util_translate.c',
                      deps='cmocka cli_smb_common',
                      for_selftest=True)
+
+    bld.SAMBA_PYTHON('py_reparse_symlink',
+                     source='py_reparse_symlink.c',
+                     deps='cli_smb_common',
+                     realname='samba/reparse_symlink.so'
+                     )
