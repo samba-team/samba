@@ -887,6 +887,7 @@ class KDCBaseTest(RawKerberosTest):
             'delegation_from_dn': None,
             'trusted_to_auth_for_delegation': False,
             'fast_support': False,
+            'sid_compression_support': True,
             'member_of': None,
             'kerberos_enabled': True,
             'secure_channel_type': None,
@@ -934,6 +935,7 @@ class KDCBaseTest(RawKerberosTest):
                             delegation_from_dn,
                             trusted_to_auth_for_delegation,
                             fast_support,
+                            sid_compression_support,
                             member_of,
                             kerberos_enabled,
                             secure_channel_type,
@@ -971,6 +973,9 @@ class KDCBaseTest(RawKerberosTest):
         if fast_support:
             enctypes = enctypes or 0
             enctypes |= KerberosCredentials.fast_supported_bits
+        if sid_compression_support is False:
+            enctypes = enctypes or 0
+            enctypes |= security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED
 
         if enctypes is not None:
             details['msDS-SupportedEncryptionTypes'] = str(enctypes)
