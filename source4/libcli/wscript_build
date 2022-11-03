@@ -58,7 +58,6 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_WREPL',
 bld.SAMBA_SUBSYSTEM('LIBCLI_RESOLVE',
 	source='resolve/resolve.c',
 	autoproto='resolve/proto.h',
-	deps='roken',
 	public_deps='ndr_nbt LIBTSOCKET'
 	)
 
