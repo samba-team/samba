@@ -2461,6 +2461,7 @@ static char winbind_get_separator(struct pwb_context *ctx)
 {
 	wbcErr wbc_status;
 	static struct wbcInterfaceDetails *details = NULL;
+	char result;
 
 	wbc_status = wbcCtxInterfaceDetails(ctx->wbc_ctx, &details);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -2474,7 +2475,9 @@ static char winbind_get_separator(struct pwb_context *ctx)
 		return '\0';
 	}
 
-	return details->winbind_separator;
+	result = details->winbind_separator;
+	wbcFreeMemory(details);
+	return result;
 }
 
 
