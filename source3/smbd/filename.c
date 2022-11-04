@@ -943,12 +943,16 @@ lookup:
 	}
 
 	if (NT_STATUS_IS_OK(status) && (cache_key.data != NULL)) {
-		DATA_BLOB value = {
-			.data = (uint8_t *)smb_fname_rel->base_name,
-			.length = strlen(smb_fname_rel->base_name) + 1,
-		};
+		const char *slash = strchr_m(smb_fname_rel->base_name, '/');
 
-		memcache_add(NULL, GETREALFILENAME_CACHE, cache_key, value);
+		if (slash == NULL) {
+			DATA_BLOB value = {
+				.data = (uint8_t *)smb_fname_rel->base_name,
+				.length = strlen(smb_fname_rel->base_name) + 1,
+			};
+			memcache_add(
+				NULL, GETREALFILENAME_CACHE, cache_key, value);
+		}
 	}
 
 	TALLOC_FREE(cache_key.data);
