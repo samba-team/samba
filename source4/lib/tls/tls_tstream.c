@@ -995,6 +995,7 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 	const char *error_pos;
 	struct tstream_tls *tlss;
 	int ret;
+	unsigned int flags = GNUTLS_CLIENT;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_tls_connect_state);
@@ -1028,7 +1029,18 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = gnutls_init(&tlss->tls_session, GNUTLS_CLIENT);
+#ifdef GNUTLS_NO_TICKETS
+	/*
+	 * tls_tstream can't properly handle 'New Session Ticket' messages
+	 * sent 'after' the client sends the 'Finished' message.
+	 * GNUTLS_NO_TICKETS was introduced in GnuTLS 3.5.6.  This flag is to
+	 * indicate the session Flag session should not use resumption with
+	 * session tickets.
+	 */
+	flags |= GNUTLS_NO_TICKETS;
+#endif
+
+	ret = gnutls_init(&tlss->tls_session, flags);
 	if (ret != GNUTLS_E_SUCCESS) {
 		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
 		tevent_req_error(req, EINVAL);
