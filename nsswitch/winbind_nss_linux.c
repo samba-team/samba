@@ -354,10 +354,10 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
  * NSS user functions
  */
 
-static struct winbindd_response getpwent_response;
+static __thread struct winbindd_response getpwent_response;
 
-static int ndx_pw_cache;                 /* Current index into pwd cache */
-static int num_pw_cache;                 /* Current size of pwd cache */
+static __thread int ndx_pw_cache;        /* Current index into pwd cache */
+static __thread int num_pw_cache;        /* Current size of pwd cache */
 
 /* Rewind "file pointer" to start of ntdom password database */
 
@@ -435,7 +435,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 {
 	NSS_STATUS ret;
 	struct winbindd_request request;
-	static int called_again;
+	static __thread int called_again;
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwent\n", getpid());
@@ -531,9 +531,9 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
-	static struct winbindd_response response;
+	static __thread struct winbindd_response response;
 	struct winbindd_request request;
-	static int keep_response;
+	static __thread int keep_response;
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwuid_r %d\n", getpid(), (unsigned int)uid);
@@ -610,9 +610,9 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
-	static struct winbindd_response response;
+	static __thread struct winbindd_response response;
 	struct winbindd_request request;
-	static int keep_response;
+	static __thread int keep_response;
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwnam_r %s\n", getpid(), name);
@@ -688,10 +688,10 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
  * NSS group functions
  */
 
-static struct winbindd_response getgrent_response;
+static __thread struct winbindd_response getgrent_response;
 
-static int ndx_gr_cache;                 /* Current index into grp cache */
-static int num_gr_cache;                 /* Current size of grp cache */
+static __thread int ndx_gr_cache;        /* Current index into grp cache */
+static __thread int num_gr_cache;        /* Current size of grp cache */
 
 /* Rewind "file pointer" to start of ntdom group database */
 
@@ -769,8 +769,8 @@ winbind_getgrent(enum winbindd_cmd cmd,
 		 char *buffer, size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
-	static struct winbindd_request request;
-	static int called_again;
+	static __thread struct winbindd_request request;
+	static __thread int called_again;
 
 
 #ifdef DEBUG_NSS
@@ -895,9 +895,9 @@ _nss_winbind_getgrnam_r(const char *name,
 			size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
-	static struct winbindd_response response;
+	static __thread struct winbindd_response response;
 	struct winbindd_request request;
-	static int keep_response;
+	static __thread int keep_response;
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrnam %s\n", getpid(), name);
@@ -983,9 +983,9 @@ _nss_winbind_getgrgid_r(gid_t gid,
 			size_t buflen, int *errnop)
 {
 	NSS_STATUS ret;
-	static struct winbindd_response response;
+	static __thread struct winbindd_response response;
 	struct winbindd_request request;
-	static int keep_response;
+	static __thread int keep_response;
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrgid %d\n", getpid(), gid);

@@ -31,7 +31,7 @@
 #include <pthread.h>
 #endif
 
-static char client_name[32];
+static __thread char client_name[32];
 
 /* Global context */
 
