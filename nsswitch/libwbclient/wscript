@@ -27,9 +27,13 @@ def build(bld):
 #
 #    Logs.info("\tSelected embedded libwbclient build")
 
+    wbclient_internal_deps = 'replace'
+    if bld.CONFIG_SET('HAVE_PTHREAD'):
+        wbclient_internal_deps += ' pthread'
+
     bld.SAMBA_SUBSYSTEM('wbclient-internal',
         source='../wb_common.c',
-        deps='replace',
+        deps=wbclient_internal_deps,
         cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
         hide_symbols=True,
         provide_builtin_linking=True,

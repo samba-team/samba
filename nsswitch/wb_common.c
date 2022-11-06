@@ -26,6 +26,7 @@
 #include "replace.h"
 #include "system/select.h"
 #include "winbind_client.h"
+#include <assert.h>
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
@@ -41,30 +42,115 @@ struct winbindd_context {
 	pid_t our_pid;		/* calling process pid */
 };
 
+static struct wb_global_ctx {
 #ifdef HAVE_PTHREAD
-static pthread_mutex_t wb_global_ctx_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_once_t control;
+	pthread_key_t key;
+#else
+	bool dummy;
+#endif
+} wb_global_ctx = {
+#ifdef HAVE_PTHREAD
+	.control = PTHREAD_ONCE_INIT,
+#endif
+};
+
+static void winbind_close_sock(struct winbindd_context *ctx);
+
+#ifdef HAVE_PTHREAD
+static void wb_thread_ctx_initialize(void);
+
+static void wb_atfork_child(void)
+{
+	struct winbindd_context *ctx = NULL;
+	int ret;
+
+	ctx = (struct winbindd_context *)pthread_getspecific(wb_global_ctx.key);
+	if (ctx == NULL) {
+		return;
+	}
+
+	ret = pthread_setspecific(wb_global_ctx.key, NULL);
+	assert(ret == 0);
+
+	winbind_close_sock(ctx);
+	free(ctx);
+
+	ret = pthread_key_delete(wb_global_ctx.key);
+	assert(ret == 0);
+
+	wb_global_ctx.control = (pthread_once_t)PTHREAD_ONCE_INIT;
+}
+
+static void wb_thread_ctx_destructor(void *p)
+{
+	struct winbindd_context *ctx = (struct winbindd_context *)p;
+
+	winbind_close_sock(ctx);
+	free(ctx);
+}
+
+static void wb_thread_ctx_initialize(void)
+{
+	int ret;
+
+	ret = pthread_atfork(NULL,
+			     NULL,
+			     wb_atfork_child);
+	assert(ret == 0);
+
+	ret = pthread_key_create(&wb_global_ctx.key,
+				 wb_thread_ctx_destructor);
+	assert(ret == 0);
+}
 #endif
 
-static struct winbindd_context *get_wb_global_ctx(void)
+static struct winbindd_context *get_wb_thread_ctx(void)
 {
-	static struct winbindd_context wb_global_ctx = {
+	struct winbindd_context *ctx = NULL;
+	int ret;
+
+	ret = pthread_once(&wb_global_ctx.control,
+			   wb_thread_ctx_initialize);
+	assert(ret == 0);
+
+	ctx = (struct winbindd_context *)pthread_getspecific(
+		wb_global_ctx.key);
+	if (ctx != NULL) {
+		return ctx;
+	}
+
+	ctx = malloc(sizeof(struct winbindd_context));
+	if (ctx == NULL) {
+		return NULL;
+	}
+
+	*ctx = (struct winbindd_context) {
 		.winbindd_fd = -1,
 		.is_privileged = false,
 		.our_pid = 0
 	};
 
-#ifdef HAVE_PTHREAD
-	pthread_mutex_lock(&wb_global_ctx_mutex);
-#endif
-	return &wb_global_ctx;
+	ret = pthread_setspecific(wb_global_ctx.key, ctx);
+	if (ret != 0) {
+		free(ctx);
+		return NULL;
+	}
+	return ctx;
 }
 
-static void put_wb_global_ctx(void)
+static struct winbindd_context *get_wb_global_ctx(void)
 {
 #ifdef HAVE_PTHREAD
-	pthread_mutex_unlock(&wb_global_ctx_mutex);
+	return get_wb_thread_ctx();
+#else
+	static struct winbindd_context ctx = {
+		.winbindd_fd = -1,
+		.is_privileged = false,
+		.our_pid = 0
+	};
+	return &ctx;
 #endif
-	return;
 }
 
 void winbind_set_client_name(const char *name)
@@ -148,9 +234,16 @@ static void winbind_destructor(void)
 {
 	struct winbindd_context *ctx;
 
+#ifdef HAVE_PTHREAD_H
+	ctx = (struct winbindd_context *)pthread_getspecific(wb_global_ctx.key);
+	if (ctx == NULL) {
+		return;
+	}
+#else
 	ctx = get_wb_global_ctx();
+#endif
+
 	winbind_close_sock(ctx);
-	put_wb_global_ctx();
 }
 
 #define CONNECT_TIMEOUT 30
@@ -782,11 +875,9 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 				     struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
-	bool release_global_ctx = false;
 
 	if (ctx == NULL) {
 		ctx = get_wb_global_ctx();
-		release_global_ctx = true;
 	}
 
 	status = winbindd_send_request(ctx, req_type, 0, request);
@@ -796,9 +887,6 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 	status = winbindd_get_response(ctx, response);
 
 out:
-	if (release_global_ctx) {
-		put_wb_global_ctx();
-	}
 	return status;
 }
 
@@ -808,11 +896,9 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 					  struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
-	bool release_global_ctx = false;
 
 	if (ctx == NULL) {
 		ctx = get_wb_global_ctx();
-		release_global_ctx = true;
 	}
 
 	status = winbindd_send_request(ctx, req_type, 1, request);
@@ -822,9 +908,6 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 	status = winbindd_get_response(ctx, response);
 
 out:
-	if (release_global_ctx) {
-		put_wb_global_ctx();
-	}
 	return status;
 }
 
