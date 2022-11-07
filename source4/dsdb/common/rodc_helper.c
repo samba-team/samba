@@ -28,10 +28,10 @@
 /*
   see if any SIDs in list1 are in list2
  */
-bool sid_list_match(uint32_t num_sids1,
-		    const struct dom_sid *list1,
-		    uint32_t num_sids2,
-		    const struct dom_sid *list2)
+static bool sid_list_match(uint32_t num_sids1,
+			   const struct dom_sid *list1,
+			   uint32_t num_sids2,
+			   const struct dom_sid *list2)
 {
 	unsigned int i, j;
 	/* do we ever have enough SIDs here to worry about O(n^2) ? */
