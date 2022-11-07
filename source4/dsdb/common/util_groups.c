@@ -86,6 +86,9 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 	}
 
 	tmp_ctx = talloc_new(res_sids_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, dn_val);
 	if (dn == NULL) {
