@@ -488,7 +488,7 @@ NTTIME samdb_result_account_expires(const struct ldb_message *msg)
 NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 					  TALLOC_CTX *mem_ctx,
 					  struct ldb_dn *domain_dn,
-					  struct ldb_message *msg,
+					  const struct ldb_message *msg,
 					  const char *attr)
 {
 	uint64_t attr_time = ldb_msg_find_attr_as_uint64(msg, attr, 0);

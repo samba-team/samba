@@ -96,7 +96,7 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
   assumes the SIDs are in extended DN format
  */
 WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
-				 struct ldb_message *msg,
+				 const struct ldb_message *msg,
 				 TALLOC_CTX *mem_ctx,
 				 const char *attr,
 				 uint32_t *num_sids,
@@ -132,10 +132,10 @@ WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 
 WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ctx,
 						      const struct dom_sid *rodc_machine_account_sid,
-						      struct ldb_message *rodc_msg,
-						      struct ldb_message *obj_msg,
+						      const struct ldb_message *rodc_msg,
+						      const struct ldb_message *obj_msg,
 						      uint32_t num_token_sids,
-						      struct dom_sid *token_sids)
+						      const struct dom_sid *token_sids)
 {
 	uint32_t num_never_reveal_sids, num_reveal_sids;
 	struct dom_sid *never_reveal_sids, *reveal_sids;

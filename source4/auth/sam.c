@@ -337,7 +337,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 					   const char *domain_name,
 					   const char *dns_domain_name,
 					   struct ldb_dn *domain_dn,
-					   struct ldb_message *msg,
+					   const struct ldb_message *msg,
 					   DATA_BLOB user_sess_key,
 					   DATA_BLOB lm_sess_key,
 					   struct auth_user_info_dc **_user_info_dc)

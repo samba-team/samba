@@ -819,7 +819,7 @@ static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
  * reused on future calls to this function.
  */
 NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
-                                         struct ldb_message *msg,
+                                         const struct ldb_message *msg,
                                          struct auth_user_info_dc **user_info_dc)
 {
 	if (skdc_entry->user_info_dc == NULL) {
@@ -1302,9 +1302,9 @@ out:
  * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
  */
 WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
-					  struct dom_sid *object_sids,
-					  struct samba_kdc_entry *rodc,
-					  struct samba_kdc_entry *object)
+					  const struct dom_sid *object_sids,
+					  const struct samba_kdc_entry *rodc,
+					  const struct samba_kdc_entry *object)
 {
 	int ret;
 	WERROR werr;

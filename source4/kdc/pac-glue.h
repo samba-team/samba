@@ -67,7 +67,7 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_untrusted);
 
 NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
-					 struct ldb_message *msg,
+					 const struct ldb_message *msg,
 					 struct auth_user_info_dc **user_info_dc);
 
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
@@ -113,9 +113,9 @@ krb5_error_code samba_kdc_validate_pac_blob(
  * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
  */
 WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_sids,
-					  struct dom_sid *sids,
-					  struct samba_kdc_entry *rodc,
-					  struct samba_kdc_entry *object);
+					  const struct dom_sid *object_sids,
+					  const struct samba_kdc_entry *rodc,
+					  const struct samba_kdc_entry *object);
 
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
