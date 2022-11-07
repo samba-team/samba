@@ -202,6 +202,17 @@ plantestsuite("samba3.smbtorture_s3.hidenewfiles",
                smbtorture3,
                "",
                "-l $LOCAL_PATH"])
+plantestsuite("samba3.smbtorture_s3.hidenewfiles_showdirs",
+              "simpleserver",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_smbtorture_s3.sh"),
+               'hide-new-files-timeout-showdirs',
+               '//$SERVER_IP/hidenewfiles',
+               '$USERNAME',
+               '$PASSWORD',
+               smbtorture3,
+               "",
+               "-l $LOCAL_PATH"])
 
 #
 # MSDFS attribute tests.

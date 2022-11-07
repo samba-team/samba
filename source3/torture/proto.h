@@ -171,6 +171,7 @@ bool run_g_lock_ping_pong(int dummy);
 bool run_local_namemap_cache1(int dummy);
 bool run_local_idmap_cache1(int dummy);
 bool run_hidenewfiles(int dummy);
+bool run_hidenewfiles_showdirs(int dummy);
 bool run_readdir_timestamp(int dummy);
 bool run_ctdbd_conn1(int dummy);
 

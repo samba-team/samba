@@ -15613,6 +15613,10 @@ static struct {
 		.name  = "hide-new-files-timeout",
 		.fn    = run_hidenewfiles,
 	},
+	{
+		.name  = "hide-new-files-timeout-showdirs",
+		.fn    = run_hidenewfiles_showdirs,
+	},
 #ifdef CLUSTER_SUPPORT
 	{
 		.name  = "ctdbd-conn1",

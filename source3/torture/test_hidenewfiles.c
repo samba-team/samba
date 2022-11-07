@@ -170,3 +170,65 @@ fail:
 
 	return ret;
 }
+
+bool run_hidenewfiles_showdirs(int dummy)
+{
+	const char *dname = "dir";
+	const char *fname = "dir/x.txt";
+	struct cli_state *cli;
+	struct smb_create_returns cr;
+	struct timeval create_time;
+	uint16_t fnum = UINT16_MAX;
+	NTSTATUS status;
+	bool ret = false;
+	bool gotit = false;
+	bool ok;
+
+	ok = torture_open_connection_flags(&cli, 0, 0);
+	if (!ok) {
+		return false;
+	}
+
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN);
+	cli_rmdir(cli, dname);
+
+	status = cli_mkdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("mkdir(%s) failed: %s\n", dname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_ntcreate(
+		cli,
+		fname,
+		0,
+		FILE_GENERIC_WRITE|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL,
+		0,
+		FILE_CREATE,
+		0,
+		0,
+		&fnum,
+		&cr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_ntcreate failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+	nttime_to_timeval(&create_time, cr.last_write_time);
+
+	gotit = have_file(cli, dname);
+	if (!gotit) {
+		d_printf("%s was hidden\n", dname);
+		goto fail;
+	}
+
+	ret = true;
+fail:
+	if (fnum != UINT16_MAX) {
+		cli_nt_delete_on_close(cli, fnum, true);
+		cli_close(cli, fnum);
+	}
+	cli_rmdir(cli, dname);
+
+	return ret;
+}
