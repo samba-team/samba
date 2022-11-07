@@ -1396,6 +1396,7 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 					  const struct ldb_message *msg,
 					  struct ldb_dn *domain_dn,
 					  bool interactive_or_kerberos,
+					  TALLOC_CTX *send_to_sam_mem_ctx,
 					  struct netr_SendToSamBase **send_to_sam)
 {
 	int ret;
@@ -1612,7 +1613,13 @@ get_transaction:
 		if (dbBadPwdCount != 0 && send_to_sam != NULL) {
 			struct netr_SendToSamBase *base_msg;
 			struct GUID guid = samdb_result_guid(msg, "objectGUID");
-			base_msg = talloc_zero(msg, struct netr_SendToSamBase);
+
+			base_msg = talloc_zero(send_to_sam_mem_ctx,
+					       struct netr_SendToSamBase);
+			if (base_msg == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto error;
+			}
 
 			base_msg->message_type = SendToSamResetBadPasswordCount;
 			base_msg->message_size = 16;

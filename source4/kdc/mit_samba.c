@@ -1031,7 +1031,7 @@ out:
 
 void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 {
-	struct netr_SendToSamBase *send_to_sam = NULL;
+	/* struct netr_SendToSamBase *send_to_sam = NULL; */
 	struct samba_kdc_entry *p =
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	struct ldb_dn *domain_dn;
@@ -1042,7 +1042,7 @@ void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 					 p->msg,
 					 domain_dn,
 					 true,
-					 &send_to_sam);
+					 NULL, NULL);
 	/* TODO: RODC support */
 }
 

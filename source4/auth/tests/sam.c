@@ -1446,7 +1446,7 @@ static void test_success_accounting_start_txn_failed(void **state) {
 	ldb_transaction_start_ret = LDB_ERR_OPERATIONS_ERROR;
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 
 	/*
@@ -1502,7 +1502,7 @@ static void test_success_accounting_reread_failed(void **state) {
 	will_return(__wrap_dsdb_search_dn, LDB_ERR_NO_SUCH_OBJECT);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(transaction_cancelled);
 
@@ -1561,7 +1561,7 @@ static void test_success_accounting_ldb_msg_new_failed(void **state) {
 	ldb_msg_new_fail = true;
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY));
 	assert_true(transaction_cancelled);
 
@@ -1612,7 +1612,7 @@ static void test_success_accounting_samdb_rodc_failed(void **state) {
 	samdb_rodc_ret = LDB_ERR_OPERATIONS_ERROR;
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_false(in_transaction);
 	assert_false(transaction_cancelled);
@@ -1675,7 +1675,7 @@ static void test_success_accounting_update_lastlogon_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_ERR_OPERATIONS_ERROR);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY));
 	assert_true(transaction_cancelled);
 
@@ -1737,7 +1737,7 @@ static void test_success_accounting_build_mod_req_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_SUCCESS);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(transaction_cancelled);
 
@@ -1800,7 +1800,7 @@ static void test_success_accounting_add_control_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_SUCCESS);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(transaction_cancelled);
 
@@ -1863,7 +1863,7 @@ static void test_success_accounting_ldb_request_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_SUCCESS);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(transaction_cancelled);
 
@@ -1926,7 +1926,7 @@ static void test_success_accounting_ldb_wait_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_SUCCESS);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(transaction_cancelled);
 
@@ -1989,7 +1989,7 @@ static void test_success_accounting_commit_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_SUCCESS);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(in_transaction);
 	assert_false(transaction_cancelled);
@@ -2055,7 +2055,7 @@ static void test_success_accounting_rollback_failed(void **state) {
 	will_return(__wrap_samdb_msg_add_int64, LDB_SUCCESS);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR));
 	assert_true(in_transaction);
 	assert_false(transaction_cancelled);
@@ -2124,7 +2124,7 @@ static void test_success_accounting_spurious_bad_pwd_indicator(void **state) {
 	ldb_build_mod_req_res = talloc_zero(ctx, struct ldb_request);
 
 	status = authsam_logon_success_accounting(
-		ldb, msg, domain_dn, true, NULL);
+		ldb, msg, domain_dn, true, NULL, NULL);
 	assert_true(NT_STATUS_EQUAL(status, NT_STATUS_OK));
 	assert_false(in_transaction);
 	assert_false(transaction_cancelled);
