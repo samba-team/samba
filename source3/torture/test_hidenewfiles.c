@@ -78,7 +78,7 @@ static bool have_file(struct cli_state *cli, const char *fname)
 
 	status = cli_list(
 		cli,
-		"*.*",
+		"*",
 		FILE_ATTRIBUTE_DIRECTORY|
 		FILE_ATTRIBUTE_SYSTEM|
 		FILE_ATTRIBUTE_HIDDEN,
@@ -108,7 +108,7 @@ bool run_hidenewfiles(int dummy)
 	/* what is configured in smb.conf */
 	unsigned hideunreadable_seconds = 5;
 
-	ok = torture_open_connection(&cli, 0);
+	ok = torture_open_connection_flags(&cli, 0, 0);
 	if (!ok) {
 		return false;
 	}
