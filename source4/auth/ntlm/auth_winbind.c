@@ -256,7 +256,7 @@ static void winbind_check_password_done(struct tevent_req *subreq)
 				ctx->auth_ctx->sam_ctx, msg,
 				domain_dn,
 				user_info->flags & USER_INFO_INTERACTIVE_LOGON,
-				NULL);
+				NULL, NULL);
 			if (tevent_req_nterror(req, status)) {
 				return;
 			}

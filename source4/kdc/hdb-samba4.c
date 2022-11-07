@@ -649,7 +649,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			 * in the PAC here or re-calculate it.
 			 */
 			status = authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
-								  domain_dn, true, &send_to_sam);
+								  domain_dn, true, frame, &send_to_sam);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
 				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 				r->error_code = final_ret;
