@@ -1391,6 +1391,38 @@ static bool irpc_bh_ref_alloc(struct dcerpc_binding_handle *h)
 	return true;
 }
 
+static void irpc_bh_do_ndr_print(struct dcerpc_binding_handle *h,
+				 int ndr_flags,
+				 const void *_struct_ptr,
+				 const struct ndr_interface_call *call)
+{
+	void *struct_ptr = discard_const(_struct_ptr);
+	bool print_in = false;
+	bool print_out = false;
+
+	if (DEBUGLEVEL >= 11) {
+		print_in = true;
+		print_out = true;
+	}
+
+	if (ndr_flags & NDR_IN) {
+		if (print_in) {
+			ndr_print_function_debug(call->ndr_print,
+						 call->name,
+						 ndr_flags,
+						 struct_ptr);
+		}
+	}
+	if (ndr_flags & NDR_OUT) {
+		if (print_out) {
+			ndr_print_function_debug(call->ndr_print,
+						 call->name,
+						 ndr_flags,
+						 struct_ptr);
+		}
+	}
+}
+
 static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
 	.name			= "wbint",
 	.is_connected		= irpc_bh_is_connected,
@@ -1401,6 +1433,7 @@ static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
 	.disconnect_recv	= irpc_bh_disconnect_recv,
 
 	.ref_alloc		= irpc_bh_ref_alloc,
+	.do_ndr_print		= irpc_bh_do_ndr_print,
 };
 
 /* initialise a irpc binding handle */
