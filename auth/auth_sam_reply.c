@@ -605,12 +605,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		rg = &pac_logon_info->resource_groups;
 	}
 
-	if (rg == NULL) {
-		*_user_info_dc = user_info_dc;
-		return NT_STATUS_OK;
-	}
-
-	if (rg->groups.count > 0) {
+	if (rg != NULL && rg->groups.count > 0) {
 		/* The IDL layer would be a better place to check this, but to
 		 * guard the integer addition below, we double-check */
 		if (rg->groups.count > 65535) {
