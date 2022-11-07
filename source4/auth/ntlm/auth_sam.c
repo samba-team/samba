@@ -787,6 +787,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	nt_status = authsam_logon_success_accounting(auth_context->sam_ctx,
 						     msg, domain_dn,
 						     interactive,
+						     tmp_ctx,
 						     &send_to_sam);
 
 	if (send_to_sam != NULL) {
