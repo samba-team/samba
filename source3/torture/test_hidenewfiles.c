@@ -1,6 +1,6 @@
 /*
  * Unix SMB/CIFS implementation.
- * Test pthreadpool_tevent
+ * Test "hide new files timeout"
  * Copyright (C) Volker Lendecke 2018
  *
  * This program is free software; you can redistribute it and/or modify
@@ -105,7 +105,7 @@ bool run_hidenewfiles(int dummy)
 	bool gotit = false;
 	bool ok;
 
-	/* what is configure in smb.conf */
+	/* what is configured in smb.conf */
 	unsigned hideunreadable_seconds = 5;
 
 	ok = torture_open_connection(&cli, 0);
