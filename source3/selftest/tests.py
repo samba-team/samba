@@ -802,6 +802,11 @@ for env in ["fileserver:local"]:
     plantestsuite("samba3.blackbox.smbstatus", env, [os.path.join(samba3srcdir, "script/tests/test_smbstatus.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, smbstatus, configuration, "SMB3"])
     plantestsuite("samba3.blackbox.net_registry_import", env, [os.path.join(samba3srcdir, "script/tests/test_net_registry_import.sh"), '$SERVER', '$LOCAL_PATH', '$USERNAME', '$PASSWORD'])
 
+plantestsuite("samba3.blackbox.server_addresses",
+              "simpleserver",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_server_addresses.sh")])
+
 # TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc NT1", "ad_dc_smb1_done:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),

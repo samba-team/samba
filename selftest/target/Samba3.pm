@@ -3457,6 +3457,10 @@ sub provision($$)
 [full_audit_fail_bad_name]
 	copy = tmp
 	full_audit:failure = badname
+
+[only_ipv6]
+	copy = tmpguest
+	server addresses = $server_ipv6
 	";
 
 	close(CONF);
