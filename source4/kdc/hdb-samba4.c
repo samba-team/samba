@@ -504,6 +504,7 @@ static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 {
 	struct dcerpc_binding_handle *irpc_handle;
 	struct winbind_SendToSam req;
+	struct tevent_req *subreq = NULL;
 
 	irpc_handle = irpc_binding_handle_by_name(mem_ctx, kdc_db_ctx->msg_ctx,
 						  "winbind_server",
@@ -516,8 +517,18 @@ static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 
 	req.in.message = *send_to_sam;
 
-	dcerpc_winbind_SendToSam_r_send(mem_ctx, kdc_db_ctx->ev_ctx,
-					irpc_handle, &req);
+	/*
+	 * This seem to rely on the current IRPC implementation,
+	 * which delivers the message in the _send function.
+	 *
+	 * TODO: we need a ONE_WAY IRPC handle and register
+	 * a callback and wait for it to be triggered!
+	 */
+	subreq = dcerpc_winbind_SendToSam_r_send(mem_ctx, kdc_db_ctx->ev_ctx,
+						 irpc_handle, &req);
+
+	/* we aren't interested in a reply */
+	TALLOC_FREE(subreq);
 }
 
 static krb5_error_code hdb_samba4_audit(krb5_context context,
