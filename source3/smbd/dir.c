@@ -1404,7 +1404,8 @@ bool is_visible_fsp(struct files_struct *fsp)
 		 * only thing we can check is the
 		 * hide_new_files_timeout.
 		 */
-		if (hide_new_files_timeout != 0) {
+		if ((hide_new_files_timeout != 0) &&
+		    !S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 			double age = timespec_elapsed(
 				&fsp->fsp_name->st.st_ex_mtime);
 
@@ -1443,7 +1444,8 @@ bool is_visible_fsp(struct files_struct *fsp)
 			return false;
 		}
 
-		if (hide_new_files_timeout != 0) {
+		if ((hide_new_files_timeout != 0) &&
+		    !S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 			double age = timespec_elapsed(
 				&fsp->fsp_name->st.st_ex_mtime);
 
