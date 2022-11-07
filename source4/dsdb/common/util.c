@@ -49,6 +49,7 @@
 #include "lib/util/sys_rw_data.h"
 #include "libcli/util/ntstatus.h"
 #include "lib/util/smb_strtox.h"
+#include "auth/auth.h"
 
 #undef strncasecmp
 #undef strcasecmp
@@ -362,6 +363,40 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 		talloc_free(sid);
 		return NULL;
 	}
+	return sid;
+}
+
+
+/**
+ * Makes an auth_SidAttr structure from a objectSid in a result set and a
+ * supplied attribute value.
+ *
+ * @param [in] mem_ctx	Talloc memory context on which to allocate the auth_SidAttr.
+ * @param [in] msg	The message from which to take the objectSid.
+ * @param [in] attr	The attribute name, usually "objectSid".
+ * @param [in] attrs	SE_GROUP_* flags to go with the SID.
+ * @returns A pointer to the auth_SidAttr structure, or NULL on failure.
+ */
+struct auth_SidAttr *samdb_result_dom_sid_attrs(TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
+						const char *attr, uint32_t attrs)
+{
+	ssize_t ret;
+	const struct ldb_val *v;
+	struct auth_SidAttr *sid;
+	v = ldb_msg_find_ldb_val(msg, attr);
+	if (v == NULL) {
+		return NULL;
+	}
+	sid = talloc(mem_ctx, struct auth_SidAttr);
+	if (sid == NULL) {
+		return NULL;
+	}
+	ret = sid_parse(v->data, v->length, &sid->sid);
+	if (ret == -1) {
+		talloc_free(sid);
+		return NULL;
+	}
+	sid->attrs = attrs;
 	return sid;
 }
 
