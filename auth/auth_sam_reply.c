@@ -590,8 +590,6 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *rg = NULL;
 	size_t sidcount;
 
-	rg = &pac_logon_info->resource_groups;
-
 	validation.sam3 = discard_const_p(struct netr_SamInfo3, &pac_logon_info->info3);
 
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx, "", 3, &validation,
