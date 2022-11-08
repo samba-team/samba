@@ -245,13 +245,15 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 		* Most of the server do it, let's ask for A specificaly.
 		*/
 		err = dns_lookup(tmp_ctx, name, QTYPE_A, &reply);
-		if (!ERR_DNS_IS_OK(err)) {
-			goto done;
-		}
-
-		total = reply_to_addrs(tmp_ctx, &a_num, &addrs, total,
+		if (ERR_DNS_IS_OK(err)) {
+			/*
+			 * Ignore an error here and just return any AAAA
+			 * records we already got. This may be an IPv6-only
+			 * config.
+			 */
+			total = reply_to_addrs(tmp_ctx, &a_num, &addrs, total,
 					reply, port);
-
+		}
 	}
 
 	if (total) {
