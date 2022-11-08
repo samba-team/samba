@@ -1064,7 +1064,9 @@ static bool test_S4U2Self(struct torture_context *tctx,
 			++k;
 		}
 		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i].sid, &kinit_session_info->torture->dc_sids[j].sid), "Different domain groups for kinit-based PAC");
+		torture_assert_u32_equal(tctx, netlogon_user_info_dc->sids[i].attrs, kinit_session_info->torture->dc_sids[j].attrs, "Different domain group attrs for kinit-based PAC");
 		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i].sid, &s4u2self_session_info->torture->dc_sids[k].sid), "Different domain groups for S4U2Self");
+		torture_assert_u32_equal(tctx, netlogon_user_info_dc->sids[i].attrs, s4u2self_session_info->torture->dc_sids[k].attrs, "Different domain group attrs for S4U2Self");
 		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s4u2self_session_info->torture->dc_sids[k].sid), "Returned BUILTIN domain in groups for S4U2Self");
 		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->torture->dc_sids[j].sid), "Returned BUILTIN domain in groups kinit-based PAC");
 		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_user_info_dc->sids[i].sid), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
