@@ -738,7 +738,7 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	struct auth_session_info *s4u2self_session_info;
 	struct auth_user_info_dc *netlogon_user_info_dc;
 
-	struct netr_NetworkInfo ninfo;
+	struct netr_NetworkInfo ninfo = {};
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	size_t i;
 	int flags = CLI_CRED_NTLMv2_AUTH;
