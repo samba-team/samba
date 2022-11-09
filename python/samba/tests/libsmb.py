@@ -32,6 +32,7 @@ class LibsmbTests(samba.tests.TestCase):
 
         self.creds = credentials.Credentials()
         self.creds.guess(self.lp)
+        self.creds.set_domain(samba.tests.env_get_var_value("DOMAIN"))
         self.creds.set_username(samba.tests.env_get_var_value("USERNAME"))
         self.creds.set_password(samba.tests.env_get_var_value("PASSWORD"))
 
