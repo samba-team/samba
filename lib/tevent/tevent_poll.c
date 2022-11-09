@@ -170,6 +170,7 @@ _PRIVATE_ bool tevent_poll_event_add_fd_internal(struct tevent_context *ev,
 	size_t num_fdes;
 
 	fde->additional_flags = UINT64_MAX;
+	tevent_common_fd_mpx_reinit(fde);
 	talloc_set_destructor(fde, poll_event_fd_destructor);
 
 	if (fde->flags == 0) {

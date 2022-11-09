@@ -236,6 +236,7 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	epoll_ev->pid = pid;
 	epoll_ev->panic_state = &panic_triggered;
 	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
+		tevent_common_fd_mpx_reinit(fde);
 		fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	}
 	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
@@ -759,6 +760,7 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 	int flags = fde->flags;
 
 	if (ev == NULL) {
+		tevent_common_fd_mpx_reinit(fde);
 		return tevent_common_fd_destructor(fde);
 	}
 
@@ -789,6 +791,7 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 	if (epoll_ev->pid != tevent_cached_getpid()) {
 		epoll_check_reopen(epoll_ev);
 		if (panic_triggered) {
+			tevent_common_fd_mpx_reinit(fde);
 			return tevent_common_fd_destructor(fde);
 		}
 	}
@@ -796,6 +799,7 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 	if (mpx_fde != NULL) {
 		epoll_update_event(epoll_ev, mpx_fde);
 		if (panic_triggered) {
+			tevent_common_fd_mpx_reinit(fde);
 			return tevent_common_fd_destructor(fde);
 		}
 	}
