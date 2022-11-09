@@ -340,7 +340,7 @@ def env_loadparm():
 def env_get_var_value(var_name, allow_missing=False):
     """Returns value for variable in os.environ
 
-    Function throws AssertionError if variable is defined.
+    Function throws AssertionError if variable is undefined.
     Unit-test based python tests require certain input params
     to be set in environment, otherwise they can't be run
     """
