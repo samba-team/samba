@@ -319,7 +319,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 			goto out;
 		}
 
-		/* Check the KDC and ticket signatures. */
+		/* Check the KDC, whole-PAC and ticket signatures. */
 		ret = krb5_pac_verify(context,
 				      *pac,
 				      0,

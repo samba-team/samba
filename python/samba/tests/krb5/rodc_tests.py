@@ -65,7 +65,9 @@ class RodcKerberosTests(KDCBaseTest):
                                                  to_rodc=True)
 
         # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(service_ticket, rodc_key, service_ticket=True)
+        self.verify_ticket(service_ticket, rodc_key, service_ticket=True,
+                           expect_ticket_checksum=True,
+                           expect_full_checksum=True)
 
 
 if __name__ == "__main__":

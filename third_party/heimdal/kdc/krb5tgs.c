@@ -778,7 +778,7 @@ tgs_make_reply(astgs_request_t r,
 
 	    ret = _krb5_kdc_pac_sign_ticket(r->context, r->pac, r->client_princ, serverkey,
 					    krbtgtkey, rodc_id, NULL, r->canon_client_princ,
-					    add_ticket_sig, et,
+					    add_ticket_sig, add_ticket_sig, et,
 					    is_tgs ? &r->pac_attributes : NULL);
 	    if (ret)
 		goto out;

@@ -1443,6 +1443,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	ssize_t tkt_checksum_idx = -1;
 	ssize_t attrs_info_idx = -1;
 	ssize_t requester_sid_idx = -1;
+	ssize_t full_checksum_idx = -1;
 
 	if (client != NULL) {
 		/*
@@ -1699,6 +1700,18 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			}
 			requester_sid_idx = i;
 			break;
+		case PAC_TYPE_FULL_CHECKSUM:
+			if (full_checksum_idx != -1) {
+				DBG_WARNING("full checksum type[%u] twice "
+					    "[%zd] and [%zu]: \n",
+					    types[i],
+					    full_checksum_idx,
+					    i);
+				code = EINVAL;
+				goto done;
+			}
+			full_checksum_idx = i;
+			break;
 		default:
 			continue;
 		}
@@ -1905,6 +1918,17 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			if (requester_sid_blob != NULL) {
 				type_blob = *requester_sid_blob;
 			}
+			break;
+		case PAC_TYPE_FULL_CHECKSUM:
+			/*
+			 * This is generated in the main KDC code
+			 */
+			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
+				continue;
+			}
+
+			type_blob = data_blob_const(&zero_byte, 1);
+
 			break;
 		default:
 			/* just copy... */
