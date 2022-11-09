@@ -7174,7 +7174,7 @@ struct tevent_req *cli_fsctl_send(
 		0,		   /* flags */
 		setup, 4, 0,	   /* setup */
 		NULL, 0, 0,	    /* param */
-		NULL, 0, max_out); /* data */
+		in->data, in->length, max_out); /* data */
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
