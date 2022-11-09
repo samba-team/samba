@@ -3226,7 +3226,15 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	 */
 
 	if (flags & PAM_PRELIM_CHECK) {
-		time_t pwdlastset_prelim = 0;
+		time_t *pwdlastset_prelim = NULL;
+
+		pwdlastset_prelim = talloc_array(NULL, time_t, 1);
+		if (pwdlastset_prelim == NULL) {
+			_pam_log(ctx, LOG_CRIT,
+				 "password - out of memory");
+			ret = PAM_BUF_ERR;
+			goto out;
+		}
 
 		/* instruct user what is happening */
 
@@ -3258,7 +3266,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		ret = winbind_auth_request(ctx, user, pass_old,
 					   NULL, NULL, 0,
 					   &error, NULL,
-					   &pwdlastset_prelim, NULL);
+					   pwdlastset_prelim, NULL);
 
 		if (ret != PAM_ACCT_EXPIRED &&
 		    ret != PAM_AUTHTOK_EXPIRED &&
@@ -3269,7 +3277,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		}
 
 		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET,
-			     (void *)pwdlastset_prelim, NULL);
+			     pwdlastset_prelim,
+			     _pam_winbind_cleanup_func);
 
 		ret = pam_set_item(pamh, PAM_OLDAUTHTOK,
 				   (const void *) pass_old);
@@ -3280,7 +3289,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		}
 	} else if (flags & PAM_UPDATE_AUTHTOK) {
 
-		time_t pwdlastset_update = 0;
+		time_t *pwdlastset_update = NULL;
 
 		/*
 		 * obtain the proposed password
@@ -3343,8 +3352,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * By reaching here we have approved the passwords and must now
 		 * rebuild the password database file.
 		 */
-		pam_get_data(pamh, PAM_WINBIND_PWD_LAST_SET,
-			     (const void **) &pwdlastset_update);
+		pam_get_data(pamh,
+			     PAM_WINBIND_PWD_LAST_SET,
+			     (const void **)&pwdlastset_update);
 
 		/*
 		 * if cached creds were enabled, make sure to set the
@@ -3356,7 +3366,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		}
 
 		ret = winbind_chauthtok_request(ctx, user, pass_old,
-						pass_new, pwdlastset_update);
+						pass_new, *pwdlastset_update);
 		if (ret != PAM_SUCCESS) {
 			pass_old = pass_new = NULL;
 			goto out;
