@@ -44,7 +44,7 @@
 #include "includes.h"
 #include "auth/sam.c"
 #include "ldb.h"
-#include "ntstatus.h"
+#include "libcli/util/ntstatus.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /*****************************************************************************
