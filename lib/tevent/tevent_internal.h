@@ -498,9 +498,6 @@ void tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 			bool (*panic_fallback)(struct tevent_context *ev,
 					       bool replay));
 #endif
-#ifdef HAVE_SOLARIS_PORTS
-bool tevent_port_init(void);
-#endif
 
 
 void tevent_trace_point_callback(struct tevent_context *ev,
