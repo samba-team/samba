@@ -151,6 +151,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	ssize_t tkt_checksum_idx = -1;
 	ssize_t attrs_info_idx = -1;
 	ssize_t requester_sid_idx = -1;
+	ssize_t full_checksum_idx = -1;
 
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -221,7 +222,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			return ret;
 		}
 
-		/* Check the KDC and ticket signatures. */
+		/* Check the KDC, whole-PAC and ticket signatures. */
 		ret = krb5_pac_verify(context,
 				      *pac,
 				      0,
@@ -430,6 +431,19 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			}
 			requester_sid_idx = i;
 			break;
+		case PAC_TYPE_FULL_CHECKSUM:
+			if (full_checksum_idx != -1) {
+				DBG_WARNING("full checksum type[%"PRIu32"] twice "
+					    "[%zd] and [%zu]: \n",
+					    types[i],
+					    full_checksum_idx,
+					    i);
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			full_checksum_idx = i;
+			break;
 		default:
 			continue;
 		}
@@ -609,6 +623,13 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			} else {
 				continue;
 			}
+		case PAC_TYPE_FULL_CHECKSUM:
+			/*
+			 * this is generated in the main KDC code
+			 * we just add a place holder here.
+			 */
+			type_blob = data_blob_const(&zero_byte, 1);
+			break;
 		default:
 			/* just copy... */
 			break;

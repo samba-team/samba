@@ -731,7 +731,7 @@ tgs_make_reply(krb5_context context,
     /* The PAC should be the last change to the ticket. */
     if (mspac != NULL) {
 	ret = _krb5_kdc_pac_sign_ticket(context, mspac, tgt_name, serverkey,
-					krbtgtkey, rodc_id, add_ticket_sig, &et);
+					krbtgtkey, rodc_id, add_ticket_sig, add_ticket_sig, &et);
 	if (ret)
 	    goto out;
     }

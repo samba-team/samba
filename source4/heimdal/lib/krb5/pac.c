@@ -69,6 +69,7 @@ struct krb5_pac_data {
     struct PAC_INFO_BUFFER *privsvr_checksum;
     struct PAC_INFO_BUFFER *logon_name;
     struct PAC_INFO_BUFFER *ticket_checksum;
+    struct PAC_INFO_BUFFER *full_checksum;
     krb5_data ticket_sign_data;
 };
 
@@ -84,6 +85,7 @@ struct krb5_pac_data {
 #define PAC_CONSTRAINED_DELEGATION	11
 #define PAC_UPN_DNS_INFO		12
 #define PAC_TICKET_CHECKSUM		16
+#define PAC_FULL_CHECKSUM		19
 
 #define CHECK(r,f,l)						\
 	do {							\
@@ -325,6 +327,13 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
             else
                 p->ticket_checksum = &p->pac->buffers[i];
             break;
+        case PAC_FULL_CHECKSUM:
+	    if (p->full_checksum)
+		krb5_set_error_message(context, ret = EINVAL,
+				       N_("PAC has multiple full checksums", ""));
+            else
+                p->full_checksum = &p->pac->buffers[i];
+            break;
         default: break;
         }
     }
@@ -559,7 +568,8 @@ verify_checksum(krb5_context context,
 		const struct PAC_INFO_BUFFER *sig,
 		const krb5_data *data,
 		void *ptr, size_t len,
-		const krb5_keyblock *key)
+		const krb5_keyblock *key,
+		krb5_boolean strict_cksumtype_match)
 {
     krb5_storage *sp = NULL;
     uint32_t type;
@@ -617,7 +627,7 @@ verify_checksum(krb5_context context,
      * http://blogs.msdn.com/b/openspecification/archive/2010/01/01/verifying-the-server-signature-in-kerberos-privilege-account-certificate.aspx
      * for Microsoft's explaination */
 
-    if (cksum.cksumtype == CKSUMTYPE_HMAC_MD5) {
+    if (cksum.cksumtype == CKSUMTYPE_HMAC_MD5 && !strict_cksumtype_match) {
 	Checksum local_checksum;
 
 	memset(&local_checksum, 0, sizeof(local_checksum));
@@ -942,7 +952,7 @@ out:
  * @param pac the pac structure returned by krb5_pac_parse().
  * @param authtime The time of the ticket the PAC belongs to.
  * @param principal the principal to verify.
- * @param server The service key, most always be given.
+ * @param server The service key, may be given.
  * @param privsvr The KDC key, may be given.
 
  * @return Returns 0 to indicate success. Otherwise an kerberos et
@@ -960,6 +970,21 @@ krb5_pac_verify(krb5_context context,
 		const krb5_keyblock *privsvr)
 {
     krb5_error_code ret;
+    /*
+     * If we are in the KDC, we expect back a full signature in the PAC
+     *
+     * This is set up as a seperate variable to make it easier if a
+     * subsequent patch is added to make this configurable in the
+     * krb5.conf (or forced into the krb5_context via Samba)
+     */
+    krb5_boolean expect_full_sig = privsvr != NULL;
+
+    /*
+     * If we are on the KDC, then we trust we are not in a realm with
+     * buggy Windows 2008 or similar era DCs that give our HMAC-MD5
+     * sigatures over AES keys.  DES is also already gone.
+     */
+    krb5_boolean strict_cksumtype_match = expect_full_sig;
 
     if (pac->server_checksum == NULL) {
 	krb5_set_error_message(context, EINVAL, "PAC missing server checksum");
@@ -971,6 +996,10 @@ krb5_pac_verify(krb5_context context,
     }
     if (pac->logon_name == NULL) {
 	krb5_set_error_message(context, EINVAL, "PAC missing logon name");
+	return EINVAL;
+    }
+    if (expect_full_sig && pac->full_checksum == NULL) {
+	krb5_set_error_message(context, EINVAL, "PAC missing full checksum");
 	return EINVAL;
     }
 
@@ -985,13 +1014,14 @@ krb5_pac_verify(krb5_context context,
         pac->privsvr_checksum->buffersize < 4)
 	return EINVAL;
 
-    /*
-     * in the service case, clean out data option of the privsvr and
-     * server checksum before checking the checksum.
-     */
-    if (server != NULL)
+    if (server != NULL || privsvr != NULL)
     {
 	krb5_data *copy;
+
+	/*
+	 * in the service case, clean out data option of the privsvr and
+	 * server checksum before checking the checksum.
+	 */
 
 	ret = krb5_copy_data(context, &pac->data, &copy);
 	if (ret)
@@ -1010,15 +1040,43 @@ krb5_pac_verify(krb5_context context,
 	       0,
 	       pac->privsvr_checksum->buffersize - 4);
 
-	ret = verify_checksum(context,
-			      pac->server_checksum,
-			      &pac->data,
-			      copy->data,
-			      copy->length,
-			      server);
+	if (server != NULL) {
+	    ret = verify_checksum(context,
+				  pac->server_checksum,
+				  &pac->data,
+				  copy->data,
+				  copy->length,
+				  server,
+				  strict_cksumtype_match);
+	    if (ret) {
+		krb5_free_data(context, copy);
+		return ret;
+	    }
+	}
+
+	if (privsvr != NULL && pac->full_checksum != NULL) {
+	    /*
+	     * in the full checksum case, also clean out the full
+	     * checksum before verifying it.
+	     */
+	    memset((char *)copy->data + pac->full_checksum->offset + 4,
+		   0,
+		   pac->full_checksum->buffersize - 4);
+
+	    ret = verify_checksum(context,
+				  pac->full_checksum,
+				  &pac->data,
+				  copy->data,
+				  copy->length,
+				  privsvr,
+				  strict_cksumtype_match);
+	    if (ret) {
+		krb5_free_data(context, copy);
+		return ret;
+	    }
+	}
+
 	krb5_free_data(context, copy);
-	if (ret)
-	    return ret;
     }
     if (privsvr) {
 	/* The priv checksum covers the server checksum */
@@ -1028,7 +1086,8 @@ krb5_pac_verify(krb5_context context,
 			      (char *)pac->data.data
 			      + pac->server_checksum->offset + 4,
 			      pac->server_checksum->buffersize - 4,
-			      privsvr);
+			      privsvr,
+			      strict_cksumtype_match);
 	if (ret)
 	    return ret;
 
@@ -1041,7 +1100,8 @@ krb5_pac_verify(krb5_context context,
 
 	    ret = verify_checksum(context, pac->ticket_checksum, &pac->data,
 				 pac->ticket_sign_data.data,
-				 pac->ticket_sign_data.length, privsvr);
+				 pac->ticket_sign_data.length, privsvr,
+				 strict_cksumtype_match);
 	    if (ret)
 		return ret;
 	}
@@ -1114,13 +1174,14 @@ _krb5_pac_sign(krb5_context context,
 	       const krb5_keyblock *server_key,
 	       const krb5_keyblock *priv_key,
 	       uint16_t rodc_id,
+	       krb5_boolean add_full_sig,
 	       krb5_data *data)
 {
     krb5_error_code ret;
     krb5_storage *sp = NULL, *spdata = NULL;
     uint32_t end;
     size_t server_size, priv_size;
-    uint32_t server_offset = 0, priv_offset = 0, ticket_offset = 0;
+    uint32_t server_offset = 0, priv_offset = 0, ticket_offset = 0, full_offset = 0;
     uint32_t server_cksumtype = 0, priv_cksumtype = 0;
     uint32_t num = 0;
     uint32_t i, sz;
@@ -1177,6 +1238,16 @@ _krb5_pac_sign(krb5_context context,
 				       N_("PAC has multiple ticket checksums", ""));
 		goto out;
 	    }
+	} else if (p->pac->buffers[i].type == PAC_FULL_CHECKSUM) {
+	    if (p->full_checksum == NULL) {
+		p->full_checksum = &p->pac->buffers[i];
+	    }
+	    if (p->full_checksum != &p->pac->buffers[i]) {
+		ret = KRB5KDC_ERR_BADOPTION;
+		krb5_set_error_message(context, ret,
+				       N_("PAC has multiple full checksums", ""));
+		goto out;
+	    }
 	}
     }
 
@@ -1188,6 +1259,8 @@ _krb5_pac_sign(krb5_context context,
     if (p->privsvr_checksum == NULL)
 	num++;
     if (p->ticket_sign_data.length != 0 && p->ticket_checksum == NULL)
+	num++;
+    if (add_full_sig && p->full_checksum == NULL)
 	num++;
 
     /* Allocate any missing-but-necessary buffers */
@@ -1230,6 +1303,11 @@ _krb5_pac_sign(krb5_context context,
 	if (p->ticket_sign_data.length != 0 && p->ticket_checksum == NULL) {
 	    p->ticket_checksum = &p->pac->buffers[p->pac->numbuffers++];
 	    p->ticket_checksum->type = PAC_TICKET_CHECKSUM;
+	}
+	if (add_full_sig && p->full_checksum == NULL) {
+	    p->full_checksum = &p->pac->buffers[p->pac->numbuffers++];
+	    memset(p->full_checksum, 0, sizeof(*p->full_checksum));
+	    p->full_checksum->type = PAC_FULL_CHECKSUM;
 	}
     }
 
@@ -1365,6 +1443,31 @@ _krb5_pac_sign(krb5_context context,
 		len += sizeof(rodc_id);
 		CHECK(ret, krb5_store_uint16(spdata, rodc_id), out);
 	    }
+	} else if (add_full_sig &&
+		   p->pac->buffers[i].type == PAC_FULL_CHECKSUM) {
+	    if (priv_size > UINT32_MAX - 4) {
+		ret = EINVAL;
+		krb5_set_error_message(context, ret, "integer overrun");
+		goto out;
+	    }
+	    len = priv_size + 4;
+	    if (end > UINT32_MAX - 4) {
+		ret = EINVAL;
+		krb5_set_error_message(context, ret, "integer overrun");
+		goto out;
+	    }
+	    full_offset = end + 4;
+	    CHECK(ret, krb5_store_uint32(spdata, priv_cksumtype), out);
+	    CHECK(ret, fill_zeros(context, spdata, priv_size), out);
+	    if (rodc_id != 0) {
+		if (len > UINT32_MAX - sizeof(rodc_id)) {
+		    ret = EINVAL;
+		    krb5_set_error_message(context, ret, "integer overrun");
+		    goto out;
+		}
+		len += sizeof(rodc_id);
+		CHECK(ret, fill_zeros(context, spdata, sizeof(rodc_id)), out);
+	    }
 	} else if (p->pac->buffers[i].type == PAC_LOGON_NAME) {
 	    len = krb5_storage_write(spdata, logon.data, logon.length);
 	    if (logon.length != len) {
@@ -1436,6 +1539,21 @@ _krb5_pac_sign(krb5_context context,
 			      p->ticket_sign_data.data,
 			      p->ticket_sign_data.length,
 			      (char *)d.data + ticket_offset, priv_size);
+    if (ret == 0 && add_full_sig)
+        ret = create_checksum(context, priv_key, priv_cksumtype,
+                              d.data, d.length,
+                              (char *)d.data + full_offset, priv_size);
+    if (ret == 0 && add_full_sig && rodc_id != 0) {
+	void *buf = (char *)d.data + full_offset + priv_size;
+	krb5_storage *rs = krb5_storage_from_mem(buf, sizeof(rodc_id));
+	if (rs == NULL)
+	    ret = krb5_enomem(context);
+        else
+            krb5_storage_set_flags(rs, KRB5_STORAGE_BYTEORDER_LE);
+        if (ret == 0)
+            ret = krb5_store_uint16(rs, rodc_id);
+	krb5_storage_free(rs);
+    }
     if (ret == 0)
         ret = create_checksum(context, server_key, server_cksumtype,
                               d.data, d.length,
@@ -1445,21 +1563,14 @@ _krb5_pac_sign(krb5_context context,
                               (char *)d.data + server_offset, server_size,
                               (char *)d.data + priv_offset, priv_size);
     if (ret == 0 && rodc_id != 0) {
-	krb5_data rd;
-	krb5_storage *rs = krb5_storage_emem();
+	void *buf = (char *)d.data + priv_offset + priv_size;
+	krb5_storage *rs = krb5_storage_from_mem(buf, sizeof(rodc_id));
 	if (rs == NULL)
 	    ret = krb5_enomem(context);
 	krb5_storage_set_flags(rs, KRB5_STORAGE_BYTEORDER_LE);
         if (ret == 0)
             ret = krb5_store_uint16(rs, rodc_id);
-        if (ret == 0)
-            ret = krb5_storage_to_data(rs, &rd);
 	krb5_storage_free(rs);
-	if (ret)
-	    goto out;
-	heim_assert(rd.length == sizeof(rodc_id), "invalid length");
-	memcpy((char *)d.data + priv_offset + priv_size, rd.data, rd.length);
-	krb5_data_free(&rd);
     }
 
     if (ret)
@@ -1665,6 +1776,7 @@ _krb5_kdc_pac_sign_ticket(krb5_context context,
 			  const krb5_keyblock *kdc_key,
 			  uint16_t rodc_id,
 			  krb5_boolean add_ticket_sig,
+			  krb5_boolean add_full_sig,
 			  EncTicketPart *tkt)
 {
     krb5_error_code ret;
@@ -1700,7 +1812,9 @@ _krb5_kdc_pac_sign_ticket(krb5_context context,
     }
 
     ret = _krb5_pac_sign(context, pac, tkt->authtime, client, server_key,
-			 kdc_key, rodc_id, &rspac);
+			 kdc_key, rodc_id,
+			 add_full_sig,
+			 &rspac);
     if (ret == 0)
         ret = _kdc_tkt_insert_pac(context, tkt, &rspac);
     krb5_data_free(&rspac);

@@ -538,7 +538,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
     pac_checksum_types = {krb5pac.PAC_TYPE_SRV_CHECKSUM,
                           krb5pac.PAC_TYPE_KDC_CHECKSUM,
-                          krb5pac.PAC_TYPE_TICKET_CHECKSUM}
+                          krb5pac.PAC_TYPE_TICKET_CHECKSUM,
+                          krb5pac.PAC_TYPE_FULL_CHECKSUM}
 
     etypes_to_test = (
         {"value": -1111, "name": "dummy", },
@@ -631,6 +632,12 @@ class RawKerberosTest(TestCaseInTempDir):
         if tkt_sig_support is None:
             tkt_sig_support = '0'
         cls.tkt_sig_support = bool(int(tkt_sig_support))
+
+        full_sig_support = samba.tests.env_get_var_value('FULL_SIG_SUPPORT',
+                                                         allow_missing=True)
+        if full_sig_support is None:
+            full_sig_support = '0'
+        cls.full_sig_support = bool(int(full_sig_support))
 
         expect_pac = samba.tests.env_get_var_value('EXPECT_PAC',
                                                    allow_missing=True)
@@ -2370,6 +2377,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          unexpected_flags=None,
                          ticket_decryption_key=None,
                          expect_ticket_checksum=None,
+                         expect_full_checksum=None,
                          generate_fast_fn=None,
                          generate_fast_armor_fn=None,
                          generate_fast_padata_fn=None,
@@ -2427,6 +2435,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
             'expect_ticket_checksum': expect_ticket_checksum,
+            'expect_full_checksum': expect_full_checksum,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
             'generate_fast_padata_fn': generate_fast_padata_fn,
@@ -2480,6 +2489,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           unexpected_flags=None,
                           ticket_decryption_key=None,
                           expect_ticket_checksum=None,
+                          expect_full_checksum=None,
                           generate_fast_fn=None,
                           generate_fast_armor_fn=None,
                           generate_fast_padata_fn=None,
@@ -2538,6 +2548,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
             'expect_ticket_checksum': expect_ticket_checksum,
+            'expect_full_checksum': expect_full_checksum,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
             'generate_fast_padata_fn': generate_fast_padata_fn,
@@ -2991,7 +3002,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.check_pac_buffers(pac_data, kdc_exchange_dict)
 
         expect_ticket_checksum = kdc_exchange_dict['expect_ticket_checksum']
-        if expect_ticket_checksum:
+        expect_full_checksum = kdc_exchange_dict['expect_full_checksum']
+        if expect_ticket_checksum or expect_full_checksum:
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
@@ -3001,7 +3013,9 @@ class RawKerberosTest(TestCaseInTempDir):
                                service_ticket=service_ticket,
                                expect_pac=expect_pac,
                                expect_ticket_checksum=expect_ticket_checksum
-                               or self.tkt_sig_support)
+                               or self.tkt_sig_support,
+                               expect_full_checksum=expect_full_checksum
+                               or self.full_sig_support)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
 
@@ -3038,10 +3052,13 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if not self.is_tgs(expected_sname) and rep_msg_type == KRB_TGS_REP:
             expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
+            expected_types.append(krb5pac.PAC_TYPE_FULL_CHECKSUM)
 
         require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO}
         if not self.tkt_sig_support:
             require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
+        if not self.full_sig_support:
+            require_strict.add(krb5pac.PAC_TYPE_FULL_CHECKSUM)
 
         expect_extra_pac_buffers = self.is_tgs(expected_sname)
 
@@ -3668,7 +3685,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
     def verify_ticket(self, ticket, krbtgt_keys, service_ticket,
                       expect_pac=True,
-                      expect_ticket_checksum=True):
+                      expect_ticket_checksum=True,
+                      expect_full_checksum=None):
         # Decrypt the ticket.
 
         key = ticket.decryption_key
@@ -3713,6 +3731,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
         checksums = {}
 
+        full_checksum_buffer = None
+
         for pac_buffer, raw_pac_buffer in zip(pac.buffers, raw_pac.buffers):
             buffer_type = pac_buffer.type
             if buffer_type in self.pac_checksum_types:
@@ -3727,7 +3747,9 @@ class RawKerberosTest(TestCaseInTempDir):
 
                 checksums[buffer_type] = checksum, ctype
 
-                if buffer_type != krb5pac.PAC_TYPE_TICKET_CHECKSUM:
+                if buffer_type == krb5pac.PAC_TYPE_FULL_CHECKSUM:
+                    full_checksum_buffer = raw_pac_buffer
+                elif buffer_type != krb5pac.PAC_TYPE_TICKET_CHECKSUM:
                     # Zero the checksum field so that we can later verify the
                     # checksums. The ticket checksum field is not zeroed.
 
@@ -3740,6 +3762,17 @@ class RawKerberosTest(TestCaseInTempDir):
 
         # Re-encode the PAC.
         pac_data = ndr_pack(raw_pac)
+
+        if full_checksum_buffer is not None:
+            signature = ndr_unpack(
+                krb5pac.PAC_SIGNATURE_DATA,
+                full_checksum_buffer.info.remaining)
+            signature.signature = bytes(len(checksum))
+            full_checksum_buffer.info.remaining = ndr_pack(
+                signature)
+
+            # Re-encode the PAC.
+            full_pac_data = ndr_pack(raw_pac)
 
         # Verify the signatures.
 
@@ -3769,6 +3802,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if not service_ticket:
             self.assertNotIn(krb5pac.PAC_TYPE_TICKET_CHECKSUM, checksums)
+            self.assertNotIn(krb5pac.PAC_TYPE_FULL_CHECKSUM, checksums)
         else:
             ticket_checksum, ticket_ctype = checksums.get(
                 krb5pac.PAC_TYPE_TICKET_CHECKSUM,
@@ -3786,6 +3820,19 @@ class RawKerberosTest(TestCaseInTempDir):
                                                 enc_part,
                                                 ticket_ctype,
                                                 ticket_checksum)
+
+            full_checksum, full_ctype = checksums.get(
+                krb5pac.PAC_TYPE_FULL_CHECKSUM,
+                (None, None))
+            if expect_full_checksum:
+                self.assertIsNotNone(full_checksum)
+            elif expect_full_checksum is False:
+                self.assertIsNone(full_checksum)
+            if full_checksum is not None:
+                krbtgt_key.verify_rodc_checksum(KU_NON_KERB_CKSUM_SALT,
+                                                full_pac_data,
+                                                full_ctype,
+                                                full_checksum)
 
     def modified_ticket(self,
                         ticket, *,
@@ -3842,6 +3889,14 @@ class RawKerberosTest(TestCaseInTempDir):
             kdc_checksum_key = checksum_keys.get(krb5pac.PAC_TYPE_KDC_CHECKSUM)
             if kdc_checksum_key is not None:
                 checksum_keys[krb5pac.PAC_TYPE_TICKET_CHECKSUM] = (
+                    kdc_checksum_key)
+
+        if krb5pac.PAC_TYPE_FULL_CHECKSUM not in checksum_keys:
+            # If the full signature key is not present, fall back to the key
+            # used for the KDC signature.
+            kdc_checksum_key = checksum_keys.get(krb5pac.PAC_TYPE_KDC_CHECKSUM)
+            if kdc_checksum_key is not None:
+                checksum_keys[krb5pac.PAC_TYPE_FULL_CHECKSUM] = (
                     kdc_checksum_key)
 
         # Decrypt the ticket.
@@ -3995,6 +4050,19 @@ class RawKerberosTest(TestCaseInTempDir):
 
         # Add the new checksum buffers to the PAC.
         pac.buffers = pac_buffers
+
+        # Calculate the full checksum and insert it into the PAC.
+        full_checksum_buffer = checksum_buffers.get(
+            krb5pac.PAC_TYPE_FULL_CHECKSUM)
+        if full_checksum_buffer is not None:
+            full_checksum_key = checksum_keys[krb5pac.PAC_TYPE_FULL_CHECKSUM]
+
+            pac_data = ndr_pack(pac)
+            full_checksum = full_checksum_key.make_checksum(
+                KU_NON_KERB_CKSUM_SALT,
+                pac_data)
+
+            full_checksum_buffer.info.signature = full_checksum
 
         # Calculate the server and KDC checksums and insert them into the PAC.
 

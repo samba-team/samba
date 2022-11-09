@@ -1802,6 +1802,7 @@ _kdc_as_rep(krb5_context context,
 				 &skey->key, /* Server key */
 				 &krbtgt_key->key, /* TGS key */
 				 rodc_id,
+				 false, /* add_full_sig */
 				 &data);
 	    krb5_free_principal(context, client_pac);
 	    krb5_pac_free(context, p);
