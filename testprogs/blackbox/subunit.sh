@@ -189,7 +189,7 @@ testit_expect_failure_grep()
 	else
 		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
 	fi
-	return $status
+	return 0
 }
 
 testok()
