@@ -1024,8 +1024,8 @@ class S4UKerberosTests(KDCBaseTest):
 
     def test_constrained_delegation_missing_service_checksum(self):
         # Present the service's ticket without the required checksums.
-        for checksum in filter(lambda x: x != krb5pac.PAC_TYPE_TICKET_CHECKSUM,
-                               self.pac_checksum_types):
+        for checksum in (krb5pac.PAC_TYPE_SRV_CHECKSUM,
+                         krb5pac.PAC_TYPE_KDC_CHECKSUM):
             with self.subTest(checksum=checksum):
                 self._run_delegation_test(
                     {
@@ -1059,8 +1059,8 @@ class S4UKerberosTests(KDCBaseTest):
 
     def test_rbcd_missing_service_checksum(self):
         # Present the service's ticket without the required checksums.
-        for checksum in filter(lambda x: x != krb5pac.PAC_TYPE_TICKET_CHECKSUM,
-                               self.pac_checksum_types):
+        for checksum in (krb5pac.PAC_TYPE_SRV_CHECKSUM,
+                         krb5pac.PAC_TYPE_KDC_CHECKSUM):
             with self.subTest(checksum=checksum):
                 self._run_delegation_test(
                     {
@@ -1249,6 +1249,33 @@ class S4UKerberosTests(KDCBaseTest):
                                 checksum=checksum, ctype=ctype)
                         })
 
+    def test_constrained_delegation_rc4_client_checksum(self):
+        # Present a user ticket with RC4 checksums.
+        expected_error_mode = (KDC_ERR_GENERIC,
+                               KDC_ERR_INAPP_CKSUM)
+
+        self._run_delegation_test(
+            {
+                'expected_error_mode': expected_error_mode,
+                'allow_delegation': True,
+                'modify_client_tkt_fn': self.rc4_pac_checksums,
+                'expect_edata': False,
+            })
+
+    def test_rbcd_rc4_client_checksum(self):
+        # Present a user ticket with RC4 checksums.
+        expected_error_mode = (KDC_ERR_GENERIC,
+                               KDC_ERR_BADOPTION)
+
+        self._run_delegation_test(
+            {
+                'expected_error_mode': expected_error_mode,
+                'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+                'modify_client_tkt_fn': self.rc4_pac_checksums,
+            })
+
     def remove_pac_checksum(self, ticket, checksum):
         checksum_keys = self.get_krbtgt_checksum_key()
 
@@ -1290,6 +1317,7 @@ class S4UKerberosTests(KDCBaseTest):
             krb5pac.PAC_TYPE_SRV_CHECKSUM: server_key,
             krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
             krb5pac.PAC_TYPE_TICKET_CHECKSUM: krbtgt_key,
+            krb5pac.PAC_TYPE_FULL_CHECKSUM: krbtgt_key,
         }
 
         # Make a copy of the existing key and change the ctype.
@@ -1301,6 +1329,31 @@ class S4UKerberosTests(KDCBaseTest):
         return self.modified_ticket(ticket,
                                     checksum_keys=checksum_keys,
                                     include_checksums={checksum: True})
+
+    def rc4_pac_checksums(self, ticket):
+        krbtgt_creds = self.get_krbtgt_creds()
+        rc4_krbtgt_key = self.TicketDecryptionKey_from_creds(
+            krbtgt_creds, etype=Enctype.RC4)
+
+        server_key = ticket.decryption_key
+
+        checksum_keys = {
+            krb5pac.PAC_TYPE_SRV_CHECKSUM: server_key,
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: rc4_krbtgt_key,
+            krb5pac.PAC_TYPE_TICKET_CHECKSUM: rc4_krbtgt_key,
+            krb5pac.PAC_TYPE_FULL_CHECKSUM: rc4_krbtgt_key,
+        }
+
+        include_checksums = {
+            krb5pac.PAC_TYPE_SRV_CHECKSUM: True,
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: True,
+            krb5pac.PAC_TYPE_TICKET_CHECKSUM: True,
+            krb5pac.PAC_TYPE_FULL_CHECKSUM: True,
+        }
+
+        return self.modified_ticket(ticket,
+                                    checksum_keys=checksum_keys,
+                                    include_checksums=include_checksums)
 
     def add_delegation_info(self, ticket, services=None):
         def modify_pac_fn(pac):
