@@ -1002,6 +1002,11 @@ if ('SAMBA4_USES_HEIMDAL' in config_hash or
 else:
     tkt_sig_support = 0
 
+if 'SAMBA4_USES_HEIMDAL' in config_hash:
+    full_sig_support = 1
+else:
+    full_sig_support = 0
+
 gnutls_pbkdf2_support = int('HAVE_GNUTLS_PBKDF2' in config_hash)
 
 if 'HAVE_MIT_KRB5_1_20' in config_hash:
@@ -1024,6 +1029,7 @@ krb5_environ = {
     'CLAIMS_SUPPORT': claims_support,
     'COMPOUND_ID_SUPPORT': compound_id_support,
     'TKT_SIG_SUPPORT': tkt_sig_support,
+    'FULL_SIG_SUPPORT': full_sig_support,
     'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support,
     'EXPECT_PAC': expect_pac,
     'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
@@ -1701,8 +1707,13 @@ for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
 
 planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests",
                     environ=krb5_environ)
-planpythontestsuite("ad_dc", "samba.tests.krb5.compatability_tests",
-                    environ=krb5_environ)
+for env, fast_support in [("ad_dc", True),
+                          ("fl2003dc", False)]:
+    planpythontestsuite(env, "samba.tests.krb5.compatability_tests",
+                        environ={
+                            **krb5_environ,
+                            'FAST_SUPPORT': int(fast_support),
+                        })
 planpythontestsuite("ad_dc", "samba.tests.krb5.kdc_tests",
                     environ=krb5_environ)
 planpythontestsuite(

@@ -146,7 +146,8 @@ interface krb5pac
 		PAC_TYPE_DEVICE_CLAIMS_INFO = 15,
 		PAC_TYPE_TICKET_CHECKSUM = 16,
 		PAC_TYPE_ATTRIBUTES_INFO = 17,
-		PAC_TYPE_REQUESTER_SID = 18
+		PAC_TYPE_REQUESTER_SID = 18,
+		PAC_TYPE_FULL_CHECKSUM = 19
 	} PAC_TYPE;
 
 	typedef struct {
@@ -165,6 +166,7 @@ interface krb5pac
 		[case(PAC_TYPE_TICKET_CHECKSUM)]	PAC_SIGNATURE_DATA ticket_checksum;
 		[case(PAC_TYPE_ATTRIBUTES_INFO)]	PAC_ATTRIBUTES_INFO attributes_info;
 		[case(PAC_TYPE_REQUESTER_SID)]	PAC_REQUESTER_SID requester_sid;
+		[case(PAC_TYPE_FULL_CHECKSUM)]	PAC_SIGNATURE_DATA full_checksum;
 		/* when new PAC info types are added they are supposed to be done
 		   in such a way that they are backwards compatible with existing
 		   servers. This makes it safe to just use a [default] for

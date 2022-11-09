@@ -1594,6 +1594,43 @@ class KdcTgsTests(KdcTgsBaseTests):
         self._fast(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
                    expected_sname=self.get_krbtgt_sname())
 
+    # Test making a TGS request with an RC4-encrypted TGT.
+    def test_tgs_rc4(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
+        self._run_tgs(tgt, expected_error=KDC_ERR_GENERIC)
+
+    def test_renew_rc4(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, renewable=True, etype=kcrypto.Enctype.RC4)
+        self._renew_tgt(tgt, expected_error=KDC_ERR_GENERIC,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=True,
+                        expect_requester_sid=True)
+
+    def test_validate_rc4(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True, etype=kcrypto.Enctype.RC4)
+        self._validate_tgt(tgt, expected_error=KDC_ERR_GENERIC,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True,
+                           expect_requester_sid=True)
+
+    def test_s4u2self_rc4(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
+        self._s4u2self(tgt, creds, expected_error=KDC_ERR_GENERIC)
+
+    def test_user2user_rc4(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
+        self._user2user(tgt, creds, expected_error=KDC_ERR_GENERIC)
+
+    def test_fast_rc4(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
+        self._fast(tgt, creds, expected_error=KDC_ERR_GENERIC)
+
     # Test user-to-user with incorrect service principal names.
     def test_user2user_matching_sname_host(self):
         creds = self._get_creds()
@@ -2605,7 +2642,9 @@ class KdcTgsTests(KdcTgsBaseTests):
                  can_modify_logon_info=True,
                  can_modify_requester_sid=True,
                  remove_pac_attrs=False,
-                 remove_requester_sid=False):
+                 remove_requester_sid=False,
+                 etype=None,
+                 cksum_etype=None):
         self.assertFalse(renewable and invalid)
 
         if remove_pac:
@@ -2624,7 +2663,9 @@ class KdcTgsTests(KdcTgsBaseTests):
             can_modify_logon_info=can_modify_logon_info,
             can_modify_requester_sid=can_modify_requester_sid,
             remove_pac_attrs=remove_pac_attrs,
-            remove_requester_sid=remove_requester_sid)
+            remove_requester_sid=remove_requester_sid,
+            etype=None,
+            cksum_etype=cksum_etype)
 
     def _modify_tgt(self,
                     tgt,
@@ -2639,7 +2680,9 @@ class KdcTgsTests(KdcTgsBaseTests):
                     can_modify_logon_info=True,
                     can_modify_requester_sid=True,
                     remove_pac_attrs=False,
-                    remove_requester_sid=False):
+                    remove_requester_sid=False,
+                    etype=None,
+                    cksum_etype=None):
         if from_rodc:
             krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
         else:
@@ -2678,13 +2721,19 @@ class KdcTgsTests(KdcTgsBaseTests):
         else:
             change_sid_fn = None
 
-        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds,
+                                                         etype)
 
         if remove_pac:
             checksum_keys = None
         else:
+            if etype == cksum_etype:
+                cksum_key = krbtgt_key
+            else:
+                cksum_key = self.TicketDecryptionKey_from_creds(krbtgt_creds,
+                                                                cksum_etype)
             checksum_keys = {
-                krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key
+                krb5pac.PAC_TYPE_KDC_CHECKSUM: cksum_key
             }
 
         if renewable:

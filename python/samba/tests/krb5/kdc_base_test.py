@@ -1518,11 +1518,15 @@ class KDCBaseTest(RawKerberosTest):
             krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
 
+        is_tgs_princ = self.is_tgs_principal(sname)
         expect_ticket_checksum = (self.tkt_sig_support
-                                  and not self.is_tgs_principal(sname))
+                                  and not is_tgs_princ)
+        expect_full_checksum = (self.full_sig_support
+                                and not is_tgs_princ)
         self.verify_ticket(service_ticket_creds, krbtgt_key,
                            service_ticket=True, expect_pac=expect_pac,
-                           expect_ticket_checksum=expect_ticket_checksum)
+                           expect_ticket_checksum=expect_ticket_checksum,
+                           expect_full_checksum=expect_full_checksum)
 
         self.tkt_cache[cache_key] = service_ticket_creds
 
