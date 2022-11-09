@@ -121,6 +121,35 @@ testit_grep()
 	return $status
 }
 
+# This returns 0 if the command gave success and the grep value was found
+# num times all other cases return != 0
+testit_grep_count()
+{
+	name="$1"
+	shift
+	grep="$1"
+	shift
+	num="$1"
+	shift
+	cmdline="$@"
+	subunit_start_test "$name"
+	output=$($cmdline 2>&1)
+	status=$?
+	if [ x$status != x0 ]; then
+		printf '%s' "$output" | subunit_fail_test "$name"
+		return $status
+	fi
+	found=$(printf '%s' "$output" | grep -c "$grep")
+	if [ x"$found" = x"$num" ]; then
+	    subunit_pass_test "$name"
+	else
+	    printf 'GREP: "%s" found "%d" times, expected "%d" in output:\n%s'\
+		   "$grep" "$found" "$num" "$output" |
+		subunit_fail_test "$name"
+	fi
+	return $status
+}
+
 testit_expect_failure()
 {
 	name="$1"
