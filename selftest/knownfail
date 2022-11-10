@@ -203,6 +203,7 @@
 ^samba4.smb2.ioctl.copy_chunk_\w*\(ad_dc_ntvfs\)	# not supported by s4 ntvfs server
 ^samba4.smb2.ioctl.copy-chunk streams\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
 ^samba4.smb2.ioctl.bug14769\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
+^samba4.smb2.ioctl-on-stream.ioctl-on-stream\(ad_dc_ntvfs\)
 ^samba3.smb2.dir.one
 ^samba3.smb2.dir.modify
 ^samba3.smb2.oplock.batch20
