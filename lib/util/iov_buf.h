@@ -22,6 +22,7 @@
 
 #include "replace.h"
 #include <talloc.h>
+#include "system/filesys.h"
 
 ssize_t iov_buflen(const struct iovec *iov, int iovlen);
 ssize_t iov_buf(const struct iovec *iov, int iovcnt,
