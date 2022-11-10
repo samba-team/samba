@@ -1687,3 +1687,4 @@ for t in CLUSTERED_LOCAL_TESTS:
          "-N 1000 -o 2000"])
 
 planpythontestsuite("fileserver", "samba.tests.smb3unix")
+planpythontestsuite("fileserver", "samba.tests.reparsepoints")
