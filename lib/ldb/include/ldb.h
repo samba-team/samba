@@ -1551,7 +1551,11 @@ const char *ldb_strerror(int ldb_err);
 void ldb_set_utf8_default(struct ldb_context *ldb);
 
 /**
-   Casefold a string
+   \brief Casefold a string
+
+   Note that the callback needs to be ASCII compatible. So first ASCII needs
+   to be handle before any UTF-8. This is needed to avoid issues with dottet
+   languages.
 
    \param ldb the ldb context
    \param mem_ctx the memory context to allocate the result string
@@ -1745,7 +1749,7 @@ char * ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
    \return the string containing the LDIF, or NULL on error
 
-   \sa ldb_ldif_message_redacted_string for a safer version of this 
+   \sa ldb_ldif_message_redacted_string for a safer version of this
        function
 */
 char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
@@ -1763,7 +1767,7 @@ char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
    \return the string containing the LDIF, or NULL on error, but
            with secret attributes redacted
 
-   \note The secret attributes are specified in a 
+   \note The secret attributes are specified in a
          'const char * const *' within the LDB_SECRET_ATTRIBUTE_LIST
          opaque set on the ldb
 
@@ -1949,7 +1953,7 @@ struct ldb_message *ldb_msg_new(TALLOC_CTX *mem_ctx);
 /**
    Find an element within an message
 */
-struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
+struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg,
 						 const char *attr_name);
 
 /**
@@ -1970,7 +1974,7 @@ int ldb_val_equal_exact(const struct ldb_val *v1, const struct ldb_val *v2);
 
    \note This search is case sensitive
 */
-struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el, 
+struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 				 struct ldb_val *val);
 
 /**
@@ -2186,7 +2190,9 @@ int ldb_set_debug(struct ldb_context *ldb,
 		  void *context);
 
 /**
-  this allows the user to set custom utf8 function for error reporting
+  this allows the user to set custom utf8 function for error reporting. make
+  sure it is able to handle ASCII first, so it prevents issues with dottet
+  languages.
 */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
 		      void *context,

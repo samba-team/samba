@@ -321,6 +321,7 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 	char *b1, *b2;
 	const char *u1, *u2;
 	int ret;
+
 	while (n1 && *s1 == ' ') { s1++; n1--; };
 	while (n2 && *s2 == ' ') { s2++; n2--; };
 
@@ -351,18 +352,22 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		while (n2 && *s2 == ' ') { s2++; n2--; }
 	}
 	if (n1 == 0 && n2 != 0) {
-		return -(int)toupper(*s2);
+		return -(int)ldb_ascii_toupper(*s2);
 	}
 	if (n2 == 0 && n1 != 0) {
-		return (int)toupper(*s1);
+		return (int)ldb_ascii_toupper(*s1);
 	}
 	if (n1 == 0 && n2 == 0) {
 		return 0;
 	}
-	return (int)toupper(*s1) - (int)toupper(*s2);
+	return (int)ldb_ascii_toupper(*s1) - (int)ldb_ascii_toupper(*s2);
 
 utf8str:
-	/* no need to recheck from the start, just from the first utf8 char found */
+	/*
+	 * No need to recheck from the start, just from the first utf8 charu
+	 * found. Note that the callback of ldb_casefold() needs to be ascii
+	 * compatible.
+	 */
 	b1 = ldb_casefold(ldb, mem_ctx, s1, n1);
 	b2 = ldb_casefold(ldb, mem_ctx, s2, n2);
 
@@ -375,9 +380,9 @@ utf8str:
 		if (ret == 0) {
 			if (n1 == n2) return 0;
 			if (n1 > n2) {
-				return (int)toupper(s1[n2]);
+				return (int)ldb_ascii_toupper(s1[n2]);
 			} else {
-				return -(int)toupper(s2[n1]);
+				return -(int)ldb_ascii_toupper(s2[n1]);
 			}
 		}
 		return ret;
