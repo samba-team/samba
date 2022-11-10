@@ -1487,7 +1487,13 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	char **out_data = (char **)_out_data;
 	NTSTATUS status;
 
-	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
+	/*
+	 * Currently all fsctls operate on the base
+	 * file if given an alternate data stream.
+	 * Revisit this if we implement fsctls later
+	 * that need access to the ADS handle.
+	 */
+	fsp = metadata_fsp(fsp);
 
 	switch (function) {
 	case FSCTL_SET_SPARSE:
