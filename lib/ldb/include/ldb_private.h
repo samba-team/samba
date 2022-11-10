@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell    2004
@@ -8,7 +8,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -84,7 +84,7 @@ struct ldb_module {
 struct ldb_schema {
 	void *attribute_handler_override_private;
 	ldb_attribute_handler_override_fn_t attribute_handler_override;
-	
+
 	/* attribute handling table */
 	unsigned num_attributes;
 	struct ldb_schema_attribute *attributes;
@@ -233,10 +233,10 @@ struct ldif_read_file_state {
 	size_t line_no;
 };
 
-struct ldb_ldif *ldb_ldif_read_file_state(struct ldb_context *ldb, 
+struct ldb_ldif *ldb_ldif_read_file_state(struct ldb_context *ldb,
 					  struct ldif_read_file_state *state);
 
-char *ldb_ldif_write_redacted_trace_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+char *ldb_ldif_write_redacted_trace_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 					   const struct ldb_ldif *ldif);
 
 /*
