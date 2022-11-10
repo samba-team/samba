@@ -64,7 +64,7 @@ const char *smb_protocol_types_string(enum protocol_types protocol)
 char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 {
 	size_t i, len;
-	const struct {
+	static const struct {
 		char c;
 		uint16_t attr;
 	} attr_strs[] = {
