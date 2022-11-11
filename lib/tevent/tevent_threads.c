@@ -576,7 +576,7 @@ void tevent_common_threaded_activate_immediate(struct tevent_context *ev)
 
 		DLIST_REMOVE(ev->scheduled_immediates, im);
 
-		tevent_debug(ev, TEVENT_DEBUG_TRACE,
+		TEVENT_DEBUG(ev, TEVENT_DEBUG_TRACE,
 			     "Schedule immediate event \"%s\": %p from thread into main\n",
 			     im->handler_name, im);
 		im->handler_name = NULL;

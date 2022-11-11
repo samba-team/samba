@@ -448,7 +448,7 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 		 * This can happen after a epoll_check_reopen
 		 * within epoll_event_fd_destructor.
 		 */
-		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_TRACE,
+		TEVENT_DEBUG(epoll_ev->ev, TEVENT_DEBUG_TRACE,
 			     "EPOLL_CTL_DEL ignoring ENOENT for fd[%d]\n",
 			     fde->fd);
 		return;

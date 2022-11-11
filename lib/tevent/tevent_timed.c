@@ -144,7 +144,7 @@ static int tevent_common_timed_destructor(struct tevent_timer *te)
 		return 0;
 	}
 
-	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(te->event_ctx, TEVENT_DEBUG_TRACE,
 		     "Destroying timer event %p \"%s\"\n",
 		     te, te->handler_name);
 
@@ -259,7 +259,7 @@ static struct tevent_timer *tevent_common_add_timer_internal(
 	talloc_set_destructor(te, tevent_common_timed_destructor);
 
 
-	tevent_debug(ev, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(ev, TEVENT_DEBUG_TRACE,
 		     "Added timed event \"%s\": %p\n",
 		     handler_name, te);
 	return te;
@@ -346,7 +346,7 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 	}
 	DLIST_REMOVE(te->event_ctx->timer_events, te);
 
-	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(te->event_ctx, TEVENT_DEBUG_TRACE,
 		     "Running timer event %p \"%s\"\n",
 		     te, te->handler_name);
 
@@ -388,7 +388,7 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 	}
 	te->busy = false;
 
-	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(te->event_ctx, TEVENT_DEBUG_TRACE,
 		     "Ending timer event %p \"%s\"\n",
 		     te, te->handler_name);
 

@@ -227,7 +227,7 @@ static int tevent_wrapper_context_destructor(struct tevent_context *wrap_ev)
 		return 0;
 	}
 
-	tevent_debug(wrap_ev, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(wrap_ev, TEVENT_DEBUG_TRACE,
 		     "Destroying wrapper context %p \"%s\"\n",
 		     wrap_ev, talloc_get_name(glue->private_state));
 

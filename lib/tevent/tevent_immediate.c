@@ -55,7 +55,7 @@ static void tevent_common_immediate_cancel(struct tevent_immediate *im)
 	}
 
 	if (im->handler_name != NULL) {
-		tevent_debug(im->event_ctx, TEVENT_DEBUG_TRACE,
+		TEVENT_DEBUG(im->event_ctx, TEVENT_DEBUG_TRACE,
 			     "Cancel immediate event %p \"%s\"\n",
 			     im, im->handler_name);
 	}
@@ -146,7 +146,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 	DLIST_ADD_END(ev->immediate_events, im);
 	talloc_set_destructor(im, tevent_common_immediate_destructor);
 
-	tevent_debug(ev, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(ev, TEVENT_DEBUG_TRACE,
 		     "Schedule immediate event \"%s\": %p\n",
 		     handler_name, im);
 }
@@ -162,7 +162,7 @@ int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
 		*removed = false;
 	}
 
-	tevent_debug(ev, TEVENT_DEBUG_TRACE,
+	TEVENT_DEBUG(ev, TEVENT_DEBUG_TRACE,
 		     "Run immediate event \"%s\": %p\n",
 		     im->handler_name, im);
 
