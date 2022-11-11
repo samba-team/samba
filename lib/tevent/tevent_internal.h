@@ -296,6 +296,13 @@ struct tevent_debug_ops {
 
 void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 		  const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+#define TEVENT_DEBUG(__ev, __level, __fmt, ...) do { \
+	if (unlikely((__ev) != NULL && \
+		     (__level) <= (__ev)->debug_ops.max_level)) \
+	{ \
+		tevent_debug((__ev), (__level), (__fmt), __VA_ARGS__); \
+	} \
+} while(0)
 
 void tevent_abort(struct tevent_context *ev, const char *reason);
 
