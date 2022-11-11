@@ -288,6 +288,7 @@ struct tevent_threaded_context {
 };
 
 struct tevent_debug_ops {
+	enum tevent_debug_level max_level;
 	void (*debug)(void *context, enum tevent_debug_level level,
 		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
 	void *context;

@@ -50,10 +50,29 @@ int tevent_set_debug(struct tevent_context *ev,
 		errno = EINVAL;
 		return -1;
 	}
-
+	if (debug != NULL) {
+		/*
+		 * tevent_set_max_debug_level(ev, TEVENT_DEBUG_TRACE)
+		 * can be used to get full tracing, but we can to
+		 * avoid overhead by default.
+		 */
+		ev->debug_ops.max_level = TEVENT_DEBUG_WARNING;
+	} else {
+		ev->debug_ops.max_level = TEVENT_DEBUG_FATAL;
+	}
 	ev->debug_ops.debug = debug;
 	ev->debug_ops.context = context;
 	return 0;
+}
+
+enum tevent_debug_level
+tevent_set_max_debug_level(struct tevent_context *ev,
+			   enum tevent_debug_level max_level)
+{
+	enum tevent_debug_level old_level;
+	old_level = ev->debug_ops.max_level;
+	ev->debug_ops.max_level = max_level;
+	return old_level;
 }
 
 /*
@@ -98,6 +117,9 @@ void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 	}
 	if (ev->wrapper.glue != NULL) {
 		ev = tevent_wrapper_main_ev(ev);
+	}
+	if (level > ev->debug_ops.max_level) {
+		return;
 	}
 	if (ev->debug_ops.debug == NULL) {
 		return;

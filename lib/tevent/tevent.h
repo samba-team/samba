@@ -624,6 +624,18 @@ typedef void (*tevent_debug_fn)(void *context,
 /**
  * Set destination for tevent debug messages
  *
+ * As of version 0.15.0 the invocation of
+ * the debug function for indiviual messages
+ * is limited by the current max_debug_level,
+ * which means TEVENT_DEBUG_TRACE messages
+ * are not passed by default:
+ *
+ * - tevent_set_debug() with debug == NULL implies
+ *   tevent_set_max_debug_level(ev, TEVENT_DEBUG_FATAL).
+ *
+ * - tevent_set_debug() with debug != NULL implies
+ *   tevent_set_max_debug_level(ev, TEVENT_DEBUG_WARNING).
+ *
  * @param[in] ev        Event context to debug
  * @param[in] debug     Function to handle output printing
  * @param[in] context   The context to pass to the debug function.
@@ -631,10 +643,28 @@ typedef void (*tevent_debug_fn)(void *context,
  * @return Always returns 0 as of version 0.9.8
  *
  * @note Default is to emit no debug messages
+ *
+ * @see tevent_set_max_debug_level()
  */
 int tevent_set_debug(struct tevent_context *ev,
 		     tevent_debug_fn debug,
 		     void *context);
+
+/**
+ * Set maximum debug level for tevent debug messages
+ *
+ * @param[in] ev         Event context to debug
+ * @param[in] max_level  Function to handle output printing
+ *
+ * @return The former max level is returned.
+ *
+ * @see tevent_set_debug()
+ *
+ * @note Available as of tevent 0.15.0
+ */
+enum tevent_debug_level
+tevent_set_max_debug_level(struct tevent_context *ev,
+			   enum tevent_debug_level max_level);
 
 /**
  * Designate stderr for debug message output
