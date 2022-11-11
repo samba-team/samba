@@ -29,6 +29,22 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
+_PRIVATE_
+const char *tevent_common_fd_str(struct tevent_common_fd_buf *buf,
+				 const char *description,
+				 const struct tevent_fd *fde)
+{
+	snprintf(buf->buf, sizeof(buf->buf),
+		 "%s[fde=%p,"
+		 "fd=%d,flags=0x%x(%s%s),%s]",
+		 description, fde, fde->fd,
+		 fde->flags,
+		 (fde->flags & TEVENT_FD_READ) ? "R" : "",
+		 (fde->flags & TEVENT_FD_WRITE) ? "W" : "",
+		 fde->handler_name);
+	return buf->buf;
+}
+
 int tevent_common_fd_destructor(struct tevent_fd *fde)
 {
 	if (fde->destroyed) {

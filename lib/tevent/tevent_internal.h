@@ -419,6 +419,14 @@ int tevent_common_context_destructor(struct tevent_context *ev);
 int tevent_common_loop_wait(struct tevent_context *ev,
 			    const char *location);
 
+struct tevent_common_fd_buf {
+	char buf[128];
+};
+
+const char *tevent_common_fd_str(struct tevent_common_fd_buf *buf,
+				 const char *description,
+				 const struct tevent_fd *fde);
+
 int tevent_common_fd_destructor(struct tevent_fd *fde);
 struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev,
 				       TALLOC_CTX *mem_ctx,
