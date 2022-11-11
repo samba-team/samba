@@ -7336,7 +7336,8 @@ class GPOTests(tests.TestCase):
         if ads.connect():
             gpos = ads.get_gpo_list(machine_creds.get_username())
 
-        stage = '[Kerberos Policy]\nMaxTicketAge = %d\n'
+        # Include MaxClockSkew to ensure we don't fail on a key we ignore
+        stage = '[Kerberos Policy]\nMaxTicketAge = %d\nMaxClockSkew = 5'
         opts = [100, 200]
         for i in range(0, 2):
             gpttmpl = gpofile % (local_path, guids[i])
