@@ -150,6 +150,10 @@ bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
                     source='srv_access_check.c',
                     deps='samba-util')
 
+bld.SAMBA3_SUBSYSTEM('WSP_BACKEND',
+                    source='''wsp/wsp_backend.c''',
+                    enabled=bld.env.with_wsp)
+
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
                     source='',
                     deps='''
