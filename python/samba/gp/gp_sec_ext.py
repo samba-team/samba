@@ -67,6 +67,8 @@ class gp_krb_ext(gp_inf_ext):
                 for section in inf_conf.sections():
                     if section == str(self):
                         for key, value in inf_conf.items(section):
+                            if key not in gp_krb_ext.apply_map:
+                                continue
                             att = gp_krb_ext.apply_map[key]
                             value_func = self.mapper().get(att)
                             self.set_kdc_tdb(att, value_func(value))
@@ -153,6 +155,8 @@ class gp_access_ext(gp_inf_ext):
                 for section in inf_conf.sections():
                     if section == str(self):
                         for key, value in inf_conf.items(section):
+                            if key not in gp_access_ext.apply_map:
+                                continue
                             att = gp_access_ext.apply_map[key]
                             (update_samba, value_func) = self.mapper().get(att)
                             update_samba(att, value_func(value))
