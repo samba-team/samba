@@ -166,7 +166,7 @@ static int std_event_context_init(struct tevent_context *ev)
 	 * pointers.
 	 */
 
-	if (ev->ops == &std_event_ops) {
+	if (ev->ops->loop_once == NULL) {
 		glue = talloc_zero(ev, struct std_event_glue);
 		if (glue == NULL) {
 			return -1;
