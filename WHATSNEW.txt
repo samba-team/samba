@@ -1,4 +1,51 @@
                    ==============================
+                   Release Notes for Samba 4.17.3
+                         November 15, 2022
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+
+o CVE-2022-42898: Samba's Kerberos libraries and AD DC failed to guard against
+                  integer overflows when parsing a PAC on a 32-bit system, which
+                  allowed an attacker with a forged PAC to corrupt the heap.
+                  https://www.samba.org/samba/security/CVE-2022-42898.html
+
+Changes since 4.17.2
+--------------------
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15203: CVE-2022-42898
+
+o  Nicolas Williams <nico@twosigma.com>
+   * BUG 15203: CVE-2022-42898
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.17.2
                           October 25, 2022
                    ==============================
@@ -46,8 +93,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.17.1
                           October 19, 2022
