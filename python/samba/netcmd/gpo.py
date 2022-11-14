@@ -3135,7 +3135,7 @@ class cmd_add_startup(Command):
 This command adds a startup script policy to the sysvol.
 
 Example:
-samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9} test_script.sh '-n'
+samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9} test_script.sh '\\-n \\-p all'
     """
 
     synopsis = "%prog <gpo> <script> [args] [run_as] [options]"
