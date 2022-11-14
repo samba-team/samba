@@ -3223,7 +3223,7 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
         if run_as is not None:
             run_as_elm = ET.SubElement(listelement, 'run_as')
             run_as_elm.text = run_as
-        if run_once is not None:
+        if run_once:
             ET.SubElement(listelement, 'run_once')
 
         out = BytesIO()
