@@ -3126,7 +3126,7 @@ samba-tool gpo manage scripts startup list {31B2F340-016D-11D2-945F-00C04FB984F9
                 run_as = run_as.text
             else:
                 run_as = 'root'
-            self.outf.write('@reboot %s %s %s' % (run_as, script_path,
+            self.outf.write('@reboot %s %s %s\n' % (run_as, script_path,
                                                   parameters.text))
 
 class cmd_add_startup(Command):
