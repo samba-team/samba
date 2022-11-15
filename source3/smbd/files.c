@@ -1201,7 +1201,7 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 
 	status = openat_pathref_fsp(dirfsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("opening [%s] failed\n",
+		DBG_NOTICE("opening [%s] failed\n",
 			smb_fname_str_dbg(smb_fname));
 		TALLOC_FREE(smb_fname);
 		return status;
