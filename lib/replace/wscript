@@ -686,6 +686,9 @@ syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
         addmain=False,
         msg='Checking for __thread local storage')
 
+    if conf.CONFIG_SET('HAVE_PTHREAD') and not conf.CONFIG_SET('HAVE___THREAD'):
+        conf.fatal('Missing required TLS support in pthread library')
+
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
     conf.CHECK_FUNCS_IN('crypt_r', 'crypt', checklibc=True)
     conf.CHECK_FUNCS_IN('crypt_rn', 'crypt', checklibc=True)
