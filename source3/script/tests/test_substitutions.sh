@@ -49,4 +49,14 @@ SMB_UNC="//$SERVER/sub_valid_users_group"
 test_smbclient "Test login to share with substitution for valid user's UNIX group" \
 	"ls" "$SMB_UNC" "-U$USERNAME%$PASSWORD" || failed=$(expr $failed + 1)
 
+test_smbclient \
+	"Test for login to share with include substitution [${USERNAME}]" \
+	"ls" "//${SERVER}/${USERNAME}_share" "-U$USERNAME%$PASSWORD" ||
+	failed=$((failed + 1))
+
+test_smbclient_expect_failure \
+	"Netative test for login to share with include substitution [${DC_USERNAME}]" \
+	"ls" "//${SERVER}/${USERNAME}_share" "-U$DC_USERNAME%$DC_PASSWORD" ||
+	failed=$((failed + 1))
+
 exit $failed

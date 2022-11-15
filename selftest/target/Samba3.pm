@@ -2674,6 +2674,8 @@ sub provision($$)
 	my $errorinjectconf="$libdir/error_inject.conf";
 	my $delayinjectconf="$libdir/delay_inject.conf";
 	my $globalinjectconf="$libdir/global_inject.conf";
+	my $aliceconfdir="$libdir";
+	my $aliceconffile="$libdir/alice.conf";
 
 	my $nss_wrapper_pl = "$ENV{PERL} $self->{srcdir}/third_party/nss_wrapper/nss_wrapper.pl";
 	my $nss_wrapper_passwd = "$privatedir/passwd";
@@ -3443,6 +3445,8 @@ sub provision($$)
 [full_audit_fail_bad_name]
 	copy = tmp
 	full_audit:failure = badname
+
+include = $aliceconfdir/%U.conf
 	";
 
 	close(CONF);
@@ -3482,6 +3486,19 @@ sub provision($$)
 		return undef;
 	}
 	close(DELAYCONF);
+
+	unless (open(ALICECONF, ">$aliceconffile")) {
+	        warn("Unable to open $aliceconffile");
+		return undef;
+	}
+
+	print ALICECONF "
+[alice_share]
+	path = $shrdir
+	comment = smb username is [%U]
+	";
+
+	close(ALICECONF);
 
 	##
 	## create a test account
