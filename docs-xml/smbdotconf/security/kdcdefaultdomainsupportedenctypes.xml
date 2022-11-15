@@ -1,0 +1,42 @@
+<samba:parameter name="kdc default domain supported enctypes"
+                 type="integer"
+                 context="G"
+                 handler="handle_kdc_default_domain_supported_enctypes"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    Set the default value of <constant>msDS-SupportedEncryptionTypes</constant> for service accounts in Active Directory that are missing this value or where <constant>msDS-SupportedEncryptionTypes</constant> is set to 0.
+  </para>
+
+  <para>
+    This allows Samba administrators to match the configuration flexibility provided by the
+    <constant>HKEY_LOCAL_MACHINE\System\CurrentControlSet\services\KDC\DefaultDomainSupportedEncTypes</constant> Registry Value on Windows.
+  </para>
+  <para>
+    Unlike the Windows registry key (which only takes an base-10 number), in Samba this may also be expressed in hexadecimal or as a list of Kerberos encryption type names.
+  </para>
+  <para>
+    Specified values are ORed together bitwise, and those currently supported consist of:
+    </para><itemizedlist>
+   <listitem>
+       <para><constant>arcfour-hmac-md5</constant>, <constant>rc4-hmac</constant>, <constant>0x4</constant>, or <constant>4</constant></para>
+       <para>Known on Windows as Kerberos RC4 encryption</para>
+   </listitem>
+   <listitem>
+       <para><constant>aes128-cts-hmac-sha1-96</constant>, <constant>aes128-cts</constant>, <constant>0x8</constant>, or <constant>8</constant></para>
+       <para>Known on Windows as Kerberos AES 128 bit encryption</para>
+   </listitem>
+   <listitem>
+       <para><constant>aes256-cts-hmac-sha1-96</constant>, <constant>aes256-cts</constant>, <constant>0x10</constant>, or <constant>16</constant></para>
+       <para>Known on Windows as Kerberos AES 256 bit encryption</para>
+   </listitem>
+   <listitem>
+       <para><constant>aes256-cts-hmac-sha1-96-sk</constant>, <constant>aes256-cts-sk</constant>, <constant>0x20</constant>, or <constant>32</constant></para>
+       <para>Allow AES session keys. When this is set, it indicates to the KDC that AES session keys can be used, even when <constant>aes256-cts</constant> and <constant>aes128-cts</constant> are not set.  This allows use of AES keys against hosts otherwise only configured with RC4 for ticket keys (which is the default).</para>
+   </listitem>
+</itemizedlist>
+
+</description>
+
+<value type="default">36<comment>equivalent to: rc4-hmac aes256-cts-hmac-sha1-96-sk</comment></value>
+</samba:parameter>

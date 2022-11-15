@@ -70,6 +70,7 @@
 #include "tdb.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/dns.h"
+#include "librpc/gen_ndr/security.h"
 #include "libds/common/roles.h"
 #include "lib/util/samba_util.h"
 #include "libcli/auth/ntlm_check.h"
@@ -1704,6 +1705,80 @@ out:
 	return value_is_valid;
 }
 
+bool handle_kdc_default_domain_supported_enctypes(struct loadparm_context *lp_ctx,
+						  struct loadparm_service *service,
+						  const char *pszParmValue, char **ptr)
+{
+	char **enctype_list = NULL;
+	char **enctype = NULL;
+	uint32_t result = 0;
+	bool ok = true;
+
+	enctype_list = str_list_make(NULL, pszParmValue, NULL);
+	if (enctype_list == NULL) {
+		DBG_ERR("OOM: failed to make string list from %s\n",
+			pszParmValue);
+		ok = false;
+		goto out;
+	}
+
+	for (enctype = enctype_list; *enctype != NULL; ++enctype) {
+		if (strwicmp(*enctype, "arcfour-hmac-md5") == 0 ||
+		    strwicmp(*enctype, "rc4-hmac") == 0)
+		{
+			result |= KERB_ENCTYPE_RC4_HMAC_MD5;
+		}
+		else if (strwicmp(*enctype, "aes128-cts-hmac-sha1-96") == 0 ||
+			 strwicmp(*enctype, "aes128-cts") == 0)
+		{
+			result |= KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+		}
+		else if (strwicmp(*enctype, "aes256-cts-hmac-sha1-96") == 0 ||
+			 strwicmp(*enctype, "aes256-cts") == 0)
+		{
+			result |= KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+		}
+		else if (strwicmp(*enctype, "aes256-cts-hmac-sha1-96-sk") == 0 ||
+			 strwicmp(*enctype, "aes256-cts-sk") == 0)
+		{
+			result |= KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK;
+		}
+		else {
+			const char *bitstr = *enctype;
+			int base;
+			int error;
+			unsigned long bit;
+
+			/* See if the bit's specified in hexadecimal. */
+			if (bitstr[0] == '0' &&
+			    (bitstr[1] == 'x' || bitstr[2] == 'X'))
+			{
+				base = 16;
+				bitstr += 2;
+			}
+			else {
+				base = 10;
+			}
+
+			bit = smb_strtoul(bitstr, NULL, base, &error, SMB_STR_FULL_STR_CONV);
+			if (error) {
+				DBG_ERR("WARNING: Ignoring invalid value '%s' "
+					"for parameter 'kdc default domain supported enctypes'\n",
+					*enctype);
+				ok = false;
+			} else {
+				result |= bit;
+			}
+		}
+	}
+
+	*(int *)ptr = result;
+out:
+	TALLOC_FREE(enctype_list);
+
+	return ok;
+}
+
 static bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service,
 			 int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
@@ -3011,6 +3086,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx,
 				  "rpc start on demand helpers",
 				  "yes");
+
+	lpcfg_do_global_parameter(lp_ctx,
+				  "kdc default domain supported enctypes",
+				  "rc4-hmac aes256-cts-hmac-sha1-96-sk");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
