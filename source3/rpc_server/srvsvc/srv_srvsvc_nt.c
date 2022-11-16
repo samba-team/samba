@@ -645,6 +645,14 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		added_home = register_homes_share(unix_name);
 	}
 
+	/*
+	 * We need to make sure to reload the services for the connecting user.
+	 * It is possible that the we have includes with substitutions.
+	 *
+	 *  include = /etc/samba/%U.conf
+	 */
+	reload_services(NULL, NULL, false);
+
 	num_services = lp_numservices();
 
         allowed = talloc_zero_array(ctx, bool, num_services);
