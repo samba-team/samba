@@ -1851,30 +1851,54 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
             # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
             # STATUS_OBJECT_PATH_NOT_FOUND
             if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                # The file doesn't exist, so there is nothing to list
+                xml_data = None
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        if xml_data is not None:
+            policy = xml_data.find('policysetting')
+            data = policy.find('data')
+            for entry in data.findall('sudoers_entry'):
+                command = entry.find('command').text
+                user = entry.find('user').text
+                listelements = entry.findall('listelement')
+                principals = []
+                for listelement in listelements:
+                    principals.extend(listelement.findall('principal'))
+                if len(principals) > 0:
+                    uname = ','.join([u.text if u.attrib['type'] == 'user' \
+                        else '%s%%' % u.text for u in principals])
+                else:
+                    uname = 'ALL'
+                nopassword = entry.find('password') is None
+                np_entry = ' NOPASSWD:' if nopassword else ''
+                p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
+                self.outf.write('%s\n' % p)
+
+        pol_file = '\\'.join([realm.lower(), 'Policies', gpo,
+                              'MACHINE\\Registry.pol'])
+        try:
+            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
                 return # The file doesn't exist, so there is nothing to list
             if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
 
-        policy = xml_data.find('policysetting')
-        data = policy.find('data')
-        for entry in data.findall('sudoers_entry'):
-            command = entry.find('command').text
-            user = entry.find('user').text
-            listelements = entry.findall('listelement')
-            principals = []
-            for listelement in listelements:
-                principals.extend(listelement.findall('principal'))
-            if len(principals) > 0:
-                uname = ','.join([u.text if u.attrib['type'] == 'user' \
-                    else '%s%%' % u.text for u in principals])
-            else:
-                uname = 'ALL'
-            nopassword = entry.find('password') is None
-            np_entry = ' NOPASSWD:' if nopassword else ''
-            p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
-            self.outf.write('%s\n' % p)
+        # Also list the policies set from the GPME
+        keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        for entry in pol_data.entries:
+            if get_bytes(entry.keyname) == keyname and \
+                    get_string(entry.data).strip():
+                self.outf.write('%s\n' % entry.data)
 
 class cmd_remove_sudoers(Command):
     """Removes a Samba Sudoers Group Policy from the sysvol
