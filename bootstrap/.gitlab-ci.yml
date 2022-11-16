@@ -1,4 +1,4 @@
-
+---
 .build_image_template:
   image: quay.io/podman/stable:latest
   stage: images
@@ -97,10 +97,10 @@ ubuntu2004:
 debian11:
   extends: .build_image_template
 
-fedora36:
+fedora37:
   extends: .build_image_template
 
-f36mit120:
+f37mit120:
   extends: .build_image_template
 
 centos8s:

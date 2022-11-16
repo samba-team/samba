@@ -495,9 +495,9 @@ RPM_DISTS = {
             'shfmt': '',
         }
     },
-    'fedora36': {
-        'docker_image': 'quay.io/fedora/fedora:36',
-        'vagrant_box': 'fedora/36-cloud-base',
+    'fedora37': {
+        'docker_image': 'quay.io/fedora/fedora:37',
+        'vagrant_box': 'fedora/37-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
@@ -506,9 +506,9 @@ RPM_DISTS = {
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         }
     },
-    'f36mit120': {
-        'docker_image': 'quay.io/fedora/fedora:36',
-        'vagrant_box': 'fedora/36-cloud-base',
+    'f37mit120': {
+        'docker_image': 'quay.io/fedora/fedora:37',
+        'vagrant_box': 'fedora/37-cloud-base',
         'bootstrap': DNF_BOOTSTRAP_MIT,
         'replace': {
             'lsb-release': 'redhat-lsb',

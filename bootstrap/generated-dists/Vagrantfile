@@ -31,18 +31,18 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "debian11/locale.sh"
     end
 
-    config.vm.define "f36mit120" do |v|
-        v.vm.box = "fedora/36-cloud-base"
-        v.vm.hostname = "f36mit120"
-        v.vm.provision :shell, path: "f36mit120/bootstrap.sh"
-        v.vm.provision :shell, path: "f36mit120/locale.sh"
+    config.vm.define "f37mit120" do |v|
+        v.vm.box = "fedora/37-cloud-base"
+        v.vm.hostname = "f37mit120"
+        v.vm.provision :shell, path: "f37mit120/bootstrap.sh"
+        v.vm.provision :shell, path: "f37mit120/locale.sh"
     end
 
-    config.vm.define "fedora36" do |v|
-        v.vm.box = "fedora/36-cloud-base"
-        v.vm.hostname = "fedora36"
-        v.vm.provision :shell, path: "fedora36/bootstrap.sh"
-        v.vm.provision :shell, path: "fedora36/locale.sh"
+    config.vm.define "fedora37" do |v|
+        v.vm.box = "fedora/37-cloud-base"
+        v.vm.hostname = "fedora37"
+        v.vm.provision :shell, path: "fedora37/bootstrap.sh"
+        v.vm.provision :shell, path: "fedora37/locale.sh"
     end
 
     config.vm.define "opensuse154" do |v|
