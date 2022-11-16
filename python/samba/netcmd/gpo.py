@@ -1955,14 +1955,30 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
             # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
             # STATUS_OBJECT_PATH_NOT_FOUND
             if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
-                raise CommandError("The specified entry does not exist")
+                data = None
             elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
-            raise
+            else:
+                raise
+
+        pol_file = '\\'.join([realm.lower(), 'Policies', gpo,
+                              'MACHINE\\Registry.pol'])
+        try:
+            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                pol_data = None
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
 
         entries = {}
-        for e in data.findall('sudoers_entry'):
+        for e in data.findall('sudoers_entry') if data else []:
             command = e.find('command').text
             user = e.find('user').text
             listelements = e.findall('listelement')
@@ -1979,23 +1995,35 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
             p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
             entries[p] = e
 
-        if entry not in entries.keys():
+        if entry in entries.keys():
+            data.remove(entries[entry])
+
+            out = BytesIO()
+            xml_data.write(out, encoding='UTF-8', xml_declaration=True)
+            out.seek(0)
+            try:
+                create_directory_hier(conn, vgp_dir)
+                conn.savefile(vgp_xml, out.read())
+            except NTSTATUSError as e:
+                if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                    raise CommandError("The authenticated user does "
+                                       "not have sufficient privileges")
+                raise
+        elif entry in ([e.data for e in pol_data.entries] if pol_data else []):
+            entries = [e for e in pol_data.entries if e.data != entry]
+            pol_data.num_entries = len(entries)
+            pol_data.entries = entries
+
+            try:
+                conn.savefile(pol_file, ndr_pack(pol_data))
+            except NTSTATUSError as e:
+                if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                    raise CommandError("The authenticated user does "
+                                       "not have sufficient privileges")
+                raise
+        else:
             raise CommandError("Cannot remove '%s' because it does not exist" %
-                                entry)
-
-        data.remove(entries[entry])
-
-        out = BytesIO()
-        xml_data.write(out, encoding='UTF-8', xml_declaration=True)
-        out.seek(0)
-        try:
-            create_directory_hier(conn, vgp_dir)
-            conn.savefile(vgp_xml, out.read())
-        except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
-                raise CommandError("The authenticated user does "
-                                   "not have sufficient privileges")
-            raise
+                               entry)
 
 class cmd_sudoers(SuperCommand):
     """Manage Sudoers Group Policy Objects"""
