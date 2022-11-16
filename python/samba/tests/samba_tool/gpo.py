@@ -825,6 +825,21 @@ class GpoCmdTestCase(SambaToolCmdTest):
         ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
         self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
 
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e.type = 1
+        e.data = b'fakeu3 ALL=(ALL) NOPASSWD: ALL'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
         sudoer = 'fakeu ALL=(ALL) NOPASSWD: ALL'
         sudoer2 = 'fakeu2,fakeg2% ALL=(ALL) NOPASSWD: ALL'
         sudoer_no_principal = 'ALL ALL=(ALL) NOPASSWD: ALL'
@@ -839,6 +854,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err, 'Sudoers list failed')
         self.assertIn(sudoer, out, 'The test entry was not found!')
         self.assertIn(sudoer2, out, 'The test entry was not found!')
+        self.assertIn(get_string(e.data), out, 'The test entry was not found!')
         self.assertIn(sudoer_no_principal, out,
                       'The test entry was not found!')
 
@@ -877,6 +893,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
 
     def test_symlink_list(self):
         lp = LoadParm()
