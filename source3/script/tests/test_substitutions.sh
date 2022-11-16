@@ -20,6 +20,7 @@ failed=0
 samba_bindir="$BINDIR"
 samba_srcdir="$SRCDIR"
 smbclient="$samba_bindir/smbclient"
+rpcclient="$samba_bindir/rpcclient"
 
 . $samba_srcdir/testprogs/blackbox/subunit.sh
 . $samba_srcdir/testprogs/blackbox/common_test_fns.inc
@@ -57,6 +58,22 @@ test_smbclient \
 test_smbclient_expect_failure \
 	"Netative test for login to share with include substitution [${DC_USERNAME}]" \
 	"ls" "//${SERVER}/${USERNAME}_share" "-U$DC_USERNAME%$DC_PASSWORD" ||
+	failed=$((failed + 1))
+
+testit_grep_count \
+	"Test for share enum with include substitution" \
+	"netname: ${USERNAME}_share" \
+	1 \
+	${rpcclient} "ncacn_np:${SERVER}" "-U$USERNAME%$PASSWORD" \
+	-c netshareenum ||
+	failed=$((failed + 1))
+
+testit_grep_count \
+	"Negative test for share enum with include substitution" \
+	"netname: ${USERNAME}_share" \
+	0 \
+	${rpcclient} "ncacn_np:${SERVER}" "-U$DC_USERNAME%$DC_PASSWORD" \
+	-c netshareenum ||
 	failed=$((failed + 1))
 
 exit $failed
