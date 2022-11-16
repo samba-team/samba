@@ -3228,7 +3228,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	if (flags & PAM_PRELIM_CHECK) {
 		time_t *pwdlastset_prelim = NULL;
 
-		pwdlastset_prelim = talloc_array(NULL, time_t, 1);
+		pwdlastset_prelim = talloc_zero(NULL, time_t);
 		if (pwdlastset_prelim == NULL) {
 			_pam_log(ctx, LOG_CRIT,
 				 "password - out of memory");
