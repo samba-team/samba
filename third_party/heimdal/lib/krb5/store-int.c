@@ -49,7 +49,7 @@ KRB5_LIB_FUNCTION krb5_ssize_t KRB5_LIB_CALL
 _krb5_get_int64(void *buffer, uint64_t *value, size_t size)
 {
     unsigned char *p = buffer;
-    unsigned long v = 0;
+    uint64_t v = 0;
     size_t i;
     for (i = 0; i < size; i++)
 	v = (v << 8) + p[i];
