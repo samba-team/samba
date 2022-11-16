@@ -730,6 +730,24 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertFalse(inf_data.has_section('Kerberos Policy'))
 
     def test_sudoers_add(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e.type = 1
+        e.data = b'fakeu ALL=(ALL) NOPASSWD: ALL'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "add"),
                                                  self.gpo_guid, 'ALL', 'ALL',
@@ -751,10 +769,22 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertIn(sudoer, out, 'The test entry was not found!')
+        self.assertIn(get_string(e.data), out, 'The test entry was not found!')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "remove"),
                                                  self.gpo_guid, sudoer,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "remove"),
+                                                 self.gpo_guid,
+                                                 get_string(e.data),
                                                  "-H", "ldap://%s" %
                                                  os.environ["SERVER"],
                                                  "-U%s%%%s" %
@@ -771,6 +801,11 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(sudoer, out, 'The test entry was still found!')
+        self.assertNotIn(get_string(e.data), out,
+                         'The test entry was still found!')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
 
     def test_sudoers_list(self):
         lp = LoadParm()
