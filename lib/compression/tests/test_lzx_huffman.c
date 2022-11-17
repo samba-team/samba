@@ -42,8 +42,36 @@
 
 #if LZXHUFF_DEBUG_VERBOSE
 #define debug_message(...) print_message(__VA_ARGS__)
+
+#include <time.h>
+
+struct timespec start = {0};
+struct timespec end = {0};
+static void debug_start_timer(void)
+{
+	clock_gettime(CLOCK_MONOTONIC, &start);
+}
+
+static void debug_end_timer(const char *name, size_t len)
+{
+	uint64_t ns;
+	double secs;
+	double rate;
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	ns = end.tv_nsec;
+	ns += end.tv_sec * 1000 * 1000 * 1000;
+	ns -= start.tv_nsec;
+	ns -= start.tv_sec * 1000 * 1000 * 1000;
+	secs = ns / 1e9;
+	rate = len / (secs * 1024 * 1024);
+	debug_message("%s %zu bytes in %.2g: \033[1;35m%.2f\033[0m MB per second\n",
+		      name, len, secs, rate);
+}
+
 #else
 #define debug_message(...) /* debug_message */
+#define debug_start_timer(...) /* debug_start_timer */
+#define debug_end_timer(...) /* debug_end_timer */
 #endif
 
 
@@ -409,11 +437,12 @@ static void test_lzxpress_huffman_decompress_files(void **state)
 		assert_non_null(p.compressed.data);
 
 		dest = talloc_array(tmp_ctx, uint8_t, p.decompressed.length);
-
+		debug_start_timer();
 		written = lzxpress_huffman_decompress(p.compressed.data,
 						      p.compressed.length,
 						      dest,
 						      p.decompressed.length);
+		debug_end_timer("decompress", p.decompressed.length);
 		if (written == p.decompressed.length &&
 		    memcmp(dest, p.decompressed.data, p.decompressed.length) == 0) {
 			debug_message("\033[1;32mdecompressed %s!\033[0m\n", p.name);
@@ -475,11 +504,12 @@ static void test_lzxpress_huffman_decompress_more_compressed_files(void **state)
 		}
 		found++;
 		dest = talloc_array(tmp_ctx, uint8_t, p.decompressed.length);
-
+		debug_start_timer();
 		written = lzxpress_huffman_decompress(p.compressed.data,
 						      p.compressed.length,
 						      dest,
 						      p.decompressed.length);
+		debug_end_timer("decompress", p.decompressed.length);
 		if (written == p.decompressed.length &&
 		    memcmp(dest, p.decompressed.data, p.decompressed.length) == 0) {
 			debug_message("\033[1;32mdecompressed %s!\033[0m\n", p.name);
@@ -517,12 +547,12 @@ static ssize_t attempt_round_trip(TALLOC_CTX *mem_ctx,
 	DATA_BLOB decompressed = data_blob_talloc(tmp_ctx, NULL,
 						original.length);
 	ssize_t comp_written, decomp_written;
-
+	debug_start_timer();
 	comp_written = lzxpress_huffman_compress_talloc(tmp_ctx,
 							original.data,
 							original.length,
 							&compressed.data);
-
+	debug_end_timer("compress", original.length);
 	if (comp_written <= 0) {
 		talloc_free(tmp_ctx);
 		return -1;
@@ -543,11 +573,12 @@ static ssize_t attempt_round_trip(TALLOC_CTX *mem_ctx,
 			debug_message("\033[1;32mbyte identical!\033[0m\n");
 		}
 	}
-
+	debug_start_timer();
 	decomp_written = lzxpress_huffman_decompress(compressed.data,
 						     comp_written,
 						     decompressed.data,
 						     original.length);
+	debug_end_timer("decompress", original.length);
 	if (save_name != NULL && LZXHUFF_DEBUG_FILES) {
 		char s[300];
 		FILE *fh = NULL;
