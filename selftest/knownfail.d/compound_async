@@ -1,1 +1,2 @@
 ^samba3.smb2.compound_async.write_write\(fileserver\)
+^samba3.smb2.compound_async.read_read\(fileserver\)
