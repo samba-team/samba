@@ -322,6 +322,29 @@ static void test_lzxpress_huffman_decompress(void **state)
 	}
 }
 
+static void test_lzxpress_huffman_compress(void **state)
+{
+	size_t i;
+	ssize_t written;
+	uint8_t *dest = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	for (i = 0; bidirectional_pairs[i].name != NULL; i++) {
+		struct lzx_pair p = bidirectional_pairs[i];
+		debug_message("%s compressed %zu decomp %zu\n", p.name,
+			      p.compressed.length,
+			      p.decompressed.length);
+
+		written = lzxpress_huffman_compress_talloc(mem_ctx,
+							   p.decompressed.data,
+							   p.decompressed.length,
+							   &dest);
+
+		assert_int_equal(written, p.compressed.length);
+		assert_memory_equal(dest, p.compressed.data, p.compressed.length);
+		talloc_free(dest);
+	}
+}
+
 
 static DATA_BLOB datablob_from_file(TALLOC_CTX *mem_ctx,
 				    const char *filename)
@@ -354,6 +377,7 @@ static DATA_BLOB datablob_from_file(TALLOC_CTX *mem_ctx,
 	fclose(fh);
 	return b;
 }
+
 
 
 static void test_lzxpress_huffman_decompress_files(void **state)
@@ -473,6 +497,673 @@ static void test_lzxpress_huffman_decompress_more_compressed_files(void **state)
 }
 
 
+/*
+ * attempt_round_trip() tests whether a data blob can survive a compression
+ * and decompression cycle. If save_name is not NULL and LZXHUFF_DEBUG_FILES
+ * evals to true, the various stages are saved in files with that name and the
+ * '-original', '-compressed', and '-decompressed' suffixes. If ref_compressed
+ * has data, it'll print a message saying whether the compressed data matches
+ * that.
+ */
+
+static ssize_t attempt_round_trip(TALLOC_CTX *mem_ctx,
+				  DATA_BLOB original,
+				  const char *save_name,
+				  DATA_BLOB ref_compressed)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	DATA_BLOB compressed = data_blob_talloc(tmp_ctx, NULL,
+						original.length * 4 / 3 + 260);
+	DATA_BLOB decompressed = data_blob_talloc(tmp_ctx, NULL,
+						original.length);
+	ssize_t comp_written, decomp_written;
+
+	comp_written = lzxpress_huffman_compress_talloc(tmp_ctx,
+							original.data,
+							original.length,
+							&compressed.data);
+
+	if (comp_written <= 0) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (ref_compressed.data != NULL) {
+		/*
+		 * This is informational, not an assertion; there are
+		 * ~infinite legitimate ways to compress the data, many as
+		 * good as each other (think of compression as a language, not
+		 * a format).
+		 */
+		debug_message("compressed size %zd vs reference %zu\n",
+			      comp_written, ref_compressed.length);
+
+		if (comp_written == compressed.length &&
+		    memcmp(compressed.data, ref_compressed.data, comp_written) == 0) {
+			debug_message("\033[1;32mbyte identical!\033[0m\n");
+		}
+	}
+
+	decomp_written = lzxpress_huffman_decompress(compressed.data,
+						     comp_written,
+						     decompressed.data,
+						     original.length);
+	if (save_name != NULL && LZXHUFF_DEBUG_FILES) {
+		char s[300];
+		FILE *fh = NULL;
+
+		snprintf(s, sizeof(s), "%s-original", save_name);
+		fprintf(stderr, "Saving %zu bytes to %s\n", original.length, s);
+		fh = fopen(s, "w");
+		fwrite(original.data, 1, original.length, fh);
+		fclose(fh);
+
+		snprintf(s, sizeof(s), "%s-compressed", save_name);
+		fprintf(stderr, "Saving %zu bytes to %s\n", comp_written, s);
+		fh = fopen(s, "w");
+		fwrite(compressed.data, 1, comp_written, fh);
+		fclose(fh);
+		/*
+		 * We save the decompressed file using original.length, not
+		 * the returned size. If these differ, the returned size will
+		 * be -1. By saving the whole buffer we can see at what point
+		 * it went haywire.
+		 */
+		snprintf(s, sizeof(s), "%s-decompressed", save_name);
+		fprintf(stderr, "Saving %zu bytes to %s\n", original.length, s);
+		fh = fopen(s, "w");
+		fwrite(decompressed.data, 1, original.length, fh);
+		fclose(fh);
+	}
+
+	if (original.length != decomp_written ||
+	    memcmp(decompressed.data,
+		   original.data,
+		   original.length) != 0) {
+		debug_message("\033[1;31mgot %zd, expected %zu\033[0m\n",
+			      decomp_written,
+			      original.length);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	talloc_free(tmp_ctx);
+	return comp_written;
+}
+
+
+static void test_lzxpress_huffman_round_trip(void **state)
+{
+	size_t i;
+	int score = 0;
+	ssize_t compressed_total = 0;
+	ssize_t reference_total = 0;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	for (i = 0; file_names[i] != NULL; i++) {
+		char filename[200];
+		char *debug_files = NULL;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		ssize_t comp_size;
+		struct lzx_pair p = {
+			.name = file_names[i]
+		};
+		debug_message("-------------------\n");
+		debug_message("%s\n", p.name);
+
+		snprintf(filename, sizeof(filename),
+			 "%s/%s.decomp", DECOMP_DIR, p.name);
+
+		p.decompressed = datablob_from_file(tmp_ctx, filename);
+		assert_non_null(p.decompressed.data);
+
+		snprintf(filename, sizeof(filename),
+			 "%s/%s.lzhuff", COMP_DIR, p.name);
+
+		p.compressed = datablob_from_file(tmp_ctx, filename);
+		if (p.compressed.data == NULL) {
+			debug_message(
+				"Could not load %s reference file %s\n",
+				p.name, filename);
+			debug_message("%s decompressed %zu\n", p.name,
+				      p.decompressed.length);
+		} else {
+			debug_message("%s: reference compressed %zu decomp %zu\n",
+				      p.name,
+				      p.compressed.length,
+				      p.decompressed.length);
+		}
+		if (1) {
+			/*
+			 * We're going to save copies in /tmp.
+			 */
+			snprintf(filename, sizeof(filename),
+				 "/tmp/lzxhuffman-%s", p.name);
+			debug_files = filename;
+		}
+
+		comp_size = attempt_round_trip(mem_ctx, p.decompressed,
+					       debug_files,
+					       p.compressed);
+		if (comp_size > 0) {
+			debug_message("\033[1;32mround trip!\033[0m\n");
+			score++;
+			if (p.compressed.length) {
+				compressed_total += comp_size;
+				reference_total += p.compressed.length;
+			}
+		}
+		talloc_free(tmp_ctx);
+	}
+	debug_message("%d/%zu correct\n", score, i);
+	print_message("\033[1;34mtotal compressed size: %zu\033[0m\n",
+		      compressed_total);
+	print_message("total reference size:  %zd \n", reference_total);
+	print_message("diff:                  %7zd \n",
+		      reference_total - compressed_total);
+	print_message("ratio: \033[1;3%dm%.2f\033[0m \n",
+		      2 + (compressed_total >= reference_total),
+		      ((double)compressed_total) / reference_total);
+	/*
+	 * Assert that the compression is *about* as good as Windows. Of course
+	 * it doesn't matter if we do better, but mysteriously getting better
+	 * is usually a sign that something is wrong.
+	 *
+	 * At the time of writing, compressed_total is 2674004, or 10686 more
+	 * than the Windows reference total. That's < 0.5% difference, we're
+	 * asserting at 2%.
+	 */
+	assert_true(labs(compressed_total - reference_total) <
+		    compressed_total / 50);
+
+	assert_int_equal(score, i);
+	talloc_free(mem_ctx);
+}
+
+/*
+ * Bob Jenkins' Small Fast RNG.
+ *
+ * We don't need it to be this good, but we do need it to be reproduceable
+ * across platforms, which rand() etc aren't.
+ *
+ * http://burtleburtle.net/bob/rand/smallprng.html
+ */
+
+struct jsf_rng {
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+};
+
+#define ROTATE32(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
+
+static uint32_t jsf32(struct jsf_rng *x) {
+	uint32_t e = x->a - ROTATE32(x->b, 27);
+	x->a = x->b ^ ROTATE32(x->c, 17);
+	x->b = x->c + x->d;
+	x->c = x->d + e;
+	x->d = e + x->a;
+	return x->d;
+}
+
+static void jsf32_init(struct jsf_rng *x, uint32_t seed) {
+	size_t i;
+	x->a = 0xf1ea5eed;
+	x->b = x->c = x->d = seed;
+	for (i = 0; i < 20; ++i) {
+		jsf32(x);
+	}
+}
+
+
+static void test_lzxpress_huffman_long_gpl_round_trip(void **state)
+{
+	/*
+	 * We use a kind of model-free Markov model to generate a massively
+	 * extended pastiche of the GPLv3 (chosen because it is right there in
+	 * "COPYING" and won't change often).
+	 *
+	 * The point is to check a round trip of a very long message with
+	 * multiple repetitions on many scales, without having to add a very
+	 * large file.
+	 */
+	size_t i, j, k;
+	uint8_t c;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB gpl = datablob_from_file(mem_ctx, "COPYING");
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 5 * 1024 * 1024);
+	DATA_BLOB ref = {0};
+	ssize_t comp_size;
+	struct jsf_rng rng;
+
+	if (gpl.data == NULL) {
+		print_message("could not read COPYING\n");
+		fail();
+	}
+
+	jsf32_init(&rng, 1);
+
+	j = 1;
+	original.data[0] = gpl.data[0];
+	for (i = 1; i < original.length; i++) {
+		size_t m;
+		char p = original.data[i - 1];
+		c = gpl.data[j];
+		original.data[i] = c;
+		j++;
+		m = (j + jsf32(&rng)) % (gpl.length - 50);
+		for (k = m; k < m + 30; k++) {
+			if (p == gpl.data[k] &&
+			    c == gpl.data[k + 1]) {
+				j = k + 2;
+				break;
+			}
+		}
+		if (j == gpl.length) {
+			j = 1;
+		}
+	}
+
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/gpl", ref);
+	assert_true(comp_size > 0);
+	assert_true(comp_size < original.length);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_long_random_graph_round_trip(void **state)
+{
+	size_t i;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 5 * 1024 * 1024);
+	DATA_BLOB ref = {0};
+	/*
+	 * There's a random trigram graph, with each pair of sequential bytes
+	 * pointing to a successor. This would probably fall into a fairly
+	 * simple loop, but we introduce damage into the system, randomly
+	 * flipping about 1 bit in 64.
+	 *
+	 * The result is semi-structured and compressable.
+	 */
+	uint8_t *d = original.data;
+	uint8_t *table = talloc_array(mem_ctx, uint8_t, 65536);
+	uint32_t *table32 = (void*)table;
+	ssize_t comp_size;
+	struct jsf_rng rng;
+
+	jsf32_init(&rng, 1);
+	for (i = 0; i < (65536 / 4); i++) {
+		table32[i] = jsf32(&rng);
+	}
+
+	d[0] = 'a';
+	d[1] = 'b';
+
+	for (i = 2; i < original.length; i++) {
+		uint16_t k = (d[i - 2] << 8) | d[i - 1];
+		uint32_t damage = jsf32(&rng) & jsf32(&rng) & jsf32(&rng);
+		damage &= (damage >> 16);
+		k ^= damage & 0xffff;
+		d[i] = table[k];
+	}
+
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/random-graph", ref);
+	assert_true(comp_size > 0);
+	assert_true(comp_size < original.length);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_chaos_graph_round_trip(void **state)
+{
+	size_t i;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 5 * 1024 * 1024);
+	DATA_BLOB ref = {0};
+	/*
+	 * There's a random trigram graph, with each pair of sequential bytes
+	 * pointing to a successor. This would probably fall into a fairly
+	 * simple loop, but we keep changing the graph. The result is long
+	 * periods of stability separatd by bursts of noise.
+	 */
+	uint8_t *d = original.data;
+	uint8_t *table = talloc_array(mem_ctx, uint8_t, 65536);
+	uint32_t *table32 = (void*)table;
+	ssize_t comp_size;
+	struct jsf_rng rng;
+
+	jsf32_init(&rng, 1);
+	for (i = 0; i < (65536 / 4); i++) {
+		table32[i] = jsf32(&rng);
+	}
+
+	d[0] = 'a';
+	d[1] = 'b';
+
+	for (i = 2; i < original.length; i++) {
+		uint16_t k = (d[i - 2] << 8) | d[i - 1];
+		uint32_t damage = jsf32(&rng);
+		d[i] = table[k];
+		if ((damage >> 29) == 0) {
+			uint16_t index = damage & 0xffff;
+			uint8_t value = (damage >> 16) & 0xff;
+			table[index] = value;
+		}
+	}
+
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/chaos-graph", ref);
+	assert_true(comp_size > 0);
+	assert_true(comp_size < original.length);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_sparse_random_graph_round_trip(void **state)
+{
+	size_t i;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 5 * 1024 * 1024);
+	DATA_BLOB ref = {0};
+	/*
+	 * There's a random trigram graph, with each pair of sequential bytes
+	 * pointing to a successor. This will fall into a fairly simple loops,
+	 * but we introduce damage into the system, randomly mangling about 1
+	 * byte in 65536.
+	 *
+	 * The result has very long repetitive runs, which should lead to
+	 * oversized blocks.
+	 */
+	uint8_t *d = original.data;
+	uint8_t *table = talloc_array(mem_ctx, uint8_t, 65536);
+	uint32_t *table32 = (void*)table;
+	ssize_t comp_size;
+	struct jsf_rng rng;
+
+	jsf32_init(&rng, 3);
+	for (i = 0; i < (65536 / 4); i++) {
+		table32[i] = jsf32(&rng);
+	}
+
+	d[0] = 'a';
+	d[1] = 'b';
+
+	for (i = 2; i < original.length; i++) {
+		uint16_t k = (d[i - 2] << 8) | d[i - 1];
+		uint32_t damage = jsf32(&rng);
+		if ((damage & 0xffff0000) == 0) {
+			k ^= damage & 0xffff;
+		}
+		d[i] = table[k];
+	}
+
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/sparse-random-graph", ref);
+	assert_true(comp_size > 0);
+	assert_true(comp_size < original.length);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_random_noise_round_trip(void **state)
+{
+	size_t i;
+	size_t len = 1024 * 1024;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, len);
+	DATA_BLOB ref = {0};
+	ssize_t comp_size;
+	/*
+	 * We are filling this up with incompressible noise, but we can assert
+	 * quite tight bounds on how badly it will fail to compress.
+	 *
+	 * Specifically, with randomly distributed codes, the Huffman table
+	 * should come out as roughly even, averaging 8 bit codes. Then there
+	 * will be a 256 byte table every 64k, which is a 1/256 overhead (i.e.
+	 * the compressed length will be 257/256 the original *on average*).
+	 * We assert it is less than 1 in 200 but more than 1 in 300.
+	 */
+	uint32_t *d32 = (uint32_t*)((void*)original.data);
+	struct jsf_rng rng;
+	jsf32_init(&rng, 2);
+
+	for (i = 0; i < (len / 4); i++) {
+		d32[i] = jsf32(&rng);
+	}
+
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/random-noise", ref);
+	assert_true(comp_size > 0);
+	assert_true(comp_size > original.length + original.length / 300);
+	assert_true(comp_size < original.length + original.length / 200);
+	debug_message("original size %zu; compressed size %zd; ratio %.3f\n",
+		      len, comp_size, ((double)comp_size) / len);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_overlong_matches(void **state)
+{
+	size_t i, j;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 1024 * 1024);
+	DATA_BLOB ref = {0};
+	uint8_t *d = original.data;
+	char filename[300];
+	/*
+	 * We are testing with something like "aaaaaaaaaaaaaaaaaaaaaaabbbbb"
+	 * where typically the number of "a"s is > 65536, and the number of
+	 * "b"s is < 42.
+	 */
+	ssize_t na[] = {65535, 65536, 65537, 65559, 65575, 200000, -1};
+	ssize_t nb[] = {1, 2, 20, 39, 40, 41, 42, -1};
+	int score = 0;
+	ssize_t comp_size;
+
+	for (i = 0; na[i] >= 0; i++) {
+		ssize_t a = na[i];
+		memset(d, 'a', a);
+		for (j = 0; nb[j] >= 0; j++) {
+			ssize_t b = nb[j];
+			memset(d + a, 'b', b);
+			original.length = a + b;
+			snprintf(filename, sizeof(filename),
+				 "/tmp/overlong-%zd-%zd", a, b);
+			comp_size = attempt_round_trip(mem_ctx,
+						       original,
+						       filename, ref);
+			if (comp_size > 0) {
+				score++;
+			}
+		}
+	}
+	debug_message("%d/%zu correct\n", score, i * j);
+	assert_int_equal(score, i * j);
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_overlong_matches_abc(void **state)
+{
+	size_t i, j, k;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 1024 * 1024);
+	DATA_BLOB ref = {0};
+	uint8_t *d = original.data;
+	char filename[300];
+	/*
+	 * We are testing with something like "aaaabbbbcc" where typically
+	 * the number of "a"s + "b"s is around 65536, and the number of "c"s
+	 * is < 43.
+	 */
+	ssize_t nab[] = {1, 21, 32767, 32768, 32769, -1};
+	ssize_t nc[] = {1, 2, 20, 39, 40, 41, 42, -1};
+	int score = 0;
+	ssize_t comp_size;
+
+	for (i = 0; nab[i] >= 0; i++) {
+		ssize_t a = nab[i];
+		memset(d, 'a', a);
+		for (j = 0; nab[j] >= 0; j++) {
+			ssize_t b = nab[j];
+			memset(d + a, 'b', b);
+			for (k = 0; nc[k] >= 0; k++) {
+				ssize_t c = nc[k];
+				memset(d + a + b, 'c', c);
+				original.length = a + b + c;
+				snprintf(filename, sizeof(filename),
+					 "/tmp/overlong-abc-%zd-%zd-%zd",
+					 a, b, c);
+				comp_size = attempt_round_trip(mem_ctx,
+							       original,
+							       filename, ref);
+				if (comp_size > 0) {
+					score++;
+				}
+			}
+		}
+	}
+	debug_message("%d/%zu correct\n", score, i * j * k);
+	assert_int_equal(score, i * j * k);
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_extremely_compressible_middle(void **state)
+{
+	size_t len = 192 * 1024;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, len);
+	DATA_BLOB ref = {0};
+	ssize_t comp_size;
+	/*
+	 * When a middle block (i.e. not the first and not the last of >= 3),
+	 * can be entirely expressed as a match starting in the previous
+	 * block, the Huffman tree would end up with 1 element, which does not
+	 * work for the code construction. It really wants to use both bits.
+	 * So we need to ensure we have some way of dealing with this.
+	 */
+	memset(original.data, 'a', 0x10000 - 1);
+	memset(original.data + 0x10000 - 1, 'b', 0x10000 + 1);
+	memset(original.data + 0x20000, 'a', 0x10000);
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/compressible-middle", ref);
+	assert_true(comp_size > 0);
+	assert_true(comp_size < 1024);
+	debug_message("original size %zu; compressed size %zd; ratio %.3f\n",
+		      len, comp_size, ((double)comp_size) / len);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_max_length_limit(void **state)
+{
+	size_t len = 65 * 1024 * 1024;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc_zero(mem_ctx, len);
+	DATA_BLOB ref = {0};
+	ssize_t comp_size;
+	/*
+	 * Reputedly Windows has a 64MB limit in the maximum match length it
+	 * will encode. We follow this, and test that here with nearly 65 MB
+	 * of zeros between two letters; this should be encoded in three
+	 * blocks:
+	 *
+	 * 1. 'a', 64M × '\0'
+	 * 2. (1M - 2) × '\0' -- finishing off what would have been the same match
+	 * 3. 'b' EOF
+	 *
+	 * Which we can assert by saying the length is > 768, < 1024.
+	 */
+	original.data[0] = 'a';
+	original.data[len - 1] = 'b';
+	comp_size = attempt_round_trip(mem_ctx, original, "/tmp/max-length-limit", ref);
+	assert_true(comp_size > 0x300);
+	assert_true(comp_size < 0x400);
+	debug_message("original size %zu; compressed size %zd; ratio %.3f\n",
+		      len, comp_size, ((double)comp_size) / len);
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_short_boring_strings(void **state)
+{
+	size_t len = 64 * 1024;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, len);
+	DATA_BLOB ref = {0};
+	ssize_t comp_size;
+	ssize_t lengths[] = {
+		1, 2, 20, 39, 40, 41, 42, 256, 270, 273, 274, 1000, 64000, -1};
+	char filename[300];
+	size_t i;
+	/*
+	 * How do short repetitive strings work? We're poking at the limit
+	 * around which LZ77 comprssion is turned on.
+	 *
+	 * For this test we don't change the blob memory between runs, just
+	 * the declared length.
+	 */
+	memset(original.data, 'a', len);
+	for (i = 0; lengths[i] >= 0; i++) {
+		original.length = lengths[i];
+		snprintf(filename, sizeof(filename),
+			 "/tmp/short-boring-%zu",
+			 original.length);
+		comp_size = attempt_round_trip(mem_ctx, original, filename, ref);
+		if (original.length < 41) {
+			assert_true(comp_size > 256 + original.length / 8);
+		} else if (original.length < 274) {
+			assert_true(comp_size == 261);
+		} else {
+			assert_true(comp_size == 263);
+		}
+		assert_true(comp_size < 261 + original.length / 8);
+	}
+	/* let's just show we didn't change the original */
+	for (i = 0; i < len; i++) {
+		if (original.data[i] != 'a') {
+			fail_msg("input data[%zu] was changed! (%2x, expected %2x)\n",
+				 i, original.data[i], 'a');
+		}
+	}
+
+	talloc_free(mem_ctx);
+}
+
+
+static void test_lzxpress_huffman_compress_empty_or_null(void **state)
+{
+	/*
+	 * We expect these to fail with a -1, except the last one, which does
+	 * the real thing.
+	 */
+	ssize_t ret;
+	const uint8_t *input = bidirectional_pairs[0].decompressed.data;
+	size_t ilen = bidirectional_pairs[0].decompressed.length;
+	size_t olen = bidirectional_pairs[0].compressed.length;
+	uint8_t output[olen];
+	struct lzxhuff_compressor_mem cmp_mem;
+
+	ret = lzxpress_huffman_compress(&cmp_mem, input, 0, output, olen);
+	assert_int_equal(ret, -1LL);
+	ret = lzxpress_huffman_compress(&cmp_mem, input, ilen, output, 0);
+	assert_int_equal(ret, -1LL);
+
+	ret = lzxpress_huffman_compress(&cmp_mem, NULL, ilen, output, olen);
+	assert_int_equal(ret, -1LL);
+	ret = lzxpress_huffman_compress(&cmp_mem, input, ilen, NULL, olen);
+	assert_int_equal(ret, -1LL);
+	ret = lzxpress_huffman_compress(NULL, input, ilen, output, olen);
+	assert_int_equal(ret, -1LL);
+
+	ret = lzxpress_huffman_compress(&cmp_mem, input, ilen, output, olen);
+	assert_int_equal(ret, olen);
+}
+
+
 static void test_lzxpress_huffman_decompress_empty_or_null(void **state)
 {
 	/*
@@ -501,10 +1192,24 @@ static void test_lzxpress_huffman_decompress_empty_or_null(void **state)
 
 int main(void) {
 	const struct CMUnitTest tests[] = {
+		cmocka_unit_test(test_lzxpress_huffman_short_boring_strings),
+		cmocka_unit_test(test_lzxpress_huffman_max_length_limit),
+		cmocka_unit_test(test_lzxpress_huffman_extremely_compressible_middle),
+		cmocka_unit_test(test_lzxpress_huffman_long_random_graph_round_trip),
+		cmocka_unit_test(test_lzxpress_huffman_chaos_graph_round_trip),
+		cmocka_unit_test(test_lzxpress_huffman_sparse_random_graph_round_trip),
+		cmocka_unit_test(test_lzxpress_huffman_round_trip),
 		cmocka_unit_test(test_lzxpress_huffman_decompress_files),
 		cmocka_unit_test(test_lzxpress_huffman_decompress_more_compressed_files),
+		cmocka_unit_test(test_lzxpress_huffman_compress),
 		cmocka_unit_test(test_lzxpress_huffman_decompress),
+		cmocka_unit_test(test_lzxpress_huffman_long_gpl_round_trip),
+		cmocka_unit_test(test_lzxpress_huffman_long_random_graph_round_trip),
+		cmocka_unit_test(test_lzxpress_huffman_random_noise_round_trip),
+		cmocka_unit_test(test_lzxpress_huffman_overlong_matches_abc),
+		cmocka_unit_test(test_lzxpress_huffman_overlong_matches),
 		cmocka_unit_test(test_lzxpress_huffman_decompress_empty_or_null),
+		cmocka_unit_test(test_lzxpress_huffman_compress_empty_or_null),
 	};
 	if (!isatty(1)) {
 		cmocka_set_message_output(CM_OUTPUT_SUBUNIT);

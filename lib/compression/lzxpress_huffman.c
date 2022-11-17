@@ -34,6 +34,13 @@
 
 #define LZXPRESS_ERROR -1LL
 
+/*
+ * We won't encode a match length longer than MAX_MATCH_LENGTH.
+ *
+ * Reports are that Windows has a limit at 64M.
+ */
+#define MAX_MATCH_LENGTH (64 * 1024 * 1024)
+
 
 struct bitstream {
 	const uint8_t *bytes;
@@ -43,6 +50,1106 @@ struct bitstream {
 	int remaining_bits;
 	uint16_t *table;
 };
+
+
+#if ! defined __has_builtin
+#define __has_builtin(x) 0
+#endif
+
+/*
+ * bitlen_nonzero_16() returns the bit number of the most significant bit, or
+ * put another way, the integer log base 2. Log(0) is undefined; the argument
+ * has to be non-zero!
+ * 1     -> 0
+ * 2,3   -> 1
+ * 4-7   -> 2
+ * 1024  -> 10, etc
+ *
+ * Probably this is handled by a compiler intrinsic function that maps to a
+ * dedicated machine instruction.
+ */
+
+static inline int bitlen_nonzero_16(uint16_t x)
+{
+#if  __has_builtin(__builtin_clz)
+
+	/* __builtin_clz returns the number of leading zeros */
+	return (sizeof(unsigned int) * CHAR_BIT) - 1
+		- __builtin_clz((unsigned int) x);
+
+#else
+
+	int count = -1;
+	while(x) {
+		x >>= 1;
+		count++;
+	}
+	return count;
+
+#endif
+}
+
+
+struct lzxhuff_compressor_context {
+	const uint8_t *input_bytes;
+	size_t input_size;
+	size_t input_pos;
+	size_t prev_block_pos;
+	uint8_t *output;
+	size_t available_size;
+	size_t output_pos;
+};
+
+static int compare_huffman_node_count(struct huffman_node *a,
+				      struct huffman_node *b)
+{
+	return a->count - b->count;
+}
+
+static int compare_huffman_node_depth(struct huffman_node *a,
+				      struct huffman_node *b)
+{
+	int c = a->depth - b->depth;
+	if (c != 0) {
+		return c;
+	}
+	return (int)a->symbol - (int)b->symbol;
+}
+
+
+#define HASH_MASK ((1 << LZX_HUFF_COMP_HASH_BITS) - 1)
+
+static inline uint16_t three_byte_hash(const uint8_t *bytes)
+{
+	/*
+	 * MS-XCA says "three byte hash", but does not specify it.
+	 *
+	 * This one is just cobbled together, but has quite good distribution
+	 * in the 12-14 bit forms, which is what we care about most.
+	 * e.g: 13 bit: median 2048, min 2022, max 2074, stddev 6.0
+	 */
+	uint16_t a = bytes[0];
+	uint16_t b = bytes[1] ^ 0x2e;
+	uint16_t c = bytes[2] ^ 0x55;
+	uint16_t ca = c - a;
+	uint16_t d = ((a + b) << 8) ^ (ca << 5) ^ (c + b) ^ (0xcab + a);
+	return d & HASH_MASK;
+}
+
+
+static inline uint16_t encode_match(size_t len, size_t offset)
+{
+	uint16_t code = 256;
+	code |= MIN(len - 3, 15);
+	code |= bitlen_nonzero_16(offset) << 4;
+	return code;
+}
+
+
+static bool depth_walk(struct huffman_node *n, uint32_t depth)
+{
+	bool ok;
+	if (n->left == NULL) {
+		/* this is a leaf, record the depth */
+		n->depth = depth;
+		return true;
+	}
+	if (depth > 14) {
+		return false;
+	}
+	ok = (depth_walk(n->left, depth + 1) &&
+	      depth_walk(n->right, depth + 1));
+
+	return ok;
+}
+
+
+static bool check_and_record_depths(struct huffman_node *root)
+{
+	return depth_walk(root, 0);
+}
+
+
+static bool encode_values(struct huffman_node *leaves,
+			  size_t n_leaves,
+			  uint16_t symbol_values[512])
+{
+	size_t i;
+	/*
+	 * See, we have a leading 1 in our internal code representation, which
+	 * indicates the code length.
+	 */
+	uint32_t code = 1;
+	uint32_t code_len = 0;
+	memset(symbol_values, 0, sizeof(uint16_t) * 512);
+	for (i = 0; i < n_leaves; i++) {
+		code <<= leaves[i].depth - code_len;
+		code_len = leaves[i].depth;
+
+		symbol_values[leaves[i].symbol] = code;
+		code++;
+	}
+	/*
+	 * The last code should be 11111... with code_len + 1 ones. The final
+	 * code++ will wrap this round to 1000... with code_len + 1 zeroes.
+	 */
+
+	if (code != 2 << code_len) {
+		return false;
+	}
+	return true;
+}
+
+
+static int generate_huffman_codes(struct huffman_node *leaf_nodes,
+				  struct huffman_node *internal_nodes,
+				  uint16_t symbol_values[512])
+{
+	size_t head_leaf = 0;
+	size_t head_branch = 0;
+	size_t tail_branch = 0;
+	struct huffman_node *huffman_root = NULL;
+	size_t i, j;
+	size_t n_leaves = 0;
+
+	/*
+	 * Before we sort the nodes, we can eliminate the unused ones.
+	 */
+	for (i = 0; i < 512; i++) {
+		if (leaf_nodes[i].count) {
+			leaf_nodes[n_leaves] = leaf_nodes[i];
+			n_leaves++;
+		}
+	}
+	if (n_leaves == 0) {
+		return LZXPRESS_ERROR;
+	}
+	if (n_leaves == 1) {
+		/*
+		 * There is *almost* no way this should happen, and it would
+		 * ruin the tree (because the shortest possible codes are 1
+		 * bit long, and there are two of them).
+		 *
+		 * The only way to get here is in an internal block in a
+		 * 3-or-more block message (i.e. > 128k), which consists
+		 * entirely of a match starting in the previous block (if it
+		 * was the end block, it would have the EOF symbol).
+		 *
+		 * What we do is add a dummy symbol which is this one XOR 256.
+		 * It won't be used in the stream but will balance the tree.
+		 */
+		leaf_nodes[1] = leaf_nodes[0];
+		leaf_nodes[1].symbol ^= 0x100;
+		n_leaves = 2;
+	}
+
+	/* note, in sort we're using internal_nodes as auxillary space */
+	stable_sort(leaf_nodes,
+		    internal_nodes,
+		    n_leaves,
+		    sizeof(struct huffman_node),
+		    (samba_compare_fn_t)compare_huffman_node_count);
+
+	/*
+	 * This outer loop is for re-quantizing the counts if the tree is too
+	 * tall (>15), which we need to do because the final encoding can't
+	 * express a tree that deep.
+	 *
+	 * In theory, this should be a 'while (true)' loop, but we chicken
+	 * out with 10 iterations, just in case.
+	 *
+	 * In practice it will almost always resolve in the first round; if
+	 * not then, in the second or third. Remember we'll looking at 64k or
+	 * less, so the rarest we can have is 1 in 64k; each round of
+	 * quantization effecively doubles its frequency to 1 in 32k, 1 in
+	 * 16k, etc, until we're treating the rare symbol as actually quite
+	 * common.
+	 */
+	for (j = 0; j < 10; j++) {
+		bool less_than_15_bits;
+		while (true) {
+			struct huffman_node *a = NULL;
+			struct huffman_node *b = NULL;
+			size_t leaf_len = n_leaves - head_leaf;
+			size_t internal_len = tail_branch - head_branch;
+
+			if (leaf_len + internal_len == 1) {
+				/*
+				 * We have the complete tree. The root will be
+				 * an internal node unless there is just one
+				 * symbol, which is already impossible.
+				 */
+				if (unlikely(leaf_len == 1)) {
+					return LZXPRESS_ERROR;
+				} else {
+					huffman_root = \
+						&internal_nodes[head_branch];
+				}
+				break;
+			}
+			/*
+			 * We know here we have at least two nodes, and we
+			 * want to select the two lowest scoring ones. Those
+			 * have to be either a) the head of each queue, or b)
+			 * the first two nodes of either queue.
+			 *
+			 * The complicating factors are: a) we need to check
+			 * the length of each queue, and b) in the case of
+			 * ties, we prefer to pair leaves with leaves.
+			 *
+			 * Note a complication we don't have: the leaf node
+			 * queue never grows, and the subtree queue starts
+			 * empty and cannot grow beyond n - 1. It feeds on
+			 * itself. We don't need to think about overflow.
+			 */
+			if (leaf_len == 0) {
+				/* two from subtrees */
+				a = &internal_nodes[head_branch];
+				b = &internal_nodes[head_branch + 1];
+				head_branch += 2;
+			} else if (internal_len == 0) {
+				/* two from nodes */
+				a = &leaf_nodes[head_leaf];
+				b = &leaf_nodes[head_leaf + 1];
+				head_leaf += 2;
+			} else if (leaf_len == 1 && internal_len == 1) {
+				/* one of each */
+				a = &leaf_nodes[head_leaf];
+				b = &internal_nodes[head_branch];
+				head_branch++;
+				head_leaf++;
+			} else {
+				/*
+				 * Take the lowest head, twice, checking for
+				 * length after taking the first one.
+				 */
+				if (leaf_nodes[head_leaf].count >
+				    internal_nodes[head_branch].count) {
+					a = &internal_nodes[head_branch];
+					head_branch++;
+					if (internal_len == 1) {
+						b = &leaf_nodes[head_leaf];
+						head_leaf++;
+						goto done;
+					}
+				} else {
+					a = &leaf_nodes[head_leaf];
+					head_leaf++;
+					if (leaf_len == 1) {
+						b = &internal_nodes[head_branch];
+						head_branch++;
+						goto done;
+					}
+				}
+				/* the other node */
+				if (leaf_nodes[head_leaf].count >
+				    internal_nodes[head_branch].count) {
+					b = &internal_nodes[head_branch];
+					head_branch++;
+				} else {
+					b = &leaf_nodes[head_leaf];
+					head_leaf++;
+				}
+			}
+		done:
+			/*
+			 * Now we add a new node to the subtrees list that
+			 * combines the score of node_a and node_b, and points
+			 * to them as children.
+			 */
+			internal_nodes[tail_branch].count = a->count + b->count;
+			internal_nodes[tail_branch].left = a;
+			internal_nodes[tail_branch].right = b;
+			tail_branch++;
+			if (tail_branch == n_leaves) {
+				/*
+				 * We're not getting here, no way, never ever.
+				 * Unless we made a terible mistake.
+				 *
+				 * That is, in a binary tree with n leaves,
+				 * there are ALWAYS n-1 internal nodes.
+				 */
+				return LZXPRESS_ERROR;
+			}
+		}
+		/*
+		 * We have a tree, and need to turn it into a lookup table,
+		 * and see if it is shallow enough (<= 15).
+		 */
+		less_than_15_bits = check_and_record_depths(huffman_root);
+		if (less_than_15_bits) {
+			/*
+			 * Now the leaf nodes know how deep they are, and we
+			 * no longer need the internal nodes.
+			 *
+			 * We need to sort the nodes of equal depth, so that
+			 * they are sorted by depth first, and symbol value
+			 * second. The internal_nodes can again be auxillary
+			 * memory.
+			 */
+			stable_sort(
+				leaf_nodes,
+				internal_nodes,
+				n_leaves,
+				sizeof(struct huffman_node),
+				(samba_compare_fn_t)compare_huffman_node_depth);
+
+			encode_values(leaf_nodes, n_leaves, symbol_values);
+
+			return n_leaves;
+		}
+
+		/*
+		 * requantize by halfing and rounding up, so that small counts
+		 * become relatively bigger. This will lead to a flatter tree.
+		 */
+		for (i = 0; i < n_leaves; i++) {
+			leaf_nodes[i].count >>= 1;
+			leaf_nodes[i].count += 1;
+		}
+		head_leaf = 0;
+		head_branch = 0;
+		tail_branch = 0;
+	}
+	return LZXPRESS_ERROR;
+}
+
+/*
+ * LZX_HUFF_COMP_HASH_SEARCH_ATTEMPTS is how far ahead to search in the
+ * circular hash table for a match, before we give up. A bigger number will
+ * generally lead to better but slower compression, but a stupidly big number
+ * will just be worse.
+ *
+ * If you're fiddling with this, consider also fiddling with
+ * LZX_HUFF_COMP_HASH_BITS.
+ */
+#define LZX_HUFF_COMP_HASH_SEARCH_ATTEMPTS 5
+
+static inline void store_match(uint16_t *hash_table,
+			       uint16_t h,
+			       uint16_t offset)
+{
+	int i;
+	uint16_t o = hash_table[h];
+	uint16_t h2;
+	uint16_t worst_h;
+	int worst_score;
+
+	if (o == 0xffff) {
+		/* there is nothing there yet */
+		hash_table[h] = offset;
+		return;
+	}
+	for (i = 1; i < LZX_HUFF_COMP_HASH_SEARCH_ATTEMPTS; i++) {
+		h2 = (h + i) & HASH_MASK;
+		if (hash_table[h2] == 0xffff) {
+			hash_table[h2] = offset;
+			return;
+		}
+	}
+	/*
+	 * There are no slots, but we really want to store this, so we'll kick
+	 * out the one with the longest distance.
+	 */
+	worst_h = h;
+	worst_score = offset - o;
+	for (i = 1; i < LZX_HUFF_COMP_HASH_SEARCH_ATTEMPTS; i++) {
+		int score;
+		h2 = (h + i) & HASH_MASK;
+		o = hash_table[h2];
+		score = offset - o;
+		if (score > worst_score) {
+			worst_score = score;
+			worst_h = h2;
+		}
+	}
+	hash_table[worst_h] = offset;
+}
+
+
+/*
+ * Yes, struct match looks a lot like a DATA_BLOB.
+ */
+struct match {
+	const uint8_t *there;
+	size_t length;
+};
+
+
+static inline struct match lookup_match(uint16_t *hash_table,
+					uint16_t h,
+					const uint8_t *data,
+					const uint8_t *here,
+					size_t max_len)
+{
+	int i;
+	uint16_t o = hash_table[h];
+	uint16_t h2;
+	size_t len;
+	const uint8_t *there = NULL;
+	struct match best = {0};
+
+	for (i = 0; i < LZX_HUFF_COMP_HASH_SEARCH_ATTEMPTS; i++) {
+		h2 = (h + i) & HASH_MASK;
+		o = hash_table[h2];
+		if (o == 0xffff) {
+			/*
+			 * in setting this, we would never have stepped over
+			 * an 0xffff, so we won't now.
+			 */
+			break;
+		}
+		there = data + o;
+		if (here - there > 65534 || there > here) {
+			continue;
+		}
+
+		/*
+		 * When we already have a long match, we can try to avoid
+		 * measuring out another long, but shorter match.
+		 */
+		if (best.length > 1000 &&
+		    there[best.length - 1] != best.there[best.length - 1]) {
+			continue;
+		}
+
+		for (len = 0;
+		     len < max_len && here[len] == there[len];
+		     len++) {
+			/* counting */
+		}
+		if (len > 2) {
+			/*
+			 * As a tiebreaker, we prefer the closer match which
+			 * is likely to encode smaller (and certainly no worse).
+			 */
+			if (len > best.length ||
+			    (len == best.length && there > best.there)) {
+				best.length = len;
+				best.there = there;
+			}
+		}
+	}
+	return best;
+}
+
+
+
+static ssize_t lz77_encode_block(struct lzxhuff_compressor_context *cmp_ctx,
+				 struct lzxhuff_compressor_mem *cmp_mem,
+				 uint16_t *hash_table,
+				 uint16_t *prev_hash_table)
+{
+	uint16_t *intermediate = cmp_mem->intermediate;
+	struct huffman_node *leaf_nodes = cmp_mem->leaf_nodes;
+	uint16_t *symbol_values = cmp_mem->symbol_values;
+	size_t i, j, intermediate_len;
+	const uint8_t *data = cmp_ctx->input_bytes + cmp_ctx->input_pos;
+	const uint8_t *prev_block = NULL;
+	size_t remaining_size = cmp_ctx->input_size - cmp_ctx->input_pos;
+	size_t block_end = MIN(65536, remaining_size);
+	struct match match;
+	int n_symbols;
+
+	if (cmp_ctx->input_size < cmp_ctx->input_pos) {
+		return LZXPRESS_ERROR;
+	}
+
+	if (cmp_ctx->prev_block_pos != cmp_ctx->input_pos) {
+		prev_block = cmp_ctx->input_bytes + cmp_ctx->prev_block_pos;
+	} else if (prev_hash_table != NULL) {
+		/* we've got confused! hash and block should go together */
+		return LZXPRESS_ERROR;
+	}
+
+	/*
+	 * leaf_nodes is used to count the symbols seen, for later Huffman
+	 * encoding.
+	 */
+	for (i = 0; i < 512; i++) {
+		leaf_nodes[i] = (struct huffman_node) {
+			.symbol = i
+		};
+	}
+
+	j = 0;
+
+	if (remaining_size < 41) {
+		/*
+		 * There is no point doing a hash table and looking for
+		 * matches in this tiny block (remembering we are committed to
+		 * using 32 bits, so there's a good chance we wouldn't even
+		 * save a byte). The threshold of 41 matches Windows.
+		 * If remaining_size < 3, we *can't* do the hash.
+		 */
+		i = 0;
+	} else {
+		/*
+		 * We use 0xffff as the unset value for table, because it is
+		 * not a valid match offset (and 0x0 is).
+		 */
+		memset(hash_table, 0xff, sizeof(cmp_mem->hash_table1));
+
+		for (i = 0; i <= block_end - 3; i++) {
+			uint16_t code;
+			const uint8_t *here = data + i;
+			uint16_t h = three_byte_hash(here);
+			size_t max_len = MIN(remaining_size - i, MAX_MATCH_LENGTH);
+			match = lookup_match(hash_table,
+					     h,
+					     data,
+					     here,
+					     max_len);
+
+			if (match.there == NULL && prev_hash_table != NULL) {
+				/*
+				 * If this is not the first block,
+				 * backreferences can look into the previous
+				 * block (but only as far as 65535 bytes, so
+				 * the end of this block cannot see the start
+				 * of the last one).
+				 */
+				match = lookup_match(prev_hash_table,
+						     h,
+						     prev_block,
+						     here,
+						     remaining_size - i);
+			}
+
+			store_match(hash_table, h, i);
+
+			if (match.there == NULL) {
+				/* add a literal and move on. */
+				uint8_t c = data[i];
+				leaf_nodes[c].count++;
+				intermediate[j] = c;
+				j++;
+				continue;
+			}
+
+			/* a real match */
+			if (match.length <= 65538) {
+				intermediate[j] = 0xffff;
+				intermediate[j + 1] = match.length - 3;
+				intermediate[j + 2] = here - match.there;
+				j += 3;
+			} else {
+				size_t m = match.length - 3;
+				intermediate[j] = 0xfffe;
+				intermediate[j + 1] = m & 0xffff;
+				intermediate[j + 2] = m >> 16;
+				intermediate[j + 3] = here - match.there;
+				j += 4;
+			}
+			code = encode_match(match.length, here - match.there);
+			leaf_nodes[code].count++;
+			i += match.length - 1; /* `- 1` for the loop i++ */
+			/*
+			 * A match can take us past the intended block length,
+			 * extending the block. We don't need to do anything
+			 * special for this case -- the loops will naturally
+			 * do the right thing.
+			 */
+		}
+	}
+
+	/*
+	 * There might be some bytes at the end.
+	 */
+	for (; i < block_end; i++) {
+		leaf_nodes[data[i]].count++;
+		intermediate[j] = data[i];
+		j++;
+	}
+
+	if (i == remaining_size) {
+		/* add a trailing EOF marker (256) */
+		intermediate[j] = 0xffff;
+		intermediate[j + 1] = 0;
+		intermediate[j + 2] = 1;
+		j += 3;
+		leaf_nodes[256].count++;
+	}
+
+	intermediate_len = j;
+
+	cmp_ctx->prev_block_pos = cmp_ctx->input_pos;
+	cmp_ctx->input_pos += i;
+
+	/* fill in the symbols table */
+	n_symbols = generate_huffman_codes(leaf_nodes,
+					   cmp_mem->internal_nodes,
+					   symbol_values);
+	if (n_symbols < 0) {
+		return n_symbols;
+	}
+
+	return intermediate_len;
+}
+
+
+
+static ssize_t write_huffman_table(uint16_t symbol_values[512],
+				   uint8_t *output,
+				   size_t available_size)
+{
+	size_t i;
+
+	if (available_size < 256) {
+		return LZXPRESS_ERROR;
+	}
+
+	for (i = 0; i < 256; i++) {
+		uint8_t b = 0;
+		uint16_t even = symbol_values[i * 2];
+		uint16_t odd = symbol_values[i * 2 + 1];
+		if (even != 0) {
+			b = bitlen_nonzero_16(even);
+		}
+		if (odd != 0) {
+			b |= bitlen_nonzero_16(odd) << 4;
+		}
+		output[i] = b;
+	}
+	return i;
+}
+
+
+struct write_context {
+	uint8_t *dest;
+	size_t dest_len;
+	size_t head;                 /* where lengths go */
+	size_t next_code;            /* where symbol stream goes */
+	size_t pending_next_code;    /* will be next_code */
+	int bit_len;
+	uint32_t bits;
+};
+
+/*
+ * Write out 16 bits, little-endian, for write_huffman_codes()
+ *
+ * As you'll notice, there's a bit to do.
+ *
+ * We are collecting up bits in a uint32_t, then when there are 16 of them we
+ * write out a word into the stream, using a trio of offsets (wc->next_code,
+ * wc->pending_next_code, and wc->head) which dance around ensuring that the
+ * bitstream and the interspersed lengths are in the right places relative to
+ * each other.
+ */
+
+static inline bool write_bits(struct write_context *wc,
+			      uint16_t code, uint16_t length)
+{
+	wc->bits <<= length;
+	wc->bits |= code;
+	wc->bit_len += length;
+	if (wc->bit_len > 16) {
+		uint32_t w = wc->bits >> (wc->bit_len - 16);
+		wc->bit_len -= 16;
+		if (wc->next_code + 2 > wc->dest_len) {
+			return false;
+		}
+		wc->dest[wc->next_code] = w & 0xff;
+		wc->dest[wc->next_code + 1] = (w >> 8) & 0xff;
+		wc->next_code = wc->pending_next_code;
+		wc->pending_next_code = wc->head;
+		wc->head += 2;
+	}
+	return true;
+}
+
+
+static inline bool write_code(struct write_context *wc, uint16_t code)
+{
+	int code_bit_len = bitlen_nonzero_16(code);
+	code &= (1 << code_bit_len) - 1;
+	return  write_bits(wc, code, code_bit_len);
+}
+
+static inline bool write_byte(struct write_context *wc, uint8_t byte)
+{
+	if (wc->head + 1 > wc->dest_len) {
+		return false;
+	}
+	wc->dest[wc->head] = byte;
+	wc->head++;
+	return true;
+}
+
+
+static inline bool write_long_len(struct write_context *wc, size_t len)
+{
+	if (len < 65535) {
+		if (wc->head + 3 > wc->dest_len) {
+			return false;
+		}
+		wc->dest[wc->head] = 255;
+		wc->dest[wc->head + 1] = len & 255;
+		wc->dest[wc->head + 2] = len >> 8;
+		wc->head += 3;
+	} else {
+		if (wc->head + 7 > wc->dest_len) {
+			return false;
+		}
+		wc->dest[wc->head] = 255;
+		wc->dest[wc->head + 1] = 0;
+		wc->dest[wc->head + 2] = 0;
+		wc->dest[wc->head + 3] = len & 255;
+		wc->dest[wc->head + 4] = (len >> 8) & 255;
+		wc->dest[wc->head + 5] = (len >> 16) & 255;
+		wc->dest[wc->head + 6] = (len >> 24) & 255;
+		wc->head += 7;
+	}
+	return true;
+}
+
+static ssize_t write_compressed_bytes(uint16_t symbol_values[512],
+				      uint16_t *intermediate,
+				      size_t intermediate_len,
+				      uint8_t *dest,
+				      size_t dest_len)
+{
+	bool ok;
+	size_t i;
+	size_t end;
+	struct write_context wc = {
+		.head = 4,
+		.pending_next_code = 2,
+		.dest = dest,
+		.dest_len = dest_len
+	};
+	for (i = 0; i < intermediate_len; i++) {
+		uint16_t c = intermediate[i];
+		size_t len;
+		uint16_t distance;
+		uint16_t code_len = 0;
+		uint16_t code_dist = 0;
+		if (c < 256) {
+			ok = write_code(&wc, symbol_values[c]);
+			if (!ok) {
+				return LZXPRESS_ERROR;
+			}
+			continue;
+		}
+
+		if (c == 0xfffe) {
+			if (i > intermediate_len - 4) {
+				return LZXPRESS_ERROR;
+			}
+
+			len = intermediate[i + 1];
+			len |= intermediate[i + 2] << 16;
+			distance = intermediate[i + 3];
+			i += 3;
+		} else if (c == 0xffff) {
+			if (i > intermediate_len - 3) {
+				return LZXPRESS_ERROR;
+			}
+			len = intermediate[i + 1];
+			distance = intermediate[i + 2];
+			i += 2;
+		} else {
+			return LZXPRESS_ERROR;
+		}
+		/* len has already had 3 subtracted */
+		if (len >= 15) {
+			/*
+			 * We are going to need to write extra length
+			 * bytes into the stream, but we don't do it
+			 * now, we do it after the code has been
+			 * written (and before the distance bits).
+			 */
+			code_len = 15;
+		} else {
+			code_len = len;
+		}
+		code_dist = bitlen_nonzero_16(distance);
+		c = 256 | (code_dist << 4) | code_len;
+		if (c > 511) {
+			return LZXPRESS_ERROR;
+		}
+
+		ok = write_code(&wc, symbol_values[c]);
+		if (!ok) {
+			return LZXPRESS_ERROR;
+		}
+
+		if (code_len == 15) {
+			if (len >= 270) {
+				ok = write_long_len(&wc, len);
+			} else {
+				ok = write_byte(&wc, len - 15);
+			}
+			if (! ok) {
+				return LZXPRESS_ERROR;
+			}
+		}
+		if (code_dist != 0) {
+			uint16_t dist_bits = distance - (1 << code_dist);
+			ok = write_bits(&wc, dist_bits, code_dist);
+			if (!ok) {
+				return LZXPRESS_ERROR;
+			}
+		}
+	}
+	/*
+	 * There are some intricacies around flushing the bits and returning
+	 * the length.
+	 *
+	 * If the returned length is not exactly right and there is another
+	 * block, that block will read its huffman table from the wrong place,
+	 * and have all the symbol codes out by a multiple of 4.
+	 */
+	end = wc.head;
+	if (wc.bit_len == 0) {
+		end -= 2;
+	}
+	ok = write_bits(&wc, 0, 16 - wc.bit_len);
+	if (!ok) {
+		return LZXPRESS_ERROR;
+	}
+	for (i = 0; i < 2; i++) {
+		/*
+		 * Flush out the bits with zeroes. It doesn't matter if we do
+		 * a round too many, as we have buffer space, and have already
+		 * determined the returned length (end).
+		 */
+		ok = write_bits(&wc, 0, 16);
+		if (!ok) {
+			return LZXPRESS_ERROR;
+		}
+	}
+	return end;
+}
+
+
+static ssize_t lzx_huffman_compress_block(struct lzxhuff_compressor_context *cmp_ctx,
+					  struct lzxhuff_compressor_mem *cmp_mem,
+					  size_t block_no)
+{
+	ssize_t intermediate_size;
+	uint16_t *hash_table = NULL;
+	uint16_t *back_window_hash_table = NULL;
+	ssize_t bytes_written;
+
+	if (cmp_ctx->available_size - cmp_ctx->output_pos < 260) {
+		/* huffman block + 4 bytes */
+		return LZXPRESS_ERROR;
+	}
+
+	/*
+	 * For LZ77 compression, we keep a hash table for the previous block,
+	 * via alternation after the first block.
+	 *
+	 * LZ77 writes into the intermediate buffer in the cmp_mem context.
+	 */
+	if (block_no == 0) {
+		hash_table = cmp_mem->hash_table1;
+		back_window_hash_table = NULL;
+	} else if (block_no & 1) {
+		hash_table = cmp_mem->hash_table2;
+		back_window_hash_table = cmp_mem->hash_table1;
+	} else {
+		hash_table = cmp_mem->hash_table1;
+		back_window_hash_table = cmp_mem->hash_table2;
+	}
+
+	intermediate_size = lz77_encode_block(cmp_ctx,
+					      cmp_mem,
+					      hash_table,
+					      back_window_hash_table);
+
+	if (intermediate_size < 0) {
+		return intermediate_size;
+	}
+
+	/*
+	 * Write the 256 byte Huffman table, based on the counts gained in
+	 * LZ77 phase.
+	 */
+	bytes_written = write_huffman_table(
+		cmp_mem->symbol_values,
+		cmp_ctx->output + cmp_ctx->output_pos,
+		cmp_ctx->available_size - cmp_ctx->output_pos);
+
+	if (bytes_written != 256) {
+		return LZXPRESS_ERROR;
+	}
+	cmp_ctx->output_pos += 256;
+
+	/*
+	 * Write the compressed bytes using the LZ77 matches and Huffman codes
+	 * worked out in the previous steps.
+	 */
+	bytes_written = write_compressed_bytes(
+		cmp_mem->symbol_values,
+		cmp_mem->intermediate,
+		intermediate_size,
+		cmp_ctx->output + cmp_ctx->output_pos,
+		cmp_ctx->available_size - cmp_ctx->output_pos);
+
+	if (bytes_written < 0) {
+		return bytes_written;
+	}
+
+	cmp_ctx->output_pos += bytes_written;
+	return bytes_written;
+}
+
+
+/*
+ * lzxpress_huffman_compress_talloc()
+ *
+ * This is the convenience function that allocates the compressor context and
+ * output memory for you. The return value is the number of bytes written to
+ * the location indicated by the output pointer.
+ *
+ * The maximum input_size is effectively around 227MB due to the need to guess
+ * an upper bound on the output size that hits an internal limitation in
+ * talloc.
+ *
+ * @param mem_ctx      TALLOC_CTX parent for the compressed buffer.
+ * @param input_bytes  memory to be compressed.
+ * @param input_size   length of the input buffer.
+ * @param output       destination pointer for the compressed data.
+ *
+ * @return the number of bytes written or -1 on error.
+ */
+
+ssize_t lzxpress_huffman_compress_talloc(TALLOC_CTX *mem_ctx,
+					 const uint8_t *input_bytes,
+					 size_t input_size,
+					 uint8_t **output)
+{
+	struct lzxhuff_compressor_mem *cmp = NULL;
+	/*
+	 * In the worst case, the output size should be about the same as the
+	 * input size, plus the 256 byte header per 64k block. We aim for
+	 * ample, but within the order of magnitude.
+	 */
+	size_t alloc_size = input_size + (input_size / 8) + 270;
+	ssize_t output_size;
+
+	*output = talloc_array(mem_ctx, uint8_t, alloc_size);
+	if (*output == NULL) {
+		return LZXPRESS_ERROR;
+	}
+
+	cmp = talloc(mem_ctx, struct lzxhuff_compressor_mem);
+	if (cmp == NULL) {
+		TALLOC_FREE(*output);
+		return LZXPRESS_ERROR;
+	}
+
+	output_size = lzxpress_huffman_compress(cmp,
+						input_bytes,
+						input_size,
+						*output,
+						alloc_size);
+
+	talloc_free(cmp);
+
+	if (output_size < 0) {
+		TALLOC_FREE(*output);
+		return LZXPRESS_ERROR;
+	}
+
+	*output = talloc_realloc(mem_ctx, *output, uint8_t, output_size);
+	if (*output == NULL) {
+		return LZXPRESS_ERROR;
+	}
+
+	return output_size;
+}
+
+/*
+ * lzxpress_huffman_compress()
+ *
+ * This is the inconvenience function, slightly faster and fiddlier than
+ * lzxpress_huffman_compress_talloc().
+ *
+ * To use this, you need to have allocated (but not initialised) a `struct
+ * lzxhuff_compressor_context`, and an output buffer. If the buffer is not big
+ * enough (per `output_size`), you'll get a negative return value, otherwise
+ * the number of bytes actually consumed, which will always be at least 260.
+ *
+ * The `struct lzxhuff_compressor_context` is reusable -- it is basically a
+ * collection of uninitialised memory buffers. The total size is less than
+ * 150k, so stack allocation is plausible.
+ *
+ * input_size and available_size are limited to the minimum of UINT32_MAX and
+ * SSIZE_MAX. On 64 bit machines that will be UINT32_MAX, or 4GB.
+ *
+ * @param cmp_mem         a struct lzxhuff_compressor_mem.
+ * @param input_bytes     memory to be compressed.
+ * @param input_size      length of the input buffer.
+ * @param output          destination for the compressed data.
+ * @param available_size  allocated output bytes.
+ *
+ * @return the number of bytes written or -1 on error.
+ */
+ssize_t lzxpress_huffman_compress(struct lzxhuff_compressor_mem *cmp_mem,
+				  const uint8_t *input_bytes,
+				  size_t input_size,
+				  uint8_t *output,
+				  size_t available_size)
+{
+	size_t i = 0;
+	struct lzxhuff_compressor_context cmp_ctx = {
+		.input_bytes = input_bytes,
+		.input_size = input_size,
+		.input_pos = 0,
+		.prev_block_pos = 0,
+		.output = output,
+		.available_size = available_size,
+		.output_pos = 0
+	};
+
+	if (input_size == 0) {
+		/*
+		 * We can't deal with this for a number of reasons (e.g. it
+		 * breaks the Huffman tree), and the output will be infinitely
+		 * bigger than the input. The caller needs to go and think
+		 * about what they're trying to do here.
+		 */
+		return LZXPRESS_ERROR;
+	}
+
+	if (input_size > SSIZE_MAX ||
+	    input_size > UINT32_MAX ||
+	    available_size > SSIZE_MAX ||
+	    available_size > UINT32_MAX ||
+	    available_size == 0) {
+		/*
+		 * We use negative ssize_t to return errors, which is limiting
+		 * on 32 bit machines; otherwise we adhere to Microsoft's 4GB
+		 * limit.
+		 *
+		 * lzxpress_huffman_compress_talloc() will not get this far,
+		 * having already have failed on talloc's 256 MB limit.
+		 */
+		return LZXPRESS_ERROR;
+	}
+
+	if (cmp_mem == NULL ||
+	    output == NULL ||
+	    input_bytes == NULL) {
+		return LZXPRESS_ERROR;
+	}
+
+	while (cmp_ctx.input_pos < cmp_ctx.input_size) {
+		ssize_t ret;
+		ret = lzx_huffman_compress_block(&cmp_ctx,
+						 cmp_mem,
+						 i);
+		if (ret < 0) {
+			return ret;
+		}
+		i++;
+	}
+
+	return cmp_ctx.output_pos;
+}
 
 
 /**
