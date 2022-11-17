@@ -57,6 +57,11 @@ bld.SAMBA_BINARY('fuzz_lzxpress_round_trip',
                  deps='fuzzing LZXPRESS afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_lzxpress_huffman_decompress',
+                 source='fuzz_lzxpress_huffman_decompress.c',
+                 deps='fuzzing LZXPRESS afl-fuzz-main',
+                 fuzzer=True)
+
 bld.SAMBA_BINARY('fuzz_ldap_decode',
                  source='fuzz_ldap_decode.c',
                  deps='fuzzing cli-ldap afl-fuzz-main',
