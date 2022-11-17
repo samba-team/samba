@@ -3916,13 +3916,11 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
         etype = ET.SubElement(listelement, 'type')
         etype.text = objectclass.upper()
         entry = ET.SubElement(listelement, 'entry')
-        if objectclass == 'user':
-            entry.text = get_string(res[0]['userPrincipalName'][-1])
-        else:
+        entry.text = '%s\\%s' % (samdb.domain_netbios_name(),
+                                 get_string(res[0]['samaccountname'][-1]))
+        if objectclass == 'group':
             groupattr = ET.SubElement(data, 'groupattr')
             groupattr.text = 'samAccountName'
-            entry.text = '%s\\%s' % (domain,
-                                     get_string(res[0]['samaccountname'][-1]))
         adobject = ET.SubElement(listelement, 'adobject')
         name = ET.SubElement(adobject, 'name')
         name.text = get_string(res[0]['samaccountname'][-1])
