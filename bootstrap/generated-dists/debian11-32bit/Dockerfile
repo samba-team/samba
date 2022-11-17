@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM quay.io/fedora/fedora:37
+FROM registry-1.docker.io/i386/debian:11
 
 # pass in with --build-arg while build
 ARG SHA1SUM
@@ -26,4 +26,4 @@ RUN useradd -m -U -s /bin/bash samba && \
 USER samba
 WORKDIR /home/samba
 # samba tests rely on this
-ENV USER=samba LC_ALL=en_US.utf8 LANG=en_US.utf8
+ENV USER=samba LC_ALL=en_US.utf8 LANG=en_US.utf8 LANGUAGE=en_US

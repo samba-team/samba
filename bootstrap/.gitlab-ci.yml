@@ -88,14 +88,6 @@
       #
       - $SAMBA_CI_REBUILD_BROKEN_IMAGES == "yes"
 
-ubuntu1804:
-  extends: .build_image_template
-
-ubuntu1804-32bit:
-  extends: .build_image_template
-  variables:
-    SAMBA_CI_TEST_JOB: "samba-32bit"
-
 ubuntu2004:
   extends: .build_image_template
 
@@ -105,8 +97,16 @@ ubuntu2204:
 debian11:
   extends: .build_image_template
 
+debian12:
+  extends: .build_image_template
+
 fedora38:
   extends: .build_image_template
+
+debian11-32bit:
+  extends: .build_image_template
+  variables:
+    SAMBA_CI_TEST_JOB: "samba-32bit"
 
 centos8s:
   extends: .build_image_template
@@ -119,5 +119,5 @@ centos7:
     # We install a compat-gnutls34 package for GnuTLS >= 3.4.7
     PKG_CONFIG_PATH: /usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig
 
-opensuse154:
+opensuse155:
   extends: .build_image_template

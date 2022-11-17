@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM opensuse/leap:15.4
+FROM debian:12
 
 # pass in with --build-arg while build
 ARG SHA1SUM

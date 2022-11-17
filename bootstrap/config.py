@@ -415,13 +415,35 @@ Vagrant.configure("2") do |config|
 end
 """
 
-
 DEB_DISTS = {
     'debian11': {
         'docker_image': 'debian:11',
         'vagrant_box': 'debian/bullseye64',
         'replace': {
             'language-pack-en': '',   # included in locales
+        }
+    },
+    'debian11-32bit': {
+        'docker_image': 'registry-1.docker.io/i386/debian:11',
+        'vagrant_box': 'debian/bullseye32',
+        'replace': {
+            'language-pack-en': '',   # included in locales
+        }
+    },
+    'debian12': {
+        'docker_image': 'debian:12',
+        'vagrant_box': 'debian/bookworm64',
+        'replace': {
+            'language-pack-en': '',   # included in locales
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+        }
+    },
+    'debian12-32bit': {
+        'docker_image': 'registry-1.docker.io/i386/debian:12',
+        'vagrant_box': 'debian/bookworm32',
+        'replace': {
+            'language-pack-en': '',   # included in locales
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         }
     },
     'ubuntu1804': {
@@ -524,9 +546,9 @@ RPM_DISTS = {
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         }
     },
-    'opensuse154': {
-        'docker_image': 'opensuse/leap:15.4',
-        'vagrant_box': 'opensuse/openSUSE-15.4-x86_64',
+    'opensuse155': {
+        'docker_image': 'opensuse/leap:15.5',
+        'vagrant_box': 'opensuse/openSUSE-15.5-x86_64',
         'bootstrap': ZYPPER_BOOTSTRAP,
         'replace': {
             '@development-tools': '',
