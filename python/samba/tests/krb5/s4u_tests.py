@@ -1124,7 +1124,8 @@ class S4UKerberosTests(KDCBaseTest):
         # Attempt to modify the ticket without updating the PAC checksums.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_BAD_INTEGRITY),
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD

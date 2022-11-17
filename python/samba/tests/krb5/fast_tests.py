@@ -1918,8 +1918,14 @@ class FAST_Tests(KDCBaseTest):
             opts = {}
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={**opts,
-                  'fast_support': True})
+            opts={
+                **opts,
+                'fast_support': True,
+                'supported_enctypes': (
+                    security.KERB_ENCTYPE_RC4_HMAC_MD5 |
+                    security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
+                ),
+            })
         return self.get_tgt(mach_creds)
 
     def get_user_tgt(self, opts):
