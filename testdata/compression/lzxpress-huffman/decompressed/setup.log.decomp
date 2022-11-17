@@ -1,0 +1,411 @@
+2022/10/18 22:52:43 Starting cygwin install, version 2.919
+2022/10/18 22:52:43 User has backup/restore rights
+2022/10/18 22:52:43 User has symlink creation right
+2022/10/18 22:52:43 io_stream_cygfile: fopen(/etc/setup/setup.rc) failed 2 No such file or directory
+2022/10/18 22:52:43 Current Directory: C:\Users\Administrator.DOUGLAS-WIN\Downloads
+2022/10/18 22:52:52 source: network install
+2022/10/18 22:52:57 root: C:\cygwin64 system
+2022/10/18 22:53:01 Selected local directory: C:\Users\Administrator.DOUGLAS-WIN\Downloads
+2022/10/18 22:53:05 net: Preconfig
+2022/10/18 22:53:23 site: http://ucmirror.canterbury.ac.nz/cygwin/
+2022/10/18 22:53:26 io_stream_cygfile: fopen(/etc/setup/timestamp) failed 2 No such file or directory
+2022/10/18 22:53:26 io_stream_cygfile: fopen(/etc/setup/installed.db) failed 2 No such file or directory
+2022/10/18 22:53:26 solving: 37 tasks, update: yes, use test packages: no
+2022/10/18 22:56:09 solving: 76 tasks, update: no, use test packages: no
+2022/10/18 22:56:09 Augmented Transaction List:
+2022/10/18 22:56:09    0 install base-cygwin                             3.8-1          
+2022/10/18 22:56:09    1 install cygwin                                  3.3.6-1        
+2022/10/18 22:56:09    2 install libpopt-common                          1.18-1         
+2022/10/18 22:56:09    3 install rebase                                  4.6.1-1        
+2022/10/18 22:56:09    4 install terminfo                                6.1-1.20190727 
+2022/10/18 22:56:09    5 install tzdata                                  2022e-1        
+2022/10/18 22:56:09    6 install mingw64-x86_64-windows-default-manifest 6.4-1          
+2022/10/18 22:56:09    7 install mingw64-x86_64-winpthreads              10.0.0-1       
+2022/10/18 22:56:09    8 install cygwin-devel                            3.3.6-1        
+2022/10/18 22:56:09    9 install w32api-headers                          10.0.0-1       
+2022/10/18 22:56:09   10 install windows-default-manifest                6.4-1          
+2022/10/18 22:56:09   11 install gsettings-desktop-schemas               3.24.1-1       
+2022/10/18 22:56:09   12 install libltdl7                                2.4.7-1        
+2022/10/18 22:56:09   13 install libcrypt2                               4.4.20-1       
+2022/10/18 22:56:09   14 install libpcre1                                8.45-1         
+2022/10/18 22:56:09   15 install libnettle6                              3.4.1-1        
+2022/10/18 22:56:09   16 install liblcms2_2                              2.13.1-1       
+2022/10/18 22:56:09   17 install libjansson4                             2.13.1-1       
+2022/10/18 22:56:09   18 install libdbus1_3                              1.10.22-1      
+2022/10/18 22:56:09   19 install libatomic1                              11.3.0-1       
+2022/10/18 22:56:09   20 install libzstd1                                1.5.2-1        
+2022/10/18 22:56:09   21 install zlib0                                   1.2.13-1       
+2022/10/18 22:56:09   22 install which                                   2.20-2         
+2022/10/18 22:56:09   23 install run                                     1.3.4-2        
+2022/10/18 22:56:09   24 install mintty                                  3.6.1-1        
+2022/10/18 22:56:09   25 install login                                   1.13-1         
+2022/10/18 22:56:09   26 install libtasn1_6                              4.14-1         
+2022/10/18 22:56:09   27 install libsigsegv2                             2.10-2         
+2022/10/18 22:56:09   28 install libpipeline1                            1.5.6-1        
+2022/10/18 22:56:09   29 install libpcre2_8_0                            10.40-1        
+2022/10/18 22:56:09   30 install liblzma5                                5.2.7-1        
+2022/10/18 22:56:09   31 install liblz4_1                                1.7.5-1        
+2022/10/18 22:56:09   32 install libiconv2                               1.17-1         
+2022/10/18 22:56:09   33 install libgmp10                                6.2.1-2        
+2022/10/18 22:56:09   34 install libgcc1                                 11.3.0-1       
+2022/10/18 22:56:09   35 install libffi6                                 3.2.1-2        
+2022/10/18 22:56:09   36 install libbz2_1                                1.0.8-1        
+2022/10/18 22:56:09   37 install libargp                                 20110921-3     
+2022/10/18 22:56:09   38 install ipc-utils                               1.0-2          
+2022/10/18 22:56:09   39 install hostname                                3.13-1         
+2022/10/18 22:56:09   40 install editrights                              1.03-1         
+2022/10/18 22:56:09   41 install dash                                    0.5.11.5-1     
+2022/10/18 22:56:09   42 install terminfo-extra                          6.1-1.20190727 
+2022/10/18 22:56:09   43 install mingw64-x86_64-headers                  10.0.0-1       
+2022/10/18 22:56:09   44 install w32api-runtime                          10.0.0-1       
+2022/10/18 22:56:09   45 install libintl8                                0.21-1         
+2022/10/18 22:56:09   46 install libhogweed4                             3.4.1-1        
+2022/10/18 22:56:09   47 install libisl23                                0.25-1         
+2022/10/18 22:56:09   48 install libcom_err2                             1.44.5-1       
+2022/10/18 22:56:09   49 install libunistring2                           0.9.10-1       
+2022/10/18 22:56:09   50 install libquadmath0                            11.3.0-1       
+2022/10/18 22:56:09   51 install libgomp1                                11.3.0-1       
+2022/10/18 22:56:09   52 install libstdc++6                              11.3.0-1       
+2022/10/18 22:56:09   53 install libmpfr6                                4.1.0-2        
+2022/10/18 22:56:09   54 install file                                    5.41-2         
+2022/10/18 22:56:09   55 install getent                                  2.18.90-4      
+2022/10/18 22:56:09   56 install _autorebase                             001091-1       
+2022/10/18 22:56:09   57 install libncursesw10                           6.1-1.20190727 
+2022/10/18 22:56:09   58 install mingw64-x86_64-runtime                  10.0.0-1       
+2022/10/18 22:56:09   59 install libkrb5support0                         1.15.2-2       
+2022/10/18 22:56:09   60 install binutils                                2.39-1         
+2022/10/18 22:56:09   61 install mingw64-x86_64-binutils                 2.39-1         
+2022/10/18 22:56:09   62 install sed                                     4.8-1          
+2022/10/18 22:56:09   63 install libuuid1                                2.33.1-2       
+2022/10/18 22:56:09   64 install libsmartcols1                           2.33.1-2       
+2022/10/18 22:56:09   65 install libpopt0                                1.18-1         
+2022/10/18 22:56:09   66 install libp11-kit0                             0.23.20-1      
+2022/10/18 22:56:09   67 install libgdbm6                                1.18.1-1       
+2022/10/18 22:56:09   68 install libattr1                                2.4.48-2       
+2022/10/18 22:56:09   69 install diffutils                               3.8-1          
+2022/10/18 22:56:09   70 install alternatives                            1.3.30c-10     
+2022/10/18 22:56:09   71 install libidn2_0                               2.3.3-1        
+2022/10/18 22:56:09   72 install libdb5.3                                5.3.28-2       
+2022/10/18 22:56:09   73 install libmpc3                                 1.2.1-2        
+2022/10/18 22:56:09   74 install vim-minimal                             8.2.4372-1     
+2022/10/18 22:56:09   75 install ncurses                                 6.1-1.20190727 
+2022/10/18 22:56:09   76 install libreadline7                            8.1-2          
+2022/10/18 22:56:09   77 install less                                    590-1          
+2022/10/18 22:56:09   78 install info                                    6.8-2          
+2022/10/18 22:56:09   79 install libk5crypto3                            1.15.2-2       
+2022/10/18 22:56:09   80 install libblkid1                               2.33.1-2       
+2022/10/18 22:56:09   81 install cygutils                                1.4.17-1       
+2022/10/18 22:56:09   82 install p11-kit-trust                           0.23.20-1      
+2022/10/18 22:56:09   83 install p11-kit                                 0.23.20-1      
+2022/10/18 22:56:09   84 install libxml2                                 2.9.12-2       
+2022/10/18 22:56:09   85 install gawk                                    5.1.1-1        
+2022/10/18 22:56:09   86 install coreutils                               9.0-1          
+2022/10/18 22:56:09   87 install libkrb5_3                               1.15.2-2       
+2022/10/18 22:56:09   88 install libfdisk1                               2.33.1-2       
+2022/10/18 22:56:09   89 install libglib2.0_0                            2.54.3-1       
+2022/10/18 22:56:09   90 install bash                                    4.4.12-3       
+2022/10/18 22:56:09   91 install libgssapi_krb5_2                        1.15.2-2       
+2022/10/18 22:56:09   92 install util-linux                              2.33.1-2       
+2022/10/18 22:56:09   93 install desktop-file-utils                      0.23-1         
+2022/10/18 22:56:09   94 install tzcode                                  2022e-1        
+2022/10/18 22:56:09   95 install gamin                                   0.1.10-15      
+2022/10/18 22:56:09   96 install zstd                                    1.5.2-1        
+2022/10/18 22:56:09   97 install xz                                      5.2.7-1        
+2022/10/18 22:56:09   98 install mingw64-x86_64-gcc-core                 11.3.0-1       
+2022/10/18 22:56:09   99 install gzip                                    1.12-1         
+2022/10/18 22:56:09  100 install groff                                   1.22.4-1       
+2022/10/18 22:56:09  101 install grep                                    3.8-1          
+2022/10/18 22:56:09  102 install gcc-core                                11.3.0-1       
+2022/10/18 22:56:09  103 install findutils                               4.9.0-1        
+2022/10/18 22:56:09  104 install crypto-policies                         20190218-1     
+2022/10/18 22:56:09  105 install ca-certificates                         2022.2.54-3    
+2022/10/18 22:56:09  106 install bzip2                                   1.0.8-1        
+2022/10/18 22:56:09  107 install libfam0                                 0.1.10-15      
+2022/10/18 22:56:09  108 install man-db                                  2.10.2-1       
+2022/10/18 22:56:09  109 install base-files                              4.3-3          
+2022/10/18 22:56:09  110 install libgnutls30                             3.6.9-1        
+2022/10/18 22:56:09  111 install libssl1.1                               1.1.1q-1       
+2022/10/18 22:56:09  112 install tar                                     1.34-1         
+2022/10/18 22:56:09  113 install shared-mime-info                        2.2-1          
+2022/10/18 22:56:09  114 install libopenldap2_4_2                        2.6.3-1        
+2022/10/18 22:56:09  115 install openssl                                 1.1.1q-1       
+2022/10/18 22:56:09  116 install libsasl2_3                              2.1.27-1       
+2022/10/18 22:56:09  117 install libopenldap2                            2.6.3-1        
+2022/10/18 22:56:09  118 install libmailutils7                           3.10-1         
+2022/10/18 22:56:09  119 install libmailutils-sieve-extensions           3.10-1         
+2022/10/18 22:56:09  120 install mailutils                               3.10-1         
+2022/10/18 22:56:09  121 install emacs-common                            28.2-1         
+2022/10/18 22:56:09  122 install emacs-basic                             28.2-1         
+2022/10/18 22:56:09  123 install emacs                                   28.2-1         
+2022/10/18 22:56:22 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/base-cygwin/base-cygwin-3.8-1.tar.xz
+2022/10/18 22:56:24 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cygwin/cygwin-3.3.6-1.tar.xz
+2022/10/18 22:56:24 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/popt/libpopt-common/libpopt-common-1.18-1.tar.xz
+2022/10/18 22:56:25 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/rebase/rebase-4.6.1-1.tar.xz
+2022/10/18 22:56:25 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/terminfo/terminfo-6.1-1.20190727.tar.xz
+2022/10/18 22:56:25 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/tzdata/tzdata-2022e-1.tar.xz
+2022/10/18 22:56:25 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-windows-default-manifest/mingw64-x86_64-windows-default-manifest-6.4-1.tar.xz
+2022/10/18 22:56:25 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-winpthreads/mingw64-x86_64-winpthreads-10.0.0-1.tar.xz
+2022/10/18 22:56:25 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cygwin/cygwin-devel/cygwin-devel-3.3.6-1.tar.xz
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/w32api-headers/w32api-headers-10.0.0-1.tar.xz
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/windows-default-manifest/windows-default-manifest-6.4-1.tar.xz
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/gsettings-desktop-schemas/gsettings-desktop-schemas-3.24.1-1.tar.xz
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libtool/libltdl7/libltdl7-2.4.7-1.tar.zst
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libxcrypt/libcrypt2/libcrypt2-4.4.20-1.tar.xz
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/pcre/libpcre1/libpcre1-8.45-1.tar.zst
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/nettle/libnettle6/libnettle6-3.4.1-1.tar.xz
+2022/10/18 22:56:28 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/lcms2/liblcms2_2/liblcms2_2-2.13.1-1.tar.xz
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/jansson/libjansson4/libjansson4-2.13.1-1.tar.xz
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/dbus/libdbus1_3/libdbus1_3-1.10.22-1.tar.xz
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libatomic1/libatomic1-11.3.0-1.tar.zst
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/zstd/libzstd1/libzstd1-1.5.2-1.tar.zst
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/zlib/zlib0/zlib0-1.2.13-1.tar.zst
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/which/which-2.20-2.tar.bz2
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/run/run-1.3.4-2.tar.xz
+2022/10/18 22:56:29 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mintty/mintty-3.6.1-1.tar.xz
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/login/login-1.13-1.tar.xz
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libtasn1/libtasn1_6/libtasn1_6-4.14-1.tar.xz
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libsigsegv/libsigsegv2/libsigsegv2-2.10-2.tar.xz
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libpipeline/libpipeline1/libpipeline1-1.5.6-1.tar.xz
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/pcre2/libpcre2_8_0/libpcre2_8_0-10.40-1.tar.zst
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/xz/liblzma5/liblzma5-5.2.7-1.tar.zst
+2022/10/18 22:56:30 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/lz4/liblz4_1/liblz4_1-1.7.5-1.tar.xz
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libiconv/libiconv2/libiconv2-1.17-1.tar.xz
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gmp/libgmp10/libgmp10-6.2.1-2.tar.zst
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libgcc1/libgcc1-11.3.0-1.tar.zst
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libffi/libffi6/libffi6-3.2.1-2.tar.xz
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/bzip2/libbz2_1/libbz2_1-1.0.8-1.tar.xz
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libargp/libargp-20110921-3.tar.xz
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ipc-utils/ipc-utils-1.0-2.tar.bz2
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/hostname/hostname-3.13-1.tar.bz2
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/editrights/editrights-1.03-1.tar.xz
+2022/10/18 22:56:31 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/dash/dash-0.5.11.5-1.tar.xz
+2022/10/18 22:56:32 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/terminfo-extra/terminfo-extra-6.1-1.20190727.tar.xz
+2022/10/18 22:56:35 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-headers/mingw64-x86_64-headers-10.0.0-1.tar.xz
+2022/10/18 22:56:36 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/w32api-runtime/w32api-runtime-10.0.0-1.tar.xz
+2022/10/18 22:56:36 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gettext/libintl8/libintl8-0.21-1.tar.xz
+2022/10/18 22:56:36 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/nettle/libhogweed4/libhogweed4-3.4.1-1.tar.xz
+2022/10/18 22:56:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/isl/libisl23/libisl23-0.25-1.tar.zst
+2022/10/18 22:56:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/e2fsprogs/libcom_err2/libcom_err2-1.44.5-1.tar.xz
+2022/10/18 22:56:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libunistring/libunistring2/libunistring2-0.9.10-1.tar.xz
+2022/10/18 22:56:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libquadmath0/libquadmath0-11.3.0-1.tar.zst
+2022/10/18 22:56:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libgomp1/libgomp1-11.3.0-1.tar.zst
+2022/10/18 22:56:38 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libstdc++6/libstdc++6-11.3.0-1.tar.zst
+2022/10/18 22:56:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mpfr/libmpfr6/libmpfr6-4.1.0-2.tar.zst
+2022/10/18 22:56:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/file/file-5.41-2.tar.xz
+2022/10/18 22:56:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/getent/getent-2.18.90-4.tar.xz
+2022/10/18 22:56:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/_autorebase/_autorebase-001091-1.tar.zst
+2022/10/18 22:56:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/libncursesw10/libncursesw10-6.1-1.20190727.tar.xz
+2022/10/18 22:56:41 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-runtime/mingw64-x86_64-runtime-10.0.0-1.tar.xz
+2022/10/18 22:56:41 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libkrb5support0/libkrb5support0-1.15.2-2.tar.xz
+2022/10/18 22:56:44 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/binutils/binutils-2.39-1.tar.zst
+2022/10/18 22:56:45 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mingw64-x86_64-binutils/mingw64-x86_64-binutils-2.39-1.tar.zst
+2022/10/18 22:56:47 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/sed/sed-4.8-1.tar.xz
+2022/10/18 22:56:47 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libuuid1/libuuid1-2.33.1-2.tar.xz
+2022/10/18 22:56:47 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libsmartcols1/libsmartcols1-2.33.1-2.tar.xz
+2022/10/18 22:56:47 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/popt/libpopt0/libpopt0-1.18-1.tar.xz
+2022/10/18 22:56:48 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/p11-kit/libp11-kit0/libp11-kit0-0.23.20-1.tar.xz
+2022/10/18 22:56:48 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gdbm/libgdbm6/libgdbm6-1.18.1-1.tar.xz
+2022/10/18 22:56:48 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/attr/libattr1/libattr1-2.4.48-2.tar.xz
+2022/10/18 22:56:48 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/diffutils/diffutils-3.8-1.tar.xz
+2022/10/18 22:56:48 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/alternatives/alternatives-1.3.30c-10.tar.bz2
+2022/10/18 22:56:49 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libidn2/libidn2_0/libidn2_0-2.3.3-1.tar.xz
+2022/10/18 22:56:50 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/db/libdb5.3/libdb5.3-5.3.28-2.tar.xz
+2022/10/18 22:56:50 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mpclib/libmpc3/libmpc3-1.2.1-2.tar.zst
+2022/10/18 22:56:50 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/vim/vim-minimal/vim-minimal-8.2.4372-1.tar.xz
+2022/10/18 22:56:50 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/ncurses-6.1-1.20190727.tar.xz
+2022/10/18 22:56:50 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/readline/libreadline7/libreadline7-8.1-2.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/less/less-590-1.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/texinfo/info/info-6.8-2.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libk5crypto3/libk5crypto3-1.15.2-2.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libblkid1/libblkid1-2.33.1-2.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cygutils/cygutils-1.4.17-1.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/p11-kit/p11-kit-trust/p11-kit-trust-0.23.20-1.tar.xz
+2022/10/18 22:56:51 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/p11-kit/p11-kit-0.23.20-1.tar.xz
+2022/10/18 22:56:52 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libxml2/libxml2-2.9.12-2.tar.xz
+2022/10/18 22:56:52 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gawk/gawk-5.1.1-1.tar.xz
+2022/10/18 22:56:54 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/coreutils/coreutils-9.0-1.tar.xz
+2022/10/18 22:56:54 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libkrb5_3/libkrb5_3-1.15.2-2.tar.xz
+2022/10/18 22:56:55 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libfdisk1/libfdisk1-2.33.1-2.tar.xz
+2022/10/18 22:56:57 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/glib2.0/libglib2.0_0/libglib2.0_0-2.54.3-1.tar.xz
+2022/10/18 22:56:58 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/bash/bash-4.4.12-3.tar.xz
+2022/10/18 22:56:58 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libgssapi_krb5_2/libgssapi_krb5_2-1.15.2-2.tar.xz
+2022/10/18 22:56:59 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/util-linux-2.33.1-2.tar.xz
+2022/10/18 22:56:59 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/desktop-file-utils/desktop-file-utils-0.23-1.tar.xz
+2022/10/18 22:56:59 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/tzcode/tzcode-2022e-1.tar.xz
+2022/10/18 22:56:59 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gamin/gamin-0.1.10-15.tar.xz
+2022/10/18 22:57:00 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/zstd/zstd-1.5.2-1.tar.zst
+2022/10/18 22:57:00 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/xz/xz-5.2.7-1.tar.zst
+2022/10/18 22:57:16 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mingw64-x86_64-gcc/mingw64-x86_64-gcc-core/mingw64-x86_64-gcc-core-11.3.0-1.tar.zst
+2022/10/18 22:57:17 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gzip/gzip-1.12-1.tar.xz
+2022/10/18 22:57:20 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/groff/groff-1.22.4-1.tar.xz
+2022/10/18 22:57:21 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/grep/grep-3.8-1.tar.xz
+2022/10/18 22:57:35 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/gcc-core/gcc-core-11.3.0-1.tar.zst
+2022/10/18 22:57:36 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/findutils/findutils-4.9.0-1.tar.xz
+2022/10/18 22:57:36 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/crypto-policies/crypto-policies-20190218-1.tar.xz
+2022/10/18 22:57:36 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/ca-certificates/ca-certificates-2022.2.54-3.tar.zst
+2022/10/18 22:57:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/bzip2/bzip2-1.0.8-1.tar.xz
+2022/10/18 22:57:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gamin/libfam0/libfam0-0.1.10-15.tar.xz
+2022/10/18 22:57:37 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/man-db/man-db-2.10.2-1.tar.zst
+2022/10/18 22:57:38 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/base-files/base-files-4.3-3.tar.zst
+2022/10/18 22:57:38 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gnutls/libgnutls30/libgnutls30-3.6.9-1.tar.xz
+2022/10/18 22:57:38 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openssl/libssl1.1/libssl1.1-1.1.1q-1.tar.zst
+2022/10/18 22:57:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/tar/tar-1.34-1.tar.zst
+2022/10/18 22:57:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/shared-mime-info/shared-mime-info-2.2-1.tar.xz
+2022/10/18 22:57:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openldap/libopenldap2_4_2/libopenldap2_4_2-2.6.3-1.tar.zst
+2022/10/18 22:57:39 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openssl/openssl-1.1.1q-1.tar.zst
+2022/10/18 22:57:40 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cyrus-sasl/libsasl2_3/libsasl2_3-2.1.27-1.tar.xz
+2022/10/18 22:57:40 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openldap/libopenldap2/libopenldap2-2.6.3-1.tar.zst
+2022/10/18 22:57:40 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mailutils/libmailutils7/libmailutils7-3.10-1.tar.xz
+2022/10/18 22:57:40 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mailutils/libmailutils-sieve-extensions/libmailutils-sieve-extensions-3.10-1.tar.xz
+2022/10/18 22:57:40 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mailutils/mailutils-3.10-1.tar.xz
+2022/10/18 22:57:59 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/emacs/emacs-common/emacs-common-28.2-1.tar.xz
+2022/10/18 22:58:00 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/emacs/emacs-basic/emacs-basic-28.2-1.tar.xz
+2022/10/18 22:58:00 Downloaded C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/emacs/emacs-28.2-1.tar.xz
+2022/10/18 22:58:00 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/base-cygwin/base-cygwin-3.8-1.tar.xz
+2022/10/18 22:58:00 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cygwin/cygwin-3.3.6-1.tar.xz
+2022/10/18 22:58:01 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/popt/libpopt-common/libpopt-common-1.18-1.tar.xz
+2022/10/18 22:58:01 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/rebase/rebase-4.6.1-1.tar.xz
+2022/10/18 22:58:01 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/terminfo/terminfo-6.1-1.20190727.tar.xz
+2022/10/18 22:58:02 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/tzdata/tzdata-2022e-1.tar.xz
+2022/10/18 22:58:07 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-windows-default-manifest/mingw64-x86_64-windows-default-manifest-6.4-1.tar.xz
+2022/10/18 22:58:07 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-winpthreads/mingw64-x86_64-winpthreads-10.0.0-1.tar.xz
+2022/10/18 22:58:07 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cygwin/cygwin-devel/cygwin-devel-3.3.6-1.tar.xz
+2022/10/18 22:58:08 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/w32api-headers/w32api-headers-10.0.0-1.tar.xz
+2022/10/18 22:58:13 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/windows-default-manifest/windows-default-manifest-6.4-1.tar.xz
+2022/10/18 22:58:13 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/gsettings-desktop-schemas/gsettings-desktop-schemas-3.24.1-1.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libtool/libltdl7/libltdl7-2.4.7-1.tar.zst
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libxcrypt/libcrypt2/libcrypt2-4.4.20-1.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/pcre/libpcre1/libpcre1-8.45-1.tar.zst
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/nettle/libnettle6/libnettle6-3.4.1-1.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/lcms2/liblcms2_2/liblcms2_2-2.13.1-1.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/jansson/libjansson4/libjansson4-2.13.1-1.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/dbus/libdbus1_3/libdbus1_3-1.10.22-1.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libatomic1/libatomic1-11.3.0-1.tar.zst
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/zstd/libzstd1/libzstd1-1.5.2-1.tar.zst
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/zlib/zlib0/zlib0-1.2.13-1.tar.zst
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/which/which-2.20-2.tar.bz2
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/run/run-1.3.4-2.tar.xz
+2022/10/18 22:58:14 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mintty/mintty-3.6.1-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/login/login-1.13-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libtasn1/libtasn1_6/libtasn1_6-4.14-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libsigsegv/libsigsegv2/libsigsegv2-2.10-2.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libpipeline/libpipeline1/libpipeline1-1.5.6-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/pcre2/libpcre2_8_0/libpcre2_8_0-10.40-1.tar.zst
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/xz/liblzma5/liblzma5-5.2.7-1.tar.zst
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/lz4/liblz4_1/liblz4_1-1.7.5-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libiconv/libiconv2/libiconv2-1.17-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gmp/libgmp10/libgmp10-6.2.1-2.tar.zst
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libgcc1/libgcc1-11.3.0-1.tar.zst
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libffi/libffi6/libffi6-3.2.1-2.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/bzip2/libbz2_1/libbz2_1-1.0.8-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libargp/libargp-20110921-3.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ipc-utils/ipc-utils-1.0-2.tar.bz2
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/hostname/hostname-3.13-1.tar.bz2
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/editrights/editrights-1.03-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/dash/dash-0.5.11.5-1.tar.xz
+2022/10/18 22:58:15 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/terminfo-extra/terminfo-extra-6.1-1.20190727.tar.xz
+2022/10/18 22:58:21 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-headers/mingw64-x86_64-headers-10.0.0-1.tar.xz
+2022/10/18 22:58:28 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/w32api-runtime/w32api-runtime-10.0.0-1.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gettext/libintl8/libintl8-0.21-1.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/nettle/libhogweed4/libhogweed4-3.4.1-1.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/isl/libisl23/libisl23-0.25-1.tar.zst
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/e2fsprogs/libcom_err2/libcom_err2-1.44.5-1.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libunistring/libunistring2/libunistring2-0.9.10-1.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libquadmath0/libquadmath0-11.3.0-1.tar.zst
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libgomp1/libgomp1-11.3.0-1.tar.zst
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/libstdc++6/libstdc++6-11.3.0-1.tar.zst
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mpfr/libmpfr6/libmpfr6-4.1.0-2.tar.zst
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/file/file-5.41-2.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/getent/getent-2.18.90-4.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/_autorebase/_autorebase-001091-1.tar.zst
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/libncursesw10/libncursesw10-6.1-1.20190727.tar.xz
+2022/10/18 22:58:31 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/mingw64-x86_64-runtime/mingw64-x86_64-runtime-10.0.0-1.tar.xz
+2022/10/18 22:58:34 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libkrb5support0/libkrb5support0-1.15.2-2.tar.xz
+2022/10/18 22:58:35 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/binutils/binutils-2.39-1.tar.zst
+2022/10/18 22:58:36 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mingw64-x86_64-binutils/mingw64-x86_64-binutils-2.39-1.tar.zst
+2022/10/18 22:58:36 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/sed/sed-4.8-1.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libuuid1/libuuid1-2.33.1-2.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libsmartcols1/libsmartcols1-2.33.1-2.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/popt/libpopt0/libpopt0-1.18-1.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/p11-kit/libp11-kit0/libp11-kit0-0.23.20-1.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gdbm/libgdbm6/libgdbm6-1.18.1-1.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/attr/libattr1/libattr1-2.4.48-2.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/diffutils/diffutils-3.8-1.tar.xz
+2022/10/18 22:58:37 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/alternatives/alternatives-1.3.30c-10.tar.bz2
+2022/10/18 22:58:38 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libidn2/libidn2_0/libidn2_0-2.3.3-1.tar.xz
+2022/10/18 22:58:38 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/db/libdb5.3/libdb5.3-5.3.28-2.tar.xz
+2022/10/18 22:58:38 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mpclib/libmpc3/libmpc3-1.2.1-2.tar.zst
+2022/10/18 22:58:38 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/vim/vim-minimal/vim-minimal-8.2.4372-1.tar.xz
+2022/10/18 22:58:38 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/ncurses/ncurses-6.1-1.20190727.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/readline/libreadline7/libreadline7-8.1-2.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/less/less-590-1.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/texinfo/info/info-6.8-2.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libk5crypto3/libk5crypto3-1.15.2-2.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libblkid1/libblkid1-2.33.1-2.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cygutils/cygutils-1.4.17-1.tar.xz
+2022/10/18 22:58:39 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/p11-kit/p11-kit-trust/p11-kit-trust-0.23.20-1.tar.xz
+2022/10/18 22:58:40 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/p11-kit/p11-kit-0.23.20-1.tar.xz
+2022/10/18 22:58:40 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/libxml2/libxml2-2.9.12-2.tar.xz
+2022/10/18 22:58:40 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gawk/gawk-5.1.1-1.tar.xz
+2022/10/18 22:58:40 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/coreutils/coreutils-9.0-1.tar.xz
+2022/10/18 22:58:42 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libkrb5_3/libkrb5_3-1.15.2-2.tar.xz
+2022/10/18 22:58:42 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/libfdisk1/libfdisk1-2.33.1-2.tar.xz
+2022/10/18 22:58:42 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/glib2.0/libglib2.0_0/libglib2.0_0-2.54.3-1.tar.xz
+2022/10/18 22:58:43 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/bash/bash-4.4.12-3.tar.xz
+2022/10/18 22:58:44 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/krb5/libgssapi_krb5_2/libgssapi_krb5_2-1.15.2-2.tar.xz
+2022/10/18 22:58:44 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/util-linux/util-linux-2.33.1-2.tar.xz
+2022/10/18 22:58:45 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/desktop-file-utils/desktop-file-utils-0.23-1.tar.xz
+2022/10/18 22:58:45 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/tzcode/tzcode-2022e-1.tar.xz
+2022/10/18 22:58:45 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gamin/gamin-0.1.10-15.tar.xz
+2022/10/18 22:58:45 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/zstd/zstd-1.5.2-1.tar.zst
+2022/10/18 22:58:45 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/xz/xz-5.2.7-1.tar.zst
+2022/10/18 22:58:45 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mingw64-x86_64-gcc/mingw64-x86_64-gcc-core/mingw64-x86_64-gcc-core-11.3.0-1.tar.zst
+2022/10/18 22:58:47 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gzip/gzip-1.12-1.tar.xz
+2022/10/18 22:58:47 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/groff/groff-1.22.4-1.tar.xz
+2022/10/18 22:58:50 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/grep/grep-3.8-1.tar.xz
+2022/10/18 22:58:51 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gcc/gcc-core/gcc-core-11.3.0-1.tar.zst
+2022/10/18 22:58:53 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/findutils/findutils-4.9.0-1.tar.xz
+2022/10/18 22:58:54 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/crypto-policies/crypto-policies-20190218-1.tar.xz
+2022/10/18 22:58:54 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/ca-certificates/ca-certificates-2022.2.54-3.tar.zst
+2022/10/18 22:58:54 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/bzip2/bzip2-1.0.8-1.tar.xz
+2022/10/18 22:58:54 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gamin/libfam0/libfam0-0.1.10-15.tar.xz
+2022/10/18 22:58:54 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/man-db/man-db-2.10.2-1.tar.zst
+2022/10/18 22:58:55 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/noarch/release/base-files/base-files-4.3-3.tar.zst
+2022/10/18 22:58:55 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/gnutls/libgnutls30/libgnutls30-3.6.9-1.tar.xz
+2022/10/18 22:58:55 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openssl/libssl1.1/libssl1.1-1.1.1q-1.tar.zst
+2022/10/18 22:58:55 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/tar/tar-1.34-1.tar.zst
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/shared-mime-info/shared-mime-info-2.2-1.tar.xz
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openldap/libopenldap2_4_2/libopenldap2_4_2-2.6.3-1.tar.zst
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openssl/openssl-1.1.1q-1.tar.zst
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/cyrus-sasl/libsasl2_3/libsasl2_3-2.1.27-1.tar.xz
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/openldap/libopenldap2/libopenldap2-2.6.3-1.tar.zst
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mailutils/libmailutils7/libmailutils7-3.10-1.tar.xz
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mailutils/libmailutils-sieve-extensions/libmailutils-sieve-extensions-3.10-1.tar.xz
+2022/10/18 22:58:56 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/mailutils/mailutils-3.10-1.tar.xz
+2022/10/18 22:58:57 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/emacs/emacs-common/emacs-common-28.2-1.tar.xz
+2022/10/18 22:59:17 Extracting from file://C:\Users\Administrator.DOUGLAS-WIN\Downloads/http%3a%2f%2fucmirror.canterbury.ac.nz%2fcygwin%2f/x86_64/release/emacs/emacs-basic/emacs-basic-28.2-1.tar.xz
+2022/10/18 22:59:17 Changing gid back to original
+2022/10/18 22:59:17 running: C:\cygwin64\bin\dash.exe "/etc/postinstall/0p_000_autorebase.dash"
+2022/10/18 22:59:19 running: C:\cygwin64\bin\dash.exe "/etc/postinstall/0p_update-info-dir.dash"
+2022/10/18 22:59:25 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/000-cygwin-post-install.sh"
+2022/10/18 22:59:25 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/coreutils.sh"
+2022/10/18 22:59:25 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/bash.sh"
+2022/10/18 22:59:25 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/base-files-mketc.sh"
+2022/10/18 22:59:25 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/base-files-profile.sh"
+2022/10/18 22:59:27 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/p11-kit.sh"
+2022/10/18 22:59:27 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/ca-certificates.sh"
+2022/10/18 22:59:31 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/crypto-policies.sh"
+2022/10/18 22:59:33 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/emacs-basic.sh"
+2022/10/18 22:59:33 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/emacs.sh"
+2022/10/18 22:59:33 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/openssl.sh"
+2022/10/18 22:59:33 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/libsasl2_3.sh"
+2022/10/18 22:59:33 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/libxml2.sh"
+2022/10/18 22:59:34 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/man-db.sh"
+2022/10/18 22:59:34 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/mintty.sh"
+2022/10/18 22:59:34 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/zp_desktop-file-utils.sh"
+2022/10/18 22:59:34 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/zp_glib2.0.sh"
+2022/10/18 22:59:34 running: C:\cygwin64\bin\dash.exe "/etc/postinstall/zp_man-db-update-index.dash"
+2022/10/18 22:59:34 running: C:\cygwin64\bin\bash.exe --norc --noprofile "/etc/postinstall/zp_shared-mime-info.sh"
+2022/10/18 22:59:45 Changing gid to Administrators
+2022/10/18 23:00:30 note: Installation Complete
+2022/10/18 23:00:30 Ending cygwin install
