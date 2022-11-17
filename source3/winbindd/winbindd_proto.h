@@ -382,6 +382,9 @@ const char *idmap_config_const_string(const char *domname, const char *option,
 				      const char *def);
 bool idmap_config_bool(const char *domname, const char *option, bool def);
 int idmap_config_int(const char *domname, const char *option, int def);
+const char **idmap_config_string_list(const char *domname,
+				      const char *option,
+				      const char **def);
 bool domain_has_idmap_config(const char *domname);
 bool lp_scan_idmap_domains(bool (*fn)(const char *domname,
 				      void *private_data),

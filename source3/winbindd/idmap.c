@@ -212,6 +212,17 @@ int idmap_config_int(const char *domname, const char *option, int def)
 	return lp_parm_int(-1, config_option, option, def);
 }
 
+const char **idmap_config_string_list(const char *domname,
+				      const char *option,
+				      const char **def)
+{
+	int len = idmap_config_name(domname, NULL, 0);
+	char config_option[len];
+	idmap_config_name(domname, config_option, sizeof(config_option));
+
+	return lp_parm_string_list(-1, config_option, option, def);
+}
+
 bool domain_has_idmap_config(const char *domname)
 {
 	int i;
