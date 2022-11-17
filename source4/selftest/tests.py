@@ -1691,10 +1691,18 @@ planoldpythontestsuite(
     'ad_dc:local',
     'samba.tests.krb5.lockout_tests',
     environ=krb5_environ)
-planoldpythontestsuite(
-    'ad_dc',
-    'samba.tests.krb5.etype_tests',
-    environ=krb5_environ)
+for env, forced_rc4 in [('ad_dc', False),
+                        ('promoted_dc', True)]:
+    planoldpythontestsuite(
+        env,
+        'samba.tests.krb5.etype_tests',
+        environ={
+            **krb5_environ,
+            'DC_SERVER': '$SERVER',
+            'DC_SERVER_IP': '$SERVER_IP',
+            'DC_SERVER_IPV6': '$SERVER_IPV6',
+            'FORCED_RC4': int(forced_rc4),
+        })
 
 for env in [
         'vampire_dc',

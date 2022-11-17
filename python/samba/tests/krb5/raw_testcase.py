@@ -365,6 +365,10 @@ class KerberosCredentials(Credentials):
                            security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
                            security.KERB_ENCTYPE_CLAIMS_SUPPORTED)
 
+    non_etype_bits = fast_supported_bits | (
+        security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) | (
+        security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK)
+
     def __init__(self):
         super(KerberosCredentials, self).__init__()
         all_enc_types = 0
@@ -426,7 +430,7 @@ class KerberosCredentials(Credentials):
                 bits &= ~bit
                 etypes += (etype,)
 
-        bits &= ~cls.fast_supported_bits
+        bits &= ~cls.non_etype_bits
         if bits != 0:
             raise ValueError(f'Unsupported etype bits: {bits}')
 
@@ -553,6 +557,8 @@ class RawKerberosTest(TestCaseInTempDir):
         {"value": kcrypto.Enctype.RC4, "name": "rc4", },
     )
 
+    expect_padata_outer = object()
+
     setup_etype_test_permutations_done = False
 
     @classmethod
@@ -668,6 +674,18 @@ class RawKerberosTest(TestCaseInTempDir):
         if padata_checking is None:
             padata_checking = '1'
         cls.padata_checking = bool(int(padata_checking))
+
+        default_etypes = samba.tests.env_get_var_value('DEFAULT_ETYPES',
+                                                       allow_missing=True)
+        if default_etypes is not None:
+            default_etypes = int(default_etypes)
+        cls.default_etypes = default_etypes
+
+        forced_rc4 = samba.tests.env_get_var_value('FORCED_RC4',
+                                                   allow_missing=True)
+        if forced_rc4 is None:
+            forced_rc4 = '0'
+        cls.forced_rc4 = bool(int(forced_rc4))
 
     def setUp(self):
         super().setUp()
@@ -1282,7 +1300,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if etype is None:
             etypes = creds.get_tgs_krb5_etypes()
-            if etypes:
+            if etypes and etypes[0] not in (kcrypto.Enctype.DES_CRC,
+                                            kcrypto.Enctype.DES_MD5):
                 etype = etypes[0]
             else:
                 etype = kcrypto.Enctype.RC4
@@ -2975,10 +2994,6 @@ class RawKerberosTest(TestCaseInTempDir):
                     if PADATA_SUPPORTED_ETYPES in enc_pa_dict:
                         expected_supported_etypes = kdc_exchange_dict[
                             'expected_supported_etypes']
-                        expected_supported_etypes |= (
-                            security.KERB_ENCTYPE_DES_CBC_CRC |
-                            security.KERB_ENCTYPE_DES_CBC_MD5 |
-                            security.KERB_ENCTYPE_RC4_HMAC_MD5)
 
                         (supported_etypes,) = struct.unpack(
                             '<L',
@@ -3290,6 +3305,8 @@ class RawKerberosTest(TestCaseInTempDir):
                             and (not sent_fast or fast_armor_type is None
                                  or fast_armor_type == FX_FAST_ARMOR_AP_REQUEST)
                             and not inner)
+        if inner and expect_edata is self.expect_padata_outer:
+            expect_edata = False
         if not expect_edata:
             self.assertIsNone(expected_status)
             if self.strict_checking:
