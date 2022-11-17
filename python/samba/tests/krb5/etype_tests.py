@@ -17,13 +17,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import itertools
 import sys
 import os
 
 from samba.dcerpc import security
 
+from samba.tests import DynamicTestCase
 from samba.tests.krb5.kdc_tgs_tests import KdcTgsBaseTests
+from samba.tests.krb5.raw_testcase import KerberosCredentials
 from samba.tests.krb5.rfc4120_constants import (
+    AES128_CTS_HMAC_SHA1_96,
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
     KDC_ERR_ETYPE_NOSUPP,
@@ -35,48 +39,165 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 global_asn1_print = False
 global_hexdump = False
 
+rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
+aes128_bit = security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+aes256_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+aes256_sk_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
+fast_bit = security.KERB_ENCTYPE_FAST_SUPPORTED
 
+etype_bits = rc4_bit | aes128_bit | aes256_bit
+extra_bits = aes256_sk_bit | fast_bit
+
+
+@DynamicTestCase
 class EtypeTests(KdcTgsBaseTests):
     def setUp(self):
         super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
-    # Perform an AS-REQ for a service ticket, specifying AES. The request
-    # should fail with an error.
-    def test_as_aes_requested(self):
-        creds = self.get_mach_creds()
-        target_creds = self.get_service_creds()
+        self.default_supported_enctypes = self.default_etypes
+        if self.default_supported_enctypes is None:
+            lp = self.get_lp()
+            self.default_supported_enctypes = lp.get(
+                'kdc default domain supported enctypes')
 
-        self._as_req(creds, expected_error=KDC_ERR_ETYPE_NOSUPP,
-                     target_creds=target_creds,
-                     etype=(AES256_CTS_HMAC_SHA1_96,))
+    def _server_creds(self, supported=None):
+        return self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'supported_enctypes': supported,
+            })
 
-    # Perform an AS-REQ for a service ticket, specifying RC4. The resulting
-    # ticket should be encrypted with RC4, with an RC4 session key.
-    def test_as_rc4_requested(self):
-        creds = self.get_mach_creds()
-        target_creds = self.get_service_creds()
+    def only_non_etype_bits_set(self, bits):
+        return bits is not None and (
+            bits & extra_bits and
+            not (bits & etype_bits))
 
-        ticket = self._as_req(creds, expected_error=0,
+    @classmethod
+    def setUpDynamicTestCases(cls):
+        all_etypes = (AES256_CTS_HMAC_SHA1_96,
+                      AES128_CTS_HMAC_SHA1_96,
+                      ARCFOUR_HMAC_MD5)
+
+        # An iterator yielding all permutations consisting of at least one
+        # etype.
+        requested_etype_cases = itertools.chain.from_iterable(
+            itertools.permutations(all_etypes, x)
+            for x in range(1, len(all_etypes) + 1))
+
+        # Some combinations of msDS-SupportedEncryptionTypes bits to be set on
+        # the target server.
+        supported_etype_cases = (
+            # Not set.
+            None,
+            # Every possible combination of RC4, AES128, AES256, and AES256-SK.
+            0,
+            rc4_bit,
+            aes256_sk_bit,
+            aes256_sk_bit | rc4_bit,
+            aes256_bit,
+            aes256_bit | rc4_bit,
+            aes256_bit | aes256_sk_bit,
+            aes256_bit | aes256_sk_bit | rc4_bit,
+            aes128_bit,
+            aes128_bit | rc4_bit,
+            aes128_bit | aes256_sk_bit,
+            aes128_bit | aes256_sk_bit | rc4_bit,
+            aes128_bit | aes256_bit,
+            aes128_bit | aes256_bit | rc4_bit,
+            aes128_bit | aes256_bit | aes256_sk_bit,
+            aes128_bit | aes256_bit | aes256_sk_bit | rc4_bit,
+            # Some combinations with an extra bit (the FAST-supported bit) set.
+            fast_bit,
+            fast_bit | rc4_bit,
+            fast_bit | aes256_sk_bit,
+            fast_bit | aes256_bit,
+        )
+
+        for requested_etypes in requested_etype_cases:
+            for supported_etypes in supported_etype_cases:
+                tname = (f'{supported_etypes}_supported_'
+                         f'{requested_etypes}_requested')
+                targs = supported_etypes, requested_etypes
+                cls.generate_dynamic_test('test_etype_as', tname, *targs)
+
+    def _test_etype_as_with_args(self, supported_bits, requested_etypes):
+        # The ticket will be encrypted with the strongest enctype for which the
+        # server explicitly declares support, falling back to RC4 if the server
+        # has no declared supported encryption types. The enctype of the
+        # session key is the first enctype listed in the request that the
+        # server supports, taking the AES-SK bit as an indication of support
+        # for both AES types.
+
+        # If none of the enctypes in the request are supported by the target
+        # server, implicitly or explicitly, return ETYPE_NOSUPP.
+
+        expected_error = 0
+
+        if not supported_bits:
+            # If msDS-SupportedEncryptionTypes is missing or set to zero, the
+            # default value, provided by smb.conf, is assumed.
+            supported_bits = self.default_supported_enctypes
+
+        # If msDS-SupportedEncryptionTypes specifies only non-etype bits, we
+        # expect an error.
+        if self.only_non_etype_bits_set(supported_bits):
+            expected_error = KDC_ERR_ETYPE_NOSUPP
+
+        virtual_bits = supported_bits
+
+        if self.forced_rc4 and not (virtual_bits & rc4_bit):
+            # If our fallback smb.conf option is set, force in RC4 support.
+            virtual_bits |= rc4_bit
+
+        if virtual_bits & aes256_sk_bit:
+            # If strong session keys are enabled, force in the AES bits.
+            virtual_bits |= aes256_bit | aes128_bit
+
+        virtual_etypes = KerberosCredentials.bits_to_etypes(virtual_bits)
+
+        # The enctype of the session key is the first listed in the request
+        # that the server supports, implicitly or explicitly.
+        for requested_etype in requested_etypes:
+            if requested_etype in virtual_etypes:
+                expected_session_etype = requested_etype
+                break
+        else:
+            # If there is no such enctype, expect an error.
+            expected_error = KDC_ERR_ETYPE_NOSUPP
+
+        # Get the credentials of the client and server accounts.
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=supported_bits)
+
+        # Perform the TGS-REQ.
+        ticket = self._as_req(creds, expected_error=expected_error,
                               target_creds=target_creds,
-                              etype=(ARCFOUR_HMAC_MD5,))
+                              etype=requested_etypes)
+        if expected_error:
+            # There's no more to check. Return.
+            return
 
-        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
-        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
+        # We expect the ticket etype to be the strongest the server claims to
+        # support, with a fallback to RC4.
+        expected_etype = ARCFOUR_HMAC_MD5
+        if supported_bits is not None:
+            if supported_bits & aes256_bit:
+                expected_etype = AES256_CTS_HMAC_SHA1_96
+            elif supported_bits & aes128_bit:
+                expected_etype = AES128_CTS_HMAC_SHA1_96
+
+        # Check the etypes of the ticket and session key.
+        self.assertEqual(expected_etype, ticket.decryption_key.etype)
+        self.assertEqual(expected_session_etype, ticket.session_key.etype)
 
     # Perform an AS-REQ for a service ticket, specifying AES, when the target
     # service only supports AES. The resulting ticket should be encrypted with
     # AES, with an AES session key.
     def test_as_aes_supported_aes_requested(self):
-        creds = self.get_mach_creds()
-
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-            })
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=aes256_bit)
 
         ticket = self._as_req(creds, expected_error=0,
                               target_creds=target_creds,
@@ -86,36 +207,71 @@ class EtypeTests(KdcTgsBaseTests):
         self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.session_key.etype)
 
     # Perform an AS-REQ for a service ticket, specifying RC4, when the target
-    # service only supports AES. The resulting ticket should be encrypted with
-    # AES, with an RC4 session key.
+    # service only supports AES. The request should fail with an error.
     def test_as_aes_supported_rc4_requested(self):
-        creds = self.get_mach_creds()
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=aes256_bit)
 
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-            })
+        if self.forced_rc4:
+            expected_error = 0
+            expected_session_etype = ARCFOUR_HMAC_MD5
+        else:
+            expected_error = KDC_ERR_ETYPE_NOSUPP
+            expected_session_etype = AES256_CTS_HMAC_SHA1_96
 
-        ticket = self._as_req(creds, expected_error=0,
+        ticket = self._as_req(creds, expected_error=expected_error,
                               target_creds=target_creds,
                               etype=(ARCFOUR_HMAC_MD5,))
 
+        if not self.forced_rc4:
+            return
+
         self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
-        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
+        self.assertEqual(expected_session_etype, ticket.session_key.etype)
+
+    # Perform an AS-REQ for a service ticket, specifying AES, when the target
+    # service only supports AES, and supports AES256 session keys. The
+    # resulting ticket should be encrypted with AES, with an AES session key.
+    def test_as_aes_supported_aes_session_aes_requested(self):
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=aes256_bit | aes256_sk_bit)
+
+        ticket = self._as_req(creds, expected_error=0,
+                              target_creds=target_creds,
+                              etype=(AES256_CTS_HMAC_SHA1_96,))
+
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.session_key.etype)
+
+    # Perform an AS-REQ for a service ticket, specifying RC4, when the target
+    # service only supports AES, and supports AES256 session keys. The request
+    # should fail with an error.
+    def test_as_aes_supported_aes_session_rc4_requested(self):
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=aes256_bit | aes256_sk_bit)
+
+        if self.forced_rc4:
+            expected_error = 0
+            expected_session_etype = ARCFOUR_HMAC_MD5
+        else:
+            expected_error = KDC_ERR_ETYPE_NOSUPP
+            expected_session_etype = AES256_CTS_HMAC_SHA1_96
+
+        ticket = self._as_req(creds, expected_error=expected_error,
+                     target_creds=target_creds,
+                     etype=(ARCFOUR_HMAC_MD5,))
+
+        if not self.forced_rc4:
+            return
+
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
+        self.assertEqual(expected_session_etype, ticket.session_key.etype)
 
     # Perform an AS-REQ for a service ticket, specifying AES, when the target
     # service only supports RC4. The request should fail with an error.
     def test_as_rc4_supported_aes_requested(self):
-        creds = self.get_mach_creds()
-
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_RC4_HMAC_MD5,
-            })
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=rc4_bit)
 
         self._as_req(creds, expected_error=KDC_ERR_ETYPE_NOSUPP,
                      target_creds=target_creds,
@@ -125,14 +281,8 @@ class EtypeTests(KdcTgsBaseTests):
     # service only supports RC4. The resulting ticket should be encrypted with
     # RC4, with an RC4 session key.
     def test_as_rc4_supported_rc4_requested(self):
-        creds = self.get_mach_creds()
-
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_RC4_HMAC_MD5,
-            })
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=rc4_bit)
 
         ticket = self._as_req(creds, expected_error=0,
                               target_creds=target_creds,
@@ -141,29 +291,31 @@ class EtypeTests(KdcTgsBaseTests):
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
 
-    # Perform a TGS-REQ for a service ticket, specifying AES. The request
-    # should fail with an error.
-    def test_tgs_aes_requested(self):
-        creds = self.get_mach_creds()
-        tgt = self.get_tgt(creds)
+    # Perform an AS-REQ for a service ticket, specifying AES, when the target
+    # service only supports RC4, but supports AES256 session keys. The
+    # resulting ticket should be encrypted with RC4, with an AES256 session
+    # key.
+    def test_as_rc4_supported_aes_session_aes_requested(self):
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=rc4_bit | aes256_sk_bit)
 
-        target_creds = self.get_mach_creds()
+        ticket = self._as_req(creds, expected_error=0,
+                              target_creds=target_creds,
+                              etype=(AES256_CTS_HMAC_SHA1_96,))
 
-        self._tgs_req(tgt, expected_error=KDC_ERR_ETYPE_NOSUPP,
-                      target_creds=target_creds,
-                      etypes=(AES256_CTS_HMAC_SHA1_96,))
+        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.session_key.etype)
 
-    # Perform a TGS-REQ for a service ticket, specifying RC4. The resulting
-    # ticket should be encrypted with RC4, with an RC4 session key.
-    def test_tgs_rc4_requested(self):
-        creds = self.get_mach_creds()
-        tgt = self.get_tgt(creds)
+    # Perform an AS-REQ for a service ticket, specifying RC4, when the target
+    # service only supports RC4, but supports AES256 session keys. The
+    # resulting ticket should be encrypted with RC4, with an RC4 session key.
+    def test_as_rc4_supported_aes_session_rc4_requested(self):
+        creds = self.get_client_creds()
+        target_creds = self._server_creds(supported=rc4_bit | aes256_sk_bit)
 
-        target_creds = self.get_mach_creds()
-
-        ticket = self._tgs_req(tgt, expected_error=0,
-                               target_creds=target_creds,
-                               etypes=(ARCFOUR_HMAC_MD5,))
+        ticket = self._as_req(creds, expected_error=0,
+                              target_creds=target_creds,
+                              etype=(ARCFOUR_HMAC_MD5,))
 
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
@@ -172,15 +324,10 @@ class EtypeTests(KdcTgsBaseTests):
     # service only supports AES. The resulting ticket should be encrypted with
     # AES, with an AES session key.
     def test_tgs_aes_supported_aes_requested(self):
-        creds = self.get_mach_creds()
+        creds = self.get_client_creds()
         tgt = self.get_tgt(creds)
 
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-            })
+        target_creds = self._server_creds(supported=aes256_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
                                target_creds=target_creds,
@@ -190,22 +337,64 @@ class EtypeTests(KdcTgsBaseTests):
         self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.session_key.etype)
 
     # Perform a TGS-REQ for a service ticket, specifying RC4, when the target
-    # service only supports AES. The resulting ticket should be encrypted with
-    # AES, with an RC4 session key.
+    # service only supports AES. The request should fail with an error.
     def test_tgs_aes_supported_rc4_requested(self):
-        creds = self.get_mach_creds()
+        creds = self.get_client_creds()
         tgt = self.get_tgt(creds)
 
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-            })
+        target_creds = self._server_creds(supported=aes256_bit)
+
+        if self.forced_rc4:
+            expected_error = 0
+        else:
+            expected_error = KDC_ERR_ETYPE_NOSUPP
+
+        ticket = self._tgs_req(tgt, expected_error=expected_error,
+                               target_creds=target_creds,
+                               etypes=(ARCFOUR_HMAC_MD5,))
+
+        if not self.forced_rc4:
+            return
+
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
+        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
+
+    # Perform a TGS-REQ for a service ticket, specifying AES, when the target
+    # service only supports AES, and supports AES256 session keys. The
+    # resulting ticket should be encrypted with AES, with an AES session key.
+    def test_tgs_aes_supported_aes_session_aes_requested(self):
+        creds = self.get_client_creds()
+        tgt = self.get_tgt(creds)
+
+        target_creds = self._server_creds(supported=aes256_bit | aes256_sk_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
                                target_creds=target_creds,
+                               etypes=(AES256_CTS_HMAC_SHA1_96,))
+
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.session_key.etype)
+
+    # Perform a TGS-REQ for a service ticket, specifying RC4, when the target
+    # service only supports AES, and supports AES256 session keys. The request
+    # should fail with an error.
+    def test_tgs_aes_supported_aes_session_rc4_requested(self):
+        creds = self.get_client_creds()
+        tgt = self.get_tgt(creds)
+
+        target_creds = self._server_creds(supported=aes256_bit | aes256_sk_bit)
+
+        if self.forced_rc4:
+            expected_error = 0
+        else:
+            expected_error = KDC_ERR_ETYPE_NOSUPP
+
+        ticket = self._tgs_req(tgt, expected_error=expected_error,
+                               target_creds=target_creds,
                                etypes=(ARCFOUR_HMAC_MD5,))
+
+        if not self.forced_rc4:
+            return
 
         self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
@@ -213,15 +402,10 @@ class EtypeTests(KdcTgsBaseTests):
     # Perform a TGS-REQ for a service ticket, specifying AES, when the target
     # service only supports RC4. The request should fail with an error.
     def test_tgs_rc4_supported_aes_requested(self):
-        creds = self.get_mach_creds()
+        creds = self.get_client_creds()
         tgt = self.get_tgt(creds)
 
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_RC4_HMAC_MD5,
-            })
+        target_creds = self._server_creds(supported=rc4_bit)
 
         self._tgs_req(tgt, expected_error=KDC_ERR_ETYPE_NOSUPP,
                       target_creds=target_creds,
@@ -231,15 +415,43 @@ class EtypeTests(KdcTgsBaseTests):
     # service only supports RC4. The resulting ticket should be encrypted with
     # RC4, with an RC4 session key.
     def test_tgs_rc4_supported_rc4_requested(self):
-        creds = self.get_mach_creds()
+        creds = self.get_client_creds()
         tgt = self.get_tgt(creds)
 
-        target_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'supported_enctypes':
-                security.KERB_ENCTYPE_RC4_HMAC_MD5,
-            })
+        target_creds = self._server_creds(supported=rc4_bit)
+
+        ticket = self._tgs_req(tgt, expected_error=0,
+                               target_creds=target_creds,
+                               etypes=(ARCFOUR_HMAC_MD5,))
+
+        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
+        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.session_key.etype)
+
+    # Perform a TGS-REQ for a service ticket, specifying AES, when the target
+    # service only supports RC4, but supports AES256 session keys. The
+    # resulting ticket should be encrypted with RC4, with an AES256 session
+    # key.
+    def test_tgs_rc4_supported_aes_session_aes_requested(self):
+        creds = self.get_client_creds()
+        tgt = self.get_tgt(creds)
+
+        target_creds = self._server_creds(supported=rc4_bit | aes256_sk_bit)
+
+        ticket = self._tgs_req(tgt, expected_error=0,
+                               target_creds=target_creds,
+                               etypes=(AES256_CTS_HMAC_SHA1_96,))
+
+        self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.session_key.etype)
+
+    # Perform a TGS-REQ for a service ticket, specifying RC4, when the target
+    # service only supports RC4, but supports AES256 session keys. The
+    # resulting ticket should be encrypted with RC4, with an RC4 session key.
+    def test_tgs_rc4_supported_aes_session_rc4_requested(self):
+        creds = self.get_client_creds()
+        tgt = self.get_tgt(creds)
+
+        target_creds = self._server_creds(supported=rc4_bit | aes256_sk_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
                                target_creds=target_creds,
