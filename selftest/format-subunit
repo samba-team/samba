@@ -46,7 +46,7 @@ summaryfile = os.path.join(opts.prefix, "summary")
 
 msg_ops.write_summary(summaryfile)
 
-print("\nA summary with detailed information can be found in:")
-print("  %s" % summaryfile)
+print("\nThere might be more detail in "
+      f"{os.path.join(opts.prefix, 'subunit')} or {summaryfile}.")
 
 sys.exit(expected_ret)
