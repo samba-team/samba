@@ -177,50 +177,39 @@ static bool idmap_init(void)
 	return true;
 }
 
+static int idmap_config_name(const char *domname, char *buf, size_t buflen)
+{
+	int len = snprintf(buf, buflen, "idmap config %s", domname);
+	SMB_ASSERT(len > 0);
+	return len + 1;
+}
+
 const char *idmap_config_const_string(const char *domname, const char *option,
 				      const char *def)
 {
-	int len = snprintf(NULL, 0, "idmap config %s", domname);
+	int len = idmap_config_name(domname, NULL, 0);
+	char config_option[len];
+	idmap_config_name(domname, config_option, sizeof(config_option));
 
-	if (len == -1) {
-		return NULL;
-	}
-	{
-		char config_option[len+1];
-		snprintf(config_option, sizeof(config_option),
-			 "idmap config %s", domname);
-		return lp_parm_const_string(-1, config_option, option, def);
-	}
+	return lp_parm_const_string(-1, config_option, option, def);
 }
 
 bool idmap_config_bool(const char *domname, const char *option, bool def)
 {
-	int len = snprintf(NULL, 0, "idmap config %s", domname);
+	int len = idmap_config_name(domname, NULL, 0);
+	char config_option[len];
+	idmap_config_name(domname, config_option, sizeof(config_option));
 
-	if (len == -1) {
-		return def;
-	}
-	{
-		char config_option[len+1];
-		snprintf(config_option, sizeof(config_option),
-			 "idmap config %s", domname);
-		return lp_parm_bool(-1, config_option, option, def);
-	}
+	return lp_parm_bool(-1, config_option, option, def);
 }
 
 int idmap_config_int(const char *domname, const char *option, int def)
 {
-	int len = snprintf(NULL, 0, "idmap config %s", domname);
+	int len = idmap_config_name(domname, NULL, 0);
+	char config_option[len];
+	idmap_config_name(domname, config_option, sizeof(config_option));
 
-	if (len == -1) {
-		return def;
-	}
-	{
-		char config_option[len+1];
-		snprintf(config_option, sizeof(config_option),
-			 "idmap config %s", domname);
-		return lp_parm_int(-1, config_option, option, def);
-	}
+	return lp_parm_int(-1, config_option, option, def);
 }
 
 bool domain_has_idmap_config(const char *domname)
