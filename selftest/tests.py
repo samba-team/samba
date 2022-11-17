@@ -478,3 +478,6 @@ plantestsuite("samba.unittests.gnutls_aead_aes_256_cbc_hmac_sha512", "none",
               [os.path.join(bindir(), "test_gnutls_aead_aes_256_cbc_hmac_sha512")])
 plantestsuite("samba.unittests.encode_decode", "none",
               [os.path.join(bindir(), "test_encode_decode")])
+
+plantestsuite("samba.unittests.compression.lzxpress_huffman", "none",
+              [os.path.join(bindir(), "default/lib/compression/test_lzx_huffman")])
