@@ -5260,22 +5260,15 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 		return true;
 	}
 
-	/*
-	 * Arithmetic on 32-bit systems may cause overflow, depending on
-	 * size_t precision. First we check its unlikely, then we
-	 * force the precision into target off_t, then we check that
-	 * the total did not overflow either.
-	 */
-	if (bandsize > SIZE_MAX/nbands) {
-		DBG_ERR("tmsize potential overflow: bandsize [%zu] nbands [%zu]\n",
-			bandsize, nbands);
-		return false;
-	}
 	tm_size = (off_t)bandsize * (off_t)nbands;
-
-	if (state->total_size + tm_size < state->total_size) {
-		DBG_ERR("tm total size overflow: bandsize [%zu] nbands [%zu]\n",
-			bandsize, nbands);
+	if (tm_size / nbands != bandsize ||
+	    state->total_size + tm_size < state->total_size)
+	{
+		DBG_ERR("tm size overflow: total_size [%jd]"
+			" bandsize [%zu] nbands [%zu]\n",
+			(intmax_t)state->total_size,
+			bandsize,
+			nbands);
 		return false;
 	}
 
