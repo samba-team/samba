@@ -1498,6 +1498,8 @@ sub provision_promoted_dc($$$)
 
         ntlm auth = ntlmv2-only
 
+	kdc force enable rc4 weak session keys = yes
+
 [sysvol]
 	path = $ctx->{statedir}/sysvol
 	read only = yes

@@ -23,7 +23,7 @@ import os
 import ldb
 
 
-from samba import dsdb
+from samba import dsdb, ntstatus
 
 from samba.dcerpc import krb5pac, security
 
@@ -38,7 +38,9 @@ from samba.tests.krb5.rfc4120_constants import (
     ARCFOUR_HMAC_MD5,
     KRB_ERROR,
     KRB_TGS_REP,
+    KDC_ERR_BADKEYVER,
     KDC_ERR_BADMATCH,
+    KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_GENERIC,
     KDC_ERR_MODIFIED,
     KDC_ERR_NOT_US,
@@ -1364,12 +1366,16 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_tgs_rc4(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
-        self._run_tgs(tgt, expected_error=KDC_ERR_GENERIC)
+        self._run_tgs(tgt, expected_error=(KDC_ERR_GENERIC,
+                                           KDC_ERR_BADKEYVER),
+                      expect_edata=True,
+                      expected_status=ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
 
     def test_renew_rc4(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, renewable=True, etype=kcrypto.Enctype.RC4)
-        self._renew_tgt(tgt, expected_error=KDC_ERR_GENERIC,
+        self._renew_tgt(tgt, expected_error=(KDC_ERR_GENERIC,
+                                             KDC_ERR_BADKEYVER),
                         expect_pac_attrs=True,
                         expect_pac_attrs_pac_request=True,
                         expect_requester_sid=True)
@@ -1377,7 +1383,8 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_validate_rc4(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, invalid=True, etype=kcrypto.Enctype.RC4)
-        self._validate_tgt(tgt, expected_error=KDC_ERR_GENERIC,
+        self._validate_tgt(tgt, expected_error=(KDC_ERR_GENERIC,
+                                                KDC_ERR_BADKEYVER),
                            expect_pac_attrs=True,
                            expect_pac_attrs_pac_request=True,
                            expect_requester_sid=True)
@@ -1385,17 +1392,21 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_s4u2self_rc4(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
-        self._s4u2self(tgt, creds, expected_error=KDC_ERR_GENERIC)
+        self._s4u2self(tgt, creds, expected_error=(KDC_ERR_GENERIC,
+                                                   KDC_ERR_BADKEYVER),
+                       expect_edata=True,
+                       expected_status=ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
 
     def test_user2user_rc4(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
-        self._user2user(tgt, creds, expected_error=KDC_ERR_GENERIC)
+        self._user2user(tgt, creds, expected_error=KDC_ERR_ETYPE_NOSUPP)
 
     def test_fast_rc4(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
-        self._fast(tgt, creds, expected_error=KDC_ERR_GENERIC)
+        self._fast(tgt, creds, expected_error=KDC_ERR_GENERIC,
+                   expect_edata=self.expect_padata_outer)
 
     # Test user-to-user with incorrect service principal names.
     def test_user2user_matching_sname_host(self):
@@ -2429,7 +2440,7 @@ class KdcTgsTests(KdcTgsBaseTests):
             can_modify_requester_sid=can_modify_requester_sid,
             remove_pac_attrs=remove_pac_attrs,
             remove_requester_sid=remove_requester_sid,
-            etype=None,
+            etype=etype,
             cksum_etype=cksum_etype)
 
     def _modify_tgt(self,
@@ -2651,7 +2662,8 @@ class KdcTgsTests(KdcTgsBaseTests):
 
     def _run_tgs(self, tgt, expected_error, expect_pac=True,
                  expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
-                 expect_requester_sid=None, expected_sid=None):
+                 expect_requester_sid=None, expected_sid=None,
+                 expect_edata=False, expected_status=None):
         target_creds = self.get_service_creds()
         return self._tgs_req(
             tgt, expected_error, target_creds,
@@ -2659,7 +2671,9 @@ class KdcTgsTests(KdcTgsBaseTests):
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
-            expected_sid=expected_sid)
+            expected_sid=expected_sid,
+            expect_edata=expect_edata,
+            expected_status=expected_status)
 
     # These tests fail against Windows, which does not implement ticket
     # renewal.
@@ -2723,7 +2737,8 @@ class KdcTgsTests(KdcTgsBaseTests):
                              expect_pac=expect_pac)
 
     def _user2user(self, tgt, tgt_creds, expected_error, sname=None,
-                   srealm=None, user_tgt=None, expect_pac=True):
+                   srealm=None, user_tgt=None, expect_pac=True,
+                   expected_status=None):
         if user_tgt is None:
             user_creds = self._get_mach_creds()
             user_tgt = self.get_tgt(user_creds)
@@ -2734,10 +2749,11 @@ class KdcTgsTests(KdcTgsBaseTests):
                              additional_ticket=tgt,
                              sname=sname,
                              srealm=srealm,
-                             expect_pac=expect_pac)
+                             expect_pac=expect_pac,
+                             expected_status=expected_status)
 
     def _fast(self, armor_tgt, armor_tgt_creds, expected_error,
-              expected_sname=None, expect_pac=True):
+              expected_sname=None, expect_pac=True, expect_edata=False):
         user_creds = self._get_mach_creds()
         user_tgt = self.get_tgt(user_creds)
 
@@ -2746,7 +2762,8 @@ class KdcTgsTests(KdcTgsBaseTests):
         return self._tgs_req(user_tgt, expected_error, target_creds,
                              armor_tgt=armor_tgt,
                              expected_sname=expected_sname,
-                             expect_pac=expect_pac)
+                             expect_pac=expect_pac,
+                             expect_edata=expect_edata)
 
 
 if __name__ == "__main__":

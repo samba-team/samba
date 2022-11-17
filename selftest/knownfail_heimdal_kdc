@@ -98,6 +98,7 @@
 #
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_no_pac
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rc4.ad_dc
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_req_invalid
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_denied
@@ -109,3 +110,518 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_service_ticket
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_sid_mismatch_nonexisting
+#
+# Encryption type tests
+#
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_no_claims_to_self.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_session_aes_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_session_aes_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_session_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_session_rc4_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_rc4_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_supported_aes_session_aes_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_supported_aes_session_aes_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_supported_aes_session_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_supported_aes_session_rc4_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_0_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_16_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_24_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_32_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_36_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_40_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_44_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_48_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_52_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_56_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_60_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65536_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65552_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_65568_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_8_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(17,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 17, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 17, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 23\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18, 23\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(18,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 17, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 17, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 18, 17\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 18, 17\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 18\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23, 18\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23,\)_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_as_None_supported_\(23,\)_requested.promoted_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_tgs_aes_supported_aes_session_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_tgs_aes_supported_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_tgs_rc4_supported_aes_session_aes_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_tgs_rc4_supported_aes_session_aes_requested.promoted_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_ad_fx_fast_armor.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_ad_fx_fast_armor_enc_auth_data.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_ad_fx_fast_armor_ticket.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_authdata_fast_not_used.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_authdata_fast_used.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_encrypted_challenge_as_req_self.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_armor.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_armor_session_key.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_hide_client_names.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_no_claims.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_no_sname.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_wrong_flags.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_wrong_nonce.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_wrong_realm.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_wrong_till.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_no_auth_data.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_pac_request_false.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_pac_request_none.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_pac_request_true.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_no_subkey.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_wrong_principal.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_client_no_auth_data_required.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_client_no_auth_data_required.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_service_no_auth_data_required.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_rc4.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_enterprise_canon.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_enterprise_canon_case.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_enterprise_canon_case_mac.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_enterprise_canon_mac.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_no_pac.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_rc4.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_service_no_auth_data_required.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rc4.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_upn_dns_info_ex_mac.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_upn_dns_info_ex_upn_mac.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_upn_dns_info_ex_upn_user.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_upn_dns_info_ex_user.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rc4.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rc4.ad_dc
+^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_ticket_requester_sid_lifetime_tgs.ad_dc
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rc4_client_checksum.ad_dc_default:local
