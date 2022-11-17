@@ -3815,7 +3815,8 @@ class cmd_add_access(Command):
     """Adds a VGP Host Access Group Policy to the sysvol
 
 This command adds a host access setting to the sysvol for applying to winbind
-clients.
+clients. Any time an allow entry is detected by the client, an implicit deny
+ALL will be assumed.
 
 Example:
 samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow goodguy example.com
