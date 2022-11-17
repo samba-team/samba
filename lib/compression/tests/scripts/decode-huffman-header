@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+"""Print the codes in the first Huffman tree header in the given file.
+
+USAGE: decode-huffman-header FILE
+
+The number of codes of different length is printed first, followed by
+the implied total frequency of codes, followed by the deduced codes.
+
+If the total is not 1.0, the header is invalid.
+"""
+
+import sys
+
+
+if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) != 2:
+    print(__doc__)
+    exit(len(sys.argv) != 2)
+
+
+def read_table(data):
+    lengths = [[] for x in range(16)]
+    for i, b in enumerate(data):
+        even = b & 15
+        odd = b >> 4
+        lengths[even].append(i * 2)
+        lengths[odd].append(i * 2 + 1)
+
+    code = 0
+
+    total = 0.0
+    for i, bucket in enumerate(lengths):
+        if bucket and i:
+            portion = 1.0 / (1 << i) * len(bucket)
+            total += portion
+            print(f"length {i:2}: {len(bucket):4} ({portion})")
+    print(f"total {total}")
+
+    for i, bucket in enumerate(lengths):
+        if i == 0:
+            continue
+        code <<= 1
+        for c in bucket:
+            print(f'{c:03x}   {code:0{i}b}')
+            code += 1
+
+
+def main():
+    fn = sys.argv[1]
+    with open(fn, 'rb') as f:
+        data = f.read(256)
+        read_table(data)
+
+
+main()
