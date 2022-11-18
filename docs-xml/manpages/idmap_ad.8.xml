@@ -99,6 +99,37 @@
 		<para>Default: no</para>
 		</listitem>
 		</varlistentry>
+		<varlistentry>
+		<term>deny ous</term>
+		<listitem><para>This parameter is a list of OUs from
+		which objects will not be mapped via the ad idmap
+		module. If <parameter>deny ous</parameter> is set but
+		<parameter>allow ous</parameter> is not set, every
+		object outside the OUs listed in <parameter>deny
+		ous</parameter> is allowed.
+		</para>
+		<para>Default: none</para>
+		</listitem>
+		</varlistentry>
+		<varlistentry>
+		<term>allow ous</term>
+		<listitem><para>This parameter is a list of OUs from
+		which objects will be mapped via the ad idmap
+		module. If <parameter>allow ous</parameter> is set but
+		<parameter>deny ous</parameter> is not set, every
+		object outside the OUs <parameter>allow
+		ous</parameter> is denied.
+		</para>
+		<para>
+		If both <parameter>allow ous</parameter> and
+		<parameter>deny ous</parameter> are set,
+		<parameter>deny ous</parameter> is evaluated first,
+		then <parameter>allow ous</parameter> is looked at. If
+		an AD object matches neither, it is denied.
+		</para>
+		<para>Default: none</para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 

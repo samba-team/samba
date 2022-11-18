@@ -34,6 +34,8 @@
 #include "source3/libads/sitename_cache.h"
 #include "source3/libads/kerberos_proto.h"
 #include "source3/librpc/gen_ndr/ads.h"
+#include "source3/lib/global_contexts.h"
+#include <ldb.h>
 
 struct idmap_ad_schema_names;
 
@@ -45,6 +47,10 @@ struct idmap_ad_context {
 
 	bool unix_primary_group;
 	bool unix_nss_info;
+
+	struct ldb_context *ldb;
+	struct ldb_dn **deny_ous;
+	struct ldb_dn **allow_ous;
 };
 
 static NTSTATUS idmap_ad_get_context(struct idmap_domain *dom,
@@ -434,6 +440,42 @@ static int idmap_ad_context_destructor(struct idmap_ad_context *ctx)
 	return 0;
 }
 
+static struct ldb_dn **str_list_to_dns(TALLOC_CTX *mem_ctx,
+				       const char *dbgmsg,
+				       struct ldb_context *ldb,
+				       const char **strlist)
+{
+	size_t i, num_dns = str_list_length(strlist);
+	char *dbgstr = NULL;
+	struct ldb_dn **dns = NULL;
+
+	dns = talloc_array(mem_ctx, struct ldb_dn *, num_dns);
+	if (dns == NULL) {
+		TALLOC_FREE(dbgstr);
+		return NULL;
+	}
+
+	dbgstr = talloc_strdup(talloc_tos(), "");
+
+	for (i = 0; i < num_dns; i++) {
+		dns[i] = ldb_dn_new(dns, ldb, strlist[i]);
+		if (dns[i] == NULL) {
+			DBG_WARNING("ldb_dn_new(%s) failed\n", strlist[i]);
+			TALLOC_FREE(dns);
+			return NULL;
+		}
+		talloc_asprintf_addbuf(
+			&dbgstr,
+			"%s ",
+			ldb_dn_get_extended_linearized(dbgstr, dns[i], 1));
+	}
+
+	DBG_DEBUG("%s %s\n", dbgmsg, dbgstr);
+	TALLOC_FREE(dbgstr);
+
+	return dns;
+}
+
 static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 					struct idmap_domain *dom,
 					const char *domname,
@@ -441,6 +483,8 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 {
 	struct idmap_ad_context *ctx;
 	const char *schema_mode;
+	const char **allow = NULL;
+	const char **deny = NULL;
 	NTSTATUS status;
 	TLDAPRC rc;
 
@@ -483,8 +527,118 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
 
+	deny = idmap_config_string_list(domname, "deny ous", NULL);
+	allow = idmap_config_string_list(domname, "allow ous", NULL);
+
+	if ((deny != NULL) || (allow != NULL)) {
+		int ret = ldb_global_init();
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
+			DBG_WARNING("ldb_global_init() failed: %s\n",
+				    strerror(errno));
+			TALLOC_FREE(ctx);
+			return status;
+		}
+
+		ctx->ldb = ldb_init(ctx, global_event_context());
+		if (ctx->ldb == NULL) {
+			status = map_nt_error_from_unix(errno);
+			DBG_WARNING("ldb_init() failed: %s\n", strerror(errno));
+			TALLOC_FREE(ctx);
+			return status;
+		}
+	}
+
+	if (deny != NULL) {
+		ctx->deny_ous = str_list_to_dns(ctx, "Denying", ctx->ldb, deny);
+		if (ctx->deny_ous == NULL) {
+			DBG_DEBUG("str_list_to_dns failed\n");
+			TALLOC_FREE(ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (allow != NULL) {
+		ctx->allow_ous =
+			str_list_to_dns(ctx, "Allowing", ctx->ldb, allow);
+		if (ctx->allow_ous == NULL) {
+			DBG_DEBUG("str_list_to_dns failed\n");
+			TALLOC_FREE(ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	*pctx = ctx;
 	return NT_STATUS_OK;
+}
+
+static bool check_dn(struct ldb_dn **dns, struct ldb_dn *dn)
+{
+	size_t i, num_dns = talloc_array_length(dns);
+
+	for (i = 0; i < num_dns; i++) {
+		struct ldb_dn *base = dns[i];
+		int ret = ldb_dn_compare_base(base, dn);
+		if (ret == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool idmap_ad_dn_filter(struct idmap_domain *dom, const char *dnstr)
+{
+	struct idmap_ad_context *ctx = NULL;
+	struct ldb_dn *dn = NULL;
+	NTSTATUS status;
+	bool result = false;
+
+	status = idmap_ad_get_context(dom, &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("idmap_ad_get_context failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	if ((ctx->allow_ous == NULL) && (ctx->deny_ous == NULL)) {
+		/*
+		 * Nothing to check
+		 */
+		return true;
+	}
+
+	dn = ldb_dn_new(talloc_tos(), ctx->ldb, dnstr);
+	if (dn == NULL) {
+		DBG_DEBUG("ldb_dn_new(%s) failed\n", dnstr);
+		return false;
+	}
+
+	if (ctx->deny_ous != NULL) {
+		bool denied = check_dn(ctx->deny_ous, dn);
+		if (denied) {
+			DBG_WARNING("Denied %s\n", dnstr);
+			TALLOC_FREE(dn);
+			return false;
+		}
+
+		if (ctx->allow_ous == NULL) {
+			/*
+			 * Only a few denied OUs around, allow by
+			 * default
+			 */
+			result = true;
+		}
+	}
+
+	if (ctx->allow_ous != NULL) {
+		bool allowed = check_dn(ctx->allow_ous, dn);
+		if (allowed) {
+			return true;
+		}
+		DBG_WARNING("Did not allow %s\n", dnstr);
+	}
+
+	return result;
 }
 
 static NTSTATUS idmap_ad_query_user(struct idmap_domain *domain,
@@ -538,13 +692,23 @@ static NTSTATUS idmap_ad_query_user(struct idmap_domain *domain,
 
 	for (i=0; i<num_msgs; i++) {
 		struct tldap_message *msg = msgs[i];
+		char *dn = NULL;
+		bool ok;
 
 		if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
 			continue;
 		}
+		ok = tldap_entry_dn(msg, &dn);
+		if (!ok) {
+			continue;
+		}
+		ok = idmap_ad_dn_filter(domain, dn);
+		if (!ok) {
+			DBG_DEBUG("%s filtered out\n", dn);
+			continue;
+		}
 
 		if (ctx->unix_primary_group) {
-			bool ok;
 			uint32_t gid;
 
 			ok = tldap_pull_uint32(msg, ctx->schema->gid, &gid);
@@ -783,6 +947,12 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom,
 			continue;
 		}
 
+		ok = idmap_ad_dn_filter(dom, dn);
+		if (!ok) {
+			DBG_DEBUG("%s filtered out\n", dn);
+			continue;
+		}
+
 		ok = tldap_pull_uint32(msg, "sAMAccountType", &atype);
 		if (!ok) {
 			DBG_DEBUG("No atype in object %s\n", dn);
@@ -938,6 +1108,12 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 		ok = tldap_entry_dn(msg, &dn);
 		if (!ok) {
 			DBG_DEBUG("No dn found in msg %zu\n", i);
+			continue;
+		}
+
+		ok = idmap_ad_dn_filter(dom, dn);
+		if (!ok) {
+			DBG_DEBUG("%s filtered out\n", dn);
 			continue;
 		}
 
