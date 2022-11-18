@@ -1,0 +1,24 @@
+<samba:parameter name="kdc force enable rc4 weak session keys"
+                 type="boolean"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  <constant>RFC8429</constant> declares that
+	  <constant>rc4-hmac</constant> Kerberos ciphers are weak and
+	  there are known attacks on Active Directory use of this
+	  cipher suite.
+	</para>
+	<para>
+	  However for compatibility with Microsoft Windows this option
+	  allows the KDC to assume that regardless of the value set in
+	  a service account's
+	  <constant>msDS-SupportedEncryptionTypes</constant> attribute
+	  that a <constant>rc4-hmac</constant> Kerberos session key (as distinct from the ticket key, as
+	  found in a service keytab) can be used if the potentially
+	  older client requests it.
+	</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
