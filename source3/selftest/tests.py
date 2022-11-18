@@ -1170,7 +1170,7 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/aio -U$USERNAME%$PASSWORD', 'aio')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.compound_async":
-        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/aio_delay_inject -U$USERNAME%$PASSWORD')
     elif t == "smb2.ea":
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER/ea_acl_xattr --option=torture:acl_xattr_name=hackme -U$USERNAME%$PASSWORD')
     elif t == "rpc.samba3.netlogon" or t == "rpc.samba3.sessionkey":
