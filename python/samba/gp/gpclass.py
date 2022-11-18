@@ -41,6 +41,7 @@ from samba.dcerpc import misc
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.gp.util.logging import log
+from hashlib import blake2b
 
 try:
     from enum import Enum
@@ -133,6 +134,11 @@ class gp_log:
         else:
             self._state = value
 
+    def get_state(self):
+        '''Check the GPOSTATE
+        '''
+        return self._state
+
     def set_guid(self, guid):
         ''' Log to a different GPO guid
         param guid          - guid value of the GPO from which we're applying
@@ -192,6 +198,21 @@ class gp_log:
             if attr is not None:
                 return attr.text
         return None
+
+    def retrieve_all(self, gp_ext_name):
+        ''' Retrieve all stored attributes for this user, GPO guid, and CSE
+        param gp_ext_name   - Name of the extension which applied policy
+        return              - The values of the attributes prior to policy
+                              application
+        '''
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
+        assert guid_obj is not None, "gpo guid was not set"
+        ext = guid_obj.find('gp_ext[@name="%s"]' % gp_ext_name)
+        if ext is not None:
+            attrs = ext.findall('attribute')
+            return {attr.attrib['name']: attr.text for attr in attrs}
+        return {}
 
     def get_applied_guids(self):
         ''' Return a list of applied ext guids
@@ -350,6 +371,189 @@ class gp_xml_ext(gp_ext):
             return etree.fromstring(raw.decode())
         except UnicodeDecodeError:
             return etree.fromstring(raw.decode('utf-16'))
+
+
+class gp_applier(object):
+    '''Group Policy Applier/Unapplier/Modifier
+    The applier defines functions for monitoring policy application,
+    removal, and modification. It must be a multi-derived class paired
+    with a subclass of gp_ext.
+    '''
+    __metaclass__ = ABCMeta
+
+    def cache_add_attribute(self, guid, attribute, value):
+        '''Add an attribute and value to the Group Policy cache
+        guid        - The GPO guid which applies this policy
+        attribute   - The attribute name of the policy being applied
+        value       - The value of the policy being applied
+
+        Normally called by the subclass apply() function after applying policy.
+        '''
+        self.gp_db.set_guid(guid)
+        self.gp_db.store(str(self), attribute, value)
+        self.gp_db.commit()
+
+    def cache_remove_attribute(self, guid, attribute):
+        '''Remove an attribute from the Group Policy cache
+        guid        - The GPO guid which applies this policy
+        attribute   - The attribute name of the policy being unapplied
+
+        Normally called by the subclass unapply() function when removing old
+        policy.
+        '''
+        self.gp_db.set_guid(guid)
+        self.gp_db.delete(str(self), attribute)
+        self.gp_db.commit()
+
+    def cache_get_attribute_value(self, guid, attribute):
+        '''Retrieve the value stored in the cache for the given attribute
+        guid        - The GPO guid which applies this policy
+        attribute   - The attribute name of the policy
+        '''
+        self.gp_db.set_guid(guid)
+        return self.gp_db.retrieve(str(self), attribute)
+
+    def cache_get_all_attribute_values(self, guid):
+        '''Retrieve all attribute/values currently stored for this gpo+policy
+        guid        - The GPO guid which applies this policy
+        '''
+        self.gp_db.set_guid(guid)
+        return self.gp_db.retrieve_all(str(self))
+
+    def cache_get_apply_state(self):
+        '''Return the current apply state
+        return      - APPLY|ENFORCE|UNAPPLY
+        '''
+        return self.gp_db.get_state()
+
+    def generate_attribute(self, name, *args):
+        '''Generate an attribute name from arbitrary data
+        name            - A name to ensure uniqueness
+        args            - Any arbitrary set of args, str or bytes
+        return          - A blake2b digest of the data, the attribute
+
+        The importance here is the digest of the data makes the attribute
+        reproducible and uniquely identifies it. Hashing the name with
+        the data ensures we don't falsly identify a match which is the same
+        text in a different file. Using this attribute generator is optional.
+        '''
+        data = b''.join([get_bytes(arg) for arg in [*args]])
+        return blake2b(get_bytes(name)+data).hexdigest()
+
+    def generate_value_hash(self, *args):
+        '''Generate a unique value which identifies value changes
+        args            - Any arbitrary set of args, str or bytes
+        return          - A blake2b digest of the data, the value represented
+        '''
+        data = b''.join([get_bytes(arg) for arg in [*args]])
+        return blake2b(data).hexdigest()
+
+    @abstractmethod
+    def unapply(self, guid, attribute, value):
+        '''Group Policy Unapply
+        guid            - The GPO guid which applies this policy
+        attribute       - The attribute name of the policy being unapplied
+        value           - The value of the policy being unapplied
+        '''
+        pass
+
+    @abstractmethod
+    def apply(self, guid, attribute, applier_func, *args):
+        '''Group Policy Apply
+        guid            - The GPO guid which applies this policy
+        attribute       - The attribute name of the policy being applied
+        applier_func    - An applier function which takes variable args
+        args            - The variable arguments to pass to applier_func
+
+        The applier_func function MUST return the value of the policy being
+        applied. It's important that implementations of `apply` check for and
+        first unapply any changed policy. See for example calls to
+        `cache_get_all_attribute_values()` which searches for all policies
+        applied by this GPO for this Client Side Extension (CSE).
+        '''
+        pass
+
+    def clean(self, guid, keep=[], remove=[], **kwargs):
+        '''Cleanup old removed attributes
+        keep    - A list of attributes to keep
+        remove  - A single attribute to remove, or a list of attributes to
+                  remove
+        kwargs  - Additional keyword args required by the subclass unapply
+                  function
+
+        This is only necessary for CSEs which provide multiple attributes.
+        '''
+        # Clean syntax is, either provide a single remove attribute,
+        # or a list of either removal attributes or keep attributes.
+        if type(remove) != list:
+            value = self.cache_get_attribute_value(guid, remove)
+            if value is not None:
+                self.unapply(guid, remove, value, **kwargs)
+        else:
+            old_vals = self.cache_get_all_attribute_values(guid)
+            for attribute, value in old_vals.items():
+                if (len(remove) > 0 and attribute in remove) or \
+                   (len(keep) > 0 and attribute not in keep):
+                    self.unapply(guid, attribute, value, **kwargs)
+
+
+class gp_file_applier(gp_applier):
+    '''Group Policy File Applier/Unapplier/Modifier
+    Subclass of abstract class gp_applier for monitoring policy applied
+    via a file.
+    '''
+
+    def __generate_value(self, value_hash, files, sep):
+        data = [value_hash]
+        data.extend(files)
+        return sep.join(data)
+
+    def __parse_value(self, value, sep):
+        '''Parse a value
+        return          - A unique HASH, followed by the file list
+        '''
+        if value is None:
+            return None, []
+        data = value.split(sep)
+        if '/' in data[0]:
+            # The first element is not a hash, but a filename. This is a
+            # legacy value.
+            return None, data
+        else:
+            return data[0], data[1:] if len(data) > 1 else []
+
+    def unapply(self, guid, attribute, files, sep=':'):
+        # If the value isn't a list of files, parse value from the log
+        if type(files) != list:
+            _, files = self.__parse_value(files, sep)
+        for file in files:
+            if os.path.exists(file):
+                os.unlink(file)
+        self.cache_remove_attribute(guid, attribute)
+
+    def apply(self, guid, attribute, value_hash, applier_func, *args, sep=':'):
+        '''
+        applier_func MUST return a list of files created by the applier.
+
+        This applier is for policies which only apply to a single file (with
+        a couple small exceptions). This applier will remove any policy applied
+        by this GPO which doesn't match the new policy.
+        '''
+        # If the policy has changed, unapply, then apply new policy
+        old_val = self.cache_get_attribute_value(guid, attribute)
+        # Ignore removal if this policy is applied and hasn't changed
+        old_val_hash, old_val_files = self.__parse_value(old_val, sep)
+        if (old_val_hash != value_hash or \
+                self.cache_get_apply_state() == GPOSTATE.ENFORCE):
+            self.unapply(guid, attribute, old_val_files)
+        else:
+            # If policy is already applied, skip application
+            return
+
+        # Apply the policy and log the changes
+        files = applier_func(*args)
+        new_value = self.__generate_value(value_hash, files, sep)
+        self.cache_add_attribute(guid, attribute, new_value)
 
 
 ''' Fetch the hostname of a writable DC '''
