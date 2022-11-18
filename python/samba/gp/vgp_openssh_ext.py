@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba.gp.gpclass import gp_xml_ext
-from base64 import b64encode
+from io import BytesIO
+from samba.gp.gpclass import gp_xml_ext, gp_file_applier
 from tempfile import NamedTemporaryFile
 from samba.common import get_bytes, get_string
 
@@ -31,24 +31,19 @@ intro = b'''
 
 '''
 
-class vgp_openssh_ext(gp_xml_ext):
+class vgp_openssh_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/OpenSSH'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
             cfg_dir='/etc/ssh/sshd_config.d'):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, sshd_config in settings[str(self)].items():
-                    if os.path.exists(sshd_config):
-                        os.unlink(sshd_config)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, sshd_config)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
-                self.gp_db.set_guid(gpo.name)
                 xml = 'MACHINE/VGP/VTLA/SshCfg/SshD/manifest.xml'
                 path = os.path.join(gpo.file_sys_path, xml)
                 xml_conf = self.parse(path)
@@ -63,25 +58,32 @@ class vgp_openssh_ext(gp_xml_ext):
                     settings = {}
                     for kv in configsection.findall('keyvaluepair'):
                         settings[kv.find('key')] = kv.find('value')
-                    attribute = get_string(b64encode(get_bytes(gpo.name) +
-                        get_bytes(cfg_dir)))
-                    fname = self.gp_db.retrieve(str(self), attribute)
+                    raw = BytesIO()
+                    for k, v in settings.items():
+                        raw.write(b'%s %s\n' % \
+                                  (get_bytes(k.text), get_bytes(v.text)))
+                    # Each GPO applies only one set of OpenSSH settings, in a
+                    # single file, so the attribute does not need uniqueness.
+                    attribute = self.generate_attribute(gpo.name)
+                    # The value hash is generated from the raw data we will
+                    # write to the OpenSSH settings file, ensuring any changes
+                    # to this GPO will cause the file to be rewritten.
+                    value_hash = self.generate_value_hash(raw.getvalue())
                     if not os.path.isdir(cfg_dir):
                         os.mkdir(cfg_dir, 0o640)
-                    if fname and os.path.exists(fname):
-                        f = open(fname, 'wb')
-                    else:
+                    def applier_func(cfg_dir, raw):
                         f = NamedTemporaryFile(prefix='gp_',
                                                delete=False,
                                                dir=cfg_dir)
-                    f.write(intro)
-                    for k, v in settings.items():
-                        f.write(b'%s %s\n' % \
-                            (get_bytes(k.text), get_bytes(v.text)))
-                    os.chmod(f.name, 0o640)
-                    self.gp_db.store(str(self), attribute, f.name)
-                    self.gp_db.commit()
-                    f.close()
+                        f.write(intro)
+                        f.write(raw.getvalue())
+                        os.chmod(f.name, 0o640)
+                        filename = f.name
+                        f.close()
+                        return [filename]
+                    self.apply(gpo.name, attribute, value_hash, applier_func,
+                               cfg_dir, raw)
+                    raw.close()
 
     def rsop(self, gpo):
         output = {}
