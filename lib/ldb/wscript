@@ -619,6 +619,13 @@ def test(ctx):
          'tests/python/index.py',
          'tests/python/repack.py'],
         extra_env={'SELFTEST_PREFIX': test_prefix})
+    pyret = samba_utils.RUN_PYTHON_TESTS(
+        ['tests/python/api.py',
+         'tests/python/crash.py',
+         'tests/python/index.py',
+         'tests/python/repack.py'],
+        extra_env={'SELFTEST_PREFIX': test_prefix,
+                   'LC_ALL': 'tr_TR.UTF-8'})
     print("Python testsuite returned %d" % pyret)
 
     cmocka_ret = 0
