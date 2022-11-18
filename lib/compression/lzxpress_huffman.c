@@ -28,6 +28,7 @@
 #include "replace.h"
 #include "lzxpress_huffman.h"
 #include "lib/util/stable_sort.h"
+#include "lib/util/debug.h"
 #include "lib/util/byteorder.h"
 #include "lib/util/bytearray.h"
 
@@ -40,6 +41,24 @@
 #ifndef DEBUG_NO_LZ77_MATCHES
 #define DEBUG_NO_LZ77_MATCHES false
 #endif
+
+/*
+ * DEBUG_HUFFMAN_TREE forces the drawing of ascii art huffman trees during
+ * compression and decompression.
+ *
+ * These trees will also be drawn at DEBUG level 10, but that doesn't work
+ * with cmocka tests.
+ */
+#ifndef DEBUG_HUFFMAN_TREE
+#define DEBUG_HUFFMAN_TREE false
+#endif
+
+#if DEBUG_HUFFMAN_TREE
+#define DBG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define DBG(...) DBG_INFO(__VA_ARGS__)
+#endif
+
 
 #define LZXPRESS_ERROR -1LL
 
@@ -152,6 +171,182 @@ static inline uint16_t encode_match(size_t len, size_t offset)
 	code |= MIN(len - 3, 15);
 	code |= bitlen_nonzero_16(offset) << 4;
 	return code;
+}
+
+/*
+ * debug_huffman_tree() uses debug_huffman_tree_print() to draw the Huffman
+ * tree in ascii art.
+ *
+ * Note that the Huffman tree is probably not the same as that implied by the
+ * canonical Huffman encoding that is finally used. That tree would be the
+ * same shape, but with the left and right toggled to sort the branches by
+ * length, after which the symbols for each length sorted by value.
+ */
+
+static void debug_huffman_tree_print(struct huffman_node *node,
+				     int *trail, int depth)
+{
+	if (node->left == NULL) {
+		/* time to print a row */
+		int j;
+		bool branched = false;
+		int row[17];
+		char c[100];
+		int s = node->symbol;
+		char code[17];
+		if (depth > 15) {
+			fprintf(stderr,
+				" \033[1;31m Max depth exceeded! (%d)\033[0m "
+				" symbol %#3x claimed depth %d count %d\n",
+				depth, node->symbol, node->depth, node->count);
+			return;
+		}
+		for (j = depth - 1; j >= 0; j--) {
+			if (branched) {
+				if (trail[j] == -1) {
+					row[j] = -3;
+				} else {
+					row[j] = -2;
+				}
+			} else if (trail[j] == -1) {
+				row[j] = -1;
+				branched = true;
+			} else {
+				row[j] = trail[j];
+			}
+		}
+		for (j = 0; j < depth; j++) {
+			switch (row[j]) {
+			case -3:
+				code[j] = '1';
+				fprintf(stderr, "        ");
+				break;
+			case -2:
+				code[j] = '0';
+				fprintf(stderr, "      │ ");
+				break;
+			case -1:
+				code[j] = '1';
+				fprintf(stderr, "      ╰─");
+				break;
+			default:
+				code[j] = '0';
+				fprintf(stderr, "%5d─┬─", row[j]);
+				break;
+			}
+		}
+		code[depth] = 0;
+		if (s < 32) {
+			snprintf(c, sizeof(c),
+				"\033[1;32m%02x\033[0m \033[1;33m%c%c%c\033[0m",
+				 s,
+				 0xE2, 0x90, 0x80 + s); /* utf-8 for symbol */
+		}  else if (s < 127) {
+			snprintf(c, sizeof(c),
+				 "\033[1;32m%2x\033[0m '\033[10;32m%c\033[0m'",
+				 s, s);
+		} else if (s < 256) {
+			snprintf(c, sizeof(c), "\033[1;32m%2x\033[0m", s);
+		} else {
+			uint16_t len = (s & 15) + 3;
+			uint16_t dbits = ((s >> 4) & 15) + 1;
+			snprintf(c, sizeof(c),
+				 " \033[0;33mlen:%2d%s, "
+				 "dist:%d-%d \033[0m \033[1;32m%3x\033[0m%s",
+				 len,
+				 len == 18 ? "+" : "",
+				 1 << (dbits - 1),
+				 (1 << dbits) - 1,
+				 s,
+				 s == 256 ? " \033[1;31mEOF\033[0m" : "");
+
+		}
+
+		fprintf(stderr, "──%5d %s \033[2;37m%s\033[0m\n",
+			node->count, c, code);
+		return;
+	}
+	trail[depth] = node->count;
+	debug_huffman_tree_print(node->left, trail, depth + 1);
+	trail[depth] = -1;
+	debug_huffman_tree_print(node->right, trail, depth + 1);
+}
+
+
+/*
+ * If DEBUG_HUFFMAN_TREE is defined true, debug_huffman_tree()
+ * will print a tree looking something like this:
+ *
+ *     7─┬───    3  len:18+, dist:1-1  10f 0
+ *       ╰─    4─┬─    2─┬───    1 61 'a' 100
+ *               │       ╰───    1 62 'b' 101
+ *               ╰─    2─┬───    1 63 'c' 110
+ *                       ╰───    1  len: 3, dist:1-1  100 EOF 111
+ *
+ * This is based off a Huffman root node, and the tree may not be the same as
+ * the canonical tree.
+ */
+static void debug_huffman_tree(struct huffman_node *root)
+{
+	int trail[17];
+	debug_huffman_tree_print(root, trail, 0);
+}
+
+
+/*
+ * If DEBUG_HUFFMAN_TREE is defined true, debug_huffman_tree_from_table()
+ * will print something like this based on a decoding symbol table.
+ *
+ *  Tree from decoding table 9 nodes → 5 codes
+ * 10000─┬─── 5000  len:18+, dist:1-1  10f 0
+ *       ╰─ 5000─┬─ 2500─┬─── 1250 61 'a' 100
+ *               │       ╰─── 1250 62 'b' 101
+ *               ╰─ 2500─┬─── 1250 63 'c' 110
+ *                       ╰─── 1250  len: 3, dist:1-1  100 EOF 111
+ *
+ * This is the canonical form of the Huffman tree where the actual counts
+ * aren't known (we use "10000" to help indicate relative frequencies).
+ */
+static void debug_huffman_tree_from_table(uint16_t *table)
+{
+	int trail[17];
+	struct huffman_node nodes[1024] = {{0}};
+	uint16_t codes[1024];
+	size_t n = 1;
+	size_t i = 0;
+	codes[0] = 0;
+	nodes[0].count = 10000;
+
+	while (i < n) {
+		uint16_t index = codes[i];
+		struct huffman_node *node = &nodes[i];
+		if (table[index] == 0xffff) {
+			/* internal node */
+			index <<= 1;
+			/* left */
+			index++;
+			codes[n] = index;
+			node->left = nodes + n;
+			nodes[n].count = node->count >> 1;
+			n++;
+			/*right*/
+			index++;
+			codes[n] = index;
+			node->right = nodes + n;
+			nodes[n].count = node->count >> 1;
+			n++;
+		} else {
+			/* leaf node */
+			node->symbol = table[index] & 511;
+		}
+		i++;
+	}
+
+	fprintf(stderr,
+		"\033[1;34m Tree from decoding table\033[0m "
+		"%zu nodes → %zu codes\n",
+		n, (n + 1) / 2);
+	debug_huffman_tree_print(nodes, trail, 0);
 }
 
 
@@ -380,6 +575,9 @@ static int generate_huffman_codes(struct huffman_node *leaf_nodes,
 				 */
 				return LZXPRESS_ERROR;
 			}
+		}
+		if (CHECK_DEBUGLVL(10) || DEBUG_HUFFMAN_TREE) {
+			debug_huffman_tree(huffman_root);
 		}
 		/*
 		 * We have a tree, and need to turn it into a lookup table,
@@ -1160,6 +1358,51 @@ ssize_t lzxpress_huffman_compress(struct lzxhuff_compressor_mem *cmp_mem,
 	return cmp_ctx.output_pos;
 }
 
+static void debug_tree_codes(struct bitstream *input)
+{
+	/*
+	 */
+	size_t head = 0;
+	size_t tail = 2;
+	size_t ffff_count = 0;
+	struct q {
+		uint16_t tree_code;
+		uint16_t code_code;
+	};
+	struct q queue[65536];
+	char bits[17];
+	uint16_t *t = input->table;
+	queue[0].tree_code = 1;
+	queue[0].code_code = 2;
+	queue[1].tree_code = 2;
+	queue[1].code_code = 3;
+	while (head < tail) {
+		struct q q = queue[head];
+		uint16_t x = t[q.tree_code];
+		if (x != 0xffff) {
+			int k;
+			uint16_t j = q.code_code;
+			size_t offset = bitlen_nonzero_16(j) - 1;
+			for (k = 0; k <= offset; k++) {
+				bool b = (j >> (offset - k)) & 1;
+				bits[k] = b ? '1' : '0';
+			}
+			bits[k] = 0;
+			DBG("%03x   %s\n", x & 511, bits);
+			head++;
+			continue;
+		}
+		ffff_count++;
+		queue[tail].tree_code = q.tree_code * 2 + 1;
+		queue[tail].code_code = q.code_code * 2;
+		tail++;
+		queue[tail].tree_code = q.tree_code * 2 + 1 + 1;
+		queue[tail].code_code = q.code_code * 2 + 1;
+		tail++;
+		head++;
+	}
+	DBG("0xffff count: %zu\n", ffff_count);
+}
 
 /**
  * Determines the sort order of one prefix_code_symbol relative to another
@@ -1350,6 +1593,9 @@ static bool fill_decomp_table(struct bitstream *input)
 			input->table[prefix] = 0xffff;
 		}
 	}
+	if (CHECK_DEBUGLVL(10)) {
+		debug_tree_codes(input);
+	}
 
 	/*
 	 * check that the last code encodes 11111..., with right number of
@@ -1443,7 +1689,9 @@ static ssize_t lzx_huffman_decompress_block(struct bitstream *input,
 	if (! ok) {
 		return LZXPRESS_ERROR;
 	}
-
+	if (CHECK_DEBUGLVL(10) || DEBUG_HUFFMAN_TREE) {
+		debug_huffman_tree_from_table(input->table);
+	}
 	/*
 	 * Always read 32 bits at the start, even if we don't need them.
 	 */
