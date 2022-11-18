@@ -289,6 +289,8 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	struct tevent_req *req;
+	bool is_compound = false;
+	bool is_last_in_compound = false;
 	bool ok;
 
 	ok = vfs_valid_pread_range(startpos, smb_maxcnt);
@@ -316,7 +318,14 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	if (smbd_smb2_is_compound(smbreq->smb2req)) {
+	is_compound = smbd_smb2_is_compound(smbreq->smb2req);
+	is_last_in_compound = smbd_smb2_is_last_in_compound(smbreq->smb2req);
+
+	if (is_compound && !is_last_in_compound) {
+		/*
+		 * Only allow going async if this is the last
+		 * request in a compound.
+		 */
 		return NT_STATUS_RETRY;
 	}
 
