@@ -15,28 +15,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba.gp.gpclass import gp_xml_ext
+from samba.gp.gpclass import gp_xml_ext, gp_file_applier
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from samba.gp.util.logging import log
 
-class vgp_symlink_ext(gp_xml_ext):
+class vgp_symlink_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/Symbolic Links'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, symlink in settings[str(self)].items():
-                    if os.path.exists(symlink):
-                        os.unlink(symlink)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, symlink)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
-                self.gp_db.set_guid(gpo.name)
                 xml = 'MACHINE/VGP/VTLA/Unix/Symlink/manifest.xml'
                 path = os.path.join(gpo.file_sys_path, xml)
                 xml_conf = self.parse(path)
@@ -47,15 +42,22 @@ class vgp_symlink_ext(gp_xml_ext):
                 for entry in data.findall('file_properties'):
                     source = entry.find('source').text
                     target = entry.find('target').text
-                    attribute = '%s:%s' % (source, target)
-                    old_val = self.gp_db.retrieve(str(self), attribute)
-                    if not old_val:
+                    # We can only create a single instance of the target, so
+                    # this becomes our unchanging attribute.
+                    attribute = target
+                    # The changeable part of our policy is the source (the
+                    # thing the target points to), so our value hash is based
+                    # on the source.
+                    value_hash = self.generate_value_hash(source)
+                    def applier_func(source, target):
                         if not os.path.exists(target):
                             os.symlink(source, target)
-                            self.gp_db.store(str(self), attribute, target)
+                            return [target]
                         else:
                             log.warn('Symlink destination exists', target)
-                    self.gp_db.commit()
+                        return []
+                    self.apply(gpo.name, attribute, value_hash, applier_func,
+                               source, target)
 
     def rsop(self, gpo):
         output = {}
