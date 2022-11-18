@@ -8543,8 +8543,11 @@ class GPOTests(tests.TestCase):
         with TemporaryDirectory() as dname:
             ext.process_group_policy([], gpos, dname)
             conf = os.listdir(dname)
-            self.assertEquals(len(conf), 1, 'The conf file was not created')
-            gp_cfg = os.path.join(dname, conf[0])
+            # There will be 2 files, the policy file and the deny file
+            self.assertEquals(len(conf), 2, 'The conf file was not created')
+            # Ignore the DENY_ALL conf file
+            gp_cfg = os.path.join(dname,
+                [c for c in conf if '_gp_DENY_ALL.conf' not in c][0])
 
             # Check the access config for the correct access.conf entries
             print('Config file %s found' % gp_cfg)
