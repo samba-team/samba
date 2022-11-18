@@ -1195,7 +1195,7 @@ static bool test_compound_padding(struct torture_context *tctx,
 	smb2_util_close(tree, cr.out.file.handle);
 
 	/* Check compound read from stream */
-	smb2_transport_compound_start(tree->session->transport, 2);
+	smb2_transport_compound_start(tree->session->transport, 3);
 
 	ZERO_STRUCT(cr);
 	cr.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
@@ -1210,6 +1210,14 @@ static bool test_compound_padding(struct torture_context *tctx,
 
 	smb2_transport_compound_set_related(tree->session->transport, true);
 
+	/*
+	 * We send 2 reads in the compound here as the protocol
+	 * allows the last read to be split off and possibly
+	 * go async. Check the padding on the first read returned,
+	 * not the second as the second may not be part of the
+	 * returned compound.
+	 */
+
 	ZERO_STRUCT(r);
 	h.data[0] = UINT64_MAX;
 	h.data[1] = UINT64_MAX;
@@ -1218,6 +1226,15 @@ static bool test_compound_padding(struct torture_context *tctx,
 	r.in.offset      = 0;
 	r.in.min_count   = 1;
 	req[1] = smb2_read_send(tree, &r);
+
+	ZERO_STRUCT(r2);
+	h.data[0] = UINT64_MAX;
+	h.data[1] = UINT64_MAX;
+	r2.in.file.handle = h;
+	r2.in.length      = 3;
+	r2.in.offset      = 0;
+	r2.in.min_count   = 1;
+	req[2] = smb2_read_send(tree, &r2);
 
 	status = smb2_create_recv(req[0], tree, &cr);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1240,6 +1257,10 @@ static bool test_compound_padding(struct torture_context *tctx,
 	CHECK_VALUE(req[1]->in.body_size, 24);
 
 	status = smb2_read_recv(req[1], tree, &r);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Pick up the second, possibly async, read. */
+	status = smb2_read_recv(req[2], tree, &r2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	h = cr.out.file.handle;
