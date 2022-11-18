@@ -15,8 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re
-from samba.gp.gpclass import gp_xml_ext
-from hashlib import blake2b
+from samba.gp.gpclass import gp_xml_ext, gp_file_applier
 from tempfile import NamedTemporaryFile
 from samba.common import get_bytes
 from samba.gp.util.logging import log
@@ -62,25 +61,19 @@ def select_next_conf(directory):
     configs = [re.match(r'(\d+)', f) for f in os.listdir(directory) if DENY_FILE not in f]
     return max([int(m.group(1)) for m in configs if m]+[0])+1
 
-class vgp_access_ext(gp_xml_ext):
+class vgp_access_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/Host Access'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
                              access='/etc/security/access.d'):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, policy_files in settings[str(self)].items():
-                    for access_file in policy_files.split(':'):
-                        if os.path.exists(access_file):
-                            os.unlink(access_file)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, policy_files)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
-                self.gp_db.set_guid(gpo.name)
                 allow = 'MACHINE/VGP/VTLA/VAS/HostAccessControl/Allow/manifest.xml'
                 path = os.path.join(gpo.file_sys_path, allow)
                 allow_conf = self.parse(path)
@@ -119,25 +112,30 @@ class vgp_access_ext(gp_xml_ext):
                 access_file = os.path.join(access, '%010d_gp.conf' % conf_id)
                 policy_files.append(access_file)
                 access_contents = '\n'.join(entries)
-                attribute = blake2b(get_bytes(access_contents)).hexdigest()
-                old_val = self.gp_db.retrieve(str(self), attribute)
-                if old_val is not None:
-                    continue
-                if not os.path.isdir(access):
-                    os.mkdir(access, 0o644)
-                with NamedTemporaryFile(delete=False, dir=access) as f:
-                    with open(f.name, 'w') as w:
-                        w.write(intro)
-                        w.write(access_contents)
-                    os.chmod(f.name, 0o644)
-                    os.rename(f.name, access_file)
-                self.gp_db.store(str(self), attribute, ':'.join(policy_files))
-                self.gp_db.commit()
+                # Each GPO applies only one set of access policies, so the
+                # attribute does not need uniqueness.
+                attribute = self.generate_attribute(gpo.name)
+                # The value hash is generated from the access policy, ensuring
+                # any changes to this GPO will cause the files to be rewritten.
+                value_hash = self.generate_value_hash(access_contents)
+                def applier_func(access, access_file, policy_files):
+                    if not os.path.isdir(access):
+                        os.mkdir(access, 0o644)
+                    with NamedTemporaryFile(delete=False, dir=access) as f:
+                        with open(f.name, 'w') as w:
+                            w.write(intro)
+                            w.write(access_contents)
+                        os.chmod(f.name, 0o644)
+                        os.rename(f.name, access_file)
+                    return policy_files
+                self.apply(gpo.name, attribute, value_hash, applier_func,
+                           access, access_file, policy_files)
+                # Cleanup any old entries that are no longer part of the policy
+                self.clean(gpo.name, keep=[attribute])
 
     def rsop(self, gpo):
         output = {}
         if gpo.file_sys_path:
-            self.gp_db.set_guid(gpo.name)
             allow = 'MACHINE/VGP/VTLA/VAS/HostAccessControl/Allow/manifest.xml'
             path = os.path.join(gpo.file_sys_path, allow)
             allow_conf = self.parse(path)
