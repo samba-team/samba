@@ -1,0 +1,19 @@
+Tools used in the development and testing the LZ77 + Huffman code.
+
+These might not be of use to anyone ever, but here they are.
+
+make-fuzz-examples
+encodes compressed files for decompression fuzzer.
+
+decode-huffman-header
+print Huffman codes and validate first header in a compressed file.
+
+three-byte-hash
+check that a three byte hash works.
+
+make-test-vectors
+make files with randomly unbalanced symbol distributions.
+
+generate-windows-test-vectors.c
+if compiled under Cygwin or similar on Windows, this can be used to
+generate and verify test vectors.
