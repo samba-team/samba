@@ -31,6 +31,15 @@
 #include "lib/util/byteorder.h"
 #include "lib/util/bytearray.h"
 
+/*
+ * DEBUG_NO_LZ77_MATCHES toggles the encoding of matches as matches. If it is
+ * false the potential match is written as a series of literals, which is a
+ * valid but usually inefficient encoding. This is useful for isolating a
+ * problem to either the LZ77 or the Huffman stage.
+ */
+#ifndef DEBUG_NO_LZ77_MATCHES
+#define DEBUG_NO_LZ77_MATCHES false
+#endif
 
 #define LZXPRESS_ERROR -1LL
 
@@ -574,7 +583,7 @@ static ssize_t lz77_encode_block(struct lzxhuff_compressor_context *cmp_ctx,
 
 	j = 0;
 
-	if (remaining_size < 41) {
+	if (remaining_size < 41 || DEBUG_NO_LZ77_MATCHES) {
 		/*
 		 * There is no point doing a hash table and looking for
 		 * matches in this tiny block (remembering we are committed to
