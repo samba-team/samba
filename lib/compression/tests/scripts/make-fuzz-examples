@@ -1,0 +1,45 @@
+#!/usr/bin/python3
+#
+"""Pack the compressed files created by test_lzx_huffman.c (with
+LZXHUFF_DEBUG_FILES) into the format used by the decompression fuzzer.
+
+That is, the first 3 bytes are the length of the decompressed file,
+and the rest of the file is the compressed data.
+
+USAGE: make-fuzz-examples DIR
+
+where DIR is probably '/tmp'.
+"""
+import os
+import sys
+
+
+if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) != 2:
+    print(__doc__)
+    exit(len(sys.argv) != 2)
+
+
+def main():
+    files = set(os.listdir(sys.argv[1]))
+
+    for fn in files:
+        if fn.endswith('-compressed'):
+            fn2 = fn.replace('-compressed', '-decompressed')
+            if fn2 not in files:
+                print(f"skipping {fn}, no {fn2}")
+                continue
+            cfn = '/tmp/' + fn
+            dfn = '/tmp/' + fn2
+            wfn = '/tmp/' + fn.replace('-compressed', '.fuzz')
+
+            size = os.stat(dfn).st_size
+            sbytes = bytes([(size & 0xff), (size >> 8) & 0xff, (size >> 16) & 0xff])
+
+            with open(cfn, 'rb') as f:
+                s = f.read()
+
+            with open(wfn, 'wb') as f:
+                s = f.write(sbytes + s)
+
+
+main()
