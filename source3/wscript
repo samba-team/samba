@@ -603,11 +603,11 @@ msg.msg_accrightslen = sizeof(fd);
     conf.CHECK_HEADERS('asm/types.h')
 
     conf.CHECK_CODE('dev_t dev; int i = major(dev); return 0', "HAVE_DEVICE_MAJOR_FN",
-                    headers='unistd.h sys/types.h',
+                    headers='sys/sysmacros.h unistd.h sys/types.h',
                     msg="Checking for major macro")
 
     conf.CHECK_CODE('dev_t dev; int i = minor(dev); return 0', "HAVE_DEVICE_MINOR_FN",
-                    headers='unistd.h sys/types.h',
+                    headers='sys/sysmacros.h unistd.h sys/types.h',
                     msg="Checking for minor macro")
 
     conf.CHECK_STRUCTURE_MEMBER('struct dirent', 'd_off',
