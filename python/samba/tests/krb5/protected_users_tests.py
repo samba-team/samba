@@ -41,6 +41,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_REQUIRED,
+    KRB_ERROR,
     NT_PRINCIPAL,
     NT_SRV_INST,
 )
@@ -445,11 +446,20 @@ class ProtectedUsersTests(KDCBaseTest):
 
         self._test_etype(client_creds, etype=ARCFOUR_HMAC_MD5)
 
-    def test_rc4_protected(self):
+    def test_rc4_protected_aes256_preauth(self):
         client_creds = self._get_creds(protected=True)
 
         self._test_etype(client_creds, etype=ARCFOUR_HMAC_MD5,
-                         expect_error=True, rc4_support=False)
+                         preauth_etype=AES256_CTS_HMAC_SHA1_96,
+                         rc4_support=False)
+
+    def test_rc4_protected_rc4_preauth(self):
+        client_creds = self._get_creds(protected=True)
+
+        self._test_etype(client_creds, etype=ARCFOUR_HMAC_MD5,
+                         preauth_etype=ARCFOUR_HMAC_MD5,
+                         expect_error=True, rc4_support=False,
+                         expect_edata=False)
 
     # Test that AES256 can always be used.
     def test_aes256_not_protected(self):
@@ -535,13 +545,24 @@ class ProtectedUsersTests(KDCBaseTest):
 
         self._test_etype(client_creds, etype=ARCFOUR_HMAC_MD5)
 
-    def test_rc4_mac_protected(self):
+    def test_rc4_mac_protected_aes256_preauth(self):
         client_creds = self._get_creds(
             protected=True,
             account_type=self.AccountType.COMPUTER)
 
         self._test_etype(client_creds, etype=ARCFOUR_HMAC_MD5,
-                         expect_error=True, rc4_support=False)
+                         preauth_etype=AES256_CTS_HMAC_SHA1_96,
+                         rc4_support=False)
+
+    def test_rc4_mac_protected_rc4_preauth(self):
+        client_creds = self._get_creds(
+            protected=True,
+            account_type=self.AccountType.COMPUTER)
+
+        self._test_etype(client_creds, etype=ARCFOUR_HMAC_MD5,
+                         preauth_etype=ARCFOUR_HMAC_MD5,
+                         expect_error=True, rc4_support=False,
+                         expect_edata=False)
 
     def test_aes256_rc4_mac_not_protected(self):
         client_creds = self._get_creds(
@@ -1003,7 +1024,10 @@ class ProtectedUsersTests(KDCBaseTest):
         expected_error = KDC_ERR_ETYPE_NOSUPP if expect_error else 0
 
         if preauth_etype is None:
-            expected_error_mode = expected_error or KDC_ERR_PREAUTH_REQUIRED
+            if expected_error:
+                expected_error_mode = KDC_ERR_PREAUTH_REQUIRED, expected_error
+            else:
+                expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
 
             rep, kdc_exchange_dict = self._test_as_exchange(
                 cname=cname,
@@ -1026,10 +1050,15 @@ class ProtectedUsersTests(KDCBaseTest):
                 ticket_decryption_key=ticket_decryption_key,
                 rc4_support=rc4_support,
                 expect_edata=expect_edata)
-            self.check_error_rep(rep, expected_error_mode)
-
-            if expect_error:
-                return None
+            self.assertIsNotNone(rep)
+            self.assertEqual(KRB_ERROR, rep['msg-type'])
+            error_code = rep['error-code']
+            if expected_error:
+                self.assertIn(error_code, expected_error_mode)
+                if error_code == expected_error:
+                    return
+            else:
+                self.assertEqual(expected_error_mode, error_code)
 
             etype_info2 = kdc_exchange_dict['preauth_etype_info2']
 
