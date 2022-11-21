@@ -2269,7 +2269,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                dest='treat_as_external',
                default=False),
         Option("--no-aes-keys", action="store_false",
-               help="The trust uses aes kerberos keys.",
+               help="The trust does not use AES kerberos keys.",
                dest='use_aes_keys',
                default=True),
         Option("--skip-validation", action="store_false",
