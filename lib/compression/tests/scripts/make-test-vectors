@@ -1,0 +1,185 @@
+#!/usr/bin/python3
+"""Generate a few strings with unbalanced distributions to test the
+regeneration of the Huffman tree when it gets too deep.
+
+USAGE: make-test-vectors DIR
+
+This will fill up DIR with test files.
+"""
+import sys
+import random
+from collections import defaultdict
+
+
+if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) != 2:
+    print(__doc__)
+    exit(len(sys.argv) != 2)
+
+
+DIR = sys.argv[1]
+
+SIZE = (1 << 17) + (23)  # two and a bit blocks
+SIZE_NAME = "128k+"
+# SIZE = (1 << 16)
+# SIZE_NAME = "64"
+
+
+random.seed(1)
+
+
+def squares(n):
+    array = []
+    for i in range(n):
+        a = random.random()
+        b = random.random()
+        array.append(int(a * b * 256))
+    return bytes(array)
+
+
+def skewed_choices(n):
+    b = list(range(256))
+    array = random.choices(b, weights=b, k=n)
+    return bytes(array)
+
+
+def fib_shuffle(n):
+    array = []
+    a, b = 1, 1
+    for i in range(100):
+        array.extend([i] * a)
+        a, b = a + b, a
+        if len(array) > 1000000:
+            break
+    random.shuffle(array)
+    return bytes(array[:n])
+
+
+def exp_shuffle(n):
+    array = []
+    for i in range(256):
+        array.extend([i] * int(1.04 ** i))
+        if len(array) > 1000000:
+            break
+    random.shuffle(array)
+    return bytes(array[:n])
+
+
+def and_rand(n):
+    array = []
+    for i in range(n):
+        a = random.randrange(256)
+        b = random.randrange(256)
+        array.append(a & b)
+    return bytes(array)
+
+
+def betavar(n, a, b):
+    array = []
+    for i in range(n):
+        x = random.betavariate(a, b)
+        array.append(int(x * 255.999999999999))
+    return bytes(array)
+
+
+def repeated_alphabet(n):
+    a = b'abcdefghijklmnopqrstuvwxyz'
+    na = n // len(a) + 1
+    s = a * na
+    return s[:n]
+
+
+def decayed_alphabet(n):
+    s = list(repeated_alphabet(n))
+    for i in range(256):
+        j = random.randrange(n)
+        s[j] = i
+
+    return bytes(s)
+
+
+def trigram_model(n):
+    with open(__file__, 'rb') as f:
+        data = f.read()
+    lut = defaultdict(list)
+    for a, b, c in zip(data, data[1:], data[2:]):
+        k = bytes([a, b])
+        lut[k].append(c)
+
+    k = random.choice(list(lut.keys()))
+    s = []
+    p = k[1]
+    for i in range(n + 10):
+        c = random.choice(lut[k])
+        s.append(c)
+        k = bytes([p, c])
+        p = c
+
+    return bytes(s[10:])
+
+
+def trigram_sum_model(n):
+    with open(__file__, 'rb') as f:
+        data = f.read()
+    lut = [[random.randrange(256)] for i in range(512)]
+    for a, b, c in zip(data, data[1:], data[2:]):
+        lut[a + b].append(c)
+
+    s = []
+    i = random.randrange(len(data) - 1)
+    a = data[i]
+    b = data[i + 1]
+
+    for i in range(n + 10):
+        x = lut[a + b]
+        c = random.choice(x)
+        s.append(c)
+        a = b
+        b = c
+
+    return bytes(s[10:])
+
+
+def the_classics():
+    # this used to be main()
+    sq = squares(SIZE)
+    ch = skewed_choices(SIZE)
+    fs = fib_shuffle(SIZE)
+    es = exp_shuffle(SIZE)
+    ar = and_rand(SIZE)
+    bv1 = betavar(SIZE, 0.1, 1.5)
+    bv2 = betavar(SIZE, 0.5, 2.0)
+    bv3 = betavar(SIZE, 0.05, 0.05)
+
+    print("n     sq       ch      fs       es")
+    for i in range(256):
+        print(f"{i:3} {sq.count(i):5}   {ch.count(i):5}   "
+              f"{fs.count(i):5}   {es.count(i):5}"
+              f"{ar.count(i):5}   {bv1.count(i):5}"
+              f"{bv2.count(i):5}   {bv3.count(i):5}"
+              )
+
+    for series, fn in ((sq, "square_series"),
+                       (ch, "skewed_choices"),
+                       (fs, "fib_shuffle"),
+                       (es, "exp_shuffle"),
+                       (ar, "and_rand"),
+                       (bv1, "beta-variate1"),
+                       (bv2, "beta-variate2"),
+                       (bv3, "beta-variate3"),
+                       ):
+        with open(f"{DIR}/{fn}-{SIZE_NAME}", "wb") as f:
+            f.write(series)
+
+
+def main():
+    if True:
+        the_classics()
+    for series, fn in ((decayed_alphabet(SIZE), "decayed_alphabet"),
+                       (trigram_model(SIZE), "trigram"),
+                       (trigram_sum_model(SIZE), "trigram_sum"),
+                       ):
+        with open(f"{DIR}/{fn}_{SIZE_NAME}", "wb") as f:
+            f.write(series)
+
+
+main()
