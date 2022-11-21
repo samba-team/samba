@@ -1766,7 +1766,7 @@ krb5_init_creds_step(krb5_context context,
 		} else {
 		    krb5_set_error_message(context, ret,
 					   N_("Preauth required but no preauth "
-					      "options send by KDC", ""));
+					      "options sent by KDC", ""));
 		}
 	    } else if (ret == KRB5KRB_AP_ERR_SKEW && context->kdc_sec_offset == 0) {
 		/*
