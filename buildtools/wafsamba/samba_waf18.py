@@ -209,7 +209,8 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, version_script=False, msg=None):
         lib_node.parent.mkdir()
         lib_node.write('int lib_func(void) { return 42; }\n', 'w')
         main_node = bld.srcnode.make_node('main.c')
-        main_node.write('int main(void) {return !(lib_func() == 42);}', 'w')
+        main_node.write('int lib_func(void);\n'
+                        'int main(void) {return !(lib_func() == 42);}', 'w')
         linkflags = []
         if version_script:
             script = bld.srcnode.make_node('ldscript')
