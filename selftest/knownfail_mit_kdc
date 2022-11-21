@@ -442,8 +442,10 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 # Protected Users tests
 #
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_proxiable_as_protected_policy_error.ad_dc
-^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_rc4_mac_protected.ad_dc
-^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_rc4_protected.ad_dc
+^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_rc4_mac_protected_aes256_preauth.ad_dc
+^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_rc4_mac_protected_rc4_preauth.ad_dc
+^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_rc4_protected_aes256_preauth.ad_dc
+^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_rc4_protected_rc4_preauth.ad_dc
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samr_change_password_protected.ad_dc
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_ts_aes128_mac_not_protected.ad_dc
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_ts_aes128_mac_protected.ad_dc
