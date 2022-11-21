@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+"""Print statistics about a certain three byte hash.
+
+USAGE: three_byte_hash
+"""
+import sys
+
+if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) > 1:
+    print(__doc__)
+    exit(not ('--help' in sys.argv or '-h' in sys.argv))
+
+
+from statistics import mean, pstdev, median
+
+
+def h(*args, bits=12):
+    a = args[0]
+    b = args[1] ^ 0x2e
+    c = args[2] ^ 0x55
+    d = ((a + b) << 8) ^ (((c - a) & 0xffff) << 5) ^ (c + b) ^ (0xcab + a)
+    return d & ((1 << bits) - 1)
+
+
+def count(fn, bits, filter=None):
+    counts = [0] * (1 << bits)
+    for i in range(256 ** 3):
+        a, b, c = i & 255, (i >> 8) & 255, i >> 16
+        if filter and not (filter(a) and filter(b) and filter(c)):
+            continue
+
+        h = fn(a, b, c, bits=bits)
+        counts[h] += 1
+
+    print(f" {bits} bits; {len(counts)} buckets, "
+          f"expected {(1<<24) / len(counts)}")
+    print(f"median {median(counts)}")
+    print(f"mean {mean(counts)}")
+    print(f"min {min(counts)}")
+    print(f"max {max(counts)}")
+    print(f"stddev {pstdev(counts)}")
+
+
+for b in (12, 13, 14):
+    count(h, b)
+
+    print("With ASCII filter")
+    letters = set(range(32, 127))
+    letters |= set(b'\r\n\t\0')
+    count(h, b, filter=letters.__contains__)

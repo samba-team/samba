@@ -116,6 +116,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/claims_tests.py',
     'python/samba/tests/krb5/lockout_tests.py',
     'python/samba/tests/krb5/group_tests.py',
+    'lib/compression/tests/scripts/three-byte-hash',
 }
 
 EXCLUDE_HELP = {
