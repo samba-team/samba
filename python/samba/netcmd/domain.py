@@ -2301,11 +2301,14 @@ class cmd_domain_trust_create(DomainTrustCommand):
             if treat_as_external:
                 raise CommandError("--treat-as-external requires --type=forest")
 
-        enc_types = None
+        enc_types = lsa.TrustDomainInfoSupportedEncTypes()
         if use_aes_keys:
-            enc_types = lsa.TrustDomainInfoSupportedEncTypes()
             enc_types.enc_types = security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
             enc_types.enc_types |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+        else:
+            # CVE-2022-37966: Trust objects are no longer assumed to support
+            # RC4, so we must indicate support explicitly.
+            enc_types.enc_types = security.KERB_ENCTYPE_RC4_HMAC_MD5
 
         local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
         local_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
