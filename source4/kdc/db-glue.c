@@ -1597,9 +1597,10 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	ZERO_STRUCTP(entry);
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
+		/* If not told otherwise, Windows now assumes that trusts support AES. */
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
 					"msDS-SupportedEncryptionTypes",
-					supported_enctypes);
+					ENC_HMAC_SHA1_96_AES256);
 	}
 
 	status = dsdb_trust_parse_tdo_info(mem_ctx, msg, &tdo);
