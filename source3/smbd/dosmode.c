@@ -918,6 +918,13 @@ int file_set_dosmode(connection_struct *conn,
 		return -1;
 	}
 
+	if ((S_ISDIR(smb_fname->st.st_ex_mode)) &&
+	    (dosmode & FILE_ATTRIBUTE_TEMPORARY))
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
 	dosmode &= SAMBA_ATTRIBUTES_MASK;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n",
