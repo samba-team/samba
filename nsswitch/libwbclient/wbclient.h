@@ -77,9 +77,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.14: Added "authoritative" to wbcAuthErrorInfo
  *        Added WBC_SID_NAME_LABEL
  *  0.15: Added wbcSetClientProcessName()
+ *  0.16: Added wbcChangeTrustCredentialsAt()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 15
+#define WBCLIENT_MINOR_VERSION 16
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -1968,6 +1969,40 @@ wbcErr wbcCtxChangeTrustCredentials(struct wbcContext *ctx, const char *domain,
  **/
 wbcErr wbcChangeTrustCredentials(const char *domain,
 				 struct wbcAuthErrorInfo **error);
+
+/**
+ * @brief Trigger a change of the trust credentials for a specific domain
+ *        on the optionally given domain controller
+ *
+ * @param *ctx         wbclient Context
+ * @param *domain      The name of the domain.
+ * @param *dcname      The host name of the domain controller.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ *
+ * @see wbcCtxChangeTrustCredentials()
+ **/
+wbcErr wbcCtxChangeTrustCredentialsAt(struct wbcContext *ctx,
+				      const char *domain,
+				      const char *dcname,
+				      struct wbcAuthErrorInfo **error);
+
+/**
+ * @brief Trigger a change of the trust credentials for a specific domain
+ *        on the optionally given domain controller
+ *
+ * @param *domain      The name of the domain.
+ * @param *dcname      The host name of the domain controller.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ *
+ * @see wbcChangeTrustCredentials()
+ **/
+wbcErr wbcChangeTrustCredentialsAt(const char *domain,
+				   const char *dcname,
+				   struct wbcAuthErrorInfo **error);
 
 /**
  * @brief Trigger a no-op call through the NETLOGON pipe. Low-cost

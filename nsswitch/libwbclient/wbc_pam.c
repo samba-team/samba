@@ -623,8 +623,10 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 
 /* Trigger a change of the trust credentials for a specific domain */
 _PUBLIC_
-wbcErr wbcCtxChangeTrustCredentials(struct wbcContext *ctx, const char *domain,
-				    struct wbcAuthErrorInfo **error)
+wbcErr wbcCtxChangeTrustCredentialsAt(struct wbcContext *ctx,
+				      const char *domain,
+				      const char *dcname,
+				      struct wbcAuthErrorInfo **error)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -636,6 +638,11 @@ wbcErr wbcCtxChangeTrustCredentials(struct wbcContext *ctx, const char *domain,
 	if (domain) {
 		strncpy(request.domain_name, domain,
 			sizeof(request.domain_name)-1);
+	}
+
+	if (dcname != NULL) {
+		strncpy(request.data.init_conn.dcname, dcname,
+			sizeof(request.data.init_conn.dcname)-1);
 	}
 
 	/* Send request */
@@ -656,6 +663,22 @@ wbcErr wbcCtxChangeTrustCredentials(struct wbcContext *ctx, const char *domain,
 
  done:
 	return wbc_status;
+}
+
+_PUBLIC_
+wbcErr wbcChangeTrustCredentialsAt(const char *domain,
+				 const char *dcname,
+				 struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxChangeTrustCredentialsAt(NULL, domain, dcname, error);
+}
+
+_PUBLIC_
+wbcErr wbcCtxChangeTrustCredentials(struct wbcContext *ctx,
+				    const char *domain,
+				    struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxChangeTrustCredentialsAt(ctx, domain, NULL, error);
 }
 
 _PUBLIC_
