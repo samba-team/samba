@@ -3009,7 +3009,7 @@ NTSTATUS _share_mode_entry_prepare_lock(
 
 	SMB_ASSERT(share_mode_lock_key_refcount == 0);
 
-	SMB_ASSERT(__SHARE_MODE_LOCK_SPACE == sizeof(struct share_mode_lock));
+	SMB_ASSERT(__SHARE_MODE_LOCK_SPACE >= sizeof(struct share_mode_lock));
 
 	*prepare_state = (struct share_mode_entry_prepare_state) {
 		.__fid = id,
