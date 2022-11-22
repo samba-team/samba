@@ -3416,6 +3416,12 @@ static void net_ads_enctype_dump_enctypes(const char *username,
 	printf("[%s] 0x%08x AES256-CTS-HMAC-SHA1-96\n",
 		enctypes & ENC_HMAC_SHA1_96_AES256 ? "X" : " ",
 		ENC_HMAC_SHA1_96_AES256);
+	printf("[%s] 0x%08x AES256-CTS-HMAC-SHA1-96-SK\n",
+		enctypes & ENC_HMAC_SHA1_96_AES256_SK ? "X" : " ",
+		ENC_HMAC_SHA1_96_AES256_SK);
+	printf("[%s] 0x%08x RESOURCE-SID-COMPRESSION-DISABLED\n",
+		enctypes & KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED ? "X" : " ",
+		KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED);
 }
 
 static int net_ads_enctypes_list(struct net_context *c, int argc, const char **argv)
