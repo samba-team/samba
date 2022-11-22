@@ -91,6 +91,11 @@
 ubuntu1804:
   extends: .build_image_template
 
+ubuntu1804-32bit:
+  extends: .build_image_template
+  variables:
+    SAMBA_CI_TEST_JOB: "samba-32bit"
+
 ubuntu2004:
   extends: .build_image_template
 

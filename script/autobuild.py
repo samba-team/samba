@@ -811,6 +811,20 @@ tasks = {
         ],
     },
 
+    "samba-32bit": {
+        "sequence": [
+            ("random-sleep", random_sleep(300, 900)),
+            ("configure", "./configure.developer --abi-check-disable --disable-warnings-as-errors" + samba_configure_params),
+            ("make", "make -j"),
+            ("nonetest", make_test(cmd='make test', TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
+            ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
+            ("ktest", make_test(cmd='make test', include_envs=["ktest"])),
+            ("install", "make install"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("clean", "make clean"),
+        ],
+    },
+
     "samba-ctdb": {
         "sequence": [
             ("random-sleep", random_sleep(900, 1500)),
@@ -1164,6 +1178,8 @@ defaulttasks.remove("samba-admem-mit")
 defaulttasks.remove("samba-addc-mit-1")
 defaulttasks.remove("samba-addc-mit-4a")
 defaulttasks.remove("samba-addc-mit-4b")
+
+defaulttasks.remove("samba-32bit")
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")

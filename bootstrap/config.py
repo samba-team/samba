@@ -427,6 +427,13 @@ DEB_DISTS = {
             'liburing-dev': '',   # not available
         }
     },
+    'ubuntu1804-32bit': {
+        'docker_image': 'registry-1.docker.io/i386/ubuntu:18.04',
+        'vagrant_box': 'ubuntu/bionic32',
+        'replace': {
+            'liburing-dev': '',   # not available
+        }
+    },
     'ubuntu2004': {
         'docker_image': 'ubuntu:20.04',
         'vagrant_box': 'ubuntu/focal64',

@@ -1,0 +1,69 @@
+#
+# [231(2711)/261 at 9m10s, 6 errors] samba.tests.samba_upgradedns_lmdb
+# UNEXPECTED(error): samba.tests.samba_upgradedns_lmdb.samba.tests.samba_upgradedns_lmdb.UpgradeDnsLmdbTestCase.test_lmdb_lock_files_linked_on_upgrade_to_bind9_dlz(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/samba_upgradedns_lmdb.py", line 69, in test_lmdb_lock_files_linked_on_upgrade_to_bind9_dlz
+#     for filename in os.listdir(directory):
+# FileNotFoundError: [Errno 2] No such file or directory: '/home/samba/samba.git/st/tmp/tmpku4ew0tv/samba/bind-dns/dns/sam.ldb.d'
+# command: PYTHONPATH=$PYTHONPATH python3 -m samba.subunit.run  $LOADLIST samba.tests.samba_upgradedns_lmdb 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.samba_upgradedns_lmdb." --suffix="(none)"
+# expanded command: PYTHONPATH=/home/samba/samba.git/bin/python python3 -m samba.subunit.run  $LOADLIST samba.tests.samba_upgradedns_lmdb 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.samba_upgradedns_lmdb." --suffix="(none)"
+# ERROR: Testsuite[samba.tests.samba_upgradedns_lmdb]
+# REASON: Exit code was 1
+^samba.tests.samba_upgradedns_lmdb
+#
+# [235(2761)/261 at 9m14s, 7 errors] samba.tests.blackbox.downgradedatabase
+# UNEXPECTED(error): samba.tests.blackbox.downgradedatabase.samba.tests.blackbox.downgradedatabase.DowngradeTestMDB.test_undo_guid(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "bin/python/samba/tests/blackbox/downgradedatabase.py", line 43, in setUp
+#     self.check_run(prov_cmd, "Provisioning for downgrade")
+#   File "bin/python/samba/tests/__init__.py", line 421, in check_run
+#     self.check_exit_code(line, 0, msg=msg)
+#   File "bin/python/samba/tests/__init__.py", line 439, in check_exit_code
+#     msg)
+# Traceback (most recent call last):
+#   File "bin/python/samba/tests/__init__.py", line 278, in _remove_tempdir
+#     self.assertEqual([], os.listdir(self.tempdir))
+# AssertionError: Lists differ: [] != ['private', 'bind-dns', 'etc', 'state']
+# 
+# Second list contains 4 additional elements.
+# First extra element 0:
+# 'private'
+# 
+# - []
+# + ['private', 'bind-dns', 'etc', 'state']
+# command: python3 /home/samba/samba.git/source4/scripting/bin/subunitrun  $LOADLIST samba.tests.blackbox.downgradedatabase 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.blackbox.downgradedatabase." --suffix="(none)"
+# expanded command: python3 /home/samba/samba.git/source4/scripting/bin/subunitrun  $LOADLIST samba.tests.blackbox.downgradedatabase 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.blackbox.downgradedatabase." --suffix="(none)"
+# ERROR: Testsuite[samba.tests.blackbox.downgradedatabase]
+# REASON: Exit code was 1
+^samba.tests.blackbox.downgradedatabase
+#
+# [236(2763)/261 at 9m46s, 8 errors] samba4.ldap.index.python
+# Unable to find backend for 'mdb:///home/samba/samba.git/st/tmp/tmpshxaw8jv/indexedcomptest.ldb' - do you need to set LDB_MODULES_PATH?
+# UNEXPECTED(error): samba4.ldap.index.python.__main__.LdbLMDBIndexedComparisonExpressions.test_comparison_expression(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/lib/ldb-samba/tests/index.py", line 186, in setUp
+#     super(LdbLMDBIndexedComparisonExpressions, self).setUp()
+#   File "/home/samba/samba.git/lib/ldb-samba/tests/index.py", line 87, in setUp
+#     self.l = _ldb.Ldb(self.url(), options=self.options())
+# _ldb.LdbError: (80, None)
+# Unable to find backend for 'mdb:///home/samba/samba.git/st/tmp/tmpzyl07twx/indexedcomptest.ldb' - do you need to set LDB_MODULES_PATH?
+# UNEXPECTED(error): samba4.ldap.index.python.__main__.LdbLMDBIndexedComparisonExpressions.test_comparison_expression_duplicates(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/lib/ldb-samba/tests/index.py", line 186, in setUp
+#     super(LdbLMDBIndexedComparisonExpressions, self).setUp()
+#   File "/home/samba/samba.git/lib/ldb-samba/tests/index.py", line 87, in setUp
+#     self.l = _ldb.Ldb(self.url(), options=self.options())
+# _ldb.LdbError: (80, None)
+# command: python3 /home/samba/samba.git/lib/ldb-samba/tests/index.py 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba4.ldap.index.python." --suffix="(none)"
+# expanded command: python3 /home/samba/samba.git/lib/ldb-samba/tests/index.py 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba4.ldap.index.python." --suffix="(none)"
+# ERROR: Testsuite[samba4.ldap.index.python]
+# REASON: Exit code was 1
+^samba4.ldap.index.python
+#
+# [247(2834)/261 at 11m47s, 9 errors] samba4.dsdb.samdb.ldb_modules.encrypted_secrets.mdb
+# sh: 1: /home/samba/samba.git/bin/test_encrypted_secrets_mdb: not found
+# command: /home/samba/samba.git/bin/test_encrypted_secrets_mdb 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba4.dsdb.samdb.ldb_modules.encrypted_secrets.mdb." --suffix="(none)"
+# expanded command: /home/samba/samba.git/bin/test_encrypted_secrets_mdb 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba4.dsdb.samdb.ldb_modules.encrypted_secrets.mdb." --suffix="(none)"
+# ERROR: Testsuite[samba4.dsdb.samdb.ldb_modules.encrypted_secrets.mdb]
+# REASON: Exit code was 1
+^samba4.dsdb.samdb.ldb_modules.encrypted_secrets.mdb

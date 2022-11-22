@@ -276,6 +276,10 @@ def cmd_testonly(opt):
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_heimdal_kdc"
 
+    if CONFIG_GET(opt, 'SIZEOF_VOID_P') == 4:
+        env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/knownfail-32bit"
+        env.OPTIONS += " --default-ldb-backend=tdb --exclude=${srcdir}/selftest/skip-32bit"
+
     if not CONFIG_GET(opt, 'HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X'):
         # older MIT krb5 libraries (< 1.14) don't have
         # GSS_KRB5_CRED_NO_CI_FLAGS_X

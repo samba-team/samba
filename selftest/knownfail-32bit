@@ -1,0 +1,117 @@
+#
+# [3(9)/257 at 5s] samba.tests.blackbox.ndrdump
+# UNEXPECTED(failure): samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_upn_dns_info_ex(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/blackbox/ndrdump.py", line 106, in test_ndrdump_upn_dns_info_ex
+#     self.assertEqual(actual, expected.encode('utf-8'))
+# AssertionError: b'pul[904 chars]   : Wed Jan 22 10:55:33 PM 1975 UTC\n        [19848 chars]OK\n' != b'pul[904 chars]   : Thu Sep 14 02:48:05 AM 30828 UTC\n       [19850 chars]OK\n'
+# UNEXPECTED(failure): samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_upn_dns_info_ex_not_supported(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/blackbox/ndrdump.py", line 125, in test_ndrdump_upn_dns_info_ex_not_supported
+#     self.assertEqual(actual, expected.encode('utf-8'))
+# AssertionError: b'pul[904 chars]   : Wed Jan 22 10:55:33 PM 1975 UTC\n        [19948 chars]OK\n' != b'pul[904 chars]   : Thu Sep 14 02:48:05 AM 30828 UTC\n       [19950 chars]OK\n'
+# command: PYTHONPATH=$PYTHONPATH python3 -m samba.subunit.run  $LOADLIST samba.tests.blackbox.ndrdump 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.blackbox.ndrdump." --suffix="(none)"
+# expanded command: PYTHONPATH=/home/samba/samba.git/bin/python python3 -m samba.subunit.run  $LOADLIST samba.tests.blackbox.ndrdump 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.blackbox.ndrdump." --suffix="(none)"
+# ERROR: Testsuite[samba.tests.blackbox.ndrdump]
+# REASON: Exit code was 1
+^samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_upn_dns_info_ex.none
+^samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_upn_dns_info_ex_not_supported.none
+#
+# [25(244)/261 at 15s] samba.tests.s3passdb
+# ...
+# REASON: Exception: Exception: Traceback (most recent call last):
+#  File "/home/samba/samba.git/bin/python/samba/tests/s3passdb.py", line 92, in test_getuser
+#    self.assertEqual(9223372036854775807, user.kickoff_time)
+# AssertionError: 9223372036854775807 != 2147483647
+^samba.tests.s3passdb.samba.tests.s3passdb.PassdbTestCase.test_getuser.none
+#
+# [53(610)/261 at 4m22s, 1 errors] samba.tests.glue
+# UNEXPECTED(failure): samba.tests.glue.samba.tests.glue.GlueTests.test_nttime2float(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/glue.py", line 54, in test_nttime2float
+#     self.assertEqual(_glue.nttime2float(1), -11644473600.0)
+# AssertionError: 1240428288.0 != -11644473600.0
+^samba.tests.glue.samba.tests.glue.GlueTests.test_nttime2float.none
+#
+# [95(849)/261 at 5m19s, 2 errors] samba3.smbtorture_s3.LOCAL-MEMCACHE
+# UNEXPECTED(failure): samba3.smbtorture_s3.LOCAL-MEMCACHE.smbtorture(none)
+# REASON: Exception: Exception: using seed 1669051619
+# host=foo share=bar user= myname=dc5
+# Running LOCAL-MEMCACHE
+# Did not find k4, should not have been purged
+# TEST LOCAL-MEMCACHE FAILED!
+# LOCAL-MEMCACHE took 3.3e-05 secs
+# command: /home/samba/samba.git/source3/script/tests/test_smbtorture_s3.sh LOCAL-MEMCACHE //foo/bar "" "" /home/samba/samba.git/bin/smbtorture3  2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba3.smbtorture_s3.LOCAL-MEMCACHE." --suffix="(none)"
+# expanded command: /home/samba/samba.git/source3/script/tests/test_smbtorture_s3.sh LOCAL-MEMCACHE //foo/bar "" "" /home/samba/samba.git/bin/smbtorture3  2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba3.smbtorture_s3.LOCAL-MEMCACHE." --suffix="(none)"
+# ERROR: Testsuite[samba3.smbtorture_s3.LOCAL-MEMCACHE]
+# REASON: Exit code was 1
+^samba3.smbtorture_s3.LOCAL-MEMCACHE.smbtorture.none
+#
+# [152(1033)/261 at 5m54s, 3 errors] samba4.local.time
+# UNEXPECTED(failure): samba4.local.time.normalize_timespec(none)
+# REASON: Exception: Exception: ../../lib/util/tests/time.c:129: ts.tv_sec was -2 (0xFFFFFFFE), expected 2 (0x2): mismatch in tv_sec
+# command:  /home/samba/samba.git/bin/smbtorture  $LOADLIST --configfile=$SMB_CONF_PATH --option='fss:sequence timeout=1' --maximum-runtime=$SELFTEST_MAXTIME --based
+# ir=$SELFTEST_TMPDIR --format=subunit --option=torture:progress=no --target=samba4 ncalrpc:localhost local.time 2>&1  | python3 /home/samba/samba.git/selftest/filte
+# r-subunit --fail-on-empty --prefix="samba4.local.time." --suffix="(none)"
+# expanded command:  /home/samba/samba.git/bin/smbtorture  $LOADLIST --configfile=/home/samba/samba.git/st/client/client.conf --option='fss:sequence timeout=1' --max
+# imum-runtime=1200 --basedir=/home/samba/samba.git/st/tmp --format=subunit --option=torture:progress=no --target=samba4 ncalrpc:localhost local.time 2>&1  | python3
+#  /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba4.local.time." --suffix="(none)"
+# ERROR: Testsuite[samba4.local.time]
+# REASON: Exit code was 1
+^samba4.local.time.normalize_timespec.none
+
+
+# 
+# [171(1386)/261 at 6m24s, 4 errors] samba4.local.charset
+# UNEXPECTED(failure): samba4.local.charset.strcasecmp(none)
+# REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:56: strcasecmp("foo", "bar") was 1 (0x1), expected 4 (0x4): different strings both lower
+# UNEXPECTED(failure): samba4.local.charset.strcasecmp_m(none)
+# REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:85: strcasecmp_m(file_iso8859_1, file_utf8) was 1 (0x1), expected 38 (0x26): file.{accented e}
+#  should differ
+# UNEXPECTED(failure): samba4.local.charset.strncasecmp(none)
+# REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:132: strncasecmp("foo", "bar", 3) was 1 (0x1), expected 4 (0x4): different strings both lower
+# UNEXPECTED(failure): samba4.local.charset.strncasecmp_m(none)
+# REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:167: strncasecmp_m(file_iso8859_1, file_utf8, 6) was 1 (0x1), expected 38 (0x26): file.{accent
+# ed e} should differ
+# command:  /home/samba/samba.git/bin/smbtorture  $LOADLIST --configfile=$SMB_CONF_PATH --option='fss:sequence timeout=1' --maximum-runtime=$SELFTEST_MAXTIME --based
+# ir=$SELFTEST_TMPDIR --format=subunit --option=torture:progress=no --target=samba4 ncalrpc:localhost local.charset 2>&1  | python3 /home/samba/samba.git/selftest/fi
+# lter-subunit --fail-on-empty --prefix="samba4.local.charset." --suffix="(none)"
+# expanded command:  /home/samba/samba.git/bin/smbtorture  $LOADLIST --configfile=/home/samba/samba.git/st/client/client.conf --option='fss:sequence timeout=1' --max
+# imum-runtime=1200 --basedir=/home/samba/samba.git/st/tmp --format=subunit --option=torture:progress=no --target=samba4 ncalrpc:localhost local.charset 2>&1  | pyth
+# on3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba4.local.charset." --suffix="(none)"
+# ERROR: Testsuite[samba4.local.charset]
+# REASON: Exit code was 1
+^samba4.local.charset.strcasecmp.none
+^samba4.local.charset.strcasecmp_m.none
+^samba4.local.charset.strncasecmp.none
+^samba4.local.charset.strncasecmp_m.none
+#
+# [229(2702)/261 at 8m44s, 5 errors] samba.tests.samba_tool.provision_lmdb_size
+# UNEXPECTED(failure): samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_134217728b(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/samba_tool/provision_lmdb_size.py", line 104, in test_134217728b
+#     self.assertEqual(0, result)
+# AssertionError: 0 != 255
+# UNEXPECTED(failure): samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_1Gb(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/samba_tool/provision_lmdb_size.py", line 97, in test_1Gb
+#     self.assertEqual(0, result)
+# AssertionError: 0 != 255
+# UNEXPECTED(failure): samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_64Mb(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/samba_tool/provision_lmdb_size.py", line 92, in test_64Mb
+#     self.assertEqual(0, result)
+# AssertionError: 0 != 255
+# UNEXPECTED(failure): samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_default(none)
+# REASON: Exception: Exception: Traceback (most recent call last):
+#   File "/home/samba/samba.git/bin/python/samba/tests/samba_tool/provision_lmdb_size.py", line 87, in test_default
+#     self.assertEqual(0, result)
+# AssertionError: 0 != 255
+# command: PYTHONPATH=$PYTHONPATH python3 -m samba.subunit.run  $LOADLIST samba.tests.samba_tool.provision_lmdb_size 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.samba_tool.provision_lmdb_size." --suffix="(none)"
+# expanded command: PYTHONPATH=/home/samba/samba.git/bin/python python3 -m samba.subunit.run  $LOADLIST samba.tests.samba_tool.provision_lmdb_size 2>&1  | python3 /home/samba/samba.git/selftest/filter-subunit --fail-on-empty --prefix="samba.tests.samba_tool.provision_lmdb_size." --suffix="(none)"
+# ERROR: Testsuite[samba.tests.samba_tool.provision_lmdb_size]
+# REASON: Exit code was 1
+^samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_134217728b.none
+^samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_1Gb.none
+^samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_64Mb.none
+^samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_default.none
