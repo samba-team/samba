@@ -55,6 +55,7 @@ my @opt_include_env = ();
 my $opt_testenv = 0;
 my $opt_list = 0;
 my $opt_mitkrb5 = 0;
+my $opt_default_ldb_backend = "mdb";
 my $opt_resetup_env = undef;
 my $opt_load_list = undef;
 my $opt_libnss_wrapper_so_path = "";
@@ -240,6 +241,7 @@ my $result = GetOptions (
 		'testenv' => \$opt_testenv,
 		'list' => \$opt_list,
 		'mitkrb5' => \$opt_mitkrb5,
+		'default-ldb-backend=s' => \$opt_default_ldb_backend,
 		'resetup-environment' => \$opt_resetup_env,
 		'testlist=s' => \@testlists,
 		'random-order' => \$opt_random_order,
@@ -460,7 +462,8 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
 
 $target = new Samba($bindir, $srcdir, $server_maxtime,
 		    $opt_socket_wrapper_pcap,
-		    $opt_socket_wrapper_keep_pcap);
+		    $opt_socket_wrapper_keep_pcap,
+		    $opt_default_ldb_backend);
 unless ($opt_list) {
 	if ($opt_target eq "samba") {
 		$testenv_default = "ad_dc";

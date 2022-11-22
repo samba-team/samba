@@ -15,14 +15,15 @@ use IO::Poll qw(POLLIN);
 
 sub new($$$$$) {
 	my ($classname, $bindir, $srcdir, $server_maxtime,
-	    $opt_socket_wrapper_pcap, $opt_socket_wrapper_keep_pcap) = @_;
+	    $opt_socket_wrapper_pcap, $opt_socket_wrapper_keep_pcap,
+	    $default_ldb_backend) = @_;
 
 	my $self = {
 	    opt_socket_wrapper_pcap => $opt_socket_wrapper_pcap,
 	    opt_socket_wrapper_keep_pcap => $opt_socket_wrapper_keep_pcap,
 	};
 	$self->{samba3} = new Samba3($self, $bindir, $srcdir, $server_maxtime);
-	$self->{samba4} = new Samba4($self, $bindir, $srcdir, $server_maxtime);
+	$self->{samba4} = new Samba4($self, $bindir, $srcdir, $server_maxtime, $default_ldb_backend);
 	bless $self;
 	return $self;
 }

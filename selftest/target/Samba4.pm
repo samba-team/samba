@@ -19,7 +19,7 @@ use target::Samba3;
 use Archive::Tar;
 
 sub new($$$$$) {
-	my ($classname, $SambaCtx, $bindir, $srcdir, $server_maxtime) = @_;
+	my ($classname, $SambaCtx, $bindir, $srcdir, $server_maxtime, $default_ldb_backend) = @_;
 
 	my $self = {
 		vars => {},
@@ -27,7 +27,8 @@ sub new($$$$$) {
 		bindir => $bindir,
 		srcdir => $srcdir,
 		server_maxtime => $server_maxtime,
-		target3 => new Samba3($SambaCtx, $bindir, $srcdir, $server_maxtime)
+		target3 => new Samba3($SambaCtx, $bindir, $srcdir, $server_maxtime),
+		default_ldb_backend => $default_ldb_backend,
 	};
 	bless $self;
 	return $self;
@@ -1584,7 +1585,7 @@ sub provision_vampire_dc($$$)
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} --domain-critical-only";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
-	$cmd .= " --backend-store=mdb";
+	$cmd .= " --backend-store=$self->{default_ldb_backend}";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
@@ -2019,7 +2020,7 @@ sub provision_ad_dc($$$$$$$)
 	copy = print1
 ";
 
-	push (@{$extra_provision_options}, "--backend-store=mdb");
+	push (@{$extra_provision_options}, "--backend-store=$self->{default_ldb_backend}");
 	print "PROVISIONING AD DC...\n";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -2868,7 +2869,7 @@ sub setup_schema_dc
 	my ($self, $path) = @_;
 
 	# provision the PDC using an older base schema
-	my $provision_args = ["--base-schema=2008_R2", "--backend-store=mdb"];
+	my $provision_args = ["--base-schema=2008_R2", "--backend-store=$self->{default_ldb_backend}"];
 
 	my $env = $self->provision_ad_dc($path,
 					 "liveupgrade1dc",
@@ -2914,7 +2915,7 @@ sub setup_schema_pair_dc
 	my $join_cmd = $cmd_vars;
 	$join_cmd .= "$samba_tool domain join $env->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$join_cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} ";
-	$join_cmd .= " --backend-store=mdb";
+	$join_cmd .= " --backend-store=$self->{default_ldb_backend}";
 
 	my $upgrade_cmd = $cmd_vars;
 	$upgrade_cmd .= "$samba_tool domain schemaupgrade $dcvars->{CONFIGURATION}";
@@ -3370,7 +3371,7 @@ sub setup_labdc
 	my $backupdir = File::Temp->newdir();
 	my $server_args = $self->get_backup_server_args($dcvars);
 	my $backup_args = "rename $env->{DOMAIN} $env->{REALM} $server_args";
-	$backup_args .= " --no-secrets --backend-store=mdb";
+	$backup_args .= " --no-secrets --backend-store=$self->{default_ldb_backend}";
 	my $backup_file = $self->create_backup($env, $dcvars, $backupdir,
 					       $backup_args);
 	unless($backup_file) {
