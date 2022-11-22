@@ -3563,10 +3563,21 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	size_t len = 0;
 
 	if (INFO_LEVEL_IS_UNIX(info_level)) {
-		if (!lp_smb1_unix_extensions()) {
-			return NT_STATUS_INVALID_LEVEL;
+		bool ok = false;
+
+		if (lp_smb1_unix_extensions() && req->posix_pathnames) {
+			DBG_DEBUG("SMB1 unix extensions activated\n");
+			ok = true;
 		}
-		if (!req->posix_pathnames) {
+
+		if (lp_smb3_unix_extensions() &&
+		    (fsp != NULL) &&
+		    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+			DBG_DEBUG("SMB2 posix open\n");
+			ok = true;
+		}
+
+		if (!ok) {
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
