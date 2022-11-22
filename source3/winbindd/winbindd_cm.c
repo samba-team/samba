@@ -1404,7 +1404,11 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 	 * We have to check the server affinity cache here since later we select
 	 * a DC based on response time and not preference.
 	 */
-	saf_servername = saf_fetch(mem_ctx, domain->name);
+	if (domain->force_dc) {
+		saf_servername = domain->dcname;
+	} else {
+		saf_servername = saf_fetch(mem_ctx, domain->name);
+	}
 
 	/*
 	 * Check the negative connection cache before talking to it. It going
@@ -1507,6 +1511,10 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	ok = connect_preferred_dc(mem_ctx, domain, request_flags, fd);
 	if (ok) {
 		return true;
+	}
+
+	if (domain->force_dc) {
+		return false;
 	}
 
  again:

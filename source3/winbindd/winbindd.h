@@ -153,6 +153,7 @@ struct winbindd_domain {
 	} backend_data;
 
 	/* A working DC */
+	bool force_dc;
 	char *dcname;
 	const char *ping_dcname;
 	struct sockaddr_storage dcaddr;
