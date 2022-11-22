@@ -146,6 +146,7 @@
 ^samba4.smb2.create.*.acldir
 ^samba4.smb2.create.*.impersonation
 ^samba4.smb2.create.quota-fake-file\(ad_dc_ntvfs\) # not supported by the NTVFS
+^samba4.smb2.create.dosattr_tmp_dir\(ad_dc_ntvfs\)
 ^samba4.smb2.acls.*.generic
 ^samba4.smb2.acls.*.inheritflags
 ^samba4.smb2.acls.*.owner
