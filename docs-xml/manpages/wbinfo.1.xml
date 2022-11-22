@@ -144,6 +144,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>--change-secret-at <replaceable>domain-controller</replaceable></term>
+		<listitem><para>Change the trust account password at a specific
+		domain controller. Fails if the specificied domain controller
+		cannot be contacted.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>--ccache-save <replaceable>username%password</replaceable></term>
 		<listitem><para>Store user and password for ccache.
 		</para></listitem>

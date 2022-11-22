@@ -849,6 +849,43 @@ static bool wbinfo_change_secret(const char *domain)
 	return true;
 }
 
+/* Change trust account password chose Domain Controller */
+
+static bool wbinfo_change_secret_at(const char *domain,
+				    const char *domain_controller)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcAuthErrorInfo *error = NULL;
+	const char *domain_name;
+
+	if (domain) {
+		domain_name = domain;
+	} else {
+		domain_name = get_winbind_domain();
+	}
+
+	wbc_status = wbcChangeTrustCredentialsAt(
+		domain_name, domain_controller,  &error);
+
+	d_printf("changing the trust secret for domain %s via RPC calls %s\n",
+		domain_name,
+		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
+
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
+		d_fprintf(stderr, "wbcChangeTrustCredentials(%s): "
+			  "error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
+		wbcFreeMemory(error);
+	}
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcChangeTrustCredentials: "
+			  "%s\n", wbcErrorString(wbc_status));
+		return false;
+	}
+
+	return true;
+}
+
 /* Check DC connection */
 
 static bool wbinfo_ping_dc(const char *domain)
@@ -2291,7 +2328,8 @@ enum {
 	OPT_LOGOFF_USER,
 	OPT_LOGOFF_UID,
 	OPT_LANMAN,
-	OPT_KRB5CCNAME
+	OPT_KRB5CCNAME,
+	OPT_CHANGE_SECRET_AT
 };
 
 int main(int argc, const char **argv, char **envp)
@@ -2507,6 +2545,13 @@ int main(int argc, const char **argv, char **envp)
 			.val        = 'c',
 			.descrip    = "Change shared secret",
 		},
+		{
+			.longName   = "change-secret-at",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &string_arg,
+			.val        = OPT_CHANGE_SECRET_AT,
+			.descrip    = "Change shared secret at Domain Controler" },
 		{
 			.longName   = "ping-dc",
 			.shortName  = 'P',
@@ -3030,6 +3075,12 @@ int main(int argc, const char **argv, char **envp)
 			break;
 		case 'c':
 			if (!wbinfo_change_secret(opt_domain_name)) {
+				d_fprintf(stderr, "Could not change secret\n");
+				goto done;
+			}
+			break;
+		case OPT_CHANGE_SECRET_AT:
+			if (!wbinfo_change_secret_at(opt_domain_name, string_arg)) {
 				d_fprintf(stderr, "Could not change secret\n");
 				goto done;
 			}

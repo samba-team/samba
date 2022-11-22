@@ -74,7 +74,13 @@ disable colour output. See https://no-color.org/ for a description of
 this variable. `samba-tool --color=always` will use colour regardless
 of NO_COLOR.
 
+New wbinfo option --change-secret-at
+------------------------------------
 
+The wbinfo command has a new option, --change-secret-at=<DOMAIN CONTROLLER>
+which forces the trust account password to be changed at a specified domain
+controller. If the specified domain controller cannot be contacted the
+password change fails rather than trying other DCs.
 
 
 REMOVED FEATURES
