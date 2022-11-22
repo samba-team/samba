@@ -3059,6 +3059,52 @@ static bool test_fileid_unique_dir(
 	return test_fileid_unique_object(tctx, tree, 100, true);
 }
 
+static bool test_dosattr_tmp_dir(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_create c;
+	struct smb2_handle h1 = {{0}};
+	const char *fname = DNAME;
+
+	smb2_deltree(tree, fname);
+	smb2_util_rmdir(tree, fname);
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_DIR_ALL,
+		.in.file_attributes  = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+			NTCREATEX_SHARE_ACCESS_WRITE |
+			NTCREATEX_SHARE_ACCESS_DELETE,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.fname = DNAME,
+	};
+
+	status = smb2_create(tree, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	h1 = c.out.file.handle;
+
+	/* Try to set temporary attribute on directory */
+	SET_ATTRIB(FILE_ATTRIBUTE_TEMPORARY);
+
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_INVALID_PARAMETER,
+					   ret, done,
+					   "Unexpected setinfo result\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+
+	return ret;
+}
+
 /*
   test opening quota fakefile handle and returned attributes
 */
@@ -3141,6 +3187,7 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "nulldacl", test_create_null_dacl);
 	torture_suite_add_1smb2_test(suite, "mkdir-dup", test_mkdir_dup);
 	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
+	torture_suite_add_1smb2_test(suite, "dosattr_tmp_dir", test_dosattr_tmp_dir);
 	torture_suite_add_1smb2_test(suite, "quota-fake-file", test_smb2_open_quota_fake_file);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
