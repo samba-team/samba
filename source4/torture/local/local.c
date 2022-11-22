@@ -64,7 +64,6 @@
 	torture_local_convert_string,
 	torture_local_string_case_handle,
 	torture_local_string_case,
-	torture_local_compression,
 	torture_local_event, 
 	torture_local_tevent_req,
 	torture_local_torture,

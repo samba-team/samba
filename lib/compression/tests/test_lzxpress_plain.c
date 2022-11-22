@@ -18,19 +18,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 #include "includes.h"
-#include "torture/torture.h"
-#include "torture/local/proto.h"
 #include "talloc.h"
 #include "lzxpress.h"
 #include "lib/util/base64.h"
 
 /* Tests based on [MS-XCA] 3.1 Examples */
-static bool test_msft_data1(
-	struct torture_context *test
-)
+static void test_msft_data1(void **state)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
 	const char *fixed_data = "abcdefghijklmnopqrstuvwxyz";
 	const uint8_t fixed_out[] = {
@@ -45,39 +45,29 @@ static bool test_msft_data1(
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
-	torture_comment(test, "lzxpress fixed compression\n");
 	c_size = lzxpress_compress((const uint8_t *)fixed_data,
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
 
-	torture_assert_int_equal(test, c_size, sizeof(fixed_out),
-				 "fixed lzxpress_compress size");
-	torture_assert_mem_equal(test, out, fixed_out, c_size,
-				 "fixed lzxpress_compress data");
-
-	torture_comment(test, "lzxpress fixed decompression\n");
+	assert_int_equal(c_size, sizeof(fixed_out));
+	assert_memory_equal(out, fixed_out, c_size);
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(out,
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
 
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out2, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out2, fixed_data, c_size);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
 
-static bool test_msft_data2(
-	struct torture_context *test
-)
+static void test_msft_data2(void **state)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
 	const char *fixed_data =
 		"abcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabc"
@@ -95,41 +85,32 @@ static bool test_msft_data2(
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
-	torture_comment(test, "lzxpress fixed compression\n");
 	c_size = lzxpress_compress((const uint8_t *)fixed_data,
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
 
-	torture_assert_int_equal(test, c_size, sizeof(fixed_out),
-				 "fixed lzxpress_compress size");
-	torture_assert_mem_equal(test, out, fixed_out, c_size,
-				 "fixed lzxpress_compress data");
+	assert_int_equal(c_size, sizeof(fixed_out));
+	assert_memory_equal(out, fixed_out, c_size);
 
-	torture_comment(test, "lzxpress fixed decompression\n");
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(out,
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
 
-	torture_comment(test, "out2: %.*s\n", (int)c_size, (char *)out2);
-
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out2, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out2, fixed_data, c_size);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
 /*
   test lzxpress
  */
-static bool test_lzxpress(struct torture_context *test)
+static void test_lzxpress(void **state)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	const char *fixed_data = "this is a test. and this is a test too";
 	const uint8_t fixed_out[] = {
 		0xff, 0x21, 0x00, 0x04, 0x74, 0x68, 0x69, 0x73,
@@ -150,47 +131,36 @@ static bool test_lzxpress(struct torture_context *test)
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
-	torture_comment(test, "lzxpress fixed compression\n");
 	c_size = lzxpress_compress((const uint8_t *)fixed_data,
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
 
-	torture_assert_int_equal(test, c_size, sizeof(fixed_out),
-				 "fixed lzxpress_compress size");
-	torture_assert_mem_equal(test, out, fixed_out, c_size,
-				 "fixed lzxpress_compress data");
+	assert_int_equal(c_size, sizeof(fixed_out));
+	assert_memory_equal(out, fixed_out, c_size);
 
-	torture_comment(test, "lzxpress fixed decompression\n");
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(out,
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
 
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out2, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out2, fixed_data, c_size);
 
-
-	torture_comment(test, "lzxpress fixed decompression (old data)\n");
 	out3  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(fixed_out_old_version,
 				     sizeof(fixed_out_old_version),
 				     out3,
 				     talloc_get_size(out3));
 
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out3, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out3, fixed_data, c_size);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
-static bool test_lzxpress2(struct torture_context *test)
+static void test_lzxpress2(void **state)
 {
 	/*
 	 * Use two matches, separated by a literal, and each with a length
@@ -199,7 +169,7 @@ static bool test_lzxpress2(struct torture_context *test)
 	 * byte.
 	 */
 
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	const char *fixed_data = "aaaaaaaaaaaabaaaaaaaaaaaa";
 	const uint8_t fixed_out[] = {
 		0xff, 0xff, 0xff, 0x5f, 0x61, 0x07, 0x00, 0x21,
@@ -211,34 +181,27 @@ static bool test_lzxpress2(struct torture_context *test)
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
-	torture_comment(test, "lzxpress fixed compression\n");
 	c_size = lzxpress_compress((const uint8_t *)fixed_data,
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
 
-	torture_assert_int_equal(test, c_size, sizeof(fixed_out),
-				 "fixed lzxpress_compress size");
-	torture_assert_mem_equal(test, out, fixed_out, c_size,
-				 "fixed lzxpress_compress data");
+	assert_int_equal(c_size, sizeof(fixed_out));
+	assert_memory_equal(out, fixed_out, c_size);
 
-	torture_comment(test, "lzxpress fixed decompression\n");
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(out,
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
 
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out2, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out2, fixed_data, c_size);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
-static bool test_lzxpress3(struct torture_context *test)
+static void test_lzxpress3(void **state)
 {
 	/*
 	 * Use a series of 31 literals, followed by a single minimum-length
@@ -246,7 +209,7 @@ static bool test_lzxpress3(struct torture_context *test)
 	 * 32-bit flags value overflows after a match.
 	 */
 
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	const char *fixed_data = "abcdefghijklmnopqrstuvwxyz01234abca";
 	const uint8_t fixed_out[] = {
 		0x01, 0x00, 0x00, 0x00, 0x61, 0x62, 0x63, 0x64,
@@ -262,34 +225,27 @@ static bool test_lzxpress3(struct torture_context *test)
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
-	torture_comment(test, "lzxpress fixed compression\n");
 	c_size = lzxpress_compress((const uint8_t *)fixed_data,
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
 
-	torture_assert_int_equal(test, c_size, sizeof(fixed_out),
-				 "fixed lzxpress_compress size");
-	torture_assert_mem_equal(test, out, fixed_out, c_size,
-				 "fixed lzxpress_compress data");
+	assert_int_equal(c_size, sizeof(fixed_out));
+	assert_memory_equal(out, fixed_out, c_size);
 
-	torture_comment(test, "lzxpress fixed decompression\n");
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(out,
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
 
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out2, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out2, fixed_data, c_size);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
-static bool test_lzxpress4(struct torture_context *test)
+static void test_lzxpress4(void **state)
 {
 	/*
 	 * Use a series of 31 literals, followed by a single minimum-length
@@ -297,7 +253,7 @@ static bool test_lzxpress4(struct torture_context *test)
 	 * correctly when it is empty.
 	 */
 
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	const char *fixed_data = "abcdefghijklmnopqrstuvwxyz01234abc";
 	const uint8_t fixed_out[] = {
 		0x01, 0x00, 0x00, 0x00, 0x61, 0x62, 0x63, 0x64,
@@ -313,35 +269,28 @@ static bool test_lzxpress4(struct torture_context *test)
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
 
-	torture_comment(test, "lzxpress fixed compression\n");
 	c_size = lzxpress_compress((const uint8_t *)fixed_data,
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
 
-	torture_assert_int_equal(test, c_size, sizeof(fixed_out),
-				 "fixed lzxpress_compress size");
-	torture_assert_mem_equal(test, out, fixed_out, c_size,
-				 "fixed lzxpress_compress data");
+	assert_int_equal(c_size, sizeof(fixed_out));
+	assert_memory_equal(out, fixed_out, c_size);
 
-	torture_comment(test, "lzxpress fixed decompression\n");
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
 	c_size = lzxpress_decompress(out,
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
 
-	torture_assert_int_equal(test, c_size, strlen(fixed_data),
-				 "fixed lzxpress_decompress size");
-	torture_assert_mem_equal(test, out2, fixed_data, c_size,
-				 "fixed lzxpress_decompress data");
+	assert_int_equal(c_size, strlen(fixed_data));
+	assert_memory_equal(out2, fixed_data, c_size);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
 
-static bool test_lzxpress_many_zeros(struct torture_context *test)
+static void test_lzxpress_many_zeros(void **state)
 {
 	/*
 	 * Repeated values (zero is convenient but not special) will lead to
@@ -357,7 +306,7 @@ static bool test_lzxpress_many_zeros(struct torture_context *test)
 	 * seconds.
 	 */
 
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	const size_t N_ZEROS = 1000000;
 	const uint8_t *zeros = talloc_zero_size(tmp_ctx, N_ZEROS);
 	const ssize_t expected_c_size = 93;
@@ -379,8 +328,7 @@ static bool test_lzxpress_many_zeros(struct torture_context *test)
 				   comp,
 				   talloc_get_size(comp));
 
-	torture_assert_int_equal(test, c_size, expected_c_size,
-				 "fixed lzxpress_compress size");
+	assert_int_equal(c_size, expected_c_size);
 
 	decomp = talloc_size(tmp_ctx, N_ZEROS * 2);
 	c_size = lzxpress_decompress(comp,
@@ -396,23 +344,20 @@ static bool test_lzxpress_many_zeros(struct torture_context *test)
 	elapsed_ns = (
 		(t_end.tv_sec - t_start.tv_sec) * 1000U * 1000U * 1000U) +
 		(t_end.tv_nsec - t_start.tv_nsec);
-	torture_comment(test, "round-trip time: %"PRIu64" ns\n", elapsed_ns);
-	torture_assert(test, elapsed_ns < 3 * 1000U * 1000U * 1000U,
-		       "million zeros round trip tool > 3 seconds");
-	torture_assert_mem_equal(test, decomp, zeros, N_ZEROS,
-				 "fixed lzxpress_decompress data");
+	print_message("round-trip time: %"PRIu64" ns\n", elapsed_ns);
+	assert_true(elapsed_ns < 3 * 1000U * 1000U * 1000U);
+	assert_memory_equal(decomp, zeros, N_ZEROS);
 
 	talloc_free(tmp_ctx);
-	return true;
 }
 
 
-static bool test_lzxpress_round_trip(struct torture_context *test)
+static void test_lzxpress_round_trip(void **state)
 {
 	/*
 	 * Examples found using via fuzzing.
 	 */
-	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	size_t i;
 	struct b64_pair {
 		const char *uncompressed;
@@ -443,41 +388,37 @@ static bool test_lzxpress_round_trip(struct torture_context *test)
 					data,
 					alloc_size);
 
-		torture_assert_int_equal(test, len, comp.length,
-					 "lzexpress compression size");
+		assert_int_equal(len, comp.length);
 
-		torture_assert_mem_equal(test, comp.data, data, len,
-					 "lzxpress compression data");
+		assert_memory_equal(comp.data, data, len);
 
 		len = lzxpress_decompress(comp.data,
 					  comp.length,
 					  data,
 					  alloc_size);
 
-		torture_assert_int_equal(test, len, uncomp.length,
-					 "lzexpress decompression size");
+		assert_int_equal(len, uncomp.length);
 
-		torture_assert_mem_equal(test, uncomp.data, data, len,
-					 "lzxpress decompression data");
+		assert_memory_equal(uncomp.data, data, len);
 	}
 	talloc_free(tmp_ctx);
-	return true;
 }
 
 
-struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
+int main(void)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "compression");
-
-	torture_suite_add_simple_test(suite, "lzxpress", test_lzxpress);
-	torture_suite_add_simple_test(suite, "lzxpress_msft_data1", test_msft_data1);
-	torture_suite_add_simple_test(suite, "lzxpress_msft_data2", test_msft_data2);
-	torture_suite_add_simple_test(suite, "lzxpress2", test_lzxpress2);
-	torture_suite_add_simple_test(suite, "lzxpress3", test_lzxpress3);
-	torture_suite_add_simple_test(suite, "lzxpress4", test_lzxpress4);
-	torture_suite_add_simple_test(suite, "lzxpress_many_zeros",
-				      test_lzxpress_many_zeros);
-	torture_suite_add_simple_test(suite, "lzxpress_round_trip",
-				      test_lzxpress_round_trip);
-	return suite;
+	const struct CMUnitTest tests[] = {
+		cmocka_unit_test(test_lzxpress),
+		cmocka_unit_test(test_msft_data1),
+		cmocka_unit_test(test_msft_data2),
+		cmocka_unit_test(test_lzxpress2),
+		cmocka_unit_test(test_lzxpress3),
+		cmocka_unit_test(test_lzxpress4),
+		cmocka_unit_test(test_lzxpress_many_zeros),
+		cmocka_unit_test(test_lzxpress_round_trip),
+	};
+	if (!isatty(1)) {
+		cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
+	}
+	return cmocka_run_group_tests(tests, NULL, NULL);
 }

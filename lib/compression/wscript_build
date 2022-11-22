@@ -11,3 +11,10 @@ bld.SAMBA_BINARY('test_lzx_huffman',
                        ' samba-util'),
                  local_include=False,
                  for_selftest=True)
+
+bld.SAMBA_BINARY('test_lzxpress_plain',
+                 source='tests/test_lzxpress_plain.c',
+                 deps=('cmocka replace LZXPRESS'
+                       ' samba-util'),
+                 local_include=False,
+                 for_selftest=True)

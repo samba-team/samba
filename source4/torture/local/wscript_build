@@ -11,7 +11,6 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../../lib/util/tests/str.c ../../../lib/util/tests/time.c
 	../../../lib/util/tests/asn1_tests.c ../../../lib/util/tests/data_blob.c
 	../../../lib/util/tests/file.c ../../../lib/util/tests/genrand.c
-	../../../lib/compression/tests/test_lzxpress_plain.c
         ../../../lib/util/charset/tests/charset.c
         ../../../lib/util/charset/tests/convert_string.c
 	../../../lib/tdr/testsuite.c
