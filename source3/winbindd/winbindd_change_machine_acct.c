@@ -36,11 +36,16 @@ struct tevent_req *winbindd_change_machine_acct_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_change_machine_acct_state *state;
 	struct winbindd_domain *domain;
+	const char *dcname = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_change_machine_acct_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (request->data.init_conn.dcname[0] != '\0') {
+		dcname = request->data.init_conn.dcname;
 	}
 
 	domain = find_domain_from_name(request->domain_name);
@@ -62,7 +67,8 @@ struct tevent_req *winbindd_change_machine_acct_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = dcerpc_wbint_ChangeMachineAccount_send(state, ev,
-							dom_child_handle(domain));
+							dom_child_handle(domain),
+							dcname);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

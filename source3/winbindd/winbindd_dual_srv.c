@@ -841,6 +841,22 @@ NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+	if (r->in.dcname != NULL && r->in.dcname[0] != '\0') {
+		invalidate_cm_connection(domain);
+		TALLOC_FREE(domain->dcname);
+
+		domain->dcname = talloc_strdup(domain, r->in.dcname);
+		if (domain->dcname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		domain->force_dc = true;
+
+		DBG_NOTICE("attempt connection to change trust account "
+			   "password for %s at %s\n",
+			   domain->name, domain->dcname);
+	}
+
 	status = cm_connect_netlogon_secure(domain,
 					    &netlogon_pipe,
 					    &netlogon_creds_ctx);
@@ -863,9 +879,13 @@ NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 		NT_STATUS_IS_OK(status) ? "changed" : "unchanged"));
 
  done:
-	DEBUG(NT_STATUS_IS_OK(status) ? 5 : 2,
-	      ("Changing the trust account password for domain %s returned %s\n",
-	       domain->name, nt_errstr(status)));
+	DEBUG(NT_STATUS_IS_OK(status) ? 5 :
+	      domain->force_dc ? 0 : 2,
+	      ("Changing the trust account password for domain %s at %s "
+	       "(forced: %s) returned %s\n",
+	       domain->name, domain->dcname, domain->force_dc ? "yes" : "no",
+	       nt_errstr(status)));
+	domain->force_dc = false;
 
 	return status;
 }

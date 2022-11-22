@@ -162,6 +162,7 @@ interface winbind
 	);
 
     NTSTATUS wbint_ChangeMachineAccount(
+		[in,unique,string,charset(UTF8)] char *dcname
 	);
 
     NTSTATUS wbint_PingDc(
