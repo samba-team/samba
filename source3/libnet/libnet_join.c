@@ -2535,12 +2535,8 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 	ctx->in.desired_encryption_types = ENC_CRC32 |
 					   ENC_RSA_MD5 |
 					   ENC_RC4_HMAC_MD5;
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 	ctx->in.desired_encryption_types |= ENC_HMAC_SHA1_96_AES128;
-#endif
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 	ctx->in.desired_encryption_types |= ENC_HMAC_SHA1_96_AES256;
-#endif
 
 	*r = ctx;
 
