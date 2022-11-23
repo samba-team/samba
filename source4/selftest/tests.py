@@ -928,8 +928,13 @@ krb5_environ = {
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
                        environ=krb5_environ)
-planoldpythontestsuite("ad_dc_default:local", "samba.tests.krb5.s4u_tests",
-                       environ=krb5_environ)
+for env, fast_support in [("ad_dc_default:local", True),
+                          ("fl2003dc:local", False)]:
+    planoldpythontestsuite(env, "samba.tests.krb5.s4u_tests",
+                           environ={
+                               **krb5_environ,
+                               'FAST_SUPPORT': int(fast_support),
+                           })
 planoldpythontestsuite("rodc:local", "samba.tests.krb5.rodc_tests",
                        environ=krb5_environ)
 
