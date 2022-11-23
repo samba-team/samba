@@ -622,20 +622,16 @@ static char *get_enctypes(TALLOC_CTX *mem_ctx)
 
 	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
 	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_STRONG) {
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 		aes_enctypes = talloc_asprintf_append(
 		    aes_enctypes, "%s", "aes256-cts-hmac-sha1-96 ");
 		if (aes_enctypes == NULL) {
 			goto done;
 		}
-#endif
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 		aes_enctypes = talloc_asprintf_append(
 		    aes_enctypes, "%s", "aes128-cts-hmac-sha1-96");
 		if (aes_enctypes == NULL) {
 			goto done;
 		}
-#endif
 	}
 
 	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_ALLOWED &&
