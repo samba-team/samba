@@ -2401,6 +2401,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expect_pac_attrs=None,
                          expect_pac_attrs_pac_request=None,
                          expect_requester_sid=None,
+                         strict_etype_info=True,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2457,6 +2458,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_pac_attrs': expect_pac_attrs,
             'expect_pac_attrs_pac_request': expect_pac_attrs_pac_request,
             'expect_requester_sid': expect_requester_sid,
+            'strict_etype_info': strict_etype_info,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2510,6 +2512,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_requester_sid=None,
                           expected_proxy_target=None,
                           expected_transited_services=None,
+                          strict_etype_info=True,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2567,6 +2570,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_requester_sid': expect_requester_sid,
             'expected_proxy_target': expected_proxy_target,
             'expected_transited_services': expected_transited_services,
+            'strict_etype_info': strict_etype_info,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -3340,13 +3344,21 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_patypes += (PADATA_FX_FAST,)
                 expected_patypes += (PADATA_FX_COOKIE,)
 
+        require_strict = {
+            PADATA_FX_COOKIE,
+            PADATA_FX_FAST,
+            PADATA_PAC_OPTIONS,
+            PADATA_PK_AS_REP_19,
+            PADATA_PK_AS_REQ
+        }
+
+        strict_etype_info = kdc_exchange_dict['strict_etype_info']
+        if not strict_etype_info:
+            require_strict.add(PADATA_ETYPE_INFO)
+
         got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
         self.assertSequenceElementsEqual(expected_patypes, got_patypes,
-                                         require_strict={PADATA_FX_COOKIE,
-                                                         PADATA_FX_FAST,
-                                                         PADATA_PAC_OPTIONS,
-                                                         PADATA_PK_AS_REP_19,
-                                                         PADATA_PK_AS_REQ})
+                                         require_strict=require_strict)
 
         if not expected_patypes:
             return None
@@ -3457,13 +3469,17 @@ class RawKerberosTest(TestCaseInTempDir):
                     self.assertIsNone(s2kparams)
 
         etype_info = pa_dict.get(PADATA_ETYPE_INFO)
+
         if etype_info is not None:
+            strict_etype_info = kdc_exchange_dict['strict_etype_info']
+
             etype_info = self.der_decode(etype_info,
                                          asn1Spec=krb5_asn1.ETYPE_INFO())
             self.assertEqual(len(etype_info), 1)
             e = self.getElementValue(etype_info[0], 'etype')
             self.assertEqual(e, kcrypto.Enctype.RC4)
-            self.assertEqual(e, expect_etype_info2[0])
+            if strict_etype_info:
+                self.assertEqual(e, expect_etype_info2[0])
             salt = self.getElementValue(etype_info[0], 'salt')
             if self.strict_checking:
                 self.assertIsNotNone(salt)
@@ -4172,6 +4188,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_pac_attrs_pac_request=None,
                           expect_requester_sid=None,
                           expect_edata=None,
+                          strict_etype_info=True,
                           to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
@@ -4219,6 +4236,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
             expect_edata=expect_edata,
+            strict_etype_info=strict_etype_info,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,

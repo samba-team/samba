@@ -1517,6 +1517,7 @@ class KDCBaseTest(RawKerberosTest):
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
+            strict_etype_info=False,
             to_rodc=to_rodc)
         self.check_pre_authentication(rep)
 
