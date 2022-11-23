@@ -3493,7 +3493,8 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 		goto done;
 	}
 
-	etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
+	etype_list = 0;
+	etype_list |= ENC_RC4_HMAC_MD5;
 	etype_list |= ENC_HMAC_SHA1_96_AES128;
 	etype_list |= ENC_HMAC_SHA1_96_AES256;
 
