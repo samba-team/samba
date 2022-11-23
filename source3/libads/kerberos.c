@@ -665,7 +665,7 @@ static char *get_enctypes(TALLOC_CTX *mem_ctx)
 
 	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
 	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY) {
-		legacy_enctypes = "arcfour-hmac-md5 des-cbc-crc des-cbc-md5";
+		legacy_enctypes = "arcfour-hmac-md5";
 	}
 
 	enctypes = talloc_asprintf(mem_ctx, "\tdefault_etypes = %s %s\n",
