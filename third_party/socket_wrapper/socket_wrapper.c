@@ -984,12 +984,27 @@ static FILE *libc_fopen64(const char *name, const char *mode)
 }
 #endif /* HAVE_FOPEN64 */
 
+static void swrap_inject_o_largefile(int *flags)
+{
+	(void)*flags; /* maybe unused */
+#if SIZE_MAX == 0xffffffffUL && defined(O_LARGEFILE)
+#ifdef O_PATH
+	if (((*flags) & O_PATH) == 0)
+#endif
+	{
+		*flags |= O_LARGEFILE;
+	}
+#endif
+}
+
 static int libc_vopen(const char *pathname, int flags, va_list ap)
 {
 	int mode = 0;
 	int fd;
 
 	swrap_bind_symbol_all();
+
+	swrap_inject_o_largefile(&flags);
 
 	if (flags & O_CREAT) {
 		mode = va_arg(ap, int);
@@ -1019,6 +1034,8 @@ static int libc_vopen64(const char *pathname, int flags, va_list ap)
 
 	swrap_bind_symbol_all();
 
+	swrap_inject_o_largefile(&flags);
+
 	if (flags & O_CREAT) {
 		mode = va_arg(ap, int);
 	}
@@ -1034,6 +1051,8 @@ static int libc_vopenat(int dirfd, const char *path, int flags, va_list ap)
 	int fd;
 
 	swrap_bind_symbol_all();
+
+	swrap_inject_o_largefile(&flags);
 
 	if (flags & O_CREAT) {
 		mode = va_arg(ap, int);
@@ -5325,7 +5344,7 @@ union __swrap_cmsghdr {
 	struct cmsghdr *cmsg;
 };
 
-static int swrap_sendmsg_unix_scm_rights(const struct cmsghdr *cmsg,
+static int swrap_sendmsg_unix_scm_rights(struct cmsghdr *cmsg,
 					 uint8_t **cm_data,
 					 size_t *cm_data_space,
 					 int *scm_rights_pipe_fd)
@@ -5557,7 +5576,7 @@ static int swrap_sendmsg_unix_scm_rights(const struct cmsghdr *cmsg,
 	return 0;
 }
 
-static int swrap_sendmsg_unix_sol_socket(const struct cmsghdr *cmsg,
+static int swrap_sendmsg_unix_sol_socket(struct cmsghdr *cmsg,
 					 uint8_t **cm_data,
 					 size_t *cm_data_space,
 					 int *scm_rights_pipe_fd)
@@ -5581,7 +5600,7 @@ static int swrap_sendmsg_unix_sol_socket(const struct cmsghdr *cmsg,
 	return rc;
 }
 
-static int swrap_recvmsg_unix_scm_rights(const struct cmsghdr *cmsg,
+static int swrap_recvmsg_unix_scm_rights(struct cmsghdr *cmsg,
 					 uint8_t **cm_data,
 					 size_t *cm_data_space)
 {
@@ -5860,7 +5879,7 @@ static int swrap_recvmsg_unix_scm_rights(const struct cmsghdr *cmsg,
 	return 0;
 }
 
-static int swrap_recvmsg_unix_sol_socket(const struct cmsghdr *cmsg,
+static int swrap_recvmsg_unix_sol_socket(struct cmsghdr *cmsg,
 					 uint8_t **cm_data,
 					 size_t *cm_data_space)
 {
@@ -7831,10 +7850,18 @@ void swrap_destructor(void)
 
 	SAFE_FREE(sockets);
 
-	if (swrap.libc.handle != NULL) {
+	if (swrap.libc.handle != NULL
+#ifdef RTLD_NEXT
+	    && swrap.libc.handle != RTLD_NEXT
+#endif
+			) {
 		dlclose(swrap.libc.handle);
 	}
-	if (swrap.libc.socket_handle) {
+	if (swrap.libc.socket_handle
+#ifdef RTLD_NEXT
+	    && swrap.libc.socket_handle != RTLD_NEXT
+#endif
+			) {
 		dlclose(swrap.libc.socket_handle);
 	}
 }
