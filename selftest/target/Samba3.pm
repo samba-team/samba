@@ -253,7 +253,7 @@ sub check_env($$)
 	ad_member_offlogon  => ["ad_dc"],
 	ad_member_oneway    => ["fl2000dc"],
 	ad_member_idmap_nss => ["ad_dc"],
-	ad_member_s3_join   => ["ad_dc"],
+	ad_member_s3_join   => ["vampire_dc"],
 
 	clusteredmember => ["nt4_dc"],
 );
