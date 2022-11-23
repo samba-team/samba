@@ -1166,3 +1166,10 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 ^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_full_signature.ad_dc
 ^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_full_signature.fl2003dc
+#
+# S4U tests
+#
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_authentication_asserted_identity.fl2003dc:local
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rc4_client_checksum.fl2003dc:local
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_service_asserted_identity.fl2003dc:local
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_asserted_identity.fl2003dc:local
