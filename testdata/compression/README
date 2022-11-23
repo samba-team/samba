@@ -1,0 +1,47 @@
+# Test vectors for MS-XCA [de-]compression
+
+There are currently two supported varients of the Xpress Compression
+Algorithm, "Plain LZ77" and "LZ77 + Huffman". For each we two
+directories of files compressed on Windows, corresponding to the two
+compression levels that Windows offers.
+
+The subdirectories are
+
+./decompressed            - test files to compress with .decomp extension.
+./compressed-huffman      - LZ77+Huffman compressed, with .lzhuff extension.
+./compressed-more-huffman - LZ77+Huffman compressed, with .lzhuff extension.
+./compressed-plain        - Plain LZ77 compressed, with .lzplain extension.
+./compressed-more-plain   - Plain LZ77 compressed, with .lzplain extension.
+
+where the more-compressed-* versions have the files that Windows put
+more effort into compressing (largely in vain -- they are similar in
+size). Windows probably does not use this more effortful compression
+in network protocols, but these files must be decompressible.
+
+The compressed files were made using the Windows Compression API,
+which uses the same underlying code as MS-XCA, but which puts some
+annoying hurdles in the way. In particular, it won't perform
+LZ77+Huffman compression on any file smaller than 300 bytes. The
+relationship between the two is covered in various messages in
+
+https://lists.samba.org/archive/cifs-protocol/2022-October/
+https://lists.samba.org/archive/cifs-protocol/2022-November/
+
+To recreate these files or add more, use
+lib/compression/tests/scripts/generate-windows-test-vectors.c under
+Cygwin or MSYS2. This file is also in the decompressed directory.
+
+Some of the decompressed files were found via fuzzing, some are designed
+to test one aspect or another of the format, while others are public
+domain texts.
+
+These are used in compression and decompression tests.
+
+- For decompression tests, we need the decompressed versions to
+  compare against.
+
+- For compression tests, we do not assert that the compressed file is
+  identical to the Windows compressed file. Exact equality is not
+  expected by MS-XCA, which leaves room for implementation tricks, but
+  the size of the compressed file allows us to make ballpark
+  assertions about expected compression ratios.

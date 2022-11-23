@@ -88,9 +88,9 @@ struct lzx_file_pair {
 };
 
 
-#define DECOMP_DIR "testdata/compression/lzxpress-huffman/decompressed"
-#define COMP_DIR "testdata/compression/lzxpress-huffman/compressed"
-#define MORE_COMP_DIR "testdata/compression/lzxpress-huffman/more-compressed"
+#define DECOMP_DIR "testdata/compression/decompressed"
+#define COMP_DIR "testdata/compression/compressed-huffman"
+#define MORE_COMP_DIR "testdata/compression/compressed-more-huffman"
 
 
 #define VARRGH(...) __VA_ARGS__
