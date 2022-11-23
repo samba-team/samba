@@ -3580,12 +3580,8 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 	krb5_ccache ccdef = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_enctype enc_types[] = {
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-#endif
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-#endif
 		ENCTYPE_ARCFOUR_HMAC,
 		ENCTYPE_DES_CBC_MD5,
 		ENCTYPE_DES_CBC_CRC,
