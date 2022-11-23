@@ -23,7 +23,7 @@ import functools
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-from samba import ntstatus
+from samba import dsdb, ntstatus
 from samba.dcerpc import krb5pac, lsa, security
 
 from samba.tests import env_get_var_value
@@ -781,6 +781,13 @@ class S4UKerberosTests(KDCBaseTest):
         # Ensure we used all the parameters given to us.
         self.assertEqual({}, kdc_dict)
 
+    def skip_unless_fl2008(self):
+        samdb = self.get_samdb()
+        functional_level = self.get_domain_functional_level(samdb)
+
+        if functional_level < dsdb.DS_DOMAIN_FUNCTION_2008:
+            self.skipTest('RBCD requires FL2008')
+
     def test_constrained_delegation(self):
         # Test constrained delegation.
         self._run_delegation_test(
@@ -942,6 +949,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_auth_data_required(self):
+        self.skip_unless_fl2008()
+
         self._run_delegation_test(
             {
                 'expected_error_mode': 0,
@@ -954,6 +963,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_existing_delegation_info(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation with an existing S4U_DELEGATION_INFO
         # structure in the PAC.
 
@@ -981,6 +992,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_client_pac_a(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation when the client service ticket does not
         # contain a PAC, and an empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
@@ -993,6 +1006,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_client_pac_b(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation when the client service ticket does not
         # contain a PAC, and a non-empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
@@ -1008,6 +1023,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_service_pac(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation when the service TGT does not contain a
         # PAC.
         self._run_delegation_test(
@@ -1020,6 +1037,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_client_pac_no_auth_data_required_a(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation when the client service ticket does not
         # contain a PAC, and an empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
@@ -1035,6 +1054,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_client_pac_no_auth_data_required_b(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation when the client service ticket does not
         # contain a PAC, and a non-empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
@@ -1053,6 +1074,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_service_pac_no_auth_data_required(self):
+        self.skip_unless_fl2008()
+
         # Test constrained delegation when the service TGT does not contain a
         # PAC.
         self._run_delegation_test(
@@ -1068,6 +1091,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_non_forwardable(self):
+        self.skip_unless_fl2008()
+
         # Test resource-based constrained delegation with a non-forwardable
         # ticket.
         self._run_delegation_test(
@@ -1081,6 +1106,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_pac_options_a(self):
+        self.skip_unless_fl2008()
+
         # Test resource-based constrained delegation without the RBCD bit set
         # in the PAC options, and an empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
@@ -1092,6 +1119,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_rbcd_no_pac_options_b(self):
+        self.skip_unless_fl2008()
+
         # Test resource-based constrained delegation without the RBCD bit set
         # in the PAC options, and a non-empty msDS-AllowedToDelegateTo
         # attribute.
@@ -1121,6 +1150,8 @@ class S4UKerberosTests(KDCBaseTest):
             })
 
     def test_bronze_bit_rbcd_old_checksum(self):
+        self.skip_unless_fl2008()
+
         # Attempt to modify the ticket without updating the PAC checksums.
         self._run_delegation_test(
             {
@@ -1170,6 +1201,8 @@ class S4UKerberosTests(KDCBaseTest):
                     })
 
     def test_rbcd_missing_client_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present a user ticket without the required checksums.
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
@@ -1190,6 +1223,8 @@ class S4UKerberosTests(KDCBaseTest):
                     })
 
     def test_rbcd_missing_service_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present the service's ticket without the required checksums.
         for checksum in (krb5pac.PAC_TYPE_SRV_CHECKSUM,
                          krb5pac.PAC_TYPE_KDC_CHECKSUM):
@@ -1241,6 +1276,8 @@ class S4UKerberosTests(KDCBaseTest):
                     })
 
     def test_rbcd_zeroed_client_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present a user ticket with invalid checksums.
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
@@ -1256,6 +1293,8 @@ class S4UKerberosTests(KDCBaseTest):
                     })
 
     def test_rbcd_zeroed_service_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present the service's ticket with invalid checksums.
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
@@ -1331,6 +1370,8 @@ class S4UKerberosTests(KDCBaseTest):
                         })
 
     def test_rbcd_unkeyed_client_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present a user ticket with invalid checksums.
         for checksum in self.pac_checksum_types:
             for ctype in self.unkeyed_ctypes:
@@ -1354,6 +1395,8 @@ class S4UKerberosTests(KDCBaseTest):
                         })
 
     def test_rbcd_unkeyed_service_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present the service's ticket with invalid checksums.
         for checksum in self.pac_checksum_types:
             for ctype in self.unkeyed_ctypes:
@@ -1383,18 +1426,28 @@ class S4UKerberosTests(KDCBaseTest):
 
     def test_constrained_delegation_rc4_client_checksum(self):
         # Present a user ticket with RC4 checksums.
-        expected_error_mode = (KDC_ERR_GENERIC,
-                               KDC_ERR_INAPP_CKSUM)
+        samdb = self.get_samdb()
+        functional_level = self.get_domain_functional_level(samdb)
+
+        if functional_level >= dsdb.DS_DOMAIN_FUNCTION_2008:
+            expected_error_mode = (KDC_ERR_GENERIC,
+                                   KDC_ERR_INAPP_CKSUM)
+            expect_edata = False
+        else:
+            expected_error_mode = 0
+            expect_edata = None
 
         self._run_delegation_test(
             {
                 'expected_error_mode': expected_error_mode,
                 'allow_delegation': True,
                 'modify_client_tkt_fn': self.rc4_pac_checksums,
-                'expect_edata': False,
+                'expect_edata': expect_edata,
             })
 
     def test_rbcd_rc4_client_checksum(self):
+        self.skip_unless_fl2008()
+
         # Present a user ticket with RC4 checksums.
         expected_error_mode = (KDC_ERR_GENERIC,
                                KDC_ERR_BADOPTION)
