@@ -3791,12 +3791,8 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 	}
 
 	etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 	etype_list |= ENC_HMAC_SHA1_96_AES128;
-#endif
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 	etype_list |= ENC_HMAC_SHA1_96_AES256;
-#endif
 
 	if (argv[1] != NULL) {
 		sscanf(argv[1], "%i", &etype_list);
