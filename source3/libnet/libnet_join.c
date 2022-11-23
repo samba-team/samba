@@ -2515,9 +2515,8 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	ctx->in.secure_channel_type = SEC_CHAN_WKSTA;
 
-	ctx->in.desired_encryption_types = ENC_CRC32 |
-					   ENC_RSA_MD5 |
-					   ENC_RC4_HMAC_MD5;
+	ctx->in.desired_encryption_types = 0;
+	ctx->in.desired_encryption_types |= ENC_RC4_HMAC_MD5;
 	ctx->in.desired_encryption_types |= ENC_HMAC_SHA1_96_AES128;
 	ctx->in.desired_encryption_types |= ENC_HMAC_SHA1_96_AES256;
 
