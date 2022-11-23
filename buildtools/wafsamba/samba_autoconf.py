@@ -184,7 +184,8 @@ def CHECK_TYPE_IN(conf, t, headers=None, alternate=None, define=None):
 
 @conf
 def CHECK_VARIABLE(conf, v, define=None, always=False,
-                   headers=None, msg=None, lib=None):
+                   headers=None, msg=None, lib=None,
+                   mandatory=False):
     '''check for a variable declaration (or define)'''
     if define is None:
         define = 'HAVE_%s' % v.upper()
@@ -208,6 +209,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False,
                       lib=lib,
                       headers=headers,
                       define=define,
+                      mandatory=mandatory,
                       always=always)
 
 
