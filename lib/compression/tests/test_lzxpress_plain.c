@@ -309,7 +309,8 @@ static void test_lzxpress_many_zeros(void **state)
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	const size_t N_ZEROS = 1000000;
 	const uint8_t *zeros = talloc_zero_size(tmp_ctx, N_ZEROS);
-	const ssize_t expected_c_size = 93;
+	const ssize_t expected_c_size_max = 120;
+	const ssize_t expected_c_size_min = 93;
 	ssize_t c_size;
 	uint8_t *comp, *decomp;
 	static struct timespec t_start, t_end;
@@ -327,8 +328,13 @@ static void test_lzxpress_many_zeros(void **state)
 				   N_ZEROS,
 				   comp,
 				   talloc_get_size(comp));
+	/*
+	 * Because our compression depends on heuristics, we don't insist on
+	 * an exact size in this case.
+	 */
 
-	assert_int_equal(c_size, expected_c_size);
+	assert_true(c_size <= expected_c_size_max);
+	assert_true(c_size >= expected_c_size_min);
 
 	decomp = talloc_size(tmp_ctx, N_ZEROS * 2);
 	c_size = lzxpress_decompress(comp,
