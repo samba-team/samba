@@ -238,12 +238,8 @@ static int add_kt_entry_etypes(krb5_context context, TALLOC_CTX *tmpctx,
 	char *princ_s = NULL;
 	char *short_princ_s = NULL;
 	krb5_enctype enctypes[4] = {
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-#endif
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-#endif
 		ENCTYPE_ARCFOUR_HMAC,
 		0
 	};
