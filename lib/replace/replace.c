@@ -1116,6 +1116,22 @@ long rep_openat2(int dirfd, const char *pathname,
 		 struct open_how *how, size_t size)
 {
 #ifdef __NR_openat2
+#if _FILE_OFFSET_BITS == 64 && SIZE_MAX == 0xffffffffUL && defined(O_LARGEFILE)
+	struct open_how __how;
+
+#if defined(O_PATH) && ! defined(DISABLE_OPATH)
+	if ((how->flags & O_PATH) == 0)
+#endif
+	{
+		if (sizeof(__how) == size) {
+			__how = *how;
+
+			__how.flags |= O_LARGEFILE;
+			how = &__how;
+		}
+	}
+#endif
+
 	return syscall(__NR_openat2,
 		       dirfd,
 		       pathname,
