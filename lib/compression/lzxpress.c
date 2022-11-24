@@ -58,9 +58,101 @@ struct write_context {
 	uint32_t nibble_index;
 };
 
+struct match {
+	const uint8_t *there;
+	uint32_t length;
+};
+
 
 #define CHECK_INPUT_BYTES(__needed) \
 	__CHECK_BYTES(uncompressed_size, uncompressed_pos, __needed)
+#define CHECK_OUTPUT_BYTES(__needed) \
+	__CHECK_BYTES(wc->max_compressed_size, wc->compressed_pos, __needed)
+
+
+static inline ssize_t push_indicator_bit(struct write_context *wc, uint32_t bit)
+{
+	wc->indic = (wc->indic << 1) | bit;
+	wc->indic_bit += 1;
+
+	if (wc->indic_bit == 32) {
+		PUSH_LE_U32(wc->compressed, wc->indic_pos, wc->indic);
+		wc->indic_bit = 0;
+		CHECK_OUTPUT_BYTES(sizeof(uint32_t));
+		wc->indic_pos = wc->compressed_pos;
+		wc->compressed_pos += sizeof(uint32_t);
+	}
+	return wc->indic_pos;
+}
+
+
+static ssize_t encode_match(struct write_context *wc,
+			    struct match match,
+			    const uint8_t *here)
+{
+	uint32_t match_len = match.length - 3;
+	uint32_t best_offset = here - match.there - 1;
+	uint16_t metadata;
+
+	if (best_offset > 8191) {
+		return -1;
+	}
+
+	CHECK_OUTPUT_BYTES(sizeof(uint16_t));
+	metadata = (uint16_t)((best_offset << 3) | MIN(match_len, 7));
+	PUSH_LE_U16(wc->compressed, wc->compressed_pos, metadata);
+	wc->compressed_pos += sizeof(uint16_t);
+
+	if (match_len >= 7) {
+		match_len -= 7;
+
+		if (wc->nibble_index == 0) {
+			wc->nibble_index = wc->compressed_pos;
+
+			CHECK_OUTPUT_BYTES(sizeof(uint8_t));
+			wc->compressed[wc->nibble_index] = MIN(match_len, 15);
+			wc->compressed_pos += sizeof(uint8_t);
+		} else {
+			wc->compressed[wc->nibble_index] |= MIN(match_len, 15) << 4;
+			wc->nibble_index = 0;
+		}
+
+		if (match_len >= 15) {
+			match_len -= 15;
+
+			CHECK_OUTPUT_BYTES(sizeof(uint8_t));
+			wc->compressed[wc->compressed_pos] = MIN(match_len, 255);
+			wc->compressed_pos += sizeof(uint8_t);
+
+			if (match_len >= 255) {
+				/* Additional match_len */
+
+				match_len += 7 + 15;
+
+				if (match_len < (1 << 16)) {
+					CHECK_OUTPUT_BYTES(sizeof(uint16_t));
+					PUSH_LE_U16(wc->compressed, wc->compressed_pos,
+						    match_len);
+					wc->compressed_pos += sizeof(uint16_t);
+				} else {
+					CHECK_OUTPUT_BYTES(sizeof(uint16_t) +
+							   sizeof(uint32_t));
+					PUSH_LE_U16(wc->compressed,
+						    wc->compressed_pos, 0);
+					wc->compressed_pos += sizeof(uint16_t);
+
+					PUSH_LE_U32(wc->compressed,
+						    wc->compressed_pos,
+						    match_len);
+					wc->compressed_pos += sizeof(uint32_t);
+				}
+			}
+		}
+	}
+	return push_indicator_bit(wc, 1);
+}
+
+#undef CHECK_OUTPUT_BYTES
 #define CHECK_OUTPUT_BYTES(__needed) \
 	__CHECK_BYTES(wc.max_compressed_size, wc.compressed_pos, __needed)
 
@@ -80,6 +172,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	 * the match length; they are always at least 16 bits long, and can
 	 * implicitly use unused half-bytes from earlier in the stream.
 	 */
+	ssize_t ret;
 	uint32_t uncompressed_pos;
 	struct write_context wc = {
 		.indic = 0,
@@ -147,83 +240,20 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			CHECK_OUTPUT_BYTES(sizeof(uint8_t));
 			wc.compressed[wc.compressed_pos++] = uncompressed[uncompressed_pos++];
 
-			wc.indic <<= 1;
-			wc.indic_bit += 1;
-
-			if (wc.indic_bit == 32) {
-				PUSH_LE_U32(wc.compressed, wc.indic_pos, wc.indic);
-				wc.indic_bit = 0;
-				CHECK_OUTPUT_BYTES(sizeof(uint32_t));
-				wc.indic_pos = wc.compressed_pos;
-				wc.compressed_pos += sizeof(uint32_t);
+			ret = push_indicator_bit(&wc, 0);
+			if (ret < 0) {
+				return ret;
 			}
 		} else {
-			uint32_t match_len = best_len;
-
-			uint16_t metadata;
-
-			match_len -= 3;
-			best_offset -= 1;
-
-			/* Classical meta-data */
-			CHECK_OUTPUT_BYTES(sizeof(uint16_t));
-			metadata = (uint16_t)((best_offset << 3) | MIN(match_len, 7));
-			PUSH_LE_U16(wc.compressed, wc.compressed_pos, metadata);
-			wc.compressed_pos += sizeof(uint16_t);
-
-			if (match_len >= 7) {
-				match_len -= 7;
-
-				if (!wc.nibble_index) {
-					wc.nibble_index = wc.compressed_pos;
-
-					CHECK_OUTPUT_BYTES(sizeof(uint8_t));
-					wc.compressed[wc.nibble_index] = MIN(match_len, 15);
-					wc.compressed_pos += sizeof(uint8_t);
-				} else {
-					wc.compressed[wc.nibble_index] |= MIN(match_len, 15) << 4;
-					wc.nibble_index = 0;
-				}
-
-				if (match_len >= 15) {
-					match_len -= 15;
-
-					CHECK_OUTPUT_BYTES(sizeof(uint8_t));
-					wc.compressed[wc.compressed_pos] = MIN(match_len, 255);
-					wc.compressed_pos += sizeof(uint8_t);
-
-					if (match_len >= 255) {
-						/* Additional match_len */
-
-						match_len += 7 + 15;
-
-						if (match_len < (1 << 16)) {
-							CHECK_OUTPUT_BYTES(sizeof(uint16_t));
-							PUSH_LE_U16(wc.compressed, wc.compressed_pos, match_len);
-							wc.compressed_pos += sizeof(uint16_t);
-						} else {
-							CHECK_OUTPUT_BYTES(sizeof(uint16_t) + sizeof(uint32_t));
-							PUSH_LE_U16(wc.compressed, wc.compressed_pos, 0);
-							wc.compressed_pos += sizeof(uint16_t);
-
-							PUSH_LE_U32(wc.compressed, wc.compressed_pos, match_len);
-							wc.compressed_pos += sizeof(uint32_t);
-						}
-					}
-				}
+			const uint8_t *here = uncompressed + uncompressed_pos;
+			struct match match = {
+				.there = here - best_offset,
+				.length = best_len
+			};
+			ret = encode_match(&wc, match, here);
+			if (ret < 0) {
+				return ret;
 			}
-
-			wc.indic = (wc.indic << 1) | 1;
-			wc.indic_bit += 1;
-
-			if (wc.indic_bit == 32) {
-				PUSH_LE_U32(wc.compressed, wc.indic_pos, wc.indic);
-				wc.indic_bit = 0;
-				CHECK_OUTPUT_BYTES(sizeof(uint32_t));
-				wc.indic_pos = wc.compressed_pos;
-				wc.compressed_pos += sizeof(uint32_t);
-			}
-
 			uncompressed_pos += best_len;
 		}
 	}
