@@ -2722,6 +2722,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "winbind nss info", "template");
 
 	lpcfg_do_global_parameter(lp_ctx, "server schannel", "True");
+	lpcfg_do_global_parameter(lp_ctx, "reject md5 clients", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "short preserve case", "True");
 
