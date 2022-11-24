@@ -1396,15 +1396,13 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
  @param[in] mem_ctx talloc memory context to allocate from
  @param[in] domain domain to find a dc in
- @param[out] dcname NetBIOS or FQDN of DC that's connected to
- @param[out] pss DC Internet address and port
  @param[out] fd fd of the open socket connected to the newly found dc
  @return true when a DC connection is made, false otherwise
 *******************************************************************/
 
 static bool find_new_dc(TALLOC_CTX *mem_ctx,
 			struct winbindd_domain *domain,
-			char **dcname, struct sockaddr_storage *pss, int *fd,
+			int *fd,
 			uint32_t request_flags)
 {
 	struct dc_name_ip *dcs = NULL;
@@ -1420,6 +1418,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	size_t fd_index;
 
 	NTSTATUS status;
+	bool ok;
 
 	*fd = -1;
 
@@ -1460,20 +1459,27 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	*pss = addrs[fd_index];
+	domain->dcaddr = addrs[fd_index];
 
 	if (*dcnames[fd_index] != '\0' && !is_ipaddress(dcnames[fd_index])) {
 		/* Ok, we've got a name for the DC */
-		*dcname = talloc_strdup(mem_ctx, dcnames[fd_index]);
-		if (*dcname == NULL) {
+		TALLOC_FREE(domain->dcname);
+		domain->dcname = talloc_strdup(mem_ctx, dcnames[fd_index]);
+		if (domain->dcname == NULL) {
 			return false;
 		}
 		return true;
 	}
 
 	/* Try to figure out the name */
-	if (dcip_check_name(mem_ctx, domain, pss, dcname, request_flags)) {
-		return True;
+	TALLOC_FREE(domain->dcname);
+	ok = dcip_check_name(domain,
+			     domain,
+			     &domain->dcaddr,
+			     &domain->dcname,
+			     request_flags);
+	if (ok) {
+		return true;
 	}
 
 	/* We can not continue without the DC's name */
@@ -1700,15 +1706,6 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			   is found in the winbindd cache. */
 			set_global_winbindd_state_offline();
 			break;
-		}
-		if (dcname != NULL) {
-			talloc_free(domain->dcname);
-
-			domain->dcname = talloc_move(domain, &dcname);
-			if (domain->dcname == NULL) {
-				result = NT_STATUS_NO_MEMORY;
-				break;
-			}
 		}
 
 		new_conn->cli = NULL;
