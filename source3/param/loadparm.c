@@ -668,6 +668,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.require_strong_key = true;
 	Globals.reject_md5_servers = true;
 	Globals.server_schannel = true;
+	Globals.reject_md5_clients = true;
 	Globals.read_raw = true;
 	Globals.write_raw = true;
 	Globals.null_passwords = false;
