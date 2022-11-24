@@ -1979,6 +1979,44 @@ static bool torture_smb1_twrp_openroot(struct torture_context *tctx,
 	return ret;
 }
 
+static void torture_smb1_find_gmt_mask_list_fn(struct clilist_file_info *finfo,
+					       const char *name,
+					       void *state)
+{
+}
+
+/**
+ * SMB1 @GMT token as search mask is valid
+ */
+static bool torture_smb1_find_gmt_mask(struct torture_context *tctx,
+				       struct smbcli_state *cli)
+{
+	const char *dname = "\\torture_smb1_find_gmt_mask";
+	const char *path = "\\torture_smb1_find_gmt_mask\\@GMT-2022.11.24-16.24.00";
+	int fnum;
+	int n;
+	NTSTATUS status;
+	bool ret = true;
+
+	smbcli_unlink(cli->tree, path);
+	smbcli_rmdir(cli->tree, dname);
+
+	status = smbcli_mkdir(cli->tree, dname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smbcli_mkdir() failed\n");
+	fnum = smbcli_open(cli->tree, path, O_RDWR | O_CREAT, DENY_NONE);
+	smbcli_close(cli->tree, fnum);
+
+	/* Note: we don't set FLAGS2_REPARSE_PATH, so this is just a path */
+	n = smbcli_list(cli->tree, path, 0, torture_smb1_find_gmt_mask_list_fn, cli);
+	torture_assert_int_equal_goto(tctx, n, 1, ret, done, "Wrong count\n");
+
+done:
+	smbcli_unlink(cli->tree, path);
+	smbcli_rmdir(cli->tree, dname);
+	return ret;
+}
+
 NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "base");
@@ -2039,6 +2077,9 @@ NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb_test(suite,
 			"smb1-twrp-openroot",
 			torture_smb1_twrp_openroot);
+	torture_suite_add_1smb_test(suite,
+			"smb1-find-gmt-mask",
+			torture_smb1_find_gmt_mask);
 
 	suite->description = talloc_strdup(suite, 
 					"Basic SMB tests (imported from the original smbtorture)");
