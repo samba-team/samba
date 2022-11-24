@@ -1462,24 +1462,19 @@ _PUBLIC_ void cli_credentials_set_target_service(struct cli_credentials *cred, c
 _PUBLIC_ int cli_credentials_get_aes256_key(struct cli_credentials *cred,
 					    TALLOC_CTX *mem_ctx,
 					    struct loadparm_context *lp_ctx,
+					    const char *password,
 					    const char *salt,
 					    DATA_BLOB *aes_256)
 {
 	struct smb_krb5_context *smb_krb5_context = NULL;
 	krb5_error_code krb5_ret;
 	int ret;
-	const char *password = NULL;
 	krb5_data cleartext_data;
 	krb5_data salt_data;
 	krb5_keyblock key;
 
 	if (cred->password_will_be_nt_hash) {
 		DEBUG(1,("cli_credentials_get_aes256_key: cannot generate AES256 key using NT hash\n"));
-		return EINVAL;
-	}
-
-	password = cli_credentials_get_password(cred);
-	if (password == NULL) {
 		return EINVAL;
 	}
 
