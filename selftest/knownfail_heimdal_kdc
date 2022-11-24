@@ -625,3 +625,9 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rc4.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_ticket_requester_sid_lifetime_tgs.ad_dc
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rc4_client_checksum.ad_dc_default:local
+#
+# LSA tests
+#
+^samba4.rpc.lsa.trusted.domains with .lsa.TrustedDomains.ad_dc_default
+^samba4.rpc.lsa.trusted.domains with bigendian.lsa.TrustedDomains.ad_dc_default
+^samba4.rpc.lsa.trusted.domains with validate.lsa.TrustedDomains.ad_dc_default

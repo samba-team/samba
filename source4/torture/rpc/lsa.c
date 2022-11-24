@@ -3217,8 +3217,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	const char *error_string = NULL;
 	const char *workstation = cli_credentials_get_workstation(credentials);
 	const char *password = cli_credentials_get_password(credentials);
-	const struct samr_Password *nthash = NULL;
-	const struct samr_Password *old_nthash = NULL;
+	DATA_BLOB aes256_key;
+	const char *salt = NULL;
 	const char *old_password = cli_credentials_get_old_password(credentials);
 	int kvno = cli_credentials_get_kvno(credentials);
 	int expected_kvno = 0;
@@ -3250,8 +3250,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	realm = cli_credentials_get_realm(credentials);
 	trusted_realm_name = strupper_talloc(tctx, trusted_dns_name);
 
-	nthash = cli_credentials_get_nt_hash(credentials, ctx);
-	old_nthash = cli_credentials_get_old_nt_hash(credentials, ctx);
+	salt = talloc_asprintf(ctx, "%skrbtgt%s", realm, trusted_realm_name);
+	torture_assert(tctx, salt != NULL, "Failed to create salt");
 
 	k5ret = smb_krb5_init_context(ctx, tctx->lp_ctx, &ctx->smb_krb5_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "smb_krb5_init_context failed");
@@ -3596,23 +3596,35 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	}
 	torture_assert_int_equal(tctx, t_kvno, expected_kvno, assertion_message);
 
-	if (old_nthash != NULL && expected_kvno != kvno) {
-		torture_comment(tctx, "old_nthash: %s\n", assertion_message);
-		k5ret = smb_krb5_keyblock_init_contents(ctx->smb_krb5_context->krb5_context,
-							ENCTYPE_ARCFOUR_HMAC,
-							old_nthash->hash,
-							sizeof(old_nthash->hash),
-							&ctx->krbtgt_referral_keyblock);
-		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+	if (old_password != NULL && expected_kvno != kvno) {
+		torture_comment(tctx, "old_password: %s\n", assertion_message);
+
+		k5ret = cli_credentials_get_aes256_key(credentials, ctx, tctx->lp_ctx,
+						       old_password, salt,
+						       &aes256_key);
+		torture_assert_int_equal(tctx, k5ret, 0, "cli_credentials_get_aes256_key failed");
 	} else {
-		torture_comment(tctx, "nthash: %s\n", assertion_message);
-		k5ret = smb_krb5_keyblock_init_contents(ctx->smb_krb5_context->krb5_context,
-							ENCTYPE_ARCFOUR_HMAC,
-							nthash->hash,
-							sizeof(nthash->hash),
-							&ctx->krbtgt_referral_keyblock);
-		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+		torture_comment(tctx, "password: %s\n", assertion_message);
+
+		k5ret = cli_credentials_get_aes256_key(credentials, ctx, tctx->lp_ctx,
+						       password, salt,
+						       &aes256_key);
+		torture_assert_int_equal(tctx, k5ret, 0, "cli_credentials_get_aes256_key failed");
 	}
+
+	k5ret = smb_krb5_keyblock_init_contents(ctx->smb_krb5_context->krb5_context,
+						ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+						aes256_key.data,
+						aes256_key.length,
+						&ctx->krbtgt_referral_keyblock);
+	data_blob_free(&aes256_key);
+	torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+
+	torture_assert_int_equal(tctx,
+				 ctx->krbtgt_referral_keyblock.keytype,
+				 ctx->krbtgt_referral_ticket.enc_part.etype,
+				 "Key encryption type does not match enc-part encryption type");
+
 	k5ret = krb5_decrypt_ticket(ctx->smb_krb5_context->krb5_context,
 				    &ctx->krbtgt_referral_ticket,
 				    &ctx->krbtgt_referral_keyblock,
