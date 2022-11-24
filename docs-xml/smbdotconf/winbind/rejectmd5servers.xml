@@ -13,10 +13,13 @@
 	This will prevent downgrade attacks.</para>
 
 	<para>The behavior can be controlled per netbios domain
-	by using 'reject md5 servers:NETBIOSDOMAIN = yes' as option.</para>
+	by using 'reject md5 servers:NETBIOSDOMAIN = no' as option.</para>
+
+	<para>The default changed from 'no' to 'yes, with the patches for CVE-2022-38023,
+	see https://bugzilla.samba.org/show_bug.cgi?id=15240</para>
 
 	<para>This option overrides the <smbconfoption name="require strong key"/> option.</para>
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
