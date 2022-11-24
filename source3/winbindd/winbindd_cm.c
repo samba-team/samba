@@ -1727,43 +1727,43 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			break;
 	}
 
-	if (NT_STATUS_IS_OK(result)) {
-		bool seal_pipes = true;
-
-		winbindd_set_locator_kdc_envs(domain);
-
-		if (domain->online == False) {
-			/* We're changing state from offline to online. */
-			set_global_winbindd_state_online();
-		}
-		set_domain_online(domain);
-
-		/*
-		 * Much as I hate global state, this seems to be the point
-		 * where we can be certain that we have a proper connection to
-		 * a DC. wbinfo --dc-info needs that information, store it in
-		 * gencache with a looong timeout. This will need revisiting
-		 * once we start to connect to multiple DCs, wbcDcInfo is
-		 * already prepared for that.
-		 */
-		store_current_dc_in_gencache(domain->name, domain->dcname,
-					     new_conn->cli);
-
-		seal_pipes = lp_winbind_sealed_pipes();
-		seal_pipes = lp_parm_bool(-1, "winbind sealed pipes",
-					  domain->name,
-					  seal_pipes);
-
-		if (seal_pipes) {
-			new_conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-		} else {
-			new_conn->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-		}
-	} else {
+	if (!NT_STATUS_IS_OK(result)) {
 		/* Ensure we setup the retry handler. */
 		set_domain_offline(domain);
+		goto out;
 	}
 
+	winbindd_set_locator_kdc_envs(domain);
+
+	if (domain->online == False) {
+		/* We're changing state from offline to online. */
+		set_global_winbindd_state_online();
+	}
+	set_domain_online(domain);
+
+	/*
+	 * Much as I hate global state, this seems to be the point
+	 * where we can be certain that we have a proper connection to
+	 * a DC. wbinfo --dc-info needs that information, store it in
+	 * gencache with a looong timeout. This will need revisiting
+	 * once we start to connect to multiple DCs, wbcDcInfo is
+	 * already prepared for that.
+	 */
+	store_current_dc_in_gencache(domain->name, domain->dcname,
+				     new_conn->cli);
+
+	seal_pipes = lp_winbind_sealed_pipes();
+	seal_pipes = lp_parm_bool(-1, "winbind sealed pipes",
+				  domain->name,
+				  seal_pipes);
+
+	if (seal_pipes) {
+		new_conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	} else {
+		new_conn->auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	}
+
+out:
 	talloc_destroy(mem_ctx);
 	return result;
 }
