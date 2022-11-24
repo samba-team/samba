@@ -1620,6 +1620,8 @@ sub provision_ad_dc_ntvfs($$$)
 	client min protocol = CORE
 	server min protocol = LANMAN1
 
+	reject md5 clients = no
+
 	CVE_2020_1472:warn_about_unused_debug_level = 3
 	server require schannel:schannel0\$ = no
 	server require schannel:schannel1\$ = no
@@ -1984,6 +1986,8 @@ sub provision_ad_dc($$$$$$$)
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
 	print notify backchannel = yes
+
+	reject md5 clients = no
 
 	CVE_2020_1472:warn_about_unused_debug_level = 3
 	server require schannel:schannel0\$ = no

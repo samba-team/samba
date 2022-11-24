@@ -7,11 +7,16 @@
 	only in 'active directory domain controller' mode), will
 	reject clients which does not support NETLOGON_NEG_SUPPORTS_AES.</para>
 
-	<para>You can set this to yes if all domain members support aes.
-	This will prevent downgrade attacks.</para>
+	<para>Support for NETLOGON_NEG_SUPPORTS_AES was added in Windows
+	starting with Server 2008R2 and Windows 7, it's available in Samba
+	starting with 4.0, however third party domain members like NetApp ONTAP
+	still uses RC4 (HMAC-MD5), see https://www.samba.org/samba/security/CVE-2022-38023.html for more details.</para>
+
+	<para>The default changed from 'no' to 'yes', with the patches for CVE-2022-38023,
+	see https://bugzilla.samba.org/show_bug.cgi?id=15240</para>
 
 	<para>This option overrides the 'allow nt4 crypto' option.</para>
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
