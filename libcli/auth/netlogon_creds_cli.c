@@ -340,8 +340,8 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	const char *client_computer;
 	uint32_t proposed_flags;
 	uint32_t required_flags = 0;
-	bool reject_md5_servers = false;
-	bool require_strong_key = false;
+	bool reject_md5_servers = true;
+	bool require_strong_key = true;
 	int require_sign_or_seal = true;
 	bool seal_secure_channel = true;
 	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
