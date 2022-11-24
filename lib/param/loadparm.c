@@ -2669,6 +2669,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "winbind sealed pipes", "True");
 	lpcfg_do_global_parameter(lp_ctx, "winbind scan trusted domains", "False");
 	lpcfg_do_global_parameter(lp_ctx, "require strong key", "True");
+	lpcfg_do_global_parameter(lp_ctx, "reject md5 servers", "True");
 	lpcfg_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
 	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
 	lpcfg_do_global_parameter_var(lp_ctx, "gpo update command", "%s/samba-gpupdate", dyn_SCRIPTSBINDIR);
