@@ -1391,6 +1391,88 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	return True;
 }
 
+static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
+				 struct winbindd_domain *domain,
+				 uint32_t request_flags,
+				 int *fd)
+{
+	char *saf_servername = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * We have to check the server affinity cache here since later we select
+	 * a DC based on response time and not preference.
+	 */
+	saf_servername = saf_fetch(mem_ctx, domain->name);
+
+	/*
+	 * Check the negative connection cache before talking to it. It going
+	 * down may have triggered the reconnection.
+	 */
+	status = check_negative_conn_cache(domain->name, saf_servername);
+	if (!NT_STATUS_IS_OK(status)) {
+		saf_servername = NULL;
+	}
+
+	if (saf_servername != NULL) {
+		DBG_DEBUG("saf_servername is '%s' for domain %s\n",
+			  saf_servername, domain->name);
+
+		/* convert an ip address to a name */
+		if (is_ipaddress(saf_servername)) {
+			ok = interpret_string_addr(&domain->dcaddr,
+						   saf_servername,
+						   AI_NUMERICHOST);
+			if (!ok) {
+				return false;
+			}
+		} else {
+			ok = resolve_name(saf_servername,
+					  &domain->dcaddr,
+					  0x20,
+					  true);
+			if (!ok) {
+				goto fail;
+			}
+		}
+
+		TALLOC_FREE(domain->dcname);
+		ok = dcip_check_name(domain,
+				     domain,
+				     &domain->dcaddr,
+				     &domain->dcname,
+				     request_flags);
+		if (!ok) {
+			goto fail;
+		}
+	}
+
+	if (domain->dcname == NULL) {
+		return false;
+	}
+
+	status = check_negative_conn_cache(domain->name, domain->dcname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	status = smbsock_connect(&domain->dcaddr, 0,
+				 NULL, -1, NULL, -1,
+				 fd, NULL, 10);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	return true;
+
+fail:
+	winbind_add_failed_connection_entry(domain,
+					    saf_servername,
+					    NT_STATUS_UNSUCCESSFUL);
+	return false;
+
+}
+
 /*******************************************************************
  Find and make a connection to a DC in the given domain.
 
@@ -1400,10 +1482,10 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
  @return true when a DC connection is made, false otherwise
 *******************************************************************/
 
-static bool find_new_dc(TALLOC_CTX *mem_ctx,
-			struct winbindd_domain *domain,
-			int *fd,
-			uint32_t request_flags)
+static bool find_dc(TALLOC_CTX *mem_ctx,
+		    struct winbindd_domain *domain,
+		    uint32_t request_flags,
+		    int *fd)
 {
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
@@ -1421,6 +1503,11 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	bool ok;
 
 	*fd = -1;
+
+	ok = connect_preferred_dc(mem_ctx, domain, request_flags, fd);
+	if (ok) {
+		return true;
+	}
 
  again:
 	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs, request_flags) || (num_dcs == 0))
@@ -1450,9 +1537,9 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 		for (i=0; i<num_dcs; i++) {
 			char ab[INET6_ADDRSTRLEN];
 			print_sockaddr(ab, sizeof(ab), &dcs[i].ss);
-			DEBUG(10, ("find_new_dc: smbsock_any_connect failed for "
+			DBG_DEBUG("smbsock_any_connect failed for "
 				"domain %s address %s. Error was %s\n",
-				   domain->name, ab, nt_errstr(status) ));
+				   domain->name, ab, nt_errstr(status));
 			winbind_add_failed_connection_entry(domain,
 				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
@@ -1618,93 +1705,32 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				   bool need_rw_dc)
 {
 	TALLOC_CTX *mem_ctx;
-	NTSTATUS result;
-	char *saf_servername;
+	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	int retries;
 	uint32_t request_flags = need_rw_dc ? DS_WRITABLE_REQUIRED : 0;
+	int fd = -1;
+	bool retry = false;
+	bool seal_pipes = true;
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
 		set_domain_offline(domain);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	saf_servername = saf_fetch(mem_ctx, domain->name );
-
-	/* we have to check the server affinity cache here since
-	   later we select a DC based on response time and not preference */
-
-	/* Check the negative connection cache
-	   before talking to it. It going down may have
-	   triggered the reconnection. */
-
-	if (saf_servername && NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, saf_servername))) {
-		struct sockaddr_storage ss;
-		char *dcname = NULL;
-		bool resolved = true;
-
-		DEBUG(10, ("cm_open_connection: saf_servername is '%s' for domain %s\n",
-			   saf_servername, domain->name));
-
-		/* convert an ip address to a name */
-		if (is_ipaddress(saf_servername)) {
-			if (!interpret_string_addr(&ss, saf_servername,
-						   AI_NUMERICHOST)) {
-				TALLOC_FREE(mem_ctx);
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-		} else {
-			if (!resolve_name(saf_servername, &ss, 0x20, true)) {
-				resolved = false;
-			}
-		}
-
-		if (resolved && dcip_check_name(mem_ctx, domain, &ss, &dcname, request_flags)) {
-			domain->dcname = talloc_strdup(domain,
-						       dcname);
-			if (domain->dcname == NULL) {
-				TALLOC_FREE(mem_ctx);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			domain->dcaddr = ss;
-		} else {
-			winbind_add_failed_connection_entry(domain, saf_servername,
-							    NT_STATUS_UNSUCCESSFUL);
-		}
-	}
-
 	for (retries = 0; retries < 3; retries++) {
-		int fd = -1;
-		bool retry = False;
-		char *dcname = NULL;
-
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		bool found_dc;
 
 		DEBUG(10, ("cm_open_connection: dcname is '%s' for domain %s\n",
 			   domain->dcname ? domain->dcname : "", domain->name));
 
-		if (domain->dcname != NULL &&
-		    NT_STATUS_IS_OK(check_negative_conn_cache(domain->name,
-							      domain->dcname)))
-		{
-			NTSTATUS status;
-
-			status = smbsock_connect(&domain->dcaddr, 0,
-						 NULL, -1, NULL, -1,
-						 &fd, NULL, 10);
-			if (!NT_STATUS_IS_OK(status)) {
-				fd = -1;
-			}
-		}
-
-		if ((fd == -1) &&
-		    !find_new_dc(mem_ctx, domain, &dcname, &domain->dcaddr, &fd, request_flags))
-		{
+		found_dc = find_dc(mem_ctx, domain, request_flags, &fd);
+		if (!found_dc) {
 			/* This is the one place where we will
 			   set the global winbindd offline state
 			   to true, if a "WINBINDD_OFFLINE" entry
 			   is found in the winbindd cache. */
 			set_global_winbindd_state_offline();
+			result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 			break;
 		}
 
