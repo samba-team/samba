@@ -150,7 +150,7 @@ static bool test_ServerAuth3Crypto(struct dcerpc_pipe *p,
 	    force_client_rc4) {
 		torture_assert_ntstatus_equal(tctx,
 					      a.out.result,
-					      NT_STATUS_ACCESS_DENIED,
+					      NT_STATUS_DOWNGRADE_DETECTED,
 					      "Unexpected status code");
 		return false;
 	}
