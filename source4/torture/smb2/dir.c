@@ -720,7 +720,7 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 	ZERO_STRUCT(f);
 	f.in.file.handle        = *h;
 	f.in.pattern            = pattern;
-	f.in.max_response_size  = 0x1000;
+	f.in.max_response_size  = 1024*1024;
 	f.in.level              = level;
 
 	/* The search should start from the beginning everytime */
