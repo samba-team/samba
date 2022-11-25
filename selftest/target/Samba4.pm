@@ -1654,9 +1654,23 @@ sub provision_ad_dc_ntvfs($$$)
 	server require schannel:schannel10\$ = no
 	server require schannel:schannel11\$ = no
 	server require schannel:torturetest\$ = no
+	server schannel require seal:schannel0\$ = no
+	server schannel require seal:schannel1\$ = no
+	server schannel require seal:schannel2\$ = no
+	server schannel require seal:schannel3\$ = no
+	server schannel require seal:schannel4\$ = no
+	server schannel require seal:schannel5\$ = no
+	server schannel require seal:schannel6\$ = no
+	server schannel require seal:schannel7\$ = no
+	server schannel require seal:schannel8\$ = no
+	server schannel require seal:schannel9\$ = no
+	server schannel require seal:schannel10\$ = no
+	server schannel require seal:schannel11\$ = no
+	server schannel require seal:torturetest\$ = no
 
 	# needed for 'samba.tests.auth_log' tests
 	server require schannel:LOCALDC\$ = no
+	server schannel require seal:LOCALDC\$ = no
 	";
 	push (@{$extra_provision_options}, "--use-ntvfs");
 	my $ret = $self->provision($prefix,
@@ -2053,6 +2067,19 @@ sub provision_ad_dc($$$$$$$)
 	server require schannel:schannel10\$ = no
 	server require schannel:schannel11\$ = no
 	server require schannel:torturetest\$ = no
+	server schannel require seal:schannel0\$ = no
+	server schannel require seal:schannel1\$ = no
+	server schannel require seal:schannel2\$ = no
+	server schannel require seal:schannel3\$ = no
+	server schannel require seal:schannel4\$ = no
+	server schannel require seal:schannel5\$ = no
+	server schannel require seal:schannel6\$ = no
+	server schannel require seal:schannel7\$ = no
+	server schannel require seal:schannel8\$ = no
+	server schannel require seal:schannel9\$ = no
+	server schannel require seal:schannel10\$ = no
+	server schannel require seal:schannel11\$ = no
+	server schannel require seal:torturetest\$ = no
 
 	auth event notification = true
 	dsdb event notification = true
@@ -2734,6 +2761,7 @@ sub setup_ad_dc_smb1
 
 	# needed for 'samba.tests.auth_log' tests
 	server require schannel:ADDCSMB1\$ = no
+	server schannel require seal:ADDCSMB1\$ = no
 ";
 	return _setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
 }
