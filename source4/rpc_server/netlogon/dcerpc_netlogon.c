@@ -311,13 +311,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
 
-	nt_status = dcesrv_netr_ServerAuthenticate3_check_downgrade(
-			dce_call, r, pipe_state, negotiate_flags,
-			NT_STATUS_OK);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_DNS_DOMAIN:
@@ -326,16 +319,22 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	case SEC_CHAN_RODC:
 		break;
 	case SEC_CHAN_NULL:
-		return NT_STATUS_INVALID_PARAMETER;
+		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_INVALID_PARAMETER);
 	default:
 		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
 			  r->in.secure_channel_type));
-		return NT_STATUS_INVALID_PARAMETER;
+		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_INVALID_PARAMETER);
 	}
 
 	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_INVALID_SYSTEM_SERVICE);
 	}
 
 	if (r->in.secure_channel_type == SEC_CHAN_DOMAIN ||
@@ -364,16 +363,22 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		encoded_name = ldb_binary_encode_string(mem_ctx,
 							r->in.account_name);
 		if (encoded_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_MEMORY);
 		}
 
 		len = strlen(encoded_name);
 		if (len < 2) {
-			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 
 		if (require_trailer && encoded_name[len - 1] != trailer) {
-			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 		encoded_name[len - 1] = '\0';
 
@@ -391,30 +396,42 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 				  "but there's no tdo for [%s] => [%s] \n",
 				  log_escape(mem_ctx, r->in.account_name),
 				  encoded_name));
-			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				nt_status);
 		}
 
 		nt_status = dsdb_trust_get_incoming_passwords(tdo_msg, mem_ctx,
 							      &curNtHash,
 							      &prevNtHash);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED)) {
-			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				nt_status);
 		}
 
 		flatname = ldb_msg_find_attr_as_string(tdo_msg, "flatName", NULL);
 		if (flatname == NULL) {
-			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 
 		*trust_account_for_search = talloc_asprintf(mem_ctx, "%s$", flatname);
 		if (*trust_account_for_search == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_MEMORY);
 		}
 	} else {
 		*trust_account_for_search = r->in.account_name;
@@ -429,14 +446,18 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n",
 			 log_escape(mem_ctx, r->in.account_name)));
-		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 	}
 
 	if (num_records > 1) {
 		DEBUG(0,("Found %d records matching user [%s]\n",
 			 num_records,
 			 log_escape(mem_ctx, r->in.account_name)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_INTERNAL_DB_CORRUPTION);
 	}
 
 	*trust_account_in_db = ldb_msg_find_attr_as_string(msgs[0],
@@ -445,9 +466,18 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	if (*trust_account_in_db == NULL) {
 		DEBUG(0,("No samAccountName returned in record matching user [%s]\n",
 			 r->in.account_name));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+				dce_call, r, pipe_state, negotiate_flags,
+				NT_STATUS_INTERNAL_DB_CORRUPTION);
 	}
-	
+
+	nt_status = dcesrv_netr_ServerAuthenticate3_check_downgrade(
+			dce_call, r, pipe_state, negotiate_flags,
+			NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	user_account_control = ldb_msg_find_attr_as_uint(msgs[0], "userAccountControl", 0);
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
