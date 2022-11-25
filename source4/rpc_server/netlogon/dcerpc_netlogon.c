@@ -130,6 +130,67 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
+	struct dcesrv_call_state *dce_call,
+	struct netr_ServerAuthenticate3 *r,
+	struct netlogon_server_pipe_state *pipe_state,
+	uint32_t negotiate_flags,
+	NTSTATUS orig_status)
+{
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(lp_ctx);
+	bool reject_des_client = !allow_nt4_crypto;
+	bool reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
+
+	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
+		reject_des_client = false;
+	}
+
+	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		reject_des_client = false;
+		reject_md5_client = false;
+	}
+
+	if (reject_des_client || reject_md5_client) {
+		/*
+		 * Here we match Windows 2012 and return no flags.
+		 */
+		*r->out.negotiate_flags = 0;
+		return NT_STATUS_DOWNGRADE_DETECTED;
+	}
+
+	/*
+	 * This talloc_free is important to prevent re-use of the
+	 * challenge.  We have to delay it this far due to NETApp
+	 * servers per:
+	 * https://bugzilla.samba.org/show_bug.cgi?id=11291
+	 */
+	TALLOC_FREE(pipe_state);
+
+	/*
+	 * At this point we must also cleanup the TDB cache
+	 * entry, if we fail the client needs to call
+	 * netr_ServerReqChallenge again.
+	 *
+	 * Note: this handles a non existing record just fine,
+	 * the r->in.computer_name might not be the one used
+	 * in netr_ServerReqChallenge(), but we are trying to
+	 * just tidy up the normal case to prevent re-use.
+	 */
+	schannel_delete_challenge(dce_call->conn->dce_ctx->lp_ctx,
+				  r->in.computer_name);
+
+	/*
+	 * According to Microsoft (see bugid #6099)
+	 * Windows 7 looks at the negotiate_flags
+	 * returned in this structure *even if the
+	 * call fails with access denied!
+	 */
+	*r->out.negotiate_flags = negotiate_flags;
+
+	return orig_status;
+}
+
 /*
  * Do the actual processing of a netr_ServerAuthenticate3 message.
  * called from dcesrv_netr_ServerAuthenticate3, which handles the logging.
@@ -157,11 +218,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 			       "objectSid", "samAccountName", NULL};
 	uint32_t server_flags = 0;
 	uint32_t negotiate_flags = 0;
-	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(dce_call->conn->dce_ctx->lp_ctx);
-	bool reject_des_client = !allow_nt4_crypto;
-	bool reject_md5_client = lpcfg_reject_md5_clients(dce_call->conn->dce_ctx->lp_ctx);
 
 	ZERO_STRUCTP(r->out.return_credentials);
+	*r->out.negotiate_flags = 0;
 	*r->out.rid = 0;
 
 	pipe_state = dcesrv_iface_state_find_conn(dce_call,
@@ -240,51 +299,12 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
 
-	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
-		reject_des_client = false;
+	nt_status = dcesrv_netr_ServerAuthenticate3_check_downgrade(
+			dce_call, r, pipe_state, negotiate_flags,
+			NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
-
-	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		reject_des_client = false;
-		reject_md5_client = false;
-	}
-
-	if (reject_des_client || reject_md5_client) {
-		/*
-		 * Here we match Windows 2012 and return no flags.
-		 */
-		*r->out.negotiate_flags = 0;
-		return NT_STATUS_DOWNGRADE_DETECTED;
-	}
-
-	/*
-	 * This talloc_free is important to prevent re-use of the
-	 * challenge.  We have to delay it this far due to NETApp
-	 * servers per:
-	 * https://bugzilla.samba.org/show_bug.cgi?id=11291
-	 */
-	TALLOC_FREE(pipe_state);
-
-	/*
-	 * At this point we must also cleanup the TDB cache
-	 * entry, if we fail the client needs to call
-	 * netr_ServerReqChallenge again.
-	 *
-	 * Note: this handles a non existing record just fine,
-	 * the r->in.computer_name might not be the one used
-	 * in netr_ServerReqChallenge(), but we are trying to
-	 * just tidy up the normal case to prevent re-use.
-	 */
-	schannel_delete_challenge(dce_call->conn->dce_ctx->lp_ctx,
-				  r->in.computer_name);
-
-	/*
-	 * According to Microsoft (see bugid #6099)
-	 * Windows 7 looks at the negotiate_flags
-	 * returned in this structure *even if the
-	 * call fails with access denied!
-	 */
-	*r->out.negotiate_flags = negotiate_flags;
 
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_WKSTA:
