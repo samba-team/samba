@@ -135,12 +135,48 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	struct netr_ServerAuthenticate3 *r,
 	struct netlogon_server_pipe_state *pipe_state,
 	uint32_t negotiate_flags,
+	const char *trust_account_in_db,
 	NTSTATUS orig_status)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(lp_ctx);
-	bool reject_des_client = !allow_nt4_crypto;
-	bool reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
+	bool global_allow_nt4_crypto = lpcfg_allow_nt4_crypto(lp_ctx);
+	bool account_allow_nt4_crypto = global_allow_nt4_crypto;
+	const char *explicit_nt4_opt = NULL;
+	bool global_reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
+	bool account_reject_md5_client = global_reject_md5_client;
+	const char *explicit_md5_opt = NULL;
+	bool reject_des_client;
+	bool allow_nt4_crypto;
+	bool reject_md5_client;
+
+	/*
+	 * We don't use lpcfg_parm_bool(), as we
+	 * need the explicit_opt pointer in order to
+	 * adjust the debug messages.
+	 */
+
+	if (trust_account_in_db != NULL) {
+		explicit_nt4_opt = lpcfg_get_parametric(lp_ctx,
+							NULL,
+							"allow nt4 crypto",
+							trust_account_in_db);
+	}
+	if (explicit_nt4_opt != NULL) {
+		account_allow_nt4_crypto = lp_bool(explicit_nt4_opt);
+	}
+	allow_nt4_crypto = account_allow_nt4_crypto;
+	if (trust_account_in_db != NULL) {
+		explicit_md5_opt = lpcfg_get_parametric(lp_ctx,
+							NULL,
+							"server reject md5 schannel",
+							trust_account_in_db);
+	}
+	if (explicit_md5_opt != NULL) {
+		account_reject_md5_client = lp_bool(explicit_md5_opt);
+	}
+	reject_md5_client = account_reject_md5_client;
+
+	reject_des_client = !allow_nt4_crypto;
 
 	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		reject_des_client = false;
@@ -309,12 +345,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	case SEC_CHAN_NULL:
 		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_INVALID_PARAMETER);
 	default:
 		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
 			  r->in.secure_channel_type));
 		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -322,6 +360,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	if (sam_ctx == NULL) {
 		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_INVALID_SYSTEM_SERVICE);
 	}
 
@@ -353,6 +392,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		if (encoded_name == NULL) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_MEMORY);
 		}
 
@@ -360,12 +400,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		if (len < 2) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 
 		if (require_trailer && encoded_name[len - 1] != trailer) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 		encoded_name[len - 1] = '\0';
@@ -386,11 +428,13 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 				  encoded_name));
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				nt_status);
 		}
 
@@ -400,11 +444,13 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED)) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				nt_status);
 		}
 
@@ -412,6 +458,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		if (flatname == NULL) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 		}
 
@@ -419,6 +466,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		if (*trust_account_for_search == NULL) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_MEMORY);
 		}
 	} else {
@@ -436,6 +484,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 			 log_escape(mem_ctx, r->in.account_name)));
 		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
 	}
 
@@ -445,6 +494,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 			 log_escape(mem_ctx, r->in.account_name)));
 		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_INTERNAL_DB_CORRUPTION);
 	}
 
@@ -456,11 +506,13 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 			 r->in.account_name));
 		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
+				NULL, /* trust_account_in_db */
 				NT_STATUS_INTERNAL_DB_CORRUPTION);
 	}
 
 	nt_status = dcesrv_netr_ServerAuthenticate3_check_downgrade(
 			dce_call, r, pipe_state, negotiate_flags,
+			*trust_account_in_db,
 			NT_STATUS_OK);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
