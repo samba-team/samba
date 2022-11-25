@@ -137,6 +137,15 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	bool reject_des_client = !allow_nt4_crypto;
 	bool reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
 
+	/*
+	 * If weak cryto is disabled, do not announce that we support RC4.
+	 */
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		/* Without RC4 and DES we require AES */
+		reject_des_client = true;
+		reject_md5_client = true;
+	}
+
 	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		reject_des_client = false;
 	}
