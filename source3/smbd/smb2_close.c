@@ -270,8 +270,17 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smbd_smb2_close_state *state;
+	const char *fsp_name_str = NULL;
+	const char *fsp_fnum_str = NULL;
 	unsigned i;
 	NTSTATUS status;
+
+	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
+		fsp_name_str = fsp_str_dbg(in_fsp);
+		fsp_fnum_str = fsp_fnum_dbg(in_fsp);
+	}
+
+	DBG_DEBUG("%s - %s\n", fsp_name_str, fsp_fnum_str);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_close_state);
@@ -344,6 +353,9 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 				 &state->out_end_of_file,
 				 &state->out_file_attributes);
 	if (tevent_req_nterror(req, status)) {
+		DBG_INFO("%s - %s: close file failed: %s\n",
+			 fsp_name_str, fsp_fnum_str,
+			 nt_errstr(status));
 		return tevent_req_post(req, ev);
 	}
 
