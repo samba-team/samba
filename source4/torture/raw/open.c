@@ -840,7 +840,6 @@ static bool test_ntcreatex(struct torture_context *tctx, struct smbcli_state *cl
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.is_directory, 1);
 	CHECK_VAL(io.ntcreatex.out.size, 0);
-	CHECK_VAL(io.ntcreatex.out.alloc_size, 0);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 	smbcli_unlink(cli->tree, fname);
 	
@@ -1113,7 +1112,6 @@ static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_stat
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.is_directory, 1);
 	CHECK_VAL(io.ntcreatex.out.size, 0);
-	CHECK_VAL(io.ntcreatex.out.alloc_size, 0);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 	smbcli_unlink(cli->tree, fname);
 	

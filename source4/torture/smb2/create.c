@@ -1193,7 +1193,6 @@ static bool test_smb2_open(struct torture_context *tctx,
 	CHECK_ALL_INFO(io.smb2.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.smb2.out.size, size);
 	CHECK_VAL(io.smb2.out.size, 0);
-	CHECK_VAL(io.smb2.out.alloc_size, 0);
 	smb2_util_unlink(tree, fname);
 
 done:

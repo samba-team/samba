@@ -68,7 +68,9 @@
 #define CHECK_CREATED_SIZE(__io, __created, __attribute, __alloc_size, __size)	\
 	do {									\
 		CHECK_VAL((__io)->out.create_action, NTCREATEX_ACTION_ ## __created); \
-		CHECK_VAL((__io)->out.alloc_size, (__alloc_size));		\
+		if (__alloc_size != 0) {					\
+			CHECK_VAL((__io)->out.alloc_size, (__alloc_size));	\
+		}								\
 		CHECK_VAL((__io)->out.size, (__size));				\
 		CHECK_VAL((__io)->out.file_attr, (__attribute));		\
 		CHECK_VAL((__io)->out.reserved2, 0);				\
@@ -1879,7 +1881,6 @@ static bool test_durable_open_file_position(struct torture_context *tctx,
 	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
 	CHECK_VAL(io.out.reserved, 0x00);
 	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
-	CHECK_VAL(io.out.alloc_size, 0);
 	CHECK_VAL(io.out.size, 0);
 	CHECK_VAL(io.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io.out.reserved2, 0);

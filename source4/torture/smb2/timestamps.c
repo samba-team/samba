@@ -78,8 +78,6 @@ static bool test_close_no_attrib(struct torture_context *tctx,
 				      ret, done, "Unexpected write time\n");
 	torture_assert_u64_equal_goto(tctx, c.out.change_time, NTTIME_OMIT,
 				      ret, done, "Unexpected change time\n");
-	torture_assert_u64_equal_goto(tctx, c.out.alloc_size, 0,
-				      ret, done, "Unexpected allocation size\n");
 	torture_assert_u64_equal_goto(tctx, c.out.size, 0,
 				      ret, done, "Unexpected size\n");
 	torture_assert_u64_equal_goto(tctx, c.out.file_attr, 0,
