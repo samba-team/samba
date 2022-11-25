@@ -68,9 +68,11 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context 
 	bool global_reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
 	int schannel = lpcfg_server_schannel(lp_ctx);
 	bool schannel_global_required = (schannel == true);
+	bool global_require_seal = lpcfg_server_schannel_require_seal(lp_ctx);
 	static bool warned_global_nt4_once = false;
 	static bool warned_global_md5_once = false;
 	static bool warned_global_schannel_once = false;
+	static bool warned_global_seal_once = false;
 
 	if (global_allow_nt4_crypto && !warned_global_nt4_once) {
 		/*
@@ -100,6 +102,16 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context 
 		      "Please configure 'server schannel = yes' (the default), "
 		      "See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
 		warned_global_schannel_once = true;
+	}
+
+	if (!global_require_seal && !warned_global_seal_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		D_ERR("CVE-2022-38023 (and others): "
+		      "Please configure 'server schannel require seal = yes' (the default), "
+		      "See https://bugzilla.samba.org/show_bug.cgi?id=15240\n");
+		warned_global_seal_once = true;
 	}
 
 	return dcesrv_interface_bind_reject_connect(context, iface);
@@ -886,6 +898,10 @@ struct dcesrv_netr_check_schannel_state {
 	bool schannel_required;
 	bool schannel_explicitly_set;
 
+	bool seal_global_required;
+	bool seal_required;
+	bool seal_explicitly_set;
+
 	NTSTATUS result;
 };
 
@@ -900,6 +916,9 @@ static NTSTATUS dcesrv_netr_check_schannel_get_state(struct dcesrv_call_state *d
 	bool schannel_global_required = (schannel == true);
 	bool schannel_required = schannel_global_required;
 	const char *explicit_opt = NULL;
+	bool global_require_seal = lpcfg_server_schannel_require_seal(lp_ctx);
+	bool require_seal = global_require_seal;
+	const char *explicit_seal_opt = NULL;
 #define DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC (NETLOGON_SERVER_PIPE_STATE_MAGIC+1)
 	struct dcesrv_netr_check_schannel_state *s = NULL;
 	NTSTATUS status;
@@ -942,6 +961,19 @@ new_state:
 	 * need the explicit_opt pointer in order to
 	 * adjust the debug messages.
 	 */
+	explicit_seal_opt = lpcfg_get_parametric(lp_ctx,
+						 NULL,
+						 "server schannel require seal",
+						 creds->account_name);
+	if (explicit_seal_opt != NULL) {
+		require_seal = lp_bool(explicit_seal_opt);
+	}
+
+	/*
+	 * We don't use lpcfg_parm_bool(), as we
+	 * need the explicit_opt pointer in order to
+	 * adjust the debug messages.
+	 */
 	explicit_opt = lpcfg_get_parametric(lp_ctx,
 					    NULL,
 					    "server require schannel",
@@ -953,6 +985,10 @@ new_state:
 	s->schannel_global_required = schannel_global_required;
 	s->schannel_required = schannel_required;
 	s->schannel_explicitly_set = explicit_opt != NULL;
+
+	s->seal_global_required = global_require_seal;
+	s->seal_required = require_seal;
+	s->seal_explicitly_set = explicit_seal_opt != NULL;
 
 	status = dcesrv_iface_state_store_conn(dce_call,
 			DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC,
@@ -975,6 +1011,10 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 		"CVE_2020_1472", "warn_about_unused_debug_level", DBGLVL_ERR);
 	int CVE_2020_1472_error_level = lpcfg_parm_int(lp_ctx, NULL,
 		"CVE_2020_1472", "error_debug_level", DBGLVL_ERR);
+	int CVE_2022_38023_warn_level = lpcfg_parm_int(lp_ctx, NULL,
+		"CVE_2022_38023", "warn_about_unused_debug_level", DBGLVL_ERR);
+	int CVE_2022_38023_error_level = lpcfg_parm_int(lp_ctx, NULL,
+		"CVE_2022_38023", "error_debug_level", DBGLVL_ERR);
 	TALLOC_CTX *frame = talloc_stackframe();
 	unsigned int dbg_lvl = DBGLVL_DEBUG;
 	const char *opname = "<unknown>";
@@ -1004,7 +1044,7 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 		}
 
 		DEBUG(dbg_lvl, (
-		      "CVE-2020-1472(ZeroLogon): "
+		      "CVE-2020-1472(ZeroLogon)/CVE-2022-38023: "
 		      "%s request (opnum[%u]) %s schannel from "
 		      "client_account[%s] client_computer_name[%s] %s\n",
 		      opname, opnum, reason,
@@ -1015,13 +1055,107 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 		return s->result;
 	}
 
-	if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+	if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
+	    s->auth_level == DCERPC_AUTH_LEVEL_PRIVACY)
+	{
 		s->result = NT_STATUS_OK;
 
 		if (s->schannel_explicitly_set && !s->schannel_required) {
 			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_warn_level);
 		} else if (!s->schannel_required) {
 			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+		}
+		if (s->seal_explicitly_set && !s->seal_required) {
+			dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_warn_level);
+		} else if (!s->seal_required) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+		}
+
+		DEBUG(dbg_lvl, (
+		      "CVE-2020-1472(ZeroLogon)/CVE-2022-38023: "
+		      "%s request (opnum[%u]) %s schannel from "
+		      "client_account[%s] client_computer_name[%s] %s\n",
+		      opname, opnum, reason,
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name),
+		      nt_errstr(s->result)));
+
+		if (s->schannel_explicitly_set && !s->schannel_required) {
+			DEBUG(CVE_2020_1472_warn_level, (
+			      "CVE-2020-1472(ZeroLogon): "
+			      "Option 'server require schannel:%s = no' not needed for '%s'!\n",
+			      log_escape(frame, creds->account_name),
+			      log_escape(frame, creds->computer_name)));
+		}
+
+		if (s->seal_explicitly_set && !s->seal_required) {
+			DEBUG(CVE_2022_38023_warn_level, (
+			      "CVE-2022-38023: "
+			      "Option 'server schannel require seal:%s = no' not needed for '%s'!\n",
+			      log_escape(frame, creds->account_name),
+			      log_escape(frame, creds->computer_name)));
+		}
+
+		TALLOC_FREE(frame);
+		return s->result;
+	}
+
+	if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		if (s->seal_required) {
+			s->result = NT_STATUS_ACCESS_DENIED;
+
+			if (s->seal_explicitly_set) {
+				dbg_lvl = DBGLVL_NOTICE;
+			} else {
+				dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_error_level);
+			}
+			if (s->schannel_explicitly_set && !s->schannel_required) {
+				dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_warn_level);
+			}
+
+			DEBUG(dbg_lvl, (
+			      "CVE-2022-38023: "
+			      "%s request (opnum[%u]) %s schannel from "
+			      "from client_account[%s] client_computer_name[%s] %s\n",
+			      opname, opnum, reason,
+			      log_escape(frame, creds->account_name),
+			      log_escape(frame, creds->computer_name),
+			      nt_errstr(s->result)));
+			if (s->seal_explicitly_set) {
+				D_NOTICE("CVE-2022-38023: Option "
+					 "'server schannel require seal:%s = yes' "
+					 "rejects access for client.\n",
+					 log_escape(frame, creds->account_name));
+			} else {
+				DEBUG(CVE_2020_1472_error_level, (
+				      "CVE-2022-38023: Check if option "
+				      "'server schannel require seal:%s = no' "
+				      "might be needed for a legacy client.\n",
+				      log_escape(frame, creds->account_name)));
+			}
+			if (s->schannel_explicitly_set && !s->schannel_required) {
+				DEBUG(CVE_2020_1472_warn_level, (
+				      "CVE-2020-1472(ZeroLogon): Option "
+				      "'server require schannel:%s = no' "
+				      "not needed for '%s'!\n",
+				      log_escape(frame, creds->account_name),
+				      log_escape(frame, creds->computer_name)));
+			}
+			TALLOC_FREE(frame);
+			return s->result;
+		}
+
+		s->result = NT_STATUS_OK;
+
+		if (s->schannel_explicitly_set && !s->schannel_required) {
+			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_warn_level);
+		} else if (!s->schannel_required) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+		}
+		if (s->seal_explicitly_set && !s->seal_required) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+		} else if (!s->seal_required) {
+			dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_error_level);
 		}
 
 		DEBUG(dbg_lvl, (
@@ -1039,7 +1173,77 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 			      log_escape(frame, creds->account_name),
 			      log_escape(frame, creds->computer_name)));
 		}
+		if (s->seal_explicitly_set && !s->seal_required) {
+			D_INFO("CVE-2022-38023: "
+			       "Option 'server schannel require seal:%s = no' still needed for '%s'!\n",
+			       log_escape(frame, creds->account_name),
+			       log_escape(frame, creds->computer_name));
+		} else if (!s->seal_required) {
+			/*
+			 * admins should set
+			 * server schannel require seal:COMPUTER$ = no
+			 * in order to avoid the level 0 messages.
+			 * Over time they can switch the global value
+			 * to be strict.
+			 */
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: "
+			      "Please use 'server schannel require seal:%s = no' "
+			      "for '%s' to avoid this warning!\n",
+			      log_escape(frame, creds->account_name),
+			      log_escape(frame, creds->computer_name)));
+		}
 
+		TALLOC_FREE(frame);
+		return s->result;
+	}
+
+	if (s->seal_required) {
+		s->result = NT_STATUS_ACCESS_DENIED;
+
+		if (s->seal_explicitly_set) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_NOTICE);
+		} else {
+			dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_error_level);
+		}
+		if (!s->schannel_explicitly_set) {
+			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_error_level);
+		} else if (s->schannel_required) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_NOTICE);
+		}
+
+		DEBUG(dbg_lvl, (
+		      "CVE-2020-1472(ZeroLogon)/CVE-2022-38023: "
+		      "%s request (opnum[%u]) %s schannel from "
+		      "from client_account[%s] client_computer_name[%s] %s\n",
+		      opname, opnum, reason,
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name),
+		      nt_errstr(s->result)));
+		if (s->seal_explicitly_set) {
+			D_NOTICE("CVE-2022-38023: Option "
+			         "'server schannel require seal:%s = yes' "
+			         "rejects access for client.\n",
+			         log_escape(frame, creds->account_name));
+		} else {
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: Check if option "
+			      "'server schannel require seal:%s = no' "
+			      "might be needed for a legacy client.\n",
+			      log_escape(frame, creds->account_name)));
+		}
+		if (!s->schannel_explicitly_set) {
+			DEBUG(CVE_2020_1472_error_level, (
+			      "CVE-2020-1472(ZeroLogon): Check if option "
+			      "'server require schannel:%s = no' "
+			      "might be needed for a legacy client.\n",
+			      log_escape(frame, creds->account_name)));
+		} else if (s->schannel_required) {
+			D_NOTICE("CVE-2022-38023: Option "
+			         "'server require schannel:%s = yes' "
+			         "also rejects access for client.\n",
+			         log_escape(frame, creds->account_name));
+		}
 		TALLOC_FREE(frame);
 		return s->result;
 	}
@@ -1051,6 +1255,9 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 			dbg_lvl = MIN(dbg_lvl, DBGLVL_NOTICE);
 		} else {
 			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_error_level);
+		}
+		if (!s->seal_explicitly_set) {
+			dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_error_level);
 		}
 
 		DEBUG(dbg_lvl, (
@@ -1073,11 +1280,24 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 			      "might be needed for a legacy client.\n",
 			      log_escape(frame, creds->account_name)));
 		}
+		if (!s->seal_explicitly_set) {
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: Check if option "
+			      "'server schannel require seal:%s = no' "
+			      "might be needed for a legacy client.\n",
+			      log_escape(frame, creds->account_name)));
+		}
 		TALLOC_FREE(frame);
 		return s->result;
 	}
 
 	s->result = NT_STATUS_OK;
+
+	if (s->seal_explicitly_set) {
+		dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+	} else {
+		dbg_lvl = MIN(dbg_lvl, CVE_2022_38023_error_level);
+	}
 
 	if (s->schannel_explicitly_set) {
 		dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
@@ -1093,6 +1313,28 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 	      log_escape(frame, creds->account_name),
 	      log_escape(frame, creds->computer_name),
 	      nt_errstr(s->result)));
+
+	if (s->seal_explicitly_set) {
+		D_INFO("CVE-2022-38023: Option "
+		       "'server schannel require seal:%s = no' "
+		       "still needed for '%s'!\n",
+		       log_escape(frame, creds->account_name),
+		       log_escape(frame, creds->computer_name));
+	} else {
+		/*
+		 * admins should set
+		 * server schannel require seal:COMPUTER$ = no
+		 * in order to avoid the level 0 messages.
+		 * Over time they can switch the global value
+		 * to be strict.
+		 */
+		DEBUG(CVE_2022_38023_error_level, (
+		      "CVE-2022-38023: Please use "
+		       "'server schannel require seal:%s = no' "
+		      "for '%s' to avoid this warning!\n",
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name)));
+	}
 
 	if (s->schannel_explicitly_set) {
 		D_INFO("CVE-2020-1472(ZeroLogon): Option "
