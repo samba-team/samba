@@ -18,3 +18,8 @@ bld.SAMBA_BINARY('test_lzxpress_plain',
                        ' samba-util'),
                  local_include=False,
                  for_selftest=True)
+
+bld.SAMBA_PYTHON('pycompression',
+                 'pycompression.c',
+                 deps='LZXPRESS',
+                 realname='samba/compression.so')
