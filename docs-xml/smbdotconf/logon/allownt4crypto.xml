@@ -45,7 +45,9 @@
 	in order to collect the explicit
 	'<smbconfoption name="allow nt4 crypto:COMPUTERACCOUNT">yes</smbconfoption>' options.</para>
 
-	<para>This option is over-ridden by the '<smbconfoption name="reject md5 clients">yes</smbconfoption>' option.</para>
+	<para>This option is over-ridden by the effective value of 'yes' from
+	the '<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT"/>'
+	and/or '<smbconfoption name="reject md5 clients"/>' options.</para>
 </description>
 
 <value type="default">no</value>
@@ -85,12 +87,19 @@
 
     <para>This option overrides the <smbconfoption name="allow nt4 crypto"/> option.</para>
 
-    <para>This option is over-ridden by the '<smbconfoption name="reject md5 clients">yes</smbconfoption>' option.</para>
+    <para>This option is over-ridden by the effective value of 'yes' from
+    the '<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT"/>'
+    and/or '<smbconfoption name="reject md5 clients"/>' options.</para>
+    <para>Which means '<smbconfoption name="allow nt4 crypto:COMPUTERACCOUNT">yes</smbconfoption>'
+    is only useful in combination with '<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT">no</smbconfoption>'</para>
 
     <programlisting>
 	allow nt4 crypto:LEGACYCOMPUTER1$ = yes
+	server reject md5 schannel:LEGACYCOMPUTER1$ = no
 	allow nt4 crypto:NASBOX$ = yes
+	server reject md5 schannel:NASBOX$ = no
 	allow nt4 crypto:LEGACYCOMPUTER2$ = yes
+	server reject md5 schannel:LEGACYCOMPUTER2$ = no
     </programlisting>
 </description>
 
