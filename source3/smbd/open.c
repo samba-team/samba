@@ -3348,6 +3348,7 @@ static NTSTATUS check_and_store_share_mode(
 	int oplock_type = NO_OPLOCK;
 	uint32_t granted_lease = 0;
 	const struct smb2_lease_key *lease_key = NULL;
+	bool delete_on_close;
 	bool ok;
 
 	/* Get the types we need to examine. */
@@ -3355,7 +3356,8 @@ static NTSTATUS check_and_store_share_mode(
 		smb_panic("validate_oplock_types failed");
 	}
 
-	if (has_delete_on_close(lck, fsp->name_hash)) {
+	delete_on_close = has_delete_on_close(lck, fsp->name_hash);
+	if (delete_on_close) {
 		return NT_STATUS_DELETE_PENDING;
 	}
 
