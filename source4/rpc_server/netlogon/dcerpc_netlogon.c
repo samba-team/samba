@@ -64,9 +64,33 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context 
 					       const struct dcesrv_interface *iface)
 {
 	struct loadparm_context *lp_ctx = context->conn->dce_ctx->lp_ctx;
+	bool global_allow_nt4_crypto = lpcfg_allow_nt4_crypto(lp_ctx);
+	bool global_reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
 	int schannel = lpcfg_server_schannel(lp_ctx);
 	bool schannel_global_required = (schannel == true);
+	static bool warned_global_nt4_once = false;
+	static bool warned_global_md5_once = false;
 	static bool warned_global_schannel_once = false;
+
+	if (global_allow_nt4_crypto && !warned_global_nt4_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		D_ERR("CVE-2022-38023 (and others): "
+		      "Please configure 'allow nt4 crypto = no' (the default), "
+		      "See https://bugzilla.samba.org/show_bug.cgi?id=15240\n");
+		warned_global_nt4_once = true;
+	}
+
+	if (!global_reject_md5_client && !warned_global_md5_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		D_ERR("CVE-2022-38023: "
+		      "Please configure 'reject md5 clients = yes' (the default), "
+		      "See https://bugzilla.samba.org/show_bug.cgi?id=15240\n");
+		warned_global_md5_once = true;
+	}
 
 	if (!schannel_global_required && !warned_global_schannel_once) {
 		/*
@@ -143,6 +167,12 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	bool reject_des_client;
 	bool allow_nt4_crypto;
 	bool reject_md5_client;
+	bool need_des = true;
+	bool need_md5 = true;
+	int CVE_2022_38023_warn_level = lpcfg_parm_int(lp_ctx, NULL,
+			"CVE_2022_38023", "warn_about_unused_debug_level", DBGLVL_ERR);
+	int CVE_2022_38023_error_level = lpcfg_parm_int(lp_ctx, NULL,
+			"CVE_2022_38023", "error_debug_level", DBGLVL_ERR);
 
 	/*
 	 * We don't use lpcfg_parm_bool(), as we
@@ -183,19 +213,84 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	}
 
 	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
+		need_des = false;
 		reject_des_client = false;
 	}
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		need_des = false;
+		need_md5 = false;
 		reject_des_client = false;
 		reject_md5_client = false;
 	}
 
 	if (reject_des_client || reject_md5_client) {
+		TALLOC_CTX *frame = talloc_stackframe();
+
+		if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+			if (CVE_2022_38023_error_level < DBGLVL_NOTICE) {
+				CVE_2022_38023_error_level = DBGLVL_NOTICE;
+			}
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: "
+			      "client_account[%s] computer_name[%s] "
+			      "schannel_type[%u] "
+			      "client_negotiate_flags[0x%x] "
+			      "%s%s%s "
+			      "NT_STATUS_DOWNGRADE_DETECTED "
+			      "WEAK_CRYPTO_DISALLOWED\n",
+			      log_escape(frame, r->in.account_name),
+			      log_escape(frame, r->in.computer_name),
+			      r->in.secure_channel_type,
+			      (unsigned)*r->in.negotiate_flags,
+			      trust_account_in_db ? "real_account[" : "",
+			      trust_account_in_db ? trust_account_in_db : "",
+			      trust_account_in_db ? "]" : ""));
+			goto return_downgrade;
+		}
+
+		DEBUG(CVE_2022_38023_error_level, (
+		      "CVE-2022-38023: "
+		      "client_account[%s] computer_name[%s] "
+		      "schannel_type[%u] "
+		      "client_negotiate_flags[0x%x] "
+		      "%s%s%s "
+		      "NT_STATUS_DOWNGRADE_DETECTED "
+		      "reject_des[%u] reject_md5[%u]\n",
+		      log_escape(frame, r->in.account_name),
+		      log_escape(frame, r->in.computer_name),
+		      r->in.secure_channel_type,
+		      (unsigned)*r->in.negotiate_flags,
+		      trust_account_in_db ? "real_account[" : "",
+		      trust_account_in_db ? trust_account_in_db : "",
+		      trust_account_in_db ? "]" : "",
+		      reject_des_client,
+		      reject_md5_client));
+		if (trust_account_in_db == NULL) {
+			goto return_downgrade;
+		}
+
+		if (reject_md5_client && explicit_md5_opt == NULL) {
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: Check if option "
+			      "'server reject md5 schannel:%s = no' "
+			      "might be needed for a legacy client.\n",
+			      trust_account_in_db));
+		}
+		if (reject_des_client && explicit_nt4_opt == NULL) {
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: Check if option "
+			      "'allow nt4 crypto:%s = yes' "
+			      "might be needed for a legacy client.\n",
+			      trust_account_in_db));
+		}
+
+return_downgrade:
 		/*
 		 * Here we match Windows 2012 and return no flags.
 		 */
 		*r->out.negotiate_flags = 0;
+		TALLOC_FREE(frame);
 		return NT_STATUS_DOWNGRADE_DETECTED;
 	}
 
@@ -227,6 +322,54 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	 * call fails with access denied!
 	 */
 	*r->out.negotiate_flags = negotiate_flags;
+
+	if (!NT_STATUS_IS_OK(orig_status) || trust_account_in_db == NULL) {
+		return orig_status;
+	}
+
+	if (global_reject_md5_client && account_reject_md5_client && explicit_md5_opt) {
+		D_INFO("CVE-2022-38023: Check if option "
+		       "'server reject md5 schannel:%s = yes' not needed!?\n",
+		       trust_account_in_db);
+	} else if (need_md5 && !account_reject_md5_client && explicit_md5_opt) {
+		D_INFO("CVE-2022-38023: Check if option "
+			 "'server reject md5 schannel:%s = no' "
+			 "still needed for a legacy client.\n",
+			 trust_account_in_db);
+	} else if (need_md5 && explicit_md5_opt == NULL) {
+		DEBUG(CVE_2022_38023_error_level, (
+		      "CVE-2022-38023: Check if option "
+		      "'server reject md5 schannel:%s = no' "
+		      "might be needed for a legacy client.\n",
+		      trust_account_in_db));
+	} else if (!account_reject_md5_client && explicit_md5_opt) {
+		DEBUG(CVE_2022_38023_warn_level, (
+		      "CVE-2022-38023: Check if option "
+		      "'server reject md5 schannel:%s = no' not needed!?\n",
+		      trust_account_in_db));
+	}
+
+	if (!global_allow_nt4_crypto && !account_allow_nt4_crypto && explicit_nt4_opt) {
+		D_INFO("CVE-2022-38023: Check if option "
+		       "'allow nt4 crypto:%s = no' not needed!?\n",
+		       trust_account_in_db);
+	} else if (need_des && account_allow_nt4_crypto && explicit_nt4_opt) {
+		D_INFO("CVE-2022-38023: Check if option "
+			 "'allow nt4 crypto:%s = yes' "
+			 "still needed for a legacy client.\n",
+			 trust_account_in_db);
+	} else if (need_des && explicit_nt4_opt == NULL) {
+		DEBUG(CVE_2022_38023_error_level, (
+		      "CVE-2022-38023: Check if option "
+		      "'allow nt4 crypto:%s = yes' "
+		      "might be needed for a legacy client.\n",
+		      trust_account_in_db));
+	} else if (account_allow_nt4_crypto && explicit_nt4_opt) {
+		DEBUG(CVE_2022_38023_warn_level, (
+		      "CVE-2022-38023: Check if option "
+		      "'allow nt4 crypto:%s = yes' not needed!?\n",
+		      trust_account_in_db));
+	}
 
 	return orig_status;
 }
