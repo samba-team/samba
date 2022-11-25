@@ -547,7 +547,8 @@ def rsop(lp, creds, store, gp_extensions, username, target):
 
 
 def parse_gpext_conf(smb_conf):
-    lp = LoadParm()
+    from samba.samba3 import param as s3param
+    lp = s3param.get_context()
     if smb_conf is not None:
         lp.load(smb_conf)
     else:
