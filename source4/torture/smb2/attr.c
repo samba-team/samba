@@ -503,6 +503,63 @@ error_exit:
 	return ret;
 }
 
+bool torture_smb2_winattr2(struct torture_context *tctx,
+			   struct smb2_tree *tree)
+{
+	const char *fname = "winattr2.file";
+	struct smb2_create c = {0};
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	/* Create a file with FILE_ATTRIBUTE_ARCHIVE */
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_ARCHIVE,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_NONE,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	status = smb2_util_close(tree, c.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+
+	/* Reopen file with different attributes */
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_ARCHIVE |
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN |
+			FILE_ATTRIBUTE_READONLY,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_NONE,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	status = smb2_util_close(tree, c.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+
+	torture_assert_int_equal_goto(tctx,
+				      c.out.file_attr,
+				      FILE_ATTRIBUTE_ARCHIVE,
+				      ret, done,
+				      "Wrong attributes\n");
+
+done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 bool torture_smb2_sdreadtest(struct torture_context *tctx,
 			      struct smb2_tree *tree)
 {
