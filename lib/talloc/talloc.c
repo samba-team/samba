@@ -2752,6 +2752,29 @@ _PUBLIC_ char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...)
 	return s;
 }
 
+_PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
+{
+	va_list ap;
+	char *s = *ps;
+	char *t = NULL;
+
+	if (s == NULL) {
+		return;
+	}
+
+	va_start(ap, fmt);
+	t = talloc_vasprintf_append_buffer(s, fmt, ap);
+	va_end(ap);
+
+	if (t == NULL) {
+		/* signal failure to the next caller */
+		TALLOC_FREE(s);
+		*ps = NULL;
+	} else {
+		*ps = t;
+	}
+}
+
 /*
   alloc an array, checking for integer overflow in the array size
 */

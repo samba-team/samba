@@ -305,26 +305,3 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean)
 	}
 	return false;
 }
-
-_PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
-{
-	va_list ap;
-	char *s = *ps;
-	char *t = NULL;
-
-	if (s == NULL) {
-		return;
-	}
-
-	va_start(ap, fmt);
-	t = talloc_vasprintf_append_buffer(s, fmt, ap);
-	va_end(ap);
-
-	if (t == NULL) {
-		/* signal failure to the next caller */
-		TALLOC_FREE(s);
-		*ps = NULL;
-	} else {
-		*ps = t;
-	}
-}

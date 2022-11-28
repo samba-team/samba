@@ -1579,6 +1579,20 @@ _PUBLIC_ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRI
 _PUBLIC_ char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
 /**
+ * @brief Build up a string buffer, handle allocation failure
+ *
+ * @param[in] ps Pointer to the talloc'ed string to be extended
+ * @param[in] fmt The format string
+ * @param[in] ... The parameters used to fill fmt.
+ *
+ * This does nothing if *ps is NULL and sets *ps to NULL if the
+ * intermediate reallocation fails. Useful when building up a string
+ * step by step, no intermediate NULL checks are required.
+ */
+_PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...) \
+	PRINTF_ATTRIBUTE(2,3);
+
+/**
  * @brief Format a string.
  *
  * This function is the talloc equivalent of the C library function asprintf(3).
