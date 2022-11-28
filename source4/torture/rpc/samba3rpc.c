@@ -1071,7 +1071,7 @@ static bool auth2(struct torture_context *tctx,
 		goto done;
 	}
 
-	negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES;
 	E_md4hash(cli_credentials_get_password(wks_cred), mach_pw.hash);
 
 	a.in.server_name = talloc_asprintf(
@@ -1260,9 +1260,18 @@ static bool schan(struct torture_context *tctx,
 		E_md4hash(cli_credentials_get_password(user_creds),
 			  pinfo.ntpassword.hash);
 
-		netlogon_creds_arcfour_crypt(creds_state, pinfo.ntpassword.hash, 16);
-
 		logon.password = &pinfo;
+
+		/*
+		 * We don't use this here:
+		 *
+		 * netlogon_creds_encrypt_samlogon_logon(creds_state,
+		 *                                       NetlogonInteractiveInformation,
+		 *                                       &logon);
+		 *
+		 * in order to detect bugs
+		 */
+		netlogon_creds_aes_encrypt(creds_state, pinfo.ntpassword.hash, 16);
 
 		r.in.logon_level = NetlogonInteractiveInformation;
 		r.in.logon = &logon;
