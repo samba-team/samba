@@ -795,18 +795,15 @@ utility lists registered debug class names's
 
 char *debug_list_class_names_and_levels(void)
 {
-	char *buf = NULL;
+	char *buf = talloc_strdup(NULL, "");
 	size_t i;
 	/* prepare strings */
 	for (i = 0; i < debug_num_classes; i++) {
-		buf = talloc_asprintf_append(buf,
-					     "%s:%d%s",
-					     classname_table[i],
-					     dbgc_config[i].loglevel,
-					     i == (debug_num_classes - 1) ? "\n" : " ");
-		if (buf == NULL) {
-			return NULL;
-		}
+		talloc_asprintf_addbuf(&buf,
+				       "%s:%d%s",
+				       classname_table[i],
+				       dbgc_config[i].loglevel,
+				       i == (debug_num_classes - 1) ? "\n" : " ");
 	}
 	return buf;
 }
