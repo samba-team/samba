@@ -188,7 +188,7 @@ _PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char separa
 	ret = talloc_strdup(mem_ctx, list[0]);
 
 	for (i = 1; list[i]; i++) {
-		ret = talloc_asprintf_append_buffer(ret, "%c%s", separator, list[i]);
+		talloc_asprintf_addbuf(&ret, "%c%s", separator, list[i]);
 	}
 
 	return ret;
