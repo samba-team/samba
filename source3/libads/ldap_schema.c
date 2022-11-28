@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    ads (active directory) utility library
    Copyright (C) Guenther Deschner 2005-2007
    Copyright (C) Gerald (Jerry) Carter 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -40,7 +40,7 @@ static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", "attributeId", NULL };
 	int i = 0, p = 0;
-	
+
 	if (!ads || !mem_ctx || !names || !count || !OIDs || !OIDs_out) {
 		return ADS_ERROR(LDAP_PARAM_ERROR);
 	}
@@ -55,7 +55,7 @@ static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
 
 	for (i=0; i<num_OIDs; i++) {
 
-		if ((expr = talloc_asprintf_append_buffer(expr, "(attributeId=%s)", 
+		if ((expr = talloc_asprintf_append_buffer(expr, "(attributeId=%s)",
 						   OIDs[i])) == NULL) {
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
@@ -65,7 +65,7 @@ static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	status = ads_do_search_retry(ads, schema_path, 
+	status = ads_do_search_retry(ads, schema_path,
 				     LDAP_SCOPE_SUBTREE, expr, attrs, &res);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -86,12 +86,12 @@ static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
 		goto out;
 	}
 
-	for (msg = ads_first_entry(ads, res); msg != NULL; 
+	for (msg = ads_first_entry(ads, res); msg != NULL;
 	     msg = ads_next_entry(ads, msg)) {
 
-		(*names)[p] 	= ads_pull_string(ads, mem_ctx, msg, 
+		(*names)[p] 	= ads_pull_string(ads, mem_ctx, msg,
 						  "lDAPDisplayName");
-		(*OIDs_out)[p] 	= ads_pull_string(ads, mem_ctx, msg, 
+		(*OIDs_out)[p] 	= ads_pull_string(ads, mem_ctx, msg,
 						  "attributeId");
 		if (((*names)[p] == NULL) || ((*OIDs_out)[p] == NULL)) {
 			status = ADS_ERROR(LDAP_NO_MEMORY);
@@ -113,9 +113,9 @@ out:
 	return status;
 }
 
-const char *ads_get_attrname_by_guid(ADS_STRUCT *ads, 
-				     const char *schema_path, 
-				     TALLOC_CTX *mem_ctx, 
+const char *ads_get_attrname_by_guid(ADS_STRUCT *ads,
+				     const char *schema_path,
+				     TALLOC_CTX *mem_ctx,
 				     const struct GUID *schema_guid)
 {
 	ADS_STATUS rc;
@@ -139,7 +139,7 @@ const char *ads_get_attrname_by_guid(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	rc = ads_do_search_retry(ads, schema_path, LDAP_SCOPE_SUBTREE, 
+	rc = ads_do_search_retry(ads, schema_path, LDAP_SCOPE_SUBTREE,
 				 expr, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		goto done;
@@ -155,7 +155,7 @@ const char *ads_get_attrname_by_guid(ADS_STRUCT *ads,
 	TALLOC_FREE(guid_bin);
 	ads_msgfree(ads, res);
 	return result;
-	
+
 }
 
 /*********************************************************************
@@ -194,13 +194,13 @@ ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **schema_p
  * @param enum mapping type
  * @return ADS_STATUS status of search (False if one or more attributes couldn't be
  * found in Active Directory)
- **/ 
+ **/
 ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 					  ADS_STRUCT *ads,
 					  enum wb_posix_mapping map_type,
-					  struct posix_schema **s ) 
+					  struct posix_schema **s )
 {
-	TALLOC_CTX *ctx = NULL; 
+	TALLOC_CTX *ctx = NULL;
 	ADS_STATUS status;
 	char **oids_out, **names_out;
 	size_t num_names;
@@ -232,7 +232,7 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("ads_check_posix_schema_mapping for schema mode: %d\n", map_type));
 
 	switch (map_type) {
-	
+
 		case WB_POSIX_MAP_TEMPLATE:
 		case WB_POSIX_MAP_UNIXINFO:
 			DEBUG(10,("ads_check_posix_schema_mapping: nothing to do\n"));
@@ -257,7 +257,7 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE( ctx );
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-	
+
 	status = ads_schema_path(ads, ctx, &schema_path);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(3,("ads_check_posix_mapping: Unable to retrieve schema DN!\n"));
@@ -266,18 +266,18 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 
 	switch (map_type) {
 		case WB_POSIX_MAP_SFU:
-			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu, 
-							   ARRAY_SIZE(oids_sfu), 
+			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu,
+							   ARRAY_SIZE(oids_sfu),
 							   &oids_out, &names_out, &num_names);
 			break;
 		case WB_POSIX_MAP_SFU20:
-			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu20, 
-							   ARRAY_SIZE(oids_sfu20), 
+			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_sfu20,
+							   ARRAY_SIZE(oids_sfu20),
 							   &oids_out, &names_out, &num_names);
 			break;
 		case WB_POSIX_MAP_RFC2307:
-			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_rfc2307, 
-							   ARRAY_SIZE(oids_rfc2307), 
+			status = ads_get_attrnames_by_oids(ads, ctx, schema_path, oids_rfc2307,
+							   ARRAY_SIZE(oids_rfc2307),
 							   &oids_out, &names_out, &num_names);
 			break;
 		default:
@@ -286,7 +286,7 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(3,("ads_check_posix_schema_mapping: failed %s\n", 
+		DEBUG(3,("ads_check_posix_schema_mapping: failed %s\n",
 			ads_errstr(status)));
 		goto done;
 	}
@@ -299,28 +299,28 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		    strequal(ADS_ATTR_SFU_UIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU20_UIDNUMBER_OID, oids_out[i])) {
 			schema->posix_uidnumber_attr = talloc_strdup(schema, names_out[i]);
-			continue;		       
+			continue;
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_GIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_GIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU20_GIDNUMBER_OID, oids_out[i])) {
 			schema->posix_gidnumber_attr = talloc_strdup(schema, names_out[i]);
-			continue;		
+			continue;
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_HOMEDIR_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_HOMEDIR_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU20_HOMEDIR_OID, oids_out[i])) {
 			schema->posix_homedir_attr = talloc_strdup(schema, names_out[i]);
-			continue;			
+			continue;
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_SHELL_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_SHELL_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU20_SHELL_OID, oids_out[i])) {
 			schema->posix_shell_attr = talloc_strdup(schema, names_out[i]);
-			continue;			
+			continue;
 		}
 
 		if (strequal(ADS_ATTR_RFC2307_GECOS_OID, oids_out[i]) ||
@@ -342,14 +342,14 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 	    !schema->posix_shell_attr ||
 	    !schema->posix_gecos_attr) {
 	    	status = ADS_ERROR(LDAP_NO_MEMORY);
-	        TALLOC_FREE( schema );		
+	        TALLOC_FREE( schema );
 	    	goto done;
 	}
 
 	*s = schema;
-	
+
 	status = ADS_ERROR(LDAP_SUCCESS);
-	
+
 done:
 	TALLOC_FREE(ctx);
 

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    string substitution functions
    Copyright (C) Andrew Tridgell 1992-2000
@@ -324,7 +324,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 		b = a_string;
 
 		switch (*(p+1)) {
-		case 'U' : 
+		case 'U' :
 			r = strlower_talloc(tmp_ctx, smb_name);
 			if (r == NULL) {
 				goto error;
@@ -391,7 +391,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 			a_string = realloc_string_sub(a_string, "%J", r);
 			break;
 		}
-		case 'i': 
+		case 'i':
 			a_string = realloc_string_sub(
 				a_string, "%i",
 				sub_sockaddr[0] ? sub_sockaddr : "0.0.0.0");
@@ -403,12 +403,12 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 			a_string = realloc_string_sub(a_string, "%j", r);
 			break;
 		}
-		case 'L' : 
+		case 'L' :
 			if ( strncasecmp_m(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
 				break;
 			}
 			if (local_machine_name && *local_machine_name) {
-				a_string = realloc_string_sub(a_string, "%L", local_machine_name); 
+				a_string = realloc_string_sub(a_string, "%L", local_machine_name);
 			} else {
 				a_string = realloc_string_sub(a_string, "%L", lp_netbios_name());
 			}
@@ -460,7 +460,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 			slprintf(vnnstr,sizeof(vnnstr)-1, "%u", get_my_vnn());
 			a_string = realloc_string_sub(a_string, "%V", vnnstr);
 			break;
-		default: 
+		default:
 			break;
 		}
 
@@ -516,11 +516,11 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 		b = a_string;
 
 		switch (*(p+1)) {
-		case 'U' : 
+		case 'U' :
 			a_string = talloc_string_sub(
 				tmp_ctx, a_string, "%U", username);
 			break;
-		case 'u' : 
+		case 'u' :
 			a_string = talloc_string_sub(
 				tmp_ctx, a_string, "%u", username);
 			break;
@@ -571,7 +571,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			a_string = talloc_string_sub(tmp_ctx, a_string,
 						     "%N", lp_netbios_name());
 			break;
-		default: 
+		default:
 			break;
 		}
 
@@ -627,19 +627,19 @@ char *talloc_sub_advanced(TALLOC_CTX *ctx,
 			TALLOC_FREE(h);
 			break;
 		}
-		case 'P': 
-			a_string = realloc_string_sub(a_string, "%P", connectpath); 
+		case 'P':
+			a_string = realloc_string_sub(a_string, "%P", connectpath);
 			break;
-		case 'S': 
+		case 'S':
 			a_string = realloc_string_sub(a_string, "%S", servicename);
 			break;
-		case 'g': 
-			a_string = realloc_string_sub(a_string, "%g", gidtoname(gid)); 
+		case 'g':
+			a_string = realloc_string_sub(a_string, "%g", gidtoname(gid));
 			break;
-		case 'u': 
-			a_string = realloc_string_sub(a_string, "%u", user); 
+		case 'u':
+			a_string = realloc_string_sub(a_string, "%u", user);
 			break;
-		default: 
+		default:
 			break;
 		}
 

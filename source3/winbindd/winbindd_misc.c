@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon - miscellaneous other functions
@@ -228,7 +228,7 @@ bool winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 
 	for ( i = 0; i < num_domains; i++ ) {
 		struct winbindd_domain *domain;
-		bool is_online = true;		
+		bool is_online = true;
 		struct winbindd_tdc_domain *d = NULL;
 		char *trust_type = NULL;
 		struct dom_sid_buf buf;

@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Bartlett 2005-2009
@@ -7,7 +7,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -116,7 +116,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	if (rdn_name == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	rdn_val_p = ldb_dn_get_rdn_val(msg->dn);
 	if (rdn_val_p == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -176,13 +176,13 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		}
 		if (i == attribute->num_values) {
 			char *rdn_errstring = talloc_asprintf(ac,
-				"RDN mismatch on %s: %s (%.*s) should match one of:", 
-				ldb_dn_get_linearized(msg->dn), rdn_name, 
+				"RDN mismatch on %s: %s (%.*s) should match one of:",
+				ldb_dn_get_linearized(msg->dn), rdn_name,
 				(int)rdn_val.length, (const char *)rdn_val.data);
 			for (i = 0; i < attribute->num_values; i++) {
 				rdn_errstring = talloc_asprintf_append(
 					rdn_errstring, " (%.*s)",
-					(int)attribute->values[i].length, 
+					(int)attribute->values[i].length,
 					(const char *)attribute->values[i].data);
 			}
 			ldb_set_errstring(ldb, rdn_errstring);

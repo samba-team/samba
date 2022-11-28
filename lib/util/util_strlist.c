@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Jelmer Vernooij 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -84,7 +84,7 @@ _PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const cha
 	while (string && *string) {
 		size_t len = strcspn(string, sep);
 		char **ret2;
-		
+
 		if (len == 0) {
 			string += strspn(string, sep);
 			continue;
@@ -114,7 +114,7 @@ _PUBLIC_ char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const cha
 }
 
 /**
- * build a null terminated list of strings from an argv-like input string 
+ * build a null terminated list of strings from an argv-like input string
  * Entries are separated by spaces and can be enclosed by quotes.
  * Does NOT support escaping
  */
@@ -135,7 +135,7 @@ _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, con
 		size_t len = strcspn(string, sep);
 		char *element;
 		char **ret2;
-		
+
 		if (len == 0) {
 			string += strspn(string, sep);
 			continue;
@@ -163,7 +163,7 @@ _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, con
 		}
 		ret = ret2;
 
-		ret[num_elements] = element;	
+		ret[num_elements] = element;
 
 		num_elements++;
 	}
@@ -175,13 +175,13 @@ _PUBLIC_ char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, con
 }
 
 /**
- * join a list back to one string 
+ * join a list back to one string
  */
 _PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char separator)
 {
 	char *ret = NULL;
 	int i;
-	
+
 	if (list[0] == NULL)
 		return talloc_strdup(mem_ctx, "");
 
@@ -194,25 +194,25 @@ _PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char separa
 	return ret;
 }
 
-/** join a list back to one (shell-like) string; entries 
+/** join a list back to one (shell-like) string; entries
  * separated by spaces, using quotes where necessary */
 _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 {
 	char *ret = NULL;
 	int i;
-	
+
 	if (list[0] == NULL)
 		return talloc_strdup(mem_ctx, "");
 
-	if (strchr(list[0], ' ') || strlen(list[0]) == 0) 
+	if (strchr(list[0], ' ') || strlen(list[0]) == 0)
 		ret = talloc_asprintf(mem_ctx, "\"%s\"", list[0]);
-	else 
+	else
 		ret = talloc_strdup(mem_ctx, list[0]);
 
 	for (i = 1; list[i]; i++) {
-		if (strchr(list[i], ' ') || strlen(list[i]) == 0) 
+		if (strchr(list[i], ' ') || strlen(list[i]) == 0)
 			ret = talloc_asprintf_append_buffer(ret, "%c\"%s\"", sep, list[i]);
-		else 
+		else
 			ret = talloc_asprintf_append_buffer(ret, "%c%s", sep, list[i]);
 	}
 
@@ -240,9 +240,9 @@ _PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 
 	if (list == NULL)
 		return NULL;
-	
+
 	ret = talloc_array(mem_ctx, char *, str_list_length(list)+1);
-	if (ret == NULL) 
+	if (ret == NULL)
 		return NULL;
 
 	for (i=0;list && list[i];i++) {
@@ -263,11 +263,11 @@ _PUBLIC_ bool str_list_equal(const char * const *list1,
 			     const char * const *list2)
 {
 	int i;
-	
+
 	if (list1 == NULL || list2 == NULL) {
-		return (list1 == list2); 
+		return (list1 == list2);
 	}
-	
+
 	for (i=0;list1[i] && list2[i];i++) {
 		if (strcmp(list1[i], list2[i]) != 0) {
 			return false;
@@ -547,9 +547,9 @@ _PUBLIC_ const char **str_list_copy_const(TALLOC_CTX *mem_ctx,
 
 	if (list == NULL)
 		return NULL;
-	
+
 	ret = talloc_array(mem_ctx, const char *, str_list_length(list)+1);
-	if (ret == NULL) 
+	if (ret == NULL)
 		return NULL;
 
 	for (i=0;list && list[i];i++) {
