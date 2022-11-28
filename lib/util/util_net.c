@@ -977,9 +977,8 @@ static const smb_socket_option socket_options[] = {
  Print socket options.
 ****************************************************************************/
 
-static void print_socket_options(int s)
+static void print_socket_options(TALLOC_CTX *ctx, int s)
 {
-	TALLOC_CTX *frame = NULL;
 	const smb_socket_option *p = &socket_options[0];
 	char *str = NULL;
 
@@ -987,9 +986,7 @@ static void print_socket_options(int s)
 		return;
 	}
 
-	frame = talloc_stackframe();
-
-	str = talloc_strdup(frame, "");
+	str = talloc_strdup(ctx, "");
 	if (str == NULL) {
 		DBG_WARNING("talloc failed\n");
 		goto done;
@@ -1006,21 +1003,17 @@ static void print_socket_options(int s)
 			continue;
 		}
 
-		str = talloc_asprintf_append_buffer(
-			str,
+		talloc_asprintf_addbuf(
+			&str,
 			"%s%s=%d",
 			str[0] != '\0' ? ", " : "",
 			p->name,
 			val);
-		if (str == NULL) {
-			DBG_WARNING("talloc_asprintf_append_buffer failed\n");
-			goto done;
-		}
 	}
 
 	DEBUG(5, ("socket options: %s\n", str));
 done:
-	TALLOC_FREE(frame);
+	TALLOC_FREE(str);
  }
 
 /****************************************************************************
@@ -1084,8 +1077,8 @@ void set_socket_options(int fd, const char *options)
 		}
 	}
 
+	print_socket_options(ctx, fd);
 	TALLOC_FREE(ctx);
-	print_socket_options(fd);
 }
 
 /*
