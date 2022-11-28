@@ -1193,13 +1193,8 @@ char *ldb_module_call_chain(struct ldb_request *req, TALLOC_CTX *mem_ctx)
 	}
 
 	while (req && req->handle) {
-		char *s = talloc_asprintf_append_buffer(ret, "req[%u] %p  : %s\n",
-							i++, req, ldb_req_location(req));
-		if (s == NULL) {
-			talloc_free(ret);
-			return NULL;
-		}
-		ret = s;
+		talloc_asprintf_addbuf(&ret, "req[%u] %p  : %s\n",
+				       i++, req, ldb_req_location(req));
 		req = req->handle->parent;
 	}
 	return ret;
