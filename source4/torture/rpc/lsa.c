@@ -4285,7 +4285,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_pipe_connect_b");
 
 	ok = check_pw_with_ServerAuthenticate3(p1, tctx,
-					       NETLOGON_NEG_AUTH2_ADS_FLAGS,
+					       NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
 					       server_name,
 					       incoming_creds, &creds);
 	torture_assert_int_equal(tctx, ok, expected_result,
@@ -4382,7 +4382,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_pipe_connect_b");
 
 	ok = check_pw_with_ServerAuthenticate3(p2, tctx,
-					       NETLOGON_NEG_AUTH2_ADS_FLAGS,
+					       NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
 					       server_name,
 					       incoming_creds, &creds);
 	torture_assert(tctx, ok, "check_pw_with_ServerAuthenticate3 with changed password");
