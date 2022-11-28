@@ -70,7 +70,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	uint32_t rid;
 	const char *machine_name;
 	const struct samr_Password *pwhash = cli_credentials_get_nt_hash(credentials, mem_ctx);
-	uint32_t negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES;
 
 	struct sign_request sign_req;
 	struct signed_reply signed_reply;
