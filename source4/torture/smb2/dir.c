@@ -1303,6 +1303,7 @@ static bool test_large_files(struct torture_context *tctx,
 	int i, j = 0, file_count = 0;
 	char **strs = NULL;
 	unsigned count;
+	struct timespec ts1, ts2;
 
 	torture_comment(tctx,
 	    "Testing directory enumeration in a directory with >1000 files\n");
@@ -1347,6 +1348,8 @@ static bool test_large_files(struct torture_context *tctx,
 	f.in.max_response_size  = 0x100;
 	f.in.level              = SMB2_FIND_BOTH_DIRECTORY_INFO;
 
+	clock_gettime_mono(&ts1);
+
 	do {
 		status = smb2_find_level(tree, tree, &f, &count, &d);
 		if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES))
@@ -1386,6 +1389,8 @@ static bool test_large_files(struct torture_context *tctx,
 	torture_assert_int_equal_goto(tctx, file_count, num_files + 2, ret,
 				      done, "");
 
+	clock_gettime_mono(&ts2);
+
 	for (i = 0; i < num_files; i++) {
 		if (files[j].found)
 			continue;
@@ -1396,6 +1401,10 @@ static bool test_large_files(struct torture_context *tctx,
 		ret = false;
 		goto done;
 	}
+
+	torture_comment(tctx, "Directory enumeration completed in %.3f s.\n",
+			timespec_elapsed2(&ts1, &ts2));
+
 done:
 	smb2_util_close(tree, h);
 	smb2_deltree(tree, DNAME);
