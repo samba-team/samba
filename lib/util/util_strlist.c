@@ -210,10 +210,11 @@ _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char 
 		ret = talloc_strdup(mem_ctx, list[0]);
 
 	for (i = 1; list[i]; i++) {
-		if (strchr(list[i], ' ') || strlen(list[i]) == 0)
-			ret = talloc_asprintf_append_buffer(ret, "%c\"%s\"", sep, list[i]);
-		else
-			ret = talloc_asprintf_append_buffer(ret, "%c%s", sep, list[i]);
+		if (strchr(list[i], ' ') || strlen(list[i]) == 0) {
+			talloc_asprintf_addbuf(&ret, "%c\"%s\"", sep, list[i]);
+		} else {
+			talloc_asprintf_addbuf(&ret, "%c%s", sep, list[i]);
+		}
 	}
 
 	return ret;
