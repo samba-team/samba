@@ -15,31 +15,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba.gp.gpclass import gp_xml_ext
-from base64 import b64encode
-from tempfile import NamedTemporaryFile
-from subprocess import Popen, PIPE
-from samba.gp.gp_sudoers_ext import visudo, intro
+from samba.gp.gpclass import gp_xml_ext, gp_file_applier
+from samba.gp.gp_sudoers_ext import sudo_applier_func
 from samba.gp.util.logging import log
 
-class vgp_sudoers_ext(gp_xml_ext):
+class vgp_sudoers_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/Sudo Rights'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
             sdir='/etc/sudoers.d'):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, sudoers in settings[str(self)].items():
-                    if os.path.exists(sudoers):
-                        os.unlink(sudoers)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, sudoers)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
-                self.gp_db.set_guid(gpo.name)
                 xml = 'MACHINE/VGP/VTLA/Sudo/SudoersConfiguration/manifest.xml'
                 path = os.path.join(gpo.file_sys_path, xml)
                 xml_conf = self.parse(path)
@@ -47,6 +39,7 @@ class vgp_sudoers_ext(gp_xml_ext):
                     continue
                 policy = xml_conf.find('policysetting')
                 data = policy.find('data')
+                sudo_entries = []
                 for entry in data.findall('sudoers_entry'):
                     command = entry.find('command').text
                     user = entry.find('user').text
@@ -62,29 +55,17 @@ class vgp_sudoers_ext(gp_xml_ext):
                     nopassword = entry.find('password') is None
                     np_entry = ' NOPASSWD:' if nopassword else ''
                     p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
-                    attribute = b64encode(p.encode()).decode()
-                    old_val = self.gp_db.retrieve(str(self), attribute)
-                    if not old_val:
-                        contents = intro
-                        contents += '%s\n' % p
-                        with NamedTemporaryFile() as f:
-                            with open(f.name, 'w') as w:
-                                w.write(contents)
-                            sudo_validation = \
-                                    Popen([visudo, '-c', '-f', f.name],
-                                        stdout=PIPE, stderr=PIPE).wait()
-                        if sudo_validation == 0:
-                            with NamedTemporaryFile(prefix='gp_',
-                                                    delete=False,
-                                                    dir=sdir) as f:
-                                with open(f.name, 'w') as w:
-                                    w.write(contents)
-                                self.gp_db.store(str(self),
-                                                 attribute,
-                                                 f.name)
-                        else:
-                            log.error('Sudoers apply failed', p)
-                    self.gp_db.commit()
+                    sudo_entries.append(p)
+                # Each GPO applies only one set of sudoers, in a
+                # set of files, so the attribute does not need uniqueness.
+                attribute = self.generate_attribute(gpo.name)
+                # The value hash is generated from the sudo_entries, ensuring
+                # any changes to this GPO will cause the files to be rewritten.
+                value_hash = self.generate_value_hash(*sudo_entries)
+                self.apply(gpo.name, attribute, value_hash, sudo_applier_func,
+                           sdir, sudo_entries)
+                # Cleanup any old entries that are no longer part of the policy
+                self.clean(gpo.name, keep=[attribute])
 
     def rsop(self, gpo):
         output = {}

@@ -15,8 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba.gp.gpclass import gp_pol_ext
-from base64 import b64encode
+from samba.gp.gpclass import gp_pol_ext, gp_file_applier
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from samba.gp.util.logging import log
@@ -42,55 +41,61 @@ intro = '''
 visudo = find_executable('visudo',
         path='%s:%s' % (os.environ['PATH'], '/usr/sbin'))
 
-class gp_sudoers_ext(gp_pol_ext):
+def sudo_applier_func(sudo_dir, sudo_entries):
+    ret = []
+    for p in sudo_entries:
+        contents = intro
+        contents += '%s\n' % p
+        with NamedTemporaryFile() as f:
+            with open(f.name, 'w') as w:
+                w.write(contents)
+            sudo_validation = \
+                    Popen([visudo, '-c', '-f', f.name],
+                        stdout=PIPE, stderr=PIPE).wait()
+        if sudo_validation == 0:
+            with NamedTemporaryFile(prefix='gp_',
+                                    delete=False,
+                                    dir=sudo_dir) as f:
+                with open(f.name, 'w') as w:
+                    w.write(contents)
+                ret.append(f.name)
+        else:
+            log.error('Sudoers apply failed', p)
+    return ret
+
+class gp_sudoers_ext(gp_pol_ext, gp_file_applier):
     def __str__(self):
         return 'Unix Settings/Sudo Rights'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
             sdir='/etc/sudoers.d'):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, sudoers in settings[str(self)].items():
-                    if os.path.exists(sudoers):
-                        os.unlink(sudoers)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, sudoers)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
                 section = 'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
-                self.gp_db.set_guid(gpo.name)
                 pol_file = 'MACHINE/Registry.pol'
                 path = os.path.join(gpo.file_sys_path, pol_file)
                 pol_conf = self.parse(path)
                 if not pol_conf:
                     continue
+                sudo_entries = []
                 for e in pol_conf.entries:
                     if e.keyname == section and e.data.strip():
-                        attribute = b64encode(e.data.encode()).decode()
-                        old_val = self.gp_db.retrieve(str(self), attribute)
-                        if not old_val:
-                            contents = intro
-                            contents += '%s\n' % e.data
-                            with NamedTemporaryFile() as f:
-                                with open(f.name, 'w') as w:
-                                    w.write(contents)
-                                sudo_validation = \
-                                        Popen([visudo, '-c', '-f', f.name],
-                                            stdout=PIPE, stderr=PIPE).wait()
-                            if sudo_validation == 0:
-                                with NamedTemporaryFile(prefix='gp_',
-                                                        delete=False,
-                                                        dir=sdir) as f:
-                                    with open(f.name, 'w') as w:
-                                        w.write(contents)
-                                    self.gp_db.store(str(self),
-                                                     attribute,
-                                                     f.name)
-                            else:
-                                log.error('Sudoers apply failed', e.data)
-                        self.gp_db.commit()
+                        sudo_entries.append(e.data)
+                # Each GPO applies only one set of sudoers, in a
+                # set of files, so the attribute does not need uniqueness.
+                attribute = self.generate_attribute(gpo.name)
+                # The value hash is generated from the sudo_entries, ensuring
+                # any changes to this GPO will cause the files to be rewritten.
+                value_hash = self.generate_value_hash(*sudo_entries)
+                self.apply(gpo.name, attribute, value_hash, sudo_applier_func,
+                           sdir, sudo_entries)
+                # Cleanup any old entries that are no longer part of the policy
+                self.clean(gpo.name, keep=[attribute])
 
     def rsop(self, gpo):
         output = {}
