@@ -180,8 +180,8 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 				ldb_dn_get_linearized(msg->dn), rdn_name,
 				(int)rdn_val.length, (const char *)rdn_val.data);
 			for (i = 0; i < attribute->num_values; i++) {
-				rdn_errstring = talloc_asprintf_append(
-					rdn_errstring, " (%.*s)",
+				talloc_asprintf_addbuf(
+					&rdn_errstring, " (%.*s)",
 					(int)attribute->values[i].length,
 					(const char *)attribute->values[i].data);
 			}
