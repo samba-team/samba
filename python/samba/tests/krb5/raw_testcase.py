@@ -3081,8 +3081,8 @@ class RawKerberosTest(TestCaseInTempDir):
                         self.assertEqual(
                             supported_etypes & ~ignore_bits,
                             expected_supported_etypes & ~ignore_bits,
-                            f'got: {supported_etypes}, '
-                            f'expected: {expected_supported_etypes}')
+                            f'PADATA_SUPPORTED_ETYPES: got: {supported_etypes} (0x{supported_etypes:X}), '
+                            f'expected: {expected_supported_etypes} (0x{expected_supported_etypes:X})')
 
                     if PADATA_PAC_OPTIONS in enc_pa_dict:
                         pac_options = self.der_decode(
