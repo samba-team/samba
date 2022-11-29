@@ -3952,6 +3952,134 @@ static bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 	return ret;
 }
 
+/**
+  Find Maximum Path Length
+ */
+static bool generate_path(const size_t len,
+			  char *buffer,
+			  const size_t buf_len)
+{
+	size_t i;
+
+	if (len >= buf_len) {
+		return false;
+	}
+
+	for (i = 0; i < len ; i++) {
+		buffer[i] = (char)(i % 10) + 48;
+	}
+	buffer[i] = '\0';
+	return true;
+}
+
+static bool test_path_length_test(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	const size_t max_name = 2048;
+	char *name = talloc_array(tctx, char, max_name);
+	struct smb2_handle fh = {{0}};
+	size_t length = 128;
+	size_t max_file_name = 0;
+	size_t max_path_length = 0;
+	char *path_ok = NULL;
+	char *path_next = NULL;
+	char *topdir = NULL;
+	bool is_interactive = torture_setting_bool(tctx, "interactive", false);
+	NTSTATUS status;
+	bool ret = true;
+
+	if (!is_interactive) {
+		torture_result(tctx, TORTURE_SKIP,
+			       "Interactive Test: Skipping... "
+			       "(enable with --interactive)\n");
+		return ret;
+	}
+
+	torture_comment(tctx, "Testing filename and path lengths\n");
+
+	/* Find Longest File Name */
+	for (length = 128; length < max_name; length++) {
+		if (!generate_path(length, name, max_name))  {
+			torture_result(tctx, TORTURE_FAIL,
+				       "Failed to generate path.");
+			return false;
+		}
+
+		status = torture_smb2_testfile(tree, name, &fh);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		smb2_util_close(tree, fh);
+		smb2_util_unlink(tree, name);
+
+		max_file_name = length;
+	}
+
+	torture_assert_int_not_equal_goto(tctx, length, max_name, ret, done,
+					  "Name too big\n");
+
+	torture_comment(tctx, "Max file name length: %zu\n", max_file_name);
+
+	/* Remove one char that caused the failure above */
+	name[max_file_name] = '\0';
+
+	path_ok = talloc_strdup(tree, name);
+	torture_assert_not_null_goto(tctx, path_ok, ret, done,
+				     "talloc_strdup failed\n");
+
+	topdir = talloc_strdup(tree, name);
+	torture_assert_not_null_goto(tctx, topdir, ret, done,
+				     "talloc_strdup failed\n");
+
+	status = smb2_util_mkdir(tree, path_ok);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "mkdir [%s] failed: %s\n",
+				path_ok, nt_errstr(status));
+		torture_result(tctx, TORTURE_FAIL, "Initial mkdir failed");
+		return false;
+	}
+
+	while (true) {
+		path_next = talloc_asprintf(tctx, "%s\\%s", path_ok, name);
+		torture_assert_not_null_goto(tctx, path_next, ret, done,
+					     "talloc_asprintf failed\n");
+
+		status = smb2_util_mkdir(tree, path_next);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		path_ok = path_next;
+	}
+
+	for (length = 1; length < max_name; length++) {
+		if (!generate_path(length, name, max_name))  {
+			torture_result(tctx, TORTURE_FAIL,
+				       "Failed to generate path.");
+			return false;
+		}
+
+		path_next = talloc_asprintf(tctx, "%s\\%s", path_ok, name);
+		torture_assert_not_null_goto(tctx, path_next, ret, done,
+					     "talloc_asprintf failed\n");
+
+		status = torture_smb2_testfile(tree, path_next, &fh);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+		smb2_util_close(tree, fh);
+		path_ok = path_next;
+	}
+
+	max_path_length = talloc_array_length(path_ok);
+
+	torture_comment(tctx, "Max path name length: %zu\n", max_path_length);
+
+done:
+	return ret;
+}
+
 /*
    basic testing of SMB2 read
 */
@@ -3974,7 +4102,7 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
 	torture_suite_add_1smb2_test(suite, "dosattr_tmp_dir", test_dosattr_tmp_dir);
 	torture_suite_add_1smb2_test(suite, "quota-fake-file", test_smb2_open_quota_fake_file);
-
+	torture_suite_add_1smb2_test(suite, "path-length", test_path_length_test);
 	torture_suite_add_1smb2_test(suite, "bench-path-contention-shared", test_smb2_bench_path_contention_shared);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
