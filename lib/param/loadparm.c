@@ -1778,6 +1778,75 @@ out:
 	return ok;
 }
 
+bool handle_kdc_supported_enctypes(struct loadparm_context *lp_ctx,
+				   struct loadparm_service *service,
+				   const char *pszParmValue, char **ptr)
+{
+	char **enctype_list = NULL;
+	char **enctype = NULL;
+	uint32_t result = 0;
+	bool ok = true;
+
+	enctype_list = str_list_make(NULL, pszParmValue, NULL);
+	if (enctype_list == NULL) {
+		DBG_ERR("OOM: failed to make string list from %s\n",
+			pszParmValue);
+		ok = false;
+		goto out;
+	}
+
+	for (enctype = enctype_list; *enctype != NULL; ++enctype) {
+		if (strwicmp(*enctype, "arcfour-hmac-md5") == 0 ||
+		    strwicmp(*enctype, "rc4-hmac") == 0)
+		{
+			result |= KERB_ENCTYPE_RC4_HMAC_MD5;
+		}
+		else if (strwicmp(*enctype, "aes128-cts-hmac-sha1-96") == 0 ||
+			 strwicmp(*enctype, "aes128-cts") == 0)
+		{
+			result |= KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+		}
+		else if (strwicmp(*enctype, "aes256-cts-hmac-sha1-96") == 0 ||
+			 strwicmp(*enctype, "aes256-cts") == 0)
+		{
+			result |= KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+		}
+		else {
+			const char *bitstr = *enctype;
+			int base;
+			int error;
+			unsigned long bit;
+
+			/* See if the bit's specified in hexadecimal. */
+			if (bitstr[0] == '0' &&
+			    (bitstr[1] == 'x' || bitstr[2] == 'X'))
+			{
+				base = 16;
+				bitstr += 2;
+			}
+			else {
+				base = 10;
+			}
+
+			bit = smb_strtoul(bitstr, NULL, base, &error, SMB_STR_FULL_STR_CONV);
+			if (error) {
+				DBG_ERR("WARNING: Ignoring invalid value '%s' "
+					"for parameter 'kdc default domain supported enctypes'\n",
+					*enctype);
+				ok = false;
+			} else {
+				result |= bit;
+			}
+		}
+	}
+
+	*(int *)ptr = result;
+out:
+	TALLOC_FREE(enctype_list);
+
+	return ok;
+}
+
 static bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service,
 			 int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
