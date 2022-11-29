@@ -15,10 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, pwd, grp
-from samba.gp.gpclass import gp_xml_ext, check_safe_path
+from samba.gp.gpclass import gp_xml_ext, check_safe_path, gp_file_applier
 from tempfile import NamedTemporaryFile
 from shutil import copyfile, move
-from hashlib import blake2b
 from samba.gp.util.logging import log
 
 def calc_mode(entry):
@@ -59,19 +58,19 @@ def stat_from_mode(mode):
                 stat += '-'
     return stat
 
-class vgp_files_ext(gp_xml_ext):
+def source_file_change(fname):
+    if os.path.exists(fname):
+        return b'%d' % os.stat(fname).st_ctime
+
+class vgp_files_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/Files'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, _ in settings[str(self)].items():
-                    if os.path.exists(attribute):
-                        os.unlink(attribute)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, attribute)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
@@ -92,28 +91,31 @@ class vgp_files_ext(gp_xml_ext):
                     if not os.path.exists(source_file):
                         log.warn('Source file does not exist', source_file)
                         continue
-                    source_hash = \
-                        blake2b(open(source_file, 'rb').read()).hexdigest()
                     target = entry.find('target').text
                     user = entry.find('user').text
                     group = entry.find('group').text
                     mode = calc_mode(entry)
-                    value = '%s:%s:%s:%d' % (source_hash, user, group, mode)
-                    old_val = self.gp_db.retrieve(str(self), target)
-                    if old_val == value:
-                        continue
-                    if os.path.exists(target):
-                        log.warn('Target file already exists', target)
-                        continue
-                    with NamedTemporaryFile(dir=os.path.dirname(target),
-                                            delete=False) as f:
-                        copyfile(source_file, f.name)
-                        os.chown(f.name, pwd.getpwnam(user).pw_uid,
-                                 grp.getgrnam(group).gr_gid)
-                        os.chmod(f.name, mode)
-                        move(f.name, target)
-                    self.gp_db.store(str(self), target, value)
-                    self.gp_db.commit()
+
+                    # The attribute is simply the target file.
+                    attribute = target
+                    # The value hash is generated from the source file last
+                    # change stamp, the user, the group, and the mode, ensuring
+                    # any changes to this GPO will cause the file to be
+                    # rewritten.
+                    value_hash = self.generate_value_hash(
+                            source_file_change(source_file),
+                            user, group, b'%d' % mode)
+                    def applier_func(source_file, target, user, group, mode):
+                        with NamedTemporaryFile(dir=os.path.dirname(target),
+                                                delete=False) as f:
+                            copyfile(source_file, f.name)
+                            os.chown(f.name, pwd.getpwnam(user).pw_uid,
+                                     grp.getgrnam(group).gr_gid)
+                            os.chmod(f.name, mode)
+                            move(f.name, target)
+                        return [target]
+                    self.apply(gpo.name, attribute, value_hash, applier_func,
+                               source_file, target, user, group, mode)
 
     def rsop(self, gpo):
         output = {}
