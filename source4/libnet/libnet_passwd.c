@@ -832,6 +832,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		goto disconnect;
 	}
 
+	ZERO_STRUCT(r2);
 	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
 	r2.samr_handle.in.account_name	= r->samr.in.account_name;
 	r2.samr_handle.in.newpassword	= r->samr.in.newpassword;
@@ -855,6 +856,7 @@ static NTSTATUS libnet_SetPassword_generic(struct libnet_context *ctx, TALLOC_CT
 	NTSTATUS status;
 	union libnet_SetPassword r2;
 
+	ZERO_STRUCT(r2);
 	r2.samr.level		= LIBNET_SET_PASSWORD_SAMR;
 	r2.samr.in.account_name	= r->generic.in.account_name;
 	r2.samr.in.domain_name	= r->generic.in.domain_name;
