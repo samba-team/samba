@@ -26,6 +26,7 @@
 #include "lib/util/tevent_ntstatus.h"
 
 #include "torture/torture.h"
+#include "torture/util.h"
 #include "torture/smb2/proto.h"
 
 #include "librpc/gen_ndr/security.h"
@@ -1437,6 +1438,139 @@ static bool torture_smb2_rename_dir_bench(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * This test basically verifies that modify and change timestamps are preserved
+ * after file rename with outstanding open file handles.
+ */
+
+static bool torture_smb2_rename_simple_modtime(
+			struct torture_context *torture,
+			struct smb2_tree *tree1)
+{
+	struct smb2_create c1, c2;
+	union smb_fileinfo gi;
+	union smb_setfileinfo si;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree1, BASEDIR);
+	smb2_util_mkdir(tree1, BASEDIR);
+
+	torture_comment(torture, "Creating test file: file1.txt\n");
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL|SEC_STD_DELETE,
+		.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = BASEDIR "\\file1.txt",
+	};
+
+	status = smb2_create(tree1, torture, &c1);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	torture_comment(torture, "Waitig for 5 secs..\n");
+	sleep(5);
+
+	torture_comment(torture, "Creating test file: file2.txt\n");
+
+	c2 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL|SEC_STD_DELETE,
+		.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = BASEDIR "\\file2.txt",
+	};
+
+	status = smb2_create(tree1, torture, &c2);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c2.out.file.handle;
+
+	torture_comment(torture, "Renaming file1.txt --> tmp1.txt\n");
+
+	si = (union smb_setfileinfo) {
+		.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION,
+		.rename_information.in.file.handle = h1,
+		.rename_information.in.new_name =
+			BASEDIR "\\tmp1.txt",
+	};
+
+	status = smb2_setinfo_file(tree1, &si);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	torture_comment(torture, "GetInfo of tmp1.txt\n");
+
+	gi = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree1, torture, &gi);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	torture_comment(torture, "Check if timestamps are good after rename(file1.txt --> tmp1.txt).\n");
+
+	torture_assert_nttime_equal(
+		torture, c1.out.write_time, gi.all_info.out.write_time,
+		"Bad timestamp\n");
+	torture_assert_nttime_equal(
+		torture, c1.out.change_time, gi.all_info.out.change_time,
+		"Bad timestamp\n");
+
+	torture_comment(torture, "Renaming file2.txt --> file1.txt\n");
+
+	si = (union smb_setfileinfo) {
+		.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION,
+		.rename_information.in.file.handle = h2,
+		.rename_information.in.new_name =
+			BASEDIR "\\file1.txt",
+	};
+	status = smb2_setinfo_file(tree1, &si);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	torture_comment(torture, "GetInfo of file1.txt\n");
+
+	gi = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h2,
+	};
+
+	status = smb2_getinfo_file(tree1, torture, &gi);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	torture_comment(torture, "Check if timestamps are good after rename(file2.txt --> file1.txt).\n");
+
+	torture_assert_nttime_equal(
+		torture, c2.out.write_time, gi.all_info.out.write_time,
+		"Bad timestamp\n");
+	torture_assert_nttime_equal(
+		torture, c2.out.change_time, gi.all_info.out.change_time,
+		"Bad timestamp\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree1, h2);
+	}
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 static bool test_smb2_close_full_information(struct torture_context *torture,
 					struct smb2_tree *tree1,
 					struct smb2_tree *tree2)
@@ -1569,6 +1703,9 @@ struct torture_suite *torture_smb2_rename_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "simple",
 		torture_smb2_rename_simple);
+
+	torture_suite_add_1smb2_test(suite, "simple_modtime",
+		torture_smb2_rename_simple_modtime);
 
 	torture_suite_add_1smb2_test(suite, "simple_nodelete",
 		torture_smb2_rename_simple2);
