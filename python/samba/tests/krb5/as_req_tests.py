@@ -47,6 +47,7 @@ class AsReqBaseTest(KDCBaseTest):
                                   expected_cname=None, sname=None,
                                   name_type=NT_PRINCIPAL, etypes=None,
                                   expected_error=None, expect_edata=None,
+                                  expected_pa_error=None, expect_pa_edata=None,
                                   kdc_options=None, till=None):
         user_name = client_creds.get_username()
         if client_account is None:
@@ -125,6 +126,8 @@ class AsReqBaseTest(KDCBaseTest):
 
         preauth_padata = [pa_ts]
         preauth_error_mode = 0 # AS-REP
+        if expected_pa_error is not None:
+            preauth_error_mode = expected_pa_error
 
         krbtgt_decryption_key = (
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
@@ -146,6 +149,7 @@ class AsReqBaseTest(KDCBaseTest):
             kdc_options,
             expected_supported_etypes=krbtgt_supported_etypes,
             expected_account_name=user_name,
+            expect_edata=expect_pa_edata,
             preauth_key=preauth_key,
             ticket_decryption_key=krbtgt_decryption_key,
             pac_request=True)
@@ -512,10 +516,17 @@ class AsReqKerberosTests(AsReqBaseTest):
             name_type=NT_SRV_INST,
             names=[krbtgt_account, realm])
 
-        self._run_as_req_enc_timestamp(
-            client_creds,
-            sname=wrong_krbtgt_princ,
-            expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
+        if self.strict_checking:
+            self._run_as_req_enc_timestamp(
+                client_creds,
+                sname=wrong_krbtgt_princ,
+                expected_pa_error=KDC_ERR_S_PRINCIPAL_UNKNOWN,
+                expect_pa_edata=False)
+        else:
+            self._run_as_req_enc_timestamp(
+                client_creds,
+                sname=wrong_krbtgt_princ,
+                expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
     # Test that we can make a request for a ticket expiring post-2038.
     def test_future_till(self):

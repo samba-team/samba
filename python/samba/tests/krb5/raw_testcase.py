@@ -41,6 +41,10 @@ from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, security
 from samba.gensec import FEATURE_SEAL
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc.misc import (
+    SEC_CHAN_WKSTA,
+    SEC_CHAN_BDC,
+)
 
 import samba.tests
 from samba.tests import TestCaseInTempDir
@@ -485,7 +489,8 @@ class KerberosCredentials(Credentials):
         else:
             salt_name = self.get_username()
 
-        if self.get_workstation():
+        secure_schannel_type = self.get_secure_channel_type()
+        if secure_schannel_type in [SEC_CHAN_WKSTA,SEC_CHAN_BDC]:
             salt_name = self.get_username().lower()
             if salt_name[-1] == '$':
                 salt_name = salt_name[:-1]
@@ -2976,7 +2981,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 else:
                     self.assertElementMissing(ticket_private, 'renew-till')
             if self.strict_checking:
-                self.assertElementEqual(ticket_private, 'caddr', [])
+                self.assertElementMissing(ticket_private, 'caddr')
             if expect_pac is not None:
                 if expect_pac:
                     self.assertElementPresent(ticket_private,
@@ -3030,7 +3035,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementEqualPrincipal(encpart_private, 'sname',
                                              expected_sname)
             if self.strict_checking:
-                self.assertElementEqual(encpart_private, 'caddr', [])
+                self.assertElementMissing(encpart_private, 'caddr')
 
             sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
 
@@ -3792,6 +3797,13 @@ class RawKerberosTest(TestCaseInTempDir):
             if chosen_etype in {kcrypto.Enctype.AES256,
                                 kcrypto.Enctype.AES128}:
                 expected_patypes += (PADATA_ETYPE_INFO2,)
+
+            preauth_key = kdc_exchange_dict['preauth_key']
+            if preauth_key.etype == kcrypto.Enctype.RC4 and rep_padata is None:
+                rep_padata = ()
+        elif rep_msg_type == KRB_TGS_REP:
+            if expected_patypes == () and rep_padata is None:
+                rep_padata = ()
 
         if not self.strict_checking and rep_padata is None:
             rep_padata = ()
