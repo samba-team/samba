@@ -66,7 +66,8 @@ class KdcTgsBaseTests(KDCBaseTest):
                 creds,
                 expected_error,
                 target_creds,
-                etype):
+                etype,
+                expected_ticket_etype=None):
         user_name = creds.get_username()
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=user_name.split('/'))
@@ -87,7 +88,8 @@ class KdcTgsBaseTests(KDCBaseTest):
         till = self.get_KerberosTime(offset=36000)
 
         ticket_decryption_key = (
-            self.TicketDecryptionKey_from_creds(target_creds))
+            self.TicketDecryptionKey_from_creds(target_creds,
+                                                etype=expected_ticket_etype))
         expected_etypes = target_creds.tgs_supported_enctypes
 
         kdc_options = ('forwardable,'
@@ -179,6 +181,8 @@ class KdcTgsBaseTests(KDCBaseTest):
                  use_fast=False,
                  till=None,
                  etypes=None,
+                 expected_ticket_etype=None,
+                 expected_supported_etypes=None,
                  expect_pac=True,
                  expect_pac_attrs=None,
                  expect_pac_attrs_pac_request=None,
@@ -218,7 +222,7 @@ class KdcTgsBaseTests(KDCBaseTest):
         else:
             additional_tickets = None
             decryption_key = self.TicketDecryptionKey_from_creds(
-                target_creds)
+                target_creds, etype=expected_ticket_etype)
 
         subkey = self.RandomKey(tgt.session_key.etype)
 
@@ -278,6 +282,7 @@ class KdcTgsBaseTests(KDCBaseTest):
             pac_options=pac_options,
             authenticator_subkey=subkey,
             kdc_options=kdc_options,
+            expected_supported_etypes=expected_supported_etypes,
             expect_edata=expect_edata,
             expect_pac=expect_pac,
             expect_pac_attrs=expect_pac_attrs,
