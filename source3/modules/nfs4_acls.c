@@ -1017,6 +1017,14 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
 
 	if (pparams->do_chown) {
+		/*
+		 * When the chown succeeds, the special entries in the
+		 * file system ACL refer to the new owner. In order to
+		 * apply the complete information from the DACL,
+		 * setting the ACL then has to succeed. Track this
+		 * case with set_acl_as_root and set the ACL as root
+		 * accordingly.
+		 */
 		status = chown_if_needed(fsp, security_info_sent, psd,
 					 &set_acl_as_root);
 		if (!NT_STATUS_IS_OK(status)) {
