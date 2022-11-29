@@ -201,7 +201,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 		*type = "txt";
 		tmp = talloc_asprintf(mem_ctx, "\"%s\"", rec->data.txt.str[0]);
 		for (i=1; i<rec->data.txt.count; i++) {
-			tmp = talloc_asprintf_append(tmp, " \"%s\"", rec->data.txt.str[i]);
+			talloc_asprintf_addbuf(&tmp, " \"%s\"", rec->data.txt.str[i]);
 		}
 		*data = tmp;
 		break;
