@@ -3475,6 +3475,59 @@ NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 	return status;
 }
 
+/*
+ * Check whether a chown is needed and if so, attempt the chown
+ * A returned error indicates that the chown failed.
+ * NT_STATUS_OK with did_chown == false indicates that the chown was skipped.
+ * NT_STATUS_OK with did_chown == true indicates that the chown succeeded
+ */
+NTSTATUS chown_if_needed(files_struct *fsp, uint32_t security_info_sent,
+			 const struct security_descriptor *psd,
+			 bool *did_chown)
+{
+	NTSTATUS status;
+	uid_t uid = (uid_t)-1;
+	gid_t gid = (gid_t)-1;
+
+	status = unpack_nt_owners(fsp->conn, &uid, &gid, security_info_sent, psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (((uid == (uid_t)-1) || (fsp->fsp_name->st.st_ex_uid == uid)) &&
+	    ((gid == (gid_t)-1) || (fsp->fsp_name->st.st_ex_gid == gid))) {
+		/*
+		 * Skip chown
+		 */
+		*did_chown = false;
+		return NT_STATUS_OK;
+	}
+
+	DBG_NOTICE("chown %s. uid = %u, gid = %u.\n",
+		   fsp_str_dbg(fsp), (unsigned int) uid, (unsigned int)gid);
+
+	status = try_chown(fsp, uid, gid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("chown %s, %u, %u failed. Error = %s.\n",
+			 fsp_str_dbg(fsp), (unsigned int) uid,
+			 (unsigned int)gid, nt_errstr(status));
+		return status;
+	}
+
+	/*
+	 * Recheck the current state of the file, which may have changed.
+	 * (owner and suid/sgid bits, for instance)
+	 */
+
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*did_chown = true;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to set a security descriptor on an fsp. security_info_sent is the
  description of the following NT ACL.
@@ -3486,8 +3539,6 @@ NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd_orig)
 {
 	connection_struct *conn = fsp->conn;
-	uid_t user = (uid_t)-1;
-	gid_t grp = (gid_t)-1;
 	struct dom_sid file_owner_sid;
 	struct dom_sid file_grp_sid;
 	canon_ace *file_ace_list = NULL;
@@ -3559,48 +3610,17 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 		security_info_sent &= ~SECINFO_OWNER;
 	}
 
-	status = unpack_nt_owners( conn, &user, &grp, security_info_sent, psd);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/*
 	 * Do we need to chown ? If so this must be done first as the incoming
 	 * CREATOR_OWNER acl will be relative to the *new* owner, not the old.
 	 * Noticed by Simo.
+	 *
+	 * If we successfully chowned, we know we must be able to set
+	 * the acl, so do it as root (set_acl_as_root).
 	 */
-
-	if (((user != (uid_t)-1) && (fsp->fsp_name->st.st_ex_uid != user)) ||
-	    (( grp != (gid_t)-1) && (fsp->fsp_name->st.st_ex_gid != grp))) {
-
-		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
-			 fsp_str_dbg(fsp), (unsigned int)user,
-			 (unsigned int)grp));
-
-		status = try_chown(fsp, user, grp);
-		if(!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error "
-				"= %s.\n", fsp_str_dbg(fsp),
-				(unsigned int)user,
-				(unsigned int)grp,
-				nt_errstr(status)));
-			return status;
-		}
-
-		/*
-		 * Recheck the current state of the file, which may have changed.
-		 * (suid/sgid bits, for instance)
-		 */
-
-		status = vfs_stat_fsp(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/* If we successfully chowned, we know we must
-		 * be able to set the acl, so do it as root.
-		 */
-		set_acl_as_root = true;
+	status = check_chown(fsp, security_info_sent, psd, &set_acl_as_root);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	create_file_sids(&fsp->fsp_name->st, &file_owner_sid, &file_grp_sid);

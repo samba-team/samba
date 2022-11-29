@@ -825,7 +825,9 @@ SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   TALLOC_CTX *mem_ctx,
 			   struct security_descriptor **ppdesc);
-NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid);
+NTSTATUS chown_if_needed(files_struct *fsp, uint32_t security_info_sent,
+			 const struct security_descriptor *psd,
+			 bool *did_chown);
 NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd);
 int get_acl_group_bits(connection_struct *conn,
 		       struct files_struct *fsp,
