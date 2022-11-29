@@ -276,7 +276,7 @@ class KDCBaseTest(RawKerberosTest):
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
                        ou=None, account_control=0, add_dollar=True,
-                       expired_password=False):
+                       expired_password=False, force_nt4_hash=False):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
@@ -341,6 +341,26 @@ class KDCBaseTest(RawKerberosTest):
         self.accounts.append(dn)
         samdb.add(details)
 
+        expected_kvno = 1
+
+        if force_nt4_hash:
+            admin_creds = self.get_admin_creds()
+            lp = self.get_lp()
+            net_ctx = net.Net(admin_creds, lp, server=self.dc_host)
+            domain = samdb.domain_netbios_name().upper()
+
+            password = generate_random_password(32, 32)
+            utf16pw = ('"%s"' % password).encode('utf-16-le')
+
+            try:
+                net_ctx.set_password(newpassword=password,
+                                     account_name=account_name,
+                                     domain_name=domain,
+                                     force_samr_18=True)
+                expected_kvno += 1
+            except Exception as e:
+                self.fail(e)
+
         creds = KerberosCredentials()
         creds.guess(self.get_lp())
         creds.set_realm(samdb.domain_dns_name().upper())
@@ -363,8 +383,8 @@ class KDCBaseTest(RawKerberosTest):
                            attrs=['msDS-KeyVersionNumber'])
         kvno = res[0].get('msDS-KeyVersionNumber', idx=0)
         if kvno is not None:
-            self.assertEqual(int(kvno), 1)
-        creds.set_kvno(1)
+            self.assertEqual(int(kvno), expected_kvno)
+        creds.set_kvno(expected_kvno)
 
         return (creds, dn)
 
@@ -772,7 +792,8 @@ class KDCBaseTest(RawKerberosTest):
             'member_of': None,
             'kerberos_enabled': True,
             'secure_channel_type': None,
-            'id': None
+            'id': None,
+            'force_nt4_hash': False,
         }
 
         account_opts = {
@@ -819,7 +840,8 @@ class KDCBaseTest(RawKerberosTest):
                             member_of,
                             kerberos_enabled,
                             secure_channel_type,
-                            id):
+                            id,
+                            force_nt4_hash):
         if account_type is self.AccountType.USER:
             self.assertIsNone(spn)
             self.assertIsNone(delegation_to_spn)
@@ -876,9 +898,13 @@ class KDCBaseTest(RawKerberosTest):
                                         additional_details=details,
                                         account_control=user_account_control,
                                         add_dollar=add_dollar,
+                                        force_nt4_hash=force_nt4_hash,
                                         expired_password=expired_password)
 
-        keys = self.get_keys(samdb, dn)
+        expected_etypes = None
+        if force_nt4_hash:
+            expected_etypes = {kcrypto.Enctype.RC4}
+        keys = self.get_keys(samdb, dn, expected_etypes=expected_etypes)
         self.creds_set_keys(creds, keys)
 
         # Handle secret replication to the RODC.
