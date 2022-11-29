@@ -244,18 +244,30 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
-	const char *kwnames[] = { "account_name", "domain_name", "newpassword", NULL };
+	const char *kwnames[] = { "account_name", "domain_name", "newpassword", "force_samr_18", NULL };
+	PyObject *py_force_samr_18 = Py_False;
 
 	ZERO_STRUCT(r);
 
 	r.generic.level = LIBNET_SET_PASSWORD_GENERIC;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sss:set_password",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sss|O:set_password",
 					discard_const_p(char *, kwnames),
 					 &r.generic.in.account_name,
 					 &r.generic.in.domain_name,
-					 &r.generic.in.newpassword)) {
+					 &r.generic.in.newpassword,
+					 &py_force_samr_18)) {
 		return NULL;
+	}
+
+	if (py_force_samr_18) {
+		if (!PyBool_Check(py_force_samr_18)) {
+			PyErr_SetString(PyExc_TypeError, "Expected boolean force_samr_18");
+			return NULL;
+		}
+		if (py_force_samr_18 == Py_True) {
+			r.generic.samr_level = LIBNET_SET_PASSWORD_SAMR_HANDLE_18;
+		}
 	}
 
 	/* FIXME: we really need to get a context from the caller or we may end
