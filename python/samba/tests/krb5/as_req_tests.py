@@ -42,7 +42,8 @@ global_hexdump = False
 
 class AsReqBaseTest(KDCBaseTest):
     def _run_as_req_enc_timestamp(self, client_creds, sname=None,
-                                  expected_error=None):
+                                  expected_error=None,
+                                  expected_pa_error=None, expect_pa_edata=None):
         client_account = client_creds.get_username()
         client_as_etypes = self.get_default_enctypes()
         client_kvno = client_creds.get_kvno()
@@ -111,6 +112,8 @@ class AsReqBaseTest(KDCBaseTest):
         preauth_etypes = client_as_etypes
         preauth_kdc_options = krb5_asn1.KDCOptions('forwardable')
         preauth_error_mode = 0 # AS-REP
+        if expected_pa_error is not None:
+            preauth_error_mode = expected_pa_error
 
         krbtgt_decryption_key = (
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
@@ -130,6 +133,7 @@ class AsReqBaseTest(KDCBaseTest):
             preauth_etypes,
             preauth_padata,
             preauth_kdc_options,
+            expect_edata=expect_pa_edata,
             preauth_key=preauth_key,
             ticket_decryption_key=krbtgt_decryption_key,
             pac_request=True)
@@ -236,10 +240,17 @@ class AsReqKerberosTests(AsReqBaseTest):
             name_type=NT_SRV_INST,
             names=[krbtgt_account, realm])
 
-        self._run_as_req_enc_timestamp(
-            client_creds,
-            sname=wrong_krbtgt_princ,
-            expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
+        if self.strict_checking:
+            self._run_as_req_enc_timestamp(
+                client_creds,
+                sname=wrong_krbtgt_princ,
+                expected_pa_error=KDC_ERR_S_PRINCIPAL_UNKNOWN,
+                expect_pa_edata=False)
+        else:
+            self._run_as_req_enc_timestamp(
+                client_creds,
+                sname=wrong_krbtgt_princ,
+                expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
 
 if __name__ == "__main__":

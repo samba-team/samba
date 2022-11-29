@@ -41,6 +41,10 @@ from samba.credentials import Credentials
 from samba.dcerpc import krb5pac, security
 from samba.gensec import FEATURE_SEAL
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc.misc import (
+    SEC_CHAN_WKSTA,
+    SEC_CHAN_BDC,
+)
 
 import samba.tests
 from samba.tests import TestCaseInTempDir
@@ -475,7 +479,8 @@ class KerberosCredentials(Credentials):
         else:
             salt_name = self.get_username()
 
-        if self.get_workstation():
+        secure_schannel_type = self.get_secure_channel_type()
+        if secure_schannel_type in [SEC_CHAN_WKSTA,SEC_CHAN_BDC]:
             salt_name = self.get_username().lower()
             if salt_name[-1] == '$':
                 salt_name = salt_name[:-1]
@@ -2863,7 +2868,7 @@ class RawKerberosTest(TestCaseInTempDir):
             else:
                 self.assertElementMissing(ticket_private, 'renew-till')
             if self.strict_checking:
-                self.assertElementEqual(ticket_private, 'caddr', [])
+                self.assertElementMissing(ticket_private, 'caddr')
             if expect_pac is not None:
                 self.assertElementPresent(ticket_private, 'authorization-data',
                                           expect_empty=not expect_pac)
@@ -2904,7 +2909,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementEqualPrincipal(encpart_private, 'sname',
                                              expected_sname)
             if self.strict_checking:
-                self.assertElementEqual(encpart_private, 'caddr', [])
+                self.assertElementMissing(encpart_private, 'caddr')
 
             sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
 
