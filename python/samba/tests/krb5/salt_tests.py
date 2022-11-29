@@ -19,13 +19,13 @@
 import sys
 import os
 
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 import ldb
 
 from samba.tests.krb5.as_req_tests import AsReqBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False

@@ -18,6 +18,10 @@
 
 import sys
 import os
+
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 from datetime import datetime, timezone
 import tempfile
 import binascii
@@ -90,9 +94,6 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO2,
 )
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False

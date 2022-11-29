@@ -19,11 +19,12 @@
 
 import sys
 import os
-from enum import Enum, unique
-import pyasn1
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
+
+from enum import Enum, unique
+import pyasn1
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
