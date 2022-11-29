@@ -1,0 +1,40 @@
+<samba:parameter name="kdc supported enctypes"
+                 type="integer"
+                 context="G"
+                 handler="handle_kdc_supported_enctypes"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    On an active directory domain controller, this is the list of supported encryption types for local running kdc.
+  </para>
+
+  <para>
+    This allows Samba administrators to remove support for weak/unused encryption types, similar
+    the configuration flexibility provided by the <constant>Network security: Configure encryption types allowed for Kerberos</constant>
+    GPO/Local Policies/Security Options Value, which results in the
+    <constant>HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Kerberos\Parameters\SupportedEncryptionTypes</constant> Registry Value on Windows.
+  </para>
+  <para>
+    Unlike the Windows registry key (which only takes an base-10 number), in Samba this may also be expressed as hexadecimal or a list of Kerberos encryption type names.
+  </para>
+  <para>
+    Specified values are ORed together bitwise, and those currently supported consist of:
+    </para><itemizedlist>
+   <listitem>
+       <para><constant>arcfour-hmac-md5</constant>, <constant>rc4-hmac</constant>, <constant>0x4</constant>, or <constant>4</constant></para>
+       <para>Known on Windows as Kerberos RC4 encryption</para>
+   </listitem>
+   <listitem>
+       <para><constant>aes128-cts-hmac-sha1-96</constant>, <constant>aes128-cts</constant>, <constant>0x8</constant>, or <constant>8</constant></para>
+       <para>Known on Windows as Kerberos AES 128 bit encryption</para>
+   </listitem>
+   <listitem>
+       <para><constant>aes256-cts-hmac-sha1-96</constant>, <constant>aes256-cts</constant>, <constant>0x10</constant>, or <constant>16</constant></para>
+       <para>Known on Windows as Kerberos AES 256 bit encryption</para>
+   </listitem>
+</itemizedlist>
+
+</description>
+
+<value type="default">0<comment>maps to what the software supports currently: arcfour-hmac-md5 aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96</comment></value>
+</samba:parameter>
