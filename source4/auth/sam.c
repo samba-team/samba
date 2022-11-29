@@ -310,25 +310,19 @@ static NTSTATUS authsam_domain_group_filter(TALLOC_CTX *mem_ctx,
 	*_filter = NULL;
 
 	filter = talloc_strdup(mem_ctx, "(&(objectClass=group)");
-	if (filter == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/*
 	 * Skip all builtin groups, they're added later.
 	 */
-	filter = talloc_asprintf_append_buffer(filter,
-				"(!(groupType:1.2.840.113556.1.4.803:=%u))",
-				GROUP_TYPE_BUILTIN_LOCAL_GROUP);
-	if (filter == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	talloc_asprintf_addbuf(&filter,
+			       "(!(groupType:1.2.840.113556.1.4.803:=%u))",
+			       GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 	/*
 	 * Only include security groups.
 	 */
-	filter = talloc_asprintf_append_buffer(filter,
-				"(groupType:1.2.840.113556.1.4.803:=%u))",
-				GROUP_TYPE_SECURITY_ENABLED);
+	talloc_asprintf_addbuf(&filter,
+			       "(groupType:1.2.840.113556.1.4.803:=%u))",
+			       GROUP_TYPE_SECURITY_ENABLED);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
