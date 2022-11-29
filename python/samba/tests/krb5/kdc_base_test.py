@@ -566,6 +566,8 @@ class KDCBaseTest(RawKerberosTest):
         for attr in attributes:
             if attr.attid == drsuapi.DRSUAPI_ATTID_supplementalCredentials:
                 net_ctx.replicate_decrypt(bind, attr, rid)
+                if attr.value_ctr.num_values == 0:
+                    continue
                 attr_val = attr.value_ctr.values[0].blob
 
                 spl = ndr_unpack(drsblobs.supplementalCredentialsBlob,
