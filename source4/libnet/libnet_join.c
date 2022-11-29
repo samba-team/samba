@@ -487,8 +487,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	const char *password_str = NULL;
 	
 	r->out.error_string = NULL;
-	r2.samr_handle.out.error_string = NULL;
-	
+	ZERO_STRUCT(r2);
+
 	tmp_ctx = talloc_named(mem_ctx, 0, "libnet_Join temp context");
 	if (!tmp_ctx) {
 		r->out.error_string = NULL;
