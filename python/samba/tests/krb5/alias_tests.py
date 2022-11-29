@@ -20,6 +20,9 @@
 import sys
 import os
 
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 import ldb
 
 from samba.tests import delete_force
@@ -31,9 +34,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_TGT_REVOKED,
     NT_PRINCIPAL,
 )
-
-sys.path.insert(0, 'bin/python')
-os.environ['PYTHONUNBUFFERED'] = '1'
 
 global_asn1_print = False
 global_hexdump = False

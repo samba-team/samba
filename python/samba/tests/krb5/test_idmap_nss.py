@@ -20,6 +20,9 @@
 import sys
 import os
 
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 from ldb import SCOPE_SUBTREE
 from samba import NTSTATUSError
 from samba.credentials import DONT_USE_KERBEROS
@@ -33,9 +36,6 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
-
-sys.path.insert(0, 'bin/python')
-os.environ['PYTHONUNBUFFERED'] = '1'
 
 global_asn1_print = False
 global_hexdump = False

@@ -20,6 +20,9 @@
 import sys
 import os
 
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 import ldb
 
 from ldb import LdbError, ERR_OPERATIONS_ERROR, SCOPE_BASE, SCOPE_SUBTREE
@@ -29,9 +32,6 @@ from samba.samdb import SamDB
 from samba import credentials
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False

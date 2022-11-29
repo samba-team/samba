@@ -16,8 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import sys
+import os
+
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
 
 import ldb
 
@@ -25,9 +28,6 @@ from samba import generate_random_password, net
 from samba.dcerpc import drsuapi, misc
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
-
-sys.path.insert(0, 'bin/python')
-os.environ['PYTHONUNBUFFERED'] = '1'
 
 global_asn1_print = False
 global_hexdump = False

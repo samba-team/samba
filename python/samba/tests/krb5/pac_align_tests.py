@@ -19,13 +19,13 @@
 import sys
 import os
 
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 from samba.dcerpc import krb5pac
 from samba.ndr import ndr_unpack
 from samba.tests import DynamicTestCase
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
-
-sys.path.insert(0, 'bin/python')
-os.environ['PYTHONUNBUFFERED'] = '1'
 
 global_asn1_print = False
 global_hexdump = False
