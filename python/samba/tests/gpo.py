@@ -7781,6 +7781,7 @@ class GPOTests(tests.TestCase):
                     gp_db = store.get_gplog(machine_creds.get_username())
                     applied_settings = gp_db.get_applied_settings([guid])
                     for _, fname in applied_settings[-1][-1][str(ext)].items():
+                        fname = fname.split(':')[-1]
                         self.assertIn(dname, fname,
                                       'Test file not created in tmp dir')
                         self.assertTrue(os.path.exists(fname),
