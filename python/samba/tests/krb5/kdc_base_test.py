@@ -48,6 +48,11 @@ from samba.dsdb import (
     UF_SERVER_TRUST_ACCOUNT,
     UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
 )
+from samba.dcerpc.misc import (
+    SEC_CHAN_NULL,
+    SEC_CHAN_WKSTA,
+    SEC_CHAN_BDC,
+)
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import net
@@ -264,6 +269,7 @@ class KDCBaseTest(RawKerberosTest):
         # run failed
         delete_force(samdb, dn)
         account_name = name
+        secure_schannel_type = SEC_CHAN_NULL
         if account_type is self.AccountType.USER:
             object_class = "user"
             account_control |= UF_NORMAL_ACCOUNT
@@ -273,8 +279,10 @@ class KDCBaseTest(RawKerberosTest):
                 account_name += '$'
             if account_type is self.AccountType.COMPUTER:
                 account_control |= UF_WORKSTATION_TRUST_ACCOUNT
+                secure_schannel_type = SEC_CHAN_WKSTA
             elif account_type is self.AccountType.SERVER:
                 account_control |= UF_SERVER_TRUST_ACCOUNT
+                secure_schannel_type = SEC_CHAN_BDC
             else:
                 self.fail()
 
@@ -313,6 +321,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_workstation('')
         else:
             creds.set_workstation(name)
+        creds.set_secure_channel_type(secure_schannel_type)
         creds.set_dn(ldb.Dn(samdb, dn))
         creds.set_upn(upn)
         creds.set_spn(spn)
