@@ -17,10 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sys
+import os
+
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 from enum import Enum
 from functools import partial
-import os
-import sys
 import time
 
 from cryptography.hazmat.backends import default_backend
@@ -60,9 +64,6 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_PRINCIPAL,
     NT_SRV_INST,
 )
-
-sys.path.insert(0, 'bin/python')
-os.environ['PYTHONUNBUFFERED'] = '1'
 
 global_asn1_print = False
 global_hexdump = False

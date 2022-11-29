@@ -19,10 +19,10 @@
 import sys
 import os
 
-from samba.tests.krb5.kdc_base_test import KDCBaseTest
-
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
+
+from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
 global_asn1_print = False
 global_hexdump = False

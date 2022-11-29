@@ -18,6 +18,10 @@
 
 import sys
 import os
+
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 import pwd
 import ctypes
 
@@ -28,9 +32,6 @@ from samba import NTSTATUSError, ntstatus
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.credentials import MUST_USE_KERBEROS, DONT_USE_KERBEROS
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 class SmbMinDomainUid(KDCBaseTest):
     """Test for SMB authorization without NSS winbind. In such setup domain
