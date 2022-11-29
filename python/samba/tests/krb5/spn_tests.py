@@ -17,8 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import sys
+import os
+
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests import DynamicTestCase
 
@@ -32,9 +35,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
     NT_PRINCIPAL,
 )
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False

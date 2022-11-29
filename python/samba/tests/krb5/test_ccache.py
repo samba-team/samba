@@ -20,6 +20,9 @@
 import sys
 import os
 
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 import ldb
 
 from ldb import SCOPE_SUBTREE
@@ -30,9 +33,6 @@ from samba.ndr import ndr_unpack
 from samba.ntstatus import NT_STATUS_NO_IMPERSONATION_TOKEN
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False

@@ -17,9 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import functools
-import os
 import sys
+import os
+
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
+import functools
 import collections
 
 import ldb
@@ -57,9 +61,6 @@ from samba.tests.krb5.rfc4120_constants import (
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 import samba.tests.krb5.kcrypto as kcrypto
-
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False

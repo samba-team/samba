@@ -18,10 +18,11 @@
 
 import sys
 import os
-import functools
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
+
+import functools
 
 from samba import dsdb, ntstatus
 from samba.dcerpc import krb5pac, lsa, security

@@ -17,9 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import re
 import sys
+import os
+
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
+
+import re
 
 from enum import Enum
 from functools import partial
@@ -42,9 +46,6 @@ from samba.tests.krb5.rfc4120_constants import (
 )
 
 SidType = RawKerberosTest.SidType
-
-sys.path.insert(0, 'bin/python')
-os.environ['PYTHONUNBUFFERED'] = '1'
 
 global_asn1_print = False
 global_hexdump = False
