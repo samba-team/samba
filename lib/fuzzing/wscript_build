@@ -97,6 +97,16 @@ bld.SAMBA_BINARY('fuzz_cli_credentials_parse_string',
                  deps='fuzzing samba-credentials afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_stable_sort',
+                 source='fuzz_stable_sort.c',
+                 deps='fuzzing stable_sort afl-fuzz-main',
+                 fuzzer=True)
+
+bld.SAMBA_BINARY('fuzz_stable_sort_r',
+                 source='fuzz_stable_sort_r.c',
+                 deps='fuzzing stable_sort afl-fuzz-main',
+                 fuzzer=True)
+
 # The fuzz_type and fuzz_function parameters make the built
 # fuzzer take the same input as ndrdump and so the same that
 # could be sent to the client or server as the stub data.
