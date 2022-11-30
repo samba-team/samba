@@ -85,6 +85,8 @@ enum netr_SchannelType get_sec_channel_type(const char *param)
 
 static int net_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
+	net_warn_member_options();
+
 	if (net_ads_check_our_domain(c) == 0)
 		return net_ads_changetrustpw(c, argc, argv);
 
@@ -111,6 +113,8 @@ static int net_primarytrust_dumpinfo(struct net_context *c, int argc,
 			 "on a DOMAIN_MEMBER for now.\n"));
 		return 1;
 	}
+
+	net_warn_member_options();
 
 	if (c->opt_stdin) {
 		set_line_buffering(stdin);
@@ -192,6 +196,8 @@ static int net_changesecretpw(struct net_context *c, int argc,
 			   "machine account password in the secrets.tdb file!\n"));
 		return 1;
 	}
+
+	net_warn_member_options();
 
 	if(c->opt_force) {
 		struct secrets_domain_info1 *info = NULL;

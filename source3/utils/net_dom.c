@@ -154,6 +154,8 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 		return net_dom_usage(c, argc, argv);
 	}
 
+	net_warn_member_options();
+
 	if (c->opt_host) {
 		server_name = c->opt_host;
 	}
