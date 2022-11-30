@@ -1312,6 +1312,8 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
+	net_warn_member_options();
+
 	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
 		return -1;
 	}
@@ -1453,6 +1455,8 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	net_warn_member_options();
+
 	net_use_krb_machine_account(c);
 
 	get_dc_name(lp_workgroup(), lp_realm(), dc_name, &dcip);
@@ -1482,6 +1486,8 @@ int net_ads_testjoin(struct net_context *c, int argc, const char **argv)
 			 _("Test if the existing join is ok"));
 		return 0;
 	}
+
+	net_warn_member_options();
 
 	/* Display success or failure */
 	status = net_ads_join_ok(c);
@@ -1867,6 +1873,8 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 
 	if (c->display_usage)
 		return net_ads_join_usage(c, argc, argv);
+
+	net_warn_member_options();
 
 	if (!modify_config) {
 
@@ -2802,6 +2810,8 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
+	net_warn_member_options();
+
 	net_use_krb_machine_account(c);
 
 	use_in_memory_ccache();
@@ -3075,6 +3085,8 @@ static int net_ads_keytab_add(struct net_context *c,
 		return 0;
 	}
 
+	net_warn_member_options();
+
 	d_printf(_("Processing principals to add...\n"));
 
 	if (!c->opt_user_specified && c->opt_password == NULL) {
@@ -3118,6 +3130,8 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 			 _("Create new default keytab"));
 		return 0;
 	}
+
+	net_warn_member_options();
 
 	if (!c->opt_user_specified && c->opt_password == NULL) {
 		net_use_krb_machine_account(c);
