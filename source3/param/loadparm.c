@@ -993,7 +993,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.kdc_default_domain_supported_enctypes =
 		KERB_ENCTYPE_RC4_HMAC_MD5 | KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK;
-	Globals.kdc_force_enable_rc4_weak_session_keys = false;
 
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();

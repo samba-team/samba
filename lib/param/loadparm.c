@@ -3087,10 +3087,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "kdc default domain supported enctypes",
 				  "rc4-hmac aes256-cts-hmac-sha1-96-sk");
 
-	lpcfg_do_global_parameter(lp_ctx,
-				  "kdc force enable rc4 weak session keys",
-				  "no");
-
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;
