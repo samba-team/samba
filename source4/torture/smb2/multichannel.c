@@ -1862,7 +1862,6 @@ static bool test_multichannel_lease_break_test3(struct torture_context *tctx,
 	struct tevent_timer *te = NULL;
 	struct timeval ne;
 	bool timesup = false;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
 	if (!test_multichannel_initial_checks(tctx, tree1)) {
 		return true;
@@ -1914,7 +1913,7 @@ static bool test_multichannel_lease_break_test3(struct torture_context *tctx,
 
 	/* Set a timeout for 5 seconds for session 1 to open file1 */
 	ne = tevent_timeval_current_ofs(0, 5000000);
-	te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup);
+	te = tevent_add_timer(tctx->ev, mem_ctx, ne, timeout_cb, &timesup);
 	if (te == NULL) {
 		torture_comment(tctx, "Failed to add timer.");
 		goto done;
