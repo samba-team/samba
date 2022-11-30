@@ -1065,7 +1065,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val = data_blob_string_const("computer");
-	uint32_t default_supported_enctypes = lpcfg_kdc_default_domain_supported_enctypes(lp_ctx);
+	uint32_t config_default_supported_enctypes = lpcfg_kdc_default_domain_supported_enctypes(lp_ctx);
+	uint32_t default_supported_enctypes =
+		config_default_supported_enctypes != 0 ?
+		config_default_supported_enctypes :
+		ENC_RC4_HMAC_MD5 | ENC_HMAC_SHA1_96_AES256_SK;
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",

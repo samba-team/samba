@@ -63,6 +63,8 @@ class EtypeTests(KdcTgsBaseTests):
             lp = self.get_lp()
             self.default_supported_enctypes = lp.get(
                 'kdc default domain supported enctypes')
+            if self.default_supported_enctypes == 0:
+                self.default_supported_enctypes = rc4_bit | aes256_sk_bit
 
     def _server_creds(self, supported=None, force_nt4_hash=False,
                       account_type=None):
