@@ -133,16 +133,13 @@ NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &state->addrs[i]);
 		D_NOTICE("%zu: %s\n", i, addr);
-		response = talloc_asprintf_append_buffer(
-			response, "%s%s", addr,
+		talloc_asprintf_addbuf(
+			&response, "%s%s", addr,
 			i < (state->num_addrs-1) ? " " : "");
-		if (response == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
-	response = talloc_asprintf_append_buffer(
-		response, "\t%s\n", state->request->data.winsreq);
+	talloc_asprintf_addbuf(
+		&response, "\t%s\n", state->request->data.winsreq);
 	if (response == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
