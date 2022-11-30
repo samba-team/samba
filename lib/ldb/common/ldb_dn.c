@@ -877,21 +877,17 @@ char *ldb_dn_get_extended_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int
 					    (int)val.length,
 					    val.data);
 		} else {
-			p = talloc_asprintf_append_buffer(p, ";<%s=%.*s>",
-							  name,
-							  (int)val.length,
-							  val.data);
+			talloc_asprintf_addbuf(&p, ";<%s=%.*s>",
+					       name,
+					       (int)val.length,
+					       val.data);
 		}
 
 		talloc_free(val.data);
-
-		if (!p) {
-			return NULL;
-		}
 	}
 
 	if (dn->ext_comp_num && *linearized) {
-		p = talloc_asprintf_append_buffer(p, ";%s", linearized);
+		talloc_asprintf_addbuf(&p, ";%s", linearized);
 	}
 
 	if (!p) {
