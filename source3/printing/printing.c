@@ -1592,7 +1592,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 			"",
 			get_current_gid(NULL),
 			get_current_username(),
-			current_user_info.domain,
+			get_current_user_info_domain(),
 			lpqcommand);
 	if (!lpqcommand) {
 		return;
@@ -1612,7 +1612,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 			"",
 			get_current_gid(NULL),
 			get_current_username(),
-			current_user_info.domain,
+			get_current_user_info_domain(),
 			lprmcommand);
 	if (!lprmcommand) {
 		return;
@@ -2850,7 +2850,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 				      "",
 				      get_current_gid(NULL),
 				      get_current_username(),
-				      current_user_info.domain,
+				      get_current_user_info_domain(),
 				      lpq_cmd);
 	if (lpq_cmd == NULL) {
 		status = NT_STATUS_PRINT_CANCELLED;

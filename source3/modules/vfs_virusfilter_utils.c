@@ -1005,7 +1005,7 @@ int virusfilter_shell_set_conn_env(
 	virusfilter_env_set(mem_ctx, env_list, "VIRUSFILTER_USER_NAME",
 			    get_current_username());
 	virusfilter_env_set(mem_ctx, env_list, "VIRUSFILTER_USER_DOMAIN",
-			    current_user_info.domain);
+			    get_current_user_info_domain());
 
 	return 0;
 }

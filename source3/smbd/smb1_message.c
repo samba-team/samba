@@ -123,7 +123,7 @@ static void msg_deliver(struct msg_state *state)
 	}
 
 	s = talloc_sub_basic(talloc_tos(), current_user_info.smb_name,
-			     current_user_info.domain, s);
+			     get_current_user_info_domain(), s);
 	if (s == NULL) {
 		goto done;
 	}

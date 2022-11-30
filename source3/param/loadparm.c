@@ -1051,14 +1051,14 @@ static char *loadparm_s3_global_substitution_fn(
 
 	ret = talloc_sub_basic(mem_ctx,
 			get_current_username(),
-			current_user_info.domain,
+			get_current_user_info_domain(),
 			s);
 	if (trim_char(ret, '\"', '\"')) {
 		if (strchr(ret,'\"') != NULL) {
 			TALLOC_FREE(ret);
 			ret = talloc_sub_basic(mem_ctx,
 					get_current_username(),
-					current_user_info.domain,
+					get_current_user_info_domain(),
 					s);
 		}
 	}
@@ -2411,7 +2411,7 @@ bool lp_file_list_changed(void)
 
 			n2 = talloc_sub_basic(talloc_tos(),
 					      get_current_username(),
-					      current_user_info.domain,
+					      get_current_user_info_domain(),
 					      f->name);
 			if (!n2) {
 				return false;
@@ -2499,7 +2499,7 @@ bool lp_include(struct loadparm_context *lp_ctx, struct loadparm_service *servic
 	}
 
 	fname = talloc_sub_basic(talloc_tos(), get_current_username(),
-				 current_user_info.domain,
+				 get_current_user_info_domain(),
 				 pszParmValue);
 
 	add_to_file_list(NULL, &file_lists, pszParmValue, fname);
@@ -4002,7 +4002,7 @@ static bool lp_load_ex(const char *pszFname,
 
 	if (lp_config_backend_is_file()) {
 		n2 = talloc_sub_basic(talloc_tos(), get_current_username(),
-					current_user_info.domain,
+					get_current_user_info_domain(),
 					pszFname);
 		if (!n2) {
 			smb_panic("lp_load_ex: out of memory");
@@ -4318,7 +4318,7 @@ int lp_servicenumber(const char *pszServiceName)
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
 			standard_sub_basic(get_current_username(),
-					   current_user_info.domain,
+					   get_current_user_info_domain(),
 					   serviceName,sizeof(serviceName));
 			if (strequal(serviceName, pszServiceName)) {
 				break;

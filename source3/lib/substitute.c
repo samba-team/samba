@@ -186,6 +186,11 @@ const char *get_current_username(void)
 	return current_user_info.smb_name;
 }
 
+const char *get_current_user_info_domain(void)
+{
+	return current_user_info.domain;
+}
+
 /*******************************************************************
  Given a pointer to a %$(NAME) in p and the whole string in str
  expand it as an environment variable.

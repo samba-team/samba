@@ -32,6 +32,7 @@ void set_current_user_info(const char *smb_name,
 			   const char *unix_name,
 			   const char *domain);
 const char *get_current_username(void);
+const char *get_current_user_info_domain(void);
 void standard_sub_basic(const char *smb_name,
 			const char *domain_name,
 			char *str,
