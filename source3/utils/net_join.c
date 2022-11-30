@@ -39,6 +39,8 @@ int net_join(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
+	net_warn_member_options();
+
 	if (net_ads_check_our_domain(c) == 0) {
 		if (net_ads_join(c, argc, argv) == 0)
 			return 0;

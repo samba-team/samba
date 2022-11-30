@@ -371,6 +371,8 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
+	net_warn_member_options();
+
 	mem_ctx = talloc_init("net_rpc_oldjoin");
 	if (!mem_ctx) {
 		return -1;
@@ -490,6 +492,8 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
+	net_warn_member_options();
+
 	mem_ctx = talloc_init("net_rpc_testjoin");
 	if (!mem_ctx) {
 		return -1;
@@ -563,6 +567,8 @@ static int net_rpc_join_newstyle(struct net_context *c, int argc, const char **a
 			 "    Join a domain the new way\n");
 		return 0;
 	}
+
+	net_warn_member_options();
 
 	mem_ctx = talloc_init("net_rpc_join_newstyle");
 	if (!mem_ctx) {
@@ -684,6 +690,8 @@ int net_rpc_join(struct net_context *c, int argc, const char **argv)
 		d_printf(_("cannot join as standalone machine\n"));
 		return -1;
 	}
+
+	net_warn_member_options();
 
 	if (strlen(lp_netbios_name()) > 15) {
 		d_printf(_("Our netbios name can be at most 15 chars long, "
@@ -814,6 +822,8 @@ int net_rpc_info(struct net_context *c, int argc, const char **argv)
 			 _("Display information about the domain"));
 		return 0;
 	}
+
+	net_warn_member_options();
 
 	return run_rpc_command(c, NULL, &ndr_table_samr,
 			       NET_FLAGS_PDC, rpc_info_internals,

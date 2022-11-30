@@ -49,6 +49,8 @@ int net_offlinejoin(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
+	net_warn_member_options();
+
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;

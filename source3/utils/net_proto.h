@@ -448,6 +448,8 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable *table);
 void net_display_usage_from_functable(struct functable *table);
 
+void net_warn_member_options(void);
+
 const char *net_share_type_str(int num_type);
 
 NTSTATUS net_scan_dc(struct net_context *c,
