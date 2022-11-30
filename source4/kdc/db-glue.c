@@ -1008,7 +1008,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * but effectively restricted by kdc_enctypes
 	 */
 	uint32_t domain_enctypes = ENC_RC4_HMAC_MD5 | ENC_RSA_MD5 | ENC_CRC32;
-	uint32_t kdc_enctypes = ENC_ALL_TYPES;
+	uint32_t config_kdc_enctypes = lpcfg_kdc_supported_enctypes(lp_ctx);
+	uint32_t kdc_enctypes =
+		config_kdc_enctypes != 0 ?
+		config_kdc_enctypes :
+		ENC_ALL_TYPES;
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 	computer_val.data = discard_const_p(uint8_t,"computer");
 	computer_val.length = strlen((const char *)computer_val.data);
@@ -1541,7 +1545,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 	uint32_t pa_supported_enctypes;
 	uint32_t supported_session_etypes;
-	uint32_t kdc_enctypes = ENC_ALL_TYPES;
+	uint32_t config_kdc_enctypes = lpcfg_kdc_supported_enctypes(lp_ctx);
+	uint32_t kdc_enctypes =
+		config_kdc_enctypes != 0 ?
+		config_kdc_enctypes :
+		ENC_ALL_TYPES;
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
 
