@@ -1616,10 +1616,27 @@ sub provision_ad_dc_ntvfs($$$)
 	dsdb event notification = true
 	dsdb password event notification = true
 	dsdb group change notification = true
-	server schannel = auto
 	# override the new SMB2 only default
 	client min protocol = CORE
 	server min protocol = LANMAN1
+
+	CVE_2020_1472:warn_about_unused_debug_level = 3
+	server require schannel:schannel0\$ = no
+	server require schannel:schannel1\$ = no
+	server require schannel:schannel2\$ = no
+	server require schannel:schannel3\$ = no
+	server require schannel:schannel4\$ = no
+	server require schannel:schannel5\$ = no
+	server require schannel:schannel6\$ = no
+	server require schannel:schannel7\$ = no
+	server require schannel:schannel8\$ = no
+	server require schannel:schannel9\$ = no
+	server require schannel:schannel10\$ = no
+	server require schannel:schannel11\$ = no
+	server require schannel:torturetest\$ = no
+
+	# needed for 'samba.tests.auth_log' tests
+	server require schannel:LOCALDC\$ = no
 	";
 	push (@{$extra_provision_options}, "--use-ntvfs");
 	my $ret = $self->provision($prefix,
@@ -1968,8 +1985,22 @@ sub provision_ad_dc($$$$$$$)
 	lpq cache time = 0
 	print notify backchannel = yes
 
-	server schannel = auto
-        auth event notification = true
+	CVE_2020_1472:warn_about_unused_debug_level = 3
+	server require schannel:schannel0\$ = no
+	server require schannel:schannel1\$ = no
+	server require schannel:schannel2\$ = no
+	server require schannel:schannel3\$ = no
+	server require schannel:schannel4\$ = no
+	server require schannel:schannel5\$ = no
+	server require schannel:schannel6\$ = no
+	server require schannel:schannel7\$ = no
+	server require schannel:schannel8\$ = no
+	server require schannel:schannel9\$ = no
+	server require schannel:schannel10\$ = no
+	server require schannel:schannel11\$ = no
+	server require schannel:torturetest\$ = no
+
+	auth event notification = true
 	dsdb event notification = true
 	dsdb password event notification = true
 	dsdb group change notification = true
@@ -2658,6 +2689,9 @@ sub setup_ad_dc_smb1
 [global]
 	client min protocol = CORE
 	server min protocol = LANMAN1
+
+	# needed for 'samba.tests.auth_log' tests
+	server require schannel:ADDCSMB1\$ = no
 ";
 	return _setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
 }
