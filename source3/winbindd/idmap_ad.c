@@ -99,19 +99,12 @@ static TLDAPRC get_attrnames_by_oids(struct tldap_context *ld,
 	size_t num_msgs;
 
 	filter = talloc_strdup(mem_ctx, "(|");
-	if (filter == NULL) {
-		return TLDAP_NO_MEMORY;
-	}
 
 	for (i=0; i<num_oids; i++) {
-		filter = talloc_asprintf_append_buffer(
-			filter, "(attributeId=%s)", oids[i]);
-		if (filter == NULL) {
-			return TLDAP_NO_MEMORY;
-		}
+		talloc_asprintf_addbuf(&filter, "(attributeId=%s)", oids[i]);
 	}
+	talloc_asprintf_addbuf(&filter, ")");
 
-	filter = talloc_asprintf_append_buffer(filter, ")");
 	if (filter == NULL) {
 		return TLDAP_NO_MEMORY;
 	}
