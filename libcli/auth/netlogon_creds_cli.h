@@ -35,6 +35,8 @@ NTSTATUS netlogon_creds_cli_set_global_db(struct loadparm_context *lp_ctx, struc
 NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx);
 void netlogon_creds_cli_close_global_db(void);
 
+void netlogon_creds_cli_warn_options(struct loadparm_context *lp_ctx);
+
 NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				struct messaging_context *msg_ctx,
 				const char *client_account,
