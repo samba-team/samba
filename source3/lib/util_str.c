@@ -182,24 +182,6 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 }
 
 /**
- Write an octal as a string.
-**/
-
-char *octal_string(int i)
-{
-	char *result;
-	if (i == -1) {
-		result = talloc_strdup(talloc_tos(), "-1");
-	}
-	else {
-		result = talloc_asprintf(talloc_tos(), "0%o", i);
-	}
-	SMB_ASSERT(result != NULL);
-	return result;
-}
-
-
-/**
  Truncate a string at a specified length.
 **/
 

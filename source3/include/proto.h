@@ -540,7 +540,6 @@ char *realloc_string_sub(char *string,
 			const char *pattern,
 			const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
-char *octal_string(int i);
 char *string_truncate(char *s, unsigned int length);
 char *strchr_m(const char *src, char c);
 char *strrchr_m(const char *s, char c);
