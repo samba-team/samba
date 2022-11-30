@@ -31,6 +31,7 @@
 #include "libsmb/libsmb.h"
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/auth/netlogon_creds_cli.h"
 #include "lib/cmdline/cmdline.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
@@ -476,6 +477,19 @@ void net_display_usage_from_functable(struct functable *table)
 	for (i=0; table[i].funcname != NULL; i++) {
 		d_printf("%s\n", _(table[i].usage));
 	}
+}
+
+void net_warn_member_options(void)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx != NULL) {
+		netlogon_creds_cli_warn_options(lp_ctx);
+	}
+
+	TALLOC_FREE(frame);
 }
 
 const char *net_share_type_str(int num_type)
