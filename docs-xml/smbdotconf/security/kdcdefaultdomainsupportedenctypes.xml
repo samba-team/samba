@@ -38,5 +38,5 @@
 
 </description>
 
-<value type="default">36<comment>equivalent to: rc4-hmac aes256-cts-hmac-sha1-96-sk</comment></value>
+<value type="default">0<comment>maps to what the software supports currently: arcfour-hmac-md5 aes256-cts-hmac-sha1-96-sk</comment></value>
 </samba:parameter>

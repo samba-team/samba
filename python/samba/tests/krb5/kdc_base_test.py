@@ -58,6 +58,9 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba import net
 from samba.samdb import SamDB, dsdb_Dn
 
+rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
+aes256_sk_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
+
 from samba.tests import delete_force
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.raw_testcase import (
@@ -635,7 +638,8 @@ class KDCBaseTest(RawKerberosTest):
         if supported_enctypes is None:
             lp = self.get_lp()
             supported_enctypes = lp.get('kdc default domain supported enctypes')
-
+            if supported_enctypes == 0:
+                supported_enctypes = rc4_bit | aes256_sk_bit
         supported_enctypes = int(supported_enctypes)
 
         if extra_bits is not None:

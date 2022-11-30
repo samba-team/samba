@@ -3083,10 +3083,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "rpc start on demand helpers",
 				  "yes");
 
-	lpcfg_do_global_parameter(lp_ctx,
-				  "kdc default domain supported enctypes",
-				  "rc4-hmac aes256-cts-hmac-sha1-96-sk");
-
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;
