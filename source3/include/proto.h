@@ -531,7 +531,6 @@ bool trim_char(char *s,char cfront,char cback);
 bool strhasupper(const char *s);
 bool strhaslower(const char *s);
 bool in_list(const char *s, const char *list, bool casesensitive);
-void fstring_sub(char *s,const char *pattern,const char *insert);
 char *realloc_string_sub2(char *string,
 			const char *pattern,
 			const char *insert,
