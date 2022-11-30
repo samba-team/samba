@@ -956,10 +956,6 @@ int virusfilter_shell_set_conn_env(
 	fstring pidstr;
 	int ret;
 
-	if (local_machine_name == NULL || *local_machine_name == '\0') {
-		local_machine_name = lp_netbios_name();
-	}
-
 	server_addr_p = tsocket_address_inet_addr_string(
 				conn->sconn->local_address, talloc_tos());
 
