@@ -877,18 +877,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 	return dcesrv_netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
-/*
- * NOTE: The following functions are nearly identical to the ones available in
- * source3/rpc_server/srv_nelog_nt.c
- * The reason we keep 2 copies is that they use different structures to
- * represent the auth_info and the decrpc pipes.
- */
-static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
-						    TALLOC_CTX *mem_ctx,
-						    const char *computer_name,
-						    struct netr_Authenticator *received_authenticator,
-						    struct netr_Authenticator *return_authenticator,
-						    struct netlogon_creds_CredentialState **creds_out)
+static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
+					   const struct netlogon_creds_CredentialState *creds,
+					   enum dcerpc_AuthType auth_type,
+					   enum dcerpc_AuthLevel auth_level,
+					   uint16_t opnum)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -897,23 +890,17 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	bool schannel_global_required = (schannel == true);
 	bool schannel_required = schannel_global_required;
 	const char *explicit_opt = NULL;
-	struct netlogon_creds_CredentialState *creds = NULL;
 	int CVE_2020_1472_warn_level = lpcfg_parm_int(lp_ctx, NULL,
 		"CVE_2020_1472", "warn_about_unused_debug_level", DBGLVL_ERR);
 	int CVE_2020_1472_error_level = lpcfg_parm_int(lp_ctx, NULL,
 		"CVE_2020_1472", "error_debug_level", DBGLVL_ERR);
 	unsigned int dbg_lvl = DBGLVL_DEBUG;
-	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
-	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
-	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const char *opname = "<unknown>";
 	const char *reason = "<unknown>";
 
 	if (opnum < ndr_table_netlogon.num_calls) {
 		opname = ndr_table_netlogon.calls[opnum].name;
 	}
-
-	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
 	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 		if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
@@ -925,17 +912,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		}
 	} else {
 		reason = "WITHOUT";
-	}
-
-	nt_status = schannel_check_creds_state(mem_ctx,
-					       lp_ctx,
-					       computer_name,
-					       received_authenticator,
-					       return_authenticator,
-					       &creds);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		ZERO_STRUCTP(return_authenticator);
-		return nt_status;
 	}
 
 	/*
@@ -977,7 +953,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 			      log_escape(frame, creds->computer_name)));
 		}
 
-		*creds_out = creds;
 		TALLOC_FREE(frame);
 		return nt_status;
 	}
@@ -1011,8 +986,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 			      "might be needed for a legacy client.\n",
 			      log_escape(frame, creds->account_name)));
 		}
-		TALLOC_FREE(creds);
-		ZERO_STRUCTP(return_authenticator);
 		TALLOC_FREE(frame);
 		return nt_status;
 	}
@@ -1056,8 +1029,53 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		      log_escape(frame, creds->computer_name)));
 	}
 
-	*creds_out = creds;
 	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+/*
+ * NOTE: The following functions are nearly identical to the ones available in
+ * source3/rpc_server/srv_nelog_nt.c
+ * The reason we keep 2 copies is that they use different structures to
+ * represent the auth_info and the decrpc pipes.
+ */
+static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
+						    TALLOC_CTX *mem_ctx,
+						    const char *computer_name,
+						    struct netr_Authenticator *received_authenticator,
+						    struct netr_Authenticator *return_authenticator,
+						    struct netlogon_creds_CredentialState **creds_out)
+{
+	NTSTATUS nt_status;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+
+	nt_status = schannel_check_creds_state(mem_ctx,
+					       dce_call->conn->dce_ctx->lp_ctx,
+					       computer_name,
+					       received_authenticator,
+					       return_authenticator,
+					       &creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ZERO_STRUCTP(return_authenticator);
+		return nt_status;
+	}
+
+	nt_status = dcesrv_netr_check_schannel(dce_call,
+					       creds,
+					       auth_type,
+					       auth_level,
+					       dce_call->pkt.u.request.opnum);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(creds);
+		ZERO_STRUCTP(return_authenticator);
+		return nt_status;
+	}
+
+	*creds_out = creds;
 	return NT_STATUS_OK;
 }
 
