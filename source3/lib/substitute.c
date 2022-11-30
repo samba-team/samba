@@ -33,7 +33,12 @@ static char local_machine[MACHINE_NAME_SIZE];
 static char remote_machine[MACHINE_NAME_SIZE];
 
 userdom_struct current_user_info;
-fstring remote_proto="UNKNOWN";
+static fstring remote_proto="UNKNOWN";
+
+void set_remote_proto(const char *proto)
+{
+	fstrcpy(remote_proto, proto);
+}
 
 /**
  * Set the 'local' machine name

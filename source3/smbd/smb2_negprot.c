@@ -29,11 +29,10 @@
 #include "auth.h"
 #include "auth/gensec/gensec.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
-
-extern fstring remote_proto;
 
 /*
  * this is the entry point if SMB2 is selected via
@@ -334,11 +333,16 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		break;
 	}
 
-	fstr_sprintf(remote_proto, "SMB%X_%02X",
-		     (dialect >> 8) & 0xFF, dialect & 0xFF);
+	{
+		fstring proto;
+		fstr_sprintf(proto,
+			     "SMB%X_%02X",
+			     (dialect >> 8) & 0xFF, dialect & 0xFF);
+		set_remote_proto(proto);
+		DEBUG(3,("Selected protocol %s\n", proto));
+	}
 
 	reload_services(req->sconn, conn_snum_used, true);
-	DEBUG(3,("Selected protocol %s\n", remote_proto));
 
 	in_preauth = smb2_negotiate_context_find(&in_c,
 					SMB2_PREAUTH_INTEGRITY_CAPABILITIES);
@@ -1168,7 +1172,7 @@ NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 		exit_server_cleanly("no protocol supported\n");
 	}
 
-	fstrcpy(remote_proto,supported_protocols[protocol].short_name);
+	set_remote_proto(supported_protocols[protocol].short_name);
 	reload_services(sconn, conn_snum_used, true);
 	status = supported_protocols[protocol].proto_reply_fn(req, choice);
 	if (!NT_STATUS_IS_OK(status)) {

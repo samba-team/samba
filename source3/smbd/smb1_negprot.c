@@ -28,6 +28,7 @@
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smb_signing.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 /*
  * MS-CIFS, 2.2.4.52.2 SMB_COM_NEGOTIATE Response:
@@ -35,8 +36,6 @@
  * DialectIndex of 0XFFFF
  */
 #define NO_PROTOCOL_CHOSEN	0xffff
-
-extern fstring remote_proto;
 
 static void get_challenge(struct smbXsrv_connection *xconn, uint8_t buff[8])
 {
@@ -676,7 +675,7 @@ void reply_negprot(struct smb_request *req)
 		exit_server_cleanly("no protocol supported\n");
 	}
 
-	fstrcpy(remote_proto,supported_protocols[protocol].short_name);
+	set_remote_proto(supported_protocols[protocol].short_name);
 	reload_services(sconn, conn_snum_used, true);
 	status = supported_protocols[protocol].proto_reply_fn(req, choice);
 	if (!NT_STATUS_IS_OK(status)) {

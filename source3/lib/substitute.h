@@ -21,6 +21,7 @@
 #ifndef SUBSTITUTE_H
 #define SUBSTITUTE_H
 
+void set_remote_proto(const char *proto);
 bool set_local_machine_name(const char *local_name, bool perm);
 const char *get_local_machine_name(void);
 bool set_remote_machine_name(const char *remote_name, bool perm);
