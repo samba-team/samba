@@ -82,7 +82,7 @@ int main(int argc, const char *argv[])
 		goto done;
 	}
 
-	status = netlogon_creds_cli_set_global_db(&global_db);
+	status = netlogon_creds_cli_set_global_db(lp_ctx, &global_db);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr,
 			"netlogon_creds_cli_set_global_db failed: %s\n",
