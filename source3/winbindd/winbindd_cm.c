@@ -2457,6 +2457,8 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	bool retry = false; /* allow one retry attempt for expired session */
 	const char *remote_name = NULL;
 	const struct sockaddr_storage *remote_sockaddr = NULL;
+	bool sealed_pipes = true;
+	bool strong_key = true;
 
 	if (sid_check_is_our_sam(&domain->sid)) {
 		if (domain->rodc == false || need_rw_dc == false) {
@@ -2636,14 +2638,24 @@ retry:
 
  anonymous:
 
+	sealed_pipes = lp_winbind_sealed_pipes();
+	sealed_pipes = lp_parm_bool(-1, "winbind sealed pipes",
+				    domain->name,
+				    sealed_pipes);
+	strong_key = lp_require_strong_key();
+	strong_key = lp_parm_bool(-1, "require strong key",
+				  domain->name,
+				  strong_key);
+
 	/* Finally fall back to anonymous. */
-	if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+	if (sealed_pipes || strong_key) {
 		status = NT_STATUS_DOWNGRADE_DETECTED;
 		DEBUG(1, ("Unwilling to make SAMR connection to domain %s "
 			  "without connection level security, "
-			  "must set 'winbind sealed pipes = false' and "
-			  "'require strong key = false' to proceed: %s\n",
-			  domain->name, nt_errstr(status)));
+			  "must set 'winbind sealed pipes:%s = false' and "
+			  "'require strong key:%s = false' to proceed: %s\n",
+			  domain->name, domain->name, domain->name,
+			  nt_errstr(status)));
 		goto done;
 	}
 	status = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr,
@@ -2800,6 +2812,8 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	bool retry = false; /* allow one retry attempt for expired session */
 	const char *remote_name = NULL;
 	const struct sockaddr_storage *remote_sockaddr = NULL;
+	bool sealed_pipes = true;
+	bool strong_key = true;
 
 retry:
 	result = init_dc_connection_rpc(domain, false);
@@ -2961,13 +2975,24 @@ retry:
 		goto done;
 	}
 
-	if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+	sealed_pipes = lp_winbind_sealed_pipes();
+	sealed_pipes = lp_parm_bool(-1, "winbind sealed pipes",
+				    domain->name,
+				    sealed_pipes);
+	strong_key = lp_require_strong_key();
+	strong_key = lp_parm_bool(-1, "require strong key",
+				  domain->name,
+				  strong_key);
+
+	/* Finally fall back to anonymous. */
+	if (sealed_pipes || strong_key) {
 		result = NT_STATUS_DOWNGRADE_DETECTED;
 		DEBUG(1, ("Unwilling to make LSA connection to domain %s "
 			  "without connection level security, "
-			  "must set 'winbind sealed pipes = false' and "
-			  "'require strong key = false' to proceed: %s\n",
-			  domain->name, nt_errstr(result)));
+			  "must set 'winbind sealed pipes:%s = false' and "
+			  "'require strong key:%s = false' to proceed: %s\n",
+			  domain->name, domain->name, domain->name,
+			  nt_errstr(result)));
 		goto done;
 	}
 
