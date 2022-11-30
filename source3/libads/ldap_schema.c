@@ -49,19 +49,14 @@ static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
 		return ADS_ERROR_NT(NT_STATUS_NONE_MAPPED);
 	}
 
-	if ((expr = talloc_asprintf(mem_ctx, "(|")) == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	expr = talloc_asprintf(mem_ctx, "(|");
 
 	for (i=0; i<num_OIDs; i++) {
-
-		if ((expr = talloc_asprintf_append_buffer(expr, "(attributeId=%s)",
-						   OIDs[i])) == NULL) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+		talloc_asprintf_addbuf(&expr, "(attributeId=%s)", OIDs[i]);
 	}
 
-	if ((expr = talloc_asprintf_append_buffer(expr, ")")) == NULL) {
+	talloc_asprintf_addbuf(&expr, ")");
+	if (expr == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
