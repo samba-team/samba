@@ -1401,6 +1401,35 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
 	struct tevent_req *subreq = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+
+	switch (dce_call->pkt.u.request.opnum) {
+	case NDR_NETR_LOGONSAMLOGON:
+	case NDR_NETR_LOGONSAMLOGONWITHFLAGS:
+		/*
+		 * These already called dcesrv_netr_check_schannel()
+		 * via dcesrv_netr_creds_server_step_check()
+		 */
+		break;
+	case NDR_NETR_LOGONSAMLOGONEX:
+	default:
+		if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		nt_status = dcesrv_netr_check_schannel(dce_call,
+						       creds,
+						       auth_type,
+						       auth_level,
+						       dce_call->pkt.u.request.opnum);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		break;
+	}
 
 	*r->out.authoritative = 1;
 
@@ -1749,7 +1778,6 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct netr_LogonSamLogonEx *r)
 {
-	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	struct dcesrv_netr_LogonSamLogon_base_state *state;
 	NTSTATUS nt_status;
 
@@ -1785,12 +1813,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 					     r->in.computer_name, &state->creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
-	}
-
-	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
-
-	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	nt_status = dcesrv_netr_LogonSamLogon_base_call(state);
