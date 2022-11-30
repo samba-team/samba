@@ -678,13 +678,27 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		schannel_required = lp_bool(explicit_opt);
 	}
 
-	if (schannel_required) {
-		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-			*creds_out = creds;
-			TALLOC_FREE(frame);
-			return NT_STATUS_OK;
+	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		if (!schannel_required) {
+			DBG_ERR("CVE-2020-1472(ZeroLogon): "
+				"%s request (opnum[%u]) WITH schannel from "
+				"client_account[%s] client_computer_name[%s]\n",
+				opname, opnum,
+				log_escape(frame, creds->account_name),
+				log_escape(frame, creds->computer_name));
+		}
+		if (explicit_opt != NULL && !schannel_required) {
+			DBG_ERR("CVE-2020-1472(ZeroLogon): "
+				"Option 'server require schannel:%s = no' not needed!?\n",
+				log_escape(frame, creds->account_name));
 		}
 
+		*creds_out = creds;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (schannel_required) {
 		DBG_ERR("CVE-2020-1472(ZeroLogon): "
 			"%s request (opnum[%u]) without schannel from "
 			"client_account[%s] client_computer_name[%s]\n",
@@ -700,23 +714,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"%s request (opnum[%u]) WITH schannel from "
-			"client_account[%s] client_computer_name[%s]\n",
-			opname, opnum,
-			log_escape(frame, creds->account_name),
-			log_escape(frame, creds->computer_name));
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"Option 'server require schannel:%s = no' not needed!?\n",
-			log_escape(frame, creds->account_name));
-
-		*creds_out = creds;
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
 
 	if (explicit_opt != NULL) {
 		DBG_INFO("CVE-2020-1472(ZeroLogon): "
