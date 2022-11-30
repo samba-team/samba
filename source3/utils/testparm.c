@@ -598,11 +598,25 @@ static int do_global_checks(void)
 		ret = 1;
 	}
 
-	if (!lp_server_schannel()) {
+	if (lp_server_schannel() != true) { /* can be 'auto' */
 		fprintf(stderr,
-			"WARNING: You have configured 'server schannel = no'. "
+			"WARNING: You have not configured "
+			"'server schannel = yes' (the default). "
 			"Your server is vulernable to \"ZeroLogon\" "
-			"(CVE-2020-1472)\n\n");
+			"(CVE-2020-1472)\n"
+			"If required use individual "
+			"'server require schannel:COMPUTERACCOUNT$ = no' "
+			"options\n\n");
+	}
+	if (lp_client_schannel() != true) { /* can be 'auto' */
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'client schannel = yes' (the default). "
+			"Your server is vulernable to \"ZeroLogon\" "
+			"(CVE-2020-1472)\n"
+			"If required use individual "
+			"'client schannel:NETBIOSDOMAIN = no' "
+			"options\n\n");
 	}
 
 	return ret;
