@@ -29,8 +29,6 @@
 #include "smbprofile.h"
 #include "source3/lib/substitute.h"
 
-extern userdom_struct current_user_info;
-
 struct msg_state {
 	char *from;
 	char *to;
@@ -122,7 +120,7 @@ static void msg_deliver(struct msg_state *state)
 		goto done;
 	}
 
-	s = talloc_sub_basic(talloc_tos(), current_user_info.smb_name,
+	s = talloc_sub_basic(talloc_tos(), get_current_username(),
 			     get_current_user_info_domain(), s);
 	if (s == NULL) {
 		goto done;

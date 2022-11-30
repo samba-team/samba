@@ -39,9 +39,6 @@
 #define DBGC_CLASS virusfilter_debug_class
 extern int virusfilter_debug_class;
 
-/* Samba's global variable */
-extern userdom_struct current_user_info;
-
 #define VIRUSFILTER_VERSION "0.1.5"
 
 /* ====================================================================== */

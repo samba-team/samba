@@ -85,8 +85,6 @@
 
 bool bLoaded = false;
 
-extern userdom_struct current_user_info;
-
 /* the special value for the include parameter
  * to be interpreted not as a file name but to
  * trigger loading of the global smb.conf options
