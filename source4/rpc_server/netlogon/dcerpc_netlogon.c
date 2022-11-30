@@ -644,15 +644,34 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	bool schannel_required = schannel_global_required;
 	const char *explicit_opt = NULL;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	int CVE_2020_1472_warn_level = lpcfg_parm_int(lp_ctx, NULL,
+		"CVE_2020_1472", "warn_about_unused_debug_level", DBGLVL_ERR);
+	int CVE_2020_1472_error_level = lpcfg_parm_int(lp_ctx, NULL,
+		"CVE_2020_1472", "error_debug_level", DBGLVL_ERR);
+	unsigned int dbg_lvl = DBGLVL_DEBUG;
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const char *opname = "<unknown>";
+	const char *reason = "<unknown>";
 
 	if (opnum < ndr_table_netlogon.num_calls) {
 		opname = ndr_table_netlogon.calls[opnum].name;
 	}
 
-	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+
+	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+			reason = "WITH SEALED";
+		} else if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+			reason = "WITH SIGNED";
+		} else {
+			smb_panic("Schannel without SIGN/SEAL");
+		}
+	} else {
+		reason = "WITHOUT";
+	}
 
 	nt_status = schannel_check_creds_state(mem_ctx,
 					       lp_ctx,
@@ -679,62 +698,108 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	}
 
 	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		if (!schannel_required) {
-			DBG_ERR("CVE-2020-1472(ZeroLogon): "
-				"%s request (opnum[%u]) WITH schannel from "
-				"client_account[%s] client_computer_name[%s]\n",
-				opname, opnum,
-				log_escape(frame, creds->account_name),
-				log_escape(frame, creds->computer_name));
-		}
+		nt_status = NT_STATUS_OK;
+
 		if (explicit_opt != NULL && !schannel_required) {
-			DBG_ERR("CVE-2020-1472(ZeroLogon): "
-				"Option 'server require schannel:%s = no' not needed!?\n",
-				log_escape(frame, creds->account_name));
+			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_warn_level);
+		} else if (!schannel_required) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+		}
+
+		DEBUG(dbg_lvl, (
+		      "CVE-2020-1472(ZeroLogon): "
+		      "%s request (opnum[%u]) %s schannel from "
+		      "client_account[%s] client_computer_name[%s] %s\n",
+		      opname, opnum, reason,
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name),
+		      nt_errstr(nt_status)));
+
+		if (explicit_opt != NULL && !schannel_required) {
+			DEBUG(CVE_2020_1472_warn_level, (
+			      "CVE-2020-1472(ZeroLogon): "
+			      "Option 'server require schannel:%s = no' not needed for '%s'!\n",
+			      log_escape(frame, creds->account_name),
+			      log_escape(frame, creds->computer_name)));
 		}
 
 		*creds_out = creds;
 		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
+		return nt_status;
 	}
 
 	if (schannel_required) {
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"%s request (opnum[%u]) without schannel from "
-			"client_account[%s] client_computer_name[%s]\n",
-			opname, opnum,
-			log_escape(frame, creds->account_name),
-			log_escape(frame, creds->computer_name));
-		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
-			"'server require schannel:%s = no' "
-			"might be needed for a legacy client.\n",
-			log_escape(frame, creds->account_name));
+		nt_status = NT_STATUS_ACCESS_DENIED;
+
+		if (explicit_opt != NULL) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_NOTICE);
+		} else {
+			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_error_level);
+		}
+
+		DEBUG(dbg_lvl, (
+		      "CVE-2020-1472(ZeroLogon)/CVE-2022-38023: "
+		      "%s request (opnum[%u]) %s schannel from "
+		      "client_account[%s] client_computer_name[%s] %s\n",
+		      opname, opnum, reason,
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name),
+		      nt_errstr(nt_status)));
+		if (explicit_opt != NULL) {
+			D_NOTICE("CVE-2020-1472(ZeroLogon): Option "
+				"'server require schannel:%s = yes' "
+				"rejects access for client.\n",
+				log_escape(frame, creds->account_name));
+		} else {
+			DEBUG(CVE_2020_1472_error_level, (
+			      "CVE-2020-1472(ZeroLogon): Check if option "
+			      "'server require schannel:%s = no' "
+			      "might be needed for a legacy client.\n",
+			      log_escape(frame, creds->account_name)));
+		}
 		TALLOC_FREE(creds);
 		ZERO_STRUCTP(return_authenticator);
 		TALLOC_FREE(frame);
-		return NT_STATUS_ACCESS_DENIED;
+		return nt_status;
 	}
 
+	nt_status = NT_STATUS_OK;
+
 	if (explicit_opt != NULL) {
-		DBG_INFO("CVE-2020-1472(ZeroLogon): "
-			 "%s request (opnum[%u]) without schannel from "
-			 "client_account[%s] client_computer_name[%s]\n",
-			 opname, opnum,
-			 log_escape(frame, creds->account_name),
-			 log_escape(frame, creds->computer_name));
-		DBG_INFO("CVE-2020-1472(ZeroLogon): "
-			 "Option 'server require schannel:%s = no' still needed!\n",
-			 log_escape(frame, creds->account_name));
+		dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
 	} else {
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"%s request (opnum[%u]) without schannel from "
-			"client_account[%s] client_computer_name[%s]\n",
-			opname, opnum,
-			log_escape(frame, creds->account_name),
-			log_escape(frame, creds->computer_name));
-		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
-			"'server require schannel:%s = no' might be needed!\n",
-			log_escape(frame, creds->account_name));
+		dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_error_level);
+	}
+
+	DEBUG(dbg_lvl, (
+	      "CVE-2020-1472(ZeroLogon)/CVE-2022-38023: "
+	      "%s request (opnum[%u]) %s schannel from "
+	      "client_account[%s] client_computer_name[%s] %s\n",
+	      opname, opnum, reason,
+	      log_escape(frame, creds->account_name),
+	      log_escape(frame, creds->computer_name),
+	      nt_errstr(nt_status)));
+
+	if (explicit_opt != NULL) {
+		D_INFO("CVE-2020-1472(ZeroLogon): Option "
+		       "'server require schannel:%s = no' "
+		       "still needed for '%s'!\n",
+		       log_escape(frame, creds->account_name),
+		       log_escape(frame, creds->computer_name));
+	} else {
+		/*
+		 * admins should set
+		 * server require schannel:COMPUTER$ = no
+		 * in order to avoid the level 0 messages.
+		 * Over time they can switch the global value
+		 * to be strict.
+		 */
+		DEBUG(CVE_2020_1472_error_level, (
+		      "CVE-2020-1472(ZeroLogon): "
+		      "Please use 'server require schannel:%s = no' "
+		      "for '%s' to avoid this warning!\n",
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name)));
 	}
 
 	*creds_out = creds;
