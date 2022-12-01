@@ -48,13 +48,6 @@ from samba.dcerpc.drsuapi import *
 
 class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
-    def _ds_bind(self, server_name):
-        binding_str = "ncacn_ip_tcp:%s[print,seal]" % server_name
-
-        drs = drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
-        (drs_handle, supported_extensions) = drs_DsBind(drs)
-        return (drs, drs_handle)
-
     def setUp(self):
         super(DrsMoveObjectTestCase, self).setUp()
         # disable automatic replication temporary
@@ -89,8 +82,8 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.dc1_guid = self.ldb_dc1.get_invocation_id()
         self.dc2_guid = self.ldb_dc2.get_invocation_id()
 
-        self.drs_dc1 = self._ds_bind(self.dnsname_dc1)
-        self.drs_dc2 = self._ds_bind(self.dnsname_dc2)
+        self.drs_dc1 = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
+        self.drs_dc2 = self._ds_bind(self.dnsname_dc2, ip=self.url_dc2)
 
     def tearDown(self):
         try:

@@ -492,8 +492,11 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         return req10
 
-    def _ds_bind(self, server_name, creds=None):
-        binding_str = "ncacn_ip_tcp:%s[seal]" % server_name
+    def _ds_bind(self, server_name, creds=None, ip=None):
+        if ip is None:
+            binding_str = f"ncacn_ip_tcp:{server_name}[seal]"
+        else:
+            binding_str = f"ncacn_ip_tcp:{ip}[seal,target_hostname={server_name}]"
 
         if creds is None:
             creds = self.get_credentials()
