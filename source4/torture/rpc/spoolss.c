@@ -2088,6 +2088,7 @@ static bool test_devmode_set_level(struct torture_context *tctx,
 				   uint32_t level,
 				   struct spoolss_DeviceMode *devmode)
 {
+	struct spoolss_SetPrinterInfo8 info8;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
@@ -2108,8 +2109,6 @@ static bool test_devmode_set_level(struct torture_context *tctx,
 		break;
 	}
 	case 8: {
-		struct spoolss_SetPrinterInfo8 info8;
-
 		info8.devmode_ptr = 0;
 
 		info_ctr.level = 8;
