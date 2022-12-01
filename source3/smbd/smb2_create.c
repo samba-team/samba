@@ -119,7 +119,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			uint32_t in_file_attributes,
 			uint32_t in_share_access,
 			uint32_t in_create_disposition,
-			uint32_t in_create_options,
+			uint32_t _in_create_options,
 			const char *in_name,
 			struct smb2_create_blobs in_context_blobs);
 static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
@@ -561,6 +561,7 @@ struct smbd_smb2_create_state {
 	bool replay_operation;
 	uint8_t in_oplock_level;
 	uint32_t in_create_disposition;
+	uint32_t in_create_options;
 	int requested_oplock_level;
 	int info;
 	char *fname;
@@ -767,7 +768,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			uint32_t in_file_attributes,
 			uint32_t in_share_access,
 			uint32_t in_create_disposition,
-			uint32_t in_create_options,
+			uint32_t _in_create_options,
 			const char *in_name,
 			struct smb2_create_blobs in_context_blobs)
 {
@@ -791,6 +792,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		.smb2req = smb2req,
 		.in_oplock_level = in_oplock_level,
 		.in_create_disposition = in_create_disposition,
+		.in_create_options = _in_create_options,
 	};
 
 	smb1req = smbd_smb2_fake_smb_request(smb2req, NULL);
@@ -830,8 +832,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* these are ignored for SMB2 */
-	in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
-	in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
+	state->in_create_options &= ~(0x10); /* NTCREATEX_OPTIONS_SYNC_ALERT */
+	state->in_create_options &= ~(0x20); /* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
 	in_file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 
@@ -929,7 +931,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Check for trailing slash specific directory handling. */
-	status = windows_name_trailing_check(state->fname, in_create_options);
+	status = windows_name_trailing_check(state->fname,
+					     state->in_create_options);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}
@@ -1120,7 +1123,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				     in_desired_access,
 				     in_share_access,
 				     state->in_create_disposition,
-				     in_create_options,
+				     state->in_create_options,
 				     in_file_attributes,
 				     map_smb2_oplock_levels_to_samba(
 					     state->requested_oplock_level),
