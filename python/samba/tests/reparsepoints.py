@@ -82,18 +82,30 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
     def test_create_reparse_directory(self):
         conn = self.connection()
         dirname = "reparse_dir"
+        filename = f'{dirname}\\file.txt'
 
+        self.clean_file(conn, filename)
         self.clean_file(conn, dirname)
 
-        fd = conn.create(
+        dir_fd = conn.create(
             dirname,
             DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE|
             sec.SEC_STD_DELETE,
             CreateDisposition=libsmb.FILE_CREATE,
             CreateOptions=libsmb.FILE_DIRECTORY_FILE)
         b = reparse_symlink.put(0x80000025, 0, b'asdfasdfasdfasdfasdfasdf')
-        conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
-        conn.delete_on_close(fd, 1)
+        conn.fsctl(dir_fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+
+        with self.assertRaises(NTSTATUSError) as e:
+            fd = conn.create(
+                filename,
+                DesiredAccess=sec.SEC_STD_DELETE,
+                CreateDisposition=libsmb.FILE_CREATE)
+            self.assertEqual(
+                e.args[0], ntstatus.NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)
+
+        conn.delete_on_close(dir_fd, 1)
+        conn.close(dir_fd);
 
     # Only empty directories can carry reparse points
 
