@@ -240,6 +240,60 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             (enum, estr) = e1.args
             self.assertEqual(enum, werror.WERR_DS_CANT_FIND_EXPECTED_NC)
 
+    def test_InvalidNC_DummyDN_InvalidGUID(self):
+        """Test full replication on a totally invalid GUID fails with the right error code"""
+        fsmo_dn = self.ldb_dc1.get_schema_basedn()
+        (fsmo_owner, fsmo_not_owner) = self._determine_fSMORoleOwner(fsmo_dn)
+
+        req8 = self._exop_req8(dest_dsa="9c637462-5b8c-4467-aef2-bdb1f57bc4ef",
+                               invocation_id=fsmo_owner["invocation_id"],
+                               nc_dn_str="DummyDN",
+                               nc_guid=misc.GUID("c2d2f745-1610-4e93-964b-d4ba73eb32f8"),
+                               exop=drsuapi.DRSUAPI_EXOP_NONE)
+
+        (drs, drs_handle) = self._ds_bind(fsmo_owner["dns_name"])
+        try:
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+        except WERRORError as e1:
+            (enum, estr) = e1.args
+            self.assertEqual(enum, werror.WERR_DS_DRA_BAD_NC)
+
+    def test_InvalidNC_DummyDN_InvalidGUID_REPL_OBJ(self):
+        """Test single object replication on a totally invalid GUID fails with the right error code"""
+        fsmo_dn = self.ldb_dc1.get_schema_basedn()
+        (fsmo_owner, fsmo_not_owner) = self._determine_fSMORoleOwner(fsmo_dn)
+
+        req8 = self._exop_req8(dest_dsa="9c637462-5b8c-4467-aef2-bdb1f57bc4ef",
+                               invocation_id=fsmo_owner["invocation_id"],
+                               nc_dn_str="DummyDN",
+                               nc_guid=misc.GUID("c2d2f745-1610-4e93-964b-d4ba73eb32f8"),
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ)
+
+        (drs, drs_handle) = self._ds_bind(fsmo_owner["dns_name"])
+        try:
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+        except WERRORError as e1:
+            (enum, estr) = e1.args
+            self.assertEqual(enum, werror.WERR_DS_DRA_BAD_DN)
+
+    def test_InvalidNC_DummyDN_InvalidGUID_RID_ALLOC(self):
+        """Test RID Allocation on a totally invalid GUID fails with the right error code"""
+        fsmo_dn = self.ldb_dc1.get_schema_basedn()
+        (fsmo_owner, fsmo_not_owner) = self._determine_fSMORoleOwner(fsmo_dn)
+
+        req8 = self._exop_req8(dest_dsa="9c637462-5b8c-4467-aef2-bdb1f57bc4ef",
+                               invocation_id=fsmo_owner["invocation_id"],
+                               nc_dn_str="DummyDN",
+                               nc_guid=misc.GUID("c2d2f745-1610-4e93-964b-d4ba73eb32f8"),
+                               exop=drsuapi.DRSUAPI_EXOP_FSMO_RID_ALLOC)
+
+        (drs, drs_handle) = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
+        try:
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+        except WERRORError as e1:
+            (enum, estr) = e1.args
+            self.assertEqual(enum, werror.WERR_DS_DRA_BAD_NC)
+
     def test_link_utdv_hwm(self):
         """Test verify the DRS_GET_ANC behavior."""
 
@@ -597,12 +651,35 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(ctr.source_dsa_guid, misc.GUID(fsmo_owner["ntds_guid"]))
         self.assertEqual(ctr.source_dsa_invocation_id, misc.GUID(fsmo_owner["invocation_id"]))
 
+    def test_InvalidDestDSA_and_GUID(self):
+        """Test role transfer with invalid destination DSA guid"""
+        fsmo_dn = self.ldb_dc1.get_schema_basedn()
+        (fsmo_owner, fsmo_not_owner) = self._determine_fSMORoleOwner(fsmo_dn)
+
+        req8 = self._exop_req8(dest_dsa="9c637462-5b8c-4467-aef2-bdb1f57bc4ef",
+                               invocation_id=fsmo_owner["invocation_id"],
+                               nc_dn_str="DummyDN",
+                               nc_guid=misc.GUID("c2d2f745-1610-4e93-964b-d4ba73eb32f8"),
+                               exop=drsuapi.DRSUAPI_EXOP_FSMO_REQ_ROLE)
+
+        (drs, drs_handle) = self._ds_bind(fsmo_owner["dns_name"])
+        try:
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+        except WERRORError as e1:
+            (enum, estr) = e1.args
+            self.fail("DsGetNCChanges failed with {estr}")
+        self.assertEqual(level, 6, "Expected level 6 response!")
+        self._check_exop_failed(ctr, drsuapi.DRSUAPI_EXOP_ERR_UNKNOWN_CALLER)
+        self.assertEqual(ctr.source_dsa_guid, misc.GUID(fsmo_owner["ntds_guid"]))
+        self.assertEqual(ctr.source_dsa_invocation_id, misc.GUID(fsmo_owner["invocation_id"]))
+
 
 class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaPrefixMapTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
-        self.ou = "ou=pfm_exop,%s" % self.base_dn
+        self.ou = "ou=pfm_exop%d,%s" % (random.randint(0, 4294967295),
+                                        self.base_dn)
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
@@ -948,7 +1025,8 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaSyncSortTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
-        self.ou = "ou=sort_exop,%s" % self.base_dn
+        self.ou = "ou=sort_exop%d,%s" % (random.randint(0, 4294967295),
+                                         self.base_dn)
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})

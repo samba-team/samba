@@ -432,13 +432,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
     def _exop_req8(self, dest_dsa, invocation_id, nc_dn_str, exop,
                    replica_flags=0, max_objects=0, partial_attribute_set=None,
-                   partial_attribute_set_ex=None, mapping_ctr=None):
+                   partial_attribute_set_ex=None, mapping_ctr=None, nc_guid=None):
         req8 = drsuapi.DsGetNCChangesRequest8()
 
         req8.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
         req8.source_dsa_invocation_id = misc.GUID(invocation_id)
         req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
         req8.naming_context.dn = str(nc_dn_str)
+        if nc_guid is not None:
+            req8.naming_context.guid = nc_guid
         req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
         req8.highwatermark.tmp_highest_usn = 0
         req8.highwatermark.reserved_usn = 0
