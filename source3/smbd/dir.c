@@ -979,13 +979,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			smb_fname = tmp_smb_fname;
 			mode = FILE_ATTRIBUTE_DIRECTORY;
 			get_dosmode = false;
-
-			/* Ensure posix fileid and sids are hidden
-			 */
-			smb_fname->st.st_ex_ino = 0;
-			smb_fname->st.st_ex_dev = 0;
-			smb_fname->st.st_ex_uid = -1;
-			smb_fname->st.st_ex_gid = -1;
 		}
 
 		ok = mode_fn(ctx,
@@ -1004,6 +997,20 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		TALLOC_FREE(atname);
+
+		/*
+		 * Don't leak INO/DEV/User SID/Group SID about the containing
+		 * directory of the share. This MUST happen AFTER the call to
+		 * mode_fn().
+		 */
+		if (dirptr_path_is_dot && ISDOTDOT(dname)) {
+			/* Ensure posix fileid and sids are hidden
+			 */
+			smb_fname->st.st_ex_ino = 0;
+			smb_fname->st.st_ex_dev = 0;
+			smb_fname->st.st_ex_uid = -1;
+			smb_fname->st.st_ex_gid = -1;
+		}
 
 		/*
 		 * The only valid cases where we return the directory entry if
