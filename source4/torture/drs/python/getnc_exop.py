@@ -85,7 +85,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
-        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
+        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
         (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.ldb_dc1)
 
     def tearDown(self):
@@ -251,7 +251,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                nc_guid=misc.GUID("c2d2f745-1610-4e93-964b-d4ba73eb32f8"),
                                exop=drsuapi.DRSUAPI_EXOP_NONE)
 
-        (drs, drs_handle) = self._ds_bind(fsmo_owner["dns_name"])
+        (drs, drs_handle) = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
         try:
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
         except WERRORError as e1:
@@ -269,7 +269,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                nc_guid=misc.GUID("c2d2f745-1610-4e93-964b-d4ba73eb32f8"),
                                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ)
 
-        (drs, drs_handle) = self._ds_bind(fsmo_owner["dns_name"])
+        (drs, drs_handle) = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
         try:
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
         except WERRORError as e1:
@@ -702,7 +702,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
 
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,
@@ -721,7 +721,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         partial_attribute_set = self.get_partial_attribute_set([99999])
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         try:
             pfm = self._samdb_fetch_pfm_and_schi()
@@ -754,7 +754,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         partial_attribute_set = self.get_partial_attribute_set([drsuapi.DRSUAPI_ATTID_unicodePwd])
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         try:
             pfm = self._samdb_fetch_pfm_and_schi()
@@ -828,7 +828,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         partial_attribute_set = self.get_partial_attribute_set([drsuapi.DRSUAPI_ATTID_name])
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         try:
             pfm = self._samdb_fetch_pfm_and_schi()
@@ -901,7 +901,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         partial_attribute_set_ex = self.get_partial_attribute_set([drsuapi.DRSUAPI_ATTID_unicodePwd])
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         try:
             pfm = self._samdb_fetch_pfm_and_schi()
@@ -1117,7 +1117,7 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
 
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,
@@ -1177,7 +1177,7 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
 
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         # Make sure the max objects count is high enough
         req8 = self._exop_req8(dest_dsa=None,

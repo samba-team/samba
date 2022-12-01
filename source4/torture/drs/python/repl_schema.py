@@ -52,13 +52,6 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
     # current Class or Attribute object id
     obj_id = 0
 
-    def _ds_bind(self, server_name):
-        binding_str = "ncacn_ip_tcp:%s[seal]" % server_name
-
-        drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
-        (drs_handle, supported_extensions) = drs_DsBind(drs)
-        return (drs, drs_handle)
-
     def _exop_req8(self, dest_dsa, invocation_id, nc_dn_str, exop,
                    replica_flags=0, max_objects=0):
         req8 = drsuapi.DsGetNCChangesRequest8()
@@ -281,7 +274,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
 
-        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
 
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,
