@@ -24,6 +24,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/smb_strtox.h"
+#include "libcli/security/sddl.h"
 #include "system/locale.h"
 #include "lib/util/util_str_hex.h"
 
@@ -199,8 +200,8 @@ static const struct {
   decode a SID
   It can either be a special 2 letter code, or in S-* format
 */
-static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
-				       struct sddl_transition_state *state)
+static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
+						  struct sddl_transition_state *state)
 {
 	const char *sddl = (*sddlp);
 	size_t i;
@@ -280,6 +281,23 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 
 	return dom_sid_parse_talloc(mem_ctx, sid_codes[i].sid);
 }
+
+struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
+				const struct dom_sid *domain_sid)
+{
+	struct sddl_transition_state state = {
+		/*
+		 * TODO: verify .machine_rid values really belong to
+		 * to the machine_sid on a member, once
+		 * we pass machine_sid from the caller...
+		 */
+		.machine_sid = domain_sid,
+		.domain_sid = domain_sid,
+		.forest_sid = domain_sid,
+	};
+	return sddl_transition_decode_sid(mem_ctx, sddlp, &state);
+}
+
 
 static const struct flag_map ace_types[] = {
 	{ "AU", SEC_ACE_TYPE_SYSTEM_AUDIT },
@@ -561,7 +579,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 
 	/* trustee */
 	s = tok[5];
-	sid = sddl_decode_sid(mem_ctx, &s, state);
+	sid = sddl_transition_decode_sid(mem_ctx, &s, state);
 	if (sid == NULL) {
 		return false;
 	}
@@ -704,12 +722,12 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 			break;
 		case 'O':
 			if (sd->owner_sid != NULL) goto failed;
-			sd->owner_sid = sddl_decode_sid(sd, &sddl, &state);
+			sd->owner_sid = sddl_transition_decode_sid(sd, &sddl, &state);
 			if (sd->owner_sid == NULL) goto failed;
 			break;
 		case 'G':
 			if (sd->group_sid != NULL) goto failed;
-			sd->group_sid = sddl_decode_sid(sd, &sddl, &state);
+			sd->group_sid = sddl_transition_decode_sid(sd, &sddl, &state);
 			if (sd->group_sid == NULL) goto failed;
 			break;
 		default:
