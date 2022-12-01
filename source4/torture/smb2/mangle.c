@@ -201,8 +201,8 @@ static char *gen_name(struct torture_context *tctx)
 }
 
 
-bool torture_smb2_mangle(struct torture_context *torture,
-			 struct smb2_tree *tree)
+static bool torture_smb2_mangle(struct torture_context *torture,
+				struct smb2_tree *tree)
 {
 	extern int torture_numops;
 	int i;
@@ -244,4 +244,15 @@ bool torture_smb2_mangle(struct torture_context *torture,
 			collisions, total, (100.0*collisions) / total, failures);
 
 	return (failures == 0);
+}
+
+struct torture_suite *torture_smb2_name_mangling_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = NULL;
+
+	suite = torture_suite_create(ctx, "name-mangling");
+	suite->description = talloc_strdup(suite, "SMB2 name mangling tests");
+
+	torture_suite_add_1smb2_test(suite, "mangle", torture_smb2_mangle);
+	return suite;
 }
