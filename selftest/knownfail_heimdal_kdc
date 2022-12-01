@@ -57,6 +57,13 @@
 #
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samr_change_password_protected.ad_dc
 #
+# Lockout tests
+#
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc_ntstatus.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_bad_pwd_kdc_ntstatus.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_kdc_ntstatus.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_rename_kdc_ntstatus.ad_dc:local
+#
 # Group tests
 #
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_compression_tgs_req_to_service.ad_dc
