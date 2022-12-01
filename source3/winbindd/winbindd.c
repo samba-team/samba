@@ -53,6 +53,7 @@
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
 #include "winbindd_traceid.h"
+#include "lib/util/util_process.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -257,7 +258,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 	/* install default SIGCHLD handler: validation code uses fork/waitpid */
 	CatchSignal(SIGCHLD, SIG_DFL);
 
-	setproctitle("validate cache child");
+	process_set_title("wb: check cache", "validate cache child");
 
 	ret = (uint8_t)winbindd_validate_cache_nobackup();
 	DEBUG(10, ("winbindd_msg_validata_cache: got return value %d\n", ret));

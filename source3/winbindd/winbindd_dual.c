@@ -48,6 +48,7 @@
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "../lib/util/pidfile.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/util/util_process.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1762,9 +1763,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	if (child_domain != NULL) {
-		setproctitle("domain child [%s]", child_domain->name);
+		process_set_title("wb[%s]", "domain child [%s]", child_domain->name);
 	} else if (is_idmap_child(child)) {
-		setproctitle("idmap child");
+		process_set_title("wb-idmap", "idmap child");
 	}
 
 	/* Handle online/offline messages. */
