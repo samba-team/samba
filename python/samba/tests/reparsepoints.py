@@ -41,6 +41,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             err = e.args[0]
             ok = (err == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND)
             ok |= (err == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND)
+            ok |= (err == ntstatus.NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)
             if not ok:
                 raise
 
