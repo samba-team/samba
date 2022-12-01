@@ -16,8 +16,15 @@ TRUST_SERVER="$5"
 TRUST_PASSWORD="$6"
 
 wbinfo="$VALGRIND $BINDIR/wbinfo"
-ldbmodify="$VALGRIND $BINDIR/ldbmodify"
-ldbsearch="$VALGRIND $BINDIR/ldbsearch"
+ldbmodify="${VALGRIND} ldbmodify"
+if [ -x "${BINDIR}/ldbmodify" ]; then
+	ldbmodify="${VALGRIND} ${BINDIR}/ldbmodify"
+fi
+
+ldbsearch="${VALGRIND} ldbsearch"
+if [ -x "${BINDIR}/ldbsearch" ]; then
+	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
+fi
 
 failed=0
 
