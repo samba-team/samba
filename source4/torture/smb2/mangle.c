@@ -246,6 +246,88 @@ static bool torture_smb2_mangle(struct torture_context *torture,
 	return (failures == 0);
 }
 
+static bool test_mangled_mask(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	bool ret = true;
+	const char *dname = "single_find_with_mangled_name";
+	const char *fname = "single_find_with_mangled_name\\verylongfilename";
+	const char *shortname = NULL;
+	NTSTATUS status;
+	struct smb2_handle dh = {{0}};
+	struct smb2_handle fh = {{0}};
+	struct smb2_find f;
+	union smb_search_data *d;
+	unsigned count, i;
+
+	torture_comment(tctx, "Checking find with mangled search mask\n");
+
+	smb2_deltree(tree, dname);
+
+	status = torture_smb2_testdir(tree, dname, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed");
+
+	status = torture_smb2_testfile(tree, fname, &fh);
+	smb2_util_close(tree, fh);
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= dh;
+	f.in.pattern		= "*";
+	f.in.max_response_size	= 0x1000;
+	f.in.level              = SMB2_FIND_BOTH_DIRECTORY_INFO;
+
+	status = smb2_find_level(tree, tree, &f, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+	smb2_util_close(tree, dh);
+	ZERO_STRUCT(dh);
+
+	for (i = 0; i < count; i++) {
+		const char *found = d[i].both_directory_info.name.s;
+
+		if (!strcmp(found, ".") || !strcmp(found, "..")) {
+			continue;
+		}
+
+		torture_assert_str_equal_goto(tctx, found, "verylongfilename", ret, done,
+					      "Bad filename\n");
+		shortname = d[i].both_directory_info.short_name.s;
+		break;
+	}
+
+	torture_assert_not_null_goto(tctx, shortname, ret, done,
+				     "shortname is NULL\n");
+
+	torture_comment(tctx, "Got shortname: %s\n", shortname);
+
+	status = torture_smb2_testdir(tree, dname, &dh);
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= dh;
+	f.in.continue_flags	= SMB2_CONTINUE_FLAG_SINGLE;
+	f.in.pattern		= shortname;
+	f.in.max_response_size	= 0x1000;
+	f.in.level              = SMB2_FIND_BOTH_DIRECTORY_INFO;
+
+	status = smb2_find_level(tree, tree, &f, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+	smb2_util_close(tree, dh);
+	ZERO_STRUCT(dh);
+
+done:
+	if (!smb2_util_handle_empty(fh)) {
+		smb2_util_close(tree, fh);
+	}
+	if (!smb2_util_handle_empty(dh)) {
+		smb2_util_close(tree, dh);
+	}
+	smb2_deltree(tree, dname);
+	return ret;
+
+}
+
 struct torture_suite *torture_smb2_name_mangling_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = NULL;
@@ -254,5 +336,6 @@ struct torture_suite *torture_smb2_name_mangling_init(TALLOC_CTX *ctx)
 	suite->description = talloc_strdup(suite, "SMB2 name mangling tests");
 
 	torture_suite_add_1smb2_test(suite, "mangle", torture_smb2_mangle);
+	torture_suite_add_1smb2_test(suite, "mangled-mask", test_mangled_mask);
 	return suite;
 }
