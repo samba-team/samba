@@ -1448,6 +1448,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		if (enable_fast) {
 			supported_enctypes |= ENC_FAST_SUPPORTED;
 		}
+
+		/*
+		 * Resource SID compression is enabled implicitly, unless
+		 * disabled in msDS-SupportedEncryptionTypes.
+		 */
+
 	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
 		/*
 		 * DCs and RODCs computer accounts take
@@ -3347,6 +3353,8 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 					    header_pac,
 					    context,
 					    &user_info_dc,
+					    AUTH_INCLUDE_RESOURCE_GROUPS,
+					    NULL,
 					    NULL,
 					    NULL);
 	if (code != 0) {

@@ -143,18 +143,27 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	struct samba_kdc_entry *skdc_entry =
 		talloc_get_type_abort(client->context,
 		struct samba_kdc_entry);
+	const struct samba_kdc_entry *server_entry =
+		talloc_get_type_abort(server->context,
+		struct samba_kdc_entry);
 	bool is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
 	/* Only include resource groups in a service ticket. */
-	enum auth_group_inclusion group_inclusion =
-		(is_krbtgt) ?
-			AUTH_EXCLUDE_RESOURCE_GROUPS :
-			AUTH_INCLUDE_RESOURCE_GROUPS;
+	enum auth_group_inclusion group_inclusion;
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	enum samba_asserted_identity asserted_identity =
 		(is_s4u2self) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 	PAC_OPTIONS_FLAGS pac_options = {};
+
+	/* Only include resource groups in a service ticket. */
+	if (is_krbtgt) {
+		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
+	} else if (server_entry->supported_enctypes & KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) {
+		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
+	} else {
+		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
+	}
 
 	ret = samba_wdc_pac_options(r, &pac_options);
 	if (ret != 0) {

@@ -24,6 +24,7 @@
 #if defined(HAVE_KRB5)
 
 #include "system/kerberos.h"
+#include "auth/auth.h"
 #include "auth/kerberos/krb5_init_context.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "lib/krb5_wrap/krb5_samba.h"

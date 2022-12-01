@@ -475,11 +475,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	NTSTATUS nt_status;
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;
+	struct samba_kdc_entry *server_entry = NULL;
 	bool is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
 	/* Only include resource groups in a service ticket. */
-	enum auth_group_inclusion group_inclusion = (is_krbtgt)
-		? AUTH_EXCLUDE_RESOURCE_GROUPS
-		: AUTH_INCLUDE_RESOURCE_GROUPS;
+	enum auth_group_inclusion group_inclusion;
 	enum samba_asserted_identity asserted_identity =
 		(flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
@@ -487,6 +486,18 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 
 	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
+
+	server_entry = talloc_get_type_abort(server->e_data,
+					     struct samba_kdc_entry);
+
+	/* Only include resource groups in a service ticket. */
+	if (is_krbtgt) {
+		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
+	} else if (server_entry->supported_enctypes & KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) {
+		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
+	} else {
+		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
+	}
 
 	tmp_ctx = talloc_named(smb_ctx,
 			       0,

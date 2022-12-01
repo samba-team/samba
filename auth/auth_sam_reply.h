@@ -48,7 +48,8 @@ struct auth_user_info *auth_user_info_copy(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
 					   enum auth_group_inclusion group_inclusion,
-					   struct netr_SamInfo6 **_sam6);
+					   struct netr_SamInfo6 **_sam6,
+					   struct PAC_DOMAIN_GROUP_MEMBERSHIP **_resource_groups);
 NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
 					   enum auth_group_inclusion group_inclusion,
@@ -56,7 +57,8 @@ NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
 					   enum auth_group_inclusion group_inclusion,
-					   struct netr_SamInfo3 **_sam3);
+					   struct netr_SamInfo3 **_sam3,
+					   struct PAC_DOMAIN_GROUP_MEMBERSHIP **_resource_groups);
 
 /**
  * Make a user_info_dc struct from the info3 returned by a domain logon
@@ -74,6 +76,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			      const struct PAC_LOGON_INFO *pac_logon_info,
 			      const struct PAC_UPN_DNS_INFO *pac_upn_dns_info,
+			      enum auth_group_inclusion group_inclusion,
 			      struct auth_user_info_dc **_user_info_dc);
 
 /* The following definitions come from auth/wbc_auth_util.c  */

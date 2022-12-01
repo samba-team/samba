@@ -105,6 +105,7 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 	struct PAC_LOGON_INFO *logon_info;
 	struct netr_SamInfo3 *info3;
 	struct netr_SamBaseInfo *base;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups = NULL;
 	wbcErr wbc_err;
 	NTSTATUS status;
 	int sid_idx, i;
@@ -125,6 +126,7 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 	torture_assert(tctx, NT_STATUS_IS_OK(status), "pac_logon_info");
 	info3 = &logon_info->info3;
 	base = &info3->base;
+	resource_groups = &logon_info->resource_groups;
 
 	/* Compare the decoded data from winbind and from internal call */
 	torture_assert(tctx, info->user_flags == base->user_flags, "user_flags");
@@ -140,7 +142,7 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 	torture_assert(tctx, info->pass_last_set_time == nt_time_to_unix(base->last_password_change), "last_password_change");
 	torture_assert(tctx, info->pass_can_change_time == nt_time_to_unix(base->allow_password_change), "allow_password_change");
 	torture_assert(tctx, info->pass_must_change_time == nt_time_to_unix(base->force_password_change), "force_password_change");
-	torture_assert(tctx, info->num_sids == 2 + base->groups.count + info3->sidcount, "num_sids");
+	torture_assert(tctx, info->num_sids == 2 + base->groups.count + info3->sidcount + resource_groups->groups.count, "num_sids");
 
 	sid_idx = 0;
 	wbcSidToStringBuf(&info->sids[sid_idx].sid, sid_str, sizeof(sid_str));
@@ -176,6 +178,20 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 					 info3->sids[i].sid,
 					 "extra SID mismatch");
 	}
+
+	for (i = 0; i < resource_groups->groups.count; i++) {
+		sid_idx++;
+		wbcSidToStringBuf(&info->sids[sid_idx].sid,
+				  sid_str, sizeof(sid_str));
+		torture_assert_sid_equal(tctx,
+					 dom_sid_parse_talloc(tctx, sid_str),
+					 dom_sid_add_rid(tctx, resource_groups->domain_sid,
+							 resource_groups->groups.rids[i].rid),
+					 "resource SID mismatch");
+	}
+
+	sid_idx++;
+	torture_assert_int_equal(tctx, sid_idx, info->num_sids, "some SIDs still unaccounted for");
 
 	return true;
 }

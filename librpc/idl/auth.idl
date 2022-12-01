@@ -100,12 +100,20 @@ interface auth
 	} ticket_type;
 
 	/*
-	 * Used to indicate whether or not to include resource groups in the
-	 * formation of SamInfo or a PAC.
+	 * Used to indicate whether or not to include or disregard resource
+	 * groups when forming a SamInfo structure, user_info_dc structure, or
+	 * PAC, and whether or not to compress them when forming a PAC.
+	 *
+	 * When producing a TGT, existing resource groups are always copied
+	 * unmodified into the PAC. When producing a service ticket, existing
+	 * resource groups and resource groups in other domains are always
+	 * discarded.
 	 */
 	typedef enum {
-		AUTH_INCLUDE_RESOURCE_GROUPS = 0,
-		AUTH_EXCLUDE_RESOURCE_GROUPS = 1
+		AUTH_GROUP_INCLUSION_INVALID = 0, /* require invalid values to be handled. */
+		AUTH_INCLUDE_RESOURCE_GROUPS = 2,
+		AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED = 3,
+		AUTH_EXCLUDE_RESOURCE_GROUPS = 4
 	} auth_group_inclusion;
 
 	typedef [public] struct {

@@ -249,7 +249,7 @@
 	}
 	nt_status = auth_convert_user_info_dc_saminfo3(LOGON_INFO, user_info_dc,
 						       AUTH_INCLUDE_RESOURCE_GROUPS,
-						       &sam3);
+						       &sam3, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
@@ -310,8 +310,10 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 					     krb5_const_pac pac,
 					     krb5_context context,
 					     struct auth_user_info_dc **user_info_dc,
+					     const enum auth_group_inclusion group_inclusion,
 					     struct PAC_SIGNATURE_DATA *pac_srv_sig,
-					     struct PAC_SIGNATURE_DATA *pac_kdc_sig)
+					     struct PAC_SIGNATURE_DATA *pac_kdc_sig,
+					     struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups)
 {
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
@@ -341,7 +343,11 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	pac_logon_info_in = data_blob_const(k5pac_logon_info_in.data, k5pac_logon_info_in.length);
 
-	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, tmp_ctx, &info,
+	/*
+	 * Allocate this structure on mem_ctx so we can return its resource
+	 * groups to the caller.
+	 */
+	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, mem_ctx, &info,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 	smb_krb5_free_data_contents(context, &k5pac_logon_info_in);
@@ -391,6 +397,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	nt_status = make_user_info_dc_pac(mem_ctx,
 					 info.logon_info.info,
 					 upn_dns_info,
+					 group_inclusion,
 					 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("make_user_info_dc_pac() failed -%s\n",
@@ -446,6 +453,16 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
+	 * If we have resource groups and the caller wants them returned, we
+	 * oblige.
+	 */
+	if (resource_groups != NULL &&
+	    info.logon_info.info->resource_groups.groups.count != 0)
+	{
+		*resource_groups = &info.logon_info.info->resource_groups;
+	}
+
+	/*
 	 * Based on the presence of a REQUESTER_SID PAC buffer, ascertain
 	 * whether the ticket is a TGT. This helps the KDC and kpasswd service
 	 * ensure they do not accept tickets meant for the other.
@@ -489,7 +506,14 @@ NTSTATUS kerberos_pac_blob_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 
-	ret = kerberos_pac_to_user_info_dc(mem_ctx, pac, context, user_info_dc, pac_srv_sig, pac_kdc_sig);
+	ret = kerberos_pac_to_user_info_dc(mem_ctx,
+					   pac,
+					   context,
+					   user_info_dc,
+					   AUTH_INCLUDE_RESOURCE_GROUPS,
+					   pac_srv_sig,
+					   pac_kdc_sig,
+					   NULL);
 	krb5_pac_free(context, pac);
 	if (ret) {
 		return map_nt_error_from_unix_common(ret);

@@ -49,11 +49,14 @@
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *info,
-				       enum auth_group_inclusion group_inclusion,
+				       const struct PAC_DOMAIN_GROUP_MEMBERSHIP *override_resource_groups,
+				       const enum auth_group_inclusion group_inclusion,
 				       DATA_BLOB *pac_data,
 				       DATA_BLOB *requester_sid_blob)
 {
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo3 *info3 = NULL;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups = NULL;
 	union PAC_INFO pac_info;
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
@@ -65,9 +68,22 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 		*requester_sid_blob = data_blob_null;
 	}
 
+	if (override_resource_groups == NULL) {
+		resource_groups = &_resource_groups;
+	} else if (group_inclusion != AUTH_EXCLUDE_RESOURCE_GROUPS) {
+		/*
+		 * It doesn't make sense to override resource groups if we claim
+		 * to want resource groups from user_info_dc.
+		 */
+		DBG_ERR("supplied resource groups with invalid group inclusion parameter: %u\n",
+			group_inclusion);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, info,
 						       group_inclusion,
-						       &info3);
+						       &info3,
+						       resource_groups);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n",
 			  nt_errstr(nt_status)));
@@ -80,6 +96,26 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	pac_info.logon_info.info->info3 = *info3;
+	if (_resource_groups != NULL) {
+		pac_info.logon_info.info->resource_groups = *_resource_groups;
+	}
+
+	if (override_resource_groups != NULL) {
+		pac_info.logon_info.info->resource_groups = *override_resource_groups;
+	}
+
+	if (group_inclusion != AUTH_EXCLUDE_RESOURCE_GROUPS) {
+		/*
+		 * Set the resource groups flag based on whether any groups are
+		 * present. Otherwise, the flag is propagated from the
+		 * originating PAC.
+		 */
+		if (pac_info.logon_info.info->resource_groups.groups.count > 0) {
+			pac_info.logon_info.info->info3.base.user_flags |= NETLOGON_RESOURCE_GROUPS;
+		} else {
+			pac_info.logon_info.info->info3.base.user_flags &= ~NETLOGON_RESOURCE_GROUPS;
+		}
+	}
 
 	ndr_err = ndr_push_union_blob(pac_data, mem_ctx, &pac_info,
 				      PAC_TYPE_LOGON_INFO,
@@ -848,7 +884,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
 				 enum samba_asserted_identity asserted_identity,
-				 enum auth_group_inclusion group_inclusion,
+				 const enum auth_group_inclusion group_inclusion,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
@@ -944,6 +980,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_get_logon_info_pac_blob(logon_blob,
 						  user_info_dc,
+						  NULL,
 						  group_inclusion,
 						  logon_blob,
 						  requester_sid_blob);
@@ -1005,7 +1042,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
-				   enum auth_group_inclusion group_inclusion,
+				   const enum auth_group_inclusion group_inclusion,
 				   const krb5_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig)
@@ -1013,9 +1050,27 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	struct auth_user_info_dc *user_info_dc;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups = NULL;
 
-	ret = kerberos_pac_to_user_info_dc(mem_ctx, pac,
-					   context, &user_info_dc, pac_srv_sig, pac_kdc_sig);
+	if (group_inclusion == AUTH_EXCLUDE_RESOURCE_GROUPS) {
+		/*
+		 * Since we are creating a TGT, resource groups from our domain
+		 * are not to be put into the PAC. Instead, we take the resource
+		 * groups directly from the original PAC and copy them
+		 * unmodified into the new one.
+		 */
+		resource_groups = &_resource_groups;
+	}
+
+	ret = kerberos_pac_to_user_info_dc(mem_ctx,
+					   pac,
+					   context,
+					   &user_info_dc,
+					   AUTH_EXCLUDE_RESOURCE_GROUPS,
+					   pac_srv_sig,
+					   pac_kdc_sig,
+					   resource_groups);
 	if (ret) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1033,6 +1088,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
 						  user_info_dc,
+						  _resource_groups,
 						  group_inclusion,
 						  pac_blob, NULL);
 	return nt_status;
@@ -1257,6 +1313,8 @@ krb5_error_code samba_kdc_validate_pac_blob(
 						    pac,
 						    context,
 						    &pac_user_info,
+						    AUTH_EXCLUDE_RESOURCE_GROUPS,
+						    NULL,
 						    NULL,
 						    NULL);
 		if (code != 0) {
@@ -1463,9 +1521,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Only include resource groups in a service ticket. */
-	group_inclusion = (is_tgs)
-		? AUTH_EXCLUDE_RESOURCE_GROUPS
-		: AUTH_INCLUDE_RESOURCE_GROUPS;
+	if (is_tgs) {
+		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
+	} else if (server->supported_enctypes & KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) {
+		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
+	} else {
+		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
+	}
 
 	if (client != NULL) {
 		/*
