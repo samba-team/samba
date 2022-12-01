@@ -77,6 +77,34 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         b = reparse_symlink.put(0x80000026, 0, b'asdfasdfasdfasdfasdfasdf')
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
 
+    # Show that we can write to a reparse point when opened properly
+    def test_write_reparse(self):
+        conn = self.connection()
+        filename = 'reparse'
+        self.clean_file(conn, filename)
+
+        fd = conn.create(
+            filename,
+            DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
+            CreateDisposition=libsmb.FILE_CREATE)
+        b = reparse_symlink.put(0x80000025, 0, b'asdfasdfasdfasdfasdfasdf')
+        conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+        conn.close(fd);
+
+        fd,cr,_ = conn.create_ex(
+            filename,
+            DesiredAccess=sec.SEC_FILE_WRITE_DATA|sec.SEC_STD_DELETE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT,
+            CreateDisposition=libsmb.FILE_OPEN)
+        self.assertEqual(
+            cr['file_attributes'] & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+            libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+
+        conn.write(fd, b'x', 1)
+
+        conn.delete_on_close(fd, 1)
+        conn.close(fd);
+
     # Show that directories can carry reparse points
 
     def test_create_reparse_directory(self):
