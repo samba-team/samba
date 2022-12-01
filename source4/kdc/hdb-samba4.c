@@ -531,6 +531,45 @@ static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(subreq);
 }
 
+#define SAMBA_HDB_NT_STATUS_OBJ "samba:nt_status_obj"
+#define SAMBA_HDB_NT_STATUS "samba:nt_status"
+
+struct hdb_ntstatus_obj {
+	NTSTATUS status;
+	krb5_error_code current_error;
+};
+
+/*
+ * Add an NTSTATUS code to a Kerberos request. ‘error’ is the error value we
+ * want to return to the client. When it comes time to generating the error
+ * request, we shall compare this error value to whatever error we are about to
+ * return; if the two match, we shall replace the ‘e-data’ field in the reply
+ * with the NTSTATUS code.
+ */
+krb5_error_code hdb_samba4_set_ntstatus(astgs_request_t r,
+					const NTSTATUS status,
+					const krb5_error_code error)
+{
+	struct hdb_ntstatus_obj *status_obj = NULL;
+
+	status_obj = kdc_object_alloc(sizeof (*status_obj),
+				      SAMBA_HDB_NT_STATUS_OBJ,
+				      NULL);
+	if (status_obj == NULL) {
+		return ENOMEM;
+	}
+
+	*status_obj = (struct hdb_ntstatus_obj) {
+		.status = status,
+		.current_error = error,
+	};
+
+	heim_audit_setkv_object((heim_svc_req_desc)r, SAMBA_HDB_NT_STATUS, status_obj);
+	heim_release(status_obj);
+
+	return 0;
+}
+
 static krb5_error_code hdb_samba4_audit(krb5_context context,
 					HDB *db,
 					hdb_entry *entry,
