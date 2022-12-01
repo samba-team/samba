@@ -81,7 +81,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaSyncTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
-        self.ou = "OU=test_getncchanges,%s" % self.base_dn
+        self.ou = "OU=test_getncchanges%d,%s" % (random.randint(0, 4294967295),
+                                                 self.base_dn)
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
