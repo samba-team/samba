@@ -545,15 +545,34 @@ interface security
 	} security_ace_flags;
 
 	typedef [public,enum8bit] enum {
+		/*
+		 * The following entries tagged *reserved* have been
+		 * named and allocated by Microsoft but apparently not
+		 * implemented (MS-DTYP 2.4.4.1).
+		 *
+		 * The entries marked *unused* are more or less
+		 * completely ignored by Samba.
+		 */
 		SEC_ACE_TYPE_ACCESS_ALLOWED		= 0,
 		SEC_ACE_TYPE_ACCESS_DENIED		= 1,
 		SEC_ACE_TYPE_SYSTEM_AUDIT		= 2,
-		SEC_ACE_TYPE_SYSTEM_ALARM		= 3,
-		SEC_ACE_TYPE_ALLOWED_COMPOUND		= 4,
+		SEC_ACE_TYPE_SYSTEM_ALARM		= 3, /* reserved */
+		SEC_ACE_TYPE_ALLOWED_COMPOUND		= 4, /* reserved */
 		SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT	= 5,
 		SEC_ACE_TYPE_ACCESS_DENIED_OBJECT	= 6,
 		SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT	= 7,
-		SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 8
+		SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 8, /* reserved */
+		SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK	= 9,
+		SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK	= 10,
+		SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT	= 11,
+		SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT	= 12,
+		SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK		= 13,
+		SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK		= 14, /* reserved */
+		SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK_OBJECT	= 15,
+		SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK_OBJECT	= 16, /* reserved */
+		SEC_ACE_TYPE_SYSTEM_MANDATORY_LABEL		= 17, /*unused */
+		SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE		= 18,
+		SEC_ACE_TYPE_SYSTEM_SCOPED_POLICY_ID		= 19 /* unused */
 	} security_ace_type;
 
 	typedef [bitmap32bit] bitmap {
