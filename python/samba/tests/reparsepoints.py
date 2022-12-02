@@ -81,7 +81,28 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(e.exception.args[0],
                          ntstatus.NT_STATUS_INVALID_BUFFER_SIZE)
 
+        for i in range(1,15):
+            with self.assertRaises(NTSTATUSError) as e:
+                conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, i * b'0', 0)
+
+            self.assertEqual(e.exception.args[0],
+                             ntstatus.NT_STATUS_IO_REPARSE_DATA_INVALID)
+
+        # Create a syntactically valid [MS-FSCC] 2.1.2.2 REPARSE_DATA_BUFFER
         b = reparse_symlink.put(0x80000025, 0, b'asdfasdfasdfasdfasdfasdf')
+
+        # Show that SET_REPARSE_POINT does exact length checks
+
+        with self.assertRaises(NTSTATUSError) as e:
+            conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b + b'0', 0)
+        self.assertEqual(e.exception.args[0],
+                         ntstatus.NT_STATUS_IO_REPARSE_DATA_INVALID)
+
+        with self.assertRaises(NTSTATUSError) as e:
+            conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b[:-1], 0)
+        self.assertEqual(e.exception.args[0],
+                         ntstatus.NT_STATUS_IO_REPARSE_DATA_INVALID)
+
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
         b = reparse_symlink.put(0x80000026, 0, b'asdfasdfasdfasdfasdfasdf')
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
