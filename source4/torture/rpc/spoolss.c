@@ -1670,7 +1670,7 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 			break; \
 		}
 
-#define TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, err) do { \
+#define TEST_PRINTERINFO_STRING_EXP_ERR(q, lvl1, field1, lvl2, field2, value, err) do { \
 		void *p; \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
@@ -1691,11 +1691,11 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 		STRING_EQUAL(info_ctr.info.info ## lvl2->field2, value, field2); \
 	} while (0)
 
-#define TEST_PRINTERINFO_STRING(lvl1, field1, lvl2, field2, value) do { \
-	TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, WERR_OK); \
+#define TEST_PRINTERINFO_STRING(q, lvl1, field1, lvl2, field2, value) do { \
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, lvl1, field1, lvl2, field2, value, WERR_OK); \
 	} while (0);
 
-#define TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value) do { \
+#define TEST_PRINTERINFO_INT_EXP(q, lvl1, field1, lvl2, field2, value, exp_value) do { \
 		void *p; \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
@@ -1717,102 +1717,102 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 		INT_EQUAL(info_ctr.info.info ## lvl2->field2, exp_value, field1); \
 	} while (0)
 
-#define TEST_PRINTERINFO_INT(lvl1, field1, lvl2, field2, value) do { \
-        TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, value); \
+#define TEST_PRINTERINFO_INT(q, lvl1, field1, lvl2, field2, value) do { \
+        TEST_PRINTERINFO_INT_EXP(q, lvl1, field1, lvl2, field2, value, value); \
         } while (0)
 
 	q0.in.level = 0;
 	do { TESTGETCALL(GetPrinter, q0) } while (0);
 
-	TEST_PRINTERINFO_STRING(2, comment,  1, comment, "xx2-1 comment");
-	TEST_PRINTERINFO_STRING(2, comment,  2, comment, "xx2-2 comment");
+	TEST_PRINTERINFO_STRING(q, 2, comment,  1, comment, "xx2-1 comment");
+	TEST_PRINTERINFO_STRING(q, 2, comment,  2, comment, "xx2-2 comment");
 
 	/* level 0 printername does not stick */
-/*	TEST_PRINTERINFO_STRING(2, printername,  0, printername, "xx2-0 printer"); */
-	TEST_PRINTERINFO_STRING(2, printername,  1, name,	 "xx2-1 printer");
-	TEST_PRINTERINFO_STRING(2, printername,  2, printername, "xx2-2 printer");
-	TEST_PRINTERINFO_STRING(2, printername,  4, printername, "xx2-4 printer");
-	TEST_PRINTERINFO_STRING(2, printername,  5, printername, "xx2-5 printer");
-/*	TEST_PRINTERINFO_STRING(4, printername,  0, printername, "xx4-0 printer"); */
-	TEST_PRINTERINFO_STRING(4, printername,  1, name,	 "xx4-1 printer");
-	TEST_PRINTERINFO_STRING(4, printername,  2, printername, "xx4-2 printer");
-	TEST_PRINTERINFO_STRING(4, printername,  4, printername, "xx4-4 printer");
-	TEST_PRINTERINFO_STRING(4, printername,  5, printername, "xx4-5 printer");
-/*	TEST_PRINTERINFO_STRING(5, printername,  0, printername, "xx5-0 printer"); */
-	TEST_PRINTERINFO_STRING(5, printername,  1, name,	 "xx5-1 printer");
-	TEST_PRINTERINFO_STRING(5, printername,  2, printername, "xx5-2 printer");
-	TEST_PRINTERINFO_STRING(5, printername,  4, printername, "xx5-4 printer");
-	TEST_PRINTERINFO_STRING(5, printername,  5, printername, "xx5-5 printer");
+/*	TEST_PRINTERINFO_STRING(q, 2, printername,  0, printername, "xx2-0 printer"); */
+	TEST_PRINTERINFO_STRING(q, 2, printername,  1, name,	 "xx2-1 printer");
+	TEST_PRINTERINFO_STRING(q, 2, printername,  2, printername, "xx2-2 printer");
+	TEST_PRINTERINFO_STRING(q, 2, printername,  4, printername, "xx2-4 printer");
+	TEST_PRINTERINFO_STRING(q, 2, printername,  5, printername, "xx2-5 printer");
+/*	TEST_PRINTERINFO_STRING(q, 4, printername,  0, printername, "xx4-0 printer"); */
+	TEST_PRINTERINFO_STRING(q, 4, printername,  1, name,	 "xx4-1 printer");
+	TEST_PRINTERINFO_STRING(q, 4, printername,  2, printername, "xx4-2 printer");
+	TEST_PRINTERINFO_STRING(q, 4, printername,  4, printername, "xx4-4 printer");
+	TEST_PRINTERINFO_STRING(q, 4, printername,  5, printername, "xx4-5 printer");
+/*	TEST_PRINTERINFO_STRING(q, 5, printername,  0, printername, "xx5-0 printer"); */
+	TEST_PRINTERINFO_STRING(q, 5, printername,  1, name,	 "xx5-1 printer");
+	TEST_PRINTERINFO_STRING(q, 5, printername,  2, printername, "xx5-2 printer");
+	TEST_PRINTERINFO_STRING(q, 5, printername,  4, printername, "xx5-4 printer");
+	TEST_PRINTERINFO_STRING(q, 5, printername,  5, printername, "xx5-5 printer");
 
 	/* servername can be set but does not stick
-	TEST_PRINTERINFO_STRING(2, servername,  0, servername, "xx2-0 servername");
-	TEST_PRINTERINFO_STRING(2, servername,  2, servername, "xx2-2 servername");
-	TEST_PRINTERINFO_STRING(2, servername,  4, servername, "xx2-4 servername");
+	TEST_PRINTERINFO_STRING(q, 2, servername,  0, servername, "xx2-0 servername");
+	TEST_PRINTERINFO_STRING(q, 2, servername,  2, servername, "xx2-2 servername");
+	TEST_PRINTERINFO_STRING(q, 2, servername,  4, servername, "xx2-4 servername");
 	*/
 
 	/* passing an invalid port will result in WERR_UNKNOWN_PORT */
-	TEST_PRINTERINFO_STRING_EXP_ERR(2, portname,  2, portname, "xx2-2 portname", WERR_UNKNOWN_PORT);
-	TEST_PRINTERINFO_STRING_EXP_ERR(2, portname,  5, portname, "xx2-5 portname", WERR_UNKNOWN_PORT);
-	TEST_PRINTERINFO_STRING_EXP_ERR(5, portname,  2, portname, "xx5-2 portname", WERR_UNKNOWN_PORT);
-	TEST_PRINTERINFO_STRING_EXP_ERR(5, portname,  5, portname, "xx5-5 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 2, portname,  2, portname, "xx2-2 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 2, portname,  5, portname, "xx2-5 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 5, portname,  2, portname, "xx5-2 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 5, portname,  5, portname, "xx5-5 portname", WERR_UNKNOWN_PORT);
 
-	TEST_PRINTERINFO_STRING(2, sharename,	2, sharename,	"xx2-2 sharename");
+	TEST_PRINTERINFO_STRING(q, 2, sharename,	2, sharename,	"xx2-2 sharename");
 	/* passing an invalid driver will result in WERR_UNKNOWN_PRINTER_DRIVER */
-	TEST_PRINTERINFO_STRING_EXP_ERR(2, drivername,	2, drivername,	"xx2-2 drivername", WERR_UNKNOWN_PRINTER_DRIVER);
-	TEST_PRINTERINFO_STRING(2, location,	2, location,	"xx2-2 location");
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 2, drivername,	2, drivername,	"xx2-2 drivername", WERR_UNKNOWN_PRINTER_DRIVER);
+	TEST_PRINTERINFO_STRING(q, 2, location,	2, location,	"xx2-2 location");
 	/* passing an invalid sepfile will result in WERR_INVALID_SEPARATOR_FILE */
-	TEST_PRINTERINFO_STRING_EXP_ERR(2, sepfile,	2, sepfile,	"xx2-2 sepfile", WERR_INVALID_SEPARATOR_FILE);
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 2, sepfile,	2, sepfile,	"xx2-2 sepfile", WERR_INVALID_SEPARATOR_FILE);
 	/* passing an invalid printprocessor will result in WERR_UNKNOWN_PRINTPROCESSOR */
-	TEST_PRINTERINFO_STRING_EXP_ERR(2, printprocessor, 2, printprocessor, "xx2-2 printprocessor", WERR_UNKNOWN_PRINTPROCESSOR);
-	TEST_PRINTERINFO_STRING(2, datatype,	2, datatype,	"xx2-2 datatype");
-	TEST_PRINTERINFO_STRING(2, parameters,	2, parameters,	"xx2-2 parameters");
+	TEST_PRINTERINFO_STRING_EXP_ERR(q, 2, printprocessor, 2, printprocessor, "xx2-2 printprocessor", WERR_UNKNOWN_PRINTPROCESSOR);
+	TEST_PRINTERINFO_STRING(q, 2, datatype,	2, datatype,	"xx2-2 datatype");
+	TEST_PRINTERINFO_STRING(q, 2, parameters,	2, parameters,	"xx2-2 parameters");
 
 	for (i=0; i < ARRAY_SIZE(attribute_list); i++) {
-/*		TEST_PRINTERINFO_INT_EXP(2, attributes, 1, flags,
+/*		TEST_PRINTERINFO_INT_EXP(q, 2, attributes, 1, flags,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			); */
-		TEST_PRINTERINFO_INT_EXP(2, attributes, 2, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 2, attributes, 2, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-		TEST_PRINTERINFO_INT_EXP(2, attributes, 4, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 2, attributes, 4, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-		TEST_PRINTERINFO_INT_EXP(2, attributes, 5, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 2, attributes, 5, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-/*		TEST_PRINTERINFO_INT_EXP(4, attributes, 1, flags,
+/*		TEST_PRINTERINFO_INT_EXP(q, 4, attributes, 1, flags,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			); */
-		TEST_PRINTERINFO_INT_EXP(4, attributes, 2, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 4, attributes, 2, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-		TEST_PRINTERINFO_INT_EXP(4, attributes, 4, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 4, attributes, 4, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-		TEST_PRINTERINFO_INT_EXP(4, attributes, 5, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 4, attributes, 5, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-/*		TEST_PRINTERINFO_INT_EXP(5, attributes, 1, flags,
+/*		TEST_PRINTERINFO_INT_EXP(q, 5, attributes, 1, flags,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			); */
-		TEST_PRINTERINFO_INT_EXP(5, attributes, 2, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 5, attributes, 2, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-		TEST_PRINTERINFO_INT_EXP(5, attributes, 4, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 5, attributes, 4, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
-		TEST_PRINTERINFO_INT_EXP(5, attributes, 5, attributes,
+		TEST_PRINTERINFO_INT_EXP(q, 5, attributes, 5, attributes,
 			attribute_list[i],
 			(attribute_list[i] | default_attribute)
 			);
@@ -1820,35 +1820,35 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(status_list); i++) {
 		/* level 2 sets do not stick
-		TEST_PRINTERINFO_INT(2, status,	0, status, status_list[i]);
-		TEST_PRINTERINFO_INT(2, status,	2, status, status_list[i]);
-		TEST_PRINTERINFO_INT(2, status,	6, status, status_list[i]); */
-		TEST_PRINTERINFO_INT(6, status,	0, status, status_list[i]);
-		TEST_PRINTERINFO_INT(6, status,	2, status, status_list[i]);
-		TEST_PRINTERINFO_INT(6, status,	6, status, status_list[i]);
+		TEST_PRINTERINFO_INT(q, 2, status,	0, status, status_list[i]);
+		TEST_PRINTERINFO_INT(q, 2, status,	2, status, status_list[i]);
+		TEST_PRINTERINFO_INT(q, 2, status,	6, status, status_list[i]); */
+		TEST_PRINTERINFO_INT(q, 6, status,	0, status, status_list[i]);
+		TEST_PRINTERINFO_INT(q, 6, status,	2, status, status_list[i]);
+		TEST_PRINTERINFO_INT(q, 6, status,	6, status, status_list[i]);
 	}
 
 	/* priorities need to be between 0 and 99
 	   passing an invalid priority will result in WERR_INVALID_PRIORITY */
-	TEST_PRINTERINFO_INT(2, priority,	2, priority, 0);
-	TEST_PRINTERINFO_INT(2, priority,	2, priority, 1);
-	TEST_PRINTERINFO_INT(2, priority,	2, priority, 99);
-	/* TEST_PRINTERINFO_INT(2, priority,	2, priority, 100); */
-	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 0);
-	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 1);
-	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 99);
-	/* TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 100); */
+	TEST_PRINTERINFO_INT(q, 2, priority,	2, priority, 0);
+	TEST_PRINTERINFO_INT(q, 2, priority,	2, priority, 1);
+	TEST_PRINTERINFO_INT(q, 2, priority,	2, priority, 99);
+	/* TEST_PRINTERINFO_INT(q, 2, priority,	2, priority, 100); */
+	TEST_PRINTERINFO_INT(q, 2, defaultpriority,2, defaultpriority, 0);
+	TEST_PRINTERINFO_INT(q, 2, defaultpriority,2, defaultpriority, 1);
+	TEST_PRINTERINFO_INT(q, 2, defaultpriority,2, defaultpriority, 99);
+	/* TEST_PRINTERINFO_INT(q, 2, defaultpriority,2, defaultpriority, 100); */
 
-	TEST_PRINTERINFO_INT(2, starttime,	2, starttime, __LINE__);
-	TEST_PRINTERINFO_INT(2, untiltime,	2, untiltime, __LINE__);
-
-	/* does not stick
-	TEST_PRINTERINFO_INT(2, cjobs,		2, cjobs, __LINE__);
-	TEST_PRINTERINFO_INT(2, averageppm,	2, averageppm, __LINE__); */
+	TEST_PRINTERINFO_INT(q, 2, starttime,	2, starttime, __LINE__);
+	TEST_PRINTERINFO_INT(q, 2, untiltime,	2, untiltime, __LINE__);
 
 	/* does not stick
-	TEST_PRINTERINFO_INT(5, device_not_selected_timeout, 5, device_not_selected_timeout, __LINE__);
-	TEST_PRINTERINFO_INT(5, transmission_retry_timeout, 5, transmission_retry_timeout, __LINE__); */
+	TEST_PRINTERINFO_INT(q, 2, cjobs,		2, cjobs, __LINE__);
+	TEST_PRINTERINFO_INT(q, 2, averageppm,	2, averageppm, __LINE__); */
+
+	/* does not stick
+	TEST_PRINTERINFO_INT(q, 5, device_not_selected_timeout, 5, device_not_selected_timeout, __LINE__);
+	TEST_PRINTERINFO_INT(q, 5, transmission_retry_timeout, 5, transmission_retry_timeout, __LINE__); */
 
 	/* FIXME: gd also test devmode and secdesc behavior */
 
@@ -2195,7 +2195,7 @@ static bool test_devicemode_full(struct torture_context *tctx,
 	bool ret = true;
 	NTSTATUS status;
 
-#define TEST_DEVMODE_INT_EXP_RESULT(lvl1, field1, lvl2, field2, value, exp_value, expected_result) do { \
+#define TEST_DEVMODE_INT_EXP_RESULT(q, lvl1, field1, lvl2, field2, value, exp_value, expected_result) do { \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTGETCALL(GetPrinter, q) \
@@ -2218,12 +2218,12 @@ static bool test_devicemode_full(struct torture_context *tctx,
 		}\
 	} while (0)
 
-#define TEST_DEVMODE_INT_EXP(lvl1, field1, lvl2, field2, value, expected_result) do { \
-        TEST_DEVMODE_INT_EXP_RESULT(lvl1, field1, lvl2, field2, value, value, expected_result); \
+#define TEST_DEVMODE_INT_EXP(q, lvl1, field1, lvl2, field2, value, expected_result) do { \
+        TEST_DEVMODE_INT_EXP_RESULT(q, lvl1, field1, lvl2, field2, value, value, expected_result); \
         } while (0)
 
-#define TEST_DEVMODE_INT(lvl1, field1, lvl2, field2, value) do { \
-        TEST_DEVMODE_INT_EXP_RESULT(lvl1, field1, lvl2, field2, value, value, WERR_OK); \
+#define TEST_DEVMODE_INT(q, lvl1, field1, lvl2, field2, value) do { \
+        TEST_DEVMODE_INT_EXP_RESULT(q, lvl1, field1, lvl2, field2, value, value, WERR_OK); \
         } while (0)
 
 	ZERO_STRUCT(devmode_ctr);
@@ -2246,50 +2246,50 @@ static bool test_devicemode_full(struct torture_context *tctx,
 	uint16_t __driverextra_length;/* [value(r->driverextra_data.length)] */
 	uint32_t fields;
 #endif
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, __LINE__, WERR_INVALID_PARAMETER);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0, WERR_INVALID_PARAMETER);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0xffff, WERR_INVALID_PARAMETER);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAMETER : WERR_OK);
-	TEST_DEVMODE_INT(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
+	TEST_DEVMODE_INT_EXP(q, 8, size,		8, size, __LINE__, WERR_INVALID_PARAMETER);
+	TEST_DEVMODE_INT_EXP(q, 8, size,		8, size, 0, WERR_INVALID_PARAMETER);
+	TEST_DEVMODE_INT_EXP(q, 8, size,		8, size, 0xffff, WERR_INVALID_PARAMETER);
+	TEST_DEVMODE_INT_EXP(q, 8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAMETER : WERR_OK);
+	TEST_DEVMODE_INT(q, 8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
 
 	devmode_ctr.devmode->driverextra_data = data_blob_string_const("foobar");
 	torture_assert(tctx,
 		test_devmode_set_level(tctx, b, handle, 8, devmode_ctr.devmode),
 		"failed to set devmode");
 
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAMETER : WERR_OK);
-	TEST_DEVMODE_INT(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
+	TEST_DEVMODE_INT_EXP(q, 8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAMETER : WERR_OK);
+	TEST_DEVMODE_INT(q, 8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
 
-	TEST_DEVMODE_INT(8, orientation,	8, orientation, __LINE__);
-	TEST_DEVMODE_INT(8, papersize,		8, papersize, __LINE__);
-	TEST_DEVMODE_INT(8, paperlength,	8, paperlength, __LINE__);
-	TEST_DEVMODE_INT(8, paperwidth,		8, paperwidth, __LINE__);
-	TEST_DEVMODE_INT(8, scale,		8, scale, __LINE__);
-	TEST_DEVMODE_INT(8, copies,		8, copies, __LINE__);
-	TEST_DEVMODE_INT(8, defaultsource,	8, defaultsource, __LINE__);
-	TEST_DEVMODE_INT(8, printquality,	8, printquality, __LINE__);
-	TEST_DEVMODE_INT(8, color,		8, color, __LINE__);
-	TEST_DEVMODE_INT(8, duplex,		8, duplex, __LINE__);
-	TEST_DEVMODE_INT(8, yresolution,	8, yresolution, __LINE__);
-	TEST_DEVMODE_INT(8, ttoption,		8, ttoption, __LINE__);
-	TEST_DEVMODE_INT(8, collate,		8, collate, __LINE__);
+	TEST_DEVMODE_INT(q, 8, orientation,	8, orientation, __LINE__);
+	TEST_DEVMODE_INT(q, 8, papersize,		8, papersize, __LINE__);
+	TEST_DEVMODE_INT(q, 8, paperlength,	8, paperlength, __LINE__);
+	TEST_DEVMODE_INT(q, 8, paperwidth,		8, paperwidth, __LINE__);
+	TEST_DEVMODE_INT(q, 8, scale,		8, scale, __LINE__);
+	TEST_DEVMODE_INT(q, 8, copies,		8, copies, __LINE__);
+	TEST_DEVMODE_INT(q, 8, defaultsource,	8, defaultsource, __LINE__);
+	TEST_DEVMODE_INT(q, 8, printquality,	8, printquality, __LINE__);
+	TEST_DEVMODE_INT(q, 8, color,		8, color, __LINE__);
+	TEST_DEVMODE_INT(q, 8, duplex,		8, duplex, __LINE__);
+	TEST_DEVMODE_INT(q, 8, yresolution,	8, yresolution, __LINE__);
+	TEST_DEVMODE_INT(q, 8, ttoption,		8, ttoption, __LINE__);
+	TEST_DEVMODE_INT(q, 8, collate,		8, collate, __LINE__);
 #if 0
 	const char *formname;/* [charset(UTF16)] */
 #endif
-	TEST_DEVMODE_INT(8, logpixels,		8, logpixels, __LINE__);
-	TEST_DEVMODE_INT(8, bitsperpel,		8, bitsperpel, __LINE__);
-	TEST_DEVMODE_INT(8, pelswidth,		8, pelswidth, __LINE__);
-	TEST_DEVMODE_INT(8, pelsheight,		8, pelsheight, __LINE__);
-	TEST_DEVMODE_INT(8, displayflags,	8, displayflags, __LINE__);
-	TEST_DEVMODE_INT(8, displayfrequency,	8, displayfrequency, __LINE__);
-	TEST_DEVMODE_INT(8, icmmethod,		8, icmmethod, __LINE__);
-	TEST_DEVMODE_INT(8, icmintent,		8, icmintent, __LINE__);
-	TEST_DEVMODE_INT(8, mediatype,		8, mediatype, __LINE__);
-	TEST_DEVMODE_INT(8, dithertype,		8, dithertype, __LINE__);
-	TEST_DEVMODE_INT(8, reserved1,		8, reserved1, __LINE__);
-	TEST_DEVMODE_INT(8, reserved2,		8, reserved2, __LINE__);
-	TEST_DEVMODE_INT(8, panningwidth,	8, panningwidth, __LINE__);
-	TEST_DEVMODE_INT(8, panningheight,	8, panningheight, __LINE__);
+	TEST_DEVMODE_INT(q, 8, logpixels,		8, logpixels, __LINE__);
+	TEST_DEVMODE_INT(q, 8, bitsperpel,		8, bitsperpel, __LINE__);
+	TEST_DEVMODE_INT(q, 8, pelswidth,		8, pelswidth, __LINE__);
+	TEST_DEVMODE_INT(q, 8, pelsheight,		8, pelsheight, __LINE__);
+	TEST_DEVMODE_INT(q, 8, displayflags,	8, displayflags, __LINE__);
+	TEST_DEVMODE_INT(q, 8, displayfrequency,	8, displayfrequency, __LINE__);
+	TEST_DEVMODE_INT(q, 8, icmmethod,		8, icmmethod, __LINE__);
+	TEST_DEVMODE_INT(q, 8, icmintent,		8, icmintent, __LINE__);
+	TEST_DEVMODE_INT(q, 8, mediatype,		8, mediatype, __LINE__);
+	TEST_DEVMODE_INT(q, 8, dithertype,		8, dithertype, __LINE__);
+	TEST_DEVMODE_INT(q, 8, reserved1,		8, reserved1, __LINE__);
+	TEST_DEVMODE_INT(q, 8, reserved2,		8, reserved2, __LINE__);
+	TEST_DEVMODE_INT(q, 8, panningwidth,	8, panningwidth, __LINE__);
+	TEST_DEVMODE_INT(q, 8, panningheight,	8, panningheight, __LINE__);
 
 	return ret;
 }
