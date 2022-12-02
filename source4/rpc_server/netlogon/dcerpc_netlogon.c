@@ -843,42 +843,65 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 	return dcesrv_netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
-static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
-					   const struct netlogon_creds_CredentialState *creds,
-					   enum dcerpc_AuthType auth_type,
-					   enum dcerpc_AuthLevel auth_level,
-					   uint16_t opnum)
+struct dcesrv_netr_check_schannel_state {
+	struct dom_sid account_sid;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	bool schannel_global_required;
+	bool schannel_required;
+	bool schannel_explicitly_set;
+
+	NTSTATUS result;
+};
+
+static NTSTATUS dcesrv_netr_check_schannel_get_state(struct dcesrv_call_state *dce_call,
+						     const struct netlogon_creds_CredentialState *creds,
+						     enum dcerpc_AuthType auth_type,
+						     enum dcerpc_AuthLevel auth_level,
+						     struct dcesrv_netr_check_schannel_state **_s)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS nt_status;
 	int schannel = lpcfg_server_schannel(lp_ctx);
 	bool schannel_global_required = (schannel == true);
 	bool schannel_required = schannel_global_required;
 	const char *explicit_opt = NULL;
-	int CVE_2020_1472_warn_level = lpcfg_parm_int(lp_ctx, NULL,
-		"CVE_2020_1472", "warn_about_unused_debug_level", DBGLVL_ERR);
-	int CVE_2020_1472_error_level = lpcfg_parm_int(lp_ctx, NULL,
-		"CVE_2020_1472", "error_debug_level", DBGLVL_ERR);
-	unsigned int dbg_lvl = DBGLVL_DEBUG;
-	const char *opname = "<unknown>";
-	const char *reason = "<unknown>";
+#define DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC (NETLOGON_SERVER_PIPE_STATE_MAGIC+1)
+	struct dcesrv_netr_check_schannel_state *s = NULL;
+	NTSTATUS status;
 
-	if (opnum < ndr_table_netlogon.num_calls) {
-		opname = ndr_table_netlogon.calls[opnum].name;
-	}
+	*_s = NULL;
 
-	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-			reason = "WITH SEALED";
-		} else if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-			reason = "WITH SIGNED";
-		} else {
-			smb_panic("Schannel without SIGN/SEAL");
+	s = dcesrv_iface_state_find_conn(dce_call,
+			DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC,
+			struct dcesrv_netr_check_schannel_state);
+	if (s != NULL) {
+		if (!dom_sid_equal(&s->account_sid, creds->sid)) {
+			goto new_state;
 		}
-	} else {
-		reason = "WITHOUT";
+		if (s->auth_type != auth_type) {
+			goto new_state;
+		}
+		if (s->auth_level != auth_level) {
+			goto new_state;
+		}
+
+		*_s = s;
+		return NT_STATUS_OK;
 	}
+
+new_state:
+	TALLOC_FREE(s);
+	s = talloc_zero(dce_call,
+			struct dcesrv_netr_check_schannel_state);
+	if (s == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	s->account_sid = *creds->sid;
+	s->auth_type = auth_type;
+	s->auth_level = auth_level;
+	s->result = NT_STATUS_MORE_PROCESSING_REQUIRED;
 
 	/*
 	 * We don't use lpcfg_parm_bool(), as we
@@ -893,12 +916,56 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 		schannel_required = lp_bool(explicit_opt);
 	}
 
-	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		nt_status = NT_STATUS_OK;
+	s->schannel_global_required = schannel_global_required;
+	s->schannel_required = schannel_required;
+	s->schannel_explicitly_set = explicit_opt != NULL;
 
-		if (explicit_opt != NULL && !schannel_required) {
-			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_warn_level);
-		} else if (!schannel_required) {
+	status = dcesrv_iface_state_store_conn(dce_call,
+			DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC,
+			s);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*_s = s;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_call,
+						struct dcesrv_netr_check_schannel_state *s,
+						const struct netlogon_creds_CredentialState *creds,
+						uint16_t opnum)
+{
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	int CVE_2020_1472_warn_level = lpcfg_parm_int(lp_ctx, NULL,
+		"CVE_2020_1472", "warn_about_unused_debug_level", DBGLVL_ERR);
+	int CVE_2020_1472_error_level = lpcfg_parm_int(lp_ctx, NULL,
+		"CVE_2020_1472", "error_debug_level", DBGLVL_ERR);
+	TALLOC_CTX *frame = talloc_stackframe();
+	unsigned int dbg_lvl = DBGLVL_DEBUG;
+	const char *opname = "<unknown>";
+	const char *reason = "<unknown>";
+
+	if (opnum < ndr_table_netlogon.num_calls) {
+		opname = ndr_table_netlogon.calls[opnum].name;
+	}
+
+	if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		if (s->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+			reason = "WITH SEALED";
+		} else if (s->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+			reason = "WITH SIGNED";
+		} else {
+			reason = "WITH INVALID";
+			dbg_lvl = DBGLVL_ERR;
+			s->result = NT_STATUS_INTERNAL_ERROR;
+		}
+	} else {
+		reason = "WITHOUT";
+	}
+
+	if (!NT_STATUS_EQUAL(s->result, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (!NT_STATUS_IS_OK(s->result)) {
 			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
 		}
 
@@ -909,9 +976,29 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 		      opname, opnum, reason,
 		      log_escape(frame, creds->account_name),
 		      log_escape(frame, creds->computer_name),
-		      nt_errstr(nt_status)));
+		      nt_errstr(s->result)));
+		TALLOC_FREE(frame);
+		return s->result;
+	}
 
-		if (explicit_opt != NULL && !schannel_required) {
+	if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		s->result = NT_STATUS_OK;
+
+		if (s->schannel_explicitly_set && !s->schannel_required) {
+			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_warn_level);
+		} else if (!s->schannel_required) {
+			dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
+		}
+
+		DEBUG(dbg_lvl, (
+		      "CVE-2020-1472(ZeroLogon): "
+		      "%s request (opnum[%u]) %s schannel from "
+		      "client_account[%s] client_computer_name[%s] %s\n",
+		      opname, opnum, reason,
+		      log_escape(frame, creds->account_name),
+		      log_escape(frame, creds->computer_name),
+		      nt_errstr(s->result)));
+		if (s->schannel_explicitly_set && !s->schannel_required) {
 			DEBUG(CVE_2020_1472_warn_level, (
 			      "CVE-2020-1472(ZeroLogon): "
 			      "Option 'server require schannel:%s = no' not needed for '%s'!\n",
@@ -920,13 +1007,13 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 		}
 
 		TALLOC_FREE(frame);
-		return nt_status;
+		return s->result;
 	}
 
-	if (schannel_required) {
-		nt_status = NT_STATUS_ACCESS_DENIED;
+	if (s->schannel_required) {
+		s->result = NT_STATUS_ACCESS_DENIED;
 
-		if (explicit_opt != NULL) {
+		if (s->schannel_explicitly_set) {
 			dbg_lvl = MIN(dbg_lvl, DBGLVL_NOTICE);
 		} else {
 			dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_error_level);
@@ -939,8 +1026,8 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 		      opname, opnum, reason,
 		      log_escape(frame, creds->account_name),
 		      log_escape(frame, creds->computer_name),
-		      nt_errstr(nt_status)));
-		if (explicit_opt != NULL) {
+		      nt_errstr(s->result)));
+		if (s->schannel_explicitly_set) {
 			D_NOTICE("CVE-2020-1472(ZeroLogon): Option "
 				"'server require schannel:%s = yes' "
 				"rejects access for client.\n",
@@ -953,12 +1040,12 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 			      log_escape(frame, creds->account_name)));
 		}
 		TALLOC_FREE(frame);
-		return nt_status;
+		return s->result;
 	}
 
-	nt_status = NT_STATUS_OK;
+	s->result = NT_STATUS_OK;
 
-	if (explicit_opt != NULL) {
+	if (s->schannel_explicitly_set) {
 		dbg_lvl = MIN(dbg_lvl, DBGLVL_INFO);
 	} else {
 		dbg_lvl = MIN(dbg_lvl, CVE_2020_1472_error_level);
@@ -971,9 +1058,9 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 	      opname, opnum, reason,
 	      log_escape(frame, creds->account_name),
 	      log_escape(frame, creds->computer_name),
-	      nt_errstr(nt_status)));
+	      nt_errstr(s->result)));
 
-	if (explicit_opt != NULL) {
+	if (s->schannel_explicitly_set) {
 		D_INFO("CVE-2020-1472(ZeroLogon): Option "
 		       "'server require schannel:%s = no' "
 		       "still needed for '%s'!\n",
@@ -996,6 +1083,32 @@ static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 	}
 
 	TALLOC_FREE(frame);
+	return s->result;
+}
+
+static NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
+					   const struct netlogon_creds_CredentialState *creds,
+					   enum dcerpc_AuthType auth_type,
+					   enum dcerpc_AuthLevel auth_level,
+					   uint16_t opnum)
+{
+	struct dcesrv_netr_check_schannel_state *s = NULL;
+	NTSTATUS status;
+
+	status = dcesrv_netr_check_schannel_get_state(dce_call,
+						      creds,
+						      auth_type,
+						      auth_level,
+						      &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcesrv_netr_check_schannel_once(dce_call, s, creds, opnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	return NT_STATUS_OK;
 }
 
