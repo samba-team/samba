@@ -35,6 +35,7 @@
 #include "secrets.h"
 #include "../lib/util/memcache.h"
 #include "ctdbd_conn.h"
+#include "lib/util/util_process.h"
 #include "util_cluster.h"
 #include "printing/queue_process.h"
 #include "rpc_server/rpc_config.h"
@@ -1001,6 +1002,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 	pid = fork();
 	if (pid == 0) {
+		char addrstr[INET6_ADDRSTRLEN];
 		NTSTATUS status = NT_STATUS_OK;
 
 		/*
@@ -1037,6 +1039,9 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}
+
+		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+		process_set_title("smbd[%s]", "client [%s]", addrstr);
 
 		smbd_process(ev, msg_ctx, fd, false);
 	 exit:
