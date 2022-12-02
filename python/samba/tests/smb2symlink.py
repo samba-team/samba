@@ -91,11 +91,13 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}\\{suffix}')
-            self.assert_symlink_exception(
-                e, { 'unparsed_path_length' : len(suffix)+1,
-                     'substitute_name' : target,
-                     'print_name' : target,
-                     'flags' : 0x20000001 })
+
+        self.assert_symlink_exception(
+            e.exception,
+            { 'unparsed_path_length' : len(suffix)+1,
+              'substitute_name' : target,
+              'print_name' : target,
+              'flags' : 0x20000001 })
 
         self.clean_file(smb1, symlink)
 
@@ -109,11 +111,13 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}')
-            self.assert_symlink_exception(
-                e, { 'unparsed_path_length' : 0,
-                     'substitute_name' : target,
-                     'print_name' : target,
-                     'flags' : 0x20000001 })
+
+        self.assert_symlink_exception(
+                e.exception,
+            { 'unparsed_path_length' : 0,
+              'substitute_name' : target,
+              'print_name' : target,
+              'flags' : 0x20000001 })
 
         self.clean_file(smb1, symlink)
 
@@ -131,11 +135,13 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
             with self.assertRaises(NTSTATUSError) as e:
                 fd = smb2.create_ex(f'{symlink}')
-                self.assert_symlink_exception(
-                    e, { 'unparsed_path_length' : 0,
-                         'substitute_name' : target,
-                         'print_name' : target,
-                         'flags' : 0 })
+
+            self.assert_symlink_exception(
+                e.exception,
+                { 'unparsed_path_length' : 0,
+                  'substitute_name' : target,
+                  'print_name' : target,
+                  'flags' : 0 })
 
             self.clean_file(smb1, symlink)
 
@@ -153,11 +159,13 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}')
-            self.assert_symlink_exception(
-                e, { 'unparsed_path_length' : 0,
-                     'substitute_name' : rel_dest,
-                     'print_name' : rel_dest,
-                     'flags' : 0 })
+
+        self.assert_symlink_exception(
+            e.exception,
+            { 'unparsed_path_length' : 0,
+              'substitute_name' : rel_dest,
+              'print_name' : rel_dest,
+              'flags' : 0 })
 
         self.clean_file(smb1, symlink)
 

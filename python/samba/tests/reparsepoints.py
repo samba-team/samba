@@ -57,7 +57,9 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
         with self.assertRaises(NTSTATUSError) as e:
             conn.fsctl(fd, libsmb.FSCTL_GET_REPARSE_POINT, b'', 1024)
-            self.assertEqual(e.args[0], ntstatus.NT_STATUS_NOT_A_REPARSE_POINT)
+
+        self.assertEqual(e.exception.args[0],
+                         ntstatus.NT_STATUS_NOT_A_REPARSE_POINT)
 
         conn.close(fd)
 
@@ -129,8 +131,9 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
                 filename,
                 DesiredAccess=sec.SEC_STD_DELETE,
                 CreateDisposition=libsmb.FILE_CREATE)
-            self.assertEqual(
-                e.args[0], ntstatus.NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)
+
+        self.assertEqual(e.exception.args[0],
+                         ntstatus.NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)
 
         conn.delete_on_close(dir_fd, 1)
         conn.close(dir_fd);
@@ -198,7 +201,9 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
                 DesiredAccess=sec.SEC_FILE_READ_DATA,
                 CreateDisposition=libsmb.FILE_OPEN,
                 CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
-            self.assertEqual(e.args[0], ntstatus.NT_STATUS_SHARING_VIOLATION)
+
+        self.assertEqual(e.exception.args[0],
+                         ntstatus.NT_STATUS_SHARING_VIOLATION)
 
         conn.delete_on_close(fd1, 1);
         conn.close(fd1)
