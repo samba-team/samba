@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "util_reparse.h"
 #include "libcli/smb/reparse.h"
+#include "source3/smbd/proto.h"
 
 static NTSTATUS fsctl_get_reparse_point_reg(struct files_struct *fsp,
 					    TALLOC_CTX *ctx,
@@ -128,9 +129,19 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 	uint32_t reparse_tag;
 	const uint8_t *reparse_data = NULL;
 	size_t reparse_data_length;
+	uint32_t existing_tag;
+	uint8_t *existing_data = NULL;
+	uint32_t existing_len;
 	NTSTATUS status;
+	uint32_t dos_mode;
+	int ret;
 
 	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
+
+	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+		DBG_DEBUG("Can only set reparse point for regular files\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	status = reparse_buffer_check(in_data,
 				      in_len,
@@ -147,7 +158,54 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 		  reparse_tag,
 		  reparse_data_length);
 
-	return NT_STATUS_NOT_A_REPARSE_POINT;
+	status = fsctl_get_reparse_point(fsp,
+					 talloc_tos(),
+					 &existing_tag,
+					 &existing_data,
+					 UINT32_MAX,
+					 &existing_len);
+	if (NT_STATUS_IS_OK(status)) {
+
+		TALLOC_FREE(existing_data);
+
+		if (existing_tag != reparse_tag) {
+			DBG_DEBUG("Can't overwrite tag %" PRIX32
+				  " with tag %" PRIX32 "\n",
+				  existing_tag,
+				  reparse_tag);
+			return NT_STATUS_IO_REPARSE_TAG_MISMATCH;
+		}
+	}
+
+	/* Store the data */
+	ret = SMB_VFS_FSETXATTR(
+		fsp, SAMBA_XATTR_REPARSE_ATTRIB, in_data, in_len, 0);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("setxattr fail on %s - %s\n",
+			  fsp_str_dbg(fsp),
+			  strerror(errno));
+		return status;
+	}
+
+	/*
+	 * Files with reparse points don't have the ATTR_NORMAL bit
+	 * set
+	 */
+	dos_mode = fdos_mode(fsp);
+	dos_mode &= ~FILE_ATTRIBUTE_NORMAL;
+	dos_mode |= FILE_ATTRIBUTE_REPARSE_POINT;
+
+	status = SMB_VFS_FSET_DOS_ATTRIBUTES(fsp->conn, fsp, dos_mode);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("set reparse attr fail on %s - %s\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
