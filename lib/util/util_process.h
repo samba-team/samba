@@ -34,4 +34,17 @@
  */
 int prctl_set_comment(const char *comment_format, ...) PRINTF_ATTRIBUTE(1,2);
 
+/**
+ * @brief Set the process comment name and longname
+ *
+ * @param[in]  short_format    The comment to set which shouldn't be longer than 16
+ *                             16 characters (including \0).
+ * @param[in]  long_format     The format string and arguments to produce the long
+ *                             form of the process name.
+ *
+ * @return              -1 on error, 0 on success.
+ */
+void process_set_title(const char *short_format, const char *long_format, ...)
+	PRINTF_ATTRIBUTE(1,3) PRINTF_ATTRIBUTE(2,3);
+
 #endif
