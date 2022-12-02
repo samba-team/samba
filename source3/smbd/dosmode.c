@@ -410,9 +410,9 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			      struct smb_filename *smb_fname,
 			      uint32_t dosmode)
 {
-	struct xattr_DOSATTRIB dosattrib;
+	struct xattr_DOSATTRIB dosattrib = { .version = 0, };
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
+	DATA_BLOB blob = { .data = NULL, };
 	struct timespec btime;
 	int ret;
 
@@ -429,9 +429,6 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	 * vfs_default via DMAPI if that is enabled.
 	 */
 	dosmode &= ~FILE_ATTRIBUTE_OFFLINE;
-
-	ZERO_STRUCT(dosattrib);
-	ZERO_STRUCT(blob);
 
 	dosattrib.version = 5;
 	dosattrib.info.info5.valid_flags = XATTR_DOSINFO_ATTRIB |
