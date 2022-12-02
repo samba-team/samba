@@ -141,7 +141,7 @@ bool run_nttrans_fsctl(int dummy)
 	printf("FSCTL_GET_REPARSE_POINT returned correct status \n");
 
 	/* Fill in for FSCTL_SET_REPARSE_POINT and call cli_trans ... */
-	SIVAL(setup, 0, FSCTL_SET_REPARSE_POINT); /* returns NOT A REPARSE POINT */
+	SIVAL(setup, 0, FSCTL_SET_REPARSE_POINT); /* returns INVALID_BUFFER_SIZE */
 	SSVAL(setup, 4, fnum);
 	SCVAL(setup, 6, 0x1);   /* It is an fsctl */
 	SCVAL(setup, 7, 0x0);
@@ -156,8 +156,10 @@ bool run_nttrans_fsctl(int dummy)
 			   NULL, 0, NULL, /* rsetup, min_rsetup, num_rsetup */
 			   NULL, 0, NULL, /* rparam, min_rparam, num_rparam */
 			   NULL, 0, NULL); /* rdata, ... */
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_REPARSE_POINT)) {
-		d_fprintf(stderr, "cli_trans of FSCTL_SET_REPARSE_POINT returned %s instead of NT_STATUS_NOT_A_REPARSE_POINT\n",
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_BUFFER_SIZE)) {
+		d_fprintf(stderr,
+			  "cli_trans of FSCTL_SET_REPARSE_POINT returned %s "
+			  "instead of NT_STATUS_INVALID_BUFFER_SIZE\n",
 			nt_errstr(status));
 		goto fail;
 	}
