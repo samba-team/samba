@@ -293,12 +293,8 @@ static void prefork_fork_master(
 	}
 
 	pid = getpid();
-	setproctitle("task[%s] pre-fork master", service_name);
-	/*
-	 * We must fit within 15 chars of text or we will truncate, so
-	 * we put the constant part last
-	 */
-	prctl_set_comment("%s[master]", service_name);
+
+	process_set_title("%s[master]", "task[%s] pre-fork master", service_name);
 
 	/*
 	 * this will free all the listening sockets and all state that
@@ -753,16 +749,12 @@ static void prefork_fork_worker(struct task_server *task,
 		free(w);
 
 		TALLOC_FREE(ev);
-		setproctitle("task[%s] pre-forked worker(%d)",
-			     service_name,
-			     pd->instances);
-		/*
-		 * We must fit within 15 chars of text or we will truncate, so
-		 * we put child number last
-		 */
-		prctl_set_comment("%s(%d)",
+
+		process_set_title("%s(%d)",
+				  "task[%s] pre-forked worker(%d)",
 				  service_name,
 				  pd->instances);
+
 		prefork_reload_after_fork();
 		if (service_details->post_fork != NULL) {
 			service_details->post_fork(task, pd);
