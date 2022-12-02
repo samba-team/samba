@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re
-from samba.gp.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext, gp_file_applier
 from tempfile import NamedTemporaryFile
 import shutil
 from configparser import ConfigParser
@@ -69,7 +69,7 @@ def select_next_conf(directory, fname=''):
     configs = [re.match(r'(\d+)%s' % fname, f) for f in os.listdir(directory)]
     return max([int(m.group(1)) for m in configs if m]+[0])+1
 
-class gp_gnome_settings_ext(gp_pol_ext):
+class gp_gnome_settings_ext(gp_pol_ext, gp_file_applier):
     def __init__(self, *args):
         super().__init__(*args)
         self.keys = ['Compose Key',
@@ -94,18 +94,12 @@ class gp_gnome_settings_ext(gp_pol_ext):
         self.lock_down_settings[e.valuename]['Enabled'] = e.data == 1
 
     def __apply_compose_key(self, data):
-        attribute = self.keys[0]
-        old_val = self.gp_db.retrieve(str(self), attribute)
         create_user_profile(self.test_dir)
         local_db_dir = create_local_db(self.test_dir)
 
-        if old_val is not None:
-            # Overwrite the old policy if it exists
-            local_db, lock = old_val.split(';')
-        else:
-            conf_id = select_next_conf(local_db_dir, '-input-sources')
-            local_db = os.path.join(local_db_dir,
-                                    '%010d-input-sources' % conf_id)
+        conf_id = select_next_conf(local_db_dir, '-input-sources')
+        local_db = os.path.join(local_db_dir,
+                                '%010d-input-sources' % conf_id)
         data_map = { 'Right Alt': 'compose:ralt',
                      'Left Win': 'compose:lwin',
                      '3rd level of Left Win': 'compose:lwin-altgr',
@@ -138,26 +132,19 @@ class gp_gnome_settings_ext(gp_pol_ext):
 
         # Lock xkb-options
         locks_dir = create_locks_dir(self.test_dir)
-        if old_val is None:
-            conf_id = select_next_conf(locks_dir)
-            lock = os.path.join(locks_dir, '%010d-input-sources' % conf_id)
+        conf_id = select_next_conf(locks_dir)
+        lock = os.path.join(locks_dir, '%010d-input-sources' % conf_id)
         with open(lock, 'w') as w:
             w.write('/org/gnome/desktop/input-sources/xkb-options')
 
         dconf_update(self.test_dir)
-        self.gp_db.store(str(self), attribute, ';'.join([local_db, lock]))
+        return [local_db, lock]
 
     def __apply_dim_idle(self, data):
-        attribute = self.keys[1]
-        old_val = self.gp_db.retrieve(str(self), attribute)
         create_user_profile(self.test_dir)
         local_db_dir = create_local_db(self.test_dir)
-        if old_val is not None:
-            # Overwrite the old policy if it exists
-            local_power_db, local_session_db, lock = old_val.split(';')
-        else:
-            conf_id = select_next_conf(local_db_dir, '-power')
-            local_power_db = os.path.join(local_db_dir, '%010d-power' % conf_id)
+        conf_id = select_next_conf(local_db_dir, '-power')
+        local_power_db = os.path.join(local_db_dir, '%010d-power' % conf_id)
         parser = ConfigParser()
         section = 'org/gnome/settings-daemon/plugins/power'
         parser.add_section(section)
@@ -165,9 +152,8 @@ class gp_gnome_settings_ext(gp_pol_ext):
         parser.set(section, 'idle-brightness', str(data['Dim Idle Brightness']))
         with open(local_power_db, 'w') as w:
             parser.write(w)
-        if old_val is None:
-            conf_id = select_next_conf(local_db_dir, '-session')
-            local_session_db = os.path.join(local_db_dir, '%010d-session' % conf_id)
+        conf_id = select_next_conf(local_db_dir, '-session')
+        local_session_db = os.path.join(local_db_dir, '%010d-session' % conf_id)
         parser = ConfigParser()
         section = 'org/gnome/desktop/session'
         parser.add_section(section)
@@ -177,60 +163,43 @@ class gp_gnome_settings_ext(gp_pol_ext):
 
         # Lock power-saving
         locks_dir = create_locks_dir(self.test_dir)
-        if old_val is None:
-            conf_id = select_next_conf(locks_dir)
-            lock = os.path.join(locks_dir, '%010d-power-saving' % conf_id)
+        conf_id = select_next_conf(locks_dir)
+        lock = os.path.join(locks_dir, '%010d-power-saving' % conf_id)
         with open(lock, 'w') as w:
             w.write('/org/gnome/settings-daemon/plugins/power/idle-dim\n')
             w.write('/org/gnome/settings-daemon/plugins/power/idle-brightness\n')
             w.write('/org/gnome/desktop/session/idle-delay')
 
         dconf_update(self.test_dir)
-        self.gp_db.store(str(self), attribute, ';'.join([local_power_db,
-                                                         local_session_db,
-                                                         lock]))
+        return [local_power_db, local_session_db, lock]
 
     def __apply_specific_settings(self, data):
-        attribute = self.keys[2]
-        old_val = self.gp_db.retrieve(str(self), attribute)
         create_user_profile(self.test_dir)
         locks_dir = create_locks_dir(self.test_dir)
-        if old_val is not None:
-            # Overwrite the old policy if it exists
-            policy_file = old_val
-        else:
-            conf_id = select_next_conf(locks_dir, '-group-policy')
-            policy_file = os.path.join(locks_dir, '%010d-group-policy' % conf_id)
+        conf_id = select_next_conf(locks_dir, '-group-policy')
+        policy_file = os.path.join(locks_dir, '%010d-group-policy' % conf_id)
         with open(policy_file, 'w') as w:
             for key in data.keys():
                 w.write('%s\n' % key)
         dconf_update(self.test_dir)
-        self.gp_db.store(str(self), attribute, policy_file)
+        return [policy_file]
 
     def __apply_whitelisted_account(self, data):
-        attribute = self.keys[3]
-        old_val = self.gp_db.retrieve(str(self), attribute)
         create_user_profile(self.test_dir)
         local_db_dir = create_local_db(self.test_dir)
         locks_dir = create_locks_dir(self.test_dir)
         val = "['%s']" % "', '".join(data.keys())
         policy_files = self.__lockdown(local_db_dir, locks_dir, 'goa',
-                                       'whitelisted-providers', val, old_val,
+                                       'whitelisted-providers', val,
                                        'org/gnome/online-accounts')
         dconf_update(self.test_dir)
-        self.gp_db.store(str(self), attribute, ';'.join(policy_files))
+        return policy_files
 
     def __apply_enabled_extensions(self, data):
-        attribute = self.keys[4]
-        old_val = self.gp_db.retrieve(str(self), attribute)
         create_user_profile(self.test_dir)
         local_db_dir = create_local_db(self.test_dir)
-        if old_val is not None:
-            # Overwrite the old policy if it exists
-            policy_file = old_val
-        else:
-            conf_id = select_next_conf(local_db_dir)
-            policy_file = os.path.join(local_db_dir, '%010d-extensions' % conf_id)
+        conf_id = select_next_conf(local_db_dir)
+        policy_file = os.path.join(local_db_dir, '%010d-extensions' % conf_id)
         parser = ConfigParser()
         section = 'org/gnome/shell'
         parser.add_section(section)
@@ -240,22 +209,18 @@ class gp_gnome_settings_ext(gp_pol_ext):
         with open(policy_file, 'w') as w:
             parser.write(w)
         dconf_update(self.test_dir)
-        self.gp_db.store(str(self), attribute, policy_file)
+        return [policy_file]
 
     def __lockdown(self, local_db_dir, locks_dir, name, key, val,
-                   old_val, section='org/gnome/desktop/lockdown'):
-        if old_val is None:
-            policy_files = []
-            conf_id = select_next_conf(local_db_dir)
-            policy_file = os.path.join(local_db_dir,
-                                       '%010d-%s' % (conf_id, name))
-            policy_files.append(policy_file)
-            conf_id = select_next_conf(locks_dir)
-            lock = os.path.join(locks_dir, '%010d-%s' % (conf_id, name))
-            policy_files.append(lock)
-        else:
-            policy_files = old_val.split(';')
-            policy_file, lock = policy_files
+                   section='org/gnome/desktop/lockdown'):
+        policy_files = []
+        conf_id = select_next_conf(local_db_dir)
+        policy_file = os.path.join(local_db_dir,
+                                   '%010d-%s' % (conf_id, name))
+        policy_files.append(policy_file)
+        conf_id = select_next_conf(locks_dir)
+        lock = os.path.join(locks_dir, '%010d-%s' % (conf_id, name))
+        policy_files.append(lock)
         parser = ConfigParser()
         parser.add_section(section)
         parser.set(section, key, val)
@@ -266,52 +231,41 @@ class gp_gnome_settings_ext(gp_pol_ext):
         return policy_files
 
     def __apply_enabled(self, k):
-        old_val = self.gp_db.retrieve(str(self), k)
-        if old_val is not None:
-            # Overwrite the old policy if it exists
-            policy_files = old_val.split(';')
-        else:
-            policy_files = []
+        policy_files = []
 
         create_user_profile(self.test_dir)
         local_db_dir = create_local_db(self.test_dir)
         locks_dir = create_locks_dir(self.test_dir)
 
         if k == 'Lock Down Enabled Extensions':
-            if old_val is None:
-                conf_id = select_next_conf(locks_dir)
-                policy_file = os.path.join(locks_dir, '%010d-extensions' % conf_id)
-                policy_files.append(policy_file)
-            else:
-                policy_file, = policy_files
+            conf_id = select_next_conf(locks_dir)
+            policy_file = os.path.join(locks_dir, '%010d-extensions' % conf_id)
+            policy_files.append(policy_file)
             with open(policy_file, 'w') as w:
                 w.write('/org/gnome/shell/enabled-extensions\n')
                 w.write('/org/gnome/shell/development-tools')
         elif k == 'Disable Printing':
             policy_files = self.__lockdown(local_db_dir, locks_dir, 'printing',
-                                           'disable-printing', 'true', old_val)
+                                           'disable-printing', 'true')
         elif k == 'Disable File Saving':
             policy_files = self.__lockdown(local_db_dir, locks_dir,
                                            'filesaving',
-                                           'disable-save-to-disk', 'true',
-                                           old_val)
+                                           'disable-save-to-disk', 'true')
         elif k == 'Disable Command-Line Access':
             policy_files = self.__lockdown(local_db_dir, locks_dir, 'cmdline',
-                                           'disable-command-line', 'true',
-                                           old_val)
+                                           'disable-command-line', 'true')
         elif k == 'Disallow Login Using a Fingerprint':
             policy_files = self.__lockdown(local_db_dir, locks_dir,
                                            'fingerprintreader',
                                            'enable-fingerprint-authentication',
-                                           'false', old_val,
+                                           'false',
                                            section='org/gnome/login-screen')
         elif k == 'Disable User Logout':
             policy_files = self.__lockdown(local_db_dir, locks_dir, 'logout',
-                                           'disable-log-out', 'true', old_val)
+                                           'disable-log-out', 'true')
         elif k == 'Disable User Switching':
             policy_files = self.__lockdown(local_db_dir, locks_dir, 'logout',
-                                           'disable-user-switching', 'true',
-                                           old_val)
+                                           'disable-user-switching', 'true')
         elif k == 'Disable Repartitioning':
             actions = '/usr/share/polkit-1/actions'
             udisk2 = glob(os.path.join(actions,
@@ -361,12 +315,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
             log.error('Unable to apply', k)
             return
         dconf_update(self.test_dir)
-        self.gp_db.store(str(self), k, ';'.join(policy_files))
-
-    def __unapply(self, fnames):
-        for fname in fnames.split(';'):
-            if os.path.exists(fname):
-                os.unlink(fname)
+        return policy_files
 
     def __clean_data(self, k):
         data = self.lock_down_settings[k]
@@ -377,17 +326,14 @@ class gp_gnome_settings_ext(gp_pol_ext):
         if test_dir is not None:
             self.test_dir = test_dir
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, value in settings[str(self)].items():
-                    self.__unapply(value)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, value, sep=';')
+                dconf_update(test_dir)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
                 section_name = 'GNOME Settings\\Lock Down Settings'
-                self.gp_db.set_guid(gpo.name)
                 pol_file = 'MACHINE/Registry.pol'
                 path = os.path.join(gpo.file_sys_path, pol_file)
                 pol_conf = self.parse(path)
@@ -405,22 +351,40 @@ class gp_gnome_settings_ext(gp_pol_ext):
                 for k in self.lock_down_settings.keys():
                     # Ignore disabled preferences
                     if not self.lock_down_settings[k]['Enabled']:
+                        # Unapply the disabled preference if previously applied
+                        self.clean(gpo.name, remove=k)
                         continue
 
                     # Apply using the appropriate applier
+                    data = str(self.lock_down_settings[k])
+                    value_hash = self.generate_value_hash(data)
                     if k == self.keys[0]:
-                        self.__apply_compose_key(self.__clean_data(k))
+                        self.apply(gpo.name, k, value_hash,
+                                   self.__apply_compose_key,
+                                   self.__clean_data(k), sep=';')
                     elif k == self.keys[1]:
-                        self.__apply_dim_idle(self.__clean_data(k))
+                        self.apply(gpo.name, k, value_hash,
+                                   self.__apply_dim_idle,
+                                   self.__clean_data(k), sep=';')
                     elif k == self.keys[2]:
-                        self.__apply_specific_settings(self.__clean_data(k))
+                        self.apply(gpo.name, k, value_hash,
+                                   self.__apply_specific_settings,
+                                   self.__clean_data(k), sep=';')
                     elif k == self.keys[3]:
-                        self.__apply_whitelisted_account(self.__clean_data(k))
+                        self.apply(gpo.name, k, value_hash,
+                                   self.__apply_whitelisted_account,
+                                   self.__clean_data(k), sep=';')
                     elif k == self.keys[4]:
-                        self.__apply_enabled_extensions(self.__clean_data(k))
+                        self.apply(gpo.name, k, value_hash,
+                                   self.__apply_enabled_extensions,
+                                   self.__clean_data(k), sep=';')
                     else:
-                        self.__apply_enabled(k)
-                    self.gp_db.commit()
+                        self.apply(gpo.name, k, value_hash,
+                                   self.__apply_enabled,
+                                   k, sep=';')
+
+                # Unapply any policy that has been removed
+                self.clean(gpo.name, keep=self.lock_down_settings.keys())
 
     def rsop(self, gpo):
         output = {}
