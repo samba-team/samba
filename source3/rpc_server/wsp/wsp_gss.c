@@ -1515,16 +1515,18 @@ static void wsp_gss_getrows_process_rows_for_index(struct tevent_req *req)
 	}
 
 	/*
-	 * spec says cbreadbuff should be the max between
-	 * 1000 * rowstotransfer rounded up to the nearest 512 byte
-	 * multiple with the result capped to 0x4000
-	 * protocol example uses 1000 * rowwidth (which seems a bit
-	 * more sensible) so test that.
+	 * MS-WSP has some conflicting information regarding this, in
+	 * on place it mentions 1000 * rowstotransfer and in the protocol
+	 * example it calculates the cbreadbuffer based on 1000 * rowWidth.
+	 * I think the correct statement is that cbreadbuffer should
+	 * be the max between (1000 * rowstotransfer) or rowWidth rounded
+	 * up to the nearest 512 byte boundary.
+	 * This is not a server limit but rather a rule of thumb for the
+	 * client to calculate the cbreadbuffer to use but we can infer
+	 * that neither cbrowWidth or cbreadbuffer exceed MAX_ROW_BUFF_SIZE.
 	 */
-	if (rowsin->cbrowWidth > MAX_ROW_BUFF_SIZE / 1000)
-	{
-		DBG_ERR("cbrowwidth 0x%x X 1000 exceeds max "
-			"buff size of 0x%x\n",
+	if (rowsin->cbrowWidth > MAX_ROW_BUFF_SIZE) {
+		DBG_ERR("cbrowWidth 0x%x exceeds max bufsize 0x%x\n",
 			rowsin->cbrowWidth, MAX_ROW_BUFF_SIZE);
 		tevent_req_herror(req, HRESULT_FROM_NT(NT_STATUS_INVALID_PARAMETER));
 		return;

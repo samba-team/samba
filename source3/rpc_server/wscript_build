@@ -157,6 +157,7 @@ wsp_backends_sources = '''
 if bld.env.wsp_backend_es:
     wsp_backends_sources += '''
                             wsp/wsp_es_conv.c
+                            wsp/wsp_es_abs_if.c
                             '''
     bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
                       'wsp/elasticsearch_mappings.json')
