@@ -78,7 +78,13 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
     def assert_symlink_exception(self, e, expect):
         self.assertEqual(e.args[0], ntstatus.NT_STATUS_STOPPED_ON_SYMLINK)
         for k,v in expect.items():
-            self.assertEqual((k,e.args[2].get(k)), (k,v))
+            if (k == "flags"):
+                # Ignore symlink trust flags for now
+                expected = v & ~libsmb.SYMLINK_TRUST_MASK
+                got = e.args[2].get(k) & ~libsmb.SYMLINK_TRUST_MASK
+                self.assertEqual((k,got), (k,expected))
+            else:
+                self.assertEqual((k,e.args[2].get(k)), (k,v))
 
     def test_symlinkerror_directory(self):
         """Test a symlink in a nonterminal path component"""
