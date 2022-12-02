@@ -624,4 +624,15 @@ enum csc_policy {
  */
 #define SYMLINK_ERROR_TAG	     0x4C4D5953
 
+/*
+ * Flags according to answer from Dochelp:
+ * https://lists.samba.org/archive/cifs-protocol/2022-November/003909.html
+ */
+#define SYMLINK_ADMIN           0x20000000   /* The symlink creator is an admin */
+#define SYMLINK_UNTRUSTED       0x10000000   /* The symlink creator is untrusted */
+#define SYMLINK_TRUST_UNKNOWN   0x00000000   /* The symlink creator is unknown/legacy */
+
+#define SYMLINK_TRUST_MASK      0x30000000   /* Encodes the redirection trust level (maps to REDIRECTION_TRUST_LEVEL) */
+#define SYMLINK_TRUST_SHIFT     28           /* Bits to shift to convert to/from REDIRECTION_TRUST_LEVEL */
+
 #endif /* _SMB_CONSTANTS_H */
