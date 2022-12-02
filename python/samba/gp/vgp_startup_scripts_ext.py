@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba.gp.gpclass import gp_xml_ext, check_safe_path
+from samba.gp.gpclass import gp_xml_ext, check_safe_path, gp_file_applier
 from tempfile import NamedTemporaryFile
 from samba.common import get_bytes
 from subprocess import Popen, PIPE
@@ -31,20 +31,16 @@ intro = b'''
 
 '''
 
-class vgp_startup_scripts_ext(gp_xml_ext):
+class vgp_startup_scripts_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/Startup Scripts'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
                              cdir='/etc/cron.d'):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, script in settings[str(self)].items():
-                    if script and os.path.exists(script):
-                        os.unlink(script)
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, script)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
@@ -56,6 +52,7 @@ class vgp_startup_scripts_ext(gp_xml_ext):
                     continue
                 policy = xml_conf.find('policysetting')
                 data = policy.find('data')
+                attributes = []
                 for listelement in data.findall('listelement'):
                     local_path = self.lp.cache_path('gpo_cache')
                     script = listelement.find('script').text
@@ -67,11 +64,10 @@ class vgp_startup_scripts_ext(gp_xml_ext):
                         parameters = parameters.text
                     else:
                         parameters = ''
-                    hash = listelement.find('hash').text
-                    attribute = '%s:%s:%s' % (script, hash, parameters)
-                    old_val = self.gp_db.retrieve(str(self), attribute)
-                    if old_val is not None:
-                        continue
+                    value_hash = listelement.find('hash').text
+                    attribute = self.generate_attribute(script_file,
+                                                        parameters)
+                    attributes.append(attribute)
                     run_as = listelement.find('run_as')
                     if run_as is not None:
                         run_as = run_as.text
@@ -79,19 +75,28 @@ class vgp_startup_scripts_ext(gp_xml_ext):
                         run_as = 'root'
                     run_once = listelement.find('run_once') is not None
                     if run_once:
-                        Popen(['/bin/sh %s %s' % (script_file, parameters)],
-                            shell=True).wait()
-                        self.gp_db.store(str(self), attribute, '')
+                        def applier_func(script_file, parameters):
+                            Popen(['/bin/sh %s %s' % (script_file, parameters)],
+                                shell=True).wait()
+                            # Run once scripts don't create a file to unapply,
+                            # so their is nothing to return.
+                            return []
+                        self.apply(gpo.name, attribute, value_hash, applier_func,
+                                   script_file, parameters)
                     else:
-                        entry = '@reboot %s %s %s' % (run_as, script_file,
-                                                      parameters)
-                        with NamedTemporaryFile(prefix='gp_', dir=cdir,
-                                                delete=False) as f:
-                            f.write(intro)
-                            f.write(get_bytes(entry))
-                            os.chmod(f.name, 0o700)
-                            self.gp_db.store(str(self), attribute, f.name)
-                    self.gp_db.commit()
+                        def applier_func(run_as, script_file, parameters):
+                            entry = '@reboot %s %s %s' % (run_as, script_file,
+                                                          parameters)
+                            with NamedTemporaryFile(prefix='gp_', dir=cdir,
+                                                    delete=False) as f:
+                                f.write(intro)
+                                f.write(get_bytes(entry))
+                                os.chmod(f.name, 0o700)
+                                return [f.name]
+                        self.apply(gpo.name, attribute, value_hash, applier_func,
+                                   run_as, script_file, parameters)
+
+                    self.clean(gpo.name, keep=attributes)
 
     def rsop(self, gpo):
         output = {}
