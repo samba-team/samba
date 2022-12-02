@@ -1627,6 +1627,8 @@ extern void build_options(bool screen);
 	};
 	bool ok;
 
+	setproctitle_init(argc, discard_const(argv), environ);
+
 	/*
 	 * Do this before any other talloc operation
 	 */
