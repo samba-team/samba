@@ -27,7 +27,7 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 uint32_t max_out_len,
 				 uint32_t *out_len)
 {
-	DBG_DEBUG("Called on %s\n", fsp_fnum_dbg(fsp));
+	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
 	return NT_STATUS_NOT_A_REPARSE_POINT;
 }
 
@@ -36,7 +36,7 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 				 const uint8_t *in_data,
 				 uint32_t in_len)
 {
-	DBG_DEBUG("Called on %s\n", fsp_fnum_dbg(fsp));
+	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
 	return NT_STATUS_NOT_A_REPARSE_POINT;
 }
 
@@ -45,6 +45,6 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 				 const uint8_t *in_data,
 				 uint32_t in_len)
 {
-	DBG_DEBUG("Called on %s\n", fsp_fnum_dbg(fsp));
+	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
 	return NT_STATUS_NOT_A_REPARSE_POINT;
 }
