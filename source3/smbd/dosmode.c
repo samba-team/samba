@@ -355,8 +355,16 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 		dosattr |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 
-	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
-	*pattr |= (uint32_t)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
+	/*
+	 * _SPARSE and _REPARSE_POINT are valid on get but not on
+	 * set. Both are created via special fcntls.
+	 */
+
+	dosattr &= (SAMBA_ATTRIBUTES_MASK|
+		    FILE_ATTRIBUTE_SPARSE|
+		    FILE_ATTRIBUTE_REPARSE_POINT);
+
+	*pattr |= dosattr;
 
 	dos_mode_debug_print(__func__, *pattr);
 
