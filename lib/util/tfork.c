@@ -572,8 +572,8 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 	/*
 	 * The "waiter" child.
 	 */
-	setproctitle("tfork waiter process");
-	prctl_set_comment("tfork waiter");
+	process_set_title("tfork waiter", "tfork waiter proces");
+
 	CatchSignal(SIGCHLD, SIG_DFL);
 
 	close(status_sp_caller_fd);
@@ -605,8 +605,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 		return 0;
 	}
 	state->worker_pid = pid;
-	setproctitle("tfork waiter process(%d)", pid);
-	prctl_set_comment("tfork(%d)", pid);
+	process_set_title("tfork(%d)", "tfork waiter process(%d)", pid);
 
 	close(ready_pipe_worker_fd);
 
