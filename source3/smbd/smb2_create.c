@@ -1615,6 +1615,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	return;
 
 fail:
+	close_file_free(state->smb1req, &state->result, ERROR_CLOSE);
 	tevent_req_nterror(req, status);
 	tevent_req_post(req, state->ev);
 }
