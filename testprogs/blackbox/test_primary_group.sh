@@ -21,6 +21,16 @@ failed=0
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
 
+ldbsearch="${VALGRIND} ldbsearch"
+if [ -x "${BINDIR}/ldbsearch" ]; then
+	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
+fi
+
+ldbmodify="${VALGRIND} ldbmodify"
+if [ -x "${BINDIR}/ldbmodify" ]; then
+	ldbmodify="${VALGRIND} ${BINDIR}/ldbmodify"
+fi
+
 TZ=UTC
 export TZ
 
@@ -38,14 +48,14 @@ testit "create '$testuser'" $VALGRIND $PYTHON $BINDIR/samba-tool user create "$t
 testit "add '$testgroup'" $VALGRIND $PYTHON $BINDIR/samba-tool group add "$testgroup" || failed=$(expr $failed + 1)
 testit "addmembers '$testgroup' '$testuser'" $VALGRIND $PYTHON $BINDIR/samba-tool group addmembers "$testgroup" "$testuser" || failed=$(expr $failed + 1)
 
-testit "search1" $VALGRIND $BINDIR/ldbsearch -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName="$testgroup" objectSid || failed=$(expr $failed + 1)
+testit "search1" ${ldbsearch} -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName="$testgroup" objectSid || failed=$(expr $failed + 1)
 ldif="${TMPDIR}/search1.ldif"
-$VALGRIND $BINDIR/ldbsearch -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName=$testgroup objectSid >$ldif
+${ldbsearch} -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName=$testgroup objectSid >$ldif
 rid=$(cat $ldif | sed -n 's/^objectSid: S-1-5-21-.*-.*-.*-//p')
 
-testit "search2" $VALGRIND $BINDIR/ldbsearch -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName="$testuser" dn || failed=$(expr $failed + 1)
+testit "search2" ${ldbsearch} -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName="$testuser" dn || failed=$(expr $failed + 1)
 ldif="${TMPDIR}/search2.ldif"
-$VALGRIND $BINDIR/ldbsearch -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName=$testuser dn >$ldif
+${ldbsearch} -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 sAMAccountName=$testuser dn >$ldif
 user_dn=$(cat $ldif | sed -n 's/^dn: //p')
 
 ldif="${TMPDIR}/modify1.ldif"
@@ -55,7 +65,7 @@ changetype: modify
 replace: primaryGroupID
 primaryGroupID: $rid
 EOF
-testit "Change primaryGroupID to $rid" $VALGRIND $BINDIR/ldbmodify -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 --verbose <$ldif || failed=$(expr $failed + 1)
+testit "Change primaryGroupID to $rid" ${ldbmodify} -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 --verbose <$ldif || failed=$(expr $failed + 1)
 
 testit "dbcheck run1" $VALGRIND $PYTHON $BINDIR/samba-tool dbcheck --attrs=member || failed=$(expr $failed + 1)
 
@@ -66,7 +76,7 @@ changetype: modify
 replace: primaryGroupID
 primaryGroupID: 513
 EOF
-testit "Change primaryGroupID to 513" $VALGRIND $BINDIR/ldbmodify -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 <$ldif || failed=$(expr $failed + 1)
+testit "Change primaryGroupID to 513" ${ldbmodify} -H ldap://$SERVER_IP -U$USERNAME%$PASSWORD -d0 <$ldif || failed=$(expr $failed + 1)
 
 testit "dbcheck run2" $VALGRIND $PYTHON $BINDIR/samba-tool dbcheck --attrs=member || failed=$(expr $failed + 1)
 
