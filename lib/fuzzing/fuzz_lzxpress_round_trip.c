@@ -27,7 +27,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 {
-	static uint8_t compressed[1024 * 1024] = {0};
+	static uint8_t compressed[1024 * 1280] = {0};
 	static uint8_t decompressed[1024 * 1024] = {0};
 	ssize_t compressed_size;
 	ssize_t decompressed_size;
@@ -38,6 +38,9 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 
 	compressed_size = lzxpress_compress(buf, len,
 					    compressed, sizeof(compressed));
+	if (compressed_size < 0) {
+		abort();
+	}
 
 	decompressed_size = lzxpress_decompress(compressed, compressed_size,
 						decompressed, sizeof(decompressed));
