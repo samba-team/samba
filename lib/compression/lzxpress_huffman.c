@@ -1788,17 +1788,19 @@ static ssize_t lzx_huffman_decompress_block(struct bitstream *input,
 			 * the end of the expected block. That's fine, so long
 			 * as it doesn't extend past the total output size.
 			 */
+			size_t i;
 			size_t end = output_pos + length;
+			uint8_t *here = output + output_pos;
+			uint8_t *there = here - distance;
 			if (end > output_size ||
 			    previous_size + output_pos < distance ||
-			    unlikely(end < output_pos)) {
+			    unlikely(end < output_pos || there > here)) {
 				return LZXPRESS_ERROR;
 			}
-
-			for (; output_pos < end; output_pos++) {
-				output[output_pos] = \
-					output[output_pos - distance];
+			for (i = 0; i < length; i++) {
+				here[i] = there[i];
 			}
+			output_pos += length;
 			distance = 0;
 			length = 0;
 		}
