@@ -1429,9 +1429,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 				state->out_context_blobs,
 				SMB2_CREATE_TAG_MXAC,
 				blob);
-			if (tevent_req_nterror(req, status)) {
-				tevent_req_post(req, state->ev);
-				return;
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
 			}
 		}
 	}
@@ -1465,9 +1464,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
 			   "returned %s\n",
 			   nt_errstr(status)));
-		if (tevent_req_nterror(req, status)) {
-			tevent_req_post(req, state->ev);
-			return;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 
 		/*
@@ -1485,9 +1483,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					      state->out_context_blobs,
 					      SMB2_CREATE_TAG_DHNQ,
 					      blob);
-		if (tevent_req_nterror(req, status)) {
-			tevent_req_post(req, state->ev);
-			return;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 	}
 
@@ -1514,9 +1511,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					      state->out_context_blobs,
 					      SMB2_CREATE_TAG_DH2Q,
 					      blob);
-		if (tevent_req_nterror(req, status)) {
-			tevent_req_post(req, state->ev);
-			return;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 	}
 
@@ -1541,9 +1537,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					      state->out_context_blobs,
 					      SMB2_CREATE_TAG_QFID,
 					      blob);
-		if (tevent_req_nterror(req, status)) {
-			tevent_req_post(req, state->ev);
-			return;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 	}
 
@@ -1560,19 +1555,16 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		}
 
 		if (!smb2_lease_push(&lease, buf, lease_len)) {
-			tevent_req_nterror(
-				req, NT_STATUS_INTERNAL_ERROR);
-			tevent_req_post(req, state->ev);
-			return;
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
 		}
 
 		status = smb2_create_blob_add(
 			state, state->out_context_blobs,
 			SMB2_CREATE_TAG_RQLS,
 			data_blob_const(buf, lease_len));
-		if (tevent_req_nterror(req, status)) {
-			tevent_req_post(req, state->ev);
-			return;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 	}
 
@@ -1589,10 +1581,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			conn, 0, psbuf, &owner, &group, NULL, 0);
 
 		if (cc_len == -1) {
-			tevent_req_nterror(
-				req, NT_STATUS_INSUFFICIENT_RESOURCES);
-			tevent_req_post(req, state->ev);
-			return;
+			status = NT_STATUS_INSUFFICIENT_RESOURCES;
+			goto fail;
 		}
 
 		{
@@ -1616,14 +1606,17 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 				state->out_context_blobs,
 				SMB2_CREATE_TAG_POSIX,
 				blob);
-			if (tevent_req_nterror(req, status)) {
-				tevent_req_post(req, state->ev);
-				return;
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
 			}
 		}
 	}
 
 	return;
+
+fail:
+	tevent_req_nterror(req, status);
+	tevent_req_post(req, state->ev);
 }
 
 static void smbd_smb2_create_finish(struct tevent_req *req)
