@@ -1530,7 +1530,7 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	status = reinit_after_fork(
 		global_messaging_context(),
 		global_event_context(),
-		true, NULL);
+		true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		return status;

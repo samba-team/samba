@@ -256,7 +256,7 @@ NTSTATUS smbd_reinit_after_fork(struct messaging_context *msg_ctx,
 {
 	NTSTATUS ret;
 	am_parent = NULL;
-	ret = reinit_after_fork(msg_ctx, ev_ctx, parent_longlived, NULL);
+	ret = reinit_after_fork(msg_ctx, ev_ctx, parent_longlived);
 	initialize_password_db(true, ev_ctx);
 	return ret;
 }

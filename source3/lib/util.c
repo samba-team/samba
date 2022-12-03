@@ -429,8 +429,7 @@ static void reinit_after_fork_pipe_handler(struct tevent_context *ev,
 
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct tevent_context *ev_ctx,
-			   bool parent_longlived,
-			   const char *comment)
+			   bool parent_longlived)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
@@ -501,10 +500,6 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 				return map_nt_error_from_unix(ret);
 			}
 		}
-	}
-
-	if (comment) {
-		prctl_set_comment("%s", comment);
 	}
 
  done:

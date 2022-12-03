@@ -167,7 +167,7 @@ void start_async_dns(struct messaging_context *msg)
 	CatchSignal(SIGHUP, SIG_IGN);
         CatchSignal(SIGTERM, sig_term);
 
-	status = reinit_after_fork(msg, nmbd_event_context(), true, NULL);
+	status = reinit_after_fork(msg, nmbd_event_context(), true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));

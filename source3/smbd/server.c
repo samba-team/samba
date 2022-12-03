@@ -988,7 +988,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	smb_set_close_on_exec(fd);
 
 	if (s->parent->interactive) {
-		reinit_after_fork(msg_ctx, ev, true, NULL);
+		reinit_after_fork(msg_ctx, ev, true);
 		smbd_process(ev, msg_ctx, fd, true);
 		exit_server_cleanly("end of interactive mode");
 		return;
@@ -1884,7 +1884,7 @@ extern void build_options(bool screen);
 	if (cmdline_daemon_cfg->daemon)
 		pidfile_create(lp_pid_directory(), "smbd");
 
-	status = reinit_after_fork(msg_ctx, ev_ctx, false, NULL);
+	status = reinit_after_fork(msg_ctx, ev_ctx, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}

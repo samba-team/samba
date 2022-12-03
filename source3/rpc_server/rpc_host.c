@@ -2949,7 +2949,7 @@ int main(int argc, const char *argv[])
 			cmdline_daemon_cfg->no_process_group,
 			log_stdout);
 
-		status = reinit_after_fork(msg_ctx, ev_ctx, false, NULL);
+		status = reinit_after_fork(msg_ctx, ev_ctx, false);
 		if (!NT_STATUS_IS_OK(status)) {
 			exit_daemon("reinit_after_fork() failed",
 				    map_errno_from_nt_status(status));

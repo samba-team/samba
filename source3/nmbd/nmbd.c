@@ -983,7 +983,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	pidfile_create(lp_pid_directory(), "nmbd");
 
-	status = reinit_after_fork(msg, nmbd_event_context(), false, NULL);
+	status = reinit_after_fork(msg, nmbd_event_context(), false);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("reinit_after_fork() failed", map_errno_from_nt_status(status));

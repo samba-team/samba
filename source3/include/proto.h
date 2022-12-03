@@ -301,8 +301,7 @@ NTSTATUS init_before_fork(void);
 int parent_watch_fd(void);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct tevent_context *ev_ctx,
-			   bool parent_longlived,
-			   const char *comment);
+			   bool parent_longlived);
 NTSTATUS smbd_reinit_after_fork(struct messaging_context *msg_ctx,
 				struct tevent_context *ev_ctx,
 				bool parent_longlived);

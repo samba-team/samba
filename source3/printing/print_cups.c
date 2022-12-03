@@ -495,7 +495,7 @@ static bool cups_pcap_load_async(struct tevent_context *ev,
 
 	close_all_print_db();
 
-	status = reinit_after_fork(msg_ctx, ev, true, NULL);
+	status = reinit_after_fork(msg_ctx, ev, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
 		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");

@@ -776,7 +776,7 @@ bool run_g_lock5(int dummy)
 		if (child == 0) {
 			TALLOC_FREE(ctx);
 
-			status = reinit_after_fork(msg, ev, false, "");
+			status = reinit_after_fork(msg, ev, false);
 
 			close(ready_pipe[0]);
 			close(exit_pipe[1]);
@@ -943,7 +943,7 @@ bool run_g_lock6(int dummy)
 		if (child == 0) {
 			TALLOC_FREE(ctx);
 
-			status = reinit_after_fork(msg, ev, false, "");
+			status = reinit_after_fork(msg, ev, false);
 			if (!NT_STATUS_IS_OK(status)) {
 				fprintf(stderr, "reinit_after_fork failed: %s\n",
 					nt_errstr(status));
@@ -1106,7 +1106,7 @@ bool run_g_lock7(int dummy)
 		close(down_pipe[1]);
 		down_pipe[1] = -1;
 
-		status = reinit_after_fork(msg, ev, false, "");
+		status = reinit_after_fork(msg, ev, false);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr,
 				"reinit_after_fork failed: %s\n",
