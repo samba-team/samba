@@ -252,11 +252,11 @@ void smbd_exit_server_cleanly(const char *const explanation)
  */
 NTSTATUS smbd_reinit_after_fork(struct messaging_context *msg_ctx,
 				struct tevent_context *ev_ctx,
-				bool parent_longlived, const char *comment)
+				bool parent_longlived)
 {
 	NTSTATUS ret;
 	am_parent = NULL;
-	ret = reinit_after_fork(msg_ctx, ev_ctx, parent_longlived, comment);
+	ret = reinit_after_fork(msg_ctx, ev_ctx, parent_longlived, NULL);
 	initialize_password_db(true, ev_ctx);
 	return ret;
 }

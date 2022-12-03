@@ -2606,8 +2606,7 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 
 		status = smbd_reinit_after_fork(xconn->client->msg_ctx,
 						xconn->client->raw_ev_ctx,
-						true,
-						"smbd-echo");
+						true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
