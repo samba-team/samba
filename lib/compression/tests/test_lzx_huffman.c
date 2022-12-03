@@ -976,7 +976,7 @@ static void test_lzxpress_huffman_random_noise_round_trip(void **state)
 
 static void test_lzxpress_huffman_overlong_matches(void **state)
 {
-	size_t i, j;
+	size_t i, j = 0;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 1024 * 1024);
 	DATA_BLOB ref = {0};
@@ -1017,7 +1017,7 @@ static void test_lzxpress_huffman_overlong_matches(void **state)
 
 static void test_lzxpress_huffman_overlong_matches_abc(void **state)
 {
-	size_t i, j, k;
+	size_t i, j = 0, k = 0;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	DATA_BLOB original = data_blob_talloc(mem_ctx, NULL, 1024 * 1024);
 	DATA_BLOB ref = {0};
