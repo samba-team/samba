@@ -254,6 +254,7 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 			return false;
 		}
 
+		process_set_title("smbd-scavenger", "scavenger");
 		reopen_logs();
 
 		state->am_scavenger = true;

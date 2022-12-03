@@ -435,6 +435,8 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 		exit(1);
 	}
 
+	process_set_title("smbd-notifyd", "notifyd");
+
 	reopen_logs();
 
 	/* Set up sighup handler for notifyd */
@@ -651,6 +653,8 @@ static bool cleanupd_init(struct messaging_context *msg, bool interactive,
 
 		exit(1);
 	}
+
+	process_set_title("smbd-cleanupd", "cleanupd");
 
 	se = tevent_add_signal(ev,
 			       ev,

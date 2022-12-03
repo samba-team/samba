@@ -47,6 +47,7 @@
 #include "libcli/smb/smbXcli_base.h"
 #include "lib/util/time_basic.h"
 #include "source3/lib/substitute.h"
+#include "lib/util/util_process.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
@@ -2612,6 +2613,7 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 				  nt_errstr(status)));
 			exit(1);
 		}
+		process_set_title("smbd-echo", "echo handler");
 		initialize_password_db(true, xconn->client->raw_ev_ctx);
 		smbd_echo_loop(xconn, listener_pipe[1]);
 		exit(0);
