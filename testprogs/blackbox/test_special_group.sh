@@ -24,6 +24,13 @@ if [ -x "$BINDIR/tdbrestore" ]; then
 fi
 
 samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
+if [ ! -x "${samba_undump}" ]; then
+	subunit_start_test "special group"
+	subunit_skip_test "special group" <<EOF
+Skipping tests - undump.sh is not available in release tarballs
+EOF
+	exit 0
+fi
 
 cleanup_output_directories()
 {
