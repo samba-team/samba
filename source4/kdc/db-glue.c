@@ -1521,6 +1521,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			if (entry->etypes != NULL) {
 				entry->etypes->len = 1;
 			}
+			entry->old_keys.len = MIN(entry->old_keys.len, 1);
+			entry->older_keys.len = MIN(entry->older_keys.len, 1);
 		}
 #endif
 	} else if (kdc_db_ctx->rodc) {
