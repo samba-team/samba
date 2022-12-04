@@ -15,10 +15,15 @@ shift 2
 
 . $(dirname $0)/subunit.sh
 
+ldbsearch="${VALGRIND} ldbsearch"
+if [ -x "${BINDIR}/ldbsearch" ]; then
+	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
+fi
+
 basedn()
 {
 	SAMDB_PATH=$1
-	$BINDIR/ldbsearch -H $SAMDB_PATH --basedn='' --scope=base defaultNamingContext | grep defaultNamingContext | awk '{print $2}'
+	${ldbsearch} -H $SAMDB_PATH --basedn='' --scope=base defaultNamingContext | grep defaultNamingContext | awk '{print $2}'
 }
 
 ldapcmp_with_orig()
