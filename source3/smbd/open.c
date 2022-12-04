@@ -588,11 +588,7 @@ static NTSTATUS symlink_target_below_conn(
 		 * fsp is an O_PATH open, Linux does a "freadlink"
 		 * with an empty name argument to readlinkat
 		 */
-		struct smb_filename null_fname = {
-			.base_name = discard_const_p(char, ""),
-		};
-		status = readlink_talloc(
-			talloc_tos(), fsp, &null_fname, &target);
+		status = readlink_talloc(talloc_tos(), fsp, NULL, &target);
 	} else {
 		status = readlink_talloc(
 			talloc_tos(), dirfsp, symlink_name, &target);
