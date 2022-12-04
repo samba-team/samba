@@ -25,8 +25,17 @@ samba_tool="$samba4bindir/samba-tool"
 net_tool="$samba4bindir/net"
 smbpasswd="$samba4bindir/smbpasswd"
 texpect="$samba4bindir/texpect"
-ldbsearch="$samba4bindir/ldbsearch"
-ldbmodify="$samba4bindir/ldbmodify"
+
+ldbsearch="${VALGRIND} ldbsearch"
+if [ -x "${BINDIR}/ldbsearch" ]; then
+	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
+fi
+
+ldbmodify="${VALGRIND} ldbmodify"
+if [ -x "${BINDIR}/ldbmodify" ]; then
+	ldbmodify="${VALGRIND} ${BINDIR}/ldbmodify"
+fi
+
 
 newuser="$samba_tool user create"
 groupaddmem="$samba_tool group addmembers"
