@@ -685,6 +685,9 @@ NTSTATUS readlink_talloc(
 	struct smb_filename *smb_relname,
 	char **_substitute)
 {
+	struct smb_filename null_fname = {
+		.base_name = discard_const_p(char, ""),
+	};
 	char buf[PATH_MAX];
 	ssize_t ret;
 	char *substitute;
@@ -699,12 +702,7 @@ NTSTATUS readlink_talloc(
 		 * We have a Linux O_PATH handle in dirfsp and want to
 		 * read its value, essentially a freadlink
 		 */
-		smb_relname = synthetic_smb_fname(
-			talloc_tos(), "", NULL, NULL, 0, 0);
-		if (smb_relname == NULL) {
-			DBG_DEBUG("synthetic_smb_fname() failed\n");
-			return NT_STATUS_NO_MEMORY;
-		}
+		smb_relname = &null_fname;
 	}
 
 	ret = SMB_VFS_READLINKAT(
