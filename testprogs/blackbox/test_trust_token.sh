@@ -26,9 +26,10 @@ TYPE=$1
 shift 1
 failed=0
 
-samba4bindir="$BINDIR"
-
-ldbsearch="$samba4bindir/ldbsearch"
+ldbsearch="${VALGRIND} ldbsearch"
+if [ -x "${BINDIR}/ldbsearch" ]; then
+	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
+fi
 
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
