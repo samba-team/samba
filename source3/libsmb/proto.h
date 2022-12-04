@@ -266,11 +266,6 @@ struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 					const char *fname);
 NTSTATUS cli_posix_readlink_recv(
 	struct tevent_req *req, TALLOC_CTX *mem_ctx, char **target);
-NTSTATUS cli_posix_readlink(
-	struct cli_state *cli,
-	const char *fname,
-	TALLOC_CTX *mem_ctx,
-	char **target);
 struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,

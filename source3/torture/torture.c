@@ -8044,7 +8044,7 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	status = cli_posix_readlink(cli1, sname, talloc_tos(), &target);
+	status = cli_readlink(cli1, sname, talloc_tos(), &target, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("POSIX readlink on %s failed (%s)\n", sname, nt_errstr(status));
 		goto out;

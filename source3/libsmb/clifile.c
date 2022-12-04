@@ -482,48 +482,6 @@ NTSTATUS cli_posix_readlink_recv(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_posix_readlink(
-	struct cli_state *cli,
-	const char *fname,
-	TALLOC_CTX *mem_ctx,
-	char **target)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev = NULL;
-	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = cli_posix_readlink_send(frame, ev, cli, fname);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-
-	status = cli_posix_readlink_recv(req, mem_ctx, target);
-
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /****************************************************************************
  Hard link a file (UNIX extensions).
 ****************************************************************************/
