@@ -444,6 +444,14 @@ NTSTATUS readlink_talloc(
 	struct smb_filename *smb_relname,
 	char **_substitute);
 
+struct symlink_reparse_struct;
+
+NTSTATUS read_symlink_reparse(
+	TALLOC_CTX *mem_ctx,
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_relname,
+	struct symlink_reparse_struct **_symlink);
+
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname);
 
 NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,

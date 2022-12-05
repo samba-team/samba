@@ -25,6 +25,7 @@
 #include "util_tdb.h"
 #include "lib/util/bitmap.h"
 #include "lib/util/strv.h"
+#include "libcli/smb/reparse_symlink.h"
 
 #define FILE_HANDLE_OFFSET 0x1000
 
@@ -727,6 +728,67 @@ NTSTATUS readlink_talloc(
 
 	*_substitute = substitute;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS read_symlink_reparse(
+	TALLOC_CTX *mem_ctx,
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_relname,
+	struct symlink_reparse_struct **_symlink)
+{
+	struct symlink_reparse_struct *symlink = NULL;
+	NTSTATUS status;
+
+	symlink = talloc_zero(mem_ctx, struct symlink_reparse_struct);
+	if (symlink == NULL) {
+		goto nomem;
+	}
+
+	status = readlink_talloc(
+		symlink, dirfsp, smb_relname, &symlink->substitute_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("readlink_talloc failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	if (symlink->substitute_name[0] == '/') {
+		const char *connectpath = dirfsp->conn->connectpath;
+		char *abs_target_canon = NULL;
+		const char *relative = NULL;
+		bool in_share;
+
+		abs_target_canon =
+			canonicalize_absolute_path(talloc_tos(),
+						   symlink->substitute_name);
+		if (abs_target_canon == NULL) {
+			goto nomem;
+		}
+
+		in_share = subdir_of(connectpath,
+				     strlen(connectpath),
+				     abs_target_canon,
+				     &relative);
+		if (in_share) {
+			TALLOC_FREE(symlink->substitute_name);
+			symlink->substitute_name =
+				talloc_strdup(symlink, relative);
+			if (symlink->substitute_name == NULL) {
+				goto nomem;
+			}
+		}
+	}
+
+	if (!IS_DIRECTORY_SEP(symlink->substitute_name[0])) {
+		symlink->flags |= SYMLINK_FLAG_RELATIVE;
+	}
+
+	*_symlink = symlink;
+	return NT_STATUS_OK;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	TALLOC_FREE(symlink);
+	return status;
 }
 
 NTSTATUS openat_pathref_dirfsp_nosymlink(
