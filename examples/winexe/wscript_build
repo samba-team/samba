@@ -65,36 +65,44 @@ const DATA_BLOB *%s(void)
 
 winexesvc_binaries = ''
 
+bld.SAMBA_GENERATOR(
+    'winexesvc32_exe',
+    source='winexesvc.c',
+    target='winexesvc32.exe',
+    rule='${WINEXE_CC_WIN32} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}',
+    enabled=bld.env.build_winexe and bld.env.WINEXE_CC_WIN32)
+
+vars = {"WINEXE_FN": "winexesvc32_exe_binary"}
+bld.SAMBA_GENERATOR(
+    'winexesvc32_exe_binary',
+    source='winexesvc32.exe',
+    target='winexesvc32_exe_binary.c',
+    group='build_source',
+    vars=vars,
+    rule=generate_winexesvc_c_from_exe,
+    enabled=bld.env.build_winexe and bld.env.WINEXE_CC_WIN32)
+
 if bld.env.WINEXE_CC_WIN32:
-    bld.SAMBA_GENERATOR(
-        'winexesvc32_exe',
-        source='winexesvc.c',
-        target='winexesvc32.exe',
-        rule='${WINEXE_CC_WIN32} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}')
-    vars = {"WINEXE_FN": "winexesvc32_exe_binary"}
-    bld.SAMBA_GENERATOR(
-        'winexesvc32_exe_binary',
-        source='winexesvc32.exe',
-        target='winexesvc32_exe_binary.c',
-        group='build_source',
-        vars=vars,
-        rule=generate_winexesvc_c_from_exe)
     winexesvc_binaries += ' winexesvc32_exe_binary.c'
 
+bld.SAMBA_GENERATOR(
+    'winexesvc64_exe',
+    source='winexesvc.c',
+    target='winexesvc64.exe',
+    rule='${WINEXE_CC_WIN64} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}',
+    enabled=bld.env.build_winexe and bld.env.WINEXE_CC_WIN64)
+
+vars = {"WINEXE_FN": "winexesvc64_exe_binary"}
+bld.SAMBA_GENERATOR(
+    'winexesvc64_exe_binary',
+    source='winexesvc64.exe',
+    target='winexesvc64_exe_binary.c',
+    group='build_source',
+    vars=vars,
+    rule=generate_winexesvc_c_from_exe,
+    enabled=bld.env.build_winexe and bld.env.WINEXE_CC_WIN64)
+
 if bld.env.WINEXE_CC_WIN64:
-    bld.SAMBA_GENERATOR(
-        'winexesvc64_exe',
-        source='winexesvc.c',
-        target='winexesvc64.exe',
-        rule='${WINEXE_CC_WIN64} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}')
-    vars = {"WINEXE_FN": "winexesvc64_exe_binary"}
-    bld.SAMBA_GENERATOR(
-        'winexesvc64_exe_binary',
-        source='winexesvc64.exe',
-        target='winexesvc64_exe_binary.c',
-        group='build_source',
-        vars=vars,
-        rule=generate_winexesvc_c_from_exe)
     winexesvc_binaries += ' winexesvc64_exe_binary.c'
 
 if winexesvc_binaries != '':
