@@ -294,7 +294,8 @@ static void test_lzxpress_plain_decompress_more_compressed_files(void **state)
 					      dest,
 					      p.decompressed.length);
 		debug_end_timer("decompress", p.decompressed.length);
-		if (written == p.decompressed.length &&
+		if (written != -1 &&
+		    written == p.decompressed.length &&
 		    memcmp(dest, p.decompressed.data, p.decompressed.length) == 0) {
 			debug_message("\033[1;32mdecompressed %s!\033[0m\n", p.name);
 			score++;
@@ -790,7 +791,7 @@ static void test_msft_data1(void **state)
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
-
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, sizeof(fixed_out));
 	assert_memory_equal(out, fixed_out, c_size);
 	out2  = talloc_size(tmp_ctx, strlen(fixed_data));
@@ -798,7 +799,7 @@ static void test_msft_data1(void **state)
 				     sizeof(fixed_out),
 				     out2,
 				     talloc_get_size(out2));
-
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out2, fixed_data, c_size);
 
@@ -830,7 +831,7 @@ static void test_msft_data2(void **state)
 				   strlen(fixed_data),
 				   out,
 				   talloc_get_size(out));
-
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, sizeof(fixed_out));
 	assert_memory_equal(out, fixed_out, c_size);
 
@@ -840,6 +841,7 @@ static void test_msft_data2(void **state)
 				     out2,
 				     talloc_get_size(out2));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out2, fixed_data, c_size);
 
@@ -877,6 +879,7 @@ static void test_lzxpress(void **state)
 				   out,
 				   talloc_get_size(out));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, sizeof(fixed_out));
 	assert_memory_equal(out, fixed_out, c_size);
 
@@ -886,6 +889,7 @@ static void test_lzxpress(void **state)
 				     out2,
 				     talloc_get_size(out2));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out2, fixed_data, c_size);
 
@@ -895,6 +899,7 @@ static void test_lzxpress(void **state)
 				     out3,
 				     talloc_get_size(out3));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out3, fixed_data, c_size);
 
@@ -927,6 +932,7 @@ static void test_lzxpress2(void **state)
 				   out,
 				   talloc_get_size(out));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, sizeof(fixed_out));
 	assert_memory_equal(out, fixed_out, c_size);
 
@@ -936,6 +942,7 @@ static void test_lzxpress2(void **state)
 				     out2,
 				     talloc_get_size(out2));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out2, fixed_data, c_size);
 
@@ -971,6 +978,7 @@ static void test_lzxpress3(void **state)
 				   out,
 				   talloc_get_size(out));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, sizeof(fixed_out));
 	assert_memory_equal(out, fixed_out, c_size);
 
@@ -980,6 +988,7 @@ static void test_lzxpress3(void **state)
 				     out2,
 				     talloc_get_size(out2));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out2, fixed_data, c_size);
 
@@ -1015,6 +1024,7 @@ static void test_lzxpress4(void **state)
 				   out,
 				   talloc_get_size(out));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, sizeof(fixed_out));
 	assert_memory_equal(out, fixed_out, c_size);
 
@@ -1024,6 +1034,7 @@ static void test_lzxpress4(void **state)
 				     out2,
 				     talloc_get_size(out2));
 
+	assert_int_not_equal(c_size, -1);
 	assert_int_equal(c_size, strlen(fixed_data));
 	assert_memory_equal(out2, fixed_data, c_size);
 
@@ -1135,6 +1146,7 @@ static void test_lzxpress_round_trip(void **state)
 					data,
 					alloc_size);
 
+		assert_int_not_equal(len, -1);
 		assert_int_equal(len, comp.length);
 
 		assert_memory_equal(comp.data, data, len);
@@ -1144,6 +1156,7 @@ static void test_lzxpress_round_trip(void **state)
 					  data,
 					  alloc_size);
 
+		assert_int_not_equal(len, -1);
 		assert_int_equal(len, uncomp.length);
 
 		assert_memory_equal(uncomp.data, data, len);

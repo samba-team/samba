@@ -344,6 +344,7 @@ static void test_lzxpress_huffman_decompress(void **state)
 						      p.compressed.length,
 						      dest,
 						      p.decompressed.length);
+		assert_int_not_equal(written, -1);
 		assert_int_equal(written, p.decompressed.length);
 
 		assert_memory_equal(dest, p.decompressed.data, p.decompressed.length);
@@ -368,6 +369,7 @@ static void test_lzxpress_huffman_compress(void **state)
 							   p.decompressed.length,
 							   &dest);
 
+		assert_int_not_equal(written, -1);
 		assert_int_equal(written, p.compressed.length);
 		assert_memory_equal(dest, p.compressed.data, p.compressed.length);
 		talloc_free(dest);
@@ -444,7 +446,8 @@ static void test_lzxpress_huffman_decompress_files(void **state)
 						      dest,
 						      p.decompressed.length);
 		debug_end_timer("decompress", p.decompressed.length);
-		if (written == p.decompressed.length &&
+		if (written != -1 &&
+		    written == p.decompressed.length &&
 		    memcmp(dest, p.decompressed.data, p.decompressed.length) == 0) {
 			debug_message("\033[1;32mdecompressed %s!\033[0m\n", p.name);
 			score++;
