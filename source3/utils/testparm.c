@@ -680,6 +680,14 @@ static int do_global_checks(void)
 			"options\n\n");
 	}
 
+	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY) {
+		fprintf(stderr,
+			"WARNING: You have configured "
+			"'kerberos encryption types = legacy'. "
+			"Your server is vulernable to "
+			"CVE-2022-37966\n\n");
+	}
+
 	return ret;
 }
 
