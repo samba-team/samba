@@ -269,10 +269,12 @@ void netlogon_creds_cli_warn_options(struct loadparm_context *lp_ctx)
 	bool global_require_strong_key = lpcfg_require_strong_key(lp_ctx);
 	int global_client_schannel = lpcfg_client_schannel(lp_ctx);
 	bool global_seal_secure_channel = lpcfg_winbind_sealed_pipes(lp_ctx);
+	int global_kerberos_enctypes = lpcfg_kerberos_encryption_types(lp_ctx);
 	static bool warned_global_reject_md5_servers = false;
 	static bool warned_global_require_strong_key = false;
 	static bool warned_global_client_schannel = false;
 	static bool warned_global_seal_secure_channel = false;
+	static bool warned_global_kerberos_encryption_types = false;
 	static int warned_global_pid = 0;
 	int current_pid = getpid();
 
@@ -281,6 +283,7 @@ void netlogon_creds_cli_warn_options(struct loadparm_context *lp_ctx)
 		warned_global_require_strong_key = false;
 		warned_global_client_schannel = false;
 		warned_global_seal_secure_channel = false;
+		warned_global_kerberos_encryption_types = false;
 		warned_global_pid = current_pid;
 	}
 
@@ -322,6 +325,18 @@ void netlogon_creds_cli_warn_options(struct loadparm_context *lp_ctx)
 			"Please configure 'winbind sealed pipes = yes' (the default), "
 			"See https://bugzilla.samba.org/show_bug.cgi?id=15240\n");
 		warned_global_seal_secure_channel = true;
+	}
+
+	if (global_kerberos_enctypes == KERBEROS_ETYPES_LEGACY &&
+	    !warned_global_kerberos_encryption_types)
+	{
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		DBG_ERR("CVE-2022-37966: "
+			"Please void 'kerberos encryption types = legacy', "
+			"See https://bugzilla.samba.org/show_bug.cgi?id=15237\n");
+		warned_global_kerberos_encryption_types = true;
 	}
 }
 
