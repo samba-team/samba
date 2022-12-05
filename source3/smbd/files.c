@@ -693,10 +693,6 @@ NTSTATUS readlink_talloc(
 	char *substitute;
 	NTSTATUS status;
 
-	if (_substitute == NULL) {
-		return NT_STATUS_OK;
-	}
-
 	if (smb_relname == NULL) {
 		/*
 		 * We have a Linux O_PATH handle in dirfsp and want to
