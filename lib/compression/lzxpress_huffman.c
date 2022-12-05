@@ -970,6 +970,9 @@ static inline bool write_bits(struct write_context *wc,
 static inline bool write_code(struct write_context *wc, uint16_t code)
 {
 	int code_bit_len = bitlen_nonzero_16(code);
+	if (unlikely(code == 0)) {
+		return false;
+	}
 	code &= (1 << code_bit_len) - 1;
 	return  write_bits(wc, code, code_bit_len);
 }
