@@ -4124,10 +4124,12 @@ static int dsdb_dn_compare_ptrs(struct ldb_dn **dn1, struct ldb_dn **dn2)
 }
 
 /*
-  find a NC root given a DN within the NC
+  find a NC root given a DN within the NC by reading the rootDSE namingContexts
  */
-int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
-		      struct ldb_dn **nc_root)
+static int dsdb_find_nc_root_string_based(struct ldb_context *samdb,
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_dn *dn,
+					  struct ldb_dn **nc_root)
 {
 	const char *root_attrs[] = { "namingContexts", NULL };
 	TALLOC_CTX *tmp_ctx;
@@ -4210,6 +4212,235 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 
        talloc_free(tmp_ctx);
        return ldb_error(samdb, LDB_ERR_NO_SUCH_OBJECT, __func__);
+}
+
+struct dsdb_get_partition_and_dn {
+	TALLOC_CTX *mem_ctx;
+	unsigned int count;
+	struct ldb_dn *dn;
+	struct ldb_dn *partition_dn;
+	bool want_partition_dn;
+};
+
+static int dsdb_get_partition_and_dn(struct ldb_request *req,
+				     struct ldb_reply *ares)
+{
+	int ret;
+	struct dsdb_get_partition_and_dn *context = req->context;
+	struct ldb_control *partition_ctrl = NULL;
+	struct dsdb_control_current_partition *partition = NULL;
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS
+	    && ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		return ldb_request_done(req, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		if (context->count != 0) {
+			return ldb_request_done(req,
+						LDB_ERR_CONSTRAINT_VIOLATION);
+		}
+		context->count++;
+
+		context->dn = talloc_steal(context->mem_ctx,
+					   ares->message->dn);
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		talloc_free(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
+
+	case LDB_REPLY_DONE:
+		partition_ctrl
+			= ldb_reply_get_control(ares,
+						DSDB_CONTROL_CURRENT_PARTITION_OID);
+		if (!context->want_partition_dn ||
+			partition_ctrl == NULL) {
+			ret = ares->error;
+			talloc_free(ares);
+
+			return ldb_request_done(req, ret);
+		}
+
+		partition
+			= talloc_get_type_abort(partition_ctrl->data,
+						struct dsdb_control_current_partition);
+		context->partition_dn
+			= ldb_dn_copy(context->mem_ctx, partition->dn);
+		if (context->partition_dn == NULL) {
+			return ldb_request_done(req,
+						LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ares->error;
+		talloc_free(ares);
+
+		return ldb_request_done(req, ret);
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+}
+
+/*
+  find a NC root given a DN within the NC
+ */
+int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
+		      struct ldb_dn **nc_root)
+{
+	TALLOC_CTX *tmp_ctx;
+	int ret;
+	struct ldb_request *req;
+	struct ldb_result *res;
+	struct ldb_dn *search_dn = dn;
+	static const char * attrs[] = { NULL };
+	bool has_extended = ldb_dn_has_extended(dn);
+	bool has_normal_components = ldb_dn_get_comp_num(dn) >= 1;
+	struct dsdb_get_partition_and_dn context = {
+		.mem_ctx = mem_ctx,
+		.want_partition_dn = nc_root != NULL
+	};
+
+	if (!has_extended && !has_normal_components) {
+		return ldb_error(samdb, LDB_ERR_NO_SUCH_OBJECT,
+				 "Request for NC root for rootDSE (\"\") deined.");
+	}
+
+	tmp_ctx = talloc_new(samdb);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(samdb);
+	}
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (res == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(samdb);
+	}
+
+	if (has_extended && has_normal_components) {
+		bool minimise_ok;
+		search_dn = ldb_dn_copy(tmp_ctx, dn);
+		if (search_dn == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(samdb);
+		}
+		minimise_ok = ldb_dn_minimise(search_dn);
+		if (!minimise_ok) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(samdb);
+		}
+	}
+
+	ret = ldb_build_search_req(&req, samdb, tmp_ctx,
+				   search_dn,
+				   LDB_SCOPE_BASE,
+				   NULL,
+				   attrs,
+				   NULL,
+				   &context,
+				   dsdb_get_partition_and_dn,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request_add_control(req,
+				      DSDB_CONTROL_CURRENT_PARTITION_OID,
+				      false, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(req,
+					DSDB_SEARCH_SHOW_RECYCLED|
+					DSDB_SEARCH_SHOW_DELETED|
+					DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request(samdb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	/*
+	 * This could be a new DN, not in the DB, which is OK.  If we
+	 * don't need the normalised DN, we can continue.
+	 *
+	 * We may be told the partition it would be in in the search
+	 * reply control, or if not we can do a string-based match.
+	 */
+
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = LDB_SUCCESS;
+		ldb_reset_err_string(samdb);
+	} else if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+
+	/*
+	 * If the user did not need to find the nc_root,
+	 * we are done
+	 */
+	if (nc_root == NULL) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * When we are working locally, both for the case were
+	 * we find the DN, and the case where we fail, we get
+	 * back via controls the partition it was in or should
+	 * have been in, to return to the client
+	 */
+	if (context.partition_dn != NULL) {
+		(*nc_root) = context.partition_dn;
+
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * This is a remote operation, which is a little harder as we
+	 * have a work out the nc_root from the list of NCs. If we did
+	 * at least resolve the DN to a string, get that now, it makes
+	 * the string-based match below possible for a GUID-based
+	 * input over remote LDAP.
+	 */
+	if (context.dn) {
+		dn = context.dn;
+	} else if (has_extended && !has_normal_components) {
+		ldb_asprintf_errstring(samdb,
+				       "Cannot determine NC root "
+				       "for a not-found bare extended DN %s.",
+				       ldb_dn_get_extended_linearized(tmp_ctx, dn, 1));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	/*
+	 * Either we are working aginast a remote LDAP
+	 * server or the object doesn't exist locally.
+	 *
+	 * This means any GUID that was present in the DN
+	 * therefore could not be evaluated, so do a
+	 * string-based match instead.
+	 */
+	talloc_free(tmp_ctx);
+	return dsdb_find_nc_root_string_based(samdb,
+					      mem_ctx,
+					      dn,
+					      nc_root);
 }
 
 
