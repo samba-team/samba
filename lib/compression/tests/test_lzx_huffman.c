@@ -694,6 +694,7 @@ static void test_lzxpress_huffman_round_trip(void **state)
 	print_message("total reference size:  %zd \n", reference_total);
 	print_message("diff:                  %7zd \n",
 		      reference_total - compressed_total);
+	assert_true(reference_total != 0);
 	print_message("ratio: \033[1;3%dm%.2f\033[0m \n",
 		      2 + (compressed_total >= reference_total),
 		      ((double)compressed_total) / reference_total);
