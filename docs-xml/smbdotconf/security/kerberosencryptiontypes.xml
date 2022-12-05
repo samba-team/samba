@@ -37,15 +37,9 @@
     </para>
 
     <para>When set to <constant>legacy</constant>, only RC4-HMAC-MD5
-    is allowed. Avoiding AES this way has one a very specific use.
-    Normally, the encryption type is negotiated between the peers.
-    However, there is one scenario in which a Windows read-only domain
-    controller (RODC) advertises AES encryption, but then proxies the
-    request to a writeable DC which may not support AES encryption,
-    leading to failure of the handshake. Setting this parameter to
-    <constant>legacy</constant> would cause samba not to negotiate AES
-    encryption. It is assumed of course that the weaker legacy
-    encryption types are acceptable for the setup.
+    is allowed. AVOID using this option, because of
+    <ulink url="https://www.samba.org/samba/security/CVE-2022-37966.html">CVE-2022-37966</ulink> see
+    <ulink url="https://bugzilla.samba.org/show_bug.cgi?id=15237">https://bugzilla.samba.org/show_bug.cgi?id=15237</ulink>.
     </para>
 </description>
 
