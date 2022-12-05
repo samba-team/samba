@@ -27,6 +27,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include "replace.h"
 #include <talloc.h>
 #include "lzxpress_huffman.h"

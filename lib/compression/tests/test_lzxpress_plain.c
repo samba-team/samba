@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <setjmp.h>
+#include <sys/stat.h>
 #include <cmocka.h>
 #include "includes.h"
 #include "talloc.h"
