@@ -614,7 +614,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		conn, dirfsp, NULL, &full_fname, base_fname, &how);
 	TALLOC_FREE(full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("openat_pathref_nostream failed: %s\n",
+		DBG_DEBUG("openat_pathref_fullname() failed: %s\n",
 			  nt_errstr(status));
 		goto fail;
 	}
