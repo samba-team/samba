@@ -2005,6 +2005,7 @@ class DomainTrustCommand(Command):
             security.KERB_ENCTYPE_RC4_HMAC_MD5: "RC4_HMAC_MD5",
             security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96: "AES128_CTS_HMAC_SHA1_96",
             security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96: "AES256_CTS_HMAC_SHA1_96",
+            security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK: "AES256_CTS_HMAC_SHA1_96-SK",
             security.KERB_ENCTYPE_FAST_SUPPORTED: "FAST_SUPPORTED",
             security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED: "COMPOUND_IDENTITY_SUPPORTED",
             security.KERB_ENCTYPE_CLAIMS_SUPPORTED: "CLAIMS_SUPPORTED",
@@ -2226,6 +2227,125 @@ class cmd_domain_trust_show(DomainTrustCommand):
 
         return
 
+class cmd_domain_trust_modify(DomainTrustCommand):
+    """Show trusted domain details."""
+
+    synopsis = "%prog NAME [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "localdcopts": LocalDCCredentialsOptions,
+    }
+
+    takes_options = [
+        Option("--use-aes-keys", action="store_true",
+               help="The trust uses AES kerberos keys.",
+               dest='use_aes_keys',
+               default=None),
+        Option("--no-aes-keys", action="store_true",
+               help="The trust does not have any support for AES kerberos keys.",
+               dest='disable_aes_keys',
+               default=None),
+        Option("--raw-kerb-enctypes", action="store",
+               help="The raw kerberos enctype bits",
+               dest='kerb_enctypes',
+               default=None),
+    ]
+
+    takes_args = ["domain"]
+
+    def run(self, domain, sambaopts=None, versionopts=None, localdcopts=None,
+            disable_aes_keys=None, use_aes_keys=None, kerb_enctypes=None):
+
+        num_modifications = 0
+
+        enctype_args = 0
+        if kerb_enctypes is not None:
+            enctype_args += 1
+        if use_aes_keys is not None:
+            enctype_args += 1
+        if disable_aes_keys is not None:
+            enctype_args += 1
+        if enctype_args > 1:
+            raise CommandError("--no-aes-keys, --use-aes-keys and --raw-kerb-enctypes are mutually exclusive")
+        if enctype_args == 1:
+            num_modifications += 1
+
+        if num_modifications == 0:
+            raise CommandError("modification arguments are required, try --help")
+
+        local_server = self.setup_local_server(sambaopts, localdcopts)
+        try:
+            local_lsa = self.new_local_lsa_connection()
+        except RuntimeError as error:
+            raise self.LocalRuntimeError(self, error, "failed to connect to lsa server")
+
+        try:
+            local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
+            local_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
+            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+        except RuntimeError as error:
+            raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
+
+        self.outf.write("LocalDomain Netbios[%s] DNS[%s] SID[%s]\n" % (
+                        local_lsa_info.name.string,
+                        local_lsa_info.dns_domain.string,
+                        local_lsa_info.sid))
+
+        if enctype_args == 1:
+            lsaString = lsa.String()
+            lsaString.string = domain
+
+            try:
+                local_tdo_enctypes = \
+                    local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                           lsaString,
+                                                           lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)
+            except NTSTATUSError as error:
+                if self.check_runtime_error(error, ntstatus.NT_STATUS_INVALID_PARAMETER):
+                    error = None
+                if self.check_runtime_error(error, ntstatus.NT_STATUS_INVALID_INFO_CLASS):
+                    error = None
+
+                if error is not None:
+                    raise self.LocalRuntimeError(self, error,
+                                                 "QueryTrustedDomainInfoByName(SUPPORTED_ENCRYPTION_TYPES) failed")
+
+                local_tdo_enctypes = lsa.TrustDomainInfoSupportedEncTypes()
+                local_tdo_enctypes.enc_types = 0
+
+            self.outf.write("Old kerb_EncTypes:  %s\n" % self.kerb_EncTypes_string(local_tdo_enctypes.enc_types))
+
+            enc_types = lsa.TrustDomainInfoSupportedEncTypes()
+            if kerb_enctypes is not None:
+                enc_types.enc_types = int(kerb_enctypes, base=0)
+            elif use_aes_keys is not None:
+                enc_types.enc_types = security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+                enc_types.enc_types |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+            elif disable_aes_keys is not None:
+                # CVE-2022-37966: Trust objects are no longer assumed to support
+                # RC4, so we must indicate support explicitly.
+                enc_types.enc_types = security.KERB_ENCTYPE_RC4_HMAC_MD5
+            else:
+                raise CommandError("Internal error should be checked above")
+
+            if enc_types.enc_types != local_tdo_enctypes.enc_types:
+                try:
+                    local_tdo_enctypes = \
+                        local_lsa.SetTrustedDomainInfoByName(local_policy,
+                                                             lsaString,
+                                                             lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES,
+                                                             enc_types)
+                    self.outf.write("New kerb_EncTypes:  %s\n" % self.kerb_EncTypes_string(enc_types.enc_types))
+                except NTSTATUSError as error:
+                    if error is not None:
+                        raise self.LocalRuntimeError(self, error,
+                                                     "SetTrustedDomainInfoByName(SUPPORTED_ENCRYPTION_TYPES) failed")
+            else:
+                self.outf.write("No kerb_EncTypes update needed\n")
+
+        return
 
 class cmd_domain_trust_create(DomainTrustCommand):
     """Create a domain or forest trust."""
@@ -3908,6 +4028,7 @@ class cmd_domain_trust(SuperCommand):
     subcommands["list"] = cmd_domain_trust_list()
     subcommands["show"] = cmd_domain_trust_show()
     subcommands["create"] = cmd_domain_trust_create()
+    subcommands["modify"] = cmd_domain_trust_modify()
     subcommands["delete"] = cmd_domain_trust_delete()
     subcommands["validate"] = cmd_domain_trust_validate()
     subcommands["namespaces"] = cmd_domain_trust_namespaces()

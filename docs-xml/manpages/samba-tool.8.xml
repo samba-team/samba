@@ -702,6 +702,11 @@
 </refsect3>
 
 <refsect3>
+	<title>domain trust modify <replaceable>DOMAIN</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Modify a domain or forest trust.</para>
+</refsect3>
+
+<refsect3>
 	<title>domain trust delete <replaceable>DOMAIN</replaceable> <replaceable>options</replaceable> [options]</title>
 	<para>Delete a domain trust.</para>
 </refsect3>
