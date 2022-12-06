@@ -59,7 +59,7 @@
 	See CVE-2020-1472(ZeroLogon) https://bugzilla.samba.org/show_bug.cgi?id=14497
     </para>
 
-    <para>This option takes precedence to the <smbconfoption name="server schannel"/> option.</para>
+    <para>This option overrides the <smbconfoption name="server schannel"/> option.</para>
 
     <programlisting>
 	server require schannel:LEGACYCOMPUTER1$ = no
