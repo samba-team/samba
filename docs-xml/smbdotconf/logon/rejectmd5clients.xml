@@ -10,7 +10,7 @@
 	<para>You can set this to yes if all domain members support aes.
 	This will prevent downgrade attacks.</para>
 
-	<para>This option takes precedence to the 'allow nt4 crypto' option.</para>
+	<para>This option overrides the 'allow nt4 crypto' option.</para>
 </description>
 
 <value type="default">no</value>

@@ -15,7 +15,7 @@
 	<para>The behavior can be controlled per netbios domain
 	by using 'reject md5 servers:NETBIOSDOMAIN = yes' as option.</para>
 
-	<para>This option takes precedence to the <smbconfoption name="require strong key"/> option.</para>
+	<para>This option overrides the <smbconfoption name="require strong key"/> option.</para>
 </description>
 
 <value type="default">no</value>
