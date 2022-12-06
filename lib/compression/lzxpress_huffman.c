@@ -928,7 +928,7 @@ struct write_context {
 	size_t head;                 /* where lengths go */
 	size_t next_code;            /* where symbol stream goes */
 	size_t pending_next_code;    /* will be next_code */
-	int bit_len;
+	unsigned bit_len;
 	uint32_t bits;
 };
 
@@ -953,7 +953,8 @@ static inline bool write_bits(struct write_context *wc,
 	if (wc->bit_len > 16) {
 		uint32_t w = wc->bits >> (wc->bit_len - 16);
 		wc->bit_len -= 16;
-		if (wc->next_code + 2 > wc->dest_len) {
+		if (wc->next_code + 2 > wc->dest_len ||
+		    unlikely(wc->bit_len > 16)) {
 			return false;
 		}
 		wc->dest[wc->next_code] = w & 0xff;
