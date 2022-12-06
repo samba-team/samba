@@ -70,6 +70,7 @@ IGNORED_RE = (
     r'^third_party/heimdal/lib/hx509/data/',
     r'^third_party/heimdal/po',
     r'^third_party/heimdal/tests/kdc/hdb-mitdb',
+    r'^third_party/heimdal/lib/asn1/fuzz-inputs/',
 )
 
 IGNORED_EXTENSIONS = {
