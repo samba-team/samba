@@ -18,7 +18,7 @@
 
 	<para>"allow nt4 crypto = yes" allows weak crypto to be negotiated, maybe via downgrade attacks.</para>
 
-	<para>This option yields precedence to the 'reject md5 clients' option.</para>
+	<para>This option is over-ridden by the 'reject md5 clients' option.</para>
 </description>
 
 <value type="default">no</value>
