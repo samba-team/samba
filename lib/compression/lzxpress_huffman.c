@@ -1390,6 +1390,11 @@ static void debug_tree_codes(struct bitstream *input)
 			int k;
 			uint16_t j = q.code_code;
 			size_t offset = bitlen_nonzero_16(j) - 1;
+			if (unlikely(j == 0)) {
+				DBG("BROKEN code is 0!\n");
+				return;
+			}
+
 			for (k = 0; k <= offset; k++) {
 				bool b = (j >> (offset - k)) & 1;
 				bits[k] = b ? '1' : '0';
