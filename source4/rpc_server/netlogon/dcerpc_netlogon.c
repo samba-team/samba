@@ -62,6 +62,21 @@
 static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context *context,
 					       const struct dcesrv_interface *iface)
 {
+	struct loadparm_context *lp_ctx = context->conn->dce_ctx->lp_ctx;
+	int schannel = lpcfg_server_schannel(lp_ctx);
+	bool schannel_global_required = (schannel == true);
+	static bool warned_global_schannel_once = false;
+
+	if (!schannel_global_required && !warned_global_schannel_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		D_ERR("CVE-2020-1472(ZeroLogon): "
+		      "Please configure 'server schannel = yes' (the default), "
+		      "See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
+		warned_global_schannel_once = true;
+	}
+
 	return dcesrv_interface_bind_reject_connect(context, iface);
 }
 
@@ -627,7 +642,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const char *opname = "<unknown>";
-	static bool warned_global_once = false;
 
 	if (opnum < ndr_table_netlogon.num_calls) {
 		opname = ndr_table_netlogon.calls[opnum].name;
@@ -677,16 +691,6 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		TALLOC_FREE(creds);
 		ZERO_STRUCTP(return_authenticator);
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!schannel_global_required && !warned_global_once) {
-		/*
-		 * We want admins to notice their misconfiguration!
-		 */
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"Please configure 'server schannel = yes', "
-			"See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
-		warned_global_once = true;
 	}
 
 	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
