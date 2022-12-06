@@ -236,7 +236,7 @@ class SubunitOps(TestProtocolClient, TestsuiteEnabledTestResult):
 
 
 def read_test_regexes(*names):
-    ret = {}
+    ret = []
     files = []
     for name in names:
         # if we are given a directory, we read all the files it contains
@@ -256,20 +256,18 @@ def read_test_regexes(*names):
                     continue
                 if "#" in l:
                     (regex, reason) = l.split("#", 1)
-                    ret[regex.strip()] = reason.strip()
+                    ret.append(re.compile(regex.strip()))
                 else:
-                    ret[l] = None
+                    ret.append(re.compile(l))
 
     return ret
 
 
 def find_in_list(regexes, fullname):
-    for regex, reason in regexes.items():
-        if re.match(regex, fullname):
-            if reason is None:
-                return ""
-            return reason
-    return None
+    for regex in regexes:
+        if regex.match(fullname):
+            return True
+    return False
 
 
 class ImmediateFail(Exception):
@@ -344,10 +342,10 @@ class FilterOps(unittest.TestResult):
 
     def addFailure(self, test, err=None):
         test = self._add_prefix(test)
-        xfail_reason = find_in_list(self.expected_failures, test.id())
-        if xfail_reason is None:
-            xfail_reason = find_in_list(self.flapping, test.id())
-        if xfail_reason is not None:
+        xfail = find_in_list(self.expected_failures, test.id())
+        if not xfail:
+            xfail = find_in_list(self.flapping, test.id())
+        if xfail:
             self.xfail_added += 1
             self.total_xfail += 1
             self._ops.addExpectedFailure(test, err)
@@ -365,8 +363,8 @@ class FilterOps(unittest.TestResult):
 
     def addSuccess(self, test):
         test = self._add_prefix(test)
-        xfail_reason = find_in_list(self.expected_failures, test.id())
-        if xfail_reason is not None:
+        xfail = find_in_list(self.expected_failures, test.id())
+        if xfail:
             self.uxsuccess_added += 1
             self.total_uxsuccess += 1
             self._ops.addUnexpectedSuccess(test)
@@ -438,11 +436,11 @@ class FilterOps(unittest.TestResult):
         if expected_failures is not None:
             self.expected_failures = expected_failures
         else:
-            self.expected_failures = {}
+            self.expected_failures = []
         if flapping is not None:
             self.flapping = flapping
         else:
-            self.flapping = {}
+            self.flapping = []
         self.strip_ok_output = strip_ok_output
         self.xfail_added = 0
         self.fail_added = 0
