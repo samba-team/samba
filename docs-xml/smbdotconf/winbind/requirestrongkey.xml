@@ -17,7 +17,7 @@
 
 	<para>Note for active directory domain this option is hardcoded to 'yes'</para>
 
-	<para>This option yields precedence to the <smbconfoption name="reject md5 servers"/> option.</para>
+	<para>This option is over-ridden by the <smbconfoption name="reject md5 servers"/> option.</para>
 
 	<para>This option overrides the <smbconfoption name="client schannel"/> option.</para>
 </description>

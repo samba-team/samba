@@ -23,7 +23,7 @@
     <para>Note that for active directory domains this is hardcoded to
     <smbconfoption name="client schannel">yes</smbconfoption>.</para>
 
-    <para>This option yields precedence to the <smbconfoption name="require strong key"/> option.</para>
+    <para>This option is over-ridden by the <smbconfoption name="require strong key"/> option.</para>
 </description>
 <value type="default">yes</value>
 <value type="example">auto</value>
