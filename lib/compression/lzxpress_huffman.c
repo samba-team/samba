@@ -1049,7 +1049,7 @@ static ssize_t write_compressed_bytes(uint16_t symbol_values[512],
 			}
 
 			len = intermediate[i + 1];
-			len |= intermediate[i + 2] << 16;
+			len |= intermediate[i + 2] << 16U;
 			distance = intermediate[i + 3];
 			i += 3;
 		} else if (c == 0xffff) {
