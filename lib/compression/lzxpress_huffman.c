@@ -1062,6 +1062,9 @@ static ssize_t write_compressed_bytes(uint16_t symbol_values[512],
 		} else {
 			return LZXPRESS_ERROR;
 		}
+		if (unlikely(distance == 0)) {
+			return LZXPRESS_ERROR;
+		}
 		/* len has already had 3 subtracted */
 		if (len >= 15) {
 			/*
