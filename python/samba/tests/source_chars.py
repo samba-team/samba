@@ -71,6 +71,7 @@ IGNORED_RE = (
     r'^third_party/heimdal/po',
     r'^third_party/heimdal/tests/kdc/hdb-mitdb',
     r'^testdata/compression/',
+    r'^third_party/heimdal/lib/asn1/fuzz-inputs/',
 )
 
 IGNORED_EXTENSIONS = {
