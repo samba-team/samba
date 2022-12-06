@@ -16,10 +16,11 @@
 
 import os
 import json
-from samba.gp.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext, gp_file_applier
 from samba.dcerpc import misc
 from samba.common import get_string
 from samba.gp.util.logging import log
+from tempfile import NamedTemporaryFile
 
 def parse_entry_data(name, e):
     dict_entries = ['VirtualKeyboardFeatures',
@@ -365,7 +366,9 @@ def assign_entry(policies, e):
         name = e.valuename
         policies[name] = parse_entry_data(name, e)
 
-def convert_pol_to_json(managed, recommended, section, entries):
+def convert_pol_to_json(section, entries):
+    managed = {}
+    recommended = {}
     recommended_section = '\\'.join([section, 'Recommended'])
     for e in entries:
         if '**delvals.' in e.valuename:
@@ -376,59 +379,12 @@ def convert_pol_to_json(managed, recommended, section, entries):
             assign_entry(managed, e)
     return managed, recommended
 
-class gp_chromium_ext(gp_pol_ext):
+class gp_chromium_ext(gp_pol_ext, gp_file_applier):
     __managed_policies_path = '/etc/chromium/policies/managed'
     __recommended_policies_path = '/etc/chromium/policies/recommended'
 
     def __str__(self):
         return 'Google/Chromium'
-
-    def set_managed_machine_policy(self, managed):
-        try:
-            managed_policies = os.path.join(self.__managed_policies_path,
-                                            'policies.json')
-            os.makedirs(self.__managed_policies_path, exist_ok=True)
-            with open(managed_policies, 'w') as f:
-                json.dump(managed, f)
-                log.debug('Wrote Chromium preferences', managed_policies)
-        except PermissionError:
-            log.debug('Failed to write Chromium preferences',
-                      managed_policies)
-
-
-    def set_recommended_machine_policy(self, recommended):
-        try:
-            recommended_policies = os.path.join(self.__recommended_policies_path,
-                                                'policies.json')
-            os.makedirs(self.__recommended_policies_path, exist_ok=True)
-            with open(recommended_policies, 'w') as f:
-                json.dump(recommended, f)
-                log.debug('Wrote Chromium preferences', recommended_policies)
-        except PermissionError:
-            log.debug('Failed to write Chromium preferences',
-                      recommended_policies)
-
-    def get_managed_machine_policy(self):
-        managed_policies = os.path.join(self.__managed_policies_path,
-                                        'policies.json')
-        if os.path.exists(managed_policies):
-            with open(managed_policies, 'r') as r:
-                managed = json.load(r)
-                log.debug('Read Chromium preferences', managed_policies)
-        else:
-            managed = {}
-        return managed
-
-    def get_recommended_machine_policy(self):
-        recommended_policies = os.path.join(self.__recommended_policies_path,
-                                            'policies.json')
-        if os.path.exists(recommended_policies):
-            with open(recommended_policies, 'r') as r:
-                recommended = json.load(r)
-                log.debug('Read Chromium preferences', recommended_policies)
-        else:
-            recommended = {}
-        return recommended
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
                              policy_dir=None):
@@ -436,38 +392,64 @@ class gp_chromium_ext(gp_pol_ext):
             self.__recommended_policies_path = os.path.join(policy_dir,
                                                             'recommended')
             self.__managed_policies_path = os.path.join(policy_dir, 'managed')
+        # Create the policy directories if necessary
+        if not os.path.exists(self.__recommended_policies_path):
+            os.makedirs(self.__recommended_policies_path, mode=0o755,
+                        exist_ok=True)
+        if not os.path.exists(self.__managed_policies_path):
+            os.makedirs(self.__managed_policies_path, mode=0o755,
+                        exist_ok=True)
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, policies in settings[str(self)].items():
-                    if attribute == 'managed':
-                        self.set_managed_machine_policy(json.loads(policies))
-                    elif attribute == 'recommended':
-                        self.set_recommended_machine_policy(json.loads(policies))
-                    self.gp_db.delete(str(self), attribute)
-            self.gp_db.commit()
+                    try:
+                        json.loads(policies)
+                    except json.decoder.JSONDecodeError:
+                        self.unapply(guid, attribute, policies)
+                    else:
+                        # Policies were previously stored all in one file, but
+                        # the Chromium documentation says this is not
+                        # necessary. Unapply the old policy file if json was
+                        # stored in the cache (now we store a hash and file
+                        # names instead).
+                        if attribute == 'recommended':
+                            fname = os.path.join(self.__recommended_policies_path,
+                                                 'policies.json')
+                        elif attribute == 'managed':
+                            fname = os.path.join(self.__managed_policies_path,
+                                                 'policies.json')
+                        self.unapply(guid, attribute, fname)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
                 section = 'Software\\Policies\\Google\\Chrome'
-                self.gp_db.set_guid(gpo.name)
                 pol_file = 'MACHINE/Registry.pol'
                 path = os.path.join(gpo.file_sys_path, pol_file)
                 pol_conf = self.parse(path)
                 if not pol_conf:
                     continue
 
-                managed = self.get_managed_machine_policy()
-                recommended = self.get_recommended_machine_policy()
-                self.gp_db.store(str(self), 'managed', json.dumps(managed))
-                self.gp_db.store(str(self), 'recommended',
-                                 json.dumps(recommended))
-                managed, recommended = convert_pol_to_json(managed,
-                                               recommended, section,
-                                               pol_conf.entries)
-                self.set_managed_machine_policy(managed)
-                self.set_recommended_machine_policy(recommended)
-                self.gp_db.commit()
+                managed, recommended = convert_pol_to_json(section,
+                                                           pol_conf.entries)
+                def applier_func(policies, location):
+                    try:
+                        with NamedTemporaryFile(mode='w+', prefix='gp_',
+                                                delete=False,
+                                                dir=location,
+                                                suffix='.json') as f:
+                            json.dump(policies, f)
+                            os.chmod(f.name, 0o644)
+                            log.debug('Wrote Chromium preferences', policies)
+                            return [f.name]
+                    except PermissionError:
+                        log.debug('Failed to write Chromium preferences',
+                                  policies)
+                value_hash = self.generate_value_hash(json.dumps(managed))
+                self.apply(gpo.name, 'managed', value_hash, applier_func,
+                           managed, self.__managed_policies_path)
+                value_hash = self.generate_value_hash(json.dumps(recommended))
+                self.apply(gpo.name, 'recommended', value_hash, applier_func,
+                           recommended, self.__recommended_policies_path)
 
     def rsop(self, gpo):
         output = {}
