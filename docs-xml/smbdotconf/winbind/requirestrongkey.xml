@@ -19,7 +19,7 @@
 
 	<para>This option yields precedence to the <smbconfoption name="reject md5 servers"/> option.</para>
 
-	<para>This option takes precedence to the <smbconfoption name="client schannel"/> option.</para>
+	<para>This option overrides the <smbconfoption name="client schannel"/> option.</para>
 </description>
 
 <value type="default">yes</value>
