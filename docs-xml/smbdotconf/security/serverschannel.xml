@@ -23,7 +23,7 @@
     <para>If you still have legacy domain members use the <smbconfoption name="server require schannel:COMPUTERACCOUNT"/> option.
     </para>
 
-    <para>This option yields precedence to the <smbconfoption name="server require schannel:COMPUTERACCOUNT"/> option.</para>
+    <para>This option is over-ridden by the <smbconfoption name="server require schannel:COMPUTERACCOUNT"/> option.</para>
 
 </description>
 
