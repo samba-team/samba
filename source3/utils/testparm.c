@@ -608,6 +608,37 @@ static int do_global_checks(void)
 			"'server require schannel:COMPUTERACCOUNT$ = no' "
 			"options\n\n");
 	}
+	if (lp_allow_nt4_crypto()) {
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'allow nt4 crypto = no' (the default). "
+			"Your server is vulernable to "
+			"CVE-2022-38023 and others!\n"
+			"If required use individual "
+			"'allow nt4 crypto:COMPUTERACCOUNT$ = yes' "
+			"options\n\n");
+	}
+	if (!lp_reject_md5_clients()) {
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'reject md5 clients = yes' (the default). "
+			"Your server is vulernable to "
+			"CVE-2022-38023!\n"
+			"If required use individual "
+			"'server reject md5 schannel:COMPUTERACCOUNT$ = yes' "
+			"options\n\n");
+	}
+	if (!lp_server_schannel_require_seal()) {
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'server schannel require seal = yes' (the default). "
+			"Your server is vulernable to "
+			"CVE-2022-38023!\n"
+			"If required use individual "
+			"'server schannel require seal:COMPUTERACCOUNT$ = no' "
+			"options\n\n");
+	}
+
 	if (lp_client_schannel() != true) { /* can be 'auto' */
 		fprintf(stderr,
 			"WARNING: You have not configured "
@@ -616,6 +647,36 @@ static int do_global_checks(void)
 			"(CVE-2020-1472)\n"
 			"If required use individual "
 			"'client schannel:NETBIOSDOMAIN = no' "
+			"options\n\n");
+	}
+	if (!lp_reject_md5_servers()) {
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'reject md5 servers = yes' (the default). "
+			"Your server is vulernable to "
+			"CVE-2022-38023\n"
+			"If required use individual "
+			"'reject md5 servers:NETBIOSDOMAIN = no' "
+			"options\n\n");
+	}
+	if (!lp_require_strong_key()) {
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'require strong key = yes' (the default). "
+			"Your server is vulernable to "
+			"CVE-2022-38023\n"
+			"If required use individual "
+			"'require strong key:NETBIOSDOMAIN = no' "
+			"options\n\n");
+	}
+	if (!lp_winbind_sealed_pipes()) {
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'winbind sealed pipes = yes' (the default). "
+			"Your server is vulernable to "
+			"CVE-2022-38023\n"
+			"If required use individual "
+			"'winbind sealed pipes:NETBIOSDOMAIN = no' "
 			"options\n\n");
 	}
 
