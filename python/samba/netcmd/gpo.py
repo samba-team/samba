@@ -43,7 +43,6 @@ import samba.auth
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 from samba.netcmd.common import netcmd_finddc
 from samba import policy
-from samba.samba3 import param as s3param
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import NTSTATUSError
 import uuid
@@ -62,7 +61,6 @@ from samba.gp_parse.gp_csv import GPAuditCsvParser
 from samba.gp_parse.gp_inf import GptTmplInfParser
 from samba.gp_parse.gp_aas import GPAasParser
 from samba import param
-from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.netcmd.common import attr_default
 from samba.common import get_bytes, get_string
 from configparser import ConfigParser
@@ -77,7 +75,7 @@ from samba.ntstatus import (
     NT_STATUS_OBJECT_PATH_NOT_FOUND,
     NT_STATUS_ACCESS_DENIED
 )
-from samba.netcmd.gpcommon import create_directory_hier
+from samba.netcmd.gpcommon import create_directory_hier, smb_connection
 
 
 def gpo_flags_string(value):
@@ -381,23 +379,6 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
 
                 data = open(l_name, 'rb').read()
                 conn.savefile(r_name, data)
-
-
-def smb_connection(dc_hostname, service, lp, creds):
-    # SMB connect to DC
-    # Force signing for the smb connection
-    saved_signing_state = creds.get_smb_signing()
-    creds.set_smb_signing(SMB_SIGNING_REQUIRED)
-    try:
-        # the SMB bindings rely on having a s3 loadparm
-        s3_lp = s3param.get_context()
-        s3_lp.load(lp.configfile)
-        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds)
-    except Exception:
-        raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
-    # Reset signing state
-    creds.set_smb_signing(saved_signing_state)
-    return conn
 
 
 class GPOCommand(Command):

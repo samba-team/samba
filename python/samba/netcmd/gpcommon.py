@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from samba.credentials import SMB_SIGNING_REQUIRED
+from samba.samba3 import param as s3param
+from samba.samba3 import libsmb_samba_internal as libsmb
+from samba.netcmd import CommandError
 
 def create_directory_hier(conn, remotedir):
     elems = remotedir.replace('/', '\\').split('\\')
@@ -24,3 +28,19 @@ def create_directory_hier(conn, remotedir):
         path = path + '\\' + e
         if not conn.chkpath(path):
             conn.mkdir(path)
+
+def smb_connection(dc_hostname, service, lp, creds):
+    # SMB connect to DC
+    # Force signing for the smb connection
+    saved_signing_state = creds.get_smb_signing()
+    creds.set_smb_signing(SMB_SIGNING_REQUIRED)
+    try:
+        # the SMB bindings rely on having a s3 loadparm
+        s3_lp = s3param.get_context()
+        s3_lp.load(lp.configfile)
+        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds)
+    except Exception:
+        raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+    # Reset signing state
+    creds.set_smb_signing(saved_signing_state)
+    return conn
