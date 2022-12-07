@@ -6948,14 +6948,15 @@ class GPOTests(tests.TestCase):
             managed_files = os.listdir(managed)
             self.assertEquals(len(managed_files), 1,
                               'Chromium policies are missing')
-            with open(os.path.join(managed, managed_files[0]), 'r') as r:
+            managed_file = os.path.join(managed, managed_files[0])
+            with open(managed_file, 'r') as r:
                 managed_data = json.load(r)
             recommended = os.path.join(dname, 'recommended')
             recommended_files = os.listdir(recommended)
             self.assertEquals(len(recommended_files), 1,
                               'Chromium policies are missing')
-            with open(os.path.join(recommended, recommended_files[0]),
-                      'r') as r:
+            recommended_file = os.path.join(recommended, recommended_files[0])
+            with open(recommended_file, 'r') as r:
                 recommended_data = json.load(r)
             expected_managed_data = json.loads(chromium_json_expected_managed)
             expected_recommended_data = \
@@ -6975,6 +6976,32 @@ class GPOTests(tests.TestCase):
                 self.assertEqual(expected_recommended_data[name],
                                  recommended_data[name],
                                  'Policies were not applied')
+
+            # Ensure modifying the policy does not generate extra policy files
+            unstage_file(reg_pol)
+            # Change a managed entry:
+            parser.pol_file.entries[0].data = 0
+            # Change a recommended entry:
+            parser.pol_file.entries[-1].data = b'https://google.com'
+            ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+            ext.process_group_policy([], gpos, dname)
+            managed_files = os.listdir(managed)
+            self.assertEquals(len(managed_files), 1,
+                              'Number of Chromium policies is incorrect')
+            omanaged_file = managed_file
+            managed_file = os.path.join(managed, managed_files[0])
+            self.assertNotEquals(omanaged_file, managed_file,
+                                 'The managed Chromium file did not change')
+
+            recommended_files = os.listdir(recommended)
+            self.assertEquals(len(recommended_files), 1,
+                              'Number of Chromium policies is incorrect')
+            orecommended_file = recommended_file
+            recommended_file = os.path.join(recommended, recommended_files[0])
+            self.assertNotEquals(orecommended_file, recommended_file,
+                                 'The recommended Chromium file did not change')
 
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
