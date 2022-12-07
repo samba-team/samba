@@ -74,6 +74,7 @@ from samba.ntstatus import (
     NT_STATUS_OBJECT_NAME_INVALID,
     NT_STATUS_OBJECT_NAME_NOT_FOUND,
     NT_STATUS_OBJECT_PATH_NOT_FOUND,
+    NT_STATUS_OBJECT_NAME_COLLISION,
     NT_STATUS_ACCESS_DENIED
 )
 from samba.netcmd.gpcommon import (
@@ -1872,10 +1873,10 @@ class cmd_admxload(Command):
         try:
             conn.mkdir(smb_dir)
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
-            elif e.args[0] != 0xC0000035: # STATUS_OBJECT_NAME_COLLISION
+            elif e.args[0] != NT_STATUS_OBJECT_NAME_COLLISION:
                 raise
 
         for dirname, dirs, files in os.walk(admx_dir):
@@ -1887,16 +1888,16 @@ class cmd_admxload(Command):
                 try:
                     create_directory_hier(conn, sub_dir)
                 except NTSTATUSError as e:
-                    if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                    if e.args[0] == NT_STATUS_ACCESS_DENIED:
                         raise CommandError("The authenticated user does "
                                            "not have sufficient privileges")
-                    elif e.args[0] != 0xC0000035: # STATUS_OBJECT_NAME_COLLISION
+                    elif e.args[0] != NT_STATUS_OBJECT_NAME_COLLISION:
                         raise
                 with open(full_path, 'rb') as f:
                     try:
                         conn.savefile(smb_path, f.read())
                     except NTSTATUSError as e:
-                        if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                        if e.args[0] == NT_STATUS_ACCESS_DENIED:
                             raise CommandError("The authenticated user does "
                                                "not have sufficient privileges")
         self.outf.write('Installing ADMX templates to the Central Store '
@@ -1972,9 +1973,9 @@ fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL
             policysetting = xml_data.getroot().find('policysetting')
             data = policysetting.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -1990,7 +1991,7 @@ fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL
                 data = ET.SubElement(policysetting, 'data')
                 load_plugin = ET.SubElement(data, 'load_plugin')
                 load_plugin.text = 'true'
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2021,7 +2022,7 @@ fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2075,12 +2076,12 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so there is nothing to list
                 xml_data = None
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2111,11 +2112,11 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2179,11 +2180,11 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
             policysetting = xml_data.getroot().find('policysetting')
             data = policysetting.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 data = None
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2194,11 +2195,11 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
         try:
             pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 pol_data = None
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2232,7 +2233,7 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
                 create_directory_hier(conn, vgp_dir)
                 conn.savefile(vgp_xml, out.read())
             except NTSTATUSError as e:
-                if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                if e.args[0] == NT_STATUS_ACCESS_DENIED:
                     raise CommandError("The authenticated user does "
                                        "not have sufficient privileges")
                 raise
@@ -2244,7 +2245,7 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
             try:
                 conn.savefile(pol_file, ndr_pack(pol_data))
             except NTSTATUSError as e:
-                if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                if e.args[0] == NT_STATUS_ACCESS_DENIED:
                     raise CommandError("The authenticated user does "
                                        "not have sufficient privileges")
                 raise
@@ -2339,11 +2340,12 @@ PasswordComplexity      Password must meet complexity requirements
             except UnicodeDecodeError:
                 inf_data.readfp(StringIO(raw.decode('utf-16')))
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] not in [0xC0000033, 0xC000003A]:
+            if e.args[0] not in [NT_STATUS_OBJECT_NAME_INVALID,
+                                 NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                                 NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 raise
 
         section_map = { 'MaxTicketAge' : 'Kerberos Policy',
@@ -2371,7 +2373,7 @@ PasswordComplexity      Password must meet complexity requirements
             create_directory_hier(conn, inf_dir)
             conn.savefile(inf_file, get_bytes(out.getvalue()))
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2432,9 +2434,11 @@ samba-tool gpo manage security list {31B2F340-016D-11D2-945F-00C04FB984F9}
             except UnicodeDecodeError:
                 inf_data.readfp(StringIO(raw.decode('utf-16')))
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000033: # STATUS_OBJECT_NAME_INVALID
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2499,9 +2503,11 @@ samba-tool gpo manage smb_conf list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000033: # STATUS_OBJECT_NAME_INVALID
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2564,10 +2570,11 @@ samba-tool gpo manage smb_conf set {31B2F340-016D-11D2-945F-00C04FB984F9} 'apply
         try:
             pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 pol_data = preg.file() # The file doesn't exist
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2608,7 +2615,7 @@ samba-tool gpo manage smb_conf set {31B2F340-016D-11D2-945F-00C04FB984F9} 'apply
             create_directory_hier(conn, pol_dir)
             conn.savefile(pol_file, ndr_pack(pol_data))
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2668,11 +2675,11 @@ samba-tool gpo manage symlink list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2736,9 +2743,9 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -2750,7 +2757,7 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
                 description = ET.SubElement(policysetting, 'description')
                 description.text = 'Specifies symbolic link data'
                 data = ET.SubElement(policysetting, 'data')
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2769,7 +2776,7 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2826,12 +2833,12 @@ samba-tool gpo manage symlink remove {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 raise CommandError("Cannot remove link from '%s' to '%s' "
                     "because it does not exist" % source, target)
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -2855,7 +2862,7 @@ samba-tool gpo manage symlink remove {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2916,11 +2923,11 @@ samba-tool gpo manage files list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -2992,9 +2999,9 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -3006,7 +3013,7 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
                 description = ET.SubElement(policysetting, 'description')
                 description.text = 'Represents file data to set/copy on clients'
                 data = ET.SubElement(policysetting, 'data')
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3041,7 +3048,7 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
             conn.savefile(vgp_xml, out.read())
             conn.savefile(sysvol_source, source_data)
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3098,12 +3105,12 @@ samba-tool gpo manage files remove {31B2F340-016D-11D2-945F-00C04FB984F9} /usr/s
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 raise CommandError("Cannot remove file '%s' "
                     "because it does not exist" % target)
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3129,7 +3136,7 @@ samba-tool gpo manage files remove {31B2F340-016D-11D2-945F-00C04FB984F9} /usr/s
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3190,11 +3197,11 @@ samba-tool gpo manage openssh list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3263,9 +3270,9 @@ samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} Kerbero
             data = policy.find('data')
             configfile = data.find('configfile')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -3282,7 +3289,7 @@ samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} Kerbero
                 configfile = ET.SubElement(data, 'configfile')
                 configsection = ET.SubElement(configfile, 'configsection')
                 ET.SubElement(configsection, 'sectionname')
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3323,7 +3330,7 @@ samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} Kerbero
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3383,11 +3390,11 @@ samba-tool gpo manage scripts startup list {31B2F340-016D-11D2-945F-00C04FB984F9
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3469,9 +3476,9 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -3484,7 +3491,7 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
                 description.text = \
                     'Represents Unix scripts to run on Group Policy clients'
                 data = ET.SubElement(policysetting, 'data')
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3514,7 +3521,7 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
             conn.savefile(vgp_xml, out.read())
             conn.savefile(sysvol_script, script_data)
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3571,12 +3578,12 @@ samba-tool gpo manage scripts startup remove {31B2F340-016D-11D2-945F-00C04FB984
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 raise CommandError("Cannot remove script '%s' "
                     "because it does not exist" % script)
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3598,7 +3605,7 @@ samba-tool gpo manage scripts startup remove {31B2F340-016D-11D2-945F-00C04FB984
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3665,11 +3672,11 @@ samba-tool gpo manage motd list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3735,9 +3742,9 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -3753,7 +3760,7 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
                 data = ET.SubElement(policysetting, 'data')
                 filename = ET.SubElement(data, 'filename')
                 filename.text = 'motd'
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3769,7 +3776,7 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3830,11 +3837,11 @@ samba-tool gpo manage issue list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 return # The file doesn't exist, so there is nothing to list
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3900,9 +3907,9 @@ samba-tool gpo manage issue set {31B2F340-016D-11D2-945F-00C04FB984F9} "Welcome 
         try:
             xml_data = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -3918,7 +3925,7 @@ samba-tool gpo manage issue set {31B2F340-016D-11D2-945F-00C04FB984F9} "Welcome 
                 data = ET.SubElement(policysetting, 'data')
                 filename = ET.SubElement(data, 'filename')
                 filename.text = 'issue'
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -3934,7 +3941,7 @@ samba-tool gpo manage issue set {31B2F340-016D-11D2-945F-00C04FB984F9} "Welcome 
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -3994,11 +4001,11 @@ samba-tool gpo manage access list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             allow = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 allow = None # The file doesn't exist, ignore it
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -4019,11 +4026,11 @@ samba-tool gpo manage access list {31B2F340-016D-11D2-945F-00C04FB984F9}
         try:
             deny = ET.fromstring(conn.loadfile(vgp_xml))
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 deny = None # The file doesn't exist, ignore it
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -4101,9 +4108,9 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 # The file doesn't exist, so create the xml structure
                 xml_data = ET.ElementTree(ET.Element('vgppolicy'))
                 policysetting = ET.SubElement(xml_data.getroot(),
@@ -4117,7 +4124,7 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
                 apply_mode = ET.SubElement(policysetting, 'apply_mode')
                 apply_mode.text = 'merge'
                 data = ET.SubElement(policysetting, 'data')
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -4164,7 +4171,7 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
@@ -4231,12 +4238,12 @@ samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow
             policy = xml_data.getroot().find('policysetting')
             data = policy.find('data')
         except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
-            # STATUS_OBJECT_PATH_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
                 raise CommandError("Cannot remove %s entry because it does "
                                    "not exist" % etype)
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            elif e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             else:
@@ -4261,7 +4268,7 @@ samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
         except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
                                    "not have sufficient privileges")
             raise
