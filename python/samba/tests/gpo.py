@@ -7221,9 +7221,19 @@ class GPOTests(tests.TestCase):
             ext.process_group_policy([], gpos, dname)
             sudoers = os.listdir(dname)
             self.assertEquals(len(sudoers), 1, 'The sudoer file was not created')
-            self.assertIn(e2.data,
-                    open(os.path.join(dname, sudoers[0]), 'r').read(),
+            sudoers_file = os.path.join(dname, sudoers[0])
+            self.assertIn(e2.data, open(sudoers_file, 'r').read(),
                     'The sudoers entry was not applied')
+
+            # Remove the sudoers file, and make sure a re-apply puts it back
+            os.unlink(sudoers_file)
+            ext.process_group_policy([], gpos, dname)
+            sudoers = os.listdir(dname)
+            self.assertEquals(len(sudoers), 1,
+                              'The sudoer file was not recreated')
+            sudoers_file = os.path.join(dname, sudoers[0])
+            self.assertIn(e2.data, open(sudoers_file, 'r').read(),
+                    'The sudoers entry was not reapplied')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
