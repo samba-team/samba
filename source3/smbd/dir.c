@@ -1423,42 +1423,30 @@ bool is_visible_fsp(struct files_struct *fsp)
 		return true;
 	}
 
-	if (hide_unreadable ||
-	    hide_unwriteable ||
-	    hide_special ||
-	    (hide_new_files_timeout != 0))
-	{
-		/* Honour _hide unreadable_ option */
-		if (hide_unreadable &&
-		    !user_can_read_fsp(fsp))
-		{
-			DBG_DEBUG("file %s is unreadable.\n",
-				 fsp_str_dbg(fsp));
-			return false;
-		}
-		/* Honour _hide unwriteable_ option */
-		if (hide_unwriteable &&
-		    !user_can_write_fsp(fsp))
-		{
-			DBG_DEBUG("file %s is unwritable.\n",
-				 fsp_str_dbg(fsp));
-			return false;
-		}
-		/* Honour _hide_special_ option */
-		if (hide_special && file_is_special(fsp->conn, fsp->fsp_name)) {
-			DBG_DEBUG("file %s is special.\n",
-				 fsp_str_dbg(fsp));
-			return false;
-		}
+	/* Honour _hide unreadable_ option */
+	if (hide_unreadable && !user_can_read_fsp(fsp)) {
+		DBG_DEBUG("file %s is unreadable.\n", fsp_str_dbg(fsp));
+		return false;
+	}
 
-		if ((hide_new_files_timeout != 0) &&
-		    !S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-			double age = timespec_elapsed(
-				&fsp->fsp_name->st.st_ex_mtime);
+	/* Honour _hide unwriteable_ option */
+	if (hide_unwriteable && !user_can_write_fsp(fsp)) {
+		DBG_DEBUG("file %s is unwritable.\n", fsp_str_dbg(fsp));
+		return false;
+	}
 
-			if (age < (double)hide_new_files_timeout) {
-				return false;
-			}
+	/* Honour _hide_special_ option */
+	if (hide_special && file_is_special(fsp->conn, fsp->fsp_name)) {
+		DBG_DEBUG("file %s is special.\n", fsp_str_dbg(fsp));
+		return false;
+	}
+
+	if ((hide_new_files_timeout != 0) &&
+	    !S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		double age = timespec_elapsed(&fsp->fsp_name->st.st_ex_mtime);
+
+		if (age < (double)hide_new_files_timeout) {
+			return false;
 		}
 	}
 
