@@ -77,6 +77,7 @@ from samba.ntstatus import (
     NT_STATUS_OBJECT_PATH_NOT_FOUND,
     NT_STATUS_ACCESS_DENIED
 )
+from samba.netcmd.gpcommon import create_directory_hier
 
 
 def gpo_flags_string(value):
@@ -381,14 +382,6 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
                 data = open(l_name, 'rb').read()
                 conn.savefile(r_name, data)
 
-
-def create_directory_hier(conn, remotedir):
-    elems = remotedir.replace('/', '\\').split('\\')
-    path = ""
-    for e in elems:
-        path = path + '\\' + e
-        if not conn.chkpath(path):
-            conn.mkdir(path)
 
 def smb_connection(dc_hostname, service, lp, creds):
     # SMB connect to DC
