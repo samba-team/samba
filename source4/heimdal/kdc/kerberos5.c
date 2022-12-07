@@ -1391,7 +1391,6 @@ _kdc_as_rep(krb5_context context,
 			client_name);
 		continue;
 	    }
-	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
 		char client_time[100];
 
@@ -1413,8 +1412,10 @@ _kdc_as_rep(krb5_context context,
 		 * there is a e_text, they become unhappy.
 		 */
 		e_text = NULL;
+		free_PA_ENC_TS_ENC(&p);
 		goto out;
 	    }
+	    free_PA_ENC_TS_ENC(&p);
 	    et.flags.pre_authent = 1;
 
 	    set_salt_padata(rep.padata, pa_key->salt);
