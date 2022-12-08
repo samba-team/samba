@@ -4999,6 +4999,7 @@ def gpupdate(lp, arg):
 
     p = Popen(gpupdate, stdout=PIPE, stderr=PIPE)
     stdoutdata, stderrdata = p.communicate()
+    print(stderrdata)
     return p.returncode
 
 def gpupdate_force(lp):
