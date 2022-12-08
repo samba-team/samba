@@ -592,7 +592,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	result = talloc_move(mem_ctx, &kdc_str);
 out:
 	if (result != NULL) {
-		DBG_DEBUG("Returning\n%s\n", kdc_str);
+		DBG_DEBUG("Returning\n%s\n", result);
 	} else {
 		DBG_NOTICE("Failed to get KDC ip address\n");
 	}
