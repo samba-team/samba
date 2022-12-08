@@ -41,6 +41,30 @@ bool sec_ace_object(uint8_t type)
 	return false;
 }
 
+/**
+ * Check if ACE is a CALLBACK type, which means it will have a blob of data at
+ * the end.
+ */
+bool sec_ace_callback(uint8_t type)
+{
+	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK ||
+	    type == SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK ||
+	    type == SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT ||
+	    type == SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT ||
+	    type == SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK ||
+	    type == SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK_OBJECT) {
+	    /*
+	     * While SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK and
+	     * SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK_OBJECT sound like
+	     * callback types, they are reserved values in MS-DTYP,
+	     * and their eventual use is not defined.
+	     */
+		return true;
+	}
+	return false;
+}
+
+
 /*******************************************************************
  Sets up a struct security_ace structure.
 ********************************************************************/
