@@ -529,7 +529,8 @@ wbcErr wbcCtxLookupRids(struct wbcContext *ctx, struct wbcDomainSid *dom_sid,
 		     const char ***pnames,
 		     enum wbcSidType **ptypes)
 {
-	size_t i, len, ridbuf_size;
+	int i;
+	size_t  len, ridbuf_size;
 	char *ridlist;
 	char *p;
 	int error = 0;
