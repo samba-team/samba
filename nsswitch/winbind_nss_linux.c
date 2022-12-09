@@ -1165,6 +1165,7 @@ _nss_winbind_initgroups_dyn(const char *user, gid_t group, long int *start,
 	/* Back to your regularly scheduled programming */
 
  done:
+	winbindd_free_response(&response);
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: initgroups %s returns %s (%d)\n", getpid(),
 		user, nss_err_str(ret), ret);
