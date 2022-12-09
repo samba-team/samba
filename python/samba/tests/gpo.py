@@ -5330,6 +5330,10 @@ class GPOTests(tests.TestCase):
                 self.assertIn(b'hello world', out,
                     '%s script execution failed' % keyname.decode())
 
+                # Check that a call to gpupdate --rsop also succeeds
+                ret = rsop(self.lp)
+                self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
                 # Remove policy
                 gp_db = store.get_gplog(machine_creds.get_username())
                 del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -5380,6 +5384,10 @@ class GPOTests(tests.TestCase):
             self.assertIn(e.data,
                     open(os.path.join(dname, sudoers[0]), 'r').read(),
                     'The sudoers entry was not applied')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -5478,6 +5486,10 @@ class GPOTests(tests.TestCase):
                     'The sudoers entry was not applied')
             self.assertIn(data_no_principal, output,
                     'The sudoers entry was not applied')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -5623,12 +5635,13 @@ class GPOTests(tests.TestCase):
                                   'Login Prompt Message not applied')
                     self.assertEquals(ret['/etc/issue'], e4.data,
                                       'Login Prompt Message not set')
+
+                # Check that a call to gpupdate --rsop also succeeds
+                ret = rsop(self.lp)
+                self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             unstage_file(gpofile % g.name)
             unstage_file(reg_pol % g.name)
-
-        # Check that a call to gpupdate --rsop also succeeds
-        ret = rsop(self.lp)
-        self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
     def test_gp_unapply(self):
         cache_dir = self.lp.get('cache directory')
@@ -5772,6 +5785,10 @@ class GPOTests(tests.TestCase):
             ldap_timeout = lp.get('ldap timeout')
             self.assertEquals(ldap_timeout, 9999, 'ldap timeout was not applied')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -5842,6 +5859,10 @@ class GPOTests(tests.TestCase):
                             'Login Prompt Message file not created')
             data = open(issue_file, 'r').read()
             self.assertEquals(data, e2.data, 'Login Prompt Message not applied')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Unapply policy, and ensure the test files are removed
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -5924,6 +5945,10 @@ class GPOTests(tests.TestCase):
             ret = ext.rsop([g for g in gpos if g.name == guid][0])
             self.assertIn('ln -s %s %s' % (test_source, test_target),
                           list(ret.values())[0])
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
         # Unstage the manifest.xml file
         unstage_file(manifest)
@@ -6012,6 +6037,10 @@ class GPOTests(tests.TestCase):
             self.assertIn('-rwxr-xr-x', list(ret.values())[0][0],
                           'The target permissions were not listed by rsop')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
         # Unstage the manifest and source files
         unstage_file(manifest)
         unstage_file(source_file)
@@ -6071,6 +6100,10 @@ class GPOTests(tests.TestCase):
             gp_cfg = os.path.join(dname, conf[0])
             self.assertIn(data, open(gp_cfg, 'r').read(),
                     'The sshd_config entry was not applied')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -6151,6 +6184,10 @@ class GPOTests(tests.TestCase):
             self.assertIn(entry, list(ret.values())[0][0],
                           'The target entry was not listed by rsop')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
         # Unstage the manifest.xml and script files
         unstage_file(manifest)
 
@@ -6196,6 +6233,10 @@ class GPOTests(tests.TestCase):
             ret = ext.rsop(g)
             self.assertIn(entry, list(ret.values())[0][0],
                           'The target entry was not listed by rsop')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
         # Unstage the manifest.xml and script files
         unstage_file(manifest)
@@ -6245,6 +6286,10 @@ class GPOTests(tests.TestCase):
             self.assertIn(entry, list(ret.values())[0][0],
                           'The target entry was not listed by rsop')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
         # Unstage the manifest.xml and script files
         unstage_file(manifest)
         unstage_file(test_script)
@@ -6287,6 +6332,10 @@ class GPOTests(tests.TestCase):
             ext.process_group_policy([], gpos, f.name)
             self.assertEquals(open(f.name, 'r').read(), text.text,
                               'The motd was not applied')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -6336,6 +6385,10 @@ class GPOTests(tests.TestCase):
             ext.process_group_policy([], gpos, f.name)
             self.assertEquals(open(f.name, 'r').read(), text.text,
                               'The issue was not applied')
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -6468,6 +6521,10 @@ class GPOTests(tests.TestCase):
             self.assertIn('+:%s\\goodguys:ALL' % realm, data)
             self.assertIn('-:%s\\badguy:ALL' % realm, data)
             self.assertIn('-:%s\\badguys:ALL' % realm, data)
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -6670,6 +6727,10 @@ class GPOTests(tests.TestCase):
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -6776,6 +6837,10 @@ class GPOTests(tests.TestCase):
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -6847,6 +6912,10 @@ class GPOTests(tests.TestCase):
             self.assertIn(entry, crontab,
                 'The crontab entry was not installed')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(os.environ.get('DC_USERNAME'))
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -6903,6 +6972,10 @@ class GPOTests(tests.TestCase):
 
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
+
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Unapply the policy
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -7007,6 +7080,10 @@ class GPOTests(tests.TestCase):
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Unapply the policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -7080,6 +7157,10 @@ class GPOTests(tests.TestCase):
 
         # Verify RSOP does not fail
         ext.rsop([g for g in gpos if g.name == guid][0])
+
+        # Check that a call to gpupdate --rsop also succeeds
+        ret = rsop(self.lp)
+        self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
         # Unapply the policy
         gp_db = store.get_gplog(machine_creds.get_username())
@@ -7182,6 +7263,10 @@ class GPOTests(tests.TestCase):
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -7263,6 +7348,10 @@ class GPOTests(tests.TestCase):
             self.assertIn(e2.data, open(sudoers_file, 'r').read(),
                     'The sudoers entry was not reapplied')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -7315,6 +7404,10 @@ class GPOTests(tests.TestCase):
             data = open(fname, 'rb').read()
             self.assertIn(get_bytes(e.data), data, 'Cron entry is missing')
 
+            # Check that a call to gpupdate --rsop also succeeds
+            ret = rsop(self.lp)
+            self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
@@ -7366,6 +7459,10 @@ class GPOTests(tests.TestCase):
         crontab, _ = p.communicate()
         self.assertIn(get_bytes(e.data), crontab,
             'The crontab entry was not installed')
+
+        # Check that a call to gpupdate --rsop also succeeds
+        ret = rsop(self.lp)
+        self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
         # Remove policy
         gp_db = store.get_gplog(os.environ.get('DC_USERNAME'))
