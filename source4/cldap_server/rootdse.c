@@ -43,7 +43,7 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 	int ret = LDAP_SUCCESS, ldb_ret;
 
 	if (search->num_attributes >= 1) {
-		int i;
+		size_t i;
 
 		attrs = talloc_array(mem_ctx, const char *, search->num_attributes+1);
 		if (attrs == NULL) goto nomem;
