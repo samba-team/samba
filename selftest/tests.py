@@ -469,9 +469,10 @@ plantestsuite("samba.unittests.credentials", "none",
               [os.path.join(bindir(), "default/auth/credentials/test_creds")])
 plantestsuite("samba.unittests.tsocket_bsd_addr", "none",
               [os.path.join(bindir(), "default/lib/tsocket/test_tsocket_bsd_addr")])
-plantestsuite("samba.unittests.tsocket_tstream", "none",
-              [os.path.join(bindir(), "default/lib/tsocket/test_tstream")],
-              environ={'SOCKET_WRAPPER_DIR': ''})
+if ("HAVE_TCP_USER_TIMEOUT" in config_hash):
+    plantestsuite("samba.unittests.tsocket_tstream", "none",
+                  [os.path.join(bindir(), "default/lib/tsocket/test_tstream")],
+                  environ={'SOCKET_WRAPPER_DIR': ''})
 plantestsuite("samba.unittests.adouble", "none",
               [os.path.join(bindir(), "test_adouble")])
 plantestsuite("samba.unittests.gnutls_aead_aes_256_cbc_hmac_sha512", "none",
