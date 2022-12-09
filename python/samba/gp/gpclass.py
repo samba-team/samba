@@ -42,6 +42,8 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.gp.util.logging import log
 from hashlib import blake2b
+import numbers
+from samba.common import get_string
 
 try:
     from enum import Enum
@@ -718,7 +720,10 @@ def __rsop_vals(vals, level=4):
         ret = [' '*level + '[ %s ]' % __rsop_vals(v, level+2) for v in vals]
         return '\n' + '\n'.join(ret)
     else:
-        return vals
+        if isinstance(vals, numbers.Number):
+            return ' '*(level+2) + str(vals)
+        else:
+            return ' '*(level+2) + get_string(vals)
 
 def rsop(lp, creds, store, gp_extensions, username, target):
     dc_hostname = get_dc_hostname(creds, lp)
