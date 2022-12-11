@@ -154,6 +154,8 @@
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_domain_local_compression_as_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_removal_compression_tgs_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_universal_compression_as_req_to_service.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_claimed_given_tgs_req_to_krbtgt.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_given_compression_tgs_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_given_no_compression_tgs_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_given_tgs_req_to_krbtgt.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_resource_sids_wrongly_given_tgs_req_to_krbtgt.ad_dc

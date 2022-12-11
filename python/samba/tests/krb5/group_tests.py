@@ -818,6 +818,53 @@ class GroupTests(KDCBaseTest):
             },
         },
         {
+            'test': 'resource sids wrongly given; tgs-req to krbtgt',
+            'groups': {
+                'dom-local-0': (GroupType.DOMAIN_LOCAL, {}),
+                'dom-local-1': (GroupType.DOMAIN_LOCAL, {}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            # Though we have provided resource SIDs, we have reset the flag
+            # indicating that they are present.
+            'tgs:reset_user_flags': netlogon.NETLOGON_RESOURCE_GROUPS,
+            'tgs:sids': {
+                ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
+                ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+                # The resource SIDs remain in the PAC.
+                ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
+                ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'resource sids claimed given; tgs-req to krbtgt',
+            'groups': {
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            # Though we claim to have provided resource SIDs, we have not
+            # actually done so.
+            'tgs:set_user_flags': netlogon.NETLOGON_RESOURCE_GROUPS,
+            'tgs:sids': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
             'test': 'resource sids given; compression; tgs-req to service',
             'groups': {
                 'dom-local-0': (GroupType.DOMAIN_LOCAL, {}),
