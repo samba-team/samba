@@ -1024,6 +1024,9 @@ class GroupTests(KDCBaseTest):
             creds = self.get_cached_creds(
                 account_type=self.AccountType.COMPUTER,
                 opts={
+                    'supported_enctypes':
+                        security.KERB_ENCTYPE_RC4_HMAC_MD5 |
+                        security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
                     'sid_compression_support': compression,
                 })
             target_name = creds.get_username()
