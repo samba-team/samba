@@ -764,7 +764,7 @@ class GroupTests(KDCBaseTest):
                 # The TGT contains two resource SIDs for the domain-local
                 # groups.
                 ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
-                ('dom-local-1', SidType.RESOURCE_SID, resource_attrs),
+                ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
@@ -773,7 +773,7 @@ class GroupTests(KDCBaseTest):
                 # The resource SIDs remain after performing a TGS-REQ to the
                 # krbtgt.
                 ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
-                ('dom-local-1', SidType.RESOURCE_SID, resource_attrs),
+                ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
@@ -789,13 +789,37 @@ class GroupTests(KDCBaseTest):
             'tgs:to_krbtgt': False,
             'tgs:sids': {
                 ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
-                ('dom-local-1', SidType.RESOURCE_SID, resource_attrs),
+                ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
             'tgs:expected': {
                 # The resource SIDs are removed upon issuing a service ticket.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'resource sids given; no compression; tgs-req to service',
+            'groups': {
+                'dom-local-0': (GroupType.DOMAIN_LOCAL, {}),
+                'dom-local-1': (GroupType.DOMAIN_LOCAL, {}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            # Compression is disabled on the service account.
+            'tgs:compression': False,
+            'tgs:sids': {
+                ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
+                ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                # The resource SIDs are again removed.
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
@@ -825,14 +849,14 @@ class GroupTests(KDCBaseTest):
             },
         },
         {
-            'test': 'domain-local; Samba 4.17; tgs-req to service',
+            'test': 'domain-local; Samba 4.17; compression; tgs-req to service',
             'groups': {
                 'foo': (GroupType.DOMAIN_LOCAL, {user}),
             },
             'as:to_krbtgt': True,
             # The same scenario, but requesting a service ticket.
             'tgs:to_krbtgt': False,
-            'tgs:compression': False,
+            'tgs:compression': True,
             'tgs:sids': {
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
@@ -841,8 +865,30 @@ class GroupTests(KDCBaseTest):
             'tgs:expected': {
                 # The domain-local group remains in the PAC...
                 ('foo', SidType.BASE_SID, default_attrs),
-                # and another copy is added in Extra SIDs. This one has the
+                # and another copy is added in Resource SIDs. This one has the
                 # SE_GROUP_RESOURCE bit set.
+                ('foo', SidType.RESOURCE_SID, resource_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'domain-local; Samba 4.17; no compression; tgs-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            # In this case compression is disabled on the service.
+            'tgs:compression': False,
+            'tgs:sids': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+            },
+            'tgs:expected': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                # Without compression, the extra SID appears in Extra SIDs.
                 ('foo', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
