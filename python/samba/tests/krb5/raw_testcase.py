@@ -2456,6 +2456,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          unexpected_groups=None,
                          expected_upn_name=None,
                          expected_sid=None,
+                         expected_requester_sid=None,
                          expected_domain_sid=None,
                          expected_supported_etypes=None,
                          expected_flags=None,
@@ -2526,6 +2527,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
+            'expected_requester_sid': expected_requester_sid,
             'expected_domain_sid': expected_domain_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
@@ -2592,6 +2594,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           unexpected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
+                          expected_requester_sid=None,
                           expected_domain_sid=None,
                           expected_supported_etypes=None,
                           expected_flags=None,
@@ -2663,6 +2666,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
+            'expected_requester_sid': expected_requester_sid,
             'expected_domain_sid': expected_domain_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
@@ -3378,12 +3382,15 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_types.append(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
 
         expect_requester_sid = kdc_exchange_dict['expect_requester_sid']
+        expected_requester_sid = kdc_exchange_dict['expected_requester_sid']
 
         if expect_requester_sid is None:
             if self.expect_extra_pac_buffers:
                 expect_requester_sid = expect_extra_pac_buffers
             else:
                 require_strict.add(krb5pac.PAC_TYPE_REQUESTER_SID)
+        if expected_requester_sid is not None:
+            expect_requester_sid = True
         if expect_requester_sid:
             expected_types.append(krb5pac.PAC_TYPE_REQUESTER_SID)
 
@@ -3482,8 +3489,11 @@ class RawKerberosTest(TestCaseInTempDir):
                       and expect_requester_sid):
                 requester_sid = pac_buffer.info.sid
 
+                if expected_requester_sid is None:
+                    expected_requester_sid = expected_sid
                 if expected_sid is not None:
-                    self.assertEqual(expected_sid, str(requester_sid))
+                    self.assertEqual(expected_requester_sid,
+                                     str(requester_sid))
 
             elif pac_buffer.type in {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO,
                                      krb5pac.PAC_TYPE_DEVICE_CLAIMS_INFO}:

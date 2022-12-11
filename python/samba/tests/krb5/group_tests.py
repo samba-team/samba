@@ -107,7 +107,11 @@ class GroupTests(KDCBaseTest):
     # Get a ticket with the SIDs in the PAC replaced with ones we specify. This
     # is useful for creating arbitrary tickets that can be used to perform a
     # TGS-REQ.
-    def ticket_with_sids(self, ticket, new_sids, domain_sid):
+    def ticket_with_sids(self,
+                         ticket,
+                         new_sids,
+                         domain_sid,
+                         user_rid):
         krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
 
@@ -117,14 +121,19 @@ class GroupTests(KDCBaseTest):
 
         modify_pac_fn = partial(self.set_pac_sids,
                                 new_sids=new_sids,
-                                domain_sid=domain_sid)
+                                domain_sid=domain_sid,
+                                user_rid=user_rid)
 
         return self.modified_ticket(ticket,
                                     modify_pac_fn=modify_pac_fn,
                                     checksum_keys=checksum_keys)
 
     # Replace the SIDs in a PAC with 'new_sids'.
-    def set_pac_sids(self, pac, new_sids, domain_sid):
+    def set_pac_sids(self,
+                     pac,
+                     new_sids,
+                     domain_sid,
+                     user_rid):
         base_sids = []
         extra_sids = []
         resource_sids = []
@@ -167,6 +176,10 @@ class GroupTests(KDCBaseTest):
             else:
                 self.fail(f'invalid SID type {sid_type}')
 
+        found_logon_info = True
+
+        user_sid = security.dom_sid(f'{domain_sid}-{user_rid}')
+
         pac_buffers = pac.buffers
         for pac_buffer in pac_buffers:
             # Find the LOGON_INFO PAC buffer.
@@ -191,6 +204,9 @@ class GroupTests(KDCBaseTest):
                 else:
                     logon_info.info3.base.groups.rids = None
 
+                logon_info.info3.base.domain_sid = security.dom_sid(domain_sid)
+                logon_info.info3.base.rid = int(user_rid)
+
                 # Add Resource SIDs and set the RESOURCE_GROUPS flag as needed.
                 logon_info.resource_groups.groups.count = len(resource_sids)
                 if resource_sids:
@@ -205,9 +221,18 @@ class GroupTests(KDCBaseTest):
                     logon_info.info3.base.user_flags &= ~(
                         netlogon.NETLOGON_RESOURCE_GROUPS)
 
-                break
-        else:
-            self.fail('no LOGON_INFO PAC buffer')
+                found_logon_info = True
+
+            # Also replace the user's SID in the UPN DNS buffer.
+            elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
+                upn_dns_info_ex = pac_buffer.info.ex
+
+                upn_dns_info_ex.objectsid = user_sid
+
+            # But don't replace the user's SID in the Requester SID buffer, or
+            # we'll get a SID mismatch.
+
+        self.assertTrue(found_logon_info, 'no LOGON_INFO PAC buffer')
 
         pac.buffers = pac_buffers
 
@@ -1019,6 +1044,9 @@ class GroupTests(KDCBaseTest):
         # Optional SIDs to replace those in the PAC prior to a TGS-REQ.
         tgs_sids = case.pop('tgs:sids', None)
 
+        # Optional user SID to replace that in the PAC prior to a TGS-REQ.
+        tgs_user_sid = case.pop('tgs:user_sid', None)
+
         # The SIDs we expect to see in the PAC after a AS-REQ or a TGS-REQ.
         as_expected = case.pop('as:expected', None)
         tgs_expected = case.pop('tgs:expected', None)
@@ -1049,6 +1077,11 @@ class GroupTests(KDCBaseTest):
             self.assertIsNotNone(tgs_expected,
                                  'specified compression for TGS request, but '
                                  'no expected SIDs provided')
+
+        if tgs_user_sid is not None:
+            self.assertIsNotNone(tgs_sids,
+                                 'specified TGS-REQ user SID, but no '
+                                 'accompanying SIDs provided')
 
         samdb = self.get_samdb()
 
@@ -1083,9 +1116,19 @@ class GroupTests(KDCBaseTest):
         groups = self.setup_groups(samdb, group_setup, user_principal)
         del group_setup
 
-        expected_groups = self.map_sids(as_expected, groups, domain_sid)
-        tgs_sids_mapped = self.map_sids(tgs_sids, groups, domain_sid)
-        tgs_expected_mapped = self.map_sids(tgs_expected, groups, domain_sid)
+        if tgs_user_sid is None:
+            tgs_user_sid = user_sid
+        elif tgs_user_sid in groups:
+            tgs_user_sid = groups[tgs_user_sid].sid
+
+        tgs_domain_sid, tgs_user_rid = tgs_user_sid.rsplit('-', 1)
+
+        expected_groups = self.map_sids(as_expected, groups,
+                                        domain_sid)
+        tgs_sids_mapped = self.map_sids(tgs_sids, groups,
+                                        tgs_domain_sid)
+        tgs_expected_mapped = self.map_sids(tgs_expected, groups,
+                                            tgs_domain_sid)
 
         till = self.get_KerberosTime(offset=36000)
         kdc_options = '0'
@@ -1128,12 +1171,19 @@ class GroupTests(KDCBaseTest):
 
         if tgs_sids is not None:
             # Replace the SIDs in the PAC with the ones provided by the test.
-            ticket = self.ticket_with_sids(ticket, tgs_sids_mapped, domain_sid)
+            ticket = self.ticket_with_sids(ticket,
+                                           tgs_sids_mapped,
+                                           tgs_domain_sid,
+                                           tgs_user_rid)
 
         target_creds, sname = self.get_target(tgs_to_krbtgt, tgs_compression)
         decryption_key = self.TicketDecryptionKey_from_creds(target_creds)
 
         subkey = self.RandomKey(ticket.session_key.etype)
+
+        requester_sid = None
+        if tgs_to_krbtgt:
+            requester_sid = user_sid
 
         # Perform a TGS-REQ with the user account.
 
@@ -1144,8 +1194,9 @@ class GroupTests(KDCBaseTest):
             expected_sname=sname,
             expected_account_name=user_name,
             expected_groups=tgs_expected_mapped,
-            expected_sid=user_sid,
-            expected_domain_sid=domain_sid,
+            expected_sid=tgs_user_sid,
+            expected_requester_sid=requester_sid,
+            expected_domain_sid=tgs_domain_sid,
             expected_supported_etypes=target_supported_etypes,
             ticket_decryption_key=decryption_key,
             check_rep_fn=self.generic_check_kdc_rep,
