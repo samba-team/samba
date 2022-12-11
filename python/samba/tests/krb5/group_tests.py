@@ -137,7 +137,7 @@ class GroupTests(KDCBaseTest):
             if sid_type is self.SidType.BASE_SID:
                 domain, rid = sid.rsplit('-', 1)
                 self.assertEqual(domain_sid, domain,
-                                 'base SIDs must be in our domain')
+                                 f'base SID {sid} must be in our domain')
 
                 base_sid = samr.RidWithAttribute()
                 base_sid.rid = int(rid)
