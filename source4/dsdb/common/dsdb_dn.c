@@ -396,3 +396,36 @@ struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
 	talloc_free(dn_string);
 	return new_dn;
 }
+
+/*
+ * Safely convert a drsuapi_DsReplicaObjectIdentifier into a validated
+ * LDB DN of an existing DB entry, and/or find the NC root
+ *
+ * Finally, we must return the DN as found in the DB, as otherwise a
+ * subsequence ldb_dn_compare(dn, nc_root) will fail (as this is based
+ * on the string components).
+ */
+int drs_ObjectIdentifier_to_dn_and_nc_root(TALLOC_CTX *mem_ctx,
+					   struct ldb_context *ldb,
+					   struct drsuapi_DsReplicaObjectIdentifier *nc,
+					   struct ldb_dn **normalised_dn,
+					   struct ldb_dn **nc_root)
+{
+	int ret;
+	struct ldb_dn *new_dn = NULL;
+
+	new_dn = drs_ObjectIdentifier_to_dn(mem_ctx,
+					    ldb,
+					    nc);
+	if (new_dn == NULL) {
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	ret = dsdb_normalise_dn_and_find_nc_root(ldb,
+						 mem_ctx,
+						 new_dn,
+						 normalised_dn,
+						 nc_root);
+	TALLOC_FREE(new_dn);
+	return ret;
+}

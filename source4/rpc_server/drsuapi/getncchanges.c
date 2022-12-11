@@ -1091,9 +1091,20 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
-	if (!ldb_dn_validate(req_dn) ||
-	    ldb_dn_compare(req_dn, *rid_manager_dn) != 0) {
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx,
+						     ldb,
+						     req10->naming_context,
+						     &req_dn,
+						     NULL);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("RID Alloc request for invalid DN %s: %s\n",
+			drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context),
+			ldb_strerror(ret));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
+		return WERR_OK;
+	}
+
+	if (ldb_dn_compare(req_dn, *rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
 		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
 			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
@@ -1250,7 +1261,17 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	 * Which basically means that if you have GET_ALL_CHANGES rights (~== RWDC)
 	 * then you can do EXOP_REPL_SECRETS
 	 */
-	obj_dn = drs_ObjectIdentifier_to_dn(mem_ctx, b_state->sam_ctx_system, ncRoot);
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx,
+							b_state->sam_ctx_system,
+							ncRoot,
+							&obj_dn,
+							NULL);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("RevealSecretRequest for for invalid DN %s\n",
+			 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot));
+		goto failed;
+	}
+
 	if (!ldb_dn_validate(obj_dn)) goto failed;
 
 	if (has_get_all_changes) {
@@ -1362,8 +1383,9 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	    - verify that we are the current master
 	 */
 
-	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
-	if (!ldb_dn_validate(req_dn)) {
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx, ldb, req10->naming_context,
+						     &req_dn, NULL);
+	if (ret != LDB_SUCCESS) {
 		/* that is not a valid dn */
 		DEBUG(0,(__location__ ": FSMO role transfer request for invalid DN %s\n",
 			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
@@ -1389,8 +1411,16 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	/* change the current master */
 	msg = ldb_msg_new(ldb);
 	W_ERROR_HAVE_NO_MEMORY(msg);
-	msg->dn = drs_ObjectIdentifier_to_dn(msg, ldb, req10->naming_context);
-	W_ERROR_HAVE_NO_MEMORY(msg->dn);
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(msg, ldb, req10->naming_context,
+						     &msg->dn, NULL);
+	if (ret != LDB_SUCCESS) {
+		/* that is not a valid dn */
+		DBG_ERR("FSMO role transfer request for invalid DN %s: %s\n",
+			drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context),
+			ldb_strerror(ret));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
+		return WERR_OK;
+	}
 
 	/* TODO: make sure ntds_dn is a valid nTDSDSA object */
 	ret = dsdb_find_dn_by_guid(ldb, msg, &req10->destination_dsa_guid, 0, &ntds_dn);
@@ -2864,7 +2894,21 @@ allowed:
 
 	/* see if a previous replication has been abandoned */
 	if (getnc_state) {
-		struct ldb_dn *new_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
+		struct ldb_dn *new_dn;
+		ret = drs_ObjectIdentifier_to_dn_and_nc_root(getnc_state,
+							     sam_ctx,
+							     ncRoot,
+							     &new_dn,
+							     NULL);
+		if (ret != LDB_SUCCESS) {
+			/*
+			 * This can't fail as we have done this above
+			 * implicitly but not got the DN out
+			 */
+			DBG_ERR("Bad DN '%s'\n",
+				drs_ObjectIdentifier_to_string(mem_ctx, ncRoot));
+			return WERR_DS_DRA_INVALID_PARAMETER;
+		}
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
 			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s (last_dn %s)\n",
 				 ldb_dn_get_linearized(new_dn),
@@ -2899,9 +2943,13 @@ allowed:
 		uint32_t nc_instanceType;
 		struct ldb_dn *ncRoot_dn;
 
-		ncRoot_dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, ncRoot);
-		if (ncRoot_dn == NULL) {
-			return WERR_NOT_ENOUGH_MEMORY;
+		ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx,
+							     sam_ctx,
+							     ncRoot,
+							     &ncRoot_dn,
+							     NULL);
+		if (ret != LDB_SUCCESS) {
+			return WERR_DS_DRA_BAD_DN;
 		}
 
 		ret = dsdb_search_dn(sam_ctx, mem_ctx, &res,

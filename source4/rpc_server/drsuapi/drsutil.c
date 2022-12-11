@@ -191,8 +191,19 @@ WERROR drs_security_access_check(struct ldb_context *sam_ctx,
 				 struct drsuapi_DsReplicaObjectIdentifier *nc,
 				 const char *ext_right)
 {
-	struct ldb_dn *dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, nc);
+	struct ldb_dn *dn;
 	WERROR werr;
+	int ret;
+
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx,
+						     sam_ctx,
+						     nc,
+						     &dn,
+						     NULL);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_BAD_DN;
+	}
+
 	werr = drs_security_access_check_log(sam_ctx, mem_ctx, token, dn, ext_right);
 	talloc_free(dn);
 	return werr;
@@ -207,17 +218,20 @@ WERROR drs_security_access_check_nc_root(struct ldb_context *sam_ctx,
 					 struct drsuapi_DsReplicaObjectIdentifier *nc,
 					 const char *ext_right)
 {
-	struct ldb_dn *dn, *nc_root;
+	struct ldb_dn *nc_root;
 	WERROR werr;
 	int ret;
 
-	dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, nc);
-	W_ERROR_HAVE_NO_MEMORY(dn);
-	ret = dsdb_find_nc_root(sam_ctx, dn, dn, &nc_root);
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx,
+						     sam_ctx,
+						     nc,
+						     NULL,
+						     &nc_root);
 	if (ret != LDB_SUCCESS) {
-		return WERR_DS_CANT_FIND_EXPECTED_NC;
+		return WERR_DS_DRA_BAD_NC;
 	}
+
 	werr = drs_security_access_check_log(sam_ctx, mem_ctx, token, nc_root, ext_right);
-	talloc_free(dn);
+	talloc_free(nc_root);
 	return werr;
 }
