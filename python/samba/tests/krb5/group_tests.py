@@ -115,7 +115,9 @@ class GroupTests(KDCBaseTest):
                          ticket,
                          new_sids,
                          domain_sid,
-                         user_rid):
+                         user_rid,
+                         set_user_flags=0,
+                         reset_user_flags=0):
         krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
 
@@ -126,7 +128,9 @@ class GroupTests(KDCBaseTest):
         modify_pac_fn = partial(self.set_pac_sids,
                                 new_sids=new_sids,
                                 domain_sid=domain_sid,
-                                user_rid=user_rid)
+                                user_rid=user_rid,
+                                set_user_flags=set_user_flags,
+                                reset_user_flags=reset_user_flags)
 
         return self.modified_ticket(ticket,
                                     modify_pac_fn=modify_pac_fn,
@@ -137,7 +141,9 @@ class GroupTests(KDCBaseTest):
                      pac,
                      new_sids,
                      domain_sid,
-                     user_rid):
+                     user_rid,
+                     set_user_flags=0,
+                     reset_user_flags=0):
         base_sids = []
         extra_sids = []
         resource_sids = []
@@ -224,6 +230,9 @@ class GroupTests(KDCBaseTest):
                     logon_info.resource_groups.groups.rids = None
                     logon_info.info3.base.user_flags &= ~(
                         netlogon.NETLOGON_RESOURCE_GROUPS)
+
+                logon_info.info3.base.user_flags |= set_user_flags
+                logon_info.info3.base.user_flags &= ~reset_user_flags
 
                 found_logon_info = True
 
@@ -1146,6 +1155,10 @@ class GroupTests(KDCBaseTest):
         # Optional user SID to replace that in the PAC prior to a TGS-REQ.
         tgs_user_sid = case.pop('tgs:user_sid', None)
 
+        # User flags that may be set or reset in the PAC prior to a TGS-REQ.
+        tgs_set_user_flags = case.pop('tgs:set_user_flags', None)
+        tgs_reset_user_flags = case.pop('tgs:reset_user_flags', None)
+
         # The SIDs we expect to see in the PAC after a AS-REQ or a TGS-REQ.
         as_expected = case.pop('as:expected', None)
         tgs_expected = case.pop('tgs:expected', None)
@@ -1180,6 +1193,20 @@ class GroupTests(KDCBaseTest):
         if tgs_user_sid is not None:
             self.assertIsNotNone(tgs_sids,
                                  'specified TGS-REQ user SID, but no '
+                                 'accompanying SIDs provided')
+
+        if tgs_set_user_flags is None:
+            tgs_set_user_flags = 0
+        else:
+            self.assertIsNotNone(tgs_sids,
+                                 'specified TGS-REQ set user flags, but no '
+                                 'accompanying SIDs provided')
+
+        if tgs_reset_user_flags is None:
+            tgs_reset_user_flags = 0
+        else:
+            self.assertIsNotNone(tgs_sids,
+                                 'specified TGS-REQ reset user flags, but no '
                                  'accompanying SIDs provided')
 
         samdb = self.get_samdb()
@@ -1280,7 +1307,9 @@ class GroupTests(KDCBaseTest):
             ticket = self.ticket_with_sids(ticket,
                                            tgs_sids_mapped,
                                            tgs_domain_sid,
-                                           tgs_user_rid)
+                                           tgs_user_rid,
+                                           set_user_flags=tgs_set_user_flags,
+                                           reset_user_flags=tgs_reset_user_flags)
 
         target_creds, sname = self.get_target(tgs_to_krbtgt, tgs_compression)
         decryption_key = self.TicketDecryptionKey_from_creds(target_creds)
@@ -1290,6 +1319,12 @@ class GroupTests(KDCBaseTest):
         requester_sid = None
         if tgs_to_krbtgt:
             requester_sid = user_sid
+
+        expect_resource_groups_flag = None
+        if tgs_reset_user_flags & netlogon.NETLOGON_RESOURCE_GROUPS:
+            expect_resource_groups_flag = False
+        elif tgs_set_user_flags & netlogon.NETLOGON_RESOURCE_GROUPS:
+            expect_resource_groups_flag = True
 
         # Perform a TGS-REQ with the user account.
 
@@ -1304,6 +1339,7 @@ class GroupTests(KDCBaseTest):
             expected_requester_sid=requester_sid,
             expected_domain_sid=tgs_domain_sid,
             expected_supported_etypes=target_supported_etypes,
+            expect_resource_groups_flag=expect_resource_groups_flag,
             ticket_decryption_key=decryption_key,
             check_rep_fn=self.generic_check_kdc_rep,
             check_kdc_private_fn=self.generic_check_kdc_private,

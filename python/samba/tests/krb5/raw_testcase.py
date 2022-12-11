@@ -2505,6 +2505,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          unexpected_client_claims=None,
                          expected_device_claims=None,
                          unexpected_device_claims=None,
+                         expect_resource_groups_flag=None,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2576,6 +2577,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_client_claims': unexpected_client_claims,
             'expected_device_claims': expected_device_claims,
             'unexpected_device_claims': unexpected_device_claims,
+            'expect_resource_groups_flag': expect_resource_groups_flag,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2644,6 +2646,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           unexpected_client_claims=None,
                           expected_device_claims=None,
                           unexpected_device_claims=None,
+                          expect_resource_groups_flag=None,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2716,6 +2719,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'unexpected_client_claims': unexpected_client_claims,
             'expected_device_claims': expected_device_claims,
             'unexpected_device_claims': unexpected_device_claims,
+            'expect_resource_groups_flag': expect_resource_groups_flag,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -3233,11 +3237,26 @@ class RawKerberosTest(TestCaseInTempDir):
                 pac_sids.add(pac_sid)
 
         # Collect the Resource SIDs.
+        expect_resource_groups_flag = kdc_exchange_dict[
+            'expect_resource_groups_flag']
+        expect_set_reason = ''
+        expect_reset_reason = ''
+        if expect_resource_groups_flag is None:
+            expect_resource_groups_flag = (
+                resource_groups.groups.rids is not None)
+            expect_set_reason = 'resource groups present, but '
+            expect_reset_reason = 'no resource groups present, but '
+
+        if expect_resource_groups_flag:
+            self.assertTrue(
+                logon_info.user_flags & netlogon.NETLOGON_RESOURCE_GROUPS,
+                f'{expect_set_reason}RESOURCE_GROUPS flag unexpectedly reset')
+        else:
+            self.assertFalse(
+                logon_info.user_flags & netlogon.NETLOGON_RESOURCE_GROUPS,
+                f'{expect_reset_reason}RESOURCE_GROUPS flag unexpectedly set')
+
         if resource_groups.groups.rids is not None:
-            self.assertTrue(logon_info.user_flags & (
-                netlogon.NETLOGON_RESOURCE_GROUPS),
-                            'resource groups present, but RESOURCE_GROUPS '
-                            'flag not set')
             self.assertTrue(resource_groups.groups.rids, 'got empty RIDs')
 
             resource_group_sid = resource_groups.domain_sid
@@ -3251,11 +3270,6 @@ class RawKerberosTest(TestCaseInTempDir):
                            resource_group.attributes)
                 self.assertNotIn(pac_sid, pac_sids, 'got duplicated SID')
                 pac_sids.add(pac_sid)
-        else:
-            self.assertFalse(logon_info.user_flags & (
-                netlogon.NETLOGON_RESOURCE_GROUPS),
-                             'no resource groups present, but RESOURCE_GROUPS '
-                             'flag set')
 
         # Compare the aggregated SIDs against the set of expected SIDs.
         if expected_groups is not None:
