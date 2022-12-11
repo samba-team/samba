@@ -195,7 +195,6 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 {
 	WERROR werr;
 	int ret;
-	struct ldb_dn *dn;
 	struct ldb_dn *dn_normalised;
 	struct ldb_dn *nc_root;
 	struct ldb_context *sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
@@ -226,14 +225,11 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
-	dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, req->naming_context);
-	W_ERROR_HAVE_NO_MEMORY(dn);
-	ret = dsdb_normalise_dn_and_find_nc_root(sam_ctx, dn,
-						 dn,
-						 &dn_normalised,
-						 &nc_root);
+	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx, sam_ctx, req->naming_context,
+						     &dn_normalised, &nc_root);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(2, ("Didn't find a nc for %s\n", ldb_dn_get_linearized(dn)));
+		DBG_WARNING("Didn't find a nc for %s\n",
+			    ldb_dn_get_linearized(dn_normalised));
 		return WERR_DS_DRA_BAD_NC;
 	}
 	if (ldb_dn_compare(dn_normalised, nc_root) != 0) {
@@ -249,7 +245,10 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 	 * This means that in the usual case, it will never open it and never
 	 * bother to refresh the dreplsrv.
 	 */
-	werr = uref_check_dest(sam_ctx, mem_ctx, dn, &req->dest_dsa_guid,
+	werr = uref_check_dest(sam_ctx,
+			       mem_ctx,
+			       dn_normalised,
+			       &req->dest_dsa_guid,
 			       req->options);
 	if (W_ERROR_EQUAL(werr, WERR_DS_DRA_REF_ALREADY_EXISTS) ||
 	    W_ERROR_EQUAL(werr, WERR_DS_DRA_REF_NOT_FOUND)) {
@@ -266,7 +265,11 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 	}
 
 	if (req->options & DRSUAPI_DRS_DEL_REF) {
-		werr = uref_del_dest(sam_ctx, mem_ctx, dn, &req->dest_dsa_guid, req->options);
+		werr = uref_del_dest(sam_ctx,
+				     mem_ctx,
+				     dn_normalised,
+				     &req->dest_dsa_guid,
+				     req->options);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to delete repsTo for %s: %s\n",
 				 GUID_string(mem_ctx, &req->dest_dsa_guid),
@@ -287,7 +290,11 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 		dest.source_dsa_obj_guid = req->dest_dsa_guid;
 		dest.replica_flags       = req->options;
 
-		werr = uref_add_dest(sam_ctx, mem_ctx, dn, &dest, req->options);
+		werr = uref_add_dest(sam_ctx,
+				     mem_ctx,
+				     dn_normalised,
+				     &dest,
+				     req->options);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to add repsTo for %s: %s\n",
 				 GUID_string(mem_ctx, &dest.source_dsa_obj_guid),
