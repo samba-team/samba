@@ -952,7 +952,7 @@ static NTSTATUS auth3_session_info_create(
 		}
 	}
 
-	if (session_info->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 

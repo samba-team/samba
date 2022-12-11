@@ -123,7 +123,7 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 		return nt_status;
 	}
 
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 

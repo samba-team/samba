@@ -118,10 +118,7 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	sam->user_flags = 0; /* w2k3 uses NETLOGON_EXTRA_SIDS | NETLOGON_NTLMV2_ENABLED */
-	if (!user_info_dc->info->authenticated) {
-		sam->user_flags |= NETLOGON_GUEST;
-	}
+	sam->user_flags = info->user_flags; /* w2k3 uses NETLOGON_EXTRA_SIDS | NETLOGON_NTLMV2_ENABLED */
 	sam->acct_flags = user_info_dc->info->acct_flags;
 	sam->sub_auth_status = 0;
 	sam->last_successful_logon = 0;
@@ -349,8 +346,14 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	info->bad_password_count = base->bad_password_count;
 	info->acct_flags = base->acct_flags;
 
-	/* Only set authenticated if both NETLOGON_GUEST is not set, and authenticated is set */
-	info->authenticated = (authenticated && (!(base->user_flags & NETLOGON_GUEST)));
+	info->user_flags = base->user_flags;
+	if (!authenticated) {
+		/*
+		 * We only consider the user authenticated if NETLOGON_GUEST is
+		 * not set, and authenticated is set
+		 */
+		info->user_flags |= NETLOGON_GUEST;
+	}
 
 	*_user_info = info;
 	return NT_STATUS_OK;

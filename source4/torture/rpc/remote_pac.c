@@ -109,7 +109,7 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 	talloc_steal(pac_data, pac_data->pac_srv_sig);
 	talloc_steal(pac_data, pac_data->pac_kdc_sig);
 
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 

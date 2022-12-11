@@ -181,7 +181,7 @@ NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
 
 	info->acct_flags = ACB_NORMAL;
 
-	info->authenticated = true;
+	info->user_flags = 0;
 
 	*_user_info_dc = user_info_dc;
 
@@ -284,7 +284,7 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	info->acct_flags = ACB_NORMAL;
 
-	info->authenticated = true;
+	info->user_flags = 0;
 
 	*_user_info_dc = user_info_dc;
 
@@ -443,7 +443,8 @@ _PUBLIC_ NTSTATUS auth_anonymous_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	info->acct_flags = ACB_NORMAL;
 
-	info->authenticated = false;
+	/* The user is not authenticated. */
+	info->user_flags = NETLOGON_GUEST;
 
 	*_user_info_dc = user_info_dc;
 

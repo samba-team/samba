@@ -52,7 +52,11 @@ interface auth
 
 		uint32 acct_flags;
 
-		uint8 authenticated;
+		/*
+		 * The NETLOGON_GUEST flag being set indicates the user is not
+		 * authenticated.
+		 */
+		uint32 user_flags;
 	} auth_user_info;
 
 	/* This information is preserved only to assist torture tests */

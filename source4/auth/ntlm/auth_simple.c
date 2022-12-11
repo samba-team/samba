@@ -169,7 +169,7 @@ static void authenticate_ldap_simple_bind_done(struct tevent_req *subreq)
 	}
 
 	flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 

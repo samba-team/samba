@@ -135,7 +135,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 
 	info->acct_flags = ACB_NORMAL;
 
-	info->authenticated = true;
+	info->user_flags = 0;
 
 	*_user_info_dc = user_info_dc;
 

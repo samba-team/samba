@@ -111,7 +111,7 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 	/* This references user_info_dc into session_info */
@@ -252,7 +252,7 @@ static void sesssetup_nt1_send(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 	/* This references user_info_dc into session_info */

@@ -605,7 +605,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		user_info_dc->num_sids++;
 	}
 
-	info->authenticated = true;
+	info->user_flags = 0;
 
 	talloc_free(tmp_ctx);
 	*_user_info_dc = user_info_dc;

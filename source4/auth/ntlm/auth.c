@@ -540,7 +540,7 @@ static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_co
 	NTSTATUS status;
 	struct auth_user_info_dc *user_info_dc = talloc_get_type_abort(server_returned_info, struct auth_user_info_dc);
 
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
@@ -599,7 +599,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 		return status;
 	}
 
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 

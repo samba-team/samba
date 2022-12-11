@@ -3353,7 +3353,7 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		goto out;
 	}
 
-	if (user_info_dc->info->authenticated) {
+	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
