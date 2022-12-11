@@ -160,21 +160,21 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 		sid_idx++;
 		wbcSidToStringBuf(&info->sids[sid_idx].sid,
 				  sid_str, sizeof(sid_str));
-		torture_assert(tctx,
-			       dom_sid_equal(dom_sid_parse_talloc(tctx, sid_str),
-					     dom_sid_add_rid(tctx, base->domain_sid,
-							     base->groups.rids[i].rid)),
-			       sid_str);
+		torture_assert_sid_equal(tctx,
+					 dom_sid_parse_talloc(tctx, sid_str),
+					 dom_sid_add_rid(tctx, base->domain_sid,
+							 base->groups.rids[i].rid),
+					 "base SID mismatch");
 	}
 
 	for(i = 0; i < info3->sidcount; i++) {
 		sid_idx++;
 		wbcSidToStringBuf(&info->sids[sid_idx].sid,
 				  sid_str, sizeof(sid_str));
-		torture_assert(tctx,
-			       dom_sid_equal(dom_sid_parse_talloc(tctx, sid_str),
-					     info3->sids[i].sid),
-			       sid_str);
+		torture_assert_sid_equal(tctx,
+					 dom_sid_parse_talloc(tctx, sid_str),
+					 info3->sids[i].sid,
+					 "extra SID mismatch");
 	}
 
 	return true;
