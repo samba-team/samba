@@ -104,63 +104,6 @@ class GroupTests(KDCBaseTest):
             cls.generate_dynamic_test('test_group', name,
                                       dict(case))
 
-    # Enable or disable resource SID compression on the krbtgt
-    # account. Depending on how the KDC chooses to handle SID compression, this
-    # may or may not have any real effect.
-    def set_krbtgt_sid_compression(self, compression):
-        krbtgt_creds = self.get_krbtgt_creds()
-        krbtgt_dn = krbtgt_creds.get_dn()
-
-        samdb = self.get_samdb()
-
-        # Get the current supported encryption types of the krbtgt account.
-        res = samdb.search(krbtgt_dn,
-                           scope=ldb.SCOPE_BASE,
-                           attrs=['msDS-SupportedEncryptionTypes'])
-        orig_msg = res[0]
-        krbtgt_enctypes = orig_msg.get(
-            'msDS-SupportedEncryptionTypes', idx=0)
-        if krbtgt_enctypes is None:
-            # Setting the enctypes isn't likely to accomplish anything.
-            return
-
-        krbtgt_enctypes = int(krbtgt_enctypes)
-
-        # Enable or disable the compression bit.
-        if compression:
-            set_krbtgt_enctypes = krbtgt_enctypes | (
-                security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED)
-        else:
-            set_krbtgt_enctypes = krbtgt_enctypes & ~(
-                security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED)
-
-        if krbtgt_enctypes == set_krbtgt_enctypes:
-            # Nothing to do.
-            return
-
-        msg = ldb.Message(krbtgt_dn)
-        msg['msDS-SupportedEncryptionTypes'] = ldb.MessageElement(
-            str(set_krbtgt_enctypes),
-            ldb.FLAG_MOD_REPLACE,
-            'msDS-SupportedEncryptionTypes')
-
-        # Clean up the change afterwards.
-        diff = samdb.msg_diff(msg, orig_msg)
-        self.addCleanup(samdb.modify, diff)
-
-        samdb.modify(msg)
-
-        # Make sure the value remains as we set it.
-        res = samdb.search(krbtgt_dn,
-                           scope=ldb.SCOPE_BASE,
-                           attrs=['msDS-SupportedEncryptionTypes'])
-        new_krbtgt_enctypes = res[0].get(
-            'msDS-SupportedEncryptionTypes', idx=0)
-        self.assertIsNotNone(new_krbtgt_enctypes)
-        new_krbtgt_enctypes = int(new_krbtgt_enctypes)
-        self.assertEqual(set_krbtgt_enctypes, new_krbtgt_enctypes,
-                         'failed to set krbtgt supported enctypes')
-
     # Get a ticket with the SIDs in the PAC replaced with ones we specify. This
     # is useful for creating arbitrary tickets that can be used to perform a
     # TGS-REQ.
@@ -809,7 +752,7 @@ class GroupTests(KDCBaseTest):
             },
         },
         {
-            'test': 'resource sids given; compression; tgs-req to krbtgt',
+            'test': 'resource sids given; tgs-req to krbtgt',
             'groups': {
                 # A couple of independent domain-local groups.
                 'dom-local-0': (GroupType.DOMAIN_LOCAL, {}),
@@ -817,7 +760,6 @@ class GroupTests(KDCBaseTest):
             },
             'as:to_krbtgt': True,
             'tgs:to_krbtgt': True,
-            'tgs:compression': True,
             'tgs:sids': {
                 # The TGT contains two resource SIDs for the domain-local
                 # groups.
@@ -830,32 +772,6 @@ class GroupTests(KDCBaseTest):
             'tgs:expected': {
                 # The resource SIDs remain after performing a TGS-REQ to the
                 # krbtgt.
-                ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
-                ('dom-local-1', SidType.RESOURCE_SID, resource_attrs),
-                (asserted_identity, SidType.EXTRA_SID, default_attrs),
-                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
-                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
-            },
-        },
-        {
-            'test': 'resource sids given; no compression; tgs-req to krbtgt',
-            'groups': {
-                'dom-local-0': (GroupType.DOMAIN_LOCAL, {}),
-                'dom-local-1': (GroupType.DOMAIN_LOCAL, {}),
-            },
-            'as:to_krbtgt': True,
-            'tgs:to_krbtgt': True,
-            # Compression is disabled on the krbtgt account...
-            'tgs:compression': False,
-            'tgs:sids': {
-                ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
-                ('dom-local-1', SidType.RESOURCE_SID, resource_attrs),
-                (asserted_identity, SidType.EXTRA_SID, default_attrs),
-                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
-                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
-            },
-            'tgs:expected': {
-                # ...and the resource SIDs remain.
                 ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
                 ('dom-local-1', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
@@ -893,7 +809,6 @@ class GroupTests(KDCBaseTest):
             },
             'as:to_krbtgt': True,
             'tgs:to_krbtgt': True,
-            'tgs:compression': False,
             'tgs:sids': {
                 # In Samba 4.17, domain-local groups are contained within the
                 # TGT, and do not have the SE_GROUP_RESOURCE bit set.
@@ -1017,7 +932,9 @@ class GroupTests(KDCBaseTest):
     # or unsupported.
     def get_target(self, to_krbtgt, compression):
         if to_krbtgt:
-            self.set_krbtgt_sid_compression(compression)
+            self.assertIsNone(compression,
+                              "it's no good specifying compression support "
+                              "for the krbtgt")
             creds = self.get_krbtgt_creds()
             sname = self.get_krbtgt_sname()
         else:
