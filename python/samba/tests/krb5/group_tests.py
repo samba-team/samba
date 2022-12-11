@@ -23,6 +23,7 @@ import os
 sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
+import random
 import re
 
 from enum import Enum
@@ -60,7 +61,7 @@ class GroupType(Enum):
 # This simple class encapsulates the DN and SID of a Principal.
 class Principal:
     def __init__(self, dn, sid):
-        if not isinstance(dn, ldb.Dn):
+        if dn is not None and not isinstance(dn, ldb.Dn):
             raise AssertionError(f'expected {dn} to be an ldb.Dn')
 
         self.dn = dn
@@ -69,8 +70,9 @@ class Principal:
 
 @DynamicTestCase
 class GroupTests(KDCBaseTest):
-    # A placeholder object that represents the user account undergoing testing.
+    # Placeholder objects that represent the user account undergoing testing.
     user = object()
+    trust_user = object()
 
     # Constants for group SID attributes.
     default_attrs = (security.SE_GROUP_MANDATORY |
@@ -79,6 +81,8 @@ class GroupTests(KDCBaseTest):
     resource_attrs = default_attrs | security.SE_GROUP_RESOURCE
 
     asserted_identity = security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY
+
+    trust_domain = 'S-1-5-21-123-456-789'
 
     def setUp(self):
         super().setUp()
@@ -919,6 +923,89 @@ class GroupTests(KDCBaseTest):
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
             },
         },
+        # Simulate a ticket coming in over a trust.
+        {
+            'test': 'from trust; to krbtgt',
+            'groups': {
+                # The user belongs to a couple of domain-local groups in our
+                # domain.
+                'foo': (GroupType.DOMAIN_LOCAL, {trust_user}),
+                'bar': (GroupType.DOMAIN_LOCAL, {'foo'}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            # The user SID is from a different domain.
+            'tgs:user_sid': trust_user,
+            'tgs:sids': {
+                (trust_user, SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                # This dummy resource SID comes from the trusted domain.
+                (f'{trust_domain}-333', SidType.RESOURCE_SID, resource_attrs),
+            },
+            'tgs:expected': {
+                # After performing a TGS-REQ to the krbtgt, the PAC remains
+                # unchanged.
+                (trust_user, SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (f'{trust_domain}-333', SidType.RESOURCE_SID, resource_attrs),
+            },
+        },
+        {
+            'test': 'from trust; compression; to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {trust_user}),
+                'bar': (GroupType.DOMAIN_LOCAL, {'foo'}),
+            },
+            'as:to_krbtgt': True,
+            # The same thing, but to a service.
+            'tgs:to_krbtgt': False,
+            'tgs:compression': True,
+            'tgs:user_sid': trust_user,
+            'tgs:sids': {
+                (trust_user, SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (f'{trust_domain}-333', SidType.RESOURCE_SID, resource_attrs),
+            },
+            'tgs:expected': {
+                (trust_user, SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                # The resource SIDs are added to the PAC.
+                ('foo', SidType.RESOURCE_SID, resource_attrs),
+                ('bar', SidType.RESOURCE_SID, resource_attrs),
+            },
+        },
+        # Simulate a ticket coming in over a trust
+        {
+            'test': 'from trust; no compression; to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {trust_user}),
+                'bar': (GroupType.DOMAIN_LOCAL, {'foo'}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            # And again, but this time compression is disabled.
+            'tgs:compression': False,
+            'tgs:user_sid': trust_user,
+            'tgs:sids': {
+                (trust_user, SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (f'{trust_domain}-333', SidType.RESOURCE_SID, resource_attrs),
+            },
+            'tgs:expected': {
+                (trust_user, SidType.BASE_SID, default_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                # The resource SIDs are added again, but this time to Extra
+                # SIDs.
+                ('foo', SidType.EXTRA_SID, resource_attrs),
+                ('bar', SidType.EXTRA_SID, resource_attrs),
+            },
+        },
     ]
 
     # Create a new group and return a Principal object representing it.
@@ -961,10 +1048,19 @@ class GroupTests(KDCBaseTest):
         return mapped_sids
 
     # Create an arrangement on groups based on a configuration specified in a
-    # test case. 'user_principal' is a principal representing the user account.
-    def setup_groups(self, samdb, group_setup, user_principal):
+    # test case. 'user_principal' is a principal representing the user account;
+    # 'trust_principal', a principal representing the account of a user from
+    # another domain.
+    def setup_groups(self,
+                     samdb,
+                     group_setup,
+                     user_principal,
+                     trust_principal):
         # Initialiase the group mapping with the user principal.
-        groups = {self.user: user_principal}
+        groups = {
+            self.user: user_principal,
+            self.trust_user: trust_principal,
+        }
 
         # Create each group and add it to the group mapping.
         for group_id, (group_type, _) in group_setup.items():
@@ -983,7 +1079,10 @@ class GroupTests(KDCBaseTest):
                 self.fail(f"included group member '{group_id}', but it is not "
                           f"specified in {groups.keys()}")
             else:
-                return str(group.dn)
+                if group.dn is not None:
+                    return str(group.dn)
+
+                return f'<SID={group.sid}>'
 
         # Populate each group's members.
         for group_id, (_, members) in group_setup.items():
@@ -1097,6 +1196,9 @@ class GroupTests(KDCBaseTest):
         user_name = user_creds.get_username()
         salt = user_creds.get_salt()
 
+        trust_user_rid = random.randint(2000, 0xfffffffe)
+        trust_user_sid = f'{self.trust_domain}-{trust_user_rid}'
+
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=user_name.split('/'))
 
@@ -1113,7 +1215,11 @@ class GroupTests(KDCBaseTest):
         realm = target_creds.get_realm()
 
         user_principal = Principal(user_dn, user_sid)
-        groups = self.setup_groups(samdb, group_setup, user_principal)
+        trust_principal = Principal(None, trust_user_sid)
+        groups = self.setup_groups(samdb,
+                                   group_setup,
+                                   user_principal,
+                                   trust_principal)
         del group_setup
 
         if tgs_user_sid is None:
