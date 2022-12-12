@@ -206,7 +206,7 @@ struct {
 
 const char *dsdb_user_account_control_flag_bit_to_string(uint32_t uf)
 {
-	int i;
+	size_t i;
 	for (i=0; i < ARRAY_SIZE(user_account_control_name_map); i++) {
 		if (uf == user_account_control_name_map[i].uf) {
 			return user_account_control_name_map[i].name;
