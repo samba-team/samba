@@ -636,8 +636,9 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 						    struct netr_Authenticator *return_authenticator,
 						    struct netlogon_creds_CredentialState **creds_out)
 {
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	NTSTATUS nt_status;
-	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
+	int schannel = lpcfg_server_schannel(lp_ctx);
 	bool schannel_global_required = (schannel == true);
 	bool schannel_required = schannel_global_required;
 	const char *explicit_opt = NULL;
@@ -653,7 +654,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
 
 	nt_status = schannel_check_creds_state(mem_ctx,
-					       dce_call->conn->dce_ctx->lp_ctx,
+					       lp_ctx,
 					       computer_name,
 					       received_authenticator,
 					       return_authenticator,
@@ -668,7 +669,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	 * need the explicit_opt pointer in order to
 	 * adjust the debug messages.
 	 */
-	explicit_opt = lpcfg_get_parametric(dce_call->conn->dce_ctx->lp_ctx,
+	explicit_opt = lpcfg_get_parametric(lp_ctx,
 					    NULL,
 					    "server require schannel",
 					    creds->account_name);
