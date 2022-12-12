@@ -380,8 +380,8 @@ def convert_pol_to_json(section, entries):
     return managed, recommended
 
 class gp_chromium_ext(gp_pol_ext, gp_file_applier):
-    __managed_policies_path = '/etc/chromium/policies/managed'
-    __recommended_policies_path = '/etc/chromium/policies/recommended'
+    managed_policies_path = '/etc/chromium/policies/managed'
+    recommended_policies_path = '/etc/chromium/policies/recommended'
 
     def __str__(self):
         return 'Google/Chromium'
@@ -389,15 +389,15 @@ class gp_chromium_ext(gp_pol_ext, gp_file_applier):
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
                              policy_dir=None):
         if policy_dir is not None:
-            self.__recommended_policies_path = os.path.join(policy_dir,
+            self.recommended_policies_path = os.path.join(policy_dir,
                                                             'recommended')
-            self.__managed_policies_path = os.path.join(policy_dir, 'managed')
+            self.managed_policies_path = os.path.join(policy_dir, 'managed')
         # Create the policy directories if necessary
-        if not os.path.exists(self.__recommended_policies_path):
-            os.makedirs(self.__recommended_policies_path, mode=0o755,
+        if not os.path.exists(self.recommended_policies_path):
+            os.makedirs(self.recommended_policies_path, mode=0o755,
                         exist_ok=True)
-        if not os.path.exists(self.__managed_policies_path):
-            os.makedirs(self.__managed_policies_path, mode=0o755,
+        if not os.path.exists(self.managed_policies_path):
+            os.makedirs(self.managed_policies_path, mode=0o755,
                         exist_ok=True)
         for guid, settings in deleted_gpo_list:
             if str(self) in settings:
@@ -413,10 +413,10 @@ class gp_chromium_ext(gp_pol_ext, gp_file_applier):
                         # stored in the cache (now we store a hash and file
                         # names instead).
                         if attribute == 'recommended':
-                            fname = os.path.join(self.__recommended_policies_path,
+                            fname = os.path.join(self.recommended_policies_path,
                                                  'policies.json')
                         elif attribute == 'managed':
-                            fname = os.path.join(self.__managed_policies_path,
+                            fname = os.path.join(self.managed_policies_path,
                                                  'policies.json')
                         self.unapply(guid, attribute, fname)
 
@@ -446,10 +446,10 @@ class gp_chromium_ext(gp_pol_ext, gp_file_applier):
                                   policies)
                 value_hash = self.generate_value_hash(json.dumps(managed))
                 self.apply(gpo.name, 'managed', value_hash, applier_func,
-                           managed, self.__managed_policies_path)
+                           managed, self.managed_policies_path)
                 value_hash = self.generate_value_hash(json.dumps(recommended))
                 self.apply(gpo.name, 'recommended', value_hash, applier_func,
-                           recommended, self.__recommended_policies_path)
+                           recommended, self.recommended_policies_path)
 
     def rsop(self, gpo):
         output = {}
@@ -466,8 +466,8 @@ class gp_chromium_ext(gp_pol_ext, gp_file_applier):
         return output
 
 class gp_chrome_ext(gp_chromium_ext):
-    __managed_policies_path = '/etc/opt/chrome/policies/managed'
-    __recommended_policies_path = '/etc/opt/chrome/policies/recommended'
+    managed_policies_path = '/etc/opt/chrome/policies/managed'
+    recommended_policies_path = '/etc/opt/chrome/policies/recommended'
 
     def __str__(self):
         return 'Google/Chrome'
