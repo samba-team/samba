@@ -20,7 +20,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+#include "lib/util/debug.h"
 #include "librpc/gen_ndr/samr.h"
 #include "../libds/common/flags.h"
 #include "flag_mapping.h"
