@@ -32,26 +32,43 @@ _PUBLIC_ enum TDB_ERROR tdb_error(struct tdb_context *tdb)
 	return tdb->ecode;
 }
 
-static struct tdb_errname {
-	enum TDB_ERROR ecode; const char *estring;
-} emap[] = { {TDB_SUCCESS, "Success"},
-	     {TDB_ERR_CORRUPT, "Corrupt database"},
-	     {TDB_ERR_IO, "IO Error"},
-	     {TDB_ERR_LOCK, "Locking error"},
-	     {TDB_ERR_OOM, "Out of memory"},
-	     {TDB_ERR_EXISTS, "Record exists"},
-	     {TDB_ERR_NOLOCK, "Lock exists on other keys"},
-	     {TDB_ERR_EINVAL, "Invalid parameter"},
-	     {TDB_ERR_NOEXIST, "Record does not exist"},
-	     {TDB_ERR_RDONLY, "write not permitted"} };
-
-/* Error string for the last tdb error */
 _PUBLIC_ const char *tdb_errorstr(struct tdb_context *tdb)
 {
-	uint32_t i;
-	for (i = 0; i < sizeof(emap) / sizeof(struct tdb_errname); i++)
-		if (tdb->ecode == emap[i].ecode)
-			return emap[i].estring;
+	switch (tdb->ecode) {
+	case TDB_SUCCESS:
+		return "Success";
+		break;
+	case TDB_ERR_CORRUPT:
+		return "Corrupt database";
+		break;
+	case TDB_ERR_IO:
+		return "IO Error";
+		break;
+	case TDB_ERR_LOCK:
+		return "Locking error";
+		break;
+	case TDB_ERR_OOM:
+		return "Out of memory";
+		break;
+	case TDB_ERR_EXISTS:
+		return "Record exists";
+		break;
+	case TDB_ERR_NOLOCK:
+		return "Lock exists on other keys";
+		break;
+	case TDB_ERR_EINVAL:
+		return "Invalid parameter";
+		break;
+	case TDB_ERR_NOEXIST:
+		return "Record does not exist";
+		break;
+	case TDB_ERR_RDONLY:
+		return "write not permitted";
+		break;
+	default:
+		break;
+	}
+
 	return "Invalid error code";
 }
 
