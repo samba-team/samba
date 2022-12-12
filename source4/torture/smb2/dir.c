@@ -1453,8 +1453,8 @@ static bool test_1k_files_rename(struct torture_context *tctx,
 	};
 
 	status = smb2_create(tree, tree, &dir);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"Could not create test directory");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Could not create test directory");
 
 	dir_handle = dir.out.file.handle;
 
