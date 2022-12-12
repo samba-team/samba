@@ -2322,7 +2322,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 
 		case SMB_INFO_VOLUME:
 			/* Return volume name */
-			/* 
+			/*
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
@@ -2403,11 +2403,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			SIVAL(pdata,0,len);
 			break;
 
-		case SMB_QUERY_FS_VOLUME_INFO:      
+		case SMB_QUERY_FS_VOLUME_INFO:
 		case SMB_FS_VOLUME_INFORMATION:
 			put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER,
 						    pdata, &st.st_ex_btime);
-			/* 
+			/*
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
@@ -2526,7 +2526,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 #ifdef HAVE_SYS_QUOTAS
 		case SMB_FS_QUOTA_INFORMATION:
-		/* 
+		/*
 		 * what we have to send --metze:
 		 *
 		 * Unknown1: 		24 NULL bytes
@@ -2536,9 +2536,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		 * Unknown3:		6 NULL bytes
 		 *
 		 * 48 bytes total
-		 * 
+		 *
 		 * details for Quota Flags:
-		 * 
+		 *
 		 * 0x0020 Log Limit: log if the user exceeds his Hard Quota
 		 * 0x0010 Log Warn:  log if the user exceeds his Soft Quota
 		 * 0x0002 Deny Disk: deny disk access when the user exceeds his Hard Quota
@@ -2681,7 +2681,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
 
-			/* We have POSIX ACLs, pathname, encryption, 
+			/* We have POSIX ACLs, pathname, encryption,
 			 * large read/write, and locking capability. */
 
 			SBIG_UINT(pdata,4,((uint64_t)(
@@ -3620,7 +3620,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	}
 
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
-	*ppdata = (char *)SMB_REALLOC(*ppdata, data_size); 
+	*ppdata = (char *)SMB_REALLOC(*ppdata, data_size);
 	if (*ppdata == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4574,8 +4574,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	if (setting_write_time) {
 		/*
 		 * This was a Windows setfileinfo on an open file.
-		 * NT does this a lot. We also need to 
-		 * set the time here, as it can be read by 
+		 * NT does this a lot. We also need to
+		 * set the time here, as it can be read by
 		 * FindFirst/FindNext and with the patch for bug #2045
 		 * in smbd/fileio.c it ensures that this timestamp is
 		 * kept sticky even after a write. We save the request
@@ -6099,7 +6099,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	if (!VALID_STAT(sbuf)) {
 		/*
 		 * The only valid use of this is to create character and block
-		 * devices, and named pipes. This is deprecated (IMHO) and 
+		 * devices, and named pipes. This is deprecated (IMHO) and
 		 * a new info level should be used for mknod. JRA.
 		 */
 
@@ -6391,7 +6391,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
         }
 
 	info_level_return = SVAL(pdata,16);
- 
+
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
 		*pdata_return_size = 12 + SMB_FILE_UNIX_BASIC_SIZE;
 	} else if (info_level_return ==  SMB_QUERY_FILE_UNIX_INFO2) {
@@ -6642,7 +6642,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	info_level_return = SVAL(pdata,16);
- 
+
 	/* Allocate the correct return size. */
 
 	if (info_level_return == SMB_QUERY_FILE_UNIX_BASIC) {
@@ -7085,7 +7085,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
 #if 0
-			/* JRA - We used to just ignore this on a path ? 
+			/* JRA - We used to just ignore this on a path ?
 			 * Shouldn't this be invalid level on a pathname
 			 * based call ?
 			 */
@@ -7119,7 +7119,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		/* From tridge Samba4 : 
+		/* From tridge Samba4 :
 		 * MODE_INFORMATION in setfileinfo (I have no
 		 * idea what "mode information" on a file is - it takes a value of 0,
 		 * 2, 4 or 6. What could it be?).
