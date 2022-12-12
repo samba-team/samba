@@ -196,6 +196,7 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 	WERROR werr;
 	int ret;
 	struct ldb_dn *dn;
+	struct ldb_dn *dn_normalised;
 	struct ldb_dn *nc_root;
 	struct ldb_context *sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
 	struct dcerpc_binding_handle *irpc_handle;
@@ -227,13 +228,18 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 
 	dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, req->naming_context);
 	W_ERROR_HAVE_NO_MEMORY(dn);
-	ret = dsdb_find_nc_root(sam_ctx, dn, dn, &nc_root);
+	ret = dsdb_normalise_dn_and_find_nc_root(sam_ctx, dn,
+						 dn,
+						 &dn_normalised,
+						 &nc_root);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(2, ("Didn't find a nc for %s\n", ldb_dn_get_linearized(dn)));
 		return WERR_DS_DRA_BAD_NC;
 	}
-	if (ldb_dn_compare(dn, nc_root) != 0) {
-		DEBUG(2, ("dn %s is not equal to %s\n", ldb_dn_get_linearized(dn), ldb_dn_get_linearized(nc_root)));
+	if (ldb_dn_compare(dn_normalised, nc_root) != 0) {
+		DBG_NOTICE("dn %s is not equal to %s\n",
+			   ldb_dn_get_linearized(dn_normalised),
+			   ldb_dn_get_linearized(nc_root));
 		return WERR_DS_DRA_BAD_NC;
 	}
 
