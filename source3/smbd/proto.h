@@ -429,15 +429,23 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 NTSTATUS open_stream_pathref_fsp(
 	struct files_struct **_base_fsp,
 	struct smb_filename *smb_fname);
-NTSTATUS openat_pathref_dirfsp_nosymlink(
-	TALLOC_CTX *mem_ctx,
-	struct connection_struct *conn,
-	const char *path_in,
-	NTTIME twrp,
-	bool posix,
-	struct smb_filename **_smb_fname,
-	size_t *unparsed,
-	char **substitute);
+
+struct symlink_reparse_struct;
+
+struct open_symlink_err {
+	struct stat_ex st;
+	size_t unparsed;
+	struct symlink_reparse_struct *reparse;
+};
+
+NTSTATUS openat_pathref_fsp_nosymlink(TALLOC_CTX *mem_ctx,
+				      struct connection_struct *conn,
+				      struct files_struct *dirfsp,
+				      const char *path_in,
+				      NTTIME twrp,
+				      bool posix,
+				      struct smb_filename **_smb_fname,
+				      struct open_symlink_err **_symlink_err);
 NTSTATUS readlink_talloc(
 	TALLOC_CTX *mem_ctx,
 	struct files_struct *dirfsp,

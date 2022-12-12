@@ -30,6 +30,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "lib/util/memcache.h"
+#include "libcli/smb/reparse_symlink.h"
 
 uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 {
@@ -1095,8 +1096,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			posix ? SMB_FILENAME_POSIX_PATH : 0,
 			&smb_dirname);
 	} else {
-		char *substitute = NULL;
-		size_t unparsed = 0;
+		struct open_symlink_err *symlink_err = NULL;
 
 		status = normalize_filename_case(conn, dirname, ucf_flags);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1106,25 +1106,36 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			goto fail;
 		}
 
-		status = openat_pathref_dirfsp_nosymlink(
-			mem_ctx,
-			conn,
-			dirname,
-			0,
-			posix,
-			&smb_dirname,
-			&unparsed,
-			&substitute);
+		status = openat_pathref_fsp_nosymlink(mem_ctx,
+						      conn,
+						      conn->cwd_fsp,
+						      dirname,
+						      0,
+						      posix,
+						      &smb_dirname,
+						      &symlink_err);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			size_t name_in_len, dirname_len;
 
-			size_t name_in_len = strlen(name_in);
-			size_t dirname_len = strlen(dirname);
+			if (lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&
+			    strnequal(symlink_err->reparse->substitute_name,
+				      "msdfs:",
+				      6)) {
+				status = NT_STATUS_PATH_NOT_COVERED;
+				goto fail;
+			}
+
+			name_in_len = strlen(name_in);
+			dirname_len = strlen(dirname);
 
 			SMB_ASSERT(name_in_len >= dirname_len);
 
-			*_substitute = substitute;
-			*_unparsed = unparsed + (name_in_len - dirname_len);
+			*_substitute = talloc_move(
+				mem_ctx,
+				&symlink_err->reparse->substitute_name);
+			*_unparsed = symlink_err->unparsed +
+				     (name_in_len - dirname_len);
 
 			goto fail;
 		}
@@ -1135,11 +1146,6 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			  dirname,
 			  nt_errstr(status));
 		TALLOC_FREE(dirname);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
-			/* MS-DFS error must propagate back out. */
-			goto fail;
-		}
 
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			/*
@@ -1156,6 +1162,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		goto fail;
 	}
+	smb_dirname->fsp->fsp_flags.is_directory = true;
 
 	/*
 	 * Only look at bad last component values

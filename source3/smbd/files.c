@@ -808,8 +808,7 @@ openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
 				      NTTIME twrp,
 				      bool posix,
 				      struct smb_filename **_smb_fname,
-				      size_t *unparsed,
-				      char **substitute)
+				      struct open_symlink_err **_symlink_err)
 {
 	struct files_struct *dirfsp = in_dirfsp;
 	struct smb_filename full_fname = {
@@ -823,13 +822,14 @@ openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
 		.flags = full_fname.flags,
 	};
 	struct smb_filename *result = NULL;
+	struct open_symlink_err *symlink_err = NULL;
 	struct files_struct *fsp = NULL;
 	char *path = NULL, *next = NULL;
-	bool case_sensitive, ok;
+	bool case_sensitive, ok, is_toplevel;
 	int fd;
 	NTSTATUS status;
 	struct vfs_open_how how = {
-		.flags = O_NOFOLLOW|O_DIRECTORY,
+		.flags = O_NOFOLLOW | O_NONBLOCK,
 		.mode = 0,
 	};
 
@@ -868,7 +868,12 @@ openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
 #endif
 #endif
 
-	full_fname.base_name = talloc_strdup(talloc_tos(), "");
+	is_toplevel = (dirfsp == dirfsp->conn->cwd_fsp);
+	is_toplevel |= ISDOT(dirfsp->fsp_name->base_name);
+
+	full_fname.base_name =
+		talloc_strdup(talloc_tos(),
+			      is_toplevel ? "" : dirfsp->fsp_name->base_name);
 	if (full_fname.base_name == NULL) {
 		DBG_DEBUG("talloc_strdup() failed\n");
 		goto nomem;
@@ -929,8 +934,11 @@ openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
 		fd = SMB_VFS_OPENAT(conn, dirfsp, &rel_fname, fsp, &how);
 		if (fd >= 0) {
 			fsp_set_fd(fsp, fd);
-			TALLOC_FREE(full_fname.base_name);
-			full_fname = rel_fname;
+			ok = full_path_extend(&full_fname.base_name,
+					      rel_fname.base_name);
+			if (!ok) {
+				goto nomem;
+			}
 			goto done;
 		}
 
@@ -1035,54 +1043,104 @@ next:
 			&how);
 	}
 
-	/*
-	 * O_NOFOLLOW|O_DIRECTORY results in
-	 * ENOTDIR instead of ELOOP.
-	 *
-	 * But we should be prepared to handle ELOOP too.
-	 */
-	if ((fd == -1) && (errno == ENOTDIR || errno == ELOOP)) {
-		NTSTATUS orig_status = map_nt_error_from_unix(errno);
+#ifndef O_PATH
+	if ((fd == -1) && (errno == ELOOP)) {
+		int ret;
 
-		status = readlink_talloc(
-			mem_ctx, dirfsp, &rel_fname, substitute);
+		/*
+		 * openat() hit a symlink. With O_PATH we open the
+		 * symlink and get ENOTDIR in the next round, see
+		 * below.
+		 */
 
-		if (NT_STATUS_IS_OK(status)) {
-			/*
-			 * readlink_talloc() found a symlink
-			 */
-			status = NT_STATUS_STOPPED_ON_SYMLINK;
+		symlink_err = talloc_zero(mem_ctx, struct open_symlink_err);
+		if (symlink_err == NULL) {
+			goto nomem;
+		}
 
-			if (unparsed != NULL) {
-				if (next == NULL) {
-					*unparsed = 0;
-				} else {
-					size_t parsed = next - path;
-					size_t len = talloc_get_size(path);
-					*unparsed = len - parsed;
-				}
-			}
-			/*
-			 * If we're on an MSDFS share, see if this is
-			 * an MSDFS link.
-			 */
-			if (lp_host_msdfs() &&
-			    lp_msdfs_root(SNUM(conn)) &&
-			    (substitute != NULL) &&
-			    strnequal(*substitute, "msdfs:", 6) &&
-			    is_msdfs_link(dirfsp, &rel_fname))
-			{
-				status = NT_STATUS_PATH_NOT_COVERED;
-			}
-		} else {
-
+		status = read_symlink_reparse(symlink_err,
+					      dirfsp,
+					      &rel_fname,
+					      &symlink_err->reparse);
+		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("readlink_talloc failed: %s\n",
 				  nt_errstr(status));
-			/*
-			 * Restore the error status from SMB_VFS_OPENAT()
-			 */
-			status = orig_status;
+			goto fail;
 		}
+
+		if (next != NULL) {
+			size_t parsed = next - path;
+			size_t len = talloc_get_size(path);
+			symlink_err->unparsed = len - parsed;
+		}
+
+		/*
+		 * We know rel_fname is a symlink, now fill in the
+		 * rest of the metadata for our callers.
+		 */
+
+		ret = SMB_VFS_FSTATAT(conn,
+				      dirfsp,
+				      &rel_fname,
+				      &symlink_err->st,
+				      AT_SYMLINK_NOFOLLOW);
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
+			DBG_DEBUG("SMB_VFS_FSTATAT(%s/%s) failed: %s\n",
+				  fsp_str_dbg(dirfsp),
+				  rel_fname.base_name,
+				  strerror(errno));
+			TALLOC_FREE(symlink_err);
+			goto fail;
+		}
+
+		if (!S_ISLNK(symlink_err->st.st_ex_mode)) {
+			/*
+			 * Hit a race: readlink_talloc() worked before
+			 * the fstatat(), but rel_fname changed to
+			 * something that's not a symlink.
+			 */
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			TALLOC_FREE(symlink_err);
+			goto fail;
+		}
+
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		goto fail;
+	}
+#endif
+
+	if ((fd == -1) && (errno == ENOTDIR)) {
+		size_t parsed, len;
+
+		/*
+		 * dirfsp does not point at a directory, try a
+		 * freadlink.
+		 */
+
+		symlink_err = talloc_zero(mem_ctx, struct open_symlink_err);
+		if (symlink_err == NULL) {
+			goto nomem;
+		}
+
+		status = read_symlink_reparse(symlink_err,
+					      dirfsp,
+					      NULL,
+					      &symlink_err->reparse);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("readlink_talloc failed: %s\n",
+				  nt_errstr(status));
+			status = NT_STATUS_NOT_A_DIRECTORY;
+			goto fail;
+		}
+
+		parsed = rel_fname.base_name - path;
+		len = talloc_get_size(path);
+		symlink_err->unparsed = len - parsed;
+
+		symlink_err->st = dirfsp->fsp_name->st;
+
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto fail;
 	}
 
@@ -1094,11 +1152,8 @@ next:
 	}
 	fsp_set_fd(fsp, fd);
 
-	fsp->fsp_flags.is_directory = true; /* See O_DIRECTORY above */
-
 	ok = full_path_extend(&full_fname.base_name, rel_fname.base_name);
 	if (!ok) {
-		DBG_DEBUG("full_path_extend() failed\n");
 		goto nomem;
 	}
 
@@ -1201,29 +1256,69 @@ fail:
 		dirfsp = NULL;
 	}
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		*_symlink_err = symlink_err;
+	}
+
 	TALLOC_FREE(path);
 	return status;
 }
 
-NTSTATUS openat_pathref_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
-					 struct connection_struct *conn,
-					 const char *path_in,
-					 NTTIME twrp,
-					 bool posix,
-					 struct smb_filename **_smb_fname,
-					 size_t *unparsed,
-					 char **substitute)
+NTSTATUS openat_pathref_fsp_nosymlink(TALLOC_CTX *mem_ctx,
+				      struct connection_struct *conn,
+				      struct files_struct *dirfsp,
+				      const char *path_in,
+				      NTTIME twrp,
+				      bool posix,
+				      struct smb_filename **_smb_fname,
+				      struct open_symlink_err **_symlink_err)
 {
-	NTSTATUS status = openat_pathref_fsp_nosymlink_internal(mem_ctx,
-								conn,
-								conn->cwd_fsp,
-								path_in,
-								twrp,
-								posix,
-								_smb_fname,
-								unparsed,
-								substitute);
-	return status;
+	struct smb_filename *smb_fname = NULL;
+	struct open_symlink_err *symlink_err = NULL;
+	NTSTATUS status;
+
+	status = openat_pathref_fsp_nosymlink_internal(mem_ctx,
+						       conn,
+						       dirfsp,
+						       path_in,
+						       twrp,
+						       posix,
+						       &smb_fname,
+						       &symlink_err);
+
+	if (NT_STATUS_IS_OK(status) && S_ISLNK(smb_fname->st.st_ex_mode)) {
+
+		symlink_err = talloc_zero(mem_ctx, struct open_symlink_err);
+		if (symlink_err == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = read_symlink_reparse(symlink_err,
+					      smb_fname->fsp,
+					      NULL,
+					      &symlink_err->reparse);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("read_symlink_reparse() failed: %s\n",
+				  nt_errstr(status));
+			TALLOC_FREE(symlink_err);
+			return status;
+		}
+
+		symlink_err->st = smb_fname->st;
+
+		TALLOC_FREE(smb_fname);
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		*_symlink_err = symlink_err;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*_smb_fname = smb_fname;
+	return NT_STATUS_OK;
 }
 
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname)
