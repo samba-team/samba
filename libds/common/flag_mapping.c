@@ -168,52 +168,99 @@ uint32_t ds_uf2prim_group_rid(uint32_t uf)
 	return prim_group_rid;
 }
 
-#define FLAG(x) { .name = #x, .uf = x }
-struct {
-	const char *name;
-	uint32_t uf;
-} user_account_control_name_map[] = {
-	FLAG(UF_SCRIPT),
-	FLAG(UF_ACCOUNTDISABLE),
-	FLAG(UF_00000004),
-	FLAG(UF_HOMEDIR_REQUIRED),
-	FLAG(UF_LOCKOUT),
-	FLAG(UF_PASSWD_NOTREQD),
-	FLAG(UF_PASSWD_CANT_CHANGE),
-	FLAG(UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED),
-
-	FLAG(UF_TEMP_DUPLICATE_ACCOUNT),
-	FLAG(UF_NORMAL_ACCOUNT),
-	FLAG(UF_00000400),
-	FLAG(UF_INTERDOMAIN_TRUST_ACCOUNT),
-
-	FLAG(UF_WORKSTATION_TRUST_ACCOUNT),
-	FLAG(UF_SERVER_TRUST_ACCOUNT),
-	FLAG(UF_00004000),
-	FLAG(UF_00008000),
-
-	FLAG(UF_DONT_EXPIRE_PASSWD),
-	FLAG(UF_MNS_LOGON_ACCOUNT),
-	FLAG(UF_SMARTCARD_REQUIRED),
-	FLAG(UF_TRUSTED_FOR_DELEGATION),
-
-	FLAG(UF_NOT_DELEGATED),
-	FLAG(UF_USE_DES_KEY_ONLY),
-	FLAG(UF_DONT_REQUIRE_PREAUTH),
-	FLAG(UF_PASSWORD_EXPIRED),
-	FLAG(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION),
-	FLAG(UF_NO_AUTH_DATA_REQUIRED),
-	FLAG(UF_PARTIAL_SECRETS_ACCOUNT),
-	FLAG(UF_USE_AES_KEYS)
-};
-
 const char *dsdb_user_account_control_flag_bit_to_string(uint32_t uf)
 {
-	size_t i;
-	for (i=0; i < ARRAY_SIZE(user_account_control_name_map); i++) {
-		if (uf == user_account_control_name_map[i].uf) {
-			return user_account_control_name_map[i].name;
-		}
+	switch (uf) {
+	case UF_SCRIPT:
+		return "UF_SCRIPT";
+		break;
+	case UF_ACCOUNTDISABLE:
+		return "UF_ACCOUNTDISABLE";
+		break;
+	case UF_00000004:
+		return "UF_00000004";
+		break;
+	case UF_HOMEDIR_REQUIRED:
+		return "UF_HOMEDIR_REQUIRED";
+		break;
+	case UF_LOCKOUT:
+		return "UF_LOCKOUT";
+		break;
+	case UF_PASSWD_NOTREQD:
+		return "UF_PASSWD_NOTREQD";
+		break;
+	case UF_PASSWD_CANT_CHANGE:
+		return "UF_PASSWD_CANT_CHANGE";
+		break;
+	case UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED:
+		return "UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED";
+		break;
+
+	case UF_TEMP_DUPLICATE_ACCOUNT:
+		return "UF_TEMP_DUPLICATE_ACCOUNT";
+		break;
+	case UF_NORMAL_ACCOUNT:
+		return "UF_NORMAL_ACCOUNT";
+		break;
+	case UF_00000400:
+		return "UF_00000400";
+		break;
+	case UF_INTERDOMAIN_TRUST_ACCOUNT:
+		return "UF_INTERDOMAIN_TRUST_ACCOUNT";
+		break;
+
+	case UF_WORKSTATION_TRUST_ACCOUNT:
+		return "UF_WORKSTATION_TRUST_ACCOUNT";
+		break;
+	case UF_SERVER_TRUST_ACCOUNT:
+		return "UF_SERVER_TRUST_ACCOUNT";
+		break;
+	case UF_00004000:
+		return "UF_00004000";
+		break;
+	case UF_00008000:
+		return "UF_00008000";
+		break;
+
+	case UF_DONT_EXPIRE_PASSWD:
+		return "UF_DONT_EXPIRE_PASSWD";
+		break;
+	case UF_MNS_LOGON_ACCOUNT:
+		return "UF_MNS_LOGON_ACCOUNT";
+		break;
+	case UF_SMARTCARD_REQUIRED:
+		return "UF_SMARTCARD_REQUIRED";
+		break;
+	case UF_TRUSTED_FOR_DELEGATION:
+		return "UF_TRUSTED_FOR_DELEGATION";
+		break;
+
+	case UF_NOT_DELEGATED:
+		return "UF_NOT_DELEGATED";
+		break;
+	case UF_USE_DES_KEY_ONLY:
+		return "UF_USE_DES_KEY_ONLY";
+		break;
+	case UF_DONT_REQUIRE_PREAUTH:
+		return "UF_DONT_REQUIRE_PREAUTH";
+		break;
+	case UF_PASSWORD_EXPIRED:
+		return "UF_PASSWORD_EXPIRED";
+		break;
+	case UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION:
+		return "UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION";
+		break;
+	case UF_NO_AUTH_DATA_REQUIRED:
+		return "UF_NO_AUTH_DATA_REQUIRED";
+		break;
+	case UF_PARTIAL_SECRETS_ACCOUNT:
+		return "UF_PARTIAL_SECRETS_ACCOUNT";
+		break;
+	case UF_USE_AES_KEYS:
+		return "UF_USE_AES_KEYS";
+		break;
+	default:
+		break;
 	}
 	return NULL;
 }
