@@ -4289,8 +4289,11 @@ static int dsdb_get_partition_and_dn(struct ldb_request *req,
 /*
   find a NC root given a DN within the NC
  */
-int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
-		      struct ldb_dn **nc_root)
+int dsdb_normalise_dn_and_find_nc_root(struct ldb_context *samdb,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_dn *dn,
+				       struct ldb_dn **normalised_dn,
+				       struct ldb_dn **nc_root)
 {
 	TALLOC_CTX *tmp_ctx;
 	int ret;
@@ -4380,6 +4383,10 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 	 */
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (normalised_dn != NULL) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 		ret = LDB_SUCCESS;
 		ldb_reset_err_string(samdb);
 	} else if (ret != LDB_SUCCESS) {
@@ -4387,6 +4394,16 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 		return ret;
 	}
 
+	if (normalised_dn != NULL) {
+		if (context.count != 1) {
+			/* No results */
+			ldb_asprintf_errstring(samdb,
+					       "Request for NC root for %s failed to return any results.",
+					       ldb_dn_get_linearized(dn));
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		*normalised_dn = context.dn;
+	}
 
 	/*
 	 * If the user did not need to find the nc_root,
@@ -4443,6 +4460,20 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 					      nc_root);
 }
 
+/*
+  find a NC root given a DN within the NC
+ */
+int dsdb_find_nc_root(struct ldb_context *samdb,
+		      TALLOC_CTX *mem_ctx,
+		      struct ldb_dn *dn,
+		      struct ldb_dn **nc_root)
+{
+	return dsdb_normalise_dn_and_find_nc_root(samdb,
+						  mem_ctx,
+						  dn,
+						  NULL,
+						  nc_root);
+}
 
 /*
   find the deleted objects DN for any object, by looking for the NC
