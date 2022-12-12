@@ -634,6 +634,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 						    struct netlogon_creds_CredentialState **creds_out)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS nt_status;
 	int schannel = lpcfg_server_schannel(lp_ctx);
 	bool schannel_global_required = (schannel == true);
@@ -677,6 +678,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	if (schannel_required) {
 		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 			*creds_out = creds;
+			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
 		}
 
@@ -684,13 +686,15 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 			"%s request (opnum[%u]) without schannel from "
 			"client_account[%s] client_computer_name[%s]\n",
 			opname, opnum,
-			log_escape(mem_ctx, creds->account_name),
-			log_escape(mem_ctx, creds->computer_name));
+			log_escape(frame, creds->account_name),
+			log_escape(frame, creds->computer_name));
 		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
-			"'server require schannel:%s = no' is needed! \n",
-			log_escape(mem_ctx, creds->account_name));
+			"'server require schannel:%s = no' "
+			"might be needed for a legacy client.\n",
+			log_escape(frame, creds->account_name));
 		TALLOC_FREE(creds);
 		ZERO_STRUCTP(return_authenticator);
+		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -699,13 +703,14 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 			"%s request (opnum[%u]) WITH schannel from "
 			"client_account[%s] client_computer_name[%s]\n",
 			opname, opnum,
-			log_escape(mem_ctx, creds->account_name),
-			log_escape(mem_ctx, creds->computer_name));
+			log_escape(frame, creds->account_name),
+			log_escape(frame, creds->computer_name));
 		DBG_ERR("CVE-2020-1472(ZeroLogon): "
 			"Option 'server require schannel:%s = no' not needed!?\n",
-			log_escape(mem_ctx, creds->account_name));
+			log_escape(frame, creds->account_name));
 
 		*creds_out = creds;
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
@@ -715,24 +720,25 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 			 "%s request (opnum[%u]) without schannel from "
 			 "client_account[%s] client_computer_name[%s]\n",
 			 opname, opnum,
-			 log_escape(mem_ctx, creds->account_name),
-			 log_escape(mem_ctx, creds->computer_name));
+			 log_escape(frame, creds->account_name),
+			 log_escape(frame, creds->computer_name));
 		DBG_INFO("CVE-2020-1472(ZeroLogon): "
 			 "Option 'server require schannel:%s = no' still needed!\n",
-			 log_escape(mem_ctx, creds->account_name));
+			 log_escape(frame, creds->account_name));
 	} else {
 		DBG_ERR("CVE-2020-1472(ZeroLogon): "
 			"%s request (opnum[%u]) without schannel from "
 			"client_account[%s] client_computer_name[%s]\n",
 			opname, opnum,
-			log_escape(mem_ctx, creds->account_name),
-			log_escape(mem_ctx, creds->computer_name));
+			log_escape(frame, creds->account_name),
+			log_escape(frame, creds->computer_name));
 		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
 			"'server require schannel:%s = no' might be needed!\n",
-			log_escape(mem_ctx, creds->account_name));
+			log_escape(frame, creds->account_name));
 	}
 
 	*creds_out = creds;
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
