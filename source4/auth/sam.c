@@ -343,6 +343,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 					   struct auth_user_info_dc **_user_info_dc)
 {
 	NTSTATUS status;
+	int ret;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_user_info *info;
 	const char *str = NULL;
@@ -350,8 +351,11 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	/* SIDs for the account and his primary group */
 	struct dom_sid *account_sid;
 	struct dom_sid_buf buf;
-	const char *primary_group_dn;
+	const char *primary_group_dn_str = NULL;
 	DATA_BLOB primary_group_blob;
+	struct ldb_dn *primary_group_dn = NULL;
+	struct ldb_message *primary_group_msg = NULL;
+	unsigned primary_group_type;
 	/* SID structures for the expanded group memberships */
 	struct auth_SidAttr *sids = NULL;
 	uint32_t num_sids = 0;
@@ -359,6 +363,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	struct dom_sid *domain_sid;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message_element *el;
+	static const char * const group_type_attrs[] = { "groupType", NULL };
 
 	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
@@ -369,7 +374,12 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sids = talloc_array(user_info_dc, struct auth_SidAttr, 2);
+	/*
+	 * We'll typically store three SIDs: the SID of the user, the SID of the
+	 * primary group, and a copy of the latter if it's not a resource
+	 * group. Allocate enough memory for these three SIDs.
+	 */
+	sids = talloc_zero_array(user_info_dc, struct auth_SidAttr, 3);
 	if (sids == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
@@ -406,16 +416,58 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	primary_group_dn = talloc_asprintf(
+	primary_group_dn_str = talloc_asprintf(
 		tmp_ctx,
 		"<SID=%s>",
 		dom_sid_str_buf(&sids[PRIMARY_GROUP_SID_INDEX].sid, &buf));
+	if (primary_group_dn_str == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Get the DN of the primary group. */
+	primary_group_dn = ldb_dn_new(tmp_ctx, sam_ctx, primary_group_dn_str);
 	if (primary_group_dn == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	primary_group_blob = data_blob_string_const(primary_group_dn);
+	/*
+	 * Do a search for the primary group, for the purpose of checking
+	 * whether it's a resource group.
+	 */
+	ret = dsdb_search_one(sam_ctx, tmp_ctx,
+			      &primary_group_msg,
+			      primary_group_dn,
+			      LDB_SCOPE_BASE,
+			      group_type_attrs,
+			      0,
+			      NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(user_info_dc);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* Check the type of the primary group. */
+	primary_group_type = ldb_msg_find_attr_as_uint(primary_group_msg, "groupType", 0);
+	if (primary_group_type & GROUP_TYPE_RESOURCE_GROUP) {
+		/*
+		 * If it's a resource group, we might as well indicate that in
+		 * its attributes. At any rate, the primary group's attributes
+		 * are unlikely to be used in the code, as there's nowhere to
+		 * store them.
+		 */
+		sids[PRIMARY_GROUP_SID_INDEX].attrs |= SE_GROUP_RESOURCE;
+	} else {
+		/*
+		 * The primary group is not a resource group. Make a copy of its
+		 * SID to ensure it is added to the Base SIDs in the PAC.
+		 */
+		sids[REMAINING_SIDS_INDEX] = sids[PRIMARY_GROUP_SID_INDEX];
+		++num_sids;
+	}
+
+	primary_group_blob = data_blob_string_const(primary_group_dn_str);
 
 	/* Expands the primary group - this function takes in
 	 * memberOf-like values, so we fake one up with the

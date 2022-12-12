@@ -129,9 +129,6 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < info3->base.groups.count; i++) {
 		/* Don't add the primary group sid twice. */
-		if (info3->base.primary_gid == info3->base.groups.rids[i].rid) {
-			continue;
-		}
 		if (!sid_compose(&sid, info3->base.domain_sid,
 				 info3->base.groups.rids[i].rid)) {
 			DEBUG(3, ("could not compose SID from additional group "
