@@ -1027,13 +1027,6 @@ static void set_current_case_sensitive(connection_struct *conn, uint16_t flags)
 
 	snum = SNUM(conn);
 
-	if ((conn == last_conn) && (last_flags == flags)) {
-		return;
-	}
-
-	last_conn = conn;
-	last_flags = flags;
-
 	/*
 	 * Obey the client case sensitivity requests - only for clients that
 	 * support it. */
@@ -1060,7 +1053,6 @@ static void set_current_case_sensitive(connection_struct *conn, uint16_t flags)
 		conn->case_sensitive = false;
 		break;
 	}
-	return;
 }
 
 /****************************************************************************

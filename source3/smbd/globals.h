@@ -79,9 +79,6 @@ extern int sec_ctx_stack_ndx;
 extern bool become_uid_done;
 extern bool become_gid_done;
 
-extern connection_struct *last_conn;
-extern uint16_t last_flags;
-
 extern uint32_t global_client_caps;
 
 extern uint16_t fnf_handle;
