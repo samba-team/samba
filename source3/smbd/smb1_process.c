@@ -1023,6 +1023,7 @@ static void set_current_case_sensitive(connection_struct *conn, uint16_t flags)
 	enum remote_arch_types ra_type;
 
 	SMB_ASSERT(conn != NULL);
+	SMB_ASSERT(!conn->sconn->using_smb2);
 
 	snum = SNUM(conn);
 
@@ -1042,9 +1043,7 @@ static void set_current_case_sensitive(connection_struct *conn, uint16_t flags)
 		 * We need this uglyness due to DOS/Win9x clients that lie
 		 * about case insensitivity. */
 		ra_type = get_remote_arch();
-		if (conn->sconn->using_smb2) {
-			conn->case_sensitive = false;
-		} else if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+		if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
 			/*
 			 * Client can't support per-packet case sensitive
 			 * pathnames. */
