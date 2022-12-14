@@ -2411,13 +2411,15 @@ class KDCBaseTest(RawKerberosTest):
 
         netr_flags = 0
 
+        validation = None
         try:
-            conn.netr_LogonSamLogonEx(server,
-                                      mach_creds.get_workstation(),
-                                      logon_type,
-                                      logon,
-                                      validation_level,
-                                      netr_flags)
+            (validation, authoritative, flags) = (
+                conn.netr_LogonSamLogonEx(server,
+                                          mach_creds.get_workstation(),
+                                          logon_type,
+                                          logon,
+                                          validation_level,
+                                          netr_flags))
         except NTSTATUSError as err:
             self.assertTrue(protected, 'got unexpected error')
 
@@ -2426,3 +2428,8 @@ class KDCBaseTest(RawKerberosTest):
                 raise
         else:
             self.assertFalse(protected, 'expected error')
+
+            self.assertEqual(1, authoritative)
+            self.assertEqual(0, flags)
+
+        return validation
