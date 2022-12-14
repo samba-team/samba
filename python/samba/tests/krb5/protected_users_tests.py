@@ -27,8 +27,8 @@ from functools import partial
 import ldb
 
 from samba import NTSTATUSError, generate_random_password, ntstatus
-from samba.dcerpc import lsa, misc, netlogon, ntlmssp, samr, security
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc import lsa, netlogon, samr, security
+from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
 
 import samba.tests.krb5.kcrypto as kcrypto
@@ -238,94 +238,6 @@ class ProtectedUsersTests(KDCBaseTest):
                                        cached=False)
 
         self._test_samr_change_password(client_creds, protected=True)
-
-    # Test SamLogon. Authentication should succeed for non-protected accounts,
-    # and fail for protected accounts.
-    def _test_samlogon(self, creds, logon_type, protected):
-        samdb = self.get_samdb()
-
-        server = samdb.host_dns_name()
-        username, domain = creds.get_ntlm_username_domain()
-        workstation = 'Workstation'
-
-        target_info = ntlmssp.AV_PAIR_LIST()
-        target_info.count = 3
-        computername = ntlmssp.AV_PAIR()
-        computername.AvId = ntlmssp.MsvAvNbComputerName
-        computername.Value = workstation
-
-        domainname = ntlmssp.AV_PAIR()
-        domainname.AvId = ntlmssp.MsvAvNbDomainName
-        domainname.Value = domain
-
-        eol = ntlmssp.AV_PAIR()
-        eol.AvId = ntlmssp.MsvAvEOL
-        target_info.pair = [domainname, computername, eol]
-
-        target_info_blob = ndr_pack(target_info)
-
-        challenge = b'abcdefgh'
-        response = creds.get_ntlm_response(flags=0,
-                                           challenge=challenge,
-                                           target_info=target_info_blob)
-
-        mach_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={'secure_channel_type': misc.SEC_CHAN_WKSTA})
-
-        conn = netlogon.netlogon(f'ncacn_ip_tcp:{server}[schannel,seal]',
-                                 self.get_lp(),
-                                 mach_creds)
-
-        if logon_type == netlogon.NetlogonInteractiveInformation:
-            logon = netlogon.netr_PasswordInfo()
-
-            lm_pass = samr.Password()
-            lm_pass.hash = [0] * 16
-
-            nt_pass = samr.Password()
-            nt_pass.hash = list(creds.get_nt_hash())
-            mach_creds.encrypt_samr_password(nt_pass)
-
-            logon.lmpassword = lm_pass
-            logon.ntpassword = nt_pass
-
-        elif logon_type == netlogon.NetlogonNetworkInformation:
-            logon = netlogon.netr_NetworkInfo()
-
-            logon.challenge = list(challenge)
-            logon.nt = netlogon.netr_ChallengeResponse()
-            logon.nt.length = len(response['nt_response'])
-            logon.nt.data = list(response['nt_response'])
-
-        else:
-            self.fail(f'unknown logon type {logon_type}')
-
-        identity_info = netlogon.netr_IdentityInfo()
-        identity_info.domain_name.string = domain
-        identity_info.account_name.string = username
-        identity_info.workstation.string = workstation
-
-        logon.identity_info = identity_info
-
-        validation_level = netlogon.NetlogonValidationSamInfo2
-        netr_flags = 0
-
-        try:
-            conn.netr_LogonSamLogonEx(server,
-                                      mach_creds.get_workstation(),
-                                      logon_type,
-                                      logon,
-                                      validation_level,
-                                      netr_flags)
-        except NTSTATUSError as err:
-            self.assertTrue(protected, 'got unexpected error')
-
-            num, _ = err.args
-            if num != ntstatus.NT_STATUS_ACCOUNT_RESTRICTION:
-                raise
-        else:
-            self.assertFalse(protected, 'expected error')
 
     # Test interactive SamLogon with an unprotected account.
     def test_samlogon_interactive_not_protected(self):
