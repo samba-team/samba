@@ -665,6 +665,11 @@ interface security
 		SE_GROUP_LOGON_ID		= 0xC0000000
 	} security_GroupAttrs;
 
+	const uint32 SE_GROUP_DEFAULT_FLAGS =
+		SE_GROUP_MANDATORY |
+		SE_GROUP_ENABLED_BY_DEFAULT |
+		SE_GROUP_ENABLED;
+
 	/* This is not yet sent over the network, but is simply defined in IDL */
 	typedef [public] struct {
 		uint32 num_sids;

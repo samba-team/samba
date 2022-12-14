@@ -221,9 +221,7 @@ static NTSTATUS group_sids_to_info3(struct netr_SamInfo3 *info3,
 				    const struct dom_sid *sids,
 				    size_t num_sids)
 {
-	uint32_t attributes = SE_GROUP_MANDATORY |
-				SE_GROUP_ENABLED_BY_DEFAULT |
-				SE_GROUP_ENABLED;
+	uint32_t attributes = SE_GROUP_DEFAULT_FLAGS;
 	struct samr_RidWithAttributeArray *groups;
 	struct dom_sid *domain_sid;
 	unsigned int i;

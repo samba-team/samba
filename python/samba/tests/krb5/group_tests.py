@@ -75,9 +75,7 @@ class GroupTests(KDCBaseTest):
     trust_user = object()
 
     # Constants for group SID attributes.
-    default_attrs = (security.SE_GROUP_MANDATORY |
-                     security.SE_GROUP_ENABLED_BY_DEFAULT |
-                     security.SE_GROUP_ENABLED)
+    default_attrs = security.SE_GROUP_DEFAULT_FLAGS
     resource_attrs = default_attrs | security.SE_GROUP_RESOURCE
 
     asserted_identity = security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY

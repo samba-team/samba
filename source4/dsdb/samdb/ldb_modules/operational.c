@@ -1226,7 +1226,7 @@ static int get_pso_for_user(struct ldb_module *module,
 		/* lookup the best PSO object, based on the user's SID */
 		user_sid = samdb_result_dom_sid_attrs(
 			tmp_ctx, user_msg, "objectSid",
-			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED);
+			SE_GROUP_DEFAULT_FLAGS);
 
 		ret = pso_find_best(module, tmp_ctx, parent, user_sid, 1,
 				    &best_pso);

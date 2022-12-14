@@ -389,12 +389,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	sids[PRIMARY_USER_SID_INDEX].sid = *account_sid;
-	sids[PRIMARY_USER_SID_INDEX].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 	sids[PRIMARY_GROUP_SID_INDEX].sid = *domain_sid;
 	sid_append_rid(&sids[PRIMARY_GROUP_SID_INDEX].sid, ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
-	sids[PRIMARY_GROUP_SID_INDEX].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	/*
 	 * Filter out builtin groups from this token. We will search
@@ -581,8 +579,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		user_info_dc->sids[user_info_dc->num_sids].sid = global_sid_Enterprise_DCs;
-		user_info_dc->sids[user_info_dc->num_sids].attrs
-			= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		user_info_dc->sids[user_info_dc->num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		user_info_dc->num_sids++;
 	}
 
@@ -600,8 +597,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		user_info_dc->sids[user_info_dc->num_sids].sid = *domain_sid;
 		sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid,
 			    DOMAIN_RID_ENTERPRISE_READONLY_DCS);
-		user_info_dc->sids[user_info_dc->num_sids].attrs
-			= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		user_info_dc->sids[user_info_dc->num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		user_info_dc->num_sids++;
 	}
 

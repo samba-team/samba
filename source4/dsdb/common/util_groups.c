@@ -177,7 +177,7 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 		uint32_t sid_attrs;
 		bool already_there;
 
-		sid_attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		sid_attrs = SE_GROUP_DEFAULT_FLAGS;
 		group_type = ldb_msg_find_attr_as_uint(res->msgs[0], "groupType", 0);
 		if (group_type & GROUP_TYPE_RESOURCE_GROUP) {
 			sid_attrs |= SE_GROUP_RESOURCE;

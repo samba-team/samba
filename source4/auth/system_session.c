@@ -129,7 +129,7 @@ NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
 
 	user_info_dc->sids->sid = global_sid_System;
-	user_info_dc->sids->attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids->attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */
@@ -206,34 +206,27 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid, DOMAIN_RID_ADMINISTRATOR);
-	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid, DOMAIN_RID_USERS);
-	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	user_info_dc->sids[2].sid = global_sid_Builtin_Administrators;
-	user_info_dc->sids[2].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[2].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	user_info_dc->sids[3].sid = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[3].sid, DOMAIN_RID_ADMINS);
-	user_info_dc->sids[3].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[3].attrs = SE_GROUP_DEFAULT_FLAGS;
 	user_info_dc->sids[4].sid = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[4].sid, DOMAIN_RID_ENTERPRISE_ADMINS);
-	user_info_dc->sids[4].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[4].attrs = SE_GROUP_DEFAULT_FLAGS;
 	user_info_dc->sids[5].sid = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[5].sid, DOMAIN_RID_POLICY_ADMINS);
-	user_info_dc->sids[5].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[5].attrs = SE_GROUP_DEFAULT_FLAGS;
 	user_info_dc->sids[6].sid = *domain_sid;
 	sid_append_rid(&user_info_dc->sids[6].sid, DOMAIN_RID_SCHEMA_ADMINS);
-	user_info_dc->sids[6].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[6].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	/* What should the session key be?*/
 	user_info_dc->user_session_key = data_blob_talloc(user_info_dc, NULL, 16);
@@ -391,7 +384,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_user_info_dc(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
 
 	user_info_dc->sids->sid = global_sid_Anonymous;
-	user_info_dc->sids->attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids->attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	/* annoying, but the Anonymous really does have a session key... */
 	user_info_dc->user_session_key = data_blob_talloc(user_info_dc, NULL, 16);

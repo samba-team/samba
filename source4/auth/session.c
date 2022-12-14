@@ -136,11 +136,11 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		}
 
 		sid_copy(&sids[num_sids].sid, &global_sid_World);
-		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		sids[num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		num_sids++;
 
 		sid_copy(&sids[num_sids].sid, &global_sid_Network);
-		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		sids[num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		num_sids++;
 	}
 
@@ -152,7 +152,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		}
 
 		sid_copy(&sids[num_sids].sid, &global_sid_Authenticated_Users);
-		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		sids[num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		num_sids++;
 	}
 
@@ -167,7 +167,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		sids[num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		num_sids++;
 	}
 

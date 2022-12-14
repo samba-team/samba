@@ -642,7 +642,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         rids = samr_conn.GetGroupsForUser(user_handle)
         samr_dns = set()
         for rid in rids.rids:
-            self.assertEqual(rid.attributes, security.SE_GROUP_MANDATORY | security.SE_GROUP_ENABLED_BY_DEFAULT | security.SE_GROUP_ENABLED)
+            self.assertEqual(rid.attributes, security.SE_GROUP_DEFAULT_FLAGS)
             sid = "%s-%d" % (domain_sid, rid.rid)
             res = self.admin_ldb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
                                         attrs=[])

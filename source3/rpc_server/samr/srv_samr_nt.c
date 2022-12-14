@@ -3360,8 +3360,7 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 	gids = NULL;
 	num_gids = 0;
 
-	dom_gid.attributes = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
-			      SE_GROUP_ENABLED);
+	dom_gid.attributes = SE_GROUP_DEFAULT_FLAGS;
 	dom_gid.rid = primary_group_rid;
 	ADD_TO_ARRAY(p->mem_ctx, struct samr_RidWithAttribute, dom_gid, &gids, &num_gids);
 
@@ -6074,9 +6073,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 	}
 
 	for (i=0; i<num_members; i++) {
-		attr[i] = SE_GROUP_MANDATORY |
-			  SE_GROUP_ENABLED_BY_DEFAULT |
-			  SE_GROUP_ENABLED;
+		attr[i] = SE_GROUP_DEFAULT_FLAGS;
 	}
 
 	rids->count = num_members;
@@ -6597,9 +6594,7 @@ NTSTATUS _samr_QueryGroupInfo(struct pipes_struct *p,
 	GROUP_MAP *map;
 	union samr_GroupInfo *info = NULL;
 	bool ret;
-	uint32_t attributes = SE_GROUP_MANDATORY |
-			      SE_GROUP_ENABLED_BY_DEFAULT |
-			      SE_GROUP_ENABLED;
+	uint32_t attributes = SE_GROUP_DEFAULT_FLAGS;
 	const char *group_name = NULL;
 	const char *group_description = NULL;
 

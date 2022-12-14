@@ -844,7 +844,7 @@ static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
 	return add_sid_to_array_attrs_unique(
 		user_info_dc,
 		&ai_sid,
-		SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED,
+		SE_GROUP_DEFAULT_FLAGS,
 		&user_info_dc->sids,
 		&user_info_dc->num_sids);
 }

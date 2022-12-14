@@ -677,8 +677,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid, base->rid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid = *base->domain_sid;
 	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid, base->primary_gid)) {
@@ -690,8 +689,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	 * group in the first place, and besides, these attributes will never
 	 * make their way into a PAC.
 	 */
-	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs
-		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	for (i = 0; i < base->groups.count; i++) {
 		/* Skip primary group, already added above */

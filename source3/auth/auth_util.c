@@ -723,7 +723,7 @@ NTSTATUS auth3_user_info_dc_add_hints(struct auth_user_info_dc *user_info_dc,
 		    (uint32_t)uid);
 	status = add_sid_to_array_attrs_unique(user_info_dc->sids,
 					       &tmp_sid,
-					       SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED,
+					       SE_GROUP_DEFAULT_FLAGS,
 					       &user_info_dc->sids,
 					       &user_info_dc->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -741,7 +741,7 @@ NTSTATUS auth3_user_info_dc_add_hints(struct auth_user_info_dc *user_info_dc,
 		    (uint32_t)gid);
 	status = add_sid_to_array_attrs_unique(user_info_dc->sids,
 					       &tmp_sid,
-					       SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED,
+					       SE_GROUP_DEFAULT_FLAGS,
 					       &user_info_dc->sids,
 					       &user_info_dc->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -759,7 +759,7 @@ NTSTATUS auth3_user_info_dc_add_hints(struct auth_user_info_dc *user_info_dc,
 		    flags);
 	status = add_sid_to_array_attrs_unique(user_info_dc->sids,
 					       &tmp_sid,
-					       SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED,
+					       SE_GROUP_DEFAULT_FLAGS,
 					       &user_info_dc->sids,
 					       &user_info_dc->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {

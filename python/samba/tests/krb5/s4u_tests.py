@@ -61,9 +61,7 @@ global_hexdump = False
 
 class S4UKerberosTests(KDCBaseTest):
 
-    default_attrs = (security.SE_GROUP_MANDATORY |
-                     security.SE_GROUP_ENABLED_BY_DEFAULT |
-                     security.SE_GROUP_ENABLED)
+    default_attrs = security.SE_GROUP_DEFAULT_FLAGS
 
     def setUp(self):
         super(S4UKerberosTests, self).setUp()

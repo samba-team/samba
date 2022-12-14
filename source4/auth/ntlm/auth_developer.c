@@ -86,7 +86,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
 
 	user_info_dc->sids->sid = global_sid_Anonymous;
-	user_info_dc->sids->attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	user_info_dc->sids->attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */

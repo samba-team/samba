@@ -50,9 +50,7 @@ static NTSTATUS wbcsids_to_samr_RidWithAttributeArray(
 					&groups->rids[j].rid);
 		if (!ok) continue;
 
-		groups->rids[j].attributes = SE_GROUP_MANDATORY |
-					     SE_GROUP_ENABLED_BY_DEFAULT |
-					     SE_GROUP_ENABLED;
+		groups->rids[j].attributes = SE_GROUP_DEFAULT_FLAGS;
 		j++;
 	}
 
@@ -91,9 +89,7 @@ static NTSTATUS wbcsids_to_netr_SidAttrArray(
 			talloc_free(info3_sids);
 			return NT_STATUS_NO_MEMORY;
 		}
-		info3_sids[j].attributes = SE_GROUP_MANDATORY |
-					   SE_GROUP_ENABLED_BY_DEFAULT |
-					   SE_GROUP_ENABLED;
+		info3_sids[j].attributes = SE_GROUP_DEFAULT_FLAGS;
 		j++;
 	}
 
