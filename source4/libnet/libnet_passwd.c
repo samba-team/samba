@@ -105,13 +105,13 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 	if (!NT_STATUS_IS_OK(r.out.result)) {
+		status = r.out.result;
 		*error_string = talloc_asprintf(mem_ctx,
 						"samr_ChangePasswordUser4 for "
 						"'%s\\%s' failed: %s",
 						server->string,
 						account->string,
 						nt_errstr(status));
-		status = r.out.result;
 		goto done;
 	}
 
