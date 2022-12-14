@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    VFS structures and parameters
    Copyright (C) Jeremy Allison                         1999-2005
@@ -766,8 +766,8 @@ typedef struct connection_struct {
 
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
-	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
-	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
+	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */
+	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */
 	struct trans_state *pending_trans;
 
 	struct rpc_pipe_client *spoolss_pipe;
@@ -1205,7 +1205,7 @@ struct vfs_fn_pointers {
 			     uint32_t in_len,
 			     uint8_t **_out_data,
 			     uint32_t max_out_len,
-			     uint32_t *out_len); 
+			     uint32_t *out_len);
 
 	NTSTATUS (*fget_dos_attributes_fn)(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
@@ -1775,7 +1775,7 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      SMB_ACL_TYPE_T type,
 				      TALLOC_CTX *mem_ctx);
 int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
-				     struct files_struct *fsp, 	
+				     struct files_struct *fsp,
 				     TALLOC_CTX *mem_ctx,
 				     char **blob_description,
 				     DATA_BLOB *blob);
