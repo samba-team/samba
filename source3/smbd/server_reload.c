@@ -170,7 +170,6 @@ bool reload_services(struct smbd_server_connection *sconn,
 	}
 
 	mangle_reset_cache();
-	reset_stat_cache();
 	flush_dfree_cache();
 
 	return(ret);

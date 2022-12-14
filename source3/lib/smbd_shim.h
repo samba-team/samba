@@ -29,9 +29,6 @@
 
 struct smbd_shim
 {
-	void (*send_stat_cache_delete_message)(struct messaging_context *msg_ctx,
-					       const char *name);
-
 	bool (*change_to_root_user)(void);
 	bool (*become_authenticated_pipe_user)(struct auth_session_info *session_info);
 	bool (*unbecome_authenticated_pipe_user)(void);

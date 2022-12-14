@@ -32,14 +32,6 @@ void set_smbd_shim(const struct smbd_shim *shim_functions)
 	shim = *shim_functions;
 }
 
-void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
-				    const char *name)
-{
-	if (shim.send_stat_cache_delete_message) {
-		shim.send_stat_cache_delete_message(msg_ctx, name);
-	}
-}
-
 bool change_to_root_user(void)
 {
 	if (shim.change_to_root_user) {

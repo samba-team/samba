@@ -79,7 +79,7 @@ interface messaging
 		MSG_SMB_INJECT_FAULT		= 0x030C,
 		MSG_SMB_BLOCKING_LOCK_CANCEL	= 0x030D,
 		MSG_SMB_NOTIFY			= 0x030E,
-		MSG_SMB_STAT_CACHE_DELETE	= 0x030F,
+		/* MSG_SMB_STAT_CACHE_DELETE	= 0x030F,  Obsoleted */
 
 		/* Samba4 compatibility */
 		MSG_PVFS_NOTIFY			= 0x0310,

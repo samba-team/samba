@@ -124,21 +124,6 @@ static void smbd_parent_conf_updated(struct messaging_context *msg,
 	messaging_send_to_children(msg, MSG_SMB_CONF_UPDATED, NULL);
 }
 
-/*******************************************************************
- Delete a statcache entry.
- ********************************************************************/
-
-static void smb_stat_cache_delete(struct messaging_context *msg,
-				  void *private_data,
-				  uint32_t msg_tnype,
-				  struct server_id server_id,
-				  DATA_BLOB *data)
-{
-	const char *name = (const char *)data->data;
-	DEBUG(10,("smb_stat_cache_delete: delete name %s\n", name));
-	stat_cache_delete(name);
-}
-
 /****************************************************************************
   Send a SIGTERM to our process group.
 *****************************************************************************/
@@ -1280,8 +1265,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
 	messaging_register(msg_ctx, ev_ctx, MSG_SMB_CONF_UPDATED,
 			   smbd_parent_conf_updated);
-	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
-			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
 	messaging_register(msg_ctx, NULL, MSG_SMB_FORCE_TDIS,
 			   smb_parent_send_to_children);
@@ -1620,7 +1603,6 @@ extern void build_options(bool screen);
 		loadparm_s3_global_substitution();
 	static const struct smbd_shim smbd_shim_fns =
 	{
-		.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
 		.change_to_root_user = smbd_change_to_root_user,
 		.become_authenticated_pipe_user = smbd_become_authenticated_pipe_user,
 		.unbecome_authenticated_pipe_user = smbd_unbecome_authenticated_pipe_user,

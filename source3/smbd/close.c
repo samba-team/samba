@@ -343,11 +343,6 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 		/* Initial delete on close was set and no one else
 		 * wrote a real delete on close. */
 
-		if (fsp->fsp_flags.is_directory) {
-			send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
-						       fsp->fsp_name->base_name);
-		}
-
 		fsp->fsp_flags.delete_on_close = true;
 		set_delete_on_close_lck(fsp, lck,
 					fsp->conn->session_info->security_token,

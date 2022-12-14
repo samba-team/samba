@@ -965,11 +965,6 @@ static void set_delete_on_close_locked(struct share_mode_lock *lck,
 		reset_delete_on_close_lck(state->fsp, lck);
 	}
 
-	if (state->fsp->fsp_flags.is_directory) {
-		send_stat_cache_delete_message(state->fsp->conn->sconn->msg_ctx,
-					       state->fsp->fsp_name->base_name);
-	}
-
 	state->fsp->fsp_flags.delete_on_close = state->delete_on_close;
 }
 

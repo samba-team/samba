@@ -1094,25 +1094,6 @@ bool is_share_read_only_for_token(const char *username,
 NTSTATUS srvstr_push_fn(const char *base_ptr, uint16_t smb_flags2, void *dest,
 		      const char *src, int dest_len, int flags, size_t *ret_len);
 
-/* The following definitions come from smbd/statcache.c  */
-
-void stat_cache_add( const char *full_orig_name,
-		const char *translated_path,
-		NTTIME twrp,
-		bool case_sensitive);
-bool stat_cache_lookup(connection_struct *conn,
-			char **pp_name,
-			char **pp_dirpath,
-			char **pp_start,
-			NTTIME twrp,
-			SMB_STRUCT_STAT *pst);
-void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
-				    const char *name);
-void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
-				    const char *name);
-void stat_cache_delete(const char *name);
-bool reset_stat_cache( void );
-
 /* The following definitions come from smbd/statvfs.c  */
 
 int sys_statvfs(const char *path, struct vfs_statvfs_struct *statbuf);
