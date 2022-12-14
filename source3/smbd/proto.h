@@ -453,6 +453,7 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	struct connection_struct *conn,
 	const char *path_in,
 	NTTIME twrp,
+	bool posix,
 	struct smb_filename **_smb_fname,
 	size_t *unparsed,
 	char **substitute);

@@ -738,6 +738,7 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	struct connection_struct *conn,
 	const char *path_in,
 	NTTIME twrp,
+	bool posix,
 	struct smb_filename **_smb_fname,
 	size_t *unparsed,
 	char **substitute)
@@ -746,14 +747,17 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	struct smb_filename full_fname = {
 		.base_name = NULL,
 		.twrp = twrp,
+		.flags = posix ? SMB_FILENAME_POSIX_PATH : 0,
 	};
 	struct smb_filename rel_fname = {
 		.base_name = NULL,
 		.twrp = twrp,
+		.flags = full_fname.flags,
 	};
 	struct smb_filename *result = NULL;
 	struct files_struct *fsp = NULL;
 	char *path = NULL, *next = NULL;
+	bool case_sensitive;
 	int fd;
 	NTSTATUS status;
 	struct vfs_open_how how = {
@@ -922,7 +926,9 @@ next:
 		fsp,
 		&how);
 
-	if ((fd == -1) && (errno == ENOENT)) {
+	case_sensitive = (posix || conn->case_sensitive);
+
+	if ((fd == -1) && (errno == ENOENT) && !case_sensitive) {
 		const char *orig_base_name = rel_fname.base_name;
 
 		status = get_real_filename_at(

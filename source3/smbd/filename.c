@@ -1122,6 +1122,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			conn,
 			dirname,
 			0,
+			posix,
 			&smb_dirname,
 			&unparsed,
 			&substitute);
