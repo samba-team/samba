@@ -54,6 +54,7 @@ def create_user_profile(test_dir):
     with NamedTemporaryFile('w', dir=os.path.dirname(user_profile),
                             delete=False) as w:
         w.write('user-db:user\nsystem-db:local')
+        os.chmod(w.name, 0o644)
         fname = w.name
     shutil.move(fname, user_profile)
 
