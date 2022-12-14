@@ -144,7 +144,9 @@ class gp_firewalld_ext(gp_pol_ext):
                 return output
             for e in pol_conf.entries:
                 if e.keyname.startswith(section):
-                    if e.keyname.endswith('Zone'):
+                    if e.keyname.endswith('Zones'):
+                        if e.valuename == '**delvals.':
+                            continue
                         if 'Zones' not in output.keys():
                             output['Zones'] = []
                         output['Zones'].append(e.data)
