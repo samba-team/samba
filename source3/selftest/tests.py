@@ -1689,3 +1689,4 @@ for t in CLUSTERED_LOCAL_TESTS:
 planpythontestsuite("fileserver", "samba.tests.smb3unix")
 planpythontestsuite("fileserver", "samba.tests.reparsepoints")
 planpythontestsuite("fileserver_smb1", "samba.tests.smb2symlink")
+planpythontestsuite("fileserver_smb1", "samba.tests.smb1posix")
