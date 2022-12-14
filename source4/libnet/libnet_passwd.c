@@ -81,7 +81,10 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 			   cek.length);
 	BURN_DATA(old_nt_key_data);
 	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_WRONG_PASSWORD);
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 	}
 
 	status = init_samr_CryptPasswordAES(mem_ctx,
