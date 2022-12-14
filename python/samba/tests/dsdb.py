@@ -1029,6 +1029,128 @@ class DsdbTests(TestCase):
                                 str(part_dn) + "," + str(domain_dn)),
                          self.samdb.normalize_dn_in_domain(part_dn))
 
+class DsdbNCRootTests(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.lp = samba.tests.env_loadparm()
+        self.creds = Credentials()
+        self.creds.guess(self.lp)
+        self.session = system_session()
+        self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
+        self.remote = False
+
+    # These all use the local mode of operation inside
+    # dsdb_find_nc_root() using the partitions control
+    def test_dsdb_dn_nc_root_sid(self):
+        dom_sid = self.samdb.get_domain_sid()
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"<SID={dom_sid}>")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(domain_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_admin_sid(self):
+        dom_sid = self.samdb.get_domain_sid()
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"<SID={dom_sid}-500>")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(domain_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_users_container(self):
+        dom_sid = self.samdb.get_domain_sid()
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"CN=Users,{domain_dn}")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(domain_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_new_dn(self):
+        dom_sid = self.samdb.get_domain_sid()
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"CN=Xnotexisting,CN=Users,{domain_dn}")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(domain_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_new_dn_with_guid(self):
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"<GUID=828e3baf-fa02-4d82-ba5d-6f647dab5fd8>;CN=Xnotexisting,CN=Users,{domain_dn}")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(domain_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_guid(self):
+        ntds_guid = self.samdb.get_ntds_GUID()
+        configuration_dn = self.samdb.get_config_basedn()
+        dn = ldb.Dn(self.samdb, f"<GUID={ntds_guid}>")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(configuration_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_misleading_to_noexisting_guid(self):
+        ntds_guid = self.samdb.get_ntds_GUID()
+        configuration_dn = self.samdb.get_config_basedn()
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"<GUID={ntds_guid}>;CN=Xnotexisting,CN=Users,{domain_dn}")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(configuration_dn, nc_root)
+
+    def test_dsdb_dn_nc_root_misleading_to_existing_guid(self):
+        ntds_guid = self.samdb.get_ntds_GUID()
+        configuration_dn = self.samdb.get_config_basedn()
+        domain_dn = ldb.Dn(self.samdb, self.samdb.domain_dn())
+        dn = ldb.Dn(self.samdb, f"<GUID={ntds_guid}>;{domain_dn}")
+        try:
+            nc_root = self.samdb.get_nc_root(dn)
+        except ldb.LdbError as e:
+            (code, msg) = e.args
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+        self.assertEqual(configuration_dn, nc_root)
+
+class DsdbRemoteNCRootTests(DsdbNCRootTests):
+    def setUp(self):
+        super().setUp()
+        # Reconnect to the remote LDAP port
+        self.samdb = SamDB(url="ldap://%s" % samba.tests.env_get_var_value('SERVER'),
+                           session_info=self.session,
+                           credentials=self.get_credentials(),
+                           lp=self.lp)
+        self.remote = True
+
 
 class DsdbFullScanTests(TestCase):
 
