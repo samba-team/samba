@@ -2341,7 +2341,8 @@ class KDCBaseTest(RawKerberosTest):
 
     # Test SamLogon. Authentication should succeed for non-protected accounts,
     # and fail for protected accounts.
-    def _test_samlogon(self, creds, logon_type, protected):
+    def _test_samlogon(self, creds, logon_type, protected,
+                       validation_level=netlogon.NetlogonValidationSamInfo2):
         samdb = self.get_samdb()
 
         server = samdb.host_dns_name()
@@ -2408,7 +2409,6 @@ class KDCBaseTest(RawKerberosTest):
 
         logon.identity_info = identity_info
 
-        validation_level = netlogon.NetlogonValidationSamInfo2
         netr_flags = 0
 
         try:
