@@ -260,10 +260,7 @@ static bool find_snapshot_token(
 	return true;
 }
 
-bool clistr_is_previous_version_path(const char *path,
-				     const char **startp,
-				     const char **endp,
-				     NTTIME *ptwrp)
+bool clistr_is_previous_version_path(const char *path)
 {
 	const char *start = NULL;
 	const char *next = NULL;
@@ -271,20 +268,7 @@ bool clistr_is_previous_version_path(const char *path,
 	bool ok;
 
 	ok = find_snapshot_token(path, '\\', &start, &next, &twrp);
-	if (!ok) {
-		return false;
-	}
-
-	if (startp != NULL) {
-		*startp = start;
-	}
-	if (endp != NULL) {
-		*endp = next;
-	}
-	if (ptwrp != NULL) {
-		*ptwrp = twrp;
-	}
-	return true;
+	return ok;
 }
 
 static bool extract_snapshot_token_internal(char *fname, NTTIME *twrp, char sep)
