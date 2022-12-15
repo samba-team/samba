@@ -152,7 +152,7 @@ static int construct_primary_group_token(struct ldb_module *module,
 static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			  struct ldb_message *msg, const char *attribute_string,
 			  enum search_type type, struct auth_SidAttr **groupSIDs,
-			  unsigned int *num_groupSIDs)
+			  uint32_t *num_groupSIDs)
 {
 	const char *filter = NULL;
 	NTSTATUS status;
@@ -289,10 +289,10 @@ static int construct_generic_token_groups(struct ldb_module *module,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
-	unsigned int i;
+	uint32_t i;
 	int ret;
 	struct auth_SidAttr *groupSIDs = NULL;
-	unsigned int num_groupSIDs = 0;
+	uint32_t num_groupSIDs = 0;
 
 	if (scope != LDB_SCOPE_BASE) {
 		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, this is not a BASE search");
@@ -1172,7 +1172,7 @@ static int get_pso_for_user(struct ldb_module *module,
 {
 	bool pso_supported;
 	struct auth_SidAttr *groupSIDs = NULL;
-	unsigned int num_groupSIDs = 0;
+	uint32_t num_groupSIDs = 0;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *best_pso = NULL;
 	struct ldb_dn *pso_dn = NULL;

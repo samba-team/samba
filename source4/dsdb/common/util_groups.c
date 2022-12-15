@@ -28,7 +28,7 @@
 
 /* This function tests if a SID structure "sids" contains the SID "sid" */
 static bool sids_contains_sid(const struct auth_SidAttr *sids,
-			      const unsigned int num_sids,
+			      const uint32_t num_sids,
 			      const struct dom_sid *sid,
 			      uint32_t attrs)
 {
@@ -64,7 +64,7 @@ static bool sids_contains_sid(const struct auth_SidAttr *sids,
 NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 				   struct ldb_val *dn_val, const bool only_childs, const char *filter,
 				   TALLOC_CTX *res_sids_ctx, struct auth_SidAttr **res_sids,
-				   unsigned int *num_res_sids)
+				   uint32_t *num_res_sids)
 {
 	const char * const attrs[] = { "groupType", "memberOf", NULL };
 	unsigned int i;

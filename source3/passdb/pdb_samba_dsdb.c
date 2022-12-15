@@ -1704,7 +1704,7 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 	size_t num_alias_rids = 0;
 	int i;
 	struct auth_SidAttr *groupSIDs = NULL;
-	unsigned int num_groupSIDs = 0;
+	uint32_t num_groupSIDs = 0;
 	char *filter;
 	NTSTATUS status;
 	const char *sid_dn;

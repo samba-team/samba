@@ -58,7 +58,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 {
 	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
-	unsigned int i, num_sids = 0;
+	uint32_t i, num_sids = 0;
 
 	const char *filter;
 

@@ -354,7 +354,8 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	DATA_BLOB primary_group_blob;
 	/* SID structures for the expanded group memberships */
 	struct auth_SidAttr *sids = NULL;
-	unsigned int num_sids = 0, i;
+	uint32_t num_sids = 0;
+	unsigned int i;
 	struct dom_sid *domain_sid;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message_element *el;
