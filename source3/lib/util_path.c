@@ -287,14 +287,14 @@ bool clistr_is_previous_version_path(const char *path,
 	return true;
 }
 
-bool extract_snapshot_token(char *fname, NTTIME *twrp)
+static bool extract_snapshot_token_internal(char *fname, NTTIME *twrp, char sep)
 {
 	const char *start = NULL;
 	const char *next = NULL;
 	size_t remaining;
 	bool found;
 
-	found = find_snapshot_token(fname, '/', &start, &next, twrp);
+	found = find_snapshot_token(fname, sep, &start, &next, twrp);
 	if (!found) {
 		return false;
 	}
@@ -303,6 +303,11 @@ bool extract_snapshot_token(char *fname, NTTIME *twrp)
 	memmove(discard_const_p(char, start), next, remaining+1);
 
 	return true;
+}
+
+bool extract_snapshot_token(char *fname, NTTIME *twrp)
+{
+	return extract_snapshot_token_internal(fname, twrp, '/');
 }
 
 /*
