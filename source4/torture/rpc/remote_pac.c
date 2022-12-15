@@ -979,13 +979,6 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	status = check_primary_group_in_validation(tmp_ctx, r.in.validation_level, r.out.validation);
 	torture_assert_ntstatus_ok(tctx, status, "check_primary_group_in_validation failed");
 
-	/* Check that the primary group is not duplicated in user_info_dc SID array */
-	for (i = 2; i < netlogon_user_info_dc->num_sids; i++) {
-		torture_assert(tctx, !dom_sid_equal(&netlogon_user_info_dc->sids[1].sid,
-						    &netlogon_user_info_dc->sids[i].sid),
-			       "Duplicate PrimaryGroupId in return SID array");
-	}
-
 	torture_assert_str_equal(tctx, netlogon_user_info_dc->info->account_name == NULL ? "" : netlogon_user_info_dc->info->account_name,
 				 kinit_session_info->info->account_name, "Account name differs for kinit-based PAC");
 	torture_assert_str_equal(tctx,netlogon_user_info_dc->info->account_name == NULL ? "" : netlogon_user_info_dc->info->account_name,
