@@ -464,13 +464,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
     def _getnc_req10(self, dest_dsa, invocation_id, nc_dn_str, exop,
                      replica_flags=0, max_objects=0, partial_attribute_set=None,
                      partial_attribute_set_ex=None, mapping_ctr=None,
-                     more_flags=0):
+                     more_flags=0, nc_guid=None):
         req10 = drsuapi.DsGetNCChangesRequest10()
 
         req10.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
         req10.source_dsa_invocation_id = misc.GUID(invocation_id)
         req10.naming_context = drsuapi.DsReplicaObjectIdentifier()
         req10.naming_context.dn = str(nc_dn_str)
+        if nc_guid is not None:
+            req10.naming_context.guid = nc_guid
         req10.highwatermark = drsuapi.DsReplicaHighWaterMark()
         req10.highwatermark.tmp_highest_usn = 0
         req10.highwatermark.reserved_usn = 0
