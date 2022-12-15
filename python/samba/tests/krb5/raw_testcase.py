@@ -560,6 +560,7 @@ class RawKerberosTest(TestCaseInTempDir):
         BASE_SID = object()  # in info3.base.groups
         EXTRA_SID = object()  # in info3.sids
         RESOURCE_SID = object()  # in resource_groups
+        PRIMARY_GID = object()  # the (sole) primary group
 
     pac_checksum_types = {krb5pac.PAC_TYPE_SRV_CHECKSUM,
                           krb5pac.PAC_TYPE_KDC_CHECKSUM,
@@ -3198,8 +3199,12 @@ class RawKerberosTest(TestCaseInTempDir):
 
         # Check the SIDs in the PAC.
 
-        # A representation of the PAC.
-        pac_sids = set()
+        # Form a representation of the PAC, containing at first the primary
+        # GID.
+        primary_sid = f'{domain_sid}-{logon_info.primary_gid}'
+        pac_sids = {
+            (primary_sid, self.SidType.PRIMARY_GID, None),
+        }
 
         # Collect the Extra SIDs.
         if info3.sids is not None:

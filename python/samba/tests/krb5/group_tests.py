@@ -31,6 +31,7 @@ from functools import partial
 
 import ldb
 
+from samba import common, werror
 from samba.dcerpc import krb5pac, netlogon, samr, security
 from samba.dsdb import (
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
@@ -106,6 +107,120 @@ class GroupTests(KDCBaseTest):
             cls.generate_dynamic_test('test_group', name,
                                       dict(case))
 
+    def test_set_universal_primary_group(self):
+        samdb = self.get_samdb()
+
+        # Create a universal group.
+        universal_dn = self.create_group(samdb,
+                                         self.get_new_username(),
+                                         gtype=GroupType.UNIVERSAL.value)
+
+        # Get the SID of the universal group.
+        universal_sid = self.get_objectSid(samdb, universal_dn)
+
+        # Create a user account belonging to the group.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    universal_dn,
+                ),
+                'kerberos_enabled': False,
+            },
+            use_cache=False)
+
+        # Set the user's primary group.
+        self.set_primary_group(samdb, creds.get_dn(), universal_sid)
+
+    def test_set_domain_local_primary_group(self):
+        samdb = self.get_samdb()
+
+        # Create a domain-local group.
+        domain_local_dn = self.create_group(samdb,
+                                            self.get_new_username(),
+                                            gtype=GroupType.DOMAIN_LOCAL.value)
+
+        # Get the SID of the domain-local group.
+        domain_local_sid = self.get_objectSid(samdb, domain_local_dn)
+
+        # Create a user account belonging to the group.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    domain_local_dn,
+                ),
+                'kerberos_enabled': False,
+            },
+            use_cache=False)
+
+        # Setting the user's primary group fails.
+        self.set_primary_group(
+            samdb, creds.get_dn(), domain_local_sid,
+            expected_error=ldb.ERR_UNWILLING_TO_PERFORM,
+            expected_werror=werror.WERR_MEMBER_NOT_IN_GROUP)
+
+    def test_change_universal_primary_group_to_global(self):
+        samdb = self.get_samdb()
+
+        # Create a universal group.
+        universal_dn = self.create_group(samdb,
+                                         self.get_new_username(),
+                                         gtype=GroupType.UNIVERSAL.value)
+
+        # Get the SID of the universal group.
+        universal_sid = self.get_objectSid(samdb, universal_dn)
+
+        # Create a user account belonging to the group.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    universal_dn,
+                ),
+                'kerberos_enabled': False,
+            },
+            use_cache=False)
+
+        # Set the user's primary group.
+        self.set_primary_group(samdb, creds.get_dn(), universal_sid)
+
+        # Change the group to a global group.
+        self.set_group_type(samdb,
+                            ldb.Dn(samdb, universal_dn),
+                            GroupType.GLOBAL)
+
+    def test_change_universal_primary_group_to_domain_local(self):
+        samdb = self.get_samdb()
+
+        # Create a universal group.
+        universal_dn = self.create_group(samdb,
+                                         self.get_new_username(),
+                                         gtype=GroupType.UNIVERSAL.value)
+
+        # Get the SID of the universal group.
+        universal_sid = self.get_objectSid(samdb, universal_dn)
+
+        # Create a user account belonging to the group.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    universal_dn,
+                ),
+                'kerberos_enabled': False,
+            },
+            use_cache=False)
+
+        # Set the user's primary group.
+        self.set_primary_group(samdb, creds.get_dn(), universal_sid)
+
+        # Change the group to a domain-local group. This works, even though the
+        # group is still the user's primary group.
+        self.set_group_type(samdb,
+                            ldb.Dn(samdb, universal_dn),
+                            GroupType.DOMAIN_LOCAL)
+
     # Get a ticket with the SIDs in the PAC replaced with ones we specify. This
     # is useful for creating arbitrary tickets that can be used to perform a
     # TGS-REQ.
@@ -148,6 +263,8 @@ class GroupTests(KDCBaseTest):
 
         resource_domain = None
 
+        primary_gid = None
+
         # Filter our SIDs into three arrays depending on their ultimate
         # location in the PAC.
         for sid, sid_type, attrs in new_sids:
@@ -181,6 +298,15 @@ class GroupTests(KDCBaseTest):
                 resource_sid.attributes = attrs
 
                 resource_sids.append(resource_sid)
+            elif sid_type is self.SidType.PRIMARY_GID:
+                self.assertIsNone(primary_gid,
+                                  f'must not specify a second primary GID '
+                                  f'{sid}')
+                self.assertIsNone(attrs, 'cannot specify primary GID attrs')
+
+                domain, primary_gid = sid.rsplit('-', 1)
+                self.assertEqual(domain_sid, domain,
+                                 f'primary GID {sid} must be in our domain')
             else:
                 self.fail(f'invalid SID type {sid_type}')
 
@@ -214,6 +340,9 @@ class GroupTests(KDCBaseTest):
 
                 logon_info.info3.base.domain_sid = security.dom_sid(domain_sid)
                 logon_info.info3.base.rid = int(user_rid)
+
+                if primary_gid is not None:
+                    logon_info.info3.base.primary_gid = int(primary_gid)
 
                 # Add Resource SIDs and set the RESOURCE_GROUPS flag as needed.
                 logon_info.resource_groups.groups.count = len(resource_sids)
@@ -266,6 +395,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -280,6 +410,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -294,6 +425,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -307,6 +439,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -322,6 +455,7 @@ class GroupTests(KDCBaseTest):
                 # to.
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -338,6 +472,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -356,6 +491,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -378,6 +514,7 @@ class GroupTests(KDCBaseTest):
                 ('universal', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -395,6 +532,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -414,6 +552,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -431,6 +570,7 @@ class GroupTests(KDCBaseTest):
                 ('universal', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -447,6 +587,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -465,6 +606,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -480,6 +622,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
             # Make a TGS-REQ to the krbtgt with the user's account.
@@ -489,6 +632,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -503,6 +647,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
             # Make a TGS-REQ to a service with the user's account.
@@ -511,6 +656,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -525,6 +671,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
             'tgs:to_krbtgt': True,
@@ -533,6 +680,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -548,6 +696,7 @@ class GroupTests(KDCBaseTest):
                 # AS-REQ.
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
             'tgs:to_krbtgt': False,
@@ -556,6 +705,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -571,6 +721,7 @@ class GroupTests(KDCBaseTest):
             'as:expected': {
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
             'tgs:to_krbtgt': False,
@@ -581,6 +732,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -601,6 +753,7 @@ class GroupTests(KDCBaseTest):
                 # It should not be re-added in the TGS-REQ.
                 ('foo', SidType.BASE_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -621,6 +774,7 @@ class GroupTests(KDCBaseTest):
             'tgs:expected': {
                 ('foo', SidType.BASE_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -642,6 +796,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
             },
         },
         {
@@ -662,6 +817,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
             },
         },
         {
@@ -685,6 +841,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -706,6 +863,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -732,6 +890,7 @@ class GroupTests(KDCBaseTest):
                 ('universal', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -759,6 +918,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -784,6 +944,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -812,6 +973,7 @@ class GroupTests(KDCBaseTest):
                 ('dom-local-1', SidType.RESOURCE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -836,6 +998,7 @@ class GroupTests(KDCBaseTest):
             'tgs:expected': {
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
                 # The resource SIDs remain in the PAC.
                 ('dom-local-0', SidType.RESOURCE_SID, resource_attrs),
@@ -859,6 +1022,7 @@ class GroupTests(KDCBaseTest):
             'tgs:expected': {
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -881,6 +1045,7 @@ class GroupTests(KDCBaseTest):
                 # The resource SIDs are removed upon issuing a service ticket.
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -905,6 +1070,7 @@ class GroupTests(KDCBaseTest):
                 # The resource SIDs are again removed.
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
@@ -929,6 +1095,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
             },
         },
         {
@@ -953,6 +1120,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.RESOURCE_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
             },
         },
         {
@@ -975,6 +1143,7 @@ class GroupTests(KDCBaseTest):
                 ('foo', SidType.EXTRA_SID, resource_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
             },
         },
         # Simulate a ticket coming in over a trust.
@@ -1003,6 +1172,7 @@ class GroupTests(KDCBaseTest):
                 (trust_user, SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 (f'{trust_domain}-333', SidType.RESOURCE_SID, resource_attrs),
             },
         },
@@ -1027,6 +1197,7 @@ class GroupTests(KDCBaseTest):
                 (trust_user, SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 # The resource SIDs are added to the PAC.
                 ('foo', SidType.RESOURCE_SID, resource_attrs),
                 ('bar', SidType.RESOURCE_SID, resource_attrs),
@@ -1054,10 +1225,344 @@ class GroupTests(KDCBaseTest):
                 (trust_user, SidType.BASE_SID, default_attrs),
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
                 # The resource SIDs are added again, but this time to Extra
                 # SIDs.
                 ('foo', SidType.EXTRA_SID, resource_attrs),
                 ('bar', SidType.EXTRA_SID, resource_attrs),
+            },
+        },
+        # Test a group being the primary one for the user.
+        {
+            'test': 'primary universal; as-req to krbtgt',
+            'groups': {
+                'foo': (GroupType.UNIVERSAL, {user}),
+            },
+            # Set this group as our primary group.
+            'primary_group': 'foo',
+            'as:to_krbtgt': True,
+            'as:expected': {
+                # It appears in the PAC as normal.
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'primary universal; as-req to service',
+            'groups': {
+                'foo': (GroupType.UNIVERSAL, {user}),
+            },
+            # Set this group as our primary group.
+            'primary_group': 'foo',
+            # The request is made to a service.
+            'as:to_krbtgt': False,
+            'as:expected': {
+                # The group appears in the PAC as normal.
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        # Test domain-local primary groups.
+        {
+            'test': 'primary domain-local; as-req to krbtgt',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            # Though Windows normally disallows setting a domain-local group as
+            # a primary group, Samba does not.
+            'primary_group': 'foo',
+            'as:to_krbtgt': True,
+            'as:expected': {
+                # The domain-local group appears as our primary GID, but does
+                # not appear in the base SIDs.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'primary domain-local; compression; as-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            'primary_group': 'foo',
+            # The same test, but the request is made to a service.
+            'as:to_krbtgt': False,
+            'as:expected': {
+                # The domain-local still only appears as our primary GID.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'primary domain-local; no compression; as-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            'primary_group': 'foo',
+            'as:to_krbtgt': False,
+            # This time, the target account disclaims support for SID
+            # compression.
+            'as:compression': False,
+            'as:expected': {
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'primary domain-local; tgs-req to krbtgt',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            # Though Windows normally disallows setting a domain-local group as
+            # a primary group, Samba does not.
+            'primary_group': 'foo',
+            'as:to_krbtgt': True,
+            'as:expected': {
+                # The domain-local group appears as our primary GID, but does
+                # not appear in the base SIDs.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:to_krbtgt': True,
+            'tgs:expected': {
+                # The domain-local group does not appear in the base SIDs.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'primary domain-local; compression; tgs-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            # Though Windows normally disallows setting a domain-local group as
+            # a primary group, Samba does not.
+            'primary_group': 'foo',
+            'as:to_krbtgt': True,
+            'as:expected': {
+                # The domain-local group appears as our primary GID, but does
+                # not appear in the base SIDs.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            # The service is made to a service.
+            'tgs:to_krbtgt': False,
+            'tgs:expected': {
+                # The domain-local still only appears as our primary GID.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'primary domain-local; no compression; tgs-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            # Though Windows normally disallows setting a domain-local group as
+            # a primary group, Samba does not.
+            'primary_group': 'foo',
+            'as:to_krbtgt': True,
+            'as:expected': {
+                # The domain-local group appears as our primary GID, but does
+                # not appear in the base SIDs.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:to_krbtgt': False,
+            # The service does not support compression.
+            'tgs:compression': False,
+            'tgs:expected': {
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        # Test the scenario where we belong to a now-domain-local group, and
+        # possess an old TGT issued when the group was still our primary one.
+        {
+            'test': 'old primary domain-local; tgs-req to krbtgt',
+            'groups': {
+                # A domain-local group to which we belong.
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            'tgs:sids': {
+                # In the PAC, the group has the attributes of an ordinary
+                # group...
+                ('foo', SidType.BASE_SID, default_attrs),
+                # ...and remains our primary one.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                # The groups don't change.
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'old primary domain-local; compression; tgs-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            # The TGS request is made to a service.
+            'tgs:to_krbtgt': False,
+            'tgs:sids': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                # The group is added a second time to the PAC, now as a
+                # resource group.
+                ('foo', SidType.RESOURCE_SID, resource_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'old primary domain-local; no compression; tgs-req to service',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            # The target service doesn't support SID compression.
+            'tgs:compression': False,
+            'tgs:sids': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                # This time, the group is added to Extra SIDs.
+                ('foo', SidType.EXTRA_SID, resource_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        # Test the scenario where we possess an old TGT issued when a
+        # now-domain-local group was still our primary one. We no longer belong
+        # to that group, which itself belongs to another domain-local group.
+        {
+            'test': 'old primary domain-local; transitive; tgs-req to krbtgt',
+            'groups': {
+                'bar': (GroupType.DOMAIN_LOCAL, {'foo'}),
+                'foo': (GroupType.DOMAIN_LOCAL, {}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            'tgs:sids': {
+                # In the PAC, the group has the attributes of an ordinary
+                # group...
+                ('foo', SidType.BASE_SID, default_attrs),
+                # ...and remains our primary one.
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                # The groups don't change.
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'old primary domain-local; transitive; compression; tgs-req to service',
+            'groups': {
+                'bar': (GroupType.DOMAIN_LOCAL, {'foo'}),
+                'foo': (GroupType.DOMAIN_LOCAL, {}),
+            },
+            'as:to_krbtgt': True,
+            # The TGS request is made to a service.
+            'tgs:to_krbtgt': False,
+            'tgs:sids': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                # The second resource group is added to the PAC as a resource
+                # group.
+                ('bar', SidType.RESOURCE_SID, resource_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'old primary domain-local; transitive; no compression; tgs-req to service',
+            'groups': {
+                'bar': (GroupType.DOMAIN_LOCAL, {'foo'}),
+                'foo': (GroupType.DOMAIN_LOCAL, {}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            # The target service doesn't support SID compression.
+            'tgs:compression': False,
+            'tgs:sids': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                ('foo', SidType.BASE_SID, default_attrs),
+                ('foo', SidType.PRIMARY_GID, None),
+                # This time, the group is added to Extra SIDs.
+                ('bar', SidType.EXTRA_SID, resource_attrs),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
             },
         },
     ]
@@ -1101,6 +1606,55 @@ class GroupTests(KDCBaseTest):
 
         return mapped_sids
 
+    def set_primary_group(self, samdb, dn, primary_sid,
+                          expected_error=None,
+                          expected_werror=None):
+        # Get the RID to be set as our primary group.
+        primary_rid = primary_sid.rsplit('-', 1)[1]
+
+        # Find out our current primary group.
+        res = samdb.search(dn,
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['primaryGroupId'])
+        orig_msg = res[0]
+
+        # Prepare to modify the attribute.
+        msg = ldb.Message(dn)
+        msg['primaryGroupId'] = ldb.MessageElement(str(primary_rid),
+                                                   ldb.FLAG_MOD_REPLACE,
+                                                   'primaryGroupId')
+
+        # We'll remove the primaryGroupId attribute after the test, to avoid
+        # problems in the teardown if the user outlives the group.
+        remove_msg = samdb.msg_diff(msg, orig_msg)
+        self.addCleanup(samdb.modify, remove_msg)
+
+        # Set primaryGroupId.
+        if expected_error is None:
+            self.assertIsNone(expected_werror)
+
+            samdb.modify(msg)
+        else:
+            self.assertIsNotNone(expected_werror)
+
+            with self.assertRaises(
+                    ldb.LdbError,
+                    msg='expected setting primary group to fail'
+            ) as err:
+                samdb.modify(msg)
+
+            error, estr = err.exception.args
+            self.assertEqual(expected_error, error)
+            self.assertIn(f'{expected_werror:08X}', estr)
+
+    def set_group_type(self, samdb, dn, gtype):
+        group_type = common.normalise_int32(gtype.value)
+        msg = ldb.Message(dn)
+        msg['groupType'] = ldb.MessageElement(group_type,
+                                              ldb.FLAG_MOD_REPLACE,
+                                              'groupType')
+        samdb.modify(msg)
+
     # Create an arrangement on groups based on a configuration specified in a
     # test case. 'user_principal' is a principal representing the user account;
     # 'trust_principal', a principal representing the account of a user from
@@ -1109,12 +1663,15 @@ class GroupTests(KDCBaseTest):
                      samdb,
                      group_setup,
                      user_principal,
-                     trust_principal):
+                     trust_principal,
+                     primary_group):
         # Initialiase the group mapping with the user principal.
         groups = {
             self.user: user_principal,
             self.trust_user: trust_principal,
         }
+
+        primary_group_type = None
 
         # Create each group and add it to the group mapping.
         for group_id, (group_type, _) in group_setup.items():
@@ -1122,6 +1679,14 @@ class GroupTests(KDCBaseTest):
                              "don't specify user placeholder")
             self.assertNotIn(group_id, groups,
                              'group ID specified more than once')
+
+            if primary_group is not None and group_id == primary_group:
+                # Windows disallows setting a domain-local group as a primary
+                # group, unless we create it as Universal first and change it
+                # back to Domain-Local later.
+                primary_group_type = group_type
+                group_type = GroupType.UNIVERSAL
+
             groups[group_id] = self.create_group_principal(samdb, group_type)
 
         # Map a group ID to that group's DN, and generate an
@@ -1147,6 +1712,17 @@ class GroupTests(KDCBaseTest):
             # Add the members to the group.
             self.add_to_group(principal_members, dn, 'member',
                               expect_attr=False)
+
+        # Set the user's primary group.
+        if primary_group is not None:
+            primary_sid = groups[primary_group].sid
+            self.set_primary_group(samdb, user_principal.dn, primary_sid)
+
+        # Change the primary group to its actual group type.
+        if primary_group_type is not None:
+            self.set_group_type(samdb,
+                                groups[primary_group].dn,
+                                primary_group_type)
 
         # Return the mapping from group IDs to principals.
         return groups
@@ -1184,6 +1760,9 @@ class GroupTests(KDCBaseTest):
     def _test_group_with_args(self, case):
         # The group arrangement for the test.
         group_setup = case.pop('groups')
+
+        # A group that should be the primary group for the user.
+        primary_group = case.pop('primary_group', None)
 
         # Whether the AS-REQ or TGS-REQ should be directed to the krbtgt.
         as_to_krbtgt = case.pop('as:to_krbtgt')
@@ -1291,7 +1870,8 @@ class GroupTests(KDCBaseTest):
         groups = self.setup_groups(samdb,
                                    group_setup,
                                    user_principal,
-                                   trust_principal)
+                                   trust_principal,
+                                   primary_group)
         del group_setup
 
         if tgs_user_sid is None:
