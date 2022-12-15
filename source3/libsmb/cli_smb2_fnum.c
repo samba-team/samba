@@ -287,6 +287,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	if (tevent_req_nomem(fname, req)) {
 		return tevent_req_post(req, ev);
 	}
+	fname_len = strlen(fname);
 
 	/* SMB2 is pickier about pathnames. Ensure it doesn't
 	   start in a '\' */
