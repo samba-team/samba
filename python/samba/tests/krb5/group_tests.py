@@ -221,6 +221,230 @@ class GroupTests(KDCBaseTest):
                             ldb.Dn(samdb, universal_dn),
                             GroupType.DOMAIN_LOCAL)
 
+    # Check the groups in a SamInfo structure returned by SamLogon.
+    def test_samlogon_SamInfo(self):
+        samdb = self.get_samdb()
+
+        # Create a universal and a domain-local group.
+        universal_dn = self.create_group(samdb,
+                                         self.get_new_username(),
+                                         gtype=GroupType.UNIVERSAL.value)
+        domain_local_dn = self.create_group(samdb,
+                                            self.get_new_username(),
+                                            gtype=GroupType.DOMAIN_LOCAL.value)
+
+        # Create a user account belonging to both groups.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    universal_dn,
+                    domain_local_dn,
+                ),
+                'kerberos_enabled': False,
+            })
+
+        # Get the SID and RID of the user account.
+        user_sid = self.get_objectSid(samdb, creds.get_dn())
+        user_rid = int(user_sid.rsplit('-', 1)[1])
+
+        # Get the SID and RID of the universal group.
+        universal_sid = self.get_objectSid(samdb, universal_dn)
+        universal_rid = int(universal_sid.rsplit('-', 1)[1])
+
+        # We don't expect the EXTRA_SIDS flag to be set.
+        unexpected_flags = netlogon.NETLOGON_EXTRA_SIDS
+
+        # Do a SamLogon call and check we get back the right structure.
+        interactive = netlogon.NetlogonInteractiveInformation
+        level = netlogon.NetlogonValidationSamInfo
+        validation = self._test_samlogon(creds=creds,
+                                         logon_type=interactive,
+                                         protected=False,
+                                         validation_level=level)
+        self.assertIsInstance(validation, netlogon.netr_SamInfo2)
+
+        base = validation.base
+
+        # Check some properties of the base structure.
+        self.assertEqual(user_rid, base.rid)
+        self.assertEqual(security.DOMAIN_RID_USERS, base.primary_gid)
+        self.assertEqual(samdb.get_domain_sid(), str(base.domain_sid))
+        self.assertFalse(unexpected_flags & base.user_flags,
+                         f'0x{unexpected_flags:x} unexpectedly set in '
+                         f'user_flags (0x{base.user_flags:x})')
+
+        # Check we have two groups in the base.
+        self.assertEqual(2, base.groups.count)
+
+        rids = base.groups.rids
+
+        # The first group should be Domain Users.
+        self.assertEqual(security.DOMAIN_RID_USERS, rids[0].rid)
+        self.assertEqual(self.default_attrs, rids[0].attributes)
+
+        # The second should be our universal group.
+        self.assertEqual(universal_rid, rids[1].rid)
+        self.assertEqual(self.default_attrs, rids[1].attributes)
+
+        # The domain-local group is nowhere to be found.
+
+    # Check the groups in a SamInfo2 structure returned by SamLogon.
+    def test_samlogon_SamInfo2(self):
+        samdb = self.get_samdb()
+
+        # Create a universal and a domain-local group.
+        universal_dn = self.create_group(samdb,
+                                         self.get_new_username(),
+                                         gtype=GroupType.UNIVERSAL.value)
+        domain_local_dn = self.create_group(samdb,
+                                            self.get_new_username(),
+                                            gtype=GroupType.DOMAIN_LOCAL.value)
+
+        # Create a user account belonging to both groups.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    universal_dn,
+                    domain_local_dn,
+                ),
+                'kerberos_enabled': False,
+            })
+
+        # Get the SID and RID of the user account.
+        user_sid = self.get_objectSid(samdb, creds.get_dn())
+        user_rid = int(user_sid.rsplit('-', 1)[1])
+
+        # Get the SID and RID of the universal group.
+        universal_sid = self.get_objectSid(samdb, universal_dn)
+        universal_rid = int(universal_sid.rsplit('-', 1)[1])
+
+        # Get the SID of the domain-local group.
+        domain_local_sid = self.get_objectSid(samdb, domain_local_dn)
+
+        # We expect the EXTRA_SIDS flag to be set.
+        expected_flags = netlogon.NETLOGON_EXTRA_SIDS
+
+        # Do a SamLogon call and check we get back the right structure.
+        interactive = netlogon.NetlogonInteractiveInformation
+        level = netlogon.NetlogonValidationSamInfo2
+        validation = self._test_samlogon(creds=creds,
+                                         logon_type=interactive,
+                                         protected=False,
+                                         validation_level=level)
+        self.assertIsInstance(validation, netlogon.netr_SamInfo3)
+
+        base = validation.base
+
+        # Check some properties of the base structure.
+        self.assertEqual(user_rid, base.rid)
+        self.assertEqual(security.DOMAIN_RID_USERS, base.primary_gid)
+        self.assertEqual(samdb.get_domain_sid(), str(base.domain_sid))
+        self.assertTrue(expected_flags & base.user_flags,
+                        f'0x{expected_flags:x} unexpectedly reset in '
+                        f'user_flags (0x{base.user_flags:x})')
+
+        # Check we have two groups in the base.
+        self.assertEqual(2, base.groups.count)
+
+        rids = base.groups.rids
+
+        # The first group should be Domain Users.
+        self.assertEqual(security.DOMAIN_RID_USERS, rids[0].rid)
+        self.assertEqual(self.default_attrs, rids[0].attributes)
+
+        # The second should be our universal group.
+        self.assertEqual(universal_rid, rids[1].rid)
+        self.assertEqual(self.default_attrs, rids[1].attributes)
+
+        # Check that we have one group in the SIDs array.
+        self.assertEqual(1, validation.sidcount)
+
+        sids = validation.sids
+
+        # That group should be our domain-local group.
+        self.assertEqual(domain_local_sid, str(sids[0].sid))
+        self.assertEqual(self.resource_attrs, sids[0].attributes)
+
+    # Check the groups in a SamInfo4 structure returned by SamLogon.
+    def test_samlogon_SamInfo4(self):
+        samdb = self.get_samdb()
+
+        # Create a universal and a domain-local group.
+        universal_dn = self.create_group(samdb,
+                                         self.get_new_username(),
+                                         gtype=GroupType.UNIVERSAL.value)
+        domain_local_dn = self.create_group(samdb,
+                                            self.get_new_username(),
+                                            gtype=GroupType.DOMAIN_LOCAL.value)
+
+        # Create a user account belonging to both groups.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'member_of': (
+                    universal_dn,
+                    domain_local_dn,
+                ),
+                'kerberos_enabled': False,
+            })
+
+        # Get the SID and RID of the user account.
+        user_sid = self.get_objectSid(samdb, creds.get_dn())
+        user_rid = int(user_sid.rsplit('-', 1)[1])
+
+        # Get the SID and RID of the universal group.
+        universal_sid = self.get_objectSid(samdb, universal_dn)
+        universal_rid = int(universal_sid.rsplit('-', 1)[1])
+
+        # Get the SID of the domain-local group.
+        domain_local_sid = self.get_objectSid(samdb, domain_local_dn)
+
+        # We expect the EXTRA_SIDS flag to be set.
+        expected_flags = netlogon.NETLOGON_EXTRA_SIDS
+
+        # Do a SamLogon call and check we get back the right structure.
+        interactive = netlogon.NetlogonInteractiveInformation
+        level = netlogon.NetlogonValidationSamInfo4
+        validation = self._test_samlogon(creds=creds,
+                                         logon_type=interactive,
+                                         protected=False,
+                                         validation_level=level)
+        self.assertIsInstance(validation, netlogon.netr_SamInfo6)
+
+        base = validation.base
+
+        # Check some properties of the base structure.
+        self.assertEqual(user_rid, base.rid)
+        self.assertEqual(security.DOMAIN_RID_USERS, base.primary_gid)
+        self.assertEqual(samdb.get_domain_sid(), str(base.domain_sid))
+        self.assertTrue(expected_flags & base.user_flags,
+                        f'0x{expected_flags:x} unexpectedly reset in '
+                        f'user_flags (0x{base.user_flags:x})')
+
+        # Check we have two groups in the base.
+        self.assertEqual(2, base.groups.count)
+
+        rids = base.groups.rids
+
+        # The first group should be Domain Users.
+        self.assertEqual(security.DOMAIN_RID_USERS, rids[0].rid)
+        self.assertEqual(self.default_attrs, rids[0].attributes)
+
+        # The second should be our universal group.
+        self.assertEqual(universal_rid, rids[1].rid)
+        self.assertEqual(self.default_attrs, rids[1].attributes)
+
+        # Check that we have one group in the SIDs array.
+        self.assertEqual(1, validation.sidcount)
+
+        sids = validation.sids
+
+        # That group should be our domain-local group.
+        self.assertEqual(domain_local_sid, str(sids[0].sid))
+        self.assertEqual(self.resource_attrs, sids[0].attributes)
+
     # Get a ticket with the SIDs in the PAC replaced with ones we specify. This
     # is useful for creating arbitrary tickets that can be used to perform a
     # TGS-REQ.
