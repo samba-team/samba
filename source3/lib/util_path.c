@@ -310,6 +310,11 @@ bool extract_snapshot_token(char *fname, NTTIME *twrp)
 	return extract_snapshot_token_internal(fname, twrp, '/');
 }
 
+bool clistr_smb2_extract_snapshot_token(char *fname, NTTIME *twrp)
+{
+	return extract_snapshot_token_internal(fname, twrp, '\\');
+}
+
 /*
  * Take two absolute paths, figure out if "subdir" is a proper
  * subdirectory of "parent". Return the component relative to the
