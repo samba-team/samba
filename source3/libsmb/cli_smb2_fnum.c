@@ -158,9 +158,9 @@ static uint8_t flags_to_smb2_oplock(uint32_t create_flags)
  if this hasn't already been done.
 ***************************************************************/
 
-static const char *smb2_dfs_share_path(TALLOC_CTX *ctx,
-				       struct cli_state *cli,
-				       const char *path)
+static char *smb2_dfs_share_path(TALLOC_CTX *ctx,
+				 struct cli_state *cli,
+				 char *path)
 {
 	bool is_dfs = smbXcli_conn_dfs_supported(cli->conn) &&
 			smbXcli_tcon_is_dfs_share(cli->smb2.tcon);
@@ -210,7 +210,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct cli_state *cli,
-	const char *fname,
+	const char *fname_in,
 	uint32_t create_flags,
 	uint32_t impersonation_level,
 	uint32_t desired_access,
@@ -222,6 +222,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_smb2_create_fnum_state *state;
+	char *fname = NULL;
 	size_t fname_len = 0;
 	const char *startp = NULL;
 	const char *endp = NULL;
@@ -234,6 +235,11 @@ struct tevent_req *cli_smb2_create_fnum_send(
 		return NULL;
 	}
 	state->cli = cli;
+
+	fname = talloc_strdup(state, fname_in);
+	if (tevent_req_nomem(fname, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	if (cli->backup_intent) {
 		create_options |= FILE_OPEN_FOR_BACKUP_INTENT;
