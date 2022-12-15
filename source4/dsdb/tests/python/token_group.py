@@ -668,7 +668,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         memberOf = set()
         # Add the primary group
         primary_group_sid = "%s-%d" % (domain_sid, user_info.primary_gid)
-        res2 = self.admin_ldb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
+        res2 = self.admin_ldb.search(base="<SID=%s>" % primary_group_sid, scope=ldb.SCOPE_BASE,
                                      attrs=[])
 
         memberOf.add(res2[0].dn.get_casefold())
