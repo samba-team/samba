@@ -28,6 +28,8 @@
 
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
+#define PRIMARY_SIDS_COUNT 2
+#define REMAINING_SIDS_INDEX 2
 
 /*
   return a blank security token

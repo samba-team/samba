@@ -71,7 +71,7 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 			       el->num_values + 1);
 	W_ERROR_HAVE_NO_MEMORY(*sids);
 
-	(*sids)[0] = *primary_sid;
+	(*sids)[PRIMARY_USER_SID_INDEX] = *primary_sid;
 
 	for (i = 0; i<el->num_values; i++) {
 		enum ndr_err_code ndr_err;
@@ -204,7 +204,7 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 	}
 
 	/* The RODC can replicate and print tickets for itself. */
-	if (dom_sid_equal(&token_sids[0], rodc_machine_account_sid)) {
+	if (dom_sid_equal(&token_sids[PRIMARY_USER_SID_INDEX], rodc_machine_account_sid)) {
 		TALLOC_FREE(frame);
 		return WERR_OK;
 	}

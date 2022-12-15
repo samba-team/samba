@@ -330,7 +330,7 @@ static WERROR gp_reg_del_groupmembership(TALLOC_CTX *mem_ctx,
 {
 	const char *path = NULL;
 
-	path = gp_reg_groupmembership_path(mem_ctx, &token->sids[0],
+	path = gp_reg_groupmembership_path(mem_ctx, &token->sids[PRIMARY_USER_SID_INDEX],
 					   flags);
 	W_ERROR_HAVE_NO_MEMORY(path);
 
@@ -353,7 +353,7 @@ static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 	const char *path = NULL;
 	int count = 0;
 
-	path = gp_reg_groupmembership_path(mem_ctx, &token->sids[0],
+	path = gp_reg_groupmembership_path(mem_ctx, &token->sids[PRIMARY_USER_SID_INDEX],
 					   flags);
 	W_ERROR_HAVE_NO_MEMORY(path);
 
@@ -487,7 +487,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	werr = gp_secure_key(mem_ctx, flags, reg_ctx->curr_key,
-			     &token->sids[0]);
+			     &token->sids[PRIMARY_USER_SID_INDEX]);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("failed to secure key: %s\n", win_errstr(werr)));
 		goto done;
@@ -499,7 +499,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	subkeyname = gp_req_state_path(mem_ctx, &token->sids[0], flags);
+	subkeyname = gp_req_state_path(mem_ctx, &token->sids[PRIMARY_USER_SID_INDEX], flags);
 	if (!subkeyname) {
 		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
@@ -998,7 +998,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 		case GP_REG_ACTION_SEC_KEY_SET:
 			werr = gp_secure_key(mem_ctx, flags,
 					     key,
-					     &token->sids[0]);
+					     &token->sids[PRIMARY_USER_SID_INDEX]);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("reg_apply_registry_entry: "
 					"gp_secure_key failed: %s\n",

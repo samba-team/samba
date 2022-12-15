@@ -371,7 +371,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 	}
 
 	/* We don't put the user and group SIDs in there */
-	for (i=2; i<user_info_dc->num_sids; i++) {
+	for (i=REMAINING_SIDS_INDEX; i<user_info_dc->num_sids; i++) {
 		struct auth_SidAttr *group_sid = &user_info_dc->sids[i];
 		bool belongs_in_base = is_base_sid(group_sid, sam6->base.domain_sid);
 		if (belongs_in_base) {
@@ -668,7 +668,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	user_info_dc->num_sids = 2;
+	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
 
 	user_info_dc->sids = talloc_array(user_info_dc, struct auth_SidAttr,  user_info_dc->num_sids + base->groups.count);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);

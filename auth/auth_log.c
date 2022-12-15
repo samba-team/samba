@@ -407,7 +407,7 @@ static void log_successful_authz_event_json(
 		goto failure;
 	}
 	rc = json_add_sid(
-	    &authorization, "sid", &session_info->security_token->sids[0]);
+	    &authorization, "sid", &session_info->security_token->sids[PRIMARY_USER_SID_INDEX]);
 	if (rc != 0) {
 		goto failure;
 	}
@@ -758,7 +758,7 @@ static void log_successful_authz_event_human_readable(
 		auth_type,
 		log_escape(frame, session_info->info->domain_name),
 		log_escape(frame, session_info->info->account_name),
-		dom_sid_str_buf(&session_info->security_token->sids[0],
+		dom_sid_str_buf(&session_info->security_token->sids[PRIMARY_USER_SID_INDEX],
 				&sid_buf),
 		ts,
 		remote_str,

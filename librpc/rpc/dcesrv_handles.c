@@ -277,7 +277,7 @@ NTSTATUS _dcesrv_iface_state_store_assoc(struct dcesrv_call_state *call,
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(call);
 	const struct dom_sid *owner =
-		&session_info->security_token->sids[0];
+		&session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 	NTSTATUS status;
 
 	status = dcesrv_iface_state_store(call->conn->assoc_group,
@@ -302,7 +302,7 @@ void *_dcesrv_iface_state_find_assoc(struct dcesrv_call_state *call, uint64_t ma
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(call);
 	const struct dom_sid *owner =
-		&session_info->security_token->sids[0];
+		&session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 	void *ptr = NULL;
 
 	ptr = dcesrv_iface_state_find(call->conn->assoc_group,
@@ -328,7 +328,7 @@ NTSTATUS _dcesrv_iface_state_store_conn(struct dcesrv_call_state *call,
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(call);
 	const struct dom_sid *owner =
-		&session_info->security_token->sids[0];
+		&session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 	NTSTATUS status;
 
 	status = dcesrv_iface_state_store(call->conn->assoc_group,
@@ -353,7 +353,7 @@ void *_dcesrv_iface_state_find_conn(struct dcesrv_call_state *call, uint64_t mag
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(call);
 	const struct dom_sid *owner =
-		&session_info->security_token->sids[0];
+		&session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 	void *ptr = NULL;
 
 	ptr = dcesrv_iface_state_find(call->conn->assoc_group,

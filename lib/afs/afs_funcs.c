@@ -252,7 +252,7 @@ bool afs_login(connection_struct *conn)
 		return false;
 	}
 
-	user_sid = &conn->session_info->security_token->sids[0];
+	user_sid = &conn->session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 	afs_username = talloc_string_sub(talloc_tos(),
 					afs_username,
 					"%s",

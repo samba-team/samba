@@ -132,7 +132,7 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT(pac_requester_sid);
 
-		pac_requester_sid.requester_sid.sid = info->sids[0].sid;
+		pac_requester_sid.requester_sid.sid = info->sids[PRIMARY_USER_SID_INDEX].sid;
 
 		ndr_err = ndr_push_union_blob(requester_sid_blob, mem_ctx,
 					      &pac_requester_sid,
@@ -179,7 +179,7 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 		= info->info->account_name;
 
 	pac_upn.upn_dns_info.ex.sam_name_and_sid.objectsid
-		= &info->sids[0].sid;
+		= &info->sids[PRIMARY_USER_SID_INDEX].sid;
 
 	ndr_err = ndr_push_union_blob(upn_data, mem_ctx, &pac_upn,
 				      PAC_TYPE_UPN_DNS_INFO,
@@ -1326,7 +1326,7 @@ krb5_error_code samba_kdc_validate_pac_blob(
 			goto out;
 		}
 
-		pac_sid = pac_user_info->sids[0].sid;
+		pac_sid = pac_user_info->sids[PRIMARY_USER_SID_INDEX].sid;
 	} else if (code != 0) {
 		goto out;
 	}

@@ -149,7 +149,7 @@ const struct dom_sid *dsdb_audit_get_actual_sid(struct ldb_context *ldb)
 	if (user_token == NULL) {
 		return NULL;
 	}
-	return &user_token->sids[0];
+	return &user_token->sids[PRIMARY_USER_SID_INDEX];
 }
 /*
  * @brief get the ldb error string.
@@ -196,7 +196,7 @@ const struct dom_sid *dsdb_audit_get_user_sid(const struct ldb_module *module)
 	if (user_token == NULL) {
 		return NULL;
 	}
-	return &user_token->sids[0];
+	return &user_token->sids[PRIMARY_USER_SID_INDEX];
 
 }
 

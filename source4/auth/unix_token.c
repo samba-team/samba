@@ -55,7 +55,7 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	}
 
 	/* we can't do unix security without a user and group */
-	if (token->num_sids < 2) {
+	if (token->num_sids < PRIMARY_SIDS_COUNT) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -76,7 +76,7 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	g = token->num_sids;
-	if (ids[0].xid.type != ID_TYPE_BOTH) {
+	if (ids[PRIMARY_USER_SID_INDEX].xid.type != ID_TYPE_BOTH) {
 		g--;
 	}
 	(*sec)->ngroups = g;
@@ -84,36 +84,36 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
 
 	g=0;
-	if (ids[0].xid.type == ID_TYPE_BOTH) {
+	if (ids[PRIMARY_USER_SID_INDEX].xid.type == ID_TYPE_BOTH) {
 		(*sec)->uid = ids[0].xid.id;
 		(*sec)->groups[g] = ids[0].xid.id;
 		g++;
-	} else if (ids[0].xid.type == ID_TYPE_UID) {
+	} else if (ids[PRIMARY_USER_SID_INDEX].xid.type == ID_TYPE_UID) {
 		(*sec)->uid = ids[0].xid.id;
 	} else {
 		struct dom_sid_buf buf;
 		DEBUG(0, ("Unable to convert first SID (%s) in user token to a UID.  Conversion was returned as type %d, full token:\n",
-			  dom_sid_str_buf(ids[0].sid, &buf),
-			  (int)ids[0].xid.type));
+			  dom_sid_str_buf(ids[PRIMARY_USER_SID_INDEX].sid, &buf),
+			  (int)ids[PRIMARY_USER_SID_INDEX].xid.type));
 		security_token_debug(DBGC_AUTH, 0, token);
 		return NT_STATUS_INVALID_SID;
 	}
 
-	if (ids[1].xid.type == ID_TYPE_BOTH ||
-	    ids[1].xid.type == ID_TYPE_GID) {
-		(*sec)->gid = ids[1].xid.id;
-		(*sec)->groups[g] = ids[1].xid.id;
+	if (ids[PRIMARY_GROUP_SID_INDEX].xid.type == ID_TYPE_BOTH ||
+	    ids[PRIMARY_GROUP_SID_INDEX].xid.type == ID_TYPE_GID) {
+		(*sec)->gid = ids[PRIMARY_GROUP_SID_INDEX].xid.id;
+		(*sec)->groups[g] = ids[PRIMARY_GROUP_SID_INDEX].xid.id;
 		g++;
 	} else {
 		struct dom_sid_buf buf;
 		DEBUG(0, ("Unable to convert second SID (%s) in user token to a GID.  Conversion was returned as type %d, full token:\n",
-			  dom_sid_str_buf(ids[1].sid, &buf),
-			  (int)ids[1].xid.type));
+			  dom_sid_str_buf(ids[PRIMARY_GROUP_SID_INDEX].sid, &buf),
+			  (int)ids[PRIMARY_GROUP_SID_INDEX].xid.type));
 		security_token_debug(DBGC_AUTH, 0, token);
 		return NT_STATUS_INVALID_SID;
 	}
 
-	for (s=2; s < token->num_sids; s++) {
+	for (s=REMAINING_SIDS_INDEX; s < token->num_sids; s++) {
 		if (ids[s].xid.type == ID_TYPE_BOTH ||
 		    ids[s].xid.type == ID_TYPE_GID) {
 			(*sec)->groups[g] = ids[s].xid.id;
