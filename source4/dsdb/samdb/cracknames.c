@@ -305,10 +305,10 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			     samdb_partitions_dn(sam_ctx, mem_ctx),
 			     LDB_SCOPE_ONELEVEL,
 			     domain_attrs,
-			     "(&(objectClass=crossRef)(|(dnsRoot=%s)(netbiosName=%s))(systemFlags:%s:=%u))",
+			     "(&(objectClass=crossRef)(|(dnsRoot=%s)(netbiosName=%s))"
+			     "(systemFlags:"LDB_OID_COMPARATOR_AND":=%u))",
 			     ldb_binary_encode_string(mem_ctx, realm),
 			     ldb_binary_encode_string(mem_ctx, realm),
-			     LDB_OID_COMPARATOR_AND,
 			     SYSTEM_FLAG_CR_NTDS_DOMAIN);
 	TALLOC_FREE(realm);
 

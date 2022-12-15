@@ -509,9 +509,10 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	 *
 	 * Thanks to Ralf Haferkamp for input and testing - Guenther */
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectCategory=group)(&(groupType:dn:%s:=%d)(!(groupType:dn:%s:=%d))))",
-				 ADS_LDAP_MATCHING_RULE_BIT_AND, GROUP_TYPE_SECURITY_ENABLED,
-				 ADS_LDAP_MATCHING_RULE_BIT_AND,
+	filter = talloc_asprintf(mem_ctx, "(&(objectCategory=group)"
+				 "(&(groupType:dn:"ADS_LDAP_MATCHING_RULE_BIT_AND":=%d)"
+				 "(!(groupType:dn:"ADS_LDAP_MATCHING_RULE_BIT_AND":=%d))))",
+                                GROUP_TYPE_SECURITY_ENABLED,
 				 enum_dom_local_groups ? GROUP_TYPE_BUILTIN_LOCAL_GROUP : GROUP_TYPE_RESOURCE_GROUP);
 
 	if (filter == NULL) {
@@ -686,9 +687,9 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	}
 
 	ldap_exp = talloc_asprintf(mem_ctx,
-		"(&(member=%s)(objectCategory=group)(groupType:dn:%s:=%d))",
+		"(&(member=%s)(objectCategory=group)"
+		"(groupType:dn:"ADS_LDAP_MATCHING_RULE_BIT_AND":=%d))",
 		escaped_dn,
-		ADS_LDAP_MATCHING_RULE_BIT_AND,
 		GROUP_TYPE_SECURITY_ENABLED);
 	if (!ldap_exp) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));

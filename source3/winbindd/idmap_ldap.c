@@ -936,8 +936,7 @@ again:
 		bidx = idx;
 		for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
 			struct dom_sid_buf buf;
-			filter = talloc_asprintf_append_buffer(filter, "(%s=%s)",
-					LDAP_ATTRIBUTE_SID,
+			filter = talloc_asprintf_append_buffer(filter, "("LDAP_ATTRIBUTE_SID"=%s)",
 					dom_sid_str_buf(ids[idx]->sid, &buf));
 			CHECK_ALLOC_DONE(filter);
 		}
