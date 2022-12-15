@@ -6059,8 +6059,8 @@ bool dsdb_objects_have_same_nc(struct ldb_context *ldb,
 		ret = LDB_ERR_OTHER;
 	}
 	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Failed to find base DN for source %s\n",
-			ldb_dn_get_linearized(source_dn));
+		DBG_ERR("Failed to find base DN for source %s: %s\n",
+			ldb_dn_get_linearized(source_dn), ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return true;
 	}
@@ -6071,8 +6071,8 @@ bool dsdb_objects_have_same_nc(struct ldb_context *ldb,
 		ret = LDB_ERR_OTHER;
 	}
 	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Failed to find base DN for target %s\n",
-			ldb_dn_get_linearized(target_dn));
+		DBG_ERR("Failed to find base DN for target %s: %s\n",
+			ldb_dn_get_linearized(target_dn), ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return true;
 	}
