@@ -1,4 +1,153 @@
                    ==============================
+                   Release Notes for Samba 4.16.8
+                         December 15, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.16 release series.
+It also contains security changes in order to address the following defects
+
+o CVE-2022-37966: This is the Samba CVE for the Windows Kerberos
+                  RC4-HMAC Elevation of Privilege Vulnerability
+                  disclosed by Microsoft on Nov 8 2022.
+
+                  A Samba Active Directory DC will issue weak rc4-hmac
+                  session keys for use between modern clients and servers
+                  despite all modern Kerberos implementations supporting
+                  the aes256-cts-hmac-sha1-96 cipher.
+
+                  On Samba Active Directory DCs and members
+                  'kerberos encryption types = legacy' would force
+                  rc4-hmac as a client even if the server supports
+                  aes128-cts-hmac-sha1-96 and/or aes256-cts-hmac-sha1-96.
+
+                  https://www.samba.org/samba/security/CVE-2022-37966.html
+
+o CVE-2022-37967: This is the Samba CVE for the Windows
+                  Kerberos Elevation of Privilege Vulnerability
+                  disclosed by Microsoft on Nov 8 2022.
+
+                  A service account with the special constrained
+                  delegation permission could forge a more powerful
+                  ticket than the one it was presented with.
+
+                  https://www.samba.org/samba/security/CVE-2022-37967.html
+
+o CVE-2022-38023: The "RC4" protection of the NetLogon Secure channel uses the
+                  same algorithms as rc4-hmac cryptography in Kerberos,
+                  and so must also be assumed to be weak.
+
+                  https://www.samba.org/samba/security/CVE-2022-38023.html
+
+Note that there are several important behavior changes
+included in this release, which may cause compatibility problems
+interacting with system still expecting the former behavior.
+Please read the advisories of CVE-2022-37966,
+CVE-2022-37967 and CVE-2022-38023 carefully!
+
+samba-tool got a new 'domain trust modify' subcommand
+-----------------------------------------------------
+
+This allows "msDS-SupportedEncryptionTypes" to be changed
+on trustedDomain objects. Even against remote DCs (including Windows)
+using the --local-dc-ipaddress= (and other --local-dc-* options).
+See 'samba-tool domain trust modify --help' for further details.
+
+smb.conf changes
+----------------
+
+  Parameter Name                               Description             Default
+  --------------                               -----------             -------
+  allow nt4 crypto                             Deprecated              no
+  allow nt4 crypto:COMPUTERACCOUNT             New
+  kdc default domain supported enctypes        New (see manpage)
+  kdc supported enctypes                       New (see manpage)
+  kdc force enable rc4 weak session keys       New                     No
+  reject md5 clients                           New Default, Deprecated Yes
+  reject md5 servers                           New Default, Deprecated Yes
+  server schannel                              Deprecated              Yes
+  server schannel require seal                 New, Deprecated         Yes
+  server schannel require seal:COMPUTERACCOUNT New
+  winbind sealed pipes                         Deprecated              Yes
+
+Changes since 4.16.7
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15224: pam_winbind uses time_t and pointers assuming they are of the
+     same size.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14929: CVE-2022-44640 [SECURITY] Upstream Heimdal free of
+     user-controlled pointer in FAST.
+   * BUG 15219: Heimdal session key selection in AS-REQ examines wrong entry.
+   * BUG 15237: CVE-2022-37966.
+   * BUG 15258: filter-subunit is inefficient with large numbers of knownfails.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15240: CVE-2022-38023.
+   * BUG 15252: smbd allows setting FILE_ATTRIBUTE_TEMPORARY on directories.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13135: The KDC logic arround msDs-supportedEncryptionTypes differs from
+     Windows.
+   * BUG 14611: CVE-2021-20251 [SECURITY] Bad password count not incremented
+     atomically.
+   * BUG 15203: CVE-2022-42898  [SECURITY] krb5_pac_parse() buffer parsing
+     vulnerability.
+   * BUG 15219: Heimdal session key selection in AS-REQ examines wrong entry.
+   * BUG 15230: Memory leak in snprintf replacement functions.
+   * BUG 15237: CVE-2022-37966.
+   * BUG 15240: CVE-2022-38023.
+   * BUG 15253: RODC doesn't reset badPwdCount reliable via an RWDC
+     (CVE-2021-20251 regression).
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15224: pam_winbind uses time_t and pointers assuming they are of the
+     same size.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15237: CVE-2022-37966.
+   * BUG 15243: %U for include directive doesn't work for share listing
+     (netshareenum).
+   * BUG 15257: Stack smashing in net offlinejoin requestodj.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15197: Windows 11 22H2 and Samba-AD 4.15 Kerberos login issue.
+   * BUG 15219: Heimdal session key selection in AS-REQ examines wrong entry.
+   * BUG 15231: CVE-2022-37967.
+   * BUG 15237: CVE-2022-37966.
+
+o  Nicolas Williams <nico@twosigma.com>
+   * BUG 14929: CVE-2022-44640 [SECURITY] Upstream Heimdal free of
+     user-controlled pointer in FAST.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.16.7
                          November 15, 2022
                    ==============================
@@ -43,8 +192,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.16.6
                           October 25, 2022
