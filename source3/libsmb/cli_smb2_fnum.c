@@ -224,8 +224,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	struct cli_smb2_create_fnum_state *state;
 	char *fname = NULL;
 	size_t fname_len = 0;
-	const char *startp = NULL;
-	const char *endp = NULL;
+	bool have_twrp;
 	NTTIME ntt;
 	NTSTATUS status;
 
@@ -246,23 +245,8 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	}
 
 	/* Check for @GMT- paths. Remove the @GMT and turn into TWrp if so. */
-	fname_len = strlen(fname);
-	if (clistr_is_previous_version_path(fname, &startp, &endp, &ntt)) {
-		size_t len_before_gmt = startp - fname;
-		size_t len_after_gmt = fname + fname_len - endp;
-
-		char *new_fname = talloc_array(state, char,
-				len_before_gmt + len_after_gmt + 1);
-
-		if (tevent_req_nomem(new_fname, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		memcpy(new_fname, fname, len_before_gmt);
-		memcpy(new_fname + len_before_gmt, endp, len_after_gmt + 1);
-		fname = new_fname;
-		fname_len = len_before_gmt + len_after_gmt;
-
+	have_twrp = clistr_smb2_extract_snapshot_token(fname, &ntt);
+	if (have_twrp) {
 		status = smb2_create_blob_add(
 			state,
 			&state->in_cblobs,
