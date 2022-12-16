@@ -1717,7 +1717,7 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 	 * either the SAM or BUILTIN
 	 */
 
-	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 				 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;

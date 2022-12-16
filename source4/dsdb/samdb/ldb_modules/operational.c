@@ -194,18 +194,29 @@ static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	/* only return security groups */
 	switch(type) {
 	case TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u)(|(groupType:1.2.840.113556.1.4.803:=%u)(groupType:1.2.840.113556.1.4.803:=%u)))",
-					 GROUP_TYPE_SECURITY_ENABLED, GROUP_TYPE_ACCOUNT_GROUP, GROUP_TYPE_UNIVERSAL_GROUP);
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(objectClass=group)"
+					 "(groupType:"LDB_OID_COMPARATOR_AND":=%u)"
+					 "(|(groupType:"LDB_OID_COMPARATOR_AND":=%u)"
+					 "(groupType:"LDB_OID_COMPARATOR_AND":=%u)))",
+					 GROUP_TYPE_SECURITY_ENABLED,
+					 GROUP_TYPE_ACCOUNT_GROUP,
+					 GROUP_TYPE_UNIVERSAL_GROUP);
 		break;
 	case TOKEN_GROUPS_NO_GC_ACCEPTABLE:
 	case TOKEN_GROUPS:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(objectClass=group)"
+					 "(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 					 GROUP_TYPE_SECURITY_ENABLED);
 		break;
 
 	/* for RevMembGetAccountGroups, exclude built-in groups */
 	case ACCOUNT_GROUPS:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))",
+		filter = talloc_asprintf(mem_ctx,
+					 "(&(objectClass=group)"
+					 "(!(groupType:"LDB_OID_COMPARATOR_AND":=%u))"
+					 "(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 					 GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
 		break;
 	}

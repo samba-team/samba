@@ -177,7 +177,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &sids[PRIMARY_USER_SID_INDEX].sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (sam_ctx) {
-		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 					 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
 		/* Search for each group in the token */

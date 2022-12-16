@@ -315,13 +315,13 @@ static NTSTATUS authsam_domain_group_filter(TALLOC_CTX *mem_ctx,
 	 * Skip all builtin groups, they're added later.
 	 */
 	talloc_asprintf_addbuf(&filter,
-			       "(!(groupType:1.2.840.113556.1.4.803:=%u))",
+			       "(!(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 			       GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 	/*
 	 * Only include security groups.
 	 */
 	talloc_asprintf_addbuf(&filter,
-			       "(groupType:1.2.840.113556.1.4.803:=%u))",
+			       "(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 			       GROUP_TYPE_SECURITY_ENABLED);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
