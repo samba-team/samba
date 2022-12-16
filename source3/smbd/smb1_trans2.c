@@ -5550,10 +5550,10 @@ void reply_transs2(struct smb_request *req)
 	/* Revise state->total_param and state->total_data in case they have
 	   changed downwards */
 
-	if (SVAL(req->vwv+0, 0) < state->total_param)
-		state->total_param = SVAL(req->vwv+0, 0);
-	if (SVAL(req->vwv+1, 0) < state->total_data)
-		state->total_data = SVAL(req->vwv+1, 0);
+	state->total_param = MIN(PULL_LE_U16(req->vwv + 0, 0),
+				 state->total_param);
+	state->total_data = MIN(PULL_LE_U16(req->vwv + 1, 0),
+				state->total_data);
 
 	pcnt = SVAL(req->vwv+2, 0);
 	poff = SVAL(req->vwv+3, 0);
