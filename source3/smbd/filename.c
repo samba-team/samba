@@ -931,8 +931,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	NTTIME twrp,
 	struct files_struct **_dirfsp,
 	struct smb_filename **_smb_fname,
-	char **_substitute,
-	size_t *_unparsed)
+	struct open_symlink_err **_symlink_err)
 {
 	struct smb_filename *smb_dirname = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
@@ -1054,11 +1053,8 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 
 			SMB_ASSERT(name_in_len >= dirname_len);
 
-			*_substitute = talloc_move(
-				mem_ctx,
-				&symlink_err->reparse->substitute_name);
-			*_unparsed = symlink_err->unparsed +
-				     (name_in_len - dirname_len);
+			symlink_err->unparsed += (name_in_len - dirname_len);
+			*_symlink_err = symlink_err;
 
 			goto fail;
 		}
@@ -1347,9 +1343,9 @@ NTSTATUS filename_convert_dirfsp(
 	struct files_struct **_dirfsp,
 	struct smb_filename **_smb_fname)
 {
-	char *substitute = NULL;
-	size_t unparsed = 0;
+	struct open_symlink_err *symlink_err = NULL;
 	NTSTATUS status;
+	char *substitute = NULL;
 	char *target = NULL;
 	size_t symlink_redirects = 0;
 
@@ -1358,16 +1354,14 @@ next:
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	status = filename_convert_dirfsp_nosymlink(
-		mem_ctx,
-		conn,
-		name_in,
-		ucf_flags,
-		twrp,
-		_dirfsp,
-		_smb_fname,
-		&substitute,
-		&unparsed);
+	status = filename_convert_dirfsp_nosymlink(mem_ctx,
+						   conn,
+						   name_in,
+						   ucf_flags,
+						   twrp,
+						   _dirfsp,
+						   _smb_fname,
+						   &symlink_err);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		return status;
@@ -1389,13 +1383,15 @@ next:
 	 * resolve all symlinks locally.
 	 */
 
-	status = safe_symlink_target_path(
-		mem_ctx,
-		conn->connectpath,
-		name_in,
-		substitute,
-		unparsed,
-		&target);
+	substitute = symlink_err->reparse->substitute_name;
+
+	status = safe_symlink_target_path(mem_ctx,
+					  conn->connectpath,
+					  name_in,
+					  substitute,
+					  symlink_err->unparsed,
+					  &target);
+	TALLOC_FREE(symlink_err);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
