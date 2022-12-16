@@ -141,6 +141,58 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(len(cc[0][1]),8)
         c.close(fnum)
 
+    def test_libsmb_TortureCaseSensitivity(self):
+        testdir = "test_libsmb_torture_case_sensitivity"
+        filename = "file"
+        filepath = testdir + "/" + filename
+
+        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+
+        try:
+            c.deltree(testdir)
+        except:
+            pass
+
+        c.mkdir(testdir)
+
+        try:
+            # Now check for all possible upper-/lowercase combinations:
+            # - testdir/file
+            # - TESTDIR/file
+            # - testdir/FILE
+            # - TESTDIR/FILE
+
+            dircases = [testdir, testdir, testdir.upper(), testdir.upper()]
+            filecases = [filename, filename.upper(), filename, filename.upper()]
+            tcases = [{'dir':dir, 'file':file} for dir,file in zip(dircases,filecases)]
+
+            for tcase in tcases:
+                testpath = tcase['dir'] + "/" + tcase['file']
+
+                # Create the testfile
+                h = c.create(filepath,
+                             DesiredAccess=security.SEC_FILE_ALL,
+                             CreateDisposition=libsmb.FILE_OPEN_IF)
+                c.close(h)
+
+                # Open
+                c.loadfile(testpath)
+
+                # Search
+                ls = [f['name'] for f in c.list(tcase['dir'], mask=tcase['file'])]
+                self.assertIn(filename, ls, msg='When searching for "%s" not found in "%s"' % (tcase['file'], tcase['dir']))
+
+                # Rename
+                c.rename(testpath, tcase['dir'] + "/tmp")
+                c.rename(tcase['dir'] + "/TMP", filepath)
+                c.loadfile(testpath)
+
+                # Delete
+                c.unlink(testpath)
+
+        finally:
+            c.deltree(testdir)
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
