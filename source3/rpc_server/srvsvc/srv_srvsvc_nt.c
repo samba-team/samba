@@ -540,6 +540,7 @@ static bool is_hidden_share(int snum)
 static bool is_enumeration_allowed(struct pipes_struct *p,
                                    int snum)
 {
+	bool allowed;
 	struct dcesrv_call_state *dce_call = p->dce_call;
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
@@ -556,9 +557,19 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
 		return false;
 	}
 
-	return share_access_check(session_info->security_token,
-				  lp_servicename(talloc_tos(), lp_sub, snum),
-				  FILE_READ_DATA, NULL);
+
+	/*
+	 * share_access_check() must be opened as root
+	 * because it ultimately gets a R/W db handle on share_info.tdb
+	 * which has 0o600 permissions
+	 */
+	become_root();
+	allowed = share_access_check(session_info->security_token,
+				     lp_servicename(talloc_tos(), lp_sub, snum),
+				     FILE_READ_DATA, NULL);
+	unbecome_root();
+
+	return allowed;
 }
 
 /****************************************************************************
