@@ -2794,6 +2794,20 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						 session_info->security_token,
 						 req10->naming_context,
 						 GUID_DRS_GET_CHANGES);
+
+	if (W_ERROR_EQUAL(werr, WERR_DS_DRA_BAD_NC)) {
+		/*
+		 * These extended operations need a different error if
+		 * the supplied DN can't be found
+		 */
+		switch (req10->extended_op) {
+		case DRSUAPI_EXOP_REPL_OBJ:
+		case DRSUAPI_EXOP_REPL_SECRET:
+			return WERR_DS_DRA_BAD_DN;
+		default:
+			return werr;
+		}
+	}
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
