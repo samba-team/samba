@@ -666,17 +666,17 @@ fail:
  * Split up name_in as sent by the client into a directory pathref fsp
  * and a relative smb_filename.
  */
-static NTSTATUS filename_convert_dirfsp_nosymlink(
-	TALLOC_CTX *mem_ctx,
-	connection_struct *conn,
-	struct files_struct *basedir,
-	const char *name_in,
-	uint32_t ucf_flags,
-	NTTIME twrp,
-	struct files_struct **_dirfsp,
-	struct smb_filename **_smb_fname,
-	struct smb_filename **_smb_fname_rel,
-	struct reparse_data_buffer **_symlink_err)
+NTSTATUS
+filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
+				  connection_struct *conn,
+				  struct files_struct *basedir,
+				  const char *name_in,
+				  uint32_t ucf_flags,
+				  NTTIME twrp,
+				  struct files_struct **_dirfsp,
+				  struct smb_filename **_smb_fname,
+				  struct smb_filename **_smb_fname_rel,
+				  struct reparse_data_buffer **_symlink_err)
 {
 	struct smb_filename *smb_dirname = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
