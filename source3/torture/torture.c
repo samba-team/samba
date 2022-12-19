@@ -8720,8 +8720,8 @@ static bool run_ea_symlink_test(int dummy)
 	}
 
 	if (num_eas != 0) {
-		printf("cli_get_ea_list_path failed (%s)\n",
-			nt_errstr(status));
+		printf("cli_get_ea_list_path found %zu eas, expected 0\n",
+		       num_eas);
 		goto out;
 	}
 
