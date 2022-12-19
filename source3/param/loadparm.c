@@ -2886,7 +2886,7 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 	/* if we have a current service, tidy it up before moving on */
 	bRetval = true;
 
-	if (iServiceIndex >= 0)
+	if ((iServiceIndex >= 0) && (ServicePtrs[iServiceIndex] != NULL))
 		bRetval = lpcfg_service_ok(ServicePtrs[iServiceIndex]);
 
 	/* if all is still well, move to the next record in the services array */
