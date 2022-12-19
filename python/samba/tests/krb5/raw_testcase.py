@@ -37,6 +37,7 @@ from pyasn1.codec.ber.encoder import BitStringEncoder
 
 from pyasn1.error import PyAsn1Error
 
+from samba.compression import huffman_decompress
 from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, security
 from samba.gensec import FEATURE_SEAL
@@ -109,7 +110,6 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_REQ_ENC_PA_REP
 )
 import samba.tests.krb5.kcrypto as kcrypto
-from samba.tests.krb5 import xpress
 
 
 def BitStringEncoder_encodeValue32(
@@ -3545,9 +3545,8 @@ class RawKerberosTest(TestCaseInTempDir):
                             f'{claims_type} unexpectedly not compressed '
                             f'({uncompressed_size} bytes uncompressed)')
 
-                claims_data = xpress.decompress(claims_data,
-                                                compression_format,
-                                                uncompressed_size)
+                    claims_data = huffman_decompress(claims_data,
+                                                     uncompressed_size)
 
                 claims_set = ndr_unpack(claims.CLAIMS_SET_NDR,
                                         claims_data)
