@@ -23,14 +23,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-void send_trans2_replies(connection_struct *conn,
-			struct smb_request *req,
-			NTSTATUS status,
-			 const char *params,
-			 int paramsize,
-			 const char *pdata,
-			 int datasize,
-			 int max_data_bytes);
 NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			    struct smb_request *req,
 			    const char *pdata,

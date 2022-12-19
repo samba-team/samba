@@ -56,14 +56,14 @@
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-void send_trans2_replies(connection_struct *conn,
-			struct smb_request *req,
-			NTSTATUS status,
-			 const char *params,
-			 int paramsize,
-			 const char *pdata,
-			 int datasize,
-			 int max_data_bytes)
+static void send_trans2_replies(connection_struct *conn,
+				struct smb_request *req,
+				NTSTATUS status,
+				const char *params,
+				int paramsize,
+				const char *pdata,
+				int datasize,
+				int max_data_bytes)
 {
 	/* As we are using a protocol > LANMAN1 then the max_send
 	 variable must have been set in the sessetupX call.
