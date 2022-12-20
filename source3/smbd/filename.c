@@ -35,16 +35,18 @@ uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 {
 	uint32_t ucf_flags = 0;
 
-	if (req != NULL) {
-		if (req->posix_pathnames) {
-			ucf_flags |= UCF_POSIX_PATHNAMES;
-		}
-		if (req->flags2 & FLAGS2_DFS_PATHNAMES) {
-			ucf_flags |= UCF_DFS_PATHNAME;
-		}
-		if (req->flags2 & FLAGS2_REPARSE_PATH) {
-			ucf_flags |= UCF_GMT_PATHNAME;
-		}
+	if (req == NULL) {
+		return 0;
+	}
+
+	if (req->posix_pathnames) {
+		ucf_flags |= UCF_POSIX_PATHNAMES;
+	}
+	if (req->flags2 & FLAGS2_DFS_PATHNAMES) {
+		ucf_flags |= UCF_DFS_PATHNAME;
+	}
+	if (req->flags2 & FLAGS2_REPARSE_PATH) {
+		ucf_flags |= UCF_GMT_PATHNAME;
 	}
 
 	return ucf_flags;
