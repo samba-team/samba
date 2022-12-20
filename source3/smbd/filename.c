@@ -1268,18 +1268,10 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 #endif
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+	    !VALID_STAT(smb_fname_rel->st)) {
 
 		char *normalized = NULL;
-
-		if (VALID_STAT(smb_fname_rel->st)) {
-			/*
-			 * NT_STATUS_OBJECT_NAME_NOT_FOUND is
-			 * misleading: The object exists but might be
-			 * a symlink pointing outside the share.
-			 */
-			goto fail;
-		}
 
 		/*
 		 * Creating a new file
