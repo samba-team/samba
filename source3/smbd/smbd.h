@@ -85,6 +85,10 @@ struct trans_state {
 /* #define UCF_UNIX_NAME_LOOKUP 0x00000010 is no longer used. */
 #define UCF_PREP_CREATEFILE		0x00000020
 /*
+ * Return a non-fsp smb_fname for a symlink
+ */
+#define UCF_LCOMP_LNK_OK                0x00000040
+/*
  * Use the same bit as FLAGS2_REPARSE_PATH
  * which means the same thing.
  */

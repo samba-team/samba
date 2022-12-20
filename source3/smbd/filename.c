@@ -41,6 +41,10 @@ uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 
 	if (req->posix_pathnames) {
 		ucf_flags |= UCF_POSIX_PATHNAMES;
+
+		if (!req->sconn->using_smb2) {
+			ucf_flags |= UCF_LCOMP_LNK_OK;
+		}
 	}
 	if (req->flags2 & FLAGS2_DFS_PATHNAMES) {
 		ucf_flags |= UCF_DFS_PATHNAME;
@@ -1251,7 +1255,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		 * In SMB1 posix mode, if this is a symlink,
 		 * allow access to the name with a NULL smb_fname->fsp.
 		 */
-		if (!conn->sconn->using_smb2 && posix) {
+		if (ucf_flags & UCF_LCOMP_LNK_OK) {
 			SMB_ASSERT(smb_fname_rel->fsp == NULL);
 			SMB_ASSERT(streamname == NULL);
 
