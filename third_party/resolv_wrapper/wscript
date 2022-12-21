@@ -3,7 +3,7 @@
 import os
 from waflib import Logs
 
-VERSION="1.1.7"
+VERSION="1.1.8"
 
 def configure(conf):
     if conf.CHECK_RESOLV_WRAPPER():

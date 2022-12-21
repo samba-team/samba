@@ -434,6 +434,8 @@ static int rwrap_create_fake_ptr_rr(const char *key,
 	return 0;
 }
 
+#define rwrap_randomid() 0xffff & getpid()
+
 /* Prepares a fake header with a single response. Advances header_blob */
 static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 			         size_t ancount, size_t arcount)
@@ -451,7 +453,7 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 	h.blob = *header_blob;
 	memset(h.blob, 0, NS_HFIXEDSZ);
 
-	h.header->id = res_randomid();		/* random query ID */
+	h.header->id = rwrap_randomid();	/* random query ID */
 	h.header->qr = 1;			/* response flag */
 	h.header->rd = 1;			/* recursion desired */
 	h.header->ra = 1;			/* recursion available */
