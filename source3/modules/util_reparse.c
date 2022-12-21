@@ -154,6 +154,45 @@ static NTSTATUS fsctl_get_reparse_point_dev(struct files_struct *fsp,
 		fsp, &reparse_data, ctx, _out_data, max_out_len, _out_len);
 }
 
+static NTSTATUS fsctl_get_reparse_point_lnk(struct files_struct *fsp,
+					    TALLOC_CTX *mem_ctx,
+					    uint8_t **_out_data,
+					    uint32_t max_out_len,
+					    uint32_t *_out_len)
+{
+	struct reparse_data_buffer *reparse = NULL;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *base_name = NULL;
+	NTSTATUS status;
+
+	status = parent_pathref(talloc_tos(),
+				fsp->conn->cwd_fsp,
+				fsp->fsp_name,
+				&parent_fname,
+				&base_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("parent_pathref(%s) failed: %s\n",
+			  fsp_str_dbg(fsp),
+			  nt_errstr(status));
+		return status;
+	}
+
+	status = read_symlink_reparse(talloc_tos(),
+				      parent_fname->fsp,
+				      base_name,
+				      &reparse);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("read_symlink_reparse failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	status = fsctl_get_reparse_point_int(
+		fsp, reparse, mem_ctx, _out_data, max_out_len, _out_len);
+	TALLOC_FREE(reparse);
+	return status;
+}
+
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t *_reparse_tag,
@@ -211,6 +250,11 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 			&out_data,
 			max_out_len,
 			&out_len);
+		break;
+	case S_IFLNK:
+		DBG_DEBUG("%s is a symlink\n", fsp_str_dbg(fsp));
+		status = fsctl_get_reparse_point_lnk(
+			fsp, mem_ctx, &out_data, max_out_len, &out_len);
 		break;
 	default:
 		break;
