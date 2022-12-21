@@ -16,7 +16,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from distutils.sysconfig import get_python_lib
+from sysconfig import get_path
 import platform
 
 try:
@@ -1298,7 +1298,11 @@ class builder(object):
             do_print('%s: Remaining consumers %u' % (self.name, len(self.consumers)))
             return
         (self.stage, self.cmd) = self.sequence[self.next]
-        self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(plat_specific=1, standard_lib=0, prefix=self.prefix))
+        self.cmd = self.cmd.replace("${PYTHON_PREFIX}",
+                                    get_path(name='platlib',
+                                             scheme="posix_prefix",
+                                             vars={"base": self.prefix,
+                                                   "platbase": self.prefix}))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
