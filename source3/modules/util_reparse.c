@@ -22,7 +22,7 @@
 #include "util_reparse.h"
 
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
-				 TALLOC_CTX *ctx,
+				 TALLOC_CTX *mem_ctx,
 				 char **out_data,
 				 uint32_t max_out_len,
 				 uint32_t *out_len)
@@ -32,7 +32,7 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 }
 
 NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
-				 TALLOC_CTX *ctx,
+				 TALLOC_CTX *mem_ctx,
 				 const uint8_t *in_data,
 				 uint32_t in_len)
 {
@@ -41,7 +41,7 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 }
 
 NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
-				 TALLOC_CTX *ctx,
+				 TALLOC_CTX *mem_ctx,
 				 const uint8_t *in_data,
 				 uint32_t in_len)
 {
