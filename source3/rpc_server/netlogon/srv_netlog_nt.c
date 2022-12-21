@@ -1081,7 +1081,6 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const char *opname = "<unknown>";
-	static bool warned_global_once = false;
 
 	if (creds_out != NULL) {
 		*creds_out = NULL;
@@ -1141,16 +1140,6 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 		TALLOC_FREE(creds);
 		ZERO_STRUCTP(return_authenticator);
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!schannel_global_required && !warned_global_once) {
-		/*
-		 * We want admins to notice their misconfiguration!
-		 */
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"Please configure 'server schannel = yes', "
-			"See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
-		warned_global_once = true;
 	}
 
 	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
@@ -2995,6 +2984,34 @@ NTSTATUS _netr_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/*
+ * Define the bind function that will be used by ndr_netlogon_scompat.c,
+ * included at the bottom of this file.
+ */
+#define DCESRV_INTERFACE_NETLOGON_BIND(context, iface) \
+       dcesrv_interface_netlogon_bind(context, iface)
+
+static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context *context,
+					       const struct dcesrv_interface *iface)
+{
+	struct loadparm_context *lp_ctx = context->conn->dce_ctx->lp_ctx;
+	int schannel = lpcfg_server_schannel(lp_ctx);
+	bool schannel_global_required = (schannel == true);
+	static bool warned_global_schannel_once = false;
+
+	if (!schannel_global_required && !warned_global_schannel_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		D_ERR("CVE-2020-1472(ZeroLogon): "
+		      "Please configure 'server schannel = yes' (the default), "
+		      "See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
+		warned_global_schannel_once = true;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /* include the generated boilerplate */
