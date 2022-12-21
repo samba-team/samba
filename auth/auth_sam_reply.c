@@ -270,6 +270,10 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 			sam->groups.rids[sam->groups.count].attributes = group_sid->attrs;
 			sam->groups.count += 1;
 		}
+
+		if (sam->groups.count == 0) {
+			TALLOC_FREE(sam->groups.rids);
+		}
 	}
 
 	sam->user_flags = info->user_flags; /* w2k3 uses NETLOGON_EXTRA_SIDS | NETLOGON_NTLMV2_ENABLED */
@@ -395,7 +399,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 	if (sam6->sidcount) {
 		sam6->base.user_flags |= NETLOGON_EXTRA_SIDS;
 	} else {
-		sam6->sids = NULL;
+		TALLOC_FREE(sam6->sids);
 	}
 
 	if (user_info_dc->info->dns_domain_name != NULL) {
