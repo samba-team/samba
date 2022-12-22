@@ -18,15 +18,8 @@ failed=0
 
 release_dir="$SRCDIR_ABS/source4/selftest/provisions/${RELEASE}"
 
-LDBDEL_BIN=ldbdel
-if [ -x "$BINDIR/ldbdel" ]; then
-	LDBDEL_BIN=$BINDIR/ldbdel
-fi
-
-samba_tdbrestore="tdbrestore"
-if [ -x "$BINDIR/tdbrestore" ]; then
-	samba_tdbrestore="$BINDIR/tdbrestore"
-fi
+ldbdel=$(system_or_builddir_binary ldbdel "${BINDIR}")
+samba_tdbrestore=$(system_or_builddir_binary tdbrestore "${BINDIR}")
 
 samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
 if [ ! -x $samba_undump ] || [ ! -d $release_dir ]; then
@@ -125,7 +118,7 @@ remove_dns_user()
 {
 	if [ x$RELEASE != x"release-4-0-0" ]; then
 		# This is done, because otherwise the upgrdeprovision will not run without --full
-		${LDBDEL_BIN} -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb cn=dns,cn=users,dc=${RELEASE},dc=samba,dc=corp
+		${ldbdel} -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb cn=dns,cn=users,dc=${RELEASE},dc=samba,dc=corp
 	fi
 }
 
