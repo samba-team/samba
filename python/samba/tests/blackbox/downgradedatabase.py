@@ -71,8 +71,12 @@ class DowngradeTestBase(BlackboxTestCase):
     def ldbdump_keys_pack_formats(self):
         # Get all comments from all partition dbs
         comments = []
+        ldbdump = "ldbdump"
+        if os.path.exists("bin/ldbdump"):
+            ldbdump = "bin/ldbdump"
+
         for db in self.dbs:
-            dump = check_output(["bin/ldbdump", "-i", db])
+            dump = check_output([ldbdump, "-i", db])
             dump = dump.decode("utf-8")
             dump = dump.split("\n")
             comments += [s for s in dump if s.startswith("#")]
