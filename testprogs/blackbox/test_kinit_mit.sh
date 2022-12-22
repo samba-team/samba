@@ -32,17 +32,11 @@ samba_texpect="$samba_bindir/texpect"
 samba_enableaccount="$samba_tool user enable"
 machineaccountccache="$samba_srcdir/scripting/bin/machineaccountccache"
 
-ldbmodify="ldbmodify"
-if [ -x "$samba_bindir/ldbmodify" ]; then
-	ldbmodify="$samba_bindir/ldbmodify"
-fi
-
-ldbsearch="ldbsearch"
-if [ -x "$samba_bindir/ldbsearch" ]; then
-	ldbsearch="$samba_bindir/ldbsearch"
-fi
-
 . $(dirname $0)/subunit.sh
+. "$(dirname "${0}")/common_test_fns.inc"
+
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 test_smbclient()
 {
