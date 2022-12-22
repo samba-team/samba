@@ -678,6 +678,18 @@ bld.SAMBA_LIBRARY('dcerpc-pkt-auth',
                    ''',
                   deps='dcerpc-binding gensec')
 
+bld.SAMBA_SUBSYSTEM('DCERPC_SERVER_NETLOGON',
+                    source='''
+                           rpc/server/netlogon/schannel_util.c
+                           ''',
+                    deps='''
+                         talloc
+                         util_str_escape
+                         samba-hostconfig
+                         NDR_NETLOGON
+                         dcerpc-server-core
+                         ''')
+
 bld.SAMBA_LIBRARY('dcerpc-server-core',
     source='''
            rpc/dcesrv_core.c
