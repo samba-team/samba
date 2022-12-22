@@ -288,6 +288,20 @@ sub setup_nt4_dc
 	server require schannel:schannel11\$ = no
 	server require schannel:torturetest\$ = no
 
+	server schannel require seal:schannel0\$ = no
+	server schannel require seal:schannel1\$ = no
+	server schannel require seal:schannel2\$ = no
+	server schannel require seal:schannel3\$ = no
+	server schannel require seal:schannel4\$ = no
+	server schannel require seal:schannel5\$ = no
+	server schannel require seal:schannel6\$ = no
+	server schannel require seal:schannel7\$ = no
+	server schannel require seal:schannel8\$ = no
+	server schannel require seal:schannel9\$ = no
+	server schannel require seal:schannel10\$ = no
+	server schannel require seal:schannel11\$ = no
+	server schannel require seal:torturetest\$ = no
+
 	fss: sequence timeout = 1
 	check parent directory delete on close = yes
 ";
