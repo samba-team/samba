@@ -2113,6 +2113,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	const char *user_dn_ext_str = NULL;
 	int ret;
 	const char * const noattrs[] = { NULL };
+	const char * const group_type_attrs[] = { "groupType", NULL };
+	unsigned group_type;
 
 	ret = dsdb_get_expected_new_values(ac,
 					   ac->msg,
@@ -2223,7 +2225,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	ret = dsdb_module_search(ac->module, ac, &group_res,
 				 ldb_get_default_basedn(ldb),
 				 LDB_SCOPE_SUBTREE,
-				 noattrs, search_flags,
+				 group_type_attrs, search_flags,
 				 ac->req,
 				 "(objectSid=%s)",
 				 ldap_encode_ndr_dom_sid(ac, new_sid));
@@ -2236,6 +2238,16 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 	new_prim_group_dn = group_res->msgs[0]->dn;
+
+	/* The new primary group must not be domain-local. */
+	group_type = ldb_msg_find_attr_as_uint(group_res->msgs[0], "groupType", 0);
+	if (group_type & GROUP_TYPE_RESOURCE_GROUP) {
+		return dsdb_module_werror(ac->module,
+					  LDB_ERR_UNWILLING_TO_PERFORM,
+					  WERR_MEMBER_NOT_IN_GROUP,
+					  "may not set resource group as primary group!");
+	}
+
 	new_prim_group_dn_ext_str = ldb_dn_get_extended_linearized(ac,
 							new_prim_group_dn, 1);
 	if (new_prim_group_dn_ext_str == NULL) {
