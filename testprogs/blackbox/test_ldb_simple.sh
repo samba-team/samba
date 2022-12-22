@@ -14,6 +14,7 @@ shift 2
 options="$*"
 
 . $(dirname $0)/subunit.sh
+. "$(dirname "${0}")/common_test_fns.inc"
 
 check()
 {
@@ -32,9 +33,7 @@ check()
 	return $status
 }
 
-export PATH="$BINDIR:$PATH"
-
-ldbsearch="$VALGRIND ldbsearch"
+ldbsearch="${VALGRIND} $(system_or_builddir_binary ldbsearch "${BINDIR}")"
 
 check "currentTime" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base currentTime || failed=$(expr $failed + 1)
 
