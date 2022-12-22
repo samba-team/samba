@@ -15,10 +15,7 @@ shift 1
 samba_tool="$BINDIR/samba-tool"
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-samba4kinit_binary=kinit
-if test -x $BINDIR/samba4kinit; then
-	samba4kinit_binary=$BINDIR/samba4kinit
-fi
+samba4kinit_binary=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
 
 CONFIG="--configfile=$PREFIX/etc/smb.conf"
 
