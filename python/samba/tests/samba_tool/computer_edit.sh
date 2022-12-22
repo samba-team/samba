@@ -15,6 +15,9 @@ PASSWORD="$3"
 
 STpath=$(pwd)
 . $STpath/testprogs/blackbox/subunit.sh
+. "${STpath}/testprogs/blackbox/common_test_fns.inc"
+
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 display_name="Björns laptop"
 display_name_b64="QmrDtnJucyBsYXB0b3A="
@@ -70,7 +73,7 @@ EOF
 
 get_attribute_base64()
 {
-	${STpath}/bin/ldbsearch '(sAMAccountName=testmachine1$)' displayName \
+	${ldbsearch} '(sAMAccountName=testmachine1$)' displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
