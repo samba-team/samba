@@ -100,6 +100,7 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
