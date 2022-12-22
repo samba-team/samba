@@ -17,6 +17,9 @@ DBPATH=$PREFIX/start-backup
 mkdir -p $DBPATH
 
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
+. "$(dirname ${0})/../../../testprogs/blackbox/common_test_fns.inc"
+
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
 
 do_provision()
 {
@@ -28,7 +31,7 @@ do_provision()
 add_backup_marker()
 {
 	# manually add the backup marker that the backup cmd usually adds
-	$BINDIR/ldbmodify \
+	${ldbmodify} \
 		-H tdb://$DBPATH/private/sam.ldb <<EOF
 dn: @SAMBA_DSDB
 changetype: modify
