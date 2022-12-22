@@ -31,7 +31,7 @@ interface rpc_host_msg
 		/**
 		 * @brief Auth info inherited from SMB
 		 */
-		named_pipe_auth_req_info5 *npa_info5;
+		named_pipe_auth_req_info6 *npa_info6;
 
 		/**
 		 * @brief Raw bind PDU

@@ -22,10 +22,10 @@ interface named_pipe_auth
 		uint16 local_server_port;
 		auth_session_info_transport *session_info;
 		boolean8 need_idle_server;
-	} named_pipe_auth_req_info5;
+	} named_pipe_auth_req_info6;
 
 	typedef [switch_type(uint32)] union {
-		[case(5)] named_pipe_auth_req_info5 info5;
+		[case(6)] named_pipe_auth_req_info6 info6;
 	} named_pipe_auth_req_info;
 
 	typedef [public,gensize] struct {
@@ -41,10 +41,10 @@ interface named_pipe_auth
 		uint16 file_type;
 		uint16 device_state;
 		hyper allocation_size;
-	} named_pipe_auth_rep_info5;
+	} named_pipe_auth_rep_info6;
 
 	typedef [switch_type(uint32)] union {
-		[case(5)] named_pipe_auth_rep_info5 info5;
+		[case(6)] named_pipe_auth_rep_info6 info6;
 	} named_pipe_auth_rep_info;
 
 	typedef [public,gensize] struct {
