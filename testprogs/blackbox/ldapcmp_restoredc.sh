@@ -14,11 +14,9 @@ RESTORED_DC_PREFIX_ABS="$2"
 shift 2
 
 . $(dirname $0)/subunit.sh
+. "$(dirname "${0}")/common_test_fns.inc"
 
-ldbsearch="${VALGRIND} ldbsearch"
-if [ -x "${BINDIR}/ldbsearch" ]; then
-	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
-fi
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 basedn()
 {
