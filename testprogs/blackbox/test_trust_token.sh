@@ -26,13 +26,10 @@ TYPE=$1
 shift 1
 failed=0
 
-ldbsearch="${VALGRIND} ldbsearch"
-if [ -x "${BINDIR}/ldbsearch" ]; then
-	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
-fi
-
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
+
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 test_token()
 {
