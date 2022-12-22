@@ -24,15 +24,13 @@ failed=0
 
 samba_bindir="${BINDIR}"
 
-samba_kinit="$(command -v kinit)"
-if [ -x "${samba_bindir}/samba4kinit" ]; then
-	samba_kinit="${samba_bindir}/samba4kinit"
-fi
 samba_tool="${PYTHON} ${samba_bindir}/samba-tool"
 wbinfo="${samba_bindir}/wbinfo"
 
 . "$(dirname "$0")"/subunit.sh
 . "$(dirname "$0")"/common_test_fns.inc
+
+samba_kinit=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
 
 unc="//${SERVER}/tmp"
 
