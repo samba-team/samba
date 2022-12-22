@@ -26,21 +26,14 @@ net_tool="$samba4bindir/net"
 smbpasswd="$samba4bindir/smbpasswd"
 texpect="$samba4bindir/texpect"
 
-ldbsearch="${VALGRIND} ldbsearch"
-if [ -x "${BINDIR}/ldbsearch" ]; then
-	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
-fi
-
-ldbmodify="${VALGRIND} ldbmodify"
-if [ -x "${BINDIR}/ldbmodify" ]; then
-	ldbmodify="${VALGRIND} ${BINDIR}/ldbmodify"
-fi
-
-
 newuser="$samba_tool user create"
 groupaddmem="$samba_tool group addmembers"
 
 . $(dirname $0)/subunit.sh
+. "$(dirname "${0}")/common_test_fns.inc"
+
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
