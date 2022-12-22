@@ -26,28 +26,14 @@ failed=0
 
 net_tool="$BINDIR/net --configfile=$BASEDIR/$WORKDIR/client.conf --option=security=ads"
 
-ldbsearch="ldbsearch"
-if [ -x "$BINDIR/ldbsearch" ]; then
-	ldbsearch="$BINDIR/ldbsearch"
-fi
-
-ldbadd="ldbadd"
-if [ -x "$BINDIR/ldbadd" ]; then
-	ldbadd="$BINDIR/ldbadd"
-fi
-
-ldbdel="ldbdel"
-if [ -x "$BINDIR/ldbdel" ]; then
-	ldbdel="$BINDIR/ldbdel"
-fi
-
-ldbmodify="ldbmodify"
-if [ -x "$BINDIR/ldbmodify" ]; then
-	ldbmodify="$BINDIR/ldbmodify"
-fi
-
 # Load test functions
 . $(dirname $0)/subunit.sh
+. "$(dirname "${0}")/common_test_fns.inc"
+
+ldbadd=$(system_or_builddir_binary ldbadd "${BINDIR}")
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
+ldbdel=$(system_or_builddir_binary ldbdel "${BINDIR}")
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
