@@ -28,15 +28,8 @@ samba_rpcclient="$samba_bindir/rpcclient"
 samba_smbclient="$samba_bindir/smbclient"
 samba_smbtorture="$samba_bindir/smbtorture"
 
-samba_kinit=kinit
-if test -x ${samba_bindir}/samba4kinit; then
-	samba_kinit=${samba_bindir}/samba4kinit
-fi
-
-samba_kdestroy=kdestroy
-if test -x ${samba_bindir}/samba4kdestroy; then
-	samba_kinit=${samba_bindir}/samba4kdestroy
-fi
+samba_kinit=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
+samba_kdestroy=$(system_or_builddir_binary kdestroy "${BINDIR}" samba4kdestroy)
 
 test_rpc_getusername()
 {
