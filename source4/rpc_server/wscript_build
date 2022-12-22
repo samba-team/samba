@@ -118,9 +118,9 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
                       samba-hostconfig
                       DSDB_MODULE_HELPERS
                       util_str_escape
+                      DCERPC_SERVER_NETLOGON
                       '''
                  )
-
 
 bld.SAMBA_MODULE('dcerpc_lsarpc',
                  source='lsa/dcesrv_lsa.c lsa/lsa_init.c lsa/lsa_lookup.c',
