@@ -17,10 +17,7 @@ failed=0
 
 samba_tree_dir="$SRCDIR_ABS/source4/selftest/provisions/multi-dc-samba-master-c596ac6"
 
-samba_tdbrestore="tdbrestore"
-if [ -x $BINDIR/tdbrestore ]; then
-	samba_tdbrestore="$BINDIR/tdbrestore"
-fi
+samba_tdbrestore=$(system_or_builddir_binary tdbrestore "${BINDIR}")
 
 # The undump script and the provision data is not part of release tarballs,
 # skip the tests in this case!
