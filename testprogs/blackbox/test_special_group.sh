@@ -18,10 +18,7 @@ failed=0
 OLD_RELEASE="release-4-5-0-pre1"
 old_release_dir="$SRCDIR_ABS/source4/selftest/provisions/$OLD_RELEASE"
 
-samba_tdbrestore="tdbrestore"
-if [ -x "$BINDIR/tdbrestore" ]; then
-	samba_tdbrestore="$BINDIR/tdbrestore"
-fi
+samba_tdbrestore=$(system_or_builddir_binary tdbrestore "${BINDIR}")
 
 samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
 if [ ! -x "${samba_undump}" ]; then
