@@ -21,15 +21,8 @@ failed=0
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
 
-ldbsearch="${VALGRIND} ldbsearch"
-if [ -x "${BINDIR}/ldbsearch" ]; then
-	ldbsearch="${VALGRIND} ${BINDIR}/ldbsearch"
-fi
-
-ldbmodify="${VALGRIND} ldbmodify"
-if [ -x "${BINDIR}/ldbmodify" ]; then
-	ldbmodify="${VALGRIND} ${BINDIR}/ldbmodify"
-fi
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 TZ=UTC
 export TZ
