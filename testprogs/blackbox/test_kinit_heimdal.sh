@@ -38,18 +38,11 @@ fi
 enableaccount="$samba_tool user enable"
 machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
 
-ldbmodify="ldbmodify"
-if [ -x "$samba4bindir/ldbmodify" ]; then
-	ldbmodify="$samba4bindir/ldbmodify"
-fi
-
-ldbsearch="ldbsearch"
-if [ -x "$samba4bindir/ldbsearch" ]; then
-	ldbsearch="$samba4bindir/ldbsearch"
-fi
-
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
+
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 enctype="-e $ENCTYPE"
 unc="//$SERVER/tmp"
