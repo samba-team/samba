@@ -10,13 +10,10 @@ fi
 PREFIX="$1"
 shift 1
 
-samba4bindir="$BINDIR"
-ldbsearch="ldbsearch"
-if [ -x "$samba4bindir/ldbsearch" ]; then
-	ldbsearch="$samba4bindir/ldbsearch"
-fi
-
 . $(dirname $0)/subunit.sh
+. "$(dirname "${0}")/common_test_fns.inc"
+
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
 if [ ! -d $PREFIX/renamedc_test ]; then
 	mkdir -p $PREFIX/renamedc_test
