@@ -2895,7 +2895,9 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context 
 	struct loadparm_context *lp_ctx = context->conn->dce_ctx->lp_ctx;
 	int schannel = lpcfg_server_schannel(lp_ctx);
 	bool schannel_global_required = (schannel == true);
+	bool global_require_seal = lpcfg_server_schannel_require_seal(lp_ctx);
 	static bool warned_global_schannel_once = false;
+	static bool warned_global_seal_once = false;
 
 	if (!schannel_global_required && !warned_global_schannel_once) {
 		/*
@@ -2905,6 +2907,16 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context 
 		      "Please configure 'server schannel = yes' (the default), "
 		      "See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
 		warned_global_schannel_once = true;
+	}
+
+	if (!global_require_seal && !warned_global_seal_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		D_ERR("CVE-2022-38023 (and others): "
+		      "Please configure 'server schannel require seal = yes' (the default), "
+		      "See https://bugzilla.samba.org/show_bug.cgi?id=15240\n");
+		warned_global_seal_once = true;
 	}
 
 	return NT_STATUS_OK;
