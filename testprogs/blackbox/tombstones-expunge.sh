@@ -18,30 +18,10 @@ failed=0
 
 release_dir="$SRCDIR_ABS/source4/selftest/provisions/$RELEASE"
 
-ldbadd="ldbadd"
-if [ -x "$BINDIR/ldbadd" ]; then
-	ldbadd="$BINDIR/ldbadd"
-fi
-
-ldbmodify="ldbmodify"
-if [ -x "$BINDIR/ldbmodify" ]; then
-	ldbmodify="$BINDIR/ldbmodify"
-fi
-
-ldbdel="ldbdel"
-if [ -x "$BINDIR/ldbdel" ]; then
-	ldbdel="$BINDIR/ldbdel"
-fi
-
-ldbsearch="ldbsearch"
-if [ -x "$BINDIR/ldbsearch" ]; then
-	ldbsearch="$BINDIR/ldbsearch"
-fi
-
-samba_tdbrestore="tdbrestore"
-if [ -x "$BINDIR/tdbrestore" ]; then
-	samba_tdbrestore="$BINDIR/tdbrestore"
-fi
+ldbadd=$(system_or_builddir_binary ldbadd "${BINDIR}")
+ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
+ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
+samba_tdbrestore=$(system_or_builddir_binary tdbrestore "${BINDIR}")
 
 samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
 if [ ! -x $samba_undump ] || [ ! -d $release_dir ]; then
