@@ -272,8 +272,8 @@ static void np_sock_connect_read_done(struct tevent_req *subreq)
 		tevent_req_error(req, ndr_map_error2errno(ndr_err));
 		return;
 	}
-	if (state->npa_rep->level != 5) {
-		DBG_DEBUG("npa level = %"PRIu32", expected 5\n",
+	if (state->npa_rep->level != 6) {
+		DBG_DEBUG("npa level = %"PRIu32", expected 6\n",
 			  state->npa_rep->level);
 		tevent_req_error(req, EIO);
 		return;
@@ -282,7 +282,7 @@ static void np_sock_connect_read_done(struct tevent_req *subreq)
 	ret = tstream_npa_existing_stream(
 		state,
 		&state->transport,
-		state->npa_rep->info.info5.file_type,
+		state->npa_rep->info.info6.file_type,
 		&state->npa_stream);
 	if (ret == -1) {
 		ret = errno;
@@ -496,7 +496,7 @@ struct tevent_req *local_np_connect_send(
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct local_np_connect_state *state = NULL;
-	struct named_pipe_auth_req_info5 *i5 = NULL;
+	struct named_pipe_auth_req_info6 *i6 = NULL;
 	const char *socket_dir = NULL;
 	char *lower_case_pipename = NULL;
 
@@ -532,14 +532,14 @@ struct tevent_req *local_np_connect_send(
 	if (tevent_req_nomem(state->npa_req, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->npa_req->level = 5;
+	state->npa_req->level = 6;
 
-	i5 = &state->npa_req->info.info5;
+	i6 = &state->npa_req->info.info6;
 
-	i5->transport = transport;
+	i6->transport = transport;
 
 	/* we don't have "int" in IDL, make sure we don't overflow */
-	SMB_ASSERT(i5->transport == transport);
+	SMB_ASSERT(i6->transport == transport);
 
 	if (remote_client_name == NULL) {
 		remote_client_name = get_myname(state->npa_req);
@@ -548,7 +548,7 @@ struct tevent_req *local_np_connect_send(
 			return tevent_req_post(req, ev);
 		}
 	}
-	i5->remote_client_name = remote_client_name;
+	i6->remote_client_name = remote_client_name;
 
 	if (remote_client_addr == NULL) {
 		struct tsocket_address *addr = NULL;
@@ -560,18 +560,18 @@ struct tevent_req *local_np_connect_send(
 		}
 		remote_client_addr = addr;
 	}
-	i5->remote_client_addr = tsocket_address_inet_addr_string(
+	i6->remote_client_addr = tsocket_address_inet_addr_string(
 		remote_client_addr, state->npa_req);
-	if (i5->remote_client_addr == NULL) {
+	if (i6->remote_client_addr == NULL) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
-	i5->remote_client_port = tsocket_address_inet_port(remote_client_addr);
+	i6->remote_client_port = tsocket_address_inet_port(remote_client_addr);
 
 	if (local_server_name == NULL) {
 		local_server_name = remote_client_name;
 	}
-	i5->local_server_name = local_server_name;
+	i6->local_server_name = local_server_name;
 
 	if (local_server_addr == NULL) {
 		struct tsocket_address *addr = NULL;
@@ -583,27 +583,27 @@ struct tevent_req *local_np_connect_send(
 		}
 		local_server_addr = addr;
 	}
-	i5->local_server_addr = tsocket_address_inet_addr_string(
+	i6->local_server_addr = tsocket_address_inet_addr_string(
 		local_server_addr, state->npa_req);
-	if (i5->local_server_addr == NULL) {
+	if (i6->local_server_addr == NULL) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
-	i5->local_server_port = tsocket_address_inet_port(local_server_addr);
+	i6->local_server_port = tsocket_address_inet_port(local_server_addr);
 
-	i5->session_info = talloc_zero(
+	i6->session_info = talloc_zero(
 		state->npa_req, struct auth_session_info_transport);
-	if (tevent_req_nomem(i5->session_info, req)) {
+	if (tevent_req_nomem(i6->session_info, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	i5->session_info->session_info = copy_session_info(
-		i5->session_info, session_info);
-	if (tevent_req_nomem(i5->session_info->session_info, req)) {
+	i6->session_info->session_info = copy_session_info(
+		i6->session_info, session_info);
+	if (tevent_req_nomem(i6->session_info->session_info, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	i5->need_idle_server = need_idle_server;
+	i6->need_idle_server = need_idle_server;
 
 	subreq = np_sock_connect_send(
 		state, state->ev, state->socketpath, state->npa_req);
