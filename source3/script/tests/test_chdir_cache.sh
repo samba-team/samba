@@ -33,7 +33,7 @@ conf_dir=$(dirname ${SERVERCONFFILE})
 log_file=${conf_dir}/../smbd_test.log
 
 error_inject_conf=${conf_dir}/error_inject.conf
->${error_inject_conf}
+rm -f ${error_inject_conf}
 
 incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
@@ -80,7 +80,9 @@ head -n 4 <&101
 
 # Ensure any chdir will give EACCESS.
 echo "error_inject:chdir = EACCES" >${error_inject_conf}
-${SMBCONTROL} ${CONF} 0 reload-config
+testit "reload config 1" \
+	"${SMBCONTROL}" "${CONF}" smbd reload-config ||
+	failed=$((failed + 1))
 
 sleep 1
 
@@ -94,8 +96,10 @@ kill ${CLIENT_PID}
 rm -f smbclient-stdin smbclient-stdout smbclient-stderr
 
 # Remove the chdir inject.
->${error_inject_conf}
-${SMBCONTROL} ${CONF} 0 reload-config
+rm -f ${error_inject_conf}
+testit "reload config 2" \
+	"${SMBCONTROL}" "${CONF}" smbd reload-config ||
+	failed=$((failed + 1))
 
 # Now look for chdir_current_service: vfs_ChDir.*failed: Permission denied
 # in the smb log. There should be one more than before.
