@@ -878,7 +878,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	 * so use a copy to avoid destroying the client values. */
 	uint32_t in_neg_flags = *r->in.negotiate_flags;
 	const char *fn;
-	struct loadparm_context *lp_ctx;
+	struct loadparm_context *lp_ctx = p->dce_call->conn->dce_ctx->lp_ctx;
 	struct dom_sid sid;
 	struct samr_Password mach_pwd;
 	struct netlogon_creds_CredentialState *creds;
@@ -1007,19 +1007,10 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		goto out;
 	}
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto out;
-	}
-
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
 	status = schannel_save_creds_state(p->mem_ctx, lp_ctx, creds);
 	unbecome_root();
-
-	talloc_unlink(p->mem_ctx, lp_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ZERO_STRUCTP(r->out.return_credentials);
@@ -2020,7 +2011,7 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
-	struct loadparm_context *lp_ctx;
+	struct loadparm_context *lp_ctx = p->dce_call->conn->dce_ctx->lp_ctx;
 
 	*r->out.authoritative = true;
 
@@ -2029,18 +2020,10 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 		return status;
 	}
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	become_root();
 	status = schannel_get_creds_state(p->mem_ctx, lp_ctx,
 					  r->in.computer_name, &creds);
 	unbecome_root();
-	talloc_unlink(p->mem_ctx, lp_ctx);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
