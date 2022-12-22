@@ -23,11 +23,6 @@ failed=0
 
 samba_bindir="$BINDIR"
 
-samba_kinit=kinit
-if test -x $samba_bindir/samba4kinit; then
-	samba_kinit=$samba_bindir/samba4kinit
-fi
-
 smbclient="$samba_bindir/smbclient"
 samba_tool="$samba_bindir/samba-tool"
 smbpasswd="$samba_bindir/smbpasswd"
@@ -38,6 +33,8 @@ SMB_UNC="//$SERVER/tmp"
 
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
+
+samba_kinit=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
 
 do_kinit()
 {
