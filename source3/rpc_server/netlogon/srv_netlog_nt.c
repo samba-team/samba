@@ -51,6 +51,7 @@
 #include "libsmb/dsgetdcname.h"
 #include "lib/util/util_str_escape.h"
 #include "source3/lib/substitute.h"
+#include "librpc/rpc/server/netlogon/schannel_util.h"
 
 extern userdom_struct current_user_info;
 
@@ -1032,128 +1033,6 @@ NTSTATUS _netr_ServerAuthenticate2(struct pipes_struct *p,
 /*************************************************************************
  *************************************************************************/
 
-static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
-					     TALLOC_CTX *mem_ctx,
-					     const char *computer_name,
-					     struct netr_Authenticator *received_authenticator,
-					     struct netr_Authenticator *return_authenticator,
-					     struct netlogon_creds_CredentialState **creds_out)
-{
-	NTSTATUS status;
-	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
-	bool schannel_required = schannel_global_required;
-	const char *explicit_opt = NULL;
-	struct loadparm_context *lp_ctx;
-	struct netlogon_creds_CredentialState *creds = NULL;
-	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
-	uint16_t opnum = p->opnum;
-	const char *opname = "<unknown>";
-
-	if (creds_out != NULL) {
-		*creds_out = NULL;
-	}
-
-	if (opnum < ndr_table_netlogon.num_calls) {
-		opname = ndr_table_netlogon.calls[opnum].name;
-	}
-
-	auth_type = p->auth.auth_type;
-
-	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	status = schannel_check_creds_state(mem_ctx, lp_ctx,
-					    computer_name, received_authenticator,
-					    return_authenticator, &creds);
-	talloc_unlink(mem_ctx, lp_ctx);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		ZERO_STRUCTP(return_authenticator);
-		return status;
-	}
-
-	/*
-	 * We don't use lp_parm_bool(), as we
-	 * need the explicit_opt pointer in order to
-	 * adjust the debug messages.
-	 */
-
-	explicit_opt = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					    "server require schannel",
-					    creds->account_name,
-					    NULL);
-	if (explicit_opt != NULL) {
-		schannel_required = lp_bool(explicit_opt);
-	}
-
-	if (schannel_required) {
-		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-			*creds_out = creds;
-			return NT_STATUS_OK;
-		}
-
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"%s request (opnum[%u]) without schannel from "
-			"client_account[%s] client_computer_name[%s]\n",
-			opname, opnum,
-			log_escape(mem_ctx, creds->account_name),
-			log_escape(mem_ctx, creds->computer_name));
-		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
-			"'server require schannel:%s = no' is needed! \n",
-			log_escape(mem_ctx, creds->account_name));
-		TALLOC_FREE(creds);
-		ZERO_STRUCTP(return_authenticator);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"%s request (opnum[%u]) WITH schannel from "
-			"client_account[%s] client_computer_name[%s]\n",
-			opname, opnum,
-			log_escape(mem_ctx, creds->account_name),
-			log_escape(mem_ctx, creds->computer_name));
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"Option 'server require schannel:%s = no' not needed!?\n",
-			log_escape(mem_ctx, creds->account_name));
-
-		*creds_out = creds;
-		return NT_STATUS_OK;
-	}
-
-	if (explicit_opt != NULL) {
-		DBG_INFO("CVE-2020-1472(ZeroLogon): "
-			 "%s request (opnum[%u]) without schannel from "
-			 "client_account[%s] client_computer_name[%s]\n",
-			 opname, opnum,
-			 log_escape(mem_ctx, creds->account_name),
-			 log_escape(mem_ctx, creds->computer_name));
-		DBG_INFO("CVE-2020-1472(ZeroLogon): "
-			 "Option 'server require schannel:%s = no' still needed!\n",
-			 log_escape(mem_ctx, creds->account_name));
-	} else {
-		DBG_ERR("CVE-2020-1472(ZeroLogon): "
-			"%s request (opnum[%u]) without schannel from "
-			"client_account[%s] client_computer_name[%s]\n",
-			opname, opnum,
-			log_escape(mem_ctx, creds->account_name),
-			log_escape(mem_ctx, creds->computer_name));
-		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
-			"'server require schannel:%s = no' might be needed!\n",
-			log_escape(mem_ctx, creds->account_name));
-	}
-
-	*creds_out = creds;
-	return NT_STATUS_OK;
-}
-
-
-/*************************************************************************
- *************************************************************************/
-
 static NTSTATUS samr_open_machine_account(
 	struct dcerpc_binding_handle *b,
 	const struct dom_sid *machine_sid,
@@ -1397,11 +1276,12 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      r->out.return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						r->out.return_authenticator,
+						&creds);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1458,11 +1338,12 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	bool ok;
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      r->out.return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						r->out.return_authenticator,
+						&creds);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1613,11 +1494,12 @@ NTSTATUS _netr_LogonSamLogoff(struct pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds;
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      r->out.return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						r->out.return_authenticator,
+						&creds);
 	unbecome_root();
 
 	return status;
@@ -2019,11 +1901,12 @@ NTSTATUS _netr_LogonSamLogonWithFlags(struct pipes_struct *p,
 	}
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      &return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						&return_authenticator,
+						&creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2364,11 +2247,12 @@ NTSTATUS _netr_LogonGetCapabilities(struct pipes_struct *p,
 	NTSTATUS status;
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      r->out.return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						r->out.return_authenticator,
+						&creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2725,11 +2609,12 @@ NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 	/* TODO: check server name */
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      r->out.return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						r->out.return_authenticator,
+						&creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2828,11 +2713,12 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	/* TODO: check server name */
 
 	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      r->out.return_authenticator,
-					      &creds);
+	status = dcesrv_netr_creds_server_step_check(p->dce_call,
+						p->mem_ctx,
+						r->in.computer_name,
+						r->in.credential,
+						r->out.return_authenticator,
+						&creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

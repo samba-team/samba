@@ -71,7 +71,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETLOGON',
                      source='''netlogon/srv_netlog_nt.c''',
-                    deps='LIBCLI_AUTH')
+                    deps='LIBCLI_AUTH DCERPC_SERVER_NETLOGON')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NTSVCS',
                     source='''ntsvcs/srv_ntsvcs_nt.c''',

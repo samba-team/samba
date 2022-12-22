@@ -529,12 +529,6 @@ NTSTATUS dcesrv_netr_check_schannel(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
-/*
- * NOTE: The following functions are nearly identical to the ones available in
- * source3/rpc_server/srv_nelog_nt.c
- * The reason we keep 2 copies is that they use different structures to
- * represent the auth_info and the decrpc pipes.
- */
 NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
 						    const char *computer_name,
