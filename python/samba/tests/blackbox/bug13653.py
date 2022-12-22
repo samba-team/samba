@@ -120,7 +120,7 @@ from samba.tests import (
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
-from os import environ
+import os
 
 
 class Bug13653Tests(BlackboxTestCase):
@@ -129,9 +129,9 @@ class Bug13653Tests(BlackboxTestCase):
     # and load configuration from the OS environment.
     def setUp(self):
         super(Bug13653Tests, self).setUp()
-        self.env = environ["TEST_ENV"]
-        self.server = environ["SERVER"]
-        self.prefix = environ["PREFIX_ABS"]
+        self.env = os.environ["TEST_ENV"]
+        self.server = os.environ["SERVER"]
+        self.prefix = os.environ["PREFIX_ABS"]
         lp = env_loadparm()
         creds = Credentials()
         session = system_session()
@@ -178,9 +178,13 @@ class Bug13653Tests(BlackboxTestCase):
                 "samba-tool user create %s %s -H %s" % (
                     self.user, password, db_path)
             self.check_run(command)
+
+            ldbsearch = "ldbsearch"
+            if os.path.exists("bin/ldbsearch"):
+                ldbsearch = "bin/ldbsearch"
             command =\
-                "bin/ldbsearch -H ldap://%s/ -U%s%%%s '(cn=%s)' dn" % (
-                    self.server, self.user, password, self.user)
+                "%s -H ldap://%s/ -U%s%%%s '(cn=%s)' dn" % (
+                    ldbsearch, self.server, self.user, password, self.user)
             self.check_run(command)
         except BlackboxProcessError as e:
             self.fail(str(e))
