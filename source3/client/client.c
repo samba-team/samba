@@ -5126,10 +5126,11 @@ static int cmd_tcon(void)
 		return -1;
 	}
 
-	talloc_free(sharename);
-
 	d_printf("tcon to %s successful, tid: %u\n", sharename,
 		 cli_state_get_tid(cli));
+
+	talloc_free(sharename);
+
 	return 0;
 }
 
