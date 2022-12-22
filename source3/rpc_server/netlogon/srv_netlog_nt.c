@@ -1596,6 +1596,11 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context = NULL;
 	const char *fn;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	uint16_t opnum = p->dce_call->pkt.u.request.opnum;
+
+	dcesrv_call_auth_info(p->dce_call, &auth_type, &auth_level);
 
 #ifdef DEBUG_PASSWORD
 	logon = netlogon_creds_shallow_copy_logon(p->mem_ctx,
@@ -1606,15 +1611,37 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	}
 #endif
 
-	switch (p->opnum) {
+	switch (opnum) {
 		case NDR_NETR_LOGONSAMLOGON:
 			fn = "_netr_LogonSamLogon";
+			/*
+			 * Already called netr_check_schannel() via
+			 * netr_creds_server_step_check()
+			 */
 			break;
 		case NDR_NETR_LOGONSAMLOGONWITHFLAGS:
 			fn = "_netr_LogonSamLogonWithFlags";
+			/*
+			 * Already called netr_check_schannel() via
+			 * netr_creds_server_step_check()
+			 */
 			break;
 		case NDR_NETR_LOGONSAMLOGONEX:
 			fn = "_netr_LogonSamLogonEx";
+
+			if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			status = dcesrv_netr_check_schannel(p->dce_call,
+							    creds,
+							    auth_type,
+							    auth_level,
+							    opnum);
+			if (NT_STATUS_IS_ERR(status)) {
+				return status;
+			}
+
 			break;
 		default:
 			return NT_STATUS_INTERNAL_ERROR;
@@ -1846,7 +1873,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		break;
 	case 6:
 		/* Only allow this if the pipe is protected. */
-		if (p->auth.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
+		if (auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
 			DEBUG(0,("netr_Validation6: client %s not using privacy for netlogon\n",
 				get_remote_machine_name()));
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -1966,13 +1993,6 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	/* Only allow this if the pipe is protected. */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0,("_netr_LogonSamLogonEx: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
-		return NT_STATUS_INVALID_PARAMETER;
-        }
 
 	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
