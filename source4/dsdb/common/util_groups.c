@@ -66,7 +66,7 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *res_sids_ctx, struct auth_SidAttr **res_sids,
 				   uint32_t *num_res_sids)
 {
-	const char * const attrs[] = { "groupType", "memberOf", NULL };
+	static const char * const attrs[] = { "groupType", "memberOf", NULL };
 	unsigned int i;
 	int ret;
 	struct ldb_dn *dn;
