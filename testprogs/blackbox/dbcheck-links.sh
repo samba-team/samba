@@ -13,8 +13,8 @@ shift 2
 
 . $(dirname $0)/subunit.sh
 
-. $(dirname $0)/common-links.sh
 . $(dirname $0)/common_test_fns.inc
+. $(dirname $0)/common-links.sh
 
 failed=0
 
