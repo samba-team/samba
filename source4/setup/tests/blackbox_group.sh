@@ -93,8 +93,7 @@ user_getgroups_primary_first()
 	primary_group=$(echo "$res" | head -1)
 	echo $primary_group | grep -q "^${expected_primary_group}$" || return 1
 }
-testit "user setprimarygroup" $PYTHON $samba_tool user setprimarygroup $CONFIG testuser dsg
-testit "user getgroups primary first" user_getgroups_primary_first dsg
+testit_expect_failure_grep "user setprimarygroup domain-local" "ERROR: Failed to set primary group 'dsg' for user 'testuser'.*may not set resource group as primary group!" $PYTHON $samba_tool user setprimarygroup $CONFIG testuser dsg
 testit "user setprimarygroup" $PYTHON $samba_tool user setprimarygroup $CONFIG testuser gsg
 testit "user getgroups primary first" user_getgroups_primary_first gsg
 
