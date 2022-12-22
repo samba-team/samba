@@ -259,7 +259,6 @@ sub setup_nt4_dc
 	lanman auth = yes
 	ntlm auth = yes
 	raw NTLMv2 auth = yes
-	server schannel = auto
 
 	rpc_server:epmapper = external
 	rpc_server:spoolss = external
@@ -273,6 +272,22 @@ sub setup_nt4_dc
 	rpc_daemon:spoolssd = fork
 	rpc_daemon:lsasd = fork
 	rpc_daemon:fssd = fork
+
+	CVE_2020_1472:warn_about_unused_debug_level = 3
+	server require schannel:schannel0\$ = no
+	server require schannel:schannel1\$ = no
+	server require schannel:schannel2\$ = no
+	server require schannel:schannel3\$ = no
+	server require schannel:schannel4\$ = no
+	server require schannel:schannel5\$ = no
+	server require schannel:schannel6\$ = no
+	server require schannel:schannel7\$ = no
+	server require schannel:schannel8\$ = no
+	server require schannel:schannel9\$ = no
+	server require schannel:schannel10\$ = no
+	server require schannel:schannel11\$ = no
+	server require schannel:torturetest\$ = no
+
 	fss: sequence timeout = 1
 	check parent directory delete on close = yes
 ";
