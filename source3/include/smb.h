@@ -32,7 +32,6 @@
 /* logged when starting the various Samba daemons */
 #define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2023"
 
-#define SAFETY_MARGIN 1024
 #define LARGE_WRITEX_HDR_SIZE 65
 #define LARGE_WRITEX_BUFFER_SIZE (128*1024)
 
@@ -49,14 +48,6 @@
 #define Required (3)
 
 #define SIZEOFWORD 2
-
-/* string manipulation flags - see clistr.c and srvstr.c */
-#define STR_TERMINATE 1
-#define STR_UPPER 2
-#define STR_ASCII 4
-#define STR_UNICODE 8
-#define STR_NOALIGN 16
-#define STR_TERMINATE_ASCII 128
 
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
