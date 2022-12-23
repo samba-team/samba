@@ -2362,204 +2362,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 static void call_trans2setfilepathinfo(connection_struct *conn,
 				       struct smb_request *req,
 				       unsigned int tran_call,
+				       uint16_t info_level,
+				       struct smb_filename *smb_fname,
+				       struct files_struct *fsp,
 				       char **pparams, int total_params,
 				       char **ppdata, int total_data,
 				       unsigned int max_data_bytes)
 {
 	char *params = *pparams;
-	char *pdata = *ppdata;
-	uint16_t info_level;
-	struct smb_filename *smb_fname = NULL;
-	struct files_struct *dirfsp = NULL;
-	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
-	int ret;
-
-	if (!params) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	if (tran_call == TRANSACT2_SETFILEINFO) {
-		if (total_params < 4) {
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		fsp = file_fsp(req, SVAL(params,0));
-		/* Basic check for non-null fsp. */
-	        if (!check_fsp_open(conn, req, fsp)) {
-			return;
-		}
-		info_level = SVAL(params,2);
-
-		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			if (!lp_smb1_unix_extensions()) {
-				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
-			}
-			if (!req->posix_pathnames) {
-				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
-			}
-		}
-
-		smb_fname = fsp->fsp_name;
-
-		if (fsp_get_pathref_fd(fsp) == -1) {
-			/*
-			 * This is actually a SETFILEINFO on a directory
-			 * handle (returned from an NT SMB). NT5.0 seems
-			 * to do this call. JRA.
-			 */
-			ret = vfs_stat(conn, smb_fname);
-			if (ret != 0) {
-				DBG_NOTICE("vfs_stat of %s failed (%s)\n",
-					smb_fname_str_dbg(smb_fname),
-					strerror(errno));
-				reply_nterror(req,
-					map_nt_error_from_unix(errno));
-				return;
-			}
-		} else if (fsp->print_file) {
-			/*
-			 * Doing a DELETE_ON_CLOSE should cancel a print job.
-			 */
-			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-
-				fsp->fsp_flags.delete_on_close = true;
-
-				DEBUG(3,("call_trans2setfilepathinfo: "
-					 "Cancelling print job (%s)\n",
-					 fsp_str_dbg(fsp)));
-
-				SSVAL(params,0,0);
-				send_trans2_replies(conn, req, NT_STATUS_OK, params, 2,
-						    *ppdata, 0,
-						    max_data_bytes);
-				return;
-			} else {
-				reply_nterror(req,
-					NT_STATUS_OBJECT_PATH_NOT_FOUND);
-				return;
-			}
-		} else {
-			/*
-			 * Original code - this is an open file.
-			 */
-			status = vfs_stat_fsp(fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(3,("call_trans2setfilepathinfo: fstat "
-					 "of %s failed (%s)\n", fsp_fnum_dbg(fsp),
-					 nt_errstr(status)));
-				reply_nterror(req, status);
-				return;
-			}
-		}
-	} else {
-		char *fname = NULL;
-		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-		bool require_existing_object = true;
-		NTTIME twrp = 0;
-
-		/* set path info */
-		if (total_params < 7) {
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		info_level = SVAL(params,0);
-
-		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			if (!lp_smb1_unix_extensions()) {
-				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
-			}
-			if (!req->posix_pathnames) {
-				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
-			}
-		}
-
-		if (req->posix_pathnames) {
-			srvstr_get_path_posix(req,
-				params,
-				req->flags2,
-				&fname,
-				&params[6],
-				total_params - 6,
-				STR_TERMINATE,
-				&status);
-		} else {
-			srvstr_get_path(req,
-				params,
-				req->flags2,
-				&fname,
-				&params[6],
-				total_params - 6,
-				STR_TERMINATE,
-				&status);
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-
-		if (ucf_flags & UCF_GMT_PATHNAME) {
-			extract_snapshot_token(fname, &twrp);
-		}
-		status = filename_convert_dirfsp(req,
-						 conn,
-						 fname,
-						 ucf_flags,
-						 twrp,
-						 &dirfsp,
-						 &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-				reply_botherror(req,
-						NT_STATUS_PATH_NOT_COVERED,
-						ERRSRV, ERRbadpath);
-				return;
-			}
-			reply_nterror(req, status);
-			return;
-		}
-
-		/*
-		 * smb_fname->fsp may be NULL if smb_fname points at a symlink
-		 * and we're in POSIX context, so be careful when using fsp
-		 * below, it can still be NULL.
-		 */
-		fsp = smb_fname->fsp;
-
-		/*
-		 * There are 4 info levels which can
-		 * create a new object in the filesystem.
-		 * They are:
-		 * SMB_SET_FILE_UNIX_LINK -> creates POSIX symlink.
-		 * SMB_POSIX_PATH_OPEN -> creates POSIX file or directory.
-		 * SMB_SET_FILE_UNIX_BASIC:
-		 * SMB_SET_FILE_UNIX_INFO2: can create a POSIX special file.
-		 *
-		 * These info levels do not require an existing object.
-		 */
-		switch (info_level) {
-		case SMB_SET_FILE_UNIX_LINK:
-		case SMB_POSIX_PATH_OPEN:
-		case SMB_SET_FILE_UNIX_BASIC:
-		case SMB_SET_FILE_UNIX_INFO2:
-			require_existing_object = false;
-			break;
-		default:
-			break;
-		}
-
-		if (!VALID_STAT(smb_fname->st) && require_existing_object) {
-			reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		}
-	}
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (%s) info_level=%d "
 		 "totdata=%d\n", tran_call, smb_fname_str_dbg(smb_fname),
@@ -2635,10 +2447,126 @@ static void call_trans2setpathinfo(
 	int total_data,
 	unsigned int max_data_bytes)
 {
+	uint16_t info_level;
+	struct smb_filename *smb_fname = NULL;
+	struct files_struct *dirfsp = NULL;
+	struct files_struct *fsp = NULL;
+	char *params = *pparams;
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	bool require_existing_object = true;
+	NTTIME twrp = 0;
+	char *fname = NULL;
+	NTSTATUS status;
+
+	if (params == NULL) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	/* set path info */
+	if (total_params < 7) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	info_level = SVAL(params,0);
+
+	if (INFO_LEVEL_IS_UNIX(info_level)) {
+		if (!lp_smb1_unix_extensions()) {
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
+		}
+		if (!req->posix_pathnames) {
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
+		}
+	}
+
+	if (req->posix_pathnames) {
+		srvstr_get_path_posix(req,
+				      params,
+				      req->flags2,
+				      &fname,
+				      &params[6],
+				      total_params - 6,
+				      STR_TERMINATE,
+				      &status);
+	} else {
+		srvstr_get_path(req,
+				params,
+				req->flags2,
+				&fname,
+				&params[6],
+				total_params - 6,
+				STR_TERMINATE,
+				&status);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		return;
+	}
+
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(fname, &twrp);
+	}
+	status = filename_convert_dirfsp(req,
+					 conn,
+					 fname,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+					NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			return;
+		}
+		reply_nterror(req, status);
+		return;
+	}
+
+	/*
+	 * smb_fname->fsp may be NULL if smb_fname points at a symlink
+	 * and we're in POSIX context, so be careful when using fsp
+	 * below, it can still be NULL.
+	 */
+	fsp = smb_fname->fsp;
+
+	/*
+	 * There are 4 info levels which can
+	 * create a new object in the filesystem.
+	 * They are:
+	 * SMB_SET_FILE_UNIX_LINK -> creates POSIX symlink.
+	 * SMB_POSIX_PATH_OPEN -> creates POSIX file or directory.
+	 * SMB_SET_FILE_UNIX_BASIC:
+	 * SMB_SET_FILE_UNIX_INFO2: can create a POSIX special file.
+	 *
+	 * These info levels do not require an existing object.
+	 */
+	switch (info_level) {
+	case SMB_SET_FILE_UNIX_LINK:
+	case SMB_POSIX_PATH_OPEN:
+	case SMB_SET_FILE_UNIX_BASIC:
+	case SMB_SET_FILE_UNIX_INFO2:
+		require_existing_object = false;
+		break;
+	default:
+		break;
+	}
+
+	if (!VALID_STAT(smb_fname->st) && require_existing_object) {
+		reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	}
+
 	call_trans2setfilepathinfo(
 		conn,
 		req,
 		TRANSACT2_SETPATHINFO,
+		info_level,
+		smb_fname,
+		fsp,
 		pparams,
 		total_params,
 		ppdata,
@@ -2655,10 +2583,104 @@ static void call_trans2setfileinfo(
 	int total_data,
 	unsigned int max_data_bytes)
 {
+	char *pdata = *ppdata;
+	uint16_t info_level;
+	struct smb_filename *smb_fname = NULL;
+	struct files_struct *fsp = NULL;
+	char *params = *pparams;
+	NTSTATUS status;
+	int ret;
+
+	if (params == NULL) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+	if (total_params < 4) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	fsp = file_fsp(req, SVAL(params,0));
+	/* Basic check for non-null fsp. */
+	if (!check_fsp_open(conn, req, fsp)) {
+		return;
+	}
+	info_level = SVAL(params,2);
+
+	if (INFO_LEVEL_IS_UNIX(info_level)) {
+		if (!lp_smb1_unix_extensions()) {
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
+		}
+		if (!req->posix_pathnames) {
+			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return;
+		}
+	}
+
+	smb_fname = fsp->fsp_name;
+
+	if (fsp_get_pathref_fd(fsp) == -1) {
+		/*
+		 * This is actually a SETFILEINFO on a directory
+		 * handle (returned from an NT SMB). NT5.0 seems
+		 * to do this call. JRA.
+		 */
+		ret = vfs_stat(conn, smb_fname);
+		if (ret != 0) {
+			DBG_NOTICE("vfs_stat of %s failed (%s)\n",
+				   smb_fname_str_dbg(smb_fname),
+				   strerror(errno));
+			reply_nterror(req, map_nt_error_from_unix(errno));
+			return;
+		}
+	} else if (fsp->print_file) {
+		/*
+		 * Doing a DELETE_ON_CLOSE should cancel a print job.
+		 */
+		if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) &&
+		    CVAL(pdata,0)) {
+
+			fsp->fsp_flags.delete_on_close = true;
+
+			DBG_NOTICE("Cancelling print job (%s)\n",
+				   fsp_str_dbg(fsp));
+
+			SSVAL(params,0,0);
+			send_trans2_replies(
+				conn,
+				req,
+				NT_STATUS_OK,
+				params,
+				2,
+				*ppdata, 0,
+				max_data_bytes);
+			return;
+		} else {
+			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			return;
+		}
+	} else {
+		/*
+		 * Original code - this is an open file.
+		 */
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_NOTICE("fstat of %s failed (%s)\n",
+				   fsp_fnum_dbg(fsp),
+				   nt_errstr(status));
+			reply_nterror(req, status);
+			return;
+		}
+	}
+
 	call_trans2setfilepathinfo(
 		conn,
 		req,
 		TRANSACT2_SETFILEINFO,
+		info_level,
+		smb_fname,
+		fsp,
 		pparams,
 		total_params,
 		ppdata,
