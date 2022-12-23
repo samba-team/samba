@@ -2355,6 +2355,46 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	return;
 }
 
+static void call_trans2qpathinfo(
+	connection_struct *conn,
+	struct smb_request *req,
+	char **pparams,
+	int total_params,
+	char **ppdata,
+	int total_data,
+	unsigned int max_data_bytes)
+{
+	call_trans2qfilepathinfo(
+		conn,
+		req,
+		TRANSACT2_QPATHINFO,
+		pparams,
+		total_params,
+		ppdata,
+		total_data,
+		max_data_bytes);
+}
+
+static void call_trans2qfileinfo(
+	connection_struct *conn,
+	struct smb_request *req,
+	char **pparams,
+	int total_params,
+	char **ppdata,
+	int total_data,
+	unsigned int max_data_bytes)
+{
+	call_trans2qfilepathinfo(
+		conn,
+		req,
+		TRANSACT2_QFILEINFO,
+		pparams,
+		total_params,
+		ppdata,
+		total_data,
+		max_data_bytes);
+}
+
 static void handle_trans2setfilepathinfo_result(
 	connection_struct *conn,
 	struct smb_request *req,
@@ -3160,14 +3200,32 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 	}
 
 	case TRANSACT2_QPATHINFO:
-	case TRANSACT2_QFILEINFO:
 	{
 		START_PROFILE(Trans2_qpathinfo);
-		call_trans2qfilepathinfo(conn, req, state->call,
-					 &state->param, state->total_param,
-					 &state->data, state->total_data,
-					 state->max_data_return);
+		call_trans2qpathinfo(
+			conn,
+			req,
+			&state->param,
+			state->total_param,
+			&state->data,
+			state->total_data,
+			state->max_data_return);
 		END_PROFILE(Trans2_qpathinfo);
+		break;
+	}
+
+	case TRANSACT2_QFILEINFO:
+	{
+		START_PROFILE(Trans2_qfileinfo);
+		call_trans2qfileinfo(
+			conn,
+			req,
+			&state->param,
+			state->total_param,
+			&state->data,
+			state->total_data,
+			state->max_data_return);
+		END_PROFILE(Trans2_qfileinfo);
 		break;
 	}
 
