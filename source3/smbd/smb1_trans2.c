@@ -2626,6 +2626,46 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	return;
 }
 
+static void call_trans2setpathinfo(
+	connection_struct *conn,
+	struct smb_request *req,
+	char **pparams,
+	int total_params,
+	char **ppdata,
+	int total_data,
+	unsigned int max_data_bytes)
+{
+	call_trans2setfilepathinfo(
+		conn,
+		req,
+		TRANSACT2_SETPATHINFO,
+		pparams,
+		total_params,
+		ppdata,
+		total_data,
+		max_data_bytes);
+}
+
+static void call_trans2setfileinfo(
+	connection_struct *conn,
+	struct smb_request *req,
+	char **pparams,
+	int total_params,
+	char **ppdata,
+	int total_data,
+	unsigned int max_data_bytes)
+{
+	call_trans2setfilepathinfo(
+		conn,
+		req,
+		TRANSACT2_SETFILEINFO,
+		pparams,
+		total_params,
+		ppdata,
+		total_data,
+		max_data_bytes);
+}
+
 /****************************************************************************
  Reply to a TRANS2_MKDIR (make directory with extended attributes).
 ****************************************************************************/
@@ -3090,14 +3130,32 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 	}
 
 	case TRANSACT2_SETPATHINFO:
-	case TRANSACT2_SETFILEINFO:
 	{
 		START_PROFILE(Trans2_setpathinfo);
-		call_trans2setfilepathinfo(conn, req, state->call,
-					   &state->param, state->total_param,
-					   &state->data, state->total_data,
-					   state->max_data_return);
+		call_trans2setpathinfo(
+			conn,
+			req,
+			&state->param,
+			state->total_param,
+			&state->data,
+			state->total_data,
+			state->max_data_return);
 		END_PROFILE(Trans2_setpathinfo);
+		break;
+	}
+
+	case TRANSACT2_SETFILEINFO:
+	{
+		START_PROFILE(Trans2_setfileinfo);
+		call_trans2setfileinfo(
+			conn,
+			req,
+			&state->param,
+			state->total_param,
+			&state->data,
+			state->total_data,
+			state->max_data_return);
+		END_PROFILE(Trans2_setfileinfo);
 		break;
 	}
 
