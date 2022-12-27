@@ -266,6 +266,18 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 
 		for(i = 0; i < list_size; i += len + 1) {
 			len = buf[i];
+
+			/*
+			 * If for some reason we receive a truncated
+			 * return from call to list xattrs the pascal
+			 * string lengths will not be changed and
+			 * therefore we must check that we're not
+			 * reading garbage data or off end of array
+			 */
+			if (len + i >= list_size) {
+				errno = ERANGE;
+				return -1;
+			}
 			strncpy(list, extattr[t].name, extattr[t].len + 1);
 			list += extattr[t].len;
 			strncpy(list, buf + i + 1, len);
