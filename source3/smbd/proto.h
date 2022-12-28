@@ -1101,6 +1101,15 @@ int sys_statvfs(const char *path, struct vfs_statvfs_struct *statbuf);
 
 /* The following definitions come from smbd/trans2.c  */
 
+char *store_file_unix_basic(connection_struct *conn,
+			    char *pdata,
+			    files_struct *fsp,
+			    const SMB_STRUCT_STAT *psbuf);
+char *store_file_unix_basic_info2(connection_struct *conn,
+				  char *pdata,
+				  files_struct *fsp,
+				  const SMB_STRUCT_STAT *psbuf);
+
 NTSTATUS refuse_symlink_fsp(const struct files_struct *fsp);
 NTSTATUS check_access_fsp(struct files_struct *fsp,
 			  uint32_t access_mask);

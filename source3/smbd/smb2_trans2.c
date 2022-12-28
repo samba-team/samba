@@ -49,16 +49,6 @@
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
-static char *store_file_unix_basic(connection_struct *conn,
-				char *pdata,
-				files_struct *fsp,
-				const SMB_STRUCT_STAT *psbuf);
-
-static char *store_file_unix_basic_info2(connection_struct *conn,
-				char *pdata,
-				files_struct *fsp,
-				const SMB_STRUCT_STAT *psbuf);
-
 static uint32_t generate_volume_serial_number(
 				const struct loadparm_substitution *lp_sub,
 				int snum);
@@ -3055,10 +3045,10 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
  Store the FILE_UNIX_BASIC info.
 ****************************************************************************/
 
-static char *store_file_unix_basic(connection_struct *conn,
-				char *pdata,
-				files_struct *fsp,
-				const SMB_STRUCT_STAT *psbuf)
+char *store_file_unix_basic(connection_struct *conn,
+			    char *pdata,
+			    files_struct *fsp,
+			    const SMB_STRUCT_STAT *psbuf)
 {
 	dev_t devno;
 
@@ -3202,10 +3192,10 @@ static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 /* Just like SMB_QUERY_FILE_UNIX_BASIC, but with the addition
  * of file flags and birth (create) time.
  */
-static char *store_file_unix_basic_info2(connection_struct *conn,
-				char *pdata,
-				files_struct *fsp,
-				const SMB_STRUCT_STAT *psbuf)
+char *store_file_unix_basic_info2(connection_struct *conn,
+				  char *pdata,
+				  files_struct *fsp,
+				  const SMB_STRUCT_STAT *psbuf)
 {
 	uint32_t file_flags = 0;
 	uint32_t flags_mask = 0;
