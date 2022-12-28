@@ -4853,11 +4853,11 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
  Deal with SMB_SET_FILE_DISPOSITION_INFO.
 ****************************************************************************/
 
-static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
-				const char *pdata,
-				int total_data,
-				files_struct *fsp,
-				struct smb_filename *smb_fname)
+NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
+				       const char *pdata,
+				       int total_data,
+				       files_struct *fsp,
+				       struct smb_filename *smb_fname)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	bool delete_on_close;

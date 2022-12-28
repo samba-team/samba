@@ -1109,7 +1109,11 @@ char *store_file_unix_basic_info2(connection_struct *conn,
 				  char *pdata,
 				  files_struct *fsp,
 				  const SMB_STRUCT_STAT *psbuf);
-
+NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
+				       const char *pdata,
+				       int total_data,
+				       files_struct *fsp,
+				       struct smb_filename *smb_fname);
 NTSTATUS refuse_symlink_fsp(const struct files_struct *fsp);
 NTSTATUS check_access_fsp(struct files_struct *fsp,
 			  uint32_t access_mask);
