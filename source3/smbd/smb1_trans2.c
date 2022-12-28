@@ -1731,18 +1731,16 @@ static void call_trans2setfsinfo(connection_struct *conn,
 			xconn->smb1.unix_info.client_minor = SVAL(pdata,2);
 			xconn->smb1.unix_info.client_cap_low = IVAL(pdata,4);
 			xconn->smb1.unix_info.client_cap_high = IVAL(pdata,8);
+
 			/* Just print these values for now. */
-			DEBUG(10, ("call_trans2setfsinfo: set unix_info info. "
-				   "major = %u, minor = %u cap_low = 0x%x, "
-				   "cap_high = 0x%xn",
-				   (unsigned int)xconn->
-				   smb1.unix_info.client_major,
-				   (unsigned int)xconn->
-				   smb1.unix_info.client_minor,
-				   (unsigned int)xconn->
-				   smb1.unix_info.client_cap_low,
-				   (unsigned int)xconn->
-				   smb1.unix_info.client_cap_high));
+			DBG_DEBUG("set unix_info info. "
+				  "major = %"PRIu16", minor = %"PRIu16
+				  "cap_low = 0x%"PRIx32", "
+				  "cap_high = 0x%"PRIx32"\n",
+				  xconn->smb1.unix_info.client_major,
+				  xconn->smb1.unix_info.client_minor,
+				  xconn->smb1.unix_info.client_cap_low,
+				  xconn->smb1.unix_info.client_cap_high);
 
 			/*
 			 * Here is where we must switch to posix
