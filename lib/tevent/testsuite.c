@@ -32,6 +32,7 @@
 #include "system/network.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
+#include "lib/util/blocking.h"
 #ifdef HAVE_PTHREAD
 #include "system/threads.h"
 #include <assert.h>
@@ -95,6 +96,22 @@ static void do_write(int fd, void *buf, size_t count)
 	do {
 		ret = write(fd, buf, count);
 	} while (ret == -1 && errno == EINTR);
+}
+
+static void do_fill(int fd)
+{
+	uint8_t buf[1024] = {0, };
+	ssize_t ret;
+
+	set_blocking(fd, false);
+
+	do {
+		do {
+			ret = write(fd, buf, ARRAY_SIZE(buf));
+		} while (ret == -1 && errno == EINTR);
+	} while (ret == ARRAY_SIZE(buf));
+
+	set_blocking(fd, true);
 }
 
 static void fde_handler_write(struct tevent_context *ev_ctx, struct tevent_fd *f,
@@ -814,6 +831,600 @@ static bool test_event_fd2(struct torture_context *tctx,
 	state.sock0.num_written++;
 	do_write(state.sock1.fd, &c, 1);
 	state.sock1.num_written++;
+
+	while (!state.finished) {
+		errno = 0;
+		if (tevent_loop_once(state.ev) == -1) {
+			talloc_free(state.ev);
+			torture_fail(tctx, talloc_asprintf(tctx,
+				     "Failed event loop %s\n",
+				     strerror(errno)));
+		}
+	}
+
+	talloc_free(state.ev);
+
+	torture_assert(tctx, state.error == NULL, talloc_asprintf(tctx,
+		       "%s", state.error));
+
+	return true;
+}
+
+struct test_event_fd3_state {
+	struct torture_context *tctx;
+	const char *backend;
+	struct tevent_context *ev;
+	struct timeval start_time;
+	struct tevent_timer *te1, *te2, *te3, *te4, *te5;
+	struct test_event_fd3_sock {
+		struct test_event_fd3_state *state;
+		const char *sock_name;
+		int fd;
+		const char *phase_name;
+		uint64_t iteration_id;
+		uint64_t max_iterations;
+		uint16_t expected_flags;
+		uint8_t expected_count;
+		uint8_t actual_count;
+		struct test_event_fd3_fde {
+			struct test_event_fd3_sock *sock;
+			struct tevent_fd *fde;
+			uint64_t last_iteration_id;
+		} fde1, fde2, fde3, fde4, fde5, fde6, fde7, fde8, fde9;
+		void (*fde_callback)(struct test_event_fd3_fde *tfde,
+				     uint16_t flags);
+	} sock0, sock1;
+	bool finished;
+	const char *error;
+};
+
+static void test_event_fd3_fde_callback(struct test_event_fd3_fde *tfde,
+					uint16_t flags)
+{
+	struct test_event_fd3_sock *sock = tfde->sock;
+	struct test_event_fd3_state *state = sock->state;
+	uint16_t fde_flags = tevent_fd_get_flags(tfde->fde);
+	uint16_t expected_flags = sock->expected_flags & fde_flags;
+
+	if (expected_flags == 0) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (flags != expected_flags) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (tfde->last_iteration_id == sock->iteration_id) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	tfde->last_iteration_id = sock->iteration_id;
+
+	sock->actual_count += 1;
+
+	if (sock->actual_count > sock->expected_count) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (sock->actual_count == sock->expected_count) {
+		sock->actual_count = 0;
+		sock->iteration_id += 1;
+	}
+
+	if (sock->iteration_id > sock->max_iterations) {
+		torture_comment(state->tctx,
+			"%s: phase[%s] finished with %"PRIu64" iterations\n",
+			sock->sock_name,
+			sock->phase_name,
+			sock->max_iterations);
+		tevent_fd_set_flags(sock->fde1.fde, 0);
+		tevent_fd_set_flags(sock->fde2.fde, 0);
+		tevent_fd_set_flags(sock->fde3.fde, 0);
+		tevent_fd_set_flags(sock->fde4.fde, 0);
+		tevent_fd_set_flags(sock->fde5.fde, 0);
+		tevent_fd_set_flags(sock->fde6.fde, 0);
+		tevent_fd_set_flags(sock->fde7.fde, 0);
+		tevent_fd_set_flags(sock->fde8.fde, 0);
+		tevent_fd_set_flags(sock->fde9.fde, 0);
+		sock->fde_callback = NULL;
+	}
+}
+
+static void test_event_fd3_prepare_phase(struct test_event_fd3_sock *sock,
+					 const char *phase_name,
+					 uint64_t max_iterations,
+					 uint16_t expected_flags,
+					 uint8_t expected_count,
+					 uint16_t flags1,
+					 uint16_t flags2,
+					 uint16_t flags3,
+					 uint16_t flags4,
+					 uint16_t flags5,
+					 uint16_t flags6,
+					 uint16_t flags7,
+					 uint16_t flags8,
+					 uint16_t flags9)
+{
+	struct test_event_fd3_state *state = sock->state;
+
+	if (sock->fde_callback != NULL) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	sock->phase_name = phase_name;
+	sock->max_iterations = max_iterations;
+	sock->expected_flags = expected_flags;
+	sock->expected_count = expected_count;
+	sock->iteration_id = 1;
+	sock->actual_count = 0;
+
+	tevent_fd_set_flags(sock->fde1.fde, flags1);
+	sock->fde1.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde2.fde, flags2);
+	sock->fde2.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde3.fde, flags3);
+	sock->fde3.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde4.fde, flags4);
+	sock->fde4.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde5.fde, flags5);
+	sock->fde5.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde6.fde, flags6);
+	sock->fde6.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde7.fde, flags7);
+	sock->fde7.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde8.fde, flags8);
+	sock->fde8.last_iteration_id = 0;
+	tevent_fd_set_flags(sock->fde9.fde, flags9);
+	sock->fde9.last_iteration_id = 0;
+
+	sock->fde_callback = test_event_fd3_fde_callback;
+}
+
+static void test_event_fd3_sock_handler(struct tevent_context *ev_ctx,
+					struct tevent_fd *fde,
+					uint16_t flags,
+					void *private_data)
+{
+	struct test_event_fd3_fde *tfde =
+		(struct test_event_fd3_fde *)private_data;
+	struct test_event_fd3_sock *sock = tfde->sock;
+	struct test_event_fd3_state *state = sock->state;
+
+	if (sock->fd == -1) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (sock->fde_callback == NULL) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	sock->fde_callback(tfde, flags);
+	return;
+}
+
+static bool test_event_fd3_assert_timeout(struct test_event_fd3_state *state,
+					  double expected_elapsed,
+					  const char *func)
+{
+	double e = timeval_elapsed(&state->start_time);
+	double max_latency = 0.05;
+
+	if (e < expected_elapsed) {
+		torture_comment(state->tctx,
+			"%s: elapsed=%.6f < expected_elapsed=%.6f\n",
+			func, e, expected_elapsed);
+		state->finished = true;
+		state->error = __location__;
+		return false;
+	}
+
+	if (e > (expected_elapsed + max_latency)) {
+		torture_comment(state->tctx,
+			"%s: elapsed=%.6f > "
+			"(expected_elapsed=%.6f + max_latency=%.6f)\n",
+			func, e, expected_elapsed, max_latency);
+		state->finished = true;
+		state->error = __location__;
+		return false;
+	}
+
+	torture_comment(state->tctx, "%s: elapsed=%.6f\n", __func__, e);
+	return true;
+}
+
+static void test_event_fd3_writeable(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval tval,
+				    void *private_data)
+{
+	struct test_event_fd3_state *state =
+		(struct test_event_fd3_state *)private_data;
+
+	if (!test_event_fd3_assert_timeout(state, 1, __func__)) {
+		return;
+	}
+
+	test_event_fd3_prepare_phase(&state->sock0,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_WRITE,
+		5,
+		TEVENT_FD_WRITE,
+		0,
+		TEVENT_FD_READ,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		0);
+
+	test_event_fd3_prepare_phase(&state->sock1,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_WRITE,
+		9,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE);
+}
+
+static void test_event_fd3_readable(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval tval,
+				    void *private_data)
+{
+	struct test_event_fd3_state *state =
+		(struct test_event_fd3_state *)private_data;
+	uint8_t c = 0;
+
+	if (!test_event_fd3_assert_timeout(state, 2, __func__)) {
+		return;
+	}
+
+	do_write(state->sock0.fd, &c, 1);
+	do_write(state->sock1.fd, &c, 1);
+
+	test_event_fd3_prepare_phase(&state->sock0,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		9,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE);
+
+	test_event_fd3_prepare_phase(&state->sock1,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		7,
+		TEVENT_FD_READ,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		0,
+		TEVENT_FD_READ,
+		TEVENT_FD_WRITE,
+		0,
+		TEVENT_FD_READ,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE);
+}
+
+static void test_event_fd3_not_writeable(struct tevent_context *ev_ctx,
+					 struct tevent_timer *te,
+					 struct timeval tval,
+					 void *private_data)
+{
+	struct test_event_fd3_state *state =
+		(struct test_event_fd3_state *)private_data;
+
+	if (!test_event_fd3_assert_timeout(state, 3, __func__)) {
+		return;
+	}
+
+	do_fill(state->sock0.fd);
+	do_fill(state->sock1.fd);
+
+	test_event_fd3_prepare_phase(&state->sock0,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_READ,
+		5,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ,
+		0,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ,
+		0,
+		TEVENT_FD_READ);
+
+	test_event_fd3_prepare_phase(&state->sock1,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_READ,
+		9,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_READ|TEVENT_FD_WRITE);
+}
+
+static void test_event_fd3_off(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval tval,
+				    void *private_data)
+{
+	struct test_event_fd3_state *state =
+		(struct test_event_fd3_state *)private_data;
+
+	if (!test_event_fd3_assert_timeout(state, 4, __func__)) {
+		return;
+	}
+
+	TALLOC_FREE(state->sock0.fde1.fde);
+	state->sock0.fd = -1;
+
+	test_event_fd3_prepare_phase(&state->sock1,
+		__func__,
+		INT8_MAX,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		5,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ,
+		0,
+		TEVENT_FD_READ|TEVENT_FD_WRITE,
+		TEVENT_FD_WRITE,
+		TEVENT_FD_READ,
+		0,
+		TEVENT_FD_READ);
+}
+
+static void test_event_fd3_finished(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval tval,
+				    void *private_data)
+{
+	struct test_event_fd3_state *state =
+		(struct test_event_fd3_state *)private_data;
+
+	if (!test_event_fd3_assert_timeout(state, 5, __func__)) {
+		return;
+	}
+
+	/*
+	 * this should never be triggered
+	 */
+	if (state->sock0.fde_callback != NULL) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+	if (state->sock1.fde_callback != NULL) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	state->finished = true;
+}
+
+static bool test_event_fd3(struct torture_context *tctx,
+			   const void *test_data)
+{
+	struct test_event_fd3_state state = {
+		.tctx = tctx,
+		.backend = (const char *)test_data,
+	};
+	int rc;
+	int sock[2];
+
+	state.ev = test_tevent_context_init_byname(tctx, state.backend);
+	if (state.ev == NULL) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "event backend '%s' not supported\n",
+			     state.backend));
+		return true;
+	}
+
+	torture_comment(tctx, "backend '%s' - %s\n",
+			state.backend, __FUNCTION__);
+
+	sock[0] = -1;
+	sock[1] = -1;
+	rc = socketpair(AF_UNIX, SOCK_STREAM, 0, sock);
+	torture_assert_int_equal(tctx, rc, 0, "socketpair()");
+
+	state.start_time = timeval_current();
+	state.te1 = tevent_add_timer(state.ev, state.ev,
+				     timeval_add(&state.start_time, 5, 0),
+				     test_event_fd3_finished, &state);
+	torture_assert(tctx, state.te1 != NULL, "tevent_add_timer()");
+	state.te2 = tevent_add_timer(state.ev, state.ev,
+				     timeval_add(&state.start_time, 1, 0),
+				     test_event_fd3_writeable, &state);
+	torture_assert(tctx, state.te2 != NULL, "tevent_add_timer()");
+	state.te3 = tevent_add_timer(state.ev, state.ev,
+				     timeval_add(&state.start_time, 2, 0),
+				     test_event_fd3_readable, &state);
+	torture_assert(tctx, state.te3 != NULL, "tevent_add_timer()");
+	state.te4 = tevent_add_timer(state.ev, state.ev,
+				     timeval_add(&state.start_time, 3, 0),
+				     test_event_fd3_not_writeable, &state);
+	torture_assert(tctx, state.te4 != NULL, "tevent_add_timer()");
+	state.te5 = tevent_add_timer(state.ev, state.ev,
+				     timeval_add(&state.start_time, 4, 0),
+				     test_event_fd3_off, &state);
+	torture_assert(tctx, state.te5 != NULL, "tevent_add_timer()");
+
+	state.sock0.state = &state;
+	state.sock0.sock_name = "sock0";
+	state.sock0.fd = sock[0];
+	state.sock0.fde1.sock = &state.sock0;
+	state.sock0.fde1.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde1);
+	torture_assert(tctx, state.sock0.fde1.fde != NULL, "tevent_add_fd()");
+	tevent_fd_set_auto_close(state.sock0.fde1.fde);
+	state.sock0.fde2.sock = &state.sock0;
+	state.sock0.fde2.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde2);
+	torture_assert(tctx, state.sock0.fde2.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde3.sock = &state.sock0;
+	state.sock0.fde3.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde3);
+	torture_assert(tctx, state.sock0.fde3.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde4.sock = &state.sock0;
+	state.sock0.fde4.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde4);
+	torture_assert(tctx, state.sock0.fde4.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde5.sock = &state.sock0;
+	state.sock0.fde5.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde5);
+	torture_assert(tctx, state.sock0.fde5.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde6.sock = &state.sock0;
+	state.sock0.fde6.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde6);
+	torture_assert(tctx, state.sock0.fde6.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde7.sock = &state.sock0;
+	state.sock0.fde7.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde7);
+	torture_assert(tctx, state.sock0.fde7.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde8.sock = &state.sock0;
+	state.sock0.fde8.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde8);
+	torture_assert(tctx, state.sock0.fde8.fde != NULL, "tevent_add_fd()");
+	state.sock0.fde9.sock = &state.sock0;
+	state.sock0.fde9.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock0.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock0.fde9);
+	torture_assert(tctx, state.sock0.fde9.fde != NULL, "tevent_add_fd()");
+
+	state.sock1.state = &state;
+	state.sock1.sock_name = "sock1";
+	state.sock1.fd = sock[1];
+	state.sock1.fde1.sock = &state.sock1;
+	state.sock1.fde1.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     1,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde1);
+	torture_assert(tctx, state.sock1.fde1.fde != NULL, "tevent_add_fd()");
+	tevent_fd_set_auto_close(state.sock1.fde1.fde);
+	state.sock1.fde2.sock = &state.sock1;
+	state.sock1.fde2.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde2);
+	torture_assert(tctx, state.sock1.fde2.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde3.sock = &state.sock1;
+	state.sock1.fde3.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde3);
+	torture_assert(tctx, state.sock1.fde3.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde4.sock = &state.sock1;
+	state.sock1.fde4.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde4);
+	torture_assert(tctx, state.sock1.fde4.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde5.sock = &state.sock1;
+	state.sock1.fde5.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde5);
+	torture_assert(tctx, state.sock1.fde5.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde6.sock = &state.sock1;
+	state.sock1.fde6.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde6);
+	torture_assert(tctx, state.sock1.fde6.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde7.sock = &state.sock1;
+	state.sock1.fde7.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde7);
+	torture_assert(tctx, state.sock1.fde7.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde8.sock = &state.sock1;
+	state.sock1.fde8.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde8);
+	torture_assert(tctx, state.sock1.fde8.fde != NULL, "tevent_add_fd()");
+	state.sock1.fde9.sock = &state.sock1;
+	state.sock1.fde9.fde = tevent_add_fd(state.ev, state.ev,
+					     state.sock1.fd,
+					     0,
+					     test_event_fd3_sock_handler,
+					     &state.sock1.fde9);
+	torture_assert(tctx, state.sock1.fde9.fde != NULL, "tevent_add_fd()");
 
 	while (!state.finished) {
 		errno = 0;
@@ -1996,6 +2607,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "fd2",
 					       test_event_fd2,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "fd3",
+					       test_event_fd3,
 					       (const void *)list[i]);
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "wrapper",
