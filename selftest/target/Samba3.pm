@@ -529,6 +529,36 @@ sub setup_clusteredmember
 			return undef;
 		}
 
+		my $registry_share_template = "$node_ret->{SERVERCONFFILE}.registry_share_template";
+		unless (open(REGISTRYCONF, ">$registry_share_template")) {
+			warn("Unable to open $registry_share_template");
+			teardown_env($self, $node_ret);
+			teardown_env($self, $ctdb_data);
+			return undef;
+		}
+
+		print REGISTRYCONF "
+[registry_share]
+	copy = tmp
+	comment = smb username is [%U]
+";
+
+		close(REGISTRYCONF);
+
+		my $net = Samba::bindir_path($self, "net");
+		my $cmd = "";
+
+		$cmd .= "UID_WRAPPER_ROOT=1 ";
+		$cmd .= "$net conf import $node_ret->{CONFIGURATION} ${registry_share_template}";
+
+		my $net_ret = system($cmd);
+		if ($net_ret != 0) {
+			warn("net conf import failed: $net_ret\n$cmd");
+			teardown_env($self, $node_ret);
+			teardown_env($self, $ctdb_data);
+			return undef;
+		}
+
 		my $nmblookup = Samba::bindir_path($self, "nmblookup");
 		do {
 			print "Waiting for the LOGON SERVER registration ...\n";

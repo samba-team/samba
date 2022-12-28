@@ -1306,6 +1306,11 @@ plantestsuite("samba3.blackbox.smbXsrv_client_dead_rec", "fileserver:local",
                '$SERVER_IP',
                "tmp"])
 
+plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_registry_share.sh"),
+               "$SERVER", '$DC_USERNAME', "$DC_PASSWORD"])
+
 env = 'fileserver'
 plantestsuite("samba3.blackbox.virus_scanner", "%s:local" % (env),
               [os.path.join(samba3srcdir,
