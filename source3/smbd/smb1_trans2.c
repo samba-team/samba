@@ -1744,19 +1744,28 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				   (unsigned int)xconn->
 				   smb1.unix_info.client_cap_high));
 
-			/* Here is where we must switch to posix pathname processing... */
-			if (xconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+			/*
+			 * Here is where we must switch to posix
+			 * pathname processing...
+			 */
+			if (xconn->smb1.unix_info.client_cap_low &
+			    CIFS_UNIX_POSIX_PATHNAMES_CAP)
+			{
 				lp_set_posix_pathnames();
 				mangle_change_to_posix();
 			}
 
-			if ((xconn->smb1.unix_info.client_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) &&
-			    !(xconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)) {
+			if ((xconn->smb1.unix_info.client_cap_low &
+			     CIFS_UNIX_FCNTL_LOCKS_CAP) &&
+			    !(xconn->smb1.unix_info.client_cap_low &
+			      CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP))
+			{
 				/* Client that knows how to do posix locks,
 				 * but not posix open/mkdir operations. Set a
 				 * default type for read/write checks. */
 
-				lp_set_posix_default_cifsx_readwrite_locktype(POSIX_LOCK);
+				lp_set_posix_default_cifsx_readwrite_locktype(
+					POSIX_LOCK);
 
 			}
 			break;
