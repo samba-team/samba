@@ -1376,6 +1376,10 @@ plantestsuite("samba3.blackbox.smbXsrv_client_cross_node", "clusteredmember:loca
                configuration,
                'ctdb0', 'ctdb1',
                "tmp"])
+plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_registry_share.sh"),
+               "$SERVER", '$DC_USERNAME', "$DC_PASSWORD"])
 
 env = 'fileserver'
 plantestsuite("samba3.blackbox.virus_scanner", "%s:local" % (env),
