@@ -23,10 +23,5 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-NTSTATUS smb_set_posix_lock(connection_struct *conn,
-			    struct smb_request *req,
-			    const char *pdata,
-			    int total_data,
-			    files_struct *fsp);
 void reply_trans2(struct smb_request *req);
 void reply_transs2(struct smb_request *req);

@@ -280,11 +280,11 @@ static void send_trans2_replies(connection_struct *conn,
 
 static void smb_set_posix_lock_done(struct tevent_req *subreq);
 
-NTSTATUS smb_set_posix_lock(connection_struct *conn,
-			    struct smb_request *req,
-			    const char *pdata,
-			    int total_data,
-			    files_struct *fsp)
+static NTSTATUS smb_set_posix_lock(connection_struct *conn,
+				   struct smb_request *req,
+				   const char *pdata,
+				   int total_data,
+				   files_struct *fsp)
 {
 	struct tevent_req *subreq = NULL;
 	struct smbd_lock_element *lck = NULL;
@@ -295,6 +295,10 @@ NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	enum brl_type lock_type;
 
 	NTSTATUS status = NT_STATUS_OK;
+
+	if (!CAN_WRITE(conn)) {
+		return NT_STATUS_DOS(ERRSRV, ERRaccess);
+	}
 
 	if (fsp == NULL ||
 	    fsp->fsp_flags.is_pathref ||
@@ -3405,6 +3409,7 @@ static void call_trans2setfileinfo(
 	struct files_struct *fsp = NULL;
 	char *params = *pparams;
 	int data_return_size = 0;
+	bool info_level_handled;
 	NTSTATUS status;
 	int ret;
 
@@ -3495,6 +3500,32 @@ static void call_trans2setfileinfo(
 			reply_nterror(req, status);
 			return;
 		}
+	}
+
+	info_level_handled = true; /* Untouched in switch cases below */
+
+	switch (info_level) {
+
+	default:
+		info_level_handled = false;
+		break;
+
+	case SMB_SET_POSIX_LOCK:
+		status = smb_set_posix_lock(
+			conn, req, *ppdata, total_data, fsp);
+		break;
+	}
+
+	if (info_level_handled) {
+		handle_trans2setfilepathinfo_result(
+			conn,
+			req,
+			info_level,
+			status,
+			*ppdata,
+			data_return_size,
+			max_data_bytes);
+		return;
 	}
 
 	status = smbd_do_setfilepathinfo(

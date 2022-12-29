@@ -6231,18 +6231,6 @@ static NTSTATUS smbd_do_posix_setfilepathinfo(struct connection_struct *conn,
 		}
 #endif
 
-#if defined(WITH_SMB1SERVER)
-		case SMB_SET_POSIX_LOCK:
-		{
-			if (fsp == NULL) {
-				return NT_STATUS_INVALID_LEVEL;
-			}
-			status = smb_set_posix_lock(conn, req,
-						    pdata, total_data, fsp);
-			break;
-		}
-#endif
-
 		default:
 			return NT_STATUS_INVALID_LEVEL;
 	}
