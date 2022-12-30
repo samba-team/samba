@@ -2082,7 +2082,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				       fsp, smb_fname,
 				       delete_pending, write_time_ts,
 				       ea_list,
-				       0, NULL,
 				       req->flags2, max_data_bytes,
 				       &fixed_portion,
 				       ppdata, &data_size);
