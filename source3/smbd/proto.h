@@ -1143,6 +1143,13 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   struct smb_filename *smb_fname,
 			   struct smb_file_time *ft,
 			   bool setting_write_time);
+NTSTATUS smb_set_file_size(connection_struct *conn,
+			   struct smb_request *req,
+			   files_struct *fsp,
+			   struct smb_filename *smb_fname,
+			   const SMB_STRUCT_STAT *psbuf,
+			   off_t size,
+			   bool fail_after_createfile);
 
 enum perm_type {
 	PERM_NEW_FILE,

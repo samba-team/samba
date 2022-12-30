@@ -4652,13 +4652,13 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
  Deal with setting the size from any of the setfilepathinfo functions.
 ****************************************************************************/
 
-static NTSTATUS smb_set_file_size(connection_struct *conn,
-				  struct smb_request *req,
-				  files_struct *fsp,
-				  struct smb_filename *smb_fname,
-				  const SMB_STRUCT_STAT *psbuf,
-				  off_t size,
-				  bool fail_after_createfile)
+NTSTATUS smb_set_file_size(connection_struct *conn,
+			   struct smb_request *req,
+			   files_struct *fsp,
+			   struct smb_filename *smb_fname,
+			   const SMB_STRUCT_STAT *psbuf,
+			   off_t size,
+			   bool fail_after_createfile)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *new_fsp = NULL;
