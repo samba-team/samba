@@ -298,8 +298,6 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		struct timespec write_time_ts;
 		struct file_id fileid;
 		struct ea_list *ea_list = NULL;
-		int lock_data_count = 0;
-		char *lock_data = NULL;
 		size_t fixed_portion;
 
 		ZERO_STRUCT(write_time_ts);
@@ -424,8 +422,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					       delete_pending,
 					       write_time_ts,
 					       ea_list,
-					       lock_data_count,
-					       lock_data,
+					       0,
+					       NULL,
 					       STR_UNICODE,
 					       in_output_buffer_length,
 					       &fixed_portion,
