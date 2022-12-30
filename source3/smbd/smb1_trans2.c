@@ -2355,6 +2355,82 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	return;
 }
 
+static void handle_trans2setfilepathinfo_result(
+	connection_struct *conn,
+	struct smb_request *req,
+	uint16_t info_level,
+	NTSTATUS status,
+	char *pdata,
+	int data_return_size,
+	unsigned int max_data_bytes)
+{
+	char params[2] = { 0, 0, };
+
+	if (NT_STATUS_IS_OK(status)) {
+		send_trans2_replies(
+			conn,
+			req,
+			NT_STATUS_OK,
+			params,
+			2,
+			pdata,
+			data_return_size,
+			max_data_bytes);
+		return;
+	}
+
+	if (open_was_deferred(req->xconn, req->mid)) {
+		/* We have re-scheduled this call. */
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		bool ok = defer_smb1_sharing_violation(req);
+		if (ok) {
+			return;
+		}
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_EVENT_PENDING)) {
+		/* We have re-scheduled this call. */
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+		reply_botherror(
+			req,
+			NT_STATUS_PATH_NOT_COVERED,
+			ERRSRV,
+			ERRbadpath);
+		return;
+	}
+
+	if (info_level == SMB_POSIX_PATH_OPEN) {
+		reply_openerror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(status, STATUS_INVALID_EA_NAME)) {
+		/*
+		 * Invalid EA name needs to return 2 param bytes,
+		 * not a zero-length error packet.
+		 */
+
+		send_trans2_replies(
+			conn,
+			req,
+			status,
+			params,
+			2,
+			NULL,
+			0,
+			max_data_bytes);
+		return;
+	}
+
+	reply_nterror(req, status);
+}
+
 /****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
 ****************************************************************************/
@@ -2369,7 +2445,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				       char **ppdata, int total_data,
 				       unsigned int max_data_bytes)
 {
-	char *params = *pparams;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
 
@@ -2378,64 +2453,21 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		 fsp_fnum_dbg(fsp),
 		 info_level,total_data));
 
-	/* Realloc the parameter size */
-	*pparams = (char *)SMB_REALLOC(*pparams,2);
-	if (*pparams == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-	params = *pparams;
-
-	SSVAL(params,0,0);
-
 	status = smbd_do_setfilepathinfo(conn, req, req,
 					 info_level,
 					 fsp,
 					 smb_fname,
 					 ppdata, total_data,
 					 &data_return_size);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->xconn, req->mid)) {
-			/* We have re-scheduled this call. */
-			return;
-		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
-			bool ok = defer_smb1_sharing_violation(req);
-			if (ok) {
-				return;
-			}
-		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_EVENT_PENDING)) {
-			/* We have re-scheduled this call. */
-			return;
-		}
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			return;
-		}
-		if (info_level == SMB_POSIX_PATH_OPEN) {
-			reply_openerror(req, status);
-			return;
-		}
 
-		/*
-		 * Invalid EA name needs to return 2 param bytes,
-		 * not a zero-length error packet.
-		 */
-		if (NT_STATUS_EQUAL(status, STATUS_INVALID_EA_NAME)) {
-			send_trans2_replies(conn, req, status, params, 2, NULL, 0,
-					max_data_bytes);
-		} else {
-			reply_nterror(req, status);
-		}
-		return;
-	}
-
-	send_trans2_replies(conn, req, NT_STATUS_OK, params, 2, *ppdata, data_return_size,
-			    max_data_bytes);
-
-	return;
+	handle_trans2setfilepathinfo_result(
+		conn,
+		req,
+		info_level,
+		status,
+		*ppdata,
+		data_return_size,
+		max_data_bytes);
 }
 
 static void call_trans2setpathinfo(
