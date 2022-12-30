@@ -1151,6 +1151,11 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 			   off_t size,
 			   bool fail_after_createfile);
 
+bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
+			     const uint32_t smb_fflags,
+			     const uint32_t smb_fmask,
+			     int *stat_fflags);
+
 enum perm_type {
 	PERM_NEW_FILE,
 	PERM_NEW_DIR,

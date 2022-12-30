@@ -3152,10 +3152,10 @@ static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
 	}
 }
 
-static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
-				const uint32_t smb_fflags,
-				const uint32_t smb_fmask,
-				int *stat_fflags)
+bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
+			     const uint32_t smb_fflags,
+			     const uint32_t smb_fmask,
+			     int *stat_fflags)
 {
 	uint32_t max_fmask = 0;
 	size_t i;
