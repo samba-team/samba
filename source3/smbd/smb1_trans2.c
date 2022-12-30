@@ -1925,6 +1925,68 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 	return;
 }
 
+static void handle_trans2qfilepathinfo_result(
+	connection_struct *conn,
+	struct smb_request *req,
+	uint16_t info_level,
+	NTSTATUS status,
+	char *pdata,
+	int data_return_size,
+	size_t fixed_portion,
+	unsigned int max_data_bytes)
+{
+	char params[2] = { 0, 0, };
+	int param_size = 2;
+
+	/*
+	 * draft-leach-cifs-v1-spec-02.txt
+	 * 4.2.14 TRANS2_QUERY_PATH_INFORMATION: Get File Attributes given Path
+	 * says:
+	 *
+	 *  The requested information is placed in the Data portion of the
+	 *  transaction response. For the information levels greater than 0x100,
+	 *  the transaction response has 1 parameter word which should be
+	 *  ignored by the client.
+	 *
+	 * However Windows only follows this rule for the IS_NAME_VALID call.
+	 */
+	switch (info_level) {
+	case SMB_INFO_IS_NAME_VALID:
+		param_size = 0;
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
+			/* We have re-scheduled this call. */
+			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				return;
+			}
+		}
+		reply_nterror(req, status);
+		return;
+	}
+
+	if (fixed_portion > max_data_bytes) {
+		reply_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
+		return;
+	}
+
+	send_trans2_replies(
+		conn,
+		req,
+		NT_STATUS_OK,
+		params,
+		param_size,
+		pdata,
+		data_return_size,
+		max_data_bytes);
+}
+
 /****************************************************************************
  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
  file name or file id).
@@ -1945,7 +2007,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	unsigned int data_size = 0;
-	unsigned int param_size = 2;
 	struct ea_list *ea_list = NULL;
 	int lock_data_count = 0;
 	char *lock_data = NULL;
@@ -2032,24 +2093,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	params = *pparams;
 	SSVAL(params,0,0);
 
-	/*
-	 * draft-leach-cifs-v1-spec-02.txt
-	 * 4.2.14 TRANS2_QUERY_PATH_INFORMATION: Get File Attributes given Path
-	 * says:
-	 *
-	 *  The requested information is placed in the Data portion of the
-	 *  transaction response. For the information levels greater than 0x100,
-	 *  the transaction response has 1 parameter word which should be
-	 *  ignored by the client.
-	 *
-	 * However Windows only follows this rule for the IS_NAME_VALID call.
-	 */
-	switch (info_level) {
-	case SMB_INFO_IS_NAME_VALID:
-		param_size = 0;
-		break;
-	}
-
 	if ((info_level & SMB2_INFO_SPECIAL) == SMB2_INFO_SPECIAL) {
 		/*
 		 * We use levels that start with 0xFF00
@@ -2067,29 +2110,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				       req->flags2, max_data_bytes,
 				       &fixed_portion,
 				       ppdata, &data_size);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->xconn, req->mid)) {
-			/* We have re-scheduled this call. */
-			return;
-		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
-			bool ok = defer_smb1_sharing_violation(req);
-			if (ok) {
-				return;
-			}
-		}
-		reply_nterror(req, status);
-		return;
-	}
-	if (fixed_portion > max_data_bytes) {
-		reply_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
-		return;
-	}
 
-	send_trans2_replies(conn, req, NT_STATUS_OK, params, param_size, *ppdata, data_size,
-			    max_data_bytes);
-
-	return;
+	handle_trans2qfilepathinfo_result(
+		conn,
+		req,
+		info_level,
+		status,
+		*ppdata,
+		data_size,
+		fixed_portion,
+		max_data_bytes);
 }
 
 static void call_trans2qpathinfo(
