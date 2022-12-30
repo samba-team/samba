@@ -92,11 +92,11 @@ NTSTATUS check_access_fsp(struct files_struct *fsp,
  Utility function to open a fsp for a POSIX handle operation.
 ****************************************************************************/
 
-static NTSTATUS get_posix_fsp(connection_struct *conn,
-			struct smb_request *req,
-			struct smb_filename *smb_fname,
-			uint32_t access_mask,
-			files_struct **ret_fsp)
+NTSTATUS get_posix_fsp(connection_struct *conn,
+		       struct smb_request *req,
+		       struct smb_filename *smb_fname,
+		       uint32_t access_mask,
+		       files_struct **ret_fsp)
 {
 	NTSTATUS status;
 	uint32_t create_disposition = FILE_OPEN;

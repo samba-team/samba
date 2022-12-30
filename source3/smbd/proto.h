@@ -1156,6 +1156,12 @@ bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 			     const uint32_t smb_fmask,
 			     int *stat_fflags);
 
+NTSTATUS get_posix_fsp(connection_struct *conn,
+		       struct smb_request *req,
+		       struct smb_filename *smb_fname,
+		       uint32_t access_mask,
+		       files_struct **ret_fsp);
+
 enum perm_type {
 	PERM_NEW_FILE,
 	PERM_NEW_DIR,
