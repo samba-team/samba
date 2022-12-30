@@ -2431,45 +2431,6 @@ static void handle_trans2setfilepathinfo_result(
 	reply_nterror(req, status);
 }
 
-/****************************************************************************
- Reply to a TRANS2_SETFILEINFO (set file info by fileid or pathname).
-****************************************************************************/
-
-static void call_trans2setfilepathinfo(connection_struct *conn,
-				       struct smb_request *req,
-				       unsigned int tran_call,
-				       uint16_t info_level,
-				       struct smb_filename *smb_fname,
-				       struct files_struct *fsp,
-				       char **pparams, int total_params,
-				       char **ppdata, int total_data,
-				       unsigned int max_data_bytes)
-{
-	NTSTATUS status = NT_STATUS_OK;
-	int data_return_size = 0;
-
-	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (%s) info_level=%d "
-		 "totdata=%d\n", tran_call, smb_fname_str_dbg(smb_fname),
-		 fsp_fnum_dbg(fsp),
-		 info_level,total_data));
-
-	status = smbd_do_setfilepathinfo(conn, req, req,
-					 info_level,
-					 fsp,
-					 smb_fname,
-					 ppdata, total_data,
-					 &data_return_size);
-
-	handle_trans2setfilepathinfo_result(
-		conn,
-		req,
-		info_level,
-		status,
-		*ppdata,
-		data_return_size,
-		max_data_bytes);
-}
-
 static void call_trans2setpathinfo(
 	connection_struct *conn,
 	struct smb_request *req,
@@ -2488,6 +2449,7 @@ static void call_trans2setpathinfo(
 	bool require_existing_object = true;
 	NTTIME twrp = 0;
 	char *fname = NULL;
+	int data_return_size = 0;
 	NTSTATUS status;
 
 	if (params == NULL) {
@@ -2537,6 +2499,11 @@ static void call_trans2setpathinfo(
 		reply_nterror(req, status);
 		return;
 	}
+
+	DBG_NOTICE("fname=%s info_level=%d totdata=%d\n",
+		   fname,
+		   info_level,
+		   total_data);
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
@@ -2592,17 +2559,24 @@ static void call_trans2setpathinfo(
 		reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	}
 
-	call_trans2setfilepathinfo(
+	status = smbd_do_setfilepathinfo(
 		conn,
 		req,
-		TRANSACT2_SETPATHINFO,
+		req,
 		info_level,
-		smb_fname,
 		fsp,
-		pparams,
-		total_params,
+		smb_fname,
 		ppdata,
 		total_data,
+		&data_return_size);
+
+	handle_trans2setfilepathinfo_result(
+		conn,
+		req,
+		info_level,
+		status,
+		*ppdata,
+		data_return_size,
 		max_data_bytes);
 }
 
@@ -2620,6 +2594,7 @@ static void call_trans2setfileinfo(
 	struct smb_filename *smb_fname = NULL;
 	struct files_struct *fsp = NULL;
 	char *params = *pparams;
+	int data_return_size = 0;
 	NTSTATUS status;
 	int ret;
 
@@ -2651,6 +2626,12 @@ static void call_trans2setfileinfo(
 	}
 
 	smb_fname = fsp->fsp_name;
+
+	DBG_NOTICE("fnum=%s fname=%s info_level=%d totdata=%d\n",
+		   fsp_fnum_dbg(fsp),
+		   fsp_str_dbg(fsp),
+		   info_level,
+		   total_data);
 
 	if (fsp_get_pathref_fd(fsp) == -1) {
 		/*
@@ -2706,17 +2687,24 @@ static void call_trans2setfileinfo(
 		}
 	}
 
-	call_trans2setfilepathinfo(
+	status = smbd_do_setfilepathinfo(
 		conn,
 		req,
-		TRANSACT2_SETFILEINFO,
+		req,
 		info_level,
-		smb_fname,
 		fsp,
-		pparams,
-		total_params,
+		smb_fname,
 		ppdata,
 		total_data,
+		&data_return_size);
+
+	handle_trans2setfilepathinfo_result(
+		conn,
+		req,
+		info_level,
+		status,
+		*ppdata,
+		data_return_size,
 		max_data_bytes);
 }
 
