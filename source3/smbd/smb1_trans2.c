@@ -2012,8 +2012,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	char *pdata = *ppdata;
 	unsigned int data_size = 0;
 	struct ea_list *ea_list = NULL;
-	int lock_data_count = 0;
-	char *lock_data = NULL;
 	size_t fixed_portion;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -2059,32 +2057,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			break;
 		}
 
-		case SMB_QUERY_POSIX_LOCK:
-		{
-			if (fsp == NULL ||
-			    fsp->fsp_flags.is_pathref ||
-			    fsp_get_io_fd(fsp) == -1)
-			{
-				reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-				return;
-			}
-
-			if (total_data != POSIX_LOCK_DATA_SIZE) {
-				reply_nterror(
-					req, NT_STATUS_INVALID_PARAMETER);
-				return;
-			}
-
-			/* Copy the lock range data. */
-			lock_data = (char *)talloc_memdup(
-				req, pdata, total_data);
-			if (!lock_data) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-			lock_data_count = total_data;
-			break;
-		}
 		default:
 			break;
 	}
@@ -2110,7 +2082,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				       fsp, smb_fname,
 				       delete_pending, write_time_ts,
 				       ea_list,
-				       lock_data_count, lock_data,
+				       0, NULL,
 				       req->flags2, max_data_bytes,
 				       &fixed_portion,
 				       ppdata, &data_size);
@@ -2324,6 +2296,82 @@ static void call_trans2qpathinfo(
 		max_data_bytes);
 }
 
+static NTSTATUS smb_q_posix_lock(
+	struct connection_struct *conn,
+	struct smb_request *req,
+	struct files_struct *fsp,
+	char **ppdata,
+	int *ptotal_data,
+	unsigned int max_data_bytes)
+{
+	char *pdata = *ppdata;
+	int total_data = *ptotal_data;
+	uint64_t count;
+	uint64_t offset;
+	uint64_t smblctx;
+	enum brl_type lock_type;
+	NTSTATUS status;
+
+	if (fsp->fsp_flags.is_pathref || (fsp_get_io_fd(fsp) == -1)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (total_data != POSIX_LOCK_DATA_SIZE) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (SVAL(pdata, POSIX_LOCK_TYPE_OFFSET)) {
+	case POSIX_LOCK_TYPE_READ:
+		lock_type = READ_LOCK;
+		break;
+	case POSIX_LOCK_TYPE_WRITE:
+		lock_type = WRITE_LOCK;
+		break;
+	case POSIX_LOCK_TYPE_UNLOCK:
+	default:
+		/* There's no point in asking for an unlock... */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+	offset = BVAL(pdata,POSIX_LOCK_START_OFFSET);
+	count = BVAL(pdata,POSIX_LOCK_LEN_OFFSET);
+
+	status = query_lock(
+		fsp,
+		&smblctx,
+		&count,
+		&offset,
+		&lock_type,
+		POSIX_LOCK);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * For success we just return a copy of what we sent
+		 * with the lock type set to POSIX_LOCK_TYPE_UNLOCK.
+		 */
+		SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_UNLOCK);
+		return NT_STATUS_OK;
+	}
+
+	if (!ERROR_WAS_LOCK_DENIED(status)) {
+		DBG_DEBUG("query_lock() failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	/*
+	 * Here we need to report who has it locked.
+	 */
+
+	SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET, lock_type);
+	SSVAL(pdata, POSIX_LOCK_FLAGS_OFFSET, 0);
+	SIVAL(pdata, POSIX_LOCK_PID_OFFSET, (uint32_t)smblctx);
+	SBVAL(pdata, POSIX_LOCK_START_OFFSET, offset);
+	SBVAL(pdata, POSIX_LOCK_LEN_OFFSET, count);
+
+	return NT_STATUS_OK;
+}
+
 static void call_trans2qfileinfo(
 	connection_struct *conn,
 	struct smb_request *req,
@@ -2340,6 +2388,7 @@ static void call_trans2qfileinfo(
 	struct timespec write_time_ts = { .tv_sec = 0, };
 	files_struct *fsp = NULL;
 	struct file_id fileid;
+	bool info_level_handled;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
@@ -2439,6 +2488,33 @@ static void call_trans2qfileinfo(
 				       &delete_pending,
 				       &write_time_ts);
 		}
+	}
+
+	info_level_handled = true; /* Untouched in switch cases below */
+
+	switch (info_level) {
+
+	default:
+		info_level_handled = false;
+		break;
+
+	case SMB_QUERY_POSIX_LOCK:
+		status = smb_q_posix_lock(
+			conn, req, fsp, ppdata, &total_data, max_data_bytes);
+		break;
+	}
+
+	if (info_level_handled) {
+		handle_trans2qfilepathinfo_result(
+			conn,
+			req,
+			info_level,
+			status,
+			*ppdata,
+			total_data,
+			total_data,
+			max_data_bytes);
+		return;
 	}
 
 	call_trans2qfilepathinfo(
