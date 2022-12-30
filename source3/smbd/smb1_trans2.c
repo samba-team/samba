@@ -2097,6 +2097,52 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		max_data_bytes);
 }
 
+static NTSTATUS smb_q_unix_basic(
+	struct connection_struct *conn,
+	struct smb_request *req,
+	struct smb_filename *smb_fname,
+	struct files_struct *fsp,
+	char **ppdata,
+	int *ptotal_data)
+{
+	const int total_data = 100;
+	char *pdata = NULL;
+
+	pdata = SMB_REALLOC(*ppdata, total_data);
+	if (pdata == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	store_file_unix_basic(conn, pdata, fsp, &smb_fname->st);
+
+	*ppdata = pdata;
+	*ptotal_data = total_data;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smb_q_unix_info2(
+	struct connection_struct *conn,
+	struct smb_request *req,
+	struct smb_filename *smb_fname,
+	struct files_struct *fsp,
+	char **ppdata,
+	int *ptotal_data)
+{
+	const int total_data = 116;
+	char *pdata = NULL;
+
+	pdata = SMB_REALLOC(*ppdata, total_data);
+	if (pdata == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	store_file_unix_basic_info2(conn, pdata, fsp, &smb_fname->st);
+
+	*ppdata = pdata;
+	*ptotal_data = total_data;
+
+	return NT_STATUS_OK;
+}
+
 static void call_trans2qpathinfo(
 	connection_struct *conn,
 	struct smb_request *req,
@@ -2118,6 +2164,7 @@ static void call_trans2qpathinfo(
 	char *fname = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME twrp = 0;
+	bool info_level_handled;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
@@ -2279,6 +2326,48 @@ static void call_trans2qpathinfo(
 		return;
 	}
 
+	info_level_handled = true; /* Untouched in switch cases below */
+
+	switch (info_level) {
+
+	default:
+		info_level_handled = false;
+		break;
+
+	case SMB_QUERY_FILE_UNIX_BASIC:
+		status = smb_q_unix_basic(
+			conn,
+			req,
+			smb_fname,
+			smb_fname->fsp,
+			ppdata,
+			&total_data);
+		break;
+
+	case SMB_QUERY_FILE_UNIX_INFO2:
+		status = smb_q_unix_info2(
+			conn,
+			req,
+			smb_fname,
+			smb_fname->fsp,
+			ppdata,
+			&total_data);
+		break;
+	}
+
+	if (info_level_handled) {
+		handle_trans2qfilepathinfo_result(
+			conn,
+			req,
+			info_level,
+			status,
+			*ppdata,
+			total_data,
+			total_data,
+			max_data_bytes);
+		return;
+	}
+
 	call_trans2qfilepathinfo(
 		conn,
 		req,
@@ -2300,8 +2389,7 @@ static NTSTATUS smb_q_posix_lock(
 	struct smb_request *req,
 	struct files_struct *fsp,
 	char **ppdata,
-	int *ptotal_data,
-	unsigned int max_data_bytes)
+	int *ptotal_data)
 {
 	char *pdata = *ppdata;
 	int total_data = *ptotal_data;
@@ -2498,8 +2586,17 @@ static void call_trans2qfileinfo(
 		break;
 
 	case SMB_QUERY_POSIX_LOCK:
-		status = smb_q_posix_lock(
-			conn, req, fsp, ppdata, &total_data, max_data_bytes);
+		status = smb_q_posix_lock(conn, req, fsp, ppdata, &total_data);
+		break;
+
+	case SMB_QUERY_FILE_UNIX_BASIC:
+		status = smb_q_unix_basic(
+			conn, req, fsp->fsp_name, fsp, ppdata, &total_data);
+		break;
+
+	case SMB_QUERY_FILE_UNIX_INFO2:
+		status = smb_q_unix_info2(
+			conn, req, fsp->fsp_name, fsp, ppdata, &total_data);
 		break;
 	}
 

@@ -4196,33 +4196,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		 * CIFS UNIX Extensions.
 		 */
 
-		case SMB_QUERY_FILE_UNIX_BASIC:
-
-			pdata = store_file_unix_basic(conn, pdata, fsp, psbuf);
-			data_size = PTR_DIFF(pdata,(*ppdata));
-
-			DEBUG(4,("smbd_do_qfilepathinfo: "
-				 "SMB_QUERY_FILE_UNIX_BASIC\n"));
-			dump_data(4, (uint8_t *)(*ppdata), data_size);
-
-			break;
-
-		case SMB_QUERY_FILE_UNIX_INFO2:
-
-			pdata = store_file_unix_basic_info2(conn, pdata, fsp, psbuf);
-			data_size = PTR_DIFF(pdata,(*ppdata));
-
-			{
-				int i;
-				DEBUG(4,("smbd_do_qfilepathinfo: SMB_QUERY_FILE_UNIX_INFO2 "));
-
-				for (i=0; i<100; i++)
-					DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));
-				DEBUG(4,("\n"));
-			}
-
-			break;
-
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
 				status = smb_unix_read_symlink(conn,
