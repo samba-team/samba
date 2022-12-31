@@ -622,7 +622,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		binary_name,
 		SAMBA_VERSION_STRING));
 	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team"
-		" 1992-2022\n"));
+		" 1992-2023\n"));
 
 	if (sizeof(uint16_t) < 2 ||
 			sizeof(uint32_t) < 4 ||
