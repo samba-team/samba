@@ -48,6 +48,7 @@
   a pending irpc call
 */
 struct irpc_request {
+	struct irpc_request *prev, *next;
 	struct imessaging_context *msg_ctx;
 	int callid;
 	struct {
@@ -400,6 +401,16 @@ NTSTATUS imessaging_process_cleanup(
 
 static int imessaging_context_destructor(struct imessaging_context *msg)
 {
+	struct irpc_request *irpc = NULL;
+	struct irpc_request *next = NULL;
+
+	for (irpc = msg->requests; irpc != NULL; irpc = next) {
+		next = irpc->next;
+
+		DLIST_REMOVE(msg->requests, irpc);
+		irpc->callid = -1;
+	}
+
 	DLIST_REMOVE(msg_ctxs, msg);
 	TALLOC_FREE(msg->msg_dgm_ref);
 	return 0;
@@ -1035,6 +1046,7 @@ failed:
 static int irpc_destructor(struct irpc_request *irpc)
 {
 	if (irpc->callid != -1) {
+		DLIST_REMOVE(irpc->msg_ctx->requests, irpc);
 		idr_remove(irpc->msg_ctx->idr, irpc->callid);
 		if (irpc->msg_ctx->discard_incoming) {
 			SMB_ASSERT(irpc->msg_ctx->num_incoming_listeners > 0);
@@ -1238,6 +1250,7 @@ static struct tevent_req *irpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	/* make sure we accept incoming messages */
 	SMB_ASSERT(state->irpc->msg_ctx->num_incoming_listeners < UINT64_MAX);
 	state->irpc->msg_ctx->num_incoming_listeners += 1;
+	DLIST_ADD_END(state->irpc->msg_ctx->requests, state->irpc);
 	talloc_set_destructor(state->irpc, irpc_destructor);
 
 	/* setup the header */
