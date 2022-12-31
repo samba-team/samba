@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+struct irpc_request;
+
 struct imessaging_context {
 	struct imessaging_context *prev, *next;
 	struct tevent_context *ev;
@@ -30,6 +32,7 @@ struct imessaging_context {
 	struct idr_context *dispatch_tree;
 	struct irpc_list *irpc;
 	struct idr_context *idr;
+	struct irpc_request *requests;
 	struct server_id_db *names;
 	struct timeval start_time;
 	void *msg_dgm_ref;
