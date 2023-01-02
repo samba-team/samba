@@ -1064,11 +1064,15 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 
 static uint32_t get_dirent_ea_size(uint32_t mode, files_struct *fsp)
 {
-	if (!(mode & FILE_ATTRIBUTE_REPARSE_POINT)) {
-		unsigned ea_size = estimate_ea_size(fsp);
-		return ea_size;
+	uint32_t ea_size = IO_REPARSE_TAG_DFS;
+
+	if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+		(void)fsctl_get_reparse_tag(fsp, &ea_size);
+	} else {
+		ea_size = estimate_ea_size(fsp);
 	}
-	return IO_REPARSE_TAG_DFS;
+
+	return ea_size;
 }
 
 static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
