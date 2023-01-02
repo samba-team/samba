@@ -24,7 +24,9 @@ import samba.tests.libsmb
 class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
     def connection(self):
-        share = samba.tests.env_get_var_value("SHARENAME")
+        share = samba.tests.env_get_var_value("SHARENAME", allow_missing=True)
+        if not share:
+            share = "tmp"
         smb1 = samba.tests.env_get_var_value("SMB1", allow_missing=True)
         conn = libsmb.Conn(
             self.server_ip,
