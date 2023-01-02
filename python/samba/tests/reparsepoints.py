@@ -170,6 +170,26 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         conn.delete_on_close(fd, 1)
         conn.close(fd)
 
+    def test_query_dir_reparse(self):
+        conn = self.connection()
+        filename = 'reparse'
+        self.clean_file(conn, filename)
+
+        fd = conn.create(
+            filename,
+            DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
+            CreateDisposition=libsmb.FILE_CREATE)
+        b = reparse_symlink.symlink_put("y", "y", 0, 0)
+        conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+        conn.close(fd)
+
+        dirents = conn.list("", filename)
+        self.assertEqual(
+            dirents[0]["reparse_tag"],
+            libsmb.IO_REPARSE_TAG_SYMLINK)
+
+        self.clean_file(conn, filename)
+
     # Show that directories can carry reparse points
 
     def test_create_reparse_directory(self):
