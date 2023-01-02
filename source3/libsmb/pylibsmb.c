@@ -1970,6 +1970,18 @@ static NTSTATUS list_helper(struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (finfo->attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+		unsigned long tag = finfo->reparse_tag;
+
+		ret = PyDict_SetItemString(
+			file,
+			"reparse_tag",
+			PyLong_FromUnsignedLong(tag));
+		if (ret == -1) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
 	ret = PyList_Append(result, file);
 	Py_CLEAR(file);
 	if (ret == -1) {
