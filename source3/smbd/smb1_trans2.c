@@ -2486,6 +2486,82 @@ static NTSTATUS smb_q_posix_acl(
 #endif
 }
 
+static NTSTATUS smb_q_posix_symlink(
+	struct connection_struct *conn,
+	struct smb_request *req,
+	struct smb_filename *smb_fname,
+	char **ppdata,
+	int *ptotal_data)
+{
+	char buffer[PATH_MAX+1];
+	size_t needed, len;
+	int link_len;
+	char *pdata = NULL;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *base_name = NULL;
+	NTSTATUS status;
+
+	DBG_DEBUG("SMB_QUERY_FILE_UNIX_LINK for file %s\n",
+		  smb_fname_str_dbg(smb_fname));
+
+	if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
+		return NT_STATUS_DOS(ERRSRV, ERRbadlink);
+	}
+
+	status = parent_pathref(
+		talloc_tos(),
+		conn->cwd_fsp,
+		smb_fname,
+		&parent_fname,
+		&base_name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("parent_pathref failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	link_len = SMB_VFS_READLINKAT(
+		conn,
+		parent_fname->fsp,
+		base_name,
+		buffer,
+		sizeof(buffer)-1);
+	TALLOC_FREE(parent_fname);
+
+	if (link_len == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("READLINKAT failed: %s\n", nt_errstr(status));
+		return status;
+	}
+	if (link_len >= sizeof(buffer)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	buffer[link_len] = 0;
+
+	needed = (link_len+1)*2;
+
+	pdata = SMB_REALLOC(*ppdata, needed);
+	if (pdata == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*ppdata = pdata;
+
+	status = srvstr_push(
+		pdata,
+		req->flags2,
+		pdata,
+		buffer,
+		needed,
+		STR_TERMINATE,
+		&len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*ptotal_data = len;
+
+	return NT_STATUS_OK;
+}
+
 static void call_trans2qpathinfo(
 	connection_struct *conn,
 	struct smb_request *req,
@@ -2705,6 +2781,16 @@ static void call_trans2qpathinfo(
 			smb_fname->fsp,
 			ppdata,
 			&total_data);
+		break;
+
+	case SMB_QUERY_FILE_UNIX_LINK:
+		status = smb_q_posix_symlink(
+			conn,
+			req,
+			smb_fname,
+			ppdata,
+			&total_data);
+		break;
 	}
 
 	if (info_level_handled) {
