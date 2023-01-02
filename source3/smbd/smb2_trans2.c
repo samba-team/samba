@@ -1137,6 +1137,15 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 	return true;
 }
 
+static uint32_t get_dirent_ea_size(uint32_t mode, files_struct *fsp)
+{
+	if (!(mode & FILE_ATTRIBUTE_REPARSE_POINT)) {
+		unsigned ea_size = estimate_ea_size(fsp);
+		return ea_size;
+	}
+	return IO_REPARSE_TAG_DFS;
+}
+
 static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				    connection_struct *conn,
 				    uint16_t flags2,
@@ -1173,6 +1182,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	int pad = 0;
 	NTSTATUS status;
 	struct readdir_attr_data *readdir_attr_data = NULL;
+	uint32_t ea_size;
 
 	if (!(mode & FILE_ATTRIBUTE_DIRECTORY)) {
 		file_size = get_file_size_stat(&smb_fname->st);
@@ -1299,7 +1309,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
 		{
-			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
+			ea_size = estimate_ea_size(smb_fname->fsp);
 			SIVAL(p,22,ea_size); /* Extended attributes */
 		}
 		p += 27;
@@ -1408,12 +1418,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,mode); p += 4;
 		q = p; p += 4; /* q is placeholder for name length. */
-		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
-			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
-		} else {
-			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
-			SIVAL(p,0,ea_size); /* Extended attributes */
-		}
+		ea_size = get_dirent_ea_size(mode, smb_fname->fsp);
+		SIVAL(p, 0, ea_size);
 		p += 4;
 		/* Clear the short name buffer. This is
 		 * IMPORTANT as not doing so will trigger
@@ -1520,12 +1526,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,mode); p += 4;
 		q = p; p += 4; /* q is placeholder for name length. */
-		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
-			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
-		} else {
-			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
-			SIVAL(p,0,ea_size); /* Extended attributes */
-		}
+		ea_size = get_dirent_ea_size(mode, smb_fname->fsp);
+		SIVAL(p, 0, ea_size);
 		p +=4;
 		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
@@ -1602,12 +1604,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,mode); p += 4;
 		q = p; p += 4; /* q is placeholder for name length. */
-		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
-			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
-		} else {
-			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
-			SIVAL(p,0,ea_size); /* Extended attributes */
-		}
+		ea_size = get_dirent_ea_size(mode, smb_fname->fsp);
+		SIVAL(p, 0, ea_size);
 		p += 4;
 		SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
 		SBVAL(p,0,file_id); p += 8;
