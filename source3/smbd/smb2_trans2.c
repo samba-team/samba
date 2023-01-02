@@ -1650,20 +1650,18 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SOFF_T(p,0,allocation_size); p += 8;
 		SIVAL(p,0,mode); p += 4;
 		q = p; p += 4; /* q is placeholder for name length */
-		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
-			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
-		} else if (readdir_attr_data &&
-			   readdir_attr_data->type == RDATTR_AAPL) {
+		if (readdir_attr_data &&
+		    readdir_attr_data->type == RDATTR_AAPL) {
 			/*
 			 * OS X specific SMB2 extension negotiated via
 			 * AAPL create context: return max_access in
 			 * ea_size field.
 			 */
-			SIVAL(p, 0, readdir_attr_data->attr_data.aapl.max_access);
+			ea_size = readdir_attr_data->attr_data.aapl.max_access;
 		} else {
-			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
-			SIVAL(p,0,ea_size); /* Extended attributes */
+			ea_size = get_dirent_ea_size(mode, smb_fname->fsp);
 		}
+		SIVAL(p,0,ea_size); /* Extended attributes */
 		p += 4;
 
 		if (readdir_attr_data &&
