@@ -27,6 +27,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
 
+static const char *tab_depth(int level, int depth)
+{
+	if( CHECK_DEBUGLVL(level) ) {
+		dbgtext("%*s", depth*4, "");
+	}
+	return "";
+}
+
 /*******************************************************************
  Debug output for parsing info
 

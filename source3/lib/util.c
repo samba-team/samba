@@ -1235,13 +1235,6 @@ bool remote_arch_cache_delete(const struct GUID *client_guid)
 	return true;
 }
 
-const char *tab_depth(int level, int depth)
-{
-	if( CHECK_DEBUGLVL(level) ) {
-		dbgtext("%*s", depth*4, "");
-	}
-	return "";
-}
 
 /*****************************************************************************
  Provide a checksum on a string
