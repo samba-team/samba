@@ -1586,27 +1586,6 @@ bool name_to_fqdn(fstring fqdn, const char *name)
 	return true;
 }
 
-uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_options)
-{
-	switch (share_access & ~FILE_SHARE_DELETE) {
-		case FILE_SHARE_NONE:
-			return DENY_ALL;
-		case FILE_SHARE_READ:
-			return DENY_WRITE;
-		case FILE_SHARE_WRITE:
-			return DENY_READ;
-		case FILE_SHARE_READ|FILE_SHARE_WRITE:
-			return DENY_NONE;
-	}
-	if (private_options & NTCREATEX_FLAG_DENY_DOS) {
-		return DENY_DOS;
-	} else if (private_options & NTCREATEX_FLAG_DENY_FCB) {
-		return DENY_FCB;
-	}
-
-	return (uint32_t)-1;
-}
-
 struct server_id interpret_pid(const char *pid_string)
 {
 	return server_id_from_string(get_my_vnn(), pid_string);

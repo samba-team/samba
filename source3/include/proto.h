@@ -353,7 +353,6 @@ bool mask_match_search(const char *string, const char *pattern, bool is_case_sen
 bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive);
 #include "lib/util/unix_match.h"
 bool name_to_fqdn(fstring fqdn, const char *name);
-uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_options);
 
 #include "lib/util_procid.h"
 
