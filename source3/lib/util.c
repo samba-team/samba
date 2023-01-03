@@ -1638,16 +1638,6 @@ bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off)
 }
 
 /****************************************************************
- Return a safe pointer into a buffer, or NULL.
-****************************************************************/
-
-char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off)
-{
-	return is_offset_safe(buf_base, buf_len, ptr, off) ?
-			ptr + off : NULL;
-}
-
-/****************************************************************
  Return a safe pointer into a string within a buffer, or NULL.
 ****************************************************************/
 
@@ -1663,37 +1653,6 @@ char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t o
 	return ptr + off;
 }
 
-/****************************************************************
- Return an SVAL at a pointer, or failval if beyond the end.
-****************************************************************/
-
-int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
-{
-	/*
-	 * Note we use off+1 here, not off+2 as SVAL accesses ptr[0] and ptr[1],
- 	 * NOT ptr[2].
- 	 */
-	if (!is_offset_safe(buf_base, buf_len, ptr, off+1)) {
-		return failval;
-	}
-	return SVAL(ptr,off);
-}
-
-/****************************************************************
- Return an IVAL at a pointer, or failval if beyond the end.
-****************************************************************/
-
-int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
-{
-	/*
-	 * Note we use off+3 here, not off+4 as IVAL accesses
-	 * ptr[0] ptr[1] ptr[2] ptr[3] NOT ptr[4].
- 	 */
-	if (!is_offset_safe(buf_base, buf_len, ptr, off+3)) {
-		return failval;
-	}
-	return IVAL(ptr,off);
-}
 
 /****************************************************************
  Split DOM\user into DOM and user. Do not mix with winbind variants of that

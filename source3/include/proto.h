@@ -359,10 +359,7 @@ uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_opt
 
 struct server_id interpret_pid(const char *pid_string);
 bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off);
-char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
-int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval);
-int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval);
 bool split_domain_user(TALLOC_CTX *mem_ctx,
 		       const char *full_name,
 		       char **domain,
