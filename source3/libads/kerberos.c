@@ -789,9 +789,9 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	fd = mkstemp(tmpname);
 	umask(mask);
 	if (fd == -1) {
-		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
-			" for file %s. Errno %s\n",
-			tmpname, strerror(errno) ));
+		DBG_ERR("mkstemp failed, for file %s. Errno %s\n",
+			tmpname,
+			strerror(errno));
 		goto done;
 	}
 

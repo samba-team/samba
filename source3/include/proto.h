@@ -338,7 +338,6 @@ bool remote_arch_cache_delete(const struct GUID *client_guid);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
-int smb_mkstemp(char *name_template);
 void *smb_xmalloc_array(size_t size, unsigned int count);
 char *myhostname(void);
 char *myhostname_upper(void);
