@@ -935,7 +935,6 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	DATA_BLOB blob = { .data = data, .length = sizeof(data), };
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	TDB_DATA key;
 	TDB_DATA val;
 
 	if (!(op->flags & SMBXSRV_OPEN_NEED_REPLAY_CACHE)) {
@@ -948,7 +947,6 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 
 	create_guid = &op->global->create_guid;
 	guid_string = GUID_buf_string(create_guid, &buf);
-	key = string_term_tdb_data(guid_string);
 
 	ndr_err = ndr_push_struct_into_fixed_blob(&blob, &rc,
 		(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_replay_cache);
@@ -958,7 +956,7 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	}
 	val = make_tdb_data(blob.data, blob.length);
 
-	status = dbwrap_store(db, key, val, TDB_REPLACE);
+	status = dbwrap_store_bystring(db, guid_string, val, TDB_REPLACE);
 
 	if (NT_STATUS_IS_OK(status)) {
 		op->flags |= SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
