@@ -39,6 +39,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/iov_buf.h"
 #include "lib/global_contexts.h"
+#include "source3/include/util_tdb.h"
 
 struct smbXsrv_client_table {
 	struct {
@@ -143,7 +144,7 @@ static struct db_record *smbXsrv_client_global_fetch_locked(
 		struct GUID_txt_buf buf;
 		DBG_DEBUG("Failed to lock guid [%s], key '%s'\n",
 			  GUID_buf_string(client_guid, &buf),
-			  hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+			  tdb_data_dbg(key));
 	}
 
 	return rec;
@@ -234,7 +235,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("key '%s' ndr_pull_struct_blob - %s\n",
-			    hex_encode_talloc(frame, key.dptr, key.dsize),
+			    tdb_data_dbg(key),
 			    nt_errstr(status));
 		TALLOC_FREE(frame);
 		return;
@@ -247,7 +248,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 
 	if (global_blob.version != SMBXSRV_VERSION_0) {
 		DBG_ERR("key '%s' use unsupported version %u\n",
-			hex_encode_talloc(frame, key.dptr, key.dsize),
+			tdb_data_dbg(key),
 			global_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
 		TALLOC_FREE(frame);
@@ -261,7 +262,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 		struct server_id_buf tmp;
 
 		DBG_NOTICE("key '%s' server_id %s is already dead.\n",
-			   hex_encode_talloc(frame, key.dptr, key.dsize),
+			   tdb_data_dbg(key),
 			   server_id_str_buf(global->server_id, &tmp));
 		if (DEBUGLVL(DBGLVL_NOTICE)) {
 			NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
@@ -277,7 +278,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 		struct server_id_buf tmp;
 
 		DBG_NOTICE("key '%s' server_id %s does not exist.\n",
-			   hex_encode_talloc(frame, key.dptr, key.dsize),
+			   tdb_data_dbg(key),
 			   server_id_str_buf(global->server_id, &tmp));
 		if (DEBUGLVL(DBGLVL_NOTICE)) {
 			NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
@@ -454,7 +455,7 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("key '%s' ndr_push - %s\n",
-			hex_encode_talloc(global->db_rec, key.dptr, key.dsize),
+			tdb_data_dbg(key),
 			nt_errstr(status));
 		TALLOC_FREE(global->db_rec);
 		return status;
@@ -464,7 +465,7 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",
-			hex_encode_talloc(global->db_rec, key.dptr, key.dsize),
+			tdb_data_dbg(key),
 			nt_errstr(status));
 		TALLOC_FREE(global->db_rec);
 		return status;
@@ -474,7 +475,7 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		DBG_DEBUG("key '%s' stored\n",
-			hex_encode_talloc(global->db_rec, key.dptr, key.dsize));
+			  tdb_data_dbg(key));
 		NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
 	}
 
@@ -874,14 +875,13 @@ static NTSTATUS smbXsrv_client_global_remove(struct smbXsrv_client_global0 *glob
 	status = dbwrap_record_delete(global->db_rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' delete - %s\n",
-			hex_encode_talloc(global->db_rec, key.dptr, key.dsize),
+			tdb_data_dbg(key),
 			nt_errstr(status));
 		TALLOC_FREE(global->db_rec);
 		return status;
 	}
 	global->stored = false;
-	DBG_DEBUG("key '%s' delete\n",
-		  hex_encode_talloc(global->db_rec, key.dptr, key.dsize));
+	DBG_DEBUG("key '%s' delete\n", tdb_data_dbg(key));
 
 	TALLOC_FREE(global->db_rec);
 

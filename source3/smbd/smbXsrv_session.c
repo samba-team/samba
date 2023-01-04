@@ -39,6 +39,7 @@
 #include "serverid.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/global_contexts.h"
+#include "source3/include/util_tdb.h"
 
 struct smbXsrv_session_table {
 	struct {
@@ -183,7 +184,7 @@ static struct db_record *smbXsrv_session_global_fetch_locked(
 
 	if (rec == NULL) {
 		DBG_DEBUG("Failed to lock global id 0x%08x, key '%s'\n", id,
-			  hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+			  tdb_data_dbg(key));
 	}
 
 	return rec;
@@ -204,7 +205,7 @@ static struct db_record *smbXsrv_session_local_fetch_locked(
 
 	if (rec == NULL) {
 		DBG_DEBUG("Failed to lock local id 0x%08x, key '%s'\n", id,
-			  hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+			  tdb_data_dbg(key));
 	}
 
 	return rec;
@@ -844,7 +845,7 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1,("smbXsrv_session_global_verify_record: "
 			 "key '%s' ndr_pull_struct_blob - %s\n",
-			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 nt_errstr(status)));
 		TALLOC_FREE(frame);
 		*is_free = true;
@@ -862,7 +863,7 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 	if (global_blob.version != SMBXSRV_VERSION_0) {
 		DEBUG(0,("smbXsrv_session_global_verify_record: "
 			 "key '%s' use unsupported version %u\n",
-			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 global_blob.version));
 		NDR_PRINT_DEBUG(smbXsrv_session_globalB, &global_blob);
 		TALLOC_FREE(frame);
@@ -897,7 +898,7 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 		struct server_id_buf idbuf;
 		DEBUG(2,("smbXsrv_session_global_verify_record: "
 			 "key '%s' server_id %s does not exist.\n",
-			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 server_id_str_buf(global->channels[0].server_id,
 					   &idbuf)));
 		if (DEBUGLVL(2)) {
@@ -953,7 +954,7 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1,("smbXsrv_session_global_store: key '%s' ndr_push - %s\n",
-			 hex_encode_talloc(global->db_rec, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 nt_errstr(status)));
 		TALLOC_FREE(global->db_rec);
 		return status;
@@ -963,7 +964,7 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("smbXsrv_session_global_store: key '%s' store - %s\n",
-			 hex_encode_talloc(global->db_rec, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 nt_errstr(status)));
 		TALLOC_FREE(global->db_rec);
 		return status;
@@ -971,7 +972,7 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("smbXsrv_session_global_store: key '%s' stored\n",
-			 hex_encode_talloc(global->db_rec, key.dptr, key.dsize)));
+			  tdb_data_dbg(key)));
 		NDR_PRINT_DEBUG(smbXsrv_session_globalB, &global_blob);
 	}
 
@@ -1896,8 +1897,7 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
 				  "failed to delete global key '%s': %s\n",
 				  session->global->session_global_id,
-				  hex_encode_talloc(global_rec, key.dptr,
-						    key.dsize),
+				  tdb_data_dbg(key),
 				  nt_errstr(status)));
 			error = status;
 		}
@@ -1923,8 +1923,7 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
 				  "failed to delete local key '%s': %s\n",
 				  session->global->session_global_id,
-				  hex_encode_talloc(local_rec, key.dptr,
-						    key.dsize),
+				  tdb_data_dbg(key),
 				  nt_errstr(status)));
 			error = status;
 		}
@@ -2469,7 +2468,7 @@ static int smbXsrv_session_global_traverse_fn(struct db_record *rec, void *data)
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1,("Invalid record in smbXsrv_session_global.tdb:"
 			 "key '%s' ndr_pull_struct_blob - %s\n",
-			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 ndr_errstr(ndr_err)));
 		goto done;
 	}
@@ -2477,7 +2476,7 @@ static int smbXsrv_session_global_traverse_fn(struct db_record *rec, void *data)
 	if (global_blob.version != SMBXSRV_VERSION_0) {
 		DEBUG(1,("Invalid record in smbXsrv_session_global.tdb:"
 			 "key '%s' unsupported version - %d\n",
-			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 tdb_data_dbg(key),
 			 (int)global_blob.version));
 		goto done;
 	}
@@ -2485,7 +2484,7 @@ static int smbXsrv_session_global_traverse_fn(struct db_record *rec, void *data)
 	if (global_blob.info.info0 == NULL) {
 		DEBUG(1,("Invalid record in smbXsrv_tcon_global.tdb:"
 			 "key '%s' info0 NULL pointer\n",
-			 hex_encode_talloc(frame, key.dptr, key.dsize)));
+			 tdb_data_dbg(key)));
 		goto done;
 	}
 

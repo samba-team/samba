@@ -1469,9 +1469,7 @@ static void g_lock_writev_data_fn(
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {
 		DBG_DEBUG("g_lock_parse for %s failed\n",
-			  hex_encode_talloc(talloc_tos(),
-					    state->key.dptr,
-					    state->key.dsize));
+			  tdb_data_dbg(state->key));
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return;
 	}
@@ -1604,9 +1602,7 @@ static void g_lock_dump_fn(TDB_DATA key, TDB_DATA data,
 	ok = g_lock_parse(data.dptr, data.dsize, &lck);
 	if (!ok) {
 		DBG_DEBUG("g_lock_parse failed for %s\n",
-			  hex_encode_talloc(talloc_tos(),
-					    state->key.dptr,
-					    state->key.dsize));
+			  tdb_data_dbg(state->key));
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return;
 	}

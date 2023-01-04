@@ -775,7 +775,7 @@ static bool share_mode_g_lock_within_cb(TDB_DATA key)
 		DBG_ERR("Can not lock two share modes "
 			"simultaneously: existing %s requested %s\n",
 			file_id_str_buf(share_mode_lock_key_id, &existing),
-			hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+			tdb_data_dbg(key));
 		smb_panic(__location__);
 		return false;
 	}
