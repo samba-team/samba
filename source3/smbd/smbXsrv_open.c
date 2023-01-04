@@ -1211,8 +1211,7 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 {
 	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct smbXsrv_open *op = NULL;
-	uint32_t global_id = persistent_id & UINT32_MAX;
-	uint64_t global_zeros = persistent_id & 0xFFFFFFFF00000000LLU;
+	uint32_t global_id;
 	NTSTATUS status;
 	struct security_token *current_token = NULL;
 	int local_id;
@@ -1228,10 +1227,14 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (global_zeros != 0) {
-		DEBUG(10, ("global_zeros!=0\n"));
+	if ((persistent_id & 0xFFFFFFFF00000000LLU) != 0) {
+		/*
+		 * We only use 32 bit for the persistent ID
+		 */
+		DBG_DEBUG("persistent_id=%"PRIx64"\n", persistent_id);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+	global_id = persistent_id & UINT32_MAX; /* truncate to 32 bit */
 
 	op = talloc_zero(table, struct smbXsrv_open);
 	if (op == NULL) {
