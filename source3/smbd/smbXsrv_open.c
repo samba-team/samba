@@ -710,10 +710,6 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 	 * store the information in the old format.
 	 */
 
-	if (global->db_rec == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	key = dbwrap_record_get_key(global->db_rec);
 	val = dbwrap_record_get_value(global->db_rec);
 
