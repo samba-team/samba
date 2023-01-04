@@ -108,23 +108,6 @@ static TDB_DATA smbXsrv_open_global_id_to_key(uint32_t id,
 	return key;
 }
 
-#if 0
-static NTSTATUS smbXsrv_open_global_key_to_id(TDB_DATA key, uint32_t *id)
-{
-	if (id == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (key.dsize != SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	*id = RIVAL(key.dptr, 0);
-
-	return NT_STATUS_OK;
-}
-#endif
-
 static struct db_record *smbXsrv_open_global_fetch_locked(
 			struct db_context *db,
 			uint32_t id,
