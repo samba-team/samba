@@ -1163,34 +1163,27 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 	}
 	TALLOC_FREE(global_rec);
 
-	local_rec = op->db_rec;
+	local_rec = smbXsrv_open_local_fetch_locked(table->local.db_ctx,
+						    op->local_id,
+						    op /* TALLOC_CTX*/);
 	if (local_rec == NULL) {
-		local_rec = smbXsrv_open_local_fetch_locked(table->local.db_ctx,
-							    op->local_id,
-							    op /* TALLOC_CTX*/);
-		if (local_rec == NULL) {
-			error = NT_STATUS_INTERNAL_ERROR;
-		}
+		error = NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (local_rec != NULL) {
-		status = dbwrap_record_delete(local_rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			TDB_DATA key = dbwrap_record_get_key(local_rec);
+	status = dbwrap_record_delete(local_rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		TDB_DATA key = dbwrap_record_get_key(local_rec);
 
-			DEBUG(0, ("smbXsrv_open_close(0x%08x): "
-				  "failed to delete local key '%s': %s\n",
-				  op->global->open_global_id,
-				  tdb_data_dbg(key),
-				  nt_errstr(status)));
-			error = status;
-		}
-		table->local.num_opens -= 1;
+		DEBUG(0, ("smbXsrv_open_close(0x%08x): "
+			  "failed to delete local key '%s': %s\n",
+			  op->global->open_global_id,
+			  tdb_data_dbg(key),
+			  nt_errstr(status)));
+		error = status;
 	}
-	if (op->db_rec == NULL) {
-		TALLOC_FREE(local_rec);
-	}
-	op->db_rec = NULL;
+	table->local.num_opens -= 1;
+
+	TALLOC_FREE(local_rec);
 
 	if (op->compat) {
 		op->compat->op = NULL;

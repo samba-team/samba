@@ -514,7 +514,6 @@ interface smbXsrv
 	 */
 	typedef struct {
 		[ignore] smbXsrv_open_table		*table;
-		[ignore] db_record 			*db_rec;
 		uint32					local_id;
 		[ref] smbXsrv_open_global0		*global;
 		NTSTATUS				status;
