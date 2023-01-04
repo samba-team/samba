@@ -365,6 +365,11 @@ done:
 	return ret;
 }
 
+char *tdb_data_dbg(TDB_DATA d)
+{
+	return hex_encode_talloc(talloc_tos(), d.dptr, d.dsize);
+}
+
 static sig_atomic_t gotalarm;
 
 /***************************************************************
