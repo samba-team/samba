@@ -654,7 +654,7 @@ static struct dcesrv_assoc_group *rpc_worker_assoc_group_new(
 	}
 
 	id = idr_get_new_random(
-		dce_ctx->assoc_groups_idr, assoc_group, UINT16_MAX);
+		dce_ctx->assoc_groups_idr, assoc_group, 1, UINT16_MAX);
 	if (id == -1) {
 		talloc_free(assoc_group);
 		DBG_WARNING("Out of association groups!\n");

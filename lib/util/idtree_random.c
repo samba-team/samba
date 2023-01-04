@@ -40,7 +40,10 @@
 /**
   allocate a new id randomly in the given range
 */
-_PUBLIC_ int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
+_PUBLIC_ int idr_get_new_random(struct idr_context *idp,
+				void *ptr,
+				int starting_id,
+				int limit)
 {
 	int id;
 
@@ -48,12 +51,17 @@ _PUBLIC_ int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
 	   then start randomly in the bottom half of the range. This can only
 	   fail if the range is over half full, and finally fallback to any
 	   free id */
-	id = idr_get_new_above(idp, ptr, 1+(generate_random() % limit), limit);
+	id = idr_get_new_above(
+		idp, ptr, starting_id+(generate_random() % limit), limit);
 	if (id == -1) {
-		id = idr_get_new_above(idp, ptr, 1+(generate_random()%(limit/2)), limit);
+		id = idr_get_new_above(
+			idp,
+			ptr,
+			starting_id+(generate_random()%(limit/2)),
+			limit);
 	}
 	if (id == -1) {
-		id = idr_get_new_above(idp, ptr, 1, limit);
+		id = idr_get_new_above(idp, ptr, starting_id, limit);
 	}
 
 	return id;

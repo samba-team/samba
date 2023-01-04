@@ -623,8 +623,8 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 		state->request.dest = NULL;
 	}
 
-	state->message_id = idr_get_new_random(cldap->searches.idr,
-					       state, UINT16_MAX);
+	state->message_id = idr_get_new_random(
+		cldap->searches.idr, state, 1, UINT16_MAX);
 	if (state->message_id == -1) {
 		tevent_req_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
 		goto post;

@@ -33,6 +33,9 @@
 /**
   allocate a new id randomly in the given range
 */
-int idr_get_new_random(struct idr_context *idp, void *ptr, int limit);
+int idr_get_new_random(struct idr_context *idp,
+		       void *ptr,
+		       int starting_id,
+		       int limit);
 
 #endif /* _SAMBA_IDTREE_RANDOM_H_ */

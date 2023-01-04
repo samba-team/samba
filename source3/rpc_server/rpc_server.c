@@ -161,6 +161,7 @@ static NTSTATUS dcesrv_assoc_group_new(struct dcesrv_call_state *call)
 
 	id = idr_get_new_random(dce_ctx->assoc_groups_idr,
 				assoc_group,
+				1,
 				UINT16_MAX);
 	if (id == -1) {
 		TALLOC_FREE(assoc_group);
