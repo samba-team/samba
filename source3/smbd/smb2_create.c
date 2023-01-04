@@ -776,6 +776,17 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	in_file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 
+	is_dfs = (smb1req->flags2 & FLAGS2_DFS_PATHNAMES);
+	if (is_dfs) {
+		/*
+		 * With a DFS flag set, remove any leading '\\'
+		 * characters from in_name before further processing.
+		 */
+		while (in_name[0] == '\\') {
+			in_name++;
+		}
+	}
+
 	state->fname = talloc_strdup(state, in_name);
 	if (tevent_req_nomem(state->fname, req)) {
 		return tevent_req_post(req, state->ev);
@@ -959,8 +970,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	} else {
 		state->lease_ptr = NULL;
 	}
-
-	is_dfs = (smb1req->flags2 & FLAGS2_DFS_PATHNAMES);
 
 	/* convert '\\' into '/' */
 	status = check_path_syntax_smb2(state->fname, is_dfs);
