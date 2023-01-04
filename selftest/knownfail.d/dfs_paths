@@ -1,6 +1,7 @@
 ^samba3.smbtorture_s3.smb2.SMB2-DFS-PATHS.smbtorture\(fileserver\)
 ^samba3.smbtorture_s3.smb2.SMB2-NON-DFS-SHARE.smbtorture\(fileserver\)
 ^samba3.smbtorture_s3.smb2.SMB2-DFS-SHARE-NON-DFS-PATH.smbtorture\(fileserver\)
+^samba3.smbtorture_s3.smb2.SMB2-DFS-FILENAME-LEADING-BACKSLASH.smbtorture\(fileserver\)
 ^samba3.smbtorture_s3.smb1.SMB1-DFS-PATHS.smbtorture\(fileserver\)
 ^samba3.smbtorture_s3.smb1.SMB1-DFS-SEARCH-PATHS.smbtorture\(fileserver\)
 ^samba3.smbtorture_s3.smb1.SMB1-DFS-OPERATIONS.smbtorture\(fileserver\)

@@ -4946,3 +4946,193 @@ bool run_smb2_dfs_share_non_dfs_path(int dummy)
 	(void)smb2_dfs_delete(cli, dfs_filename);
 	return retval;
 }
+
+/*
+ * "Raw" test of an SMB2 filename with one or more leading
+ * backslash characters to a DFS share.
+ *
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15277
+ *
+ * Once the server passes SMB2-DFS-PATHS we can
+ * fold this test into that one.
+ *
+ * Passes cleanly against Windows.
+ */
+
+bool run_smb2_dfs_filename_leading_backslash(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	bool dfs_supported = false;
+	char *dfs_filename_slash = NULL;
+	char *dfs_filename_slash_multi = NULL;
+	uint64_t file_ino = 0;
+	bool ino_matched = false;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	bool retval = false;
+
+	printf("Starting SMB2-DFS-FILENAME-LEADING-BACKSLASH\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure this is a DFS share. */
+	dfs_supported = smbXcli_conn_dfs_supported(cli->conn);
+	if (!dfs_supported) {
+		printf("Server %s does not support DFS\n",
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+	dfs_supported = smbXcli_tcon_is_dfs_share(cli->smb2.tcon);
+	if (!dfs_supported) {
+		printf("Share %s does not support DFS\n",
+			cli->share);
+		return false;
+	}
+
+	/*
+	 * Create the filename with one leading backslash.
+	 */
+	dfs_filename_slash = talloc_asprintf(talloc_tos(),
+					"\\%s\\%s\\file",
+					smbXcli_conn_remote_name(cli->conn),
+					cli->share);
+	if (dfs_filename_slash == NULL) {
+		printf("Out of memory\n");
+		return false;
+	}
+
+	/*
+	 * Create the filename with many leading backslashes.
+	 */
+	dfs_filename_slash_multi = talloc_asprintf(talloc_tos(),
+					"\\\\\\\\%s\\%s\\file",
+					smbXcli_conn_remote_name(cli->conn),
+					cli->share);
+	if (dfs_filename_slash_multi == NULL) {
+		printf("Out of memory\n");
+		return false;
+	}
+
+	/*
+	 * Trying to open "\\server\\share\\file" should get
+	 * NT_STATUS_OBJECT_NAME_NOT_FOUND.
+	 */
+	status = get_smb2_inode(cli,
+				dfs_filename_slash,
+				&file_ino);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("%s:%d Open of %s should get "
+			"STATUS_OBJECT_NAME_NOT_FOUND, got %s\n",
+			__FILE__,
+			__LINE__,
+			dfs_filename_slash,
+			nt_errstr(status));
+		return false;
+	}
+
+	/* Now create a file called "\\server\\share\\file". */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				dfs_filename_slash,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL, /* struct smb2_create_blobs * */
+				NULL); /* struct symlink_reparse_struct */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb2cli_create on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			dfs_filename_slash,
+			nt_errstr(status));
+		return false;
+	}
+
+	/*
+	 * Trying to open "\\server\\share\\file" should now get
+	 * a valid inode.
+	 */
+	status = get_smb2_inode(cli,
+				dfs_filename_slash,
+				&file_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d Open of %s should succeed "
+			"got %s\n",
+			__FILE__,
+			__LINE__,
+			dfs_filename_slash,
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Trying to open "\\\\\\server\\share\\file" should now get
+	 * a valid inode that matches. MacOSX-style of DFS name test.
+	 */
+	ino_matched = smb2_inode_matches(cli,
+				dfs_filename_slash,
+				file_ino,
+				dfs_filename_slash_multi);
+       if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			dfs_filename_slash_multi);
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	if (fid_persistent != 0 || fid_volatile != 0) {
+		smb2cli_close(cli->conn,
+			      cli->timeout,
+			      cli->smb2.session,
+			      cli->smb2.tcon,
+			      0, /* flags */
+			      fid_persistent,
+			      fid_volatile);
+	}
+	/* Delete anything we made. */
+	(void)smb2_dfs_delete(cli, dfs_filename_slash);
+	return retval;
+}

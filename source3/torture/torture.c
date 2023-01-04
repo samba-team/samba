@@ -15370,6 +15370,10 @@ static struct {
 		.fn    = run_smb2_dfs_share_non_dfs_path,
 	},
 	{
+		.name  = "SMB2-DFS-FILENAME-LEADING-BACKSLASH",
+		.fn    = run_smb2_dfs_filename_leading_backslash,
+	},
+	{
 		.name  = "SMB1-DFS-PATHS",
 		.fn    = run_smb1_dfs_paths,
 	},

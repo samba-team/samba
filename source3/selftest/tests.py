@@ -257,6 +257,20 @@ plantestsuite("samba3.smbtorture_s3.smb2.SMB2-DFS-PATHS",
                 smbtorture3,
                 "-mSMB2"])
 
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=15277
+# MacOSX clients send a leading '\\' character for DFS paths.
+#
+plantestsuite("samba3.smbtorture_s3.smb2.SMB2-DFS-FILENAME-LEADING-BACKSLASH",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-DFS-FILENAME-LEADING-BACKSLASH',
+                '//$SERVER_IP/msdfs-pathname-share',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "-mSMB2"])
+
 #
 # SMB2-NON-DFS-SHARE needs to run against a special share non-msdfs-pathname-share
 # This is an empty non-DFS share with no links, used merely to test
