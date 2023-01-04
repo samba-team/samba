@@ -716,8 +716,10 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 	key = dbwrap_record_get_key(global->db_rec);
 	val = dbwrap_record_get_value(global->db_rec);
 
-	ZERO_STRUCT(global_blob);
-	global_blob.version = smbXsrv_version_global_current();
+	global_blob = (struct smbXsrv_open_globalB) {
+		.version = smbXsrv_version_global_current(),
+	};
+
 	if (val.dsize >= 8) {
 		global_blob.seqnum = IVAL(val.dptr, 4);
 	}
