@@ -932,7 +932,7 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 		.local_id = op->local_id,
 	};
 	uint8_t data[SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE] = { 0 };
-	DATA_BLOB blob = data_blob_const(data, ARRAY_SIZE(data));
+	DATA_BLOB blob = { .data = data, .length = sizeof(data), };
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	TDB_DATA key;
