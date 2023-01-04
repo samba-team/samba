@@ -2,10 +2,13 @@
 
 
 bld.SAMBA_LIBRARY('samba-security',
-                  source='dom_sid.c display_sec.c secace.c secacl.c security_descriptor.c sddl.c privileges.c security_token.c access_check.c object_tree.c create_descriptor.c util_sid.c session.c secdesc.c',
-                  private_library=True,
-                  deps='talloc ndr NDR_SECURITY'
-                  )
+                  source=['dom_sid.c',
+                          'display_sec.c', 'secace.c', 'secacl.c',
+                          'security_descriptor.c', 'sddl.c', 'privileges.c',
+                          'security_token.c', 'access_check.c',
+                          'object_tree.c', 'create_descriptor.c',
+                          'util_sid.c', 'session.c', 'secdesc.c'],
+                  private_library=True, deps='talloc ndr NDR_SECURITY')
 
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
 bld.SAMBA_PYTHON('pysecurity',
