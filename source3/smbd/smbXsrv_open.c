@@ -94,18 +94,17 @@ NTSTATUS smbXsrv_open_global_init(void)
  * TODO: implement string based key
  */
 
-#define SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE sizeof(uint32_t)
+struct smbXsrv_open_global_key_buf { uint8_t buf[sizeof(uint32_t)]; };
 
-static TDB_DATA smbXsrv_open_global_id_to_key(uint32_t id,
-					      uint8_t *key_buf)
+static TDB_DATA smbXsrv_open_global_id_to_key(
+	uint32_t id, struct smbXsrv_open_global_key_buf *key_buf)
 {
-	TDB_DATA key;
+	RSIVAL(key_buf->buf, 0, id);
 
-	RSIVAL(key_buf, 0, id);
-
-	key = make_tdb_data(key_buf, SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE);
-
-	return key;
+	return (TDB_DATA) {
+		.dptr = key_buf->buf,
+		.dsize = sizeof(key_buf->buf),
+	};
 }
 
 static struct db_record *smbXsrv_open_global_fetch_locked(
@@ -113,8 +112,8 @@ static struct db_record *smbXsrv_open_global_fetch_locked(
 			uint32_t id,
 			TALLOC_CTX *mem_ctx)
 {
-	uint8_t key_buf[SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE];
-	TDB_DATA key = smbXsrv_open_global_id_to_key(id, key_buf);
+	struct smbXsrv_open_global_key_buf key_buf;
+	TDB_DATA key = smbXsrv_open_global_id_to_key(id, &key_buf);
 	struct db_record *rec = NULL;
 
 
