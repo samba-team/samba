@@ -17,7 +17,7 @@ Usage::
 
 import os, re, threading
 from waflib import Task, Logs, Utils, Errors
-from waflib.Tools import c_preproc
+from waflib.Tools import asm, c, c_preproc, cxx
 from waflib.TaskGen import before_method, feature
 
 lock = threading.Lock()

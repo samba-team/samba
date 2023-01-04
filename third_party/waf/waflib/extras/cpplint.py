@@ -169,7 +169,7 @@ class cpplint(Task.Task):
         global critical_errors
         with cpplint_wrapper(get_cpplint_logger(self.env.CPPLINT_OUTPUT), self.env.CPPLINT_BREAK, self.env.CPPLINT_OUTPUT):
             params = {key: str(self.env[key]) for key in self.env if 'CPPLINT_' in key}
-            if params['CPPLINT_OUTPUT'] is 'waf':
+            if params['CPPLINT_OUTPUT'] == 'waf':
                 params['CPPLINT_OUTPUT'] = 'emacs'
             params['CPPLINT'] = self.env.get_flat('CPPLINT')
             cmd = Utils.subst_vars(CPPLINT_STR, params)

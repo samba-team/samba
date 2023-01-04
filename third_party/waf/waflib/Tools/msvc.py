@@ -111,7 +111,7 @@ def options(opt):
 
 class MSVCVersion(object):
 	def __init__(self, ver):
-		m = re.search('^(.*)\s+(\d+[.]\d+)', ver)
+		m = re.search(r'^(.*)\s+(\d+[.]\d+)', ver)
 		if m:
 			self.name = m.group(1)
 			self.number = float(m.group(2))

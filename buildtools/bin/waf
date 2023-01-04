@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 import os, sys, inspect
 
-VERSION="2.0.24"
+VERSION="2.0.25"
 REVISION="x"
 GIT="x"
 INSTALL="x"

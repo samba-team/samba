@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Federico Pellegrin, 2016-2019 (fedepell) adapted for Python
+# Federico Pellegrin, 2016-2022 (fedepell) adapted for Python
 
 """
 This tool helps with finding Python Qt5 tools and libraries,
@@ -137,7 +137,7 @@ class pyrcc(Task.Task):
 	Processes ``.qrc`` files
 	"""
 	color   = 'BLUE'
-	run_str = '${QT_PYRCC} ${SRC} -o ${TGT}'
+	run_str = '${QT_PYRCC} ${QT_PYRCC_FLAGS} ${SRC} -o ${TGT}'
 	ext_out = ['.py']
 
 	def rcname(self):
@@ -175,7 +175,7 @@ class ui5py(Task.Task):
 	Processes ``.ui`` files for python
 	"""
 	color   = 'BLUE'
-	run_str = '${QT_PYUIC} ${SRC} -o ${TGT}'
+	run_str = '${QT_PYUIC} ${QT_PYUIC_FLAGS} ${SRC} -o ${TGT}'
 	ext_out = ['.py']
 
 class ts2qm(Task.Task):
@@ -216,17 +216,17 @@ def find_pyqt5_binaries(self):
 		self.find_program(['pyrcc5'], var='QT_PYRCC')
 		self.find_program(['pylupdate5'], var='QT_PYLUPDATE')
 	elif getattr(Options.options, 'want_pyside2', True):
-		self.find_program(['pyside2-uic'], var='QT_PYUIC')
-		self.find_program(['pyside2-rcc'], var='QT_PYRCC')
-		self.find_program(['pyside2-lupdate'], var='QT_PYLUPDATE')
+		self.find_program(['pyside2-uic','uic-qt5'], var='QT_PYUIC')
+		self.find_program(['pyside2-rcc','rcc-qt5'], var='QT_PYRCC')
+		self.find_program(['pyside2-lupdate','lupdate-qt5'], var='QT_PYLUPDATE')
 	elif getattr(Options.options, 'want_pyqt4', True):
 		self.find_program(['pyuic4'], var='QT_PYUIC')
 		self.find_program(['pyrcc4'], var='QT_PYRCC')
 		self.find_program(['pylupdate4'], var='QT_PYLUPDATE')
 	else:
-		self.find_program(['pyuic5','pyside2-uic','pyuic4'], var='QT_PYUIC')
-		self.find_program(['pyrcc5','pyside2-rcc','pyrcc4'], var='QT_PYRCC')
-		self.find_program(['pylupdate5', 'pyside2-lupdate','pylupdate4'], var='QT_PYLUPDATE')
+		self.find_program(['pyuic5','pyside2-uic','pyuic4','uic-qt5'], var='QT_PYUIC')
+		self.find_program(['pyrcc5','pyside2-rcc','pyrcc4','rcc-qt5'], var='QT_PYRCC')
+		self.find_program(['pylupdate5', 'pyside2-lupdate','pylupdate4','lupdate-qt5'], var='QT_PYLUPDATE')
 
 	if not env.QT_PYUIC:
 		self.fatal('cannot find the uic compiler for python for qt5')

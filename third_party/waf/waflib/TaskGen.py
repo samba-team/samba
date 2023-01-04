@@ -400,7 +400,7 @@ def feature(*k):
 	Decorator that registers a task generator method that will be executed when the
 	object attribute ``feature`` contains the corresponding key(s)::
 
-		from waflib.Task import feature
+		from waflib.TaskGen import feature
 		@feature('myfeature')
 		def myfunction(self):
 			print('that is my feature!')

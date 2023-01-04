@@ -53,7 +53,17 @@ py_compile.compile(sys.argv[1], sys.argv[2], sys.argv[3], True)
 Piece of Python code used in :py:class:`waflib.Tools.python.pyo` and :py:class:`waflib.Tools.python.pyc` for byte-compiling python files
 """
 
-DISTUTILS_IMP = ['from distutils.sysconfig import get_config_var, get_python_lib']
+DISTUTILS_IMP = """
+try:
+	from distutils.sysconfig import get_config_var, get_python_lib
+except ImportError:
+	from sysconfig import get_config_var, get_path
+	def get_python_lib(*k, **kw):
+		keyword='platlib' if kw.get('plat_specific') else 'purelib'
+		if 'prefix' in kw:
+			return get_path(keyword, vars={'installed_base': kw['prefix'], 'platbase': kw['prefix']})
+		return get_path(keyword)
+""".splitlines()
 
 @before_method('process_source')
 @feature('py')
@@ -219,7 +229,7 @@ def get_python_variables(self, variables, imports=None):
 	try:
 		out = self.cmd_and_log(self.env.PYTHON + ['-c', '\n'.join(program)], env=os_env)
 	except Errors.WafError:
-		self.fatal('The distutils module is unusable: install "python-devel"?')
+		self.fatal('Could not run %r' % self.env.PYTHON)
 	self.to_log(out)
 	return_values = []
 	for s in out.splitlines():
@@ -291,7 +301,8 @@ def python_cross_compile(self, features='pyembed pyext'):
 @conf
 def check_python_headers(conf, features='pyembed pyext'):
 	"""
-	Check for headers and libraries necessary to extend or embed python by using the module *distutils*.
+	Check for headers and libraries necessary to extend or embed python.
+	It may use the module *distutils* or sysconfig in newer Python versions.
 	On success the environment variables xxx_PYEXT and xxx_PYEMBED are added:
 
 	* PYEXT: for compiling python extensions
@@ -439,7 +450,7 @@ def check_python_headers(conf, features='pyembed pyext'):
 		env.LIBPATH_PYEXT = env.LIBPATH_PYEMBED
 		env.LIB_PYEXT = env.LIB_PYEMBED
 
-	conf.to_log("Include path for Python extensions (found via distutils module): %r\n" % (dct['INCLUDEPY'],))
+	conf.to_log("Found an include path for Python extensions: %r\n" % (dct['INCLUDEPY'],))
 	env.INCLUDES_PYEXT = [dct['INCLUDEPY']]
 	env.INCLUDES_PYEMBED = [dct['INCLUDEPY']]
 
@@ -452,15 +463,21 @@ def check_python_headers(conf, features='pyembed pyext'):
 		env.append_unique('CXXFLAGS_PYEXT', ['-fno-strict-aliasing'])
 
 	if env.CC_NAME == "msvc":
-		from distutils.msvccompiler import MSVCCompiler
-		dist_compiler = MSVCCompiler()
-		dist_compiler.initialize()
-		env.append_value('CFLAGS_PYEXT', dist_compiler.compile_options)
-		env.append_value('CXXFLAGS_PYEXT', dist_compiler.compile_options)
-		env.append_value('LINKFLAGS_PYEXT', dist_compiler.ldflags_shared)
+		try:
+			from distutils.msvccompiler import MSVCCompiler
+		except ImportError:
+			# From https://github.com/python/cpython/blob/main/Lib/distutils/msvccompiler.py
+			env.append_value('CFLAGS_PYEXT', [ '/nologo', '/Ox', '/MD', '/W3', '/GX', '/DNDEBUG'])
+			env.append_value('CXXFLAGS_PYEXT', [ '/nologo', '/Ox', '/MD', '/W3', '/GX', '/DNDEBUG'])
+			env.append_value('LINKFLAGS_PYEXT', ['/DLL', '/nologo', '/INCREMENTAL:NO'])
+		else:
+			dist_compiler = MSVCCompiler()
+			dist_compiler.initialize()
+			env.append_value('CFLAGS_PYEXT', dist_compiler.compile_options)
+			env.append_value('CXXFLAGS_PYEXT', dist_compiler.compile_options)
+			env.append_value('LINKFLAGS_PYEXT', dist_compiler.ldflags_shared)
 
-	# See if it compiles
-	conf.check(header_name='Python.h', define_name='HAVE_PYTHON_H', uselib='PYEMBED', fragment=FRAG, errmsg='Distutils not installed? Broken python installation? Get python-config now!')
+	conf.check(header_name='Python.h', define_name='HAVE_PYTHON_H', uselib='PYEMBED', fragment=FRAG, errmsg='Could not build a Python embedded interpreter')
 
 @conf
 def check_python_version(conf, minver=None):
@@ -506,17 +523,9 @@ def check_python_version(conf, minver=None):
 		else:
 			# Finally, try to guess
 			if Utils.is_win32:
-				(python_LIBDEST, pydir) = conf.get_python_variables(
-					  ["get_config_var('LIBDEST') or ''",
-					   "get_python_lib(standard_lib=0) or ''"])
+				(pydir,) = conf.get_python_variables(["get_python_lib(standard_lib=0) or ''"])
 			else:
-				python_LIBDEST = None
-				(pydir,) = conf.get_python_variables( ["get_python_lib(standard_lib=0, prefix=%r) or ''" % conf.env.PREFIX])
-			if python_LIBDEST is None:
-				if conf.env.LIBDIR:
-					python_LIBDEST = os.path.join(conf.env.LIBDIR, 'python' + pyver)
-				else:
-					python_LIBDEST = os.path.join(conf.env.PREFIX, 'lib', 'python' + pyver)
+				(pydir,) = conf.get_python_variables(["get_python_lib(standard_lib=0, prefix=%r) or ''" % conf.env.PREFIX])
 
 		if 'PYTHONARCHDIR' in conf.env:
 			# Check if --pythonarchdir was specified
@@ -526,7 +535,7 @@ def check_python_version(conf, minver=None):
 			pyarchdir = conf.environ['PYTHONARCHDIR']
 		else:
 			# Finally, try to guess
-			(pyarchdir, ) = conf.get_python_variables( ["get_python_lib(plat_specific=1, standard_lib=0, prefix=%r) or ''" % conf.env.PREFIX])
+			(pyarchdir, ) = conf.get_python_variables(["get_python_lib(plat_specific=1, standard_lib=0, prefix=%r) or ''" % conf.env.PREFIX])
 			if not pyarchdir:
 				pyarchdir = pydir
 
@@ -585,13 +594,12 @@ def check_python_module(conf, module_name, condition=''):
 		if ret == 'unknown version':
 			conf.fatal('Could not check the %s version' % module_name)
 
-		from distutils.version import LooseVersion
 		def num(*k):
 			if isinstance(k[0], int):
-				return LooseVersion('.'.join([str(x) for x in k]))
+				return Utils.loose_version('.'.join([str(x) for x in k]))
 			else:
-				return LooseVersion(k[0])
-		d = {'num': num, 'ver': LooseVersion(ret)}
+				return Utils.loose_version(k[0])
+		d = {'num': num, 'ver': Utils.loose_version(ret)}
 		ev = eval(condition, {}, d)
 		if not ev:
 			conf.fatal('The %s version does not satisfy the requirements' % module_name)
