@@ -250,28 +250,12 @@ static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
 					TALLOC_CTX *mem_ctx,
 					struct smbXsrv_open_global0 **_g);
 
-static NTSTATUS smbXsrv_open_global_allocate(struct db_context *db,
-					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_open_global0 **_global)
+static NTSTATUS smbXsrv_open_global_allocate(
+	struct db_context *db, struct smbXsrv_open_global0 *global)
 {
 	uint32_t i;
-	struct smbXsrv_open_global0 *global = NULL;
 	uint32_t last_free = 0;
 	const uint32_t min_tries = 3;
-
-	*_global = NULL;
-
-	global = talloc_zero(mem_ctx, struct smbXsrv_open_global0);
-	if (global == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-	 * We mark every slot as invalid using 0xFF.
-	 * Valid values are masked with 0xF.
-	 */
-	memset(global->lock_sequence_array, 0xFF,
-	       sizeof(global->lock_sequence_array));
 
 	/*
 	 * Here we just randomly try the whole 32-bit space
@@ -296,9 +280,9 @@ static NTSTATUS smbXsrv_open_global_allocate(struct db_context *db,
 			id--;
 		}
 
-		global->db_rec = smbXsrv_open_global_fetch_locked(db, id, mem_ctx);
+		global->db_rec = smbXsrv_open_global_fetch_locked(
+			db, id, global);
 		if (global->db_rec == NULL) {
-			talloc_free(global);
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
 		}
 
@@ -332,12 +316,10 @@ static NTSTATUS smbXsrv_open_global_allocate(struct db_context *db,
 
 		global->open_global_id = id;
 
-		*_global = global;
 		return NT_STATUS_OK;
 	}
 
 	/* should not be reached */
-	talloc_free(global);
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
@@ -591,13 +573,25 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	op->status = NT_STATUS_OK; /* TODO: start with INTERNAL_ERROR */
 	op->idle_time = now;
 
-	status = smbXsrv_open_global_allocate(table->global.db_ctx,
-					      op, &global);
+	global = talloc_zero(op, struct smbXsrv_open_global0);
+	if (global == NULL) {
+		TALLOC_FREE(op);
+		return NT_STATUS_NO_MEMORY;
+	}
+	op->global = global;
+
+	/*
+	 * We mark every slot as invalid using 0xFF.
+	 * Valid values are masked with 0xF.
+	 */
+	memset(global->lock_sequence_array, 0xFF,
+	       sizeof(global->lock_sequence_array));
+
+	status = smbXsrv_open_global_allocate(table->global.db_ctx, global);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(op);
 		return status;
 	}
-	op->global = global;
 
 	local_id = idr_get_new_random(
 		table->local.idr,
