@@ -4544,7 +4544,7 @@ static void call_trans2setpathinfo(
 	case SMB_SET_POSIX_ACL:
 		status = smb_set_posix_acl(
 			conn, req, *ppdata, total_data, NULL, smb_fname);
-			break;
+		break;
 	}
 
 	if (info_level_handled) {
