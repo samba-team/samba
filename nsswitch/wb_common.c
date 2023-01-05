@@ -43,6 +43,7 @@ struct winbindd_context {
 };
 
 static struct wb_global_ctx {
+	bool initialized;
 #ifdef HAVE_PTHREAD
 	pthread_once_t control;
 	pthread_key_t key;
@@ -141,16 +142,23 @@ static struct winbindd_context *get_wb_thread_ctx(void)
 
 static struct winbindd_context *get_wb_global_ctx(void)
 {
-#ifdef HAVE_PTHREAD
-	return get_wb_thread_ctx();
-#else
-	static struct winbindd_context ctx = {
+	struct winbindd_context *ctx = NULL;
+#ifndef HAVE_PTHREAD
+	static struct winbindd_context _ctx = {
 		.winbindd_fd = -1,
 		.is_privileged = false,
 		.our_pid = 0
 	};
-	return &ctx;
 #endif
+
+#ifdef HAVE_PTHREAD
+	ctx = get_wb_thread_ctx();
+#else
+	ctx = &_ctx;
+#endif
+
+	wb_global_ctx.initialized = true;
+	return ctx;
 }
 
 void winbind_set_client_name(const char *name)
@@ -233,6 +241,10 @@ __attribute__((destructor))
 static void winbind_destructor(void)
 {
 	struct winbindd_context *ctx;
+
+	if (!wb_global_ctx.initialized) {
+		return;
+	}
 
 #ifdef HAVE_PTHREAD_H
 	ctx = (struct winbindd_context *)pthread_getspecific(wb_global_ctx.key);
