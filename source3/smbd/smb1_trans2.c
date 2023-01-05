@@ -2113,15 +2113,13 @@ static NTSTATUS smb_q_unix_basic(
 	int *ptotal_data)
 {
 	const int total_data = 100;
-	char *pdata = NULL;
 
-	pdata = SMB_REALLOC(*ppdata, total_data);
-	if (pdata == NULL) {
+	*ppdata = SMB_REALLOC(*ppdata, total_data);
+	if (*ppdata == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	store_file_unix_basic(conn, pdata, fsp, &smb_fname->st);
+	store_file_unix_basic(conn, *ppdata, fsp, &smb_fname->st);
 
-	*ppdata = pdata;
 	*ptotal_data = total_data;
 
 	return NT_STATUS_OK;
@@ -2136,15 +2134,13 @@ static NTSTATUS smb_q_unix_info2(
 	int *ptotal_data)
 {
 	const int total_data = 116;
-	char *pdata = NULL;
 
-	pdata = SMB_REALLOC(*ppdata, total_data);
-	if (pdata == NULL) {
+	*ppdata = SMB_REALLOC(*ppdata, total_data);
+	if (*ppdata == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	store_file_unix_basic_info2(conn, pdata, fsp, &smb_fname->st);
+	store_file_unix_basic_info2(conn, *ppdata, fsp, &smb_fname->st);
 
-	*ppdata = pdata;
 	*ptotal_data = total_data;
 
 	return NT_STATUS_OK;
@@ -2442,12 +2438,12 @@ static NTSTATUS smb_q_posix_acl(
 	}
 	size_needed += SMB_POSIX_ACL_HEADER_SIZE;
 
-	pdata = SMB_REALLOC(*ppdata, size_needed);
-	if (pdata == NULL) {
+	*ppdata = SMB_REALLOC(*ppdata, size_needed);
+	if (*ppdata == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	*ppdata = pdata;
+	pdata = *ppdata;
 
 	SSVAL(pdata,0,SMB_POSIX_ACL_VERSION);
 	SSVAL(pdata,2,num_file_acls);
@@ -2547,11 +2543,11 @@ static NTSTATUS smb_q_posix_symlink(
 
 	needed = (link_len+1)*2;
 
-	pdata = SMB_REALLOC(*ppdata, needed);
-	if (pdata == NULL) {
+	*ppdata = SMB_REALLOC(*ppdata, needed);
+	if (*ppdata == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	*ppdata = pdata;
+	pdata = *ppdata;
 
 	status = srvstr_push(
 		pdata,
