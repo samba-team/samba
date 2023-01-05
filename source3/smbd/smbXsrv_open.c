@@ -429,28 +429,26 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &global_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_globalB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(1,("smbXsrv_open_global_store: key '%s' ndr_push - %s\n",
-			 tdb_data_dbg(key),
-			 nt_errstr(status)));
+		DBG_WARNING("key '%s' ndr_push - %s\n",
+			    tdb_data_dbg(key),
+			    ndr_map_error2string(ndr_err));
 		TALLOC_FREE(global->db_rec);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
 	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
 	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("smbXsrv_open_global_store: key '%s' store - %s\n",
-			 tdb_data_dbg(key),
-			 nt_errstr(status)));
+		DBG_WARNING("key '%s' store - %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(status));
 		TALLOC_FREE(global->db_rec);
 		return status;
 	}
 
 	if (CHECK_DEBUGLVL(10)) {
-		DEBUG(10,("smbXsrv_open_global_store: key '%s' stored\n",
-			  tdb_data_dbg(key)));
+		DBG_DEBUG("key '%s' stored\n", tdb_data_dbg(key));
 		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
 	}
 
