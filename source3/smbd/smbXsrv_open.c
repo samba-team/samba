@@ -317,12 +317,15 @@ static NTSTATUS smbXsrv_open_global_verify_record(
 	return NT_STATUS_FATAL_APP_EXIT;
 }
 
-static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
+static NTSTATUS smbXsrv_open_global_store(
+	struct db_record *rec,
+	TDB_DATA key,
+	TDB_DATA oldval,
+	struct smbXsrv_open_global0 *global)
 {
 	struct smbXsrv_open_globalB global_blob;
 	DATA_BLOB blob = data_blob_null;
-	TDB_DATA key;
-	TDB_DATA val;
+	TDB_DATA val = { .dptr = NULL, };
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 
@@ -332,15 +335,12 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 	 * store the information in the old format.
 	 */
 
-	key = dbwrap_record_get_key(global->db_rec);
-	val = dbwrap_record_get_value(global->db_rec);
-
 	global_blob = (struct smbXsrv_open_globalB) {
 		.version = smbXsrv_version_global_current(),
 	};
 
-	if (val.dsize >= 8) {
-		global_blob.seqnum = IVAL(val.dptr, 4);
+	if (oldval.dsize >= 8) {
+		global_blob.seqnum = IVAL(oldval.dptr, 4);
 	}
 	global_blob.seqnum += 1;
 	global_blob.info.info0 = global;
@@ -351,18 +351,16 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 		DBG_WARNING("key '%s' ndr_push - %s\n",
 			    tdb_data_dbg(key),
 			    ndr_map_error2string(ndr_err));
-		TALLOC_FREE(global->db_rec);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
-	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
+	status = dbwrap_record_store(rec, val, TDB_REPLACE);
 	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",
 			    tdb_data_dbg(key),
 			    nt_errstr(status));
-		TALLOC_FREE(global->db_rec);
 		return status;
 	}
 
@@ -370,8 +368,6 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 		DBG_DEBUG("key '%s' stored\n", tdb_data_dbg(key));
 		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
 	}
-
-	TALLOC_FREE(global->db_rec);
 
 	return NT_STATUS_OK;
 }
@@ -603,7 +599,12 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 
 	talloc_set_destructor(op, smbXsrv_open_destructor);
 
-	status = smbXsrv_open_global_store(global);
+	status = smbXsrv_open_global_store(
+		global->db_rec,
+		dbwrap_record_get_key(global->db_rec),
+		dbwrap_record_get_value(global->db_rec),
+		global);
+	TALLOC_FREE(global->db_rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smbXsrv_open_create: "
 			 "global_id (0x%08x) store failed - %s\n",
@@ -751,7 +752,12 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	status = smbXsrv_open_global_store(op->global);
+	status = smbXsrv_open_global_store(
+		op->global->db_rec,
+		dbwrap_record_get_key(op->global->db_rec),
+		dbwrap_record_get_value(op->global->db_rec),
+		op->global);
+	TALLOC_FREE(op->global->db_rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smbXsrv_open_update: "
 			 "global_id (0x%08x) store failed - %s\n",
@@ -824,14 +830,14 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 		 * instead of deleting it
 		 */
 		op->global->db_rec = global_rec;
-		status = smbXsrv_open_global_store(op->global);
-		if (NT_STATUS_IS_OK(status)) {
-			/*
-			 * smbXsrv_open_global_store does the free
-			 * of op->global->db_rec
-			 */
-			global_rec = NULL;
-		}
+		status = smbXsrv_open_global_store(
+			op->global->db_rec,
+			dbwrap_record_get_key(op->global->db_rec),
+			dbwrap_record_get_value(op->global->db_rec),
+			op->global);
+		TALLOC_FREE(op->global->db_rec);
+		global_rec = NULL;
+
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("smbXsrv_open_close(0x%08x)"
 				 "smbXsrv_open_global_store() failed - %s\n",
@@ -1268,7 +1274,12 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 
 	talloc_set_destructor(op, smbXsrv_open_destructor);
 
-	status = smbXsrv_open_global_store(op->global);
+	status = smbXsrv_open_global_store(
+		op->global->db_rec,
+		dbwrap_record_get_key(op->global->db_rec),
+		dbwrap_record_get_value(op->global->db_rec),
+		op->global);
+	TALLOC_FREE(op->global->db_rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(op);
 		return status;
