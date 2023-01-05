@@ -43,6 +43,7 @@
 #include "../librpc/gen_ndr/ndr_nbt.h"
 #include "../lib/util/asn1.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/util/idtree_random.h"
 
 #undef strcasecmp
 

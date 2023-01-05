@@ -31,6 +31,7 @@
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/security/security.h"
 #include "clifuse.h"
+#include "lib/util/idtree.h"
 
 struct mount_state {
 	struct tevent_context *ev;

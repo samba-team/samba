@@ -30,7 +30,7 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 #include "lib/util/util_net.h"
-
+#include "lib/util/idtree.h"
 
 /*
   receive an incoming request and dispatch it to the right place

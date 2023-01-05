@@ -29,7 +29,7 @@
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 #include "auth/auth.h"
-
+#include "lib/util/idtree.h"
 
 /* fill in the bufinfo */
 void smb2srv_setup_bufinfo(struct smb2srv_request *req)

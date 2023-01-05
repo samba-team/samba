@@ -27,6 +27,7 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "lib/util/idtree_random.h"
 
 #define NBT_MAX_REPLIES 1000
 

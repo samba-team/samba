@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
-
+#include "lib/util/idtree_random.h"
 
 /*
  * init the sessions structures

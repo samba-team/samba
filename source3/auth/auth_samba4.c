@@ -29,6 +29,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "lib/global_contexts.h"
+#include "lib/util/idtree.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

@@ -26,6 +26,7 @@
 #include "samba/service_stream.h"
 #include "lib/events/events.h"
 #include "../lib/util/dlinklist.h"
+#include "lib/util/idtree.h"
 
 /* place a reasonable limit on old-style searches as clients tend to
    not send search close requests */

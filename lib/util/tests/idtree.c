@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
+#include "lib/util/idtree.h"
 
 static bool torture_local_idtree_simple(struct torture_context *tctx)
 {

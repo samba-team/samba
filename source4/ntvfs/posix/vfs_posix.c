@@ -31,6 +31,7 @@
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 #include "param/param.h"
+#include "lib/util/idtree.h"
 
 /*
   setup config options for a posix share

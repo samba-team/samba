@@ -589,9 +589,6 @@ int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol,
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string);
 
-#include "idtree.h"
-#include "idtree_random.h"
-
 #include "become_daemon.h"
 
 /**

@@ -33,6 +33,7 @@
 #include "samba/process_model.h"
 #include "lib/util/samba_modules.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/idtree_random.h"
 
 /*
   take a reference to an existing association group

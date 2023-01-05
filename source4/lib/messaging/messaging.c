@@ -40,6 +40,7 @@
 #include "lib/messaging/messages_dgm_ref.h"
 #include "../source3/lib/messages_util.h"
 #include <tdb.h>
+#include "lib/util/idtree.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define IMESSAGING_VERSION 1

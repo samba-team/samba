@@ -24,6 +24,7 @@
 #include "samba/service_stream.h"
 #include "lib/tsocket/tsocket.h"
 #include "ntvfs/ntvfs.h"
+#include "lib/util/idtree_random.h"
 
 /****************************************************************************
 init the tcon structures

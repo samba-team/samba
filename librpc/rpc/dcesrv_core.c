@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "system/network.h"
+#include "lib/util/idtree_random.h"
 
 /**
  * @file
