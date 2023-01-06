@@ -254,13 +254,9 @@ static NTSTATUS smbXsrv_open_global_allocate(
 		if (i >= min_tries && last_free != 0) {
 			id = last_free;
 		} else {
-			id = generate_random();
-		}
-		if (id == 0) {
-			id++;
-		}
-		if (id == UINT32_MAX) {
-			id--;
+			generate_nonce_buffer((uint8_t *)&id, sizeof(id));
+			id = MAX(id, 1);
+			id = MIN(id, UINT32_MAX-1);
 		}
 
 		key = smbXsrv_open_global_id_to_key(id, &key_buf);
