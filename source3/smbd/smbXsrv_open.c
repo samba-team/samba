@@ -225,11 +225,11 @@ static NTSTATUS smbXsrv_open_local_lookup(struct smbXsrv_open_table *table,
 	return NT_STATUS_OK;
 }
 
-static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
-					bool *is_free,
-					bool *was_free,
-					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_open_global0 **_g);
+static NTSTATUS smbXsrv_open_global_verify_record(
+	TDB_DATA key,
+	TDB_DATA val,
+	TALLOC_CTX *mem_ctx,
+	struct smbXsrv_open_global0 **_global0);
 
 static NTSTATUS smbXsrv_open_global_allocate(
 	struct db_context *db, struct smbXsrv_open_global0 *global)
@@ -245,9 +245,11 @@ static NTSTATUS smbXsrv_open_global_allocate(
 	 * ID for SRVSVC.
 	 */
 	for (i = 0; i < UINT32_MAX; i++) {
-		bool is_free = false;
-		bool was_free = false;
+		struct smbXsrv_open_global_key_buf key_buf;
+		struct smbXsrv_open_global0 *tmp_global0 = NULL;
+		TDB_DATA key, val;
 		uint32_t id;
+		NTSTATUS status;
 
 		if (i >= min_tries && last_free != 0) {
 			id = last_free;
@@ -261,141 +263,120 @@ static NTSTATUS smbXsrv_open_global_allocate(
 			id--;
 		}
 
-		global->db_rec = smbXsrv_open_global_fetch_locked(
-			db, id, global);
+		key = smbXsrv_open_global_id_to_key(id, &key_buf);
+
+		global->db_rec = dbwrap_fetch_locked(db, global, key);
 		if (global->db_rec == NULL) {
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
 		}
+		val = dbwrap_record_get_value(global->db_rec);
 
-		smbXsrv_open_global_verify_record(global->db_rec,
-						  &is_free,
-						  &was_free,
-						  NULL, NULL);
+		status = smbXsrv_open_global_verify_record(
+			key, val, talloc_tos(), &tmp_global0);
 
-		if (!is_free) {
-			TALLOC_FREE(global->db_rec);
-			continue;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			/*
+			 * Found an empty slot
+			 */
+			global->open_global_id = id;
+			return NT_STATUS_OK;
 		}
 
-		if (!was_free && i < min_tries) {
+		TALLOC_FREE(tmp_global0);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FATAL_APP_EXIT)) {
 			/*
-			 * The session_id is free now,
-			 * but was not free before.
-			 *
-			 * This happens if a smbd crashed
-			 * and did not cleanup the record.
-			 *
-			 * If this is one of our first tries,
-			 * then we try to find a real free one.
+			 * smbd crashed
 			 */
-			if (last_free == 0) {
+			status = dbwrap_record_delete(global->db_rec);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("dbwrap_record_delete() failed "
+					    "for record %"PRIu32": %s\n",
+					    id,
+					    nt_errstr(status));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			if ((i < min_tries) && (last_free == 0)) {
+				/*
+				 * Remember "id" as free but also try
+				 * others to not recycle ids too
+				 * quickly.
+				 */
 				last_free = id;
 			}
-			TALLOC_FREE(global->db_rec);
-			continue;
 		}
 
-		global->open_global_id = id;
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("smbXsrv_open_global_verify_record() "
+				    "failed for %s: %s, ignoring\n",
+				    tdb_data_dbg(key),
+				    nt_errstr(status));
+		}
 
-		return NT_STATUS_OK;
+		TALLOC_FREE(global->db_rec);
 	}
 
 	/* should not be reached */
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
-static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
-					bool *is_free,
-					bool *was_free,
-					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_open_global0 **_g)
+static NTSTATUS smbXsrv_open_global_verify_record(
+	TDB_DATA key,
+	TDB_DATA val,
+	TALLOC_CTX *mem_ctx,
+	struct smbXsrv_open_global0 **_global0)
 {
-	TDB_DATA key;
-	TDB_DATA val;
-	DATA_BLOB blob;
+	DATA_BLOB blob = { .data = val.dptr, .length = val.dsize, };
 	struct smbXsrv_open_globalB global_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_open_global0 *global = NULL;
-	bool exists;
-	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbXsrv_open_global0 *global0 = NULL;
+	struct server_id_buf buf;
 
-	*is_free = false;
-
-	if (was_free) {
-		*was_free = false;
-	}
-	if (_g) {
-		*_g = NULL;
-	}
-
-	key = dbwrap_record_get_key(db_rec);
-
-	val = dbwrap_record_get_value(db_rec);
 	if (val.dsize == 0) {
-		DEBUG(10, ("%s: empty value\n", __func__));
-		TALLOC_FREE(frame);
-		*is_free = true;
-		if (was_free) {
-			*was_free = true;
-		}
-		return;
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	blob = data_blob_const(val.dptr, val.dsize);
-
-	ndr_err = ndr_pull_struct_blob(&blob, frame, &global_blob,
-			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_open_globalB);
+	ndr_err = ndr_pull_struct_blob(
+		&blob,
+		mem_ctx,
+		&global_blob,
+		(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_open_globalB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(1,("smbXsrv_open_global_verify_record: "
-			 "key '%s' ndr_pull_struct_blob - %s\n",
-			 tdb_data_dbg(key),
-			 nt_errstr(status)));
-		TALLOC_FREE(frame);
-		return;
+		DBG_WARNING("key '%s' ndr_pull_struct_blob - %s\n",
+			    tdb_data_dbg(key),
+			    ndr_map_error2string(ndr_err));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	DEBUG(10,("smbXsrv_open_global_verify_record\n"));
+	DBG_DEBUG("\n");
 	if (CHECK_DEBUGLVL(10)) {
 		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
 	}
 
 	if (global_blob.version != SMBXSRV_VERSION_0) {
-		DEBUG(0,("smbXsrv_open_global_verify_record: "
-			 "key '%s' use unsupported version %u\n",
-			 tdb_data_dbg(key),
-			 global_blob.version));
+		DBG_ERR("key '%s' use unsupported version %u\n",
+			tdb_data_dbg(key),
+			global_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
-		TALLOC_FREE(frame);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	global = global_blob.info.info0;
+	global0 = global_blob.info.info0;
+	*_global0 = global0;
 
-	if (server_id_is_disconnected(&global->server_id)) {
-		exists = true;
-	} else {
-		exists = serverid_exists(&global->server_id);
+	if (server_id_is_disconnected(&global0->server_id)) {
+		return NT_STATUS_OK;
 	}
-	if (!exists) {
-		struct server_id_buf idbuf;
-		DEBUG(2,("smbXsrv_open_global_verify_record: "
-			 "key '%s' server_id %s does not exist.\n",
-			 tdb_data_dbg(key),
-			 server_id_str_buf(global->server_id, &idbuf)));
-		if (CHECK_DEBUGLVL(2)) {
-			NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
-		}
-		TALLOC_FREE(frame);
-		dbwrap_record_delete(db_rec);
-		*is_free = true;
-		return;
+	if (serverid_exists(&global0->server_id)) {
+		return NT_STATUS_OK;
 	}
 
-	if (_g) {
-		*_g = talloc_move(mem_ctx, &global);
-	}
-	TALLOC_FREE(frame);
+	DBG_WARNING("smbd %s did not clean up record %s\n",
+		    server_id_str_buf(global0->server_id, &buf),
+		    tdb_data_dbg(key));
+
+	return NT_STATUS_FATAL_APP_EXIT;
 }
 
 static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
@@ -462,8 +443,11 @@ static NTSTATUS smbXsrv_open_global_lookup(struct smbXsrv_open_table *table,
 					   TALLOC_CTX *mem_ctx,
 					   struct smbXsrv_open_global0 **_global)
 {
+	struct smbXsrv_open_global_key_buf key_buf;
+	TDB_DATA key = smbXsrv_open_global_id_to_key(open_global_id, &key_buf);
+	TDB_DATA val;
 	struct db_record *global_rec = NULL;
-	bool is_free = false;
+	NTSTATUS status;
 
 	*_global = NULL;
 
@@ -471,27 +455,25 @@ static NTSTATUS smbXsrv_open_global_lookup(struct smbXsrv_open_table *table,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	global_rec = smbXsrv_open_global_fetch_locked(table->global.db_ctx,
-						      open_global_id,
-						      mem_ctx);
+	global_rec = dbwrap_fetch_locked(table->global.db_ctx, mem_ctx, key);
 	if (global_rec == NULL) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
+	val = dbwrap_record_get_value(global_rec);
 
-	smbXsrv_open_global_verify_record(global_rec,
-					  &is_free,
-					  NULL,
-					  mem_ctx,
-					  _global);
-	if (is_free) {
-		DEBUG(10, ("%s: is_free=true\n", __func__));
-		talloc_free(global_rec);
+	status = smbXsrv_open_global_verify_record(key, val, mem_ctx, _global);
+	if (NT_STATUS_IS_OK(status)) {
+		(*_global)->db_rec = talloc_move(*_global, &global_rec);
+		return NT_STATUS_OK;
+	}
+
+	TALLOC_FREE(global_rec);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	(*_global)->db_rec = talloc_move(*_global, &global_rec);
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 static int smbXsrv_open_destructor(struct smbXsrv_open *op)
