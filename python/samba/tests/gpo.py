@@ -7125,9 +7125,13 @@ class GPOTests(tests.TestCase):
         cmd = [firewall_cmd, '--zone=work', '--list-rich-rules']
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
-        rule = b'rule family=ipv4 source address=172.25.1.7 ' + \
-               b'service name=ftp reject'
-        self.assertEquals(rule, out.strip(), 'Failed to set rich rule')
+        # Firewalld will report the rule one of two ways:
+        rules = [b'rule family=ipv4 source address=172.25.1.7 ' + \
+                 b'service name=ftp reject',
+                 b'rule family="ipv4" source address="172.25.1.7" ' + \
+                 b'service name="ftp" reject']
+        self.assertIn(out.strip(), rules, 'Failed to set rich rule')
+
 
         # Verify RSOP does not fail
         ext.rsop([g for g in gpos if g.name == guid][0])
