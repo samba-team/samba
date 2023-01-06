@@ -416,7 +416,21 @@ static NTSTATUS smbXsrv_open_global_allocate(
 			 * Found an empty slot
 			 */
 			global->open_global_id = id;
-			return NT_STATUS_OK;
+			global->open_persistent_id = id;
+
+			status = smbXsrv_open_global_store(
+				global->db_rec,
+				key,
+				(TDB_DATA) { .dsize = 0, },
+				global);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("smbXsrv_open_global_store() for "
+					    "id %"PRIu32" failed: %s\n",
+					    id,
+					    nt_errstr(status));
+			}
+			TALLOC_FREE(global->db_rec);
+			return status;
 		}
 
 		TALLOC_FREE(tmp_global0);
@@ -568,12 +582,6 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	memset(global->lock_sequence_array, 0xFF,
 	       sizeof(global->lock_sequence_array));
 
-	status = smbXsrv_open_global_allocate(table->global.db_ctx, global);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(op);
-		return status;
-	}
-
 	local_id = idr_get_new_random(
 		table->local.idr,
 		op,
@@ -585,7 +593,6 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	}
 	op->local_id = local_id;
 
-	global->open_persistent_id = global->open_global_id;
 	global->open_volatile_id = op->local_id;
 
 	global->server_id = messaging_server_id(conn->client->msg_ctx);
@@ -595,24 +602,20 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 		global->client_guid = conn->smb2.client.guid;
 	}
 
-	table->local.num_opens += 1;
-
-	talloc_set_destructor(op, smbXsrv_open_destructor);
-
-	status = smbXsrv_open_global_store(
-		global->db_rec,
-		dbwrap_record_get_key(global->db_rec),
-		dbwrap_record_get_value(global->db_rec),
-		global);
-	TALLOC_FREE(global->db_rec);
+	status = smbXsrv_open_global_allocate(table->global.db_ctx,
+					      global);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("smbXsrv_open_create: "
-			 "global_id (0x%08x) store failed - %s\n",
-			 op->global->open_global_id,
-			 nt_errstr(status)));
+		int ret = idr_remove(table->local.idr, local_id);
+		SMB_ASSERT(ret == 0);
+
+		DBG_WARNING("smbXsrv_open_global_allocate() failed: %s\n",
+			    nt_errstr(status));
 		TALLOC_FREE(op);
 		return status;
 	}
+
+	table->local.num_opens += 1;
+	talloc_set_destructor(op, smbXsrv_open_destructor);
 
 	if (CHECK_DEBUGLVL(10)) {
 		struct smbXsrv_openB open_blob = {
