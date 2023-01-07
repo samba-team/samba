@@ -614,7 +614,26 @@ def backup_restore(src_tarfile_path, dst_service_path, samdb_conn, smb_conf_path
     session_info = system_session_unix()
 
     with tarfile.open(src_tarfile_path) as f:
-        f.extractall(path=tempdir)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner) 
+            
+        
+        safe_extract(f, path=tempdir)
         # e.g.: /tmp/tmpRNystY/{dir1,dir1.NTACL,...file1,file1.NTACL}
 
     for dirpath, dirnames, filenames in os.walk(tempdir):
