@@ -1,2 +1,0 @@
-^samba4.ldap.acl_modify.python\(.*\).__main__.AclModifyTests.test_modify_delete_dns_host_name_ldif_unspecified\(.*\)
-^samba4.ldap.acl_modify.python\(.*\).__main__.AclModifyTests.test_modify_delete_dns_host_name_unspecified\(.*\)
