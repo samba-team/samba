@@ -780,9 +780,28 @@ static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
 	return status;
 }
 
+struct smbXsrv_open_update_state {
+	struct smbXsrv_open_global0 *global;
+	NTSTATUS status;
+};
+
+static void smbXsrv_open_update_fn(
+	struct db_record *rec, TDB_DATA oldval, void *private_data)
+{
+	struct smbXsrv_open_update_state *state = private_data;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+
+	state->status = smbXsrv_open_global_store(
+		rec, key, oldval, state->global);
+}
+
 NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 {
+	struct smbXsrv_open_update_state state = { .global = op->global, };
 	struct smbXsrv_open_table *table = op->table;
+	struct smbXsrv_open_global_key_buf key_buf;
+	TDB_DATA key = smbXsrv_open_global_id_to_key(
+		op->global->open_global_id, &key_buf);
 	NTSTATUS status;
 
 	if (op->global->db_rec != NULL) {
@@ -792,26 +811,21 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	op->global->db_rec = smbXsrv_open_global_fetch_locked(
-						table->global.db_ctx,
-						op->global->open_global_id,
-						op->global /* TALLOC_CTX */);
-	if (op->global->db_rec == NULL) {
+	status = dbwrap_do_locked(
+		table->global.db_ctx, key, smbXsrv_open_update_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("global_id (0x%08x) dbwrap_do_locked failed: %s\n",
+			    op->global->open_global_id,
+			    nt_errstr(status));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	status = smbXsrv_open_global_store(
-		op->global->db_rec,
-		dbwrap_record_get_key(op->global->db_rec),
-		dbwrap_record_get_value(op->global->db_rec),
-		op->global);
-	TALLOC_FREE(op->global->db_rec);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("smbXsrv_open_update: "
-			 "global_id (0x%08x) store failed - %s\n",
-			 op->global->open_global_id,
-			 nt_errstr(status)));
-		return status;
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_WARNING("global_id (0x%08x) smbXsrv_open_global_store "
+			    "failed: %s\n",
+			    op->global->open_global_id,
+			    nt_errstr(state.status));
+		return state.status;
 	}
 
 	status = smbXsrv_open_set_replay_cache(op);
