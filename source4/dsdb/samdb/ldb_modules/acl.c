@@ -844,11 +844,6 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		NULL
 	};
 
-	if (el->num_values == 0) {
-		return LDB_SUCCESS;
-	}
-	dnsHostName = &el->values[0];
-
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return ldb_oom(ldb);
@@ -998,6 +993,13 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		/* Account for the '$' character. */
 		--account_name_len;
 	}
+
+	/* Check for add or replace requests with no value. */
+	if (el->num_values == 0) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+	dnsHostName = &el->values[0];
 
 	dnsHostName_str = (const char *)dnsHostName->data;
 	dns_host_name_len = dnsHostName->length;
