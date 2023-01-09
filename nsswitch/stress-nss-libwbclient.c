@@ -216,6 +216,7 @@ static void *query_wbc_thread(void *ptr)
 			assert(nwritten == sizeof(int));
 			exit(1);
 		}
+		wbcFreeMemory(ppwd);
 		printf("child: wbcGetpwnam in child succeeded\n");
 		rc = 0;
 		nwritten = write(p[0], &rc, sizeof(int));
@@ -253,6 +254,7 @@ static void *query_wbc_thread(void *ptr)
 		state->fail = true;
 		return NULL;
 	}
+	wbcFreeMemory(ppwd);
 	printf("parent: wbcGetpwnam in parent succeeded\n");
 	return NULL;
 }
