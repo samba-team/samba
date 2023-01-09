@@ -513,6 +513,33 @@ class gp_applier(object):
                     self.unapply(guid, attribute, value, **kwargs)
 
 
+class gp_misc_applier(gp_applier):
+    '''Group Policy Miscellaneous Applier/Unapplier/Modifier
+    '''
+
+    def generate_value(self, **kwargs):
+        data = etree.Element('data')
+        for k, v in kwargs.items():
+            arg = etree.SubElement(data, k)
+            arg.text = get_string(v)
+        return get_string(etree.tostring(data, 'utf-8'))
+
+    def parse_value(self, value):
+        vals = {}
+        try:
+            data = etree.fromstring(value)
+        except etree.ParseError:
+            # If parsing fails, then it's an old cache value
+            return {'old_val': value}
+        except TypeError:
+            return {}
+        itr = data.iter()
+        next(itr) # Skip the top element
+        for item in itr:
+            vals[item.tag] = item.text
+        return vals
+
+
 class gp_file_applier(gp_applier):
     '''Group Policy File Applier/Unapplier/Modifier
     Subclass of abstract class gp_applier for monitoring policy applied
