@@ -12,9 +12,8 @@
 	</para>
 
 	<para>
-	This option controls whether the netlogon server (currently
-	only in 'active directory domain controller' mode), will
-	reject the usage of netlogon secure channel without privacy/enryption.
+	This option controls whether the netlogon server, will reject the usage
+	of netlogon secure channel without privacy/enryption.
 	</para>
 
 	<para>
