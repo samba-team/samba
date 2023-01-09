@@ -5,7 +5,6 @@
 #endif
 #include <hcrypto/evp.h>
 #include <hcrypto/des.h>
-#include <hcrypto/md2.h>
 #include <hcrypto/md4.h>
 #include <hcrypto/md5.h>
 #include <hcrypto/sha.h>

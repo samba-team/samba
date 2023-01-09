@@ -876,7 +876,7 @@ bn_s_mp_sub.o bn_s_mp_toom_mul.o bn_s_mp_toom_sqr.o"
         )
 
     HEIMDAL_LIBRARY('hcrypto',
-        'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
+        'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
         includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
         deps='roken asn1 tommath replace',
         version_script='lib/hcrypto/version-script.map',
