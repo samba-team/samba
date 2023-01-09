@@ -199,6 +199,10 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
         dirents = conn.list("", filename)
         self.assertEqual(
+            dirents[0]["attrib"],
+            libsmb.FILE_ATTRIBUTE_REPARSE_POINT|
+            libsmb.FILE_ATTRIBUTE_ARCHIVE)
+        self.assertEqual(
             dirents[0]["reparse_tag"],
             libsmb.IO_REPARSE_TAG_SYMLINK)
 
