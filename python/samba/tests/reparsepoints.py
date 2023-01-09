@@ -251,6 +251,15 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         conn.delete_on_close(dir_fd, 1)
         conn.close(dir_fd)
 
+        dirents = conn.list("", dirname)
+        self.assertEqual(
+            dirents[0]["attrib"],
+            libsmb.FILE_ATTRIBUTE_REPARSE_POINT|
+            libsmb.FILE_ATTRIBUTE_DIRECTORY)
+        self.assertEqual(dirents[0]["reparse_tag"], 0x80000025)
+
+        self.clean_file(conn, dirname)
+
     # Only empty directories can carry reparse points
 
     def test_create_reparse_nonempty_directory(self):
