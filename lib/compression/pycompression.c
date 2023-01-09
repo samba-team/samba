@@ -126,7 +126,7 @@ static PyObject *plain_decompress(PyObject *mod, PyObject *args)
 		 */
 		if (src_len <= 3333333) {
 			alloc_len = 10000000;
-		} else if (src_len / 3 >= UINT32_MAX) {
+		} else if (src_len > UINT32_MAX / 3) {
 			alloc_len = UINT32_MAX;
 		} else {
 			alloc_len = src_len * 3;
