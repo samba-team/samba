@@ -849,12 +849,63 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 	return NT_STATUS_OK;
 }
 
+struct smbXsrv_open_close_state {
+	struct smbXsrv_open *op;
+	NTSTATUS status;
+};
+
+static void smbXsrv_open_close_fn(
+	struct db_record *rec, TDB_DATA oldval, void *private_data)
+{
+	struct smbXsrv_open_close_state *state = private_data;
+	struct smbXsrv_open_global0 *global = state->op->global;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+
+	if (global->durable) {
+		/*
+		 * Durable open -- we need to update the global part
+		 * instead of deleting it
+		 */
+		state->status = smbXsrv_open_global_store(
+			rec, key, oldval, global);
+		if (!NT_STATUS_IS_OK(state->status)) {
+			DBG_WARNING("failed to store global key '%s': %s\n",
+				    tdb_data_dbg(key),
+				    nt_errstr(state->status));
+			return;
+		}
+
+		if (CHECK_DEBUGLVL(10)) {
+			struct smbXsrv_openB open_blob = {
+				.version = SMBXSRV_VERSION_0,
+				.info.info0 = state->op,
+			};
+
+			DBG_DEBUG("(0x%08x) stored disconnect\n",
+				  global->open_global_id);
+			NDR_PRINT_DEBUG(smbXsrv_openB, &open_blob);
+		}
+		return;
+	}
+
+	state->status = dbwrap_record_delete(rec);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_WARNING("failed to delete global key '%s': %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(state->status));
+	}
+}
+
 NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 {
+	struct smbXsrv_open_close_state state = { .op = op, };
+	struct smbXsrv_open_global0 *global = op->global;
 	struct smbXsrv_open_table *table;
-	struct db_record *global_rec = NULL;
 	NTSTATUS status;
 	NTSTATUS error = NT_STATUS_OK;
+	struct smbXsrv_open_global_key_buf key_buf;
+	TDB_DATA key = smbXsrv_open_global_id_to_key(
+		global->open_global_id, &key_buf);
 	int ret;
 
 	error = smbXsrv_open_clear_replay_cache(op);
@@ -871,70 +922,22 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 	op->table = NULL;
 
 	op->status = NT_STATUS_FILE_CLOSED;
-	op->global->disconnect_time = now;
-	server_id_set_disconnected(&op->global->server_id);
+	global->disconnect_time = now;
+	server_id_set_disconnected(&global->server_id);
 
-	global_rec = op->global->db_rec;
-	op->global->db_rec = NULL;
-	if (global_rec == NULL) {
-		global_rec = smbXsrv_open_global_fetch_locked(
-					table->global.db_ctx,
-					op->global->open_global_id,
-					op->global /* TALLOC_CTX */);
-		if (global_rec == NULL) {
-			error = NT_STATUS_INTERNAL_ERROR;
-		}
+	status = dbwrap_do_locked(
+		table->global.db_ctx, key, smbXsrv_open_close_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("dbwrap_do_locked() for %s failed: %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(status));
+		error = status;
+	} else if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_WARNING("smbXsrv_open_close_fn() for %s failed: %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(state.status));
+		error = state.status;
 	}
-
-	if (global_rec != NULL && op->global->durable) {
-		/*
-		 * If it is a durable open we need to update the global part
-		 * instead of deleting it
-		 */
-		op->global->db_rec = global_rec;
-		status = smbXsrv_open_global_store(
-			op->global->db_rec,
-			dbwrap_record_get_key(op->global->db_rec),
-			dbwrap_record_get_value(op->global->db_rec),
-			op->global);
-		TALLOC_FREE(op->global->db_rec);
-		global_rec = NULL;
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("smbXsrv_open_close(0x%08x)"
-				 "smbXsrv_open_global_store() failed - %s\n",
-				 op->global->open_global_id,
-				 nt_errstr(status)));
-			error = status;
-		}
-
-		if (NT_STATUS_IS_OK(status) && CHECK_DEBUGLVL(10)) {
-			struct smbXsrv_openB open_blob = {
-				.version = SMBXSRV_VERSION_0,
-				.info.info0 = op,
-			};
-
-			DEBUG(10,("smbXsrv_open_close(0x%08x): "
-				  "stored disconnect\n",
-				  op->global->open_global_id));
-			NDR_PRINT_DEBUG(smbXsrv_openB, &open_blob);
-		}
-	}
-
-	if (global_rec != NULL) {
-		status = dbwrap_record_delete(global_rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			TDB_DATA key = dbwrap_record_get_key(global_rec);
-
-			DEBUG(0, ("smbXsrv_open_close(0x%08x): "
-				  "failed to delete global key '%s': %s\n",
-				  op->global->open_global_id,
-				  tdb_data_dbg(key),
-				  nt_errstr(status)));
-			error = status;
-		}
-	}
-	TALLOC_FREE(global_rec);
 
 	ret = idr_remove(table->local.idr, op->local_id);
 	SMB_ASSERT(ret == 0);
