@@ -53,6 +53,46 @@
 #include "source3/lib/substitute.h"
 
 /****************************************************************************
+ Check if we have a correct fsp pointing to a file. Basic check for open fsp.
+****************************************************************************/
+
+bool check_fsp_open(connection_struct *conn, struct smb_request *req,
+                    files_struct *fsp)
+{
+	if ((fsp == NULL) || (conn == NULL)) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return false;
+	}
+	if ((conn != fsp->conn) || (req->vuid != fsp->vuid)) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return false;
+	}
+	return true;
+}
+
+/****************************************************************************
+ Check if we have a correct fsp pointing to a file.
+****************************************************************************/
+
+bool check_fsp(connection_struct *conn, struct smb_request *req,
+               files_struct *fsp)
+{
+	if (!check_fsp_open(conn, req, fsp)) {
+		return false;
+	}
+	if (fsp->fsp_flags.is_directory) {
+		reply_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+		return false;
+	}
+	if (fsp_get_pathref_fd(fsp) == -1) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return false;
+	}
+	fsp->num_smb_operations++;
+	return true;
+}
+
+/****************************************************************************
  Reply to a tcon.
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
