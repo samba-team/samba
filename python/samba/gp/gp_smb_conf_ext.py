@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re, numbers
-from samba.gp.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext, gp_misc_applier
 from tempfile import NamedTemporaryFile
 from samba.gp.util.logging import log
 
@@ -23,37 +23,62 @@ def is_number(x):
     return isinstance(x, numbers.Number) and \
            type(x) != bool
 
-class gp_smb_conf_ext(gp_pol_ext):
-    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+class gp_smb_conf_ext(gp_pol_ext, gp_misc_applier):
+    def unapply(self, guid, attribute, val):
+        current = self.lp.get(attribute)
+        data = self.parse_value(val)
 
+        # Only overwrite the smb.conf setting if it hasn't been modified. It
+        # may have been modified by another GPO.
+        if 'new_val' not in data or \
+                self.lptype_to_string(current) == data['new_val']:
+            self.lp.set(attribute, self.regtype_to_lptype(data['old_val'],
+                                                          current))
+            self.store_lp_smb_conf(self.lp)
+            log.info('smb.conf [global] was changed',
+                     { attribute : str(data['old_val']) })
+
+        self.cache_remove_attribute(guid, attribute)
+
+    def apply(self, guid, attribute, val):
+        old_val = self.lp.get(attribute)
+        val = self.regtype_to_lptype(val, old_val)
+
+        self.lp.set(attribute, val)
+        self.store_lp_smb_conf(self.lp)
+        log.info('smb.conf [global] was changed', { attribute : str(val) })
+
+        data = self.generate_value(old_val=self.lptype_to_string(old_val),
+                                   new_val=self.lptype_to_string(val))
+        self.cache_add_attribute(guid, attribute, data)
+
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         pol_file = 'MACHINE/Registry.pol'
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             smb_conf = settings.get('smb.conf')
             if smb_conf is None:
                 continue
             for key, value in smb_conf.items():
-                self.set_smb_conf(key, value)
-                self.gp_db.delete('smb.conf', key)
-                self.gp_db.commit()
+                self.unapply(guid, key, value)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
                 section_name = 'Software\\Policies\\Samba\\smb_conf'
-                self.gp_db.set_guid(gpo.name)
                 path = os.path.join(gpo.file_sys_path, pol_file)
                 pol_conf = self.parse(path)
                 if not pol_conf:
                     continue
+                attrs = []
                 for e in pol_conf.entries:
                     if not e.keyname.startswith(section_name):
                         continue
-                    self.set_smb_conf(e.valuename, e.data)
-                    self.gp_db.commit()
+                    attrs.append(e.valuename)
+                    self.apply(gpo.name, e.valuename, e.data)
 
-    def set_smb_conf(self, attribute, val):
-        old_val = self.lp.get(attribute)
+                # Cleanup settings which were removed from the policy
+                self.clean(gpo.name, keep=attrs)
 
+    def regtype_to_lptype(self, val, old_val):
         if type(val) == bytes:
             val = val.decode()
         if is_number(val) and is_number(old_val):
@@ -62,24 +87,24 @@ class gp_smb_conf_ext(gp_pol_ext):
             val = bool(val)
         if type(val) == bool:
             val = 'yes' if val else 'no'
+        return val
 
-        self.lp.set(attribute, val)
+    def store_lp_smb_conf(self, lp):
         with NamedTemporaryFile(delete=False,
-                                dir=os.path.dirname(self.lp.configfile)) as f:
-            self.lp.dump(False, f.name)
-            mode = os.stat(self.lp.configfile).st_mode
+                                dir=os.path.dirname(lp.configfile)) as f:
+            lp.dump(False, f.name)
+            mode = os.stat(lp.configfile).st_mode
             os.chmod(f.name, mode)
-            os.rename(f.name, self.lp.configfile)
+            os.rename(f.name, lp.configfile)
 
-        log.info('smb.conf [global] was changed', { attribute : str(val) })
-
-        if is_number(old_val):
-            old_val = str(old_val)
-        elif type(old_val) == bool:
-            old_val = 'yes' if old_val else 'no'
-        elif type(old_val) == list:
-            old_val = ' '.join(old_val)
-        self.gp_db.store(str(self), attribute, old_val)
+    def lptype_to_string(self, val):
+        if is_number(val):
+            val = str(val)
+        elif type(val) == bool:
+            val = 'yes' if val else 'no'
+        elif type(val) == list:
+            val = ' '.join(val)
+        return val
 
     def __str__(self):
         return "smb.conf"
