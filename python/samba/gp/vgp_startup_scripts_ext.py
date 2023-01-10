@@ -44,7 +44,6 @@ class vgp_startup_scripts_ext(gp_xml_ext, gp_file_applier):
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
-                self.gp_db.set_guid(gpo.name)
                 xml = 'MACHINE/VGP/VTLA/Unix/Scripts/Startup/manifest.xml'
                 path = os.path.join(gpo.file_sys_path, xml)
                 xml_conf = self.parse(path)
