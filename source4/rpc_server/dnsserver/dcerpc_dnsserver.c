@@ -200,10 +200,10 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 {
 	uint8_t is_integer, is_addresses, is_string, is_wstring, is_stringlist;
 	uint32_t answer_integer;
-	struct IP4_ARRAY *answer_iparray;
-	struct DNS_ADDR_ARRAY *answer_addrarray;
-	char *answer_string;
-	struct DNS_RPC_UTF8_STRING_LIST *answer_stringlist;
+	struct IP4_ARRAY *answer_iparray = NULL;
+	struct DNS_ADDR_ARRAY *answer_addrarray = NULL;
+	char *answer_string = NULL;
+	struct DNS_RPC_UTF8_STRING_LIST *answer_stringlist = NULL;
 	struct dnsserver_serverinfo *serverinfo;
 
 	serverinfo = dsstate->serverinfo;
@@ -729,18 +729,8 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 		}
 		is_addresses = 1;
 	} else if (strcasecmp(operation, "BreakOnReceiveFrom") == 0) {
-		if (client_version == DNS_CLIENT_VERSION_LONGHORN) {
-			answer_addrarray = NULL;
-		} else {
-			answer_iparray = NULL;
-		}
 		is_addresses = 1;
 	} else if (strcasecmp(operation, "BreakOnUpdateFrom") == 0) {
-		if (client_version == DNS_CLIENT_VERSION_LONGHORN) {
-			answer_addrarray = NULL;
-		} else {
-			answer_iparray = NULL;
-		}
 		is_addresses = 1;
 	} else if (strcasecmp(operation, "LogIPFilterList") == 0) {
 		if (client_version == DNS_CLIENT_VERSION_LONGHORN) {
@@ -780,13 +770,10 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 		answer_string = talloc_strdup(mem_ctx, serverinfo->pwszLogFilePath);
 		is_wstring = 1;
 	} else if (strcasecmp(operation, "ServerLevelPluginDll") == 0) {
-		answer_string = NULL;
 		is_wstring = 1;
 	} else if (strcasecmp(operation, "DsBackgroundPauseName") == 0) {
-		answer_string = NULL;
 		is_string = 1;
 	} else if (strcasecmp(operation, "DsNotRoundRobinTypes") == 0) {
-		answer_string = NULL;
 		is_string = 1;
 	}
 
@@ -803,10 +790,8 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 	is_stringlist = 0;
 
 	if (strcasecmp(operation, "GlobalQueryBlockList") == 0) {
-		answer_stringlist = NULL;
 		is_stringlist = 1;
 	} else if (strcasecmp(operation, "SocketPoolExcludedPortRanges") == 0) {
-		answer_stringlist = NULL;
 		is_stringlist = 1;
 	}
 
@@ -831,9 +816,9 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 {
 	uint8_t is_integer, is_addresses, is_string;
 	uint32_t answer_integer = 0;
-	struct IP4_ARRAY *answer_iparray;
-	struct DNS_ADDR_ARRAY *answer_addrarray;
-	char *answer_string;
+	struct IP4_ARRAY *answer_iparray = NULL;
+	struct DNS_ADDR_ARRAY *answer_addrarray = NULL;
+	char *answer_string = NULL;
 	struct dnsserver_zoneinfo *zoneinfo;
 
 	zoneinfo = z->zoneinfo;
@@ -1021,11 +1006,6 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 	is_addresses = 0;
 
 	if (strcasecmp(operation, "AllowNSRecordsAutoCreation") == 0) {
-		if (client_version == DNS_CLIENT_VERSION_LONGHORN) {
-			answer_addrarray = NULL;
-		} else {
-			answer_iparray = NULL;
-		}
 		is_addresses = 1;
 	} else if (strcasecmp(operation, "ScavengeServers") == 0) {
 		if (client_version == DNS_CLIENT_VERSION_LONGHORN) {
@@ -1084,7 +1064,6 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 		answer_string = talloc_strdup(mem_ctx, z->partition->pszDpFqdn);
 		is_string = 1;
 	} else if (strcasecmp(operation, "BreakOnNameUpdate") == 0) {
-		answer_string = NULL;
 		is_string = 1;
 	}
 
