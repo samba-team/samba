@@ -16,8 +16,8 @@
 
 import os, re
 from subprocess import Popen, PIPE
-from samba.gp.gpclass import gp_pol_ext, drop_privileges, gp_file_applier
-from hashlib import blake2b
+from samba.gp.gpclass import gp_pol_ext, drop_privileges, gp_file_applier, \
+    gp_misc_applier
 from tempfile import NamedTemporaryFile
 from samba.gp.util.logging import log
 
@@ -128,25 +128,37 @@ def install_crontab(fname, username):
     if p.returncode != 0:
         raise RuntimeError('Failed to install crontab: %s' % err)
 
-class gp_user_scripts_ext(gp_scripts_ext):
+def install_user_crontab(username, others, entries):
+    with NamedTemporaryFile() as f:
+        if len(entries) > 0:
+            f.write('\n'.join([others, intro,
+                    '\n'.join(entries), end]).encode())
+        else:
+            f.write(others.encode())
+        f.flush()
+        install_crontab(f.name, username)
+
+class gp_user_scripts_ext(gp_scripts_ext, gp_misc_applier):
+    def unapply(self, guid, attribute, entry):
+        others, entries = fetch_crontab(self.username)
+        if entry in entries:
+            entries.remove(entry)
+            install_user_crontab(self.username, others, entries)
+        self.cache_remove_attribute(guid, attribute)
+
+    def apply(self, guid, attribute, entry):
+        old_val = self.cache_get_attribute_value(guid, attribute)
+        others, entries = fetch_crontab(self.username)
+        if not old_val or entry not in entries:
+            entries.append(entry)
+            install_user_crontab(self.username, others, entries)
+            self.cache_add_attribute(guid, attribute, entry)
+
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         for guid, settings in deleted_gpo_list:
-            self.gp_db.set_guid(guid)
             if str(self) in settings:
-                others, entries = fetch_crontab(self.username)
                 for attribute, entry in settings[str(self)].items():
-                    if entry in entries:
-                        entries.remove(entry)
-                    self.gp_db.delete(str(self), attribute)
-                with NamedTemporaryFile() as f:
-                    if len(entries) > 0:
-                        f.write('\n'.join([others, intro,
-                                   '\n'.join(entries), end]).encode())
-                    else:
-                        f.write(others.encode())
-                    f.flush()
-                    install_crontab(f.name, self.username)
-            self.gp_db.commit()
+                    self.unapply(guid, attribute, entry)
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
@@ -155,29 +167,21 @@ class gp_user_scripts_ext(gp_scripts_ext):
                              '%s\\Monthly Scripts' % reg_key : '@monthly',
                              '%s\\Weekly Scripts' % reg_key : '@weekly',
                              '%s\\Hourly Scripts' % reg_key : '@hourly' }
-                self.gp_db.set_guid(gpo.name)
                 pol_file = 'USER/Registry.pol'
                 path = os.path.join(gpo.file_sys_path, pol_file)
                 pol_conf = drop_privileges('root', self.parse, path)
                 if not pol_conf:
                     continue
+                attrs = []
                 for e in pol_conf.entries:
                     if e.keyname in sections.keys() and e.data.strip():
                         cron_freq = sections[e.keyname]
                         attribute = '%s:%s' % (e.keyname,
-                                blake2b(e.data.encode()).hexdigest())
-                        old_val = self.gp_db.retrieve(str(self), attribute)
+                                               self.generate_attribute(e.data))
+                        attrs.append(attribute)
                         entry = '%s %s' % (cron_freq, e.data)
-                        others, entries = fetch_crontab(self.username)
-                        if not old_val or entry not in entries:
-                            entries.append(entry)
-                            with NamedTemporaryFile() as f:
-                                f.write('\n'.join([others, intro,
-                                           '\n'.join(entries), end]).encode())
-                                f.flush()
-                                install_crontab(f.name, self.username)
-                            self.gp_db.store(str(self), attribute, entry)
-                        self.gp_db.commit()
+                        self.apply(gpo.name, attribute, entry)
+                self.clean(gpo.name, keep=attrs)
 
     def rsop(self, gpo):
         return super().rsop(gpo, target='USER')
