@@ -37,6 +37,32 @@
 #include <assert.h>
 #endif
 
+static struct tevent_context *
+test_tevent_context_init(TALLOC_CTX *mem_ctx)
+{
+	struct tevent_context *ev = NULL;
+
+	ev = tevent_context_init(mem_ctx);
+	if (ev != NULL) {
+		samba_tevent_set_debug(ev, "<default>");
+	}
+
+	return ev;
+}
+
+static struct tevent_context *
+test_tevent_context_init_byname(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct tevent_context *ev = NULL;
+
+	ev = tevent_context_init_byname(mem_ctx, name);
+	if (ev != NULL) {
+		samba_tevent_set_debug(ev, name);
+	}
+
+	return ev;
+}
+
 static int fde_count;
 
 static void do_read(int fd, void *buf, size_t count)
@@ -143,7 +169,7 @@ static bool test_event_context(struct torture_context *test,
 	struct timeval t;
 	int ret;
 
-	ev_ctx = tevent_context_init_byname(test, backend);
+	ev_ctx = test_tevent_context_init_byname(test, backend);
 	if (ev_ctx == NULL) {
 		torture_comment(test, "event backend '%s' not supported\n", backend);
 		return true;
@@ -383,7 +409,7 @@ static bool test_event_fd1(struct torture_context *tctx,
 	state.tctx = tctx;
 	state.backend = (const char *)test_data;
 
-	state.ev = tevent_context_init_byname(tctx, state.backend);
+	state.ev = test_tevent_context_init_byname(tctx, state.backend);
 	if (state.ev == NULL) {
 		torture_skip(tctx, talloc_asprintf(tctx,
 			     "event backend '%s' not supported\n",
@@ -391,7 +417,6 @@ static bool test_event_fd1(struct torture_context *tctx,
 		return true;
 	}
 
-	tevent_set_debug_stderr(state.ev);
 	torture_comment(tctx, "backend '%s' - %s\n",
 			state.backend, __FUNCTION__);
 
@@ -623,7 +648,7 @@ static bool test_event_fd2(struct torture_context *tctx,
 	state.tctx = tctx;
 	state.backend = (const char *)test_data;
 
-	state.ev = tevent_context_init_byname(tctx, state.backend);
+	state.ev = test_tevent_context_init_byname(tctx, state.backend);
 	if (state.ev == NULL) {
 		torture_skip(tctx, talloc_asprintf(tctx,
 			     "event backend '%s' not supported\n",
@@ -631,7 +656,6 @@ static bool test_event_fd2(struct torture_context *tctx,
 		return true;
 	}
 
-	tevent_set_debug_stderr(state.ev);
 	torture_comment(tctx, "backend '%s' - %s\n",
 			state.backend, __FUNCTION__);
 
@@ -956,7 +980,7 @@ static bool test_wrapper(struct torture_context *tctx,
 	bool ok = false;
 	bool ret2;
 
-	ev = tevent_context_init_byname(tctx, backend);
+	ev = test_tevent_context_init_byname(tctx, backend);
 	if (ev == NULL) {
 		torture_skip(tctx, talloc_asprintf(tctx,
 			     "event backend '%s' not supported\n",
@@ -964,7 +988,6 @@ static bool test_wrapper(struct torture_context *tctx,
 		return true;
 	}
 
-	tevent_set_debug_stderr(ev);
 	torture_comment(tctx, "tevent backend '%s'\n", backend);
 
 	wrap_ev = tevent_context_wrapper_create(
@@ -1130,7 +1153,7 @@ static bool test_free_wrapper(struct torture_context *tctx,
 	int ret;
 	bool ok = false;
 
-	ev = tevent_context_init_byname(frame, backend);
+	ev = test_tevent_context_init_byname(frame, backend);
 	if (ev == NULL) {
 		torture_skip(tctx, talloc_asprintf(tctx,
 			     "event backend '%s' not supported\n",
@@ -1138,7 +1161,6 @@ static bool test_free_wrapper(struct torture_context *tctx,
 		return true;
 	}
 
-	tevent_set_debug_stderr(ev);
 	torture_comment(tctx, "tevent backend '%s'\n", backend);
 
 	wrap_ev = tevent_context_wrapper_create(
@@ -1294,7 +1316,7 @@ static bool test_event_context_threaded(struct torture_context *test,
 	int ret;
 	char c = 0;
 
-	ev = tevent_context_init_byname(test, "poll_mt");
+	ev = test_tevent_context_init_byname(test, "poll_mt");
 	torture_assert(test, ev != NULL, "poll_mt not supported");
 
 	tevent_set_trace_callback(ev, test_event_threaded_trace, NULL);
@@ -1411,11 +1433,10 @@ static bool test_multi_tevent_threaded(struct torture_context *test,
 	thread_test_ctx = test;
 	thread_counter = 0;
 
-	master_ev = tevent_context_init(NULL);
+	master_ev = test_tevent_context_init(NULL);
 	if (master_ev == NULL) {
 		return false;
 	}
-	tevent_set_debug_stderr(master_ev);
 
 	tp = tevent_thread_proxy_create(master_ev);
 	if (tp == NULL) {
@@ -1612,11 +1633,10 @@ static bool test_multi_tevent_threaded_1(struct torture_context *test,
 	thread_test_ctx = test;
 	thread_counter = 0;
 
-	master_ev = tevent_context_init(NULL);
+	master_ev = test_tevent_context_init(NULL);
 	if (master_ev == NULL) {
 		return false;
 	}
-	tevent_set_debug_stderr(master_ev);
 
 	master_tp = tevent_thread_proxy_create(master_ev);
 	if (master_tp == NULL) {
@@ -1714,7 +1734,7 @@ static bool test_multi_tevent_threaded_2(struct torture_context *test,
 	thread_test_ctx = test;
 	thread_counter = 0;
 
-	ev = tevent_context_init(test);
+	ev = test_tevent_context_init(test);
 	torture_assert(test, ev != NULL, "tevent_context_init failed");
 
 	/*
