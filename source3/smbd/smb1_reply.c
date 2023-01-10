@@ -4744,7 +4744,6 @@ void reply_close(struct smb_request *smb1req)
 	 */
 
 	if (!check_fsp_open(conn, smb1req, fsp)) {
-		reply_nterror(smb1req, NT_STATUS_INVALID_HANDLE);
 		END_PROFILE(SMBclose);
 		return;
 	}
