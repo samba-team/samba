@@ -1430,11 +1430,12 @@ static void smbXsrv_open_cleanup_fn(
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_WARNING("[global: %x08x] "
 			    "smbXsrv_open_global_parse_record() in %s "
-			    "failed: %s\n",
+			    "failed: %s, deleting record\n",
 			    state->global_id,
 			    dbwrap_name(dbwrap_record_get_db(rec)),
 			    nt_errstr(state->status));
-		return;
+		delete_open = true;
+		goto do_delete;
 	}
 
 	if (server_id_is_disconnected(&op->server_id)) {
@@ -1471,7 +1472,7 @@ static void smbXsrv_open_cleanup_fn(
 		state->status = NT_STATUS_OK;
 		return;
 	}
-
+do_delete:
 	state->status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_WARNING("[global: 0x%08x] "
