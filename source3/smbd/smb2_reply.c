@@ -572,7 +572,11 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 			      files_struct *fsp)
 {
-	if (!check_fsp_open(conn, req, fsp)) {
+	if ((fsp == NULL) || (conn == NULL)) {
+		return false;
+	}
+
+	if ((conn != fsp->conn) || (req->vuid != fsp->vuid)) {
 		return false;
 	}
 
