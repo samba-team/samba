@@ -739,8 +739,9 @@ struct tfork *tfork_create(void)
 	struct tfork_state *state = NULL;
 	struct tfork *t = NULL;
 	pid_t pid;
-	int saved_errno;
+	int saved_errno = 0;
 	int ret = 0;
+	int ret2;
 
 #ifdef HAVE_PTHREAD
 	ret = pthread_once(&tfork_global_is_initialized,
@@ -816,16 +817,16 @@ cleanup:
 				close(t->event_fd);
 			}
 
-			ret = tfork_create_reap_waiter(state->waiter_pid);
-			assert(ret == 0);
+			ret2 = tfork_create_reap_waiter(state->waiter_pid);
+			assert(ret2 == 0);
 
 			free(t);
 			t = NULL;
 		}
 	}
 
-	ret = tfork_uninstall_sigchld_handler();
-	assert(ret == 0);
+	ret2 = tfork_uninstall_sigchld_handler();
+	assert(ret2 == 0);
 
 	tfork_global_free();
 
