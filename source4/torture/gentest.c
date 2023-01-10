@@ -3026,11 +3026,6 @@ static struct {
 		.handler = handler_smb_notify,
 		.smb2    = false,
 	},
-	{
-		.name    = "SEEK",
-		.handler = handler_smb_seek,
-		.smb2    = false,
-	},
 };
 
 
