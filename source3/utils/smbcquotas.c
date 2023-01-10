@@ -760,6 +760,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_PARSE_ERROR);
 	}
 
+	if (strncmp(path, "\\\\", 2) && strncmp(path, "//", 2)) {
+		printf("Invalid argument: %s\n", path);
+		return -1;
+	}
+
 	poptFreeContext(pc);
 	samba_cmdline_burn(argc, argv);
 
