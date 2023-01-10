@@ -831,7 +831,7 @@ static inline void *__talloc(const void *context,
 
 static inline void *_talloc_pool(const void *context, size_t size)
 {
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc = NULL;
 	struct talloc_pool_hdr *pool_hdr;
 	void *result;
 
@@ -977,7 +977,7 @@ static inline void _tc_set_name_const(struct talloc_chunk *tc,
 static inline void *_talloc_named_const(const void *context, size_t size, const char *name)
 {
 	void *ptr;
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc = NULL;
 
 	ptr = __talloc(context, size, &tc);
 	if (unlikely(ptr == NULL)) {
@@ -1537,7 +1537,7 @@ _PUBLIC_ void *talloc_named(const void *context, size_t size, const char *fmt, .
 	va_list ap;
 	void *ptr;
 	const char *name;
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc = NULL;
 
 	ptr = __talloc(context, size, &tc);
 	if (unlikely(ptr == NULL)) return NULL;
@@ -1633,7 +1633,7 @@ _PUBLIC_ void *talloc_init(const char *fmt, ...)
 	va_list ap;
 	void *ptr;
 	const char *name;
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc = NULL;
 
 	ptr = __talloc(NULL, 0, &tc);
 	if (unlikely(ptr == NULL)) return NULL;
@@ -2449,7 +2449,7 @@ _PUBLIC_ void *_talloc_memdup(const void *t, const void *p, size_t size, const c
 static inline char *__talloc_strlendup(const void *t, const char *p, size_t len)
 {
 	char *ret;
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc = NULL;
 
 	ret = (char *)__talloc(t, len + 1, &tc);
 	if (unlikely(!ret)) return NULL;
@@ -2595,7 +2595,7 @@ static struct talloc_chunk *_vasprintf_tc(const void *t,
 	size_t len;
 	char *ret;
 	va_list ap2;
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc = NULL;
 	char buf[1024];
 
 	/* this call looks strange, but it makes it work on older solaris boxes */
