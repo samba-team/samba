@@ -2588,7 +2588,7 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 	 */
 	state->fde = tevent_add_fd(ev, state,
 				   state->fd,
-				   TEVENT_FD_READ | TEVENT_FD_WRITE,
+				   TEVENT_FD_ERROR | TEVENT_FD_WRITE,
 				   tstream_bsd_connect_fde_handler,
 				   req);
 	if (tevent_req_nomem(state->fde, req)) {
