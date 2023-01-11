@@ -303,10 +303,7 @@ class ClaimsTests(KDCBaseTest):
 
         if to_krbtgt:
             target_creds = self.get_krbtgt_creds()
-            srealm = target_creds.get_realm()
-            sname = self.PrincipalName_create(
-                name_type=NT_SRV_INST,
-                names=[target_creds.get_username(), srealm])
+            sname = self.get_krbtgt_sname()
         else:
             target_creds = self.get_service_creds()
             sname = None
@@ -349,25 +346,10 @@ class ClaimsTests(KDCBaseTest):
                                 b'tgsarmor')
         armor_key = Krb5EncryptionKey(armor_key, None)
 
-        if to_krbtgt:
-            target_creds = self.get_krbtgt_creds()
-
-            srealm = target_creds.get_realm()
-            sname = self.PrincipalName_create(
-                name_type=NT_SRV_INST,
-                names=[target_creds.get_username(), srealm])
-        else:
-            target_enctypes = security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
-            target_creds = self.get_cached_creds(
-                account_type=self.AccountType.COMPUTER,
-                opts={
-                    'supported_enctypes': target_enctypes,
-                })
-
-            srealm = target_creds.get_realm()
-            sname = self.PrincipalName_create(
-                name_type=NT_PRINCIPAL,
-                names=['host', target_creds.get_username()[:-1]])
+        target_creds, sname = self.get_target(
+            to_krbtgt,
+            extra_enctypes=security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED)
+        srealm = target_creds.get_realm()
 
         decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
@@ -473,25 +455,10 @@ class ClaimsTests(KDCBaseTest):
                                 b'tgsarmor')
         armor_key = Krb5EncryptionKey(armor_key, None)
 
-        if to_krbtgt:
-            target_creds = self.get_krbtgt_creds()
-
-            srealm = target_creds.get_realm()
-            sname = self.PrincipalName_create(
-                name_type=NT_SRV_INST,
-                names=[target_creds.get_username(), srealm])
-        else:
-            target_enctypes = security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
-            target_creds = self.get_cached_creds(
-                account_type=self.AccountType.COMPUTER,
-                opts={
-                    'supported_enctypes': target_enctypes,
-                })
-
-            srealm = target_creds.get_realm()
-            sname = self.PrincipalName_create(
-                name_type=NT_PRINCIPAL,
-                names=['host', target_creds.get_username()[:-1]])
+        target_creds, sname = self.get_target(
+            to_krbtgt,
+            extra_enctypes=security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED)
+        srealm = target_creds.get_realm()
 
         decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
