@@ -843,6 +843,7 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 		struct epoll_event_context);
 	struct tevent_fd *fde;
 	bool panic_triggered = false;
+	pid_t old_pid = epoll_ev->pid;
 
 	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
 				   handler, private_data,
@@ -860,7 +861,9 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 		epoll_ev->panic_state = NULL;
 	}
 
-	epoll_update_event(epoll_ev, fde);
+	if (epoll_ev->pid == old_pid) {
+		epoll_update_event(epoll_ev, fde);
+	}
 
 	return fde;
 }
@@ -873,12 +876,14 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 	struct tevent_context *ev;
 	struct epoll_event_context *epoll_ev;
 	bool panic_triggered = false;
+	pid_t old_pid;
 
 	if (fde->flags == flags) return;
 
 	ev = fde->event_ctx;
 	epoll_ev = talloc_get_type_abort(ev->additional_data,
 					 struct epoll_event_context);
+	old_pid = epoll_ev->pid;
 
 	fde->flags = flags;
 
@@ -891,7 +896,9 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 		epoll_ev->panic_state = NULL;
 	}
 
-	epoll_update_event(epoll_ev, fde);
+	if (epoll_ev->pid == old_pid) {
+		epoll_update_event(epoll_ev, fde);
+	}
 }
 
 /*
