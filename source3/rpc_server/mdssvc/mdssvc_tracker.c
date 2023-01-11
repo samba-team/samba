@@ -286,7 +286,6 @@ static bool mdssvc_tracker_prepare(void)
 	mdssvc_tracker_ctx->gmain_ctx = g_main_context_new();
 	if (mdssvc_tracker_ctx->gmain_ctx == NULL) {
 		DBG_ERR("error from g_main_context_new\n");
-		TALLOC_FREE(mdssvc_tracker_ctx);
 		return false;
 	}
 
@@ -297,7 +296,7 @@ static bool mdssvc_tracker_prepare(void)
 	if (mdssvc_tracker_ctx->glue == NULL) {
 		DBG_ERR("samba_tevent_glib_glue_create failed\n");
 		g_object_unref(mdssvc_tracker_ctx->gmain_ctx);
-		TALLOC_FREE(mdssvc_tracker_ctx);
+		mdssvc_tracker_ctx->gmain_ctx = NULL;
 		return false;
 	}
 
@@ -306,10 +305,19 @@ static bool mdssvc_tracker_prepare(void)
 
 static bool mdssvc_tracker_shutdown(struct mdssvc_ctx *mdssvc_ctx)
 {
+	if (mdssvc_tracker_ctx == NULL) {
+		return true;
+	}
+
+	if (mdssvc_tracker_ctx->gmain_ctx == NULL) {
+		return true;
+	}
+
 	samba_tevent_glib_glue_quit(mdssvc_tracker_ctx->glue);
 	TALLOC_FREE(mdssvc_tracker_ctx->glue);
 
 	g_object_unref(mdssvc_tracker_ctx->gmain_ctx);
+	mdssvc_tracker_ctx->gmain_ctx = NULL;
 	return true;
 }
 
