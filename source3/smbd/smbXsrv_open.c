@@ -244,11 +244,6 @@ static NTSTATUS smbXsrv_open_local_lookup(struct smbXsrv_open_table *table,
 	return NT_STATUS_OK;
 }
 
-static int smbXsrv_open_global_destructor(struct smbXsrv_open_global0 *global)
-{
-	return 0;
-}
-
 static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
 					bool *is_free,
 					bool *was_free,
@@ -270,7 +265,6 @@ static NTSTATUS smbXsrv_open_global_allocate(struct db_context *db,
 	if (global == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_destructor(global, smbXsrv_open_global_destructor);
 
 	/*
 	 * We mark every slot as invalid using 0xFF.
@@ -535,8 +529,6 @@ static NTSTATUS smbXsrv_open_global_lookup(struct smbXsrv_open_table *table,
 	}
 
 	(*_global)->db_rec = talloc_move(*_global, &global_rec);
-
-	talloc_set_destructor(*_global, smbXsrv_open_global_destructor);
 
 	return NT_STATUS_OK;
 }
