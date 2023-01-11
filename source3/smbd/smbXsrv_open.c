@@ -1034,10 +1034,10 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	NTSTATUS status;
 	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct db_context *db = table->local.replay_cache_db_ctx;
-	struct GUID_txt_buf _create_guid_buf;
 	struct GUID_txt_buf tmp_guid_buf;
-	const char *create_guid_str = NULL;
-	TDB_DATA create_guid_key;
+	struct GUID_txt_buf _create_guid_buf;
+	const char *create_guid_str = GUID_buf_string(&create_guid, &_create_guid_buf);
+	TDB_DATA create_guid_key = string_term_tdb_data(create_guid_str);
 	struct db_record *db_rec = NULL;
 	struct smbXsrv_open *op = NULL;
 	struct smbXsrv_open_replay_cache rc = {
@@ -1050,9 +1050,6 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	TDB_DATA val;
 
 	*_open = NULL;
-
-	create_guid_str = GUID_buf_string(&create_guid, &_create_guid_buf);
-	create_guid_key = string_term_tdb_data(create_guid_str);
 
 	db_rec = dbwrap_fetch_locked(db, frame, create_guid_key);
 	if (db_rec == NULL) {
