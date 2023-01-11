@@ -113,11 +113,10 @@ static struct db_record *smbXsrv_open_global_fetch_locked(
 			uint32_t id,
 			TALLOC_CTX *mem_ctx)
 {
-	TDB_DATA key;
 	uint8_t key_buf[SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE];
+	TDB_DATA key = smbXsrv_open_global_id_to_key(id, key_buf);
 	struct db_record *rec = NULL;
 
-	key = smbXsrv_open_global_id_to_key(id, key_buf);
 
 	rec = dbwrap_fetch_locked(db, mem_ctx, key);
 
