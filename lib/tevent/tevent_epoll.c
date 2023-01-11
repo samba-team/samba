@@ -237,6 +237,8 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	epoll_ev->panic_state = &panic_triggered;
 	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
 		fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
+	}
+	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_update_event(epoll_ev, fde);
 
 		if (panic_triggered) {
