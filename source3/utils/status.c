@@ -1185,7 +1185,8 @@ int main(int argc, const char *argv[])
 			fprintf(stderr, "This is normal if an SMB client has never "
 				 "connected to your server.\n");
 			TALLOC_FREE(db_path);
-			exit(0);
+			ret = 0;
+			goto done;
 		} else {
 			TALLOC_FREE(db);
 			TALLOC_FREE(db_path);
