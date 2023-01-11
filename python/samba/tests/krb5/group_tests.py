@@ -1951,35 +1951,6 @@ class GroupTests(KDCBaseTest):
         # Return the mapping from group IDs to principals.
         return groups
 
-    # Get the credentials and server principal name of either the krbtgt, or a
-    # specially created account, with resource SID compression either supported
-    # or unsupported.
-    def get_target(self, to_krbtgt, compression):
-        if to_krbtgt:
-            self.assertIsNone(compression,
-                              "it's no good specifying compression support "
-                              "for the krbtgt")
-            creds = self.get_krbtgt_creds()
-            sname = self.get_krbtgt_sname()
-        else:
-            creds = self.get_cached_creds(
-                account_type=self.AccountType.COMPUTER,
-                opts={
-                    'supported_enctypes':
-                        security.KERB_ENCTYPE_RC4_HMAC_MD5 |
-                        security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-                    'sid_compression_support': compression,
-                })
-            target_name = creds.get_username()
-
-            if target_name[-1] == '$':
-                target_name = target_name[:-1]
-            sname = self.PrincipalName_create(
-                name_type=NT_PRINCIPAL,
-                names=['host', target_name])
-
-        return creds, sname
-
     # This is the main function to handle a single testcase.
     def _test_group_with_args(self, case):
         # The group arrangement for the test.

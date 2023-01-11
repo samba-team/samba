@@ -1472,6 +1472,35 @@ class KDCBaseTest(RawKerberosTest):
                                  fallback_creds_fn=download_server_creds)
         return c
 
+    # Get the credentials and server principal name of either the krbtgt, or a
+    # specially created account, with resource SID compression either supported
+    # or unsupported.
+    def get_target(self, to_krbtgt, compression):
+        if to_krbtgt:
+            self.assertIsNone(compression,
+                              "it's no good specifying compression support "
+                              "for the krbtgt")
+            creds = self.get_krbtgt_creds()
+            sname = self.get_krbtgt_sname()
+        else:
+            creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts={
+                    'supported_enctypes':
+                        security.KERB_ENCTYPE_RC4_HMAC_MD5 |
+                        security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+                    'sid_compression_support': compression,
+                })
+            target_name = creds.get_username()
+
+            if target_name[-1] == '$':
+                target_name = target_name[:-1]
+            sname = self.PrincipalName_create(
+                name_type=NT_PRINCIPAL,
+                names=['host', target_name])
+
+        return creds, sname
+
     def as_req(self, cname, sname, realm, etypes, padata=None, kdc_options=0):
         '''Send a Kerberos AS_REQ, returns the undecoded response
         '''
