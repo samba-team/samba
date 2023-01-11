@@ -1218,7 +1218,7 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 	/*
 	 * If the provided create_guid is NULL, this means that
 	 * the reconnect request was a v1 request. In that case
-	 * we should skipt the create GUID verification, since
+	 * we should skip the create GUID verification, since
 	 * it is valid to v1-reconnect a v2-opened handle.
 	 */
 	if ((create_guid != NULL) &&
