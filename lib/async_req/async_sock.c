@@ -151,7 +151,8 @@ struct tevent_req *async_connect_send(
 	 * use TEVENT_FD_READ in addition until we have
 	 * TEVENT_FD_ERROR.
 	 */
-	state->fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ|TEVENT_FD_WRITE,
+	state->fde = tevent_add_fd(ev, state, fd,
+				   TEVENT_FD_ERROR|TEVENT_FD_WRITE,
 				   async_connect_connected, req);
 	if (state->fde == NULL) {
 		tevent_req_error(req, ENOMEM);
