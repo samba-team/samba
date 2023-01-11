@@ -498,44 +498,6 @@ static NTSTATUS smbXsrv_open_global_allocate(
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
-static NTSTATUS smbXsrv_open_global_lookup(struct smbXsrv_open_table *table,
-					   uint32_t open_global_id,
-					   TALLOC_CTX *mem_ctx,
-					   struct smbXsrv_open_global0 **_global)
-{
-	struct smbXsrv_open_global_key_buf key_buf;
-	TDB_DATA key = smbXsrv_open_global_id_to_key(open_global_id, &key_buf);
-	TDB_DATA val;
-	struct db_record *global_rec = NULL;
-	NTSTATUS status;
-
-	*_global = NULL;
-
-	if (table->global.db_ctx == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	global_rec = dbwrap_fetch_locked(table->global.db_ctx, mem_ctx, key);
-	if (global_rec == NULL) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-	val = dbwrap_record_get_value(global_rec);
-
-	status = smbXsrv_open_global_verify_record(key, val, mem_ctx, _global);
-	if (NT_STATUS_IS_OK(status)) {
-		(*_global)->db_rec = talloc_move(*_global, &global_rec);
-		return NT_STATUS_OK;
-	}
-
-	TALLOC_FREE(global_rec);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	return status;
-}
-
 static int smbXsrv_open_destructor(struct smbXsrv_open *op)
 {
 	NTSTATUS status;
@@ -1222,6 +1184,82 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	return status;
 }
 
+struct smb2srv_open_recreate_state {
+	struct smbXsrv_open *op;
+	const struct GUID *create_guid;
+	struct security_token *current_token;
+	struct server_id me;
+
+	NTSTATUS status;
+};
+
+static void smb2srv_open_recreate_fn(
+	struct db_record *rec, TDB_DATA oldval, void *private_data)
+{
+	struct smb2srv_open_recreate_state *state = private_data;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	struct smbXsrv_open_global0 *global = NULL;
+
+	state->status = smbXsrv_open_global_verify_record(
+		key, oldval, state->op, &state->op->global);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_WARNING("smbXsrv_open_global_verify_record for %s "
+			    "failed: %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(state->status));
+		goto not_found;
+	}
+	global = state->op->global;
+
+	/*
+	 * If the provided create_guid is NULL, this means that
+	 * the reconnect request was a v1 request. In that case
+	 * we should skip the create GUID verification, since
+	 * it is valid to v1-reconnect a v2-opened handle.
+	 */
+	if ((state->create_guid != NULL) &&
+	    !GUID_equal(&global->create_guid, state->create_guid)) {
+		struct GUID_txt_buf buf1, buf2;
+		DBG_NOTICE("%s != %s in %s\n",
+			   GUID_buf_string(&global->create_guid, &buf1),
+			   GUID_buf_string(state->create_guid, &buf2),
+			   tdb_data_dbg(key));
+		goto not_found;
+	}
+
+	if (!security_token_is_sid(
+		    state->current_token, &global->open_owner)) {
+		struct dom_sid_buf buf;
+		DBG_NOTICE("global owner %s not in our token in %s\n",
+			   dom_sid_str_buf(&global->open_owner, &buf),
+			   tdb_data_dbg(key));
+		goto not_found;
+	}
+
+	if (!global->durable) {
+		DBG_NOTICE("%"PRIu64"/%"PRIu64" not durable in %s\n",
+			   global->open_persistent_id,
+			   global->open_volatile_id,
+			   tdb_data_dbg(key));
+		goto not_found;
+	}
+
+	global->open_volatile_id = state->op->local_id;
+	global->server_id = state->me;
+
+	state->status = smbXsrv_open_global_store(rec, key, oldval, global);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_WARNING("smbXsrv_open_global_store for %s failed: %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(state->status));
+		return;
+	}
+	return;
+
+not_found:
+	state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct auth_session_info *session_info,
 			       uint64_t persistent_id,
@@ -1230,19 +1268,23 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct smbXsrv_open **_open)
 {
 	struct smbXsrv_open_table *table = conn->client->open_table;
-	struct smbXsrv_open *op = NULL;
-	uint32_t global_id;
+	struct smb2srv_open_recreate_state state = {
+		.create_guid = create_guid,
+		.me = messaging_server_id(conn->client->msg_ctx),
+	};
+	struct smbXsrv_open_global_key_buf key_buf;
+	TDB_DATA key = smbXsrv_open_global_id_to_key(
+		persistent_id & UINT32_MAX, &key_buf);
+	int ret, local_id;
 	NTSTATUS status;
-	struct security_token *current_token = NULL;
-	int local_id;
 
 	if (session_info == NULL) {
 		DEBUG(10, ("session_info=NULL\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	current_token = session_info->security_token;
+	state.current_token = session_info->security_token;
 
-	if (current_token == NULL) {
+	if (state.current_token == NULL) {
 		DEBUG(10, ("current_token=NULL\n"));
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -1254,97 +1296,73 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 		DBG_DEBUG("persistent_id=%"PRIx64"\n", persistent_id);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	global_id = persistent_id & UINT32_MAX; /* truncate to 32 bit */
-
-	op = talloc_zero(table, struct smbXsrv_open);
-	if (op == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	op->table = table;
-
-	status = smbXsrv_open_global_lookup(table, global_id, op, &op->global);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(op);
-		DEBUG(10, ("smbXsrv_open_global_lookup returned %s\n",
-			   nt_errstr(status)));
-		return status;
-	}
-
-	/*
-	 * If the provided create_guid is NULL, this means that
-	 * the reconnect request was a v1 request. In that case
-	 * we should skip the create GUID verification, since
-	 * it is valid to v1-reconnect a v2-opened handle.
-	 */
-	if ((create_guid != NULL) &&
-	    !GUID_equal(&op->global->create_guid, create_guid))
-	{
-		TALLOC_FREE(op);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (!security_token_is_sid(current_token, &op->global->open_owner)) {
-		TALLOC_FREE(op);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (!op->global->durable) {
-		TALLOC_FREE(op);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 
 	if (table->local.num_opens >= table->local.max_opens) {
-		TALLOC_FREE(op);
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
-	local_id = idr_get_new_random(
+	state.op = talloc_zero(table, struct smbXsrv_open);
+	if (state.op == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state.op->table = table;
+
+	local_id =  idr_get_new_random(
 		table->local.idr,
-		op,
+		state.op,
 		table->local.lowest_id,
 		table->local.highest_id);
 	if (local_id == -1) {
-		TALLOC_FREE(op);
+		TALLOC_FREE(state.op);
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
-
-	op->local_id = local_id;
-
-	op->idle_time = now;
-	op->status = NT_STATUS_FILE_CLOSED;
-
-	op->global->open_volatile_id = op->local_id;
-	op->global->server_id = messaging_server_id(conn->client->msg_ctx);
+	state.op->local_id = local_id;
+	SMB_ASSERT(state.op->local_id == local_id); /* No coercion loss */
 
 	table->local.num_opens += 1;
 
-	talloc_set_destructor(op, smbXsrv_open_destructor);
+	state.op->idle_time = now;
+	state.op->status = NT_STATUS_FILE_CLOSED;
 
-	status = smbXsrv_open_global_store(
-		op->global->db_rec,
-		dbwrap_record_get_key(op->global->db_rec),
-		dbwrap_record_get_value(op->global->db_rec),
-		op->global);
-	TALLOC_FREE(op->global->db_rec);
+	status = dbwrap_do_locked(
+		table->global.db_ctx, key, smb2srv_open_recreate_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(op);
-		return status;
+		DBG_DEBUG("dbwrap_do_locked() for %s failed: %s\n",
+			  tdb_data_dbg(key),
+			  nt_errstr(status));
+		goto fail;
 	}
+
+	if (!NT_STATUS_IS_OK(state.status)) {
+		status = state.status;
+		DBG_DEBUG("smb2srv_open_recreate_fn for %s failed: %s\n",
+			  tdb_data_dbg(key),
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	talloc_set_destructor(state.op, smbXsrv_open_destructor);
 
 	if (CHECK_DEBUGLVL(10)) {
 		struct smbXsrv_openB open_blob = {
-			.info.info0 = op,
+			.info.info0 = state.op,
 		};
-
-		DEBUG(10,("smbXsrv_open_recreate: global_id (0x%08x) stored\n",
-			 op->global->open_global_id));
+		DBG_DEBUG("global_id (0x%08x) stored\n",
+			  state.op->global->open_global_id);
 		NDR_PRINT_DEBUG(smbXsrv_openB, &open_blob);
 	}
 
-	*_open = op;
-	return NT_STATUS_OK;
-}
+	*_open = state.op;
 
+	return NT_STATUS_OK;
+fail:
+	table->local.num_opens -= 1;
+
+	ret = idr_remove(table->local.idr, state.op->local_id);
+	SMB_ASSERT(ret == 0);
+	TALLOC_FREE(state.op);
+	return status;
+}
 
 struct smbXsrv_open_global_traverse_state {
 	int (*fn)(struct smbXsrv_open_global0 *, void *);
