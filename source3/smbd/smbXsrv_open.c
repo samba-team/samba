@@ -747,13 +747,6 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 		op->global->open_global_id, &key_buf);
 	NTSTATUS status;
 
-	if (op->global->db_rec != NULL) {
-		DEBUG(0, ("smbXsrv_open_update(0x%08x): "
-			  "Called with db_rec != NULL'\n",
-			  op->global->open_global_id));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	status = dbwrap_do_locked(
 		table->global.db_ctx, key, smbXsrv_open_update_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1365,7 +1358,7 @@ fail:
 }
 
 struct smbXsrv_open_global_traverse_state {
-	int (*fn)(struct smbXsrv_open_global0 *, void *);
+	int (*fn)(struct db_record *rec, struct smbXsrv_open_global0 *, void *);
 	void *private_data;
 };
 
@@ -1385,15 +1378,14 @@ static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
 		return -1;
 	}
 
-	global->db_rec = rec;
-	ret = state->fn(global, state->private_data);
+	ret = state->fn(rec, global, state->private_data);
 	talloc_free(global);
 	return ret;
 }
 
 NTSTATUS smbXsrv_open_global_traverse(
-			int (*fn)(struct smbXsrv_open_global0 *, void *),
-			void *private_data)
+	int (*fn)(struct db_record *rec, struct smbXsrv_open_global0 *, void *),
+	void *private_data)
 {
 
 	NTSTATUS status;

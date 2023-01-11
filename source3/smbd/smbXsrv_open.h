@@ -64,8 +64,10 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       const struct GUID *create_guid,
 			       NTTIME now,
 			       struct smbXsrv_open **_open);
+
+struct db_record;
 NTSTATUS smbXsrv_open_global_traverse(
-	int (*fn)(struct smbXsrv_open_global0 *, void *),
+	int (*fn)(struct db_record *rec, struct smbXsrv_open_global0 *, void *),
 	void *private_data);
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);

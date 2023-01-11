@@ -232,7 +232,8 @@ done:
 	return ret;
 }
 
-static int wipedbs_traverse_open(struct smbXsrv_open_global0 *open,
+static int wipedbs_traverse_open(struct db_record *db_rec,
+				 struct smbXsrv_open_global0 *open,
 				 void *wipedbs_state)
 {
 	struct wipedbs_state *state =
@@ -300,9 +301,9 @@ static int wipedbs_traverse_open(struct smbXsrv_open_global0 *open,
 		goto done;
 	}
 
-	tmp = dbwrap_record_get_key(open->db_rec);
+	tmp = dbwrap_record_get_key(db_rec);
 	rec->key = tdb_data_talloc_copy(rec, tmp);
-	tmp = dbwrap_record_get_value(open->db_rec);
+	tmp = dbwrap_record_get_value(db_rec);
 	rec->val = tdb_data_talloc_copy(rec, tmp);
 
 	rec->desc = talloc_asprintf(
@@ -318,7 +319,7 @@ static int wipedbs_traverse_open(struct smbXsrv_open_global0 *open,
 		goto done;
 	}
 
-	state->open_db = dbwrap_record_get_db(open->db_rec);
+	state->open_db = dbwrap_record_get_db(db_rec);
 
 	DLIST_ADD(sd->open_records, rec);
 	ret = 0;
