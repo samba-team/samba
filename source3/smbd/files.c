@@ -1053,9 +1053,9 @@ next:
 	}
 
 	if (dirfsp != conn->cwd_fsp) {
-		dirfsp->fsp_name = NULL;
 		SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
 		fd_close(dirfsp);
+		dirfsp->fsp_name = NULL;
 		file_free(NULL, dirfsp);
 		dirfsp = NULL;
 	}
@@ -1117,9 +1117,9 @@ fail:
 	}
 
 	if ((dirfsp != NULL) && (dirfsp != conn->cwd_fsp)) {
-		dirfsp->fsp_name = NULL;
 		SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
 		fd_close(dirfsp);
+		dirfsp->fsp_name = NULL;
 		file_free(NULL, dirfsp);
 		dirfsp = NULL;
 	}
