@@ -144,12 +144,12 @@ int main(int argc, char **argv)
 					   flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Cannot connect to server: %s\n", nt_errstr(status));
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_mdssvc, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	status = mdscli_connect(frame,
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 				&mdscli_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect mdssvc\n");
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	if (opt_path == NULL) {
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 		basepath = talloc_strdup(frame, opt_path);
 	}
 	if (basepath == NULL) {
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	status = mdscli_search(frame,
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 			       &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("mdscli_search failed\n");
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	if (!opt_live) {
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("mdscli_get_results failed\n");
-			goto fail;
+			goto fail_free_messaging;
 		}
 
 		ncnids = talloc_array_length(cnids);
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Get path for CNID 0x%"PRIx64" failed\n",
 				       cnids[i]);
-				goto fail;
+				goto fail_free_messaging;
 			}
 			printf("%s\n", path);
 			TALLOC_FREE(path);
@@ -227,13 +227,13 @@ int main(int argc, char **argv)
 	status = mdscli_close_search(&search);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("mdscli_close_search failed\n");
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	status = mdscli_disconnect(mdscli_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("mdscli_disconnect failed\n");
-		goto fail;
+		goto fail_free_messaging;
 	}
 
 	cmdline_messaging_context_free();
@@ -241,6 +241,8 @@ int main(int argc, char **argv)
 	poptFreeContext(pc);
 	return 0;
 
+fail_free_messaging:
+	cmdline_messaging_context_free();
 fail:
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
