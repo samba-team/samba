@@ -276,7 +276,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 
 	status = SMB_VFS_FGET_NT_ACL(fsp,
 				     SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL,
-				     fsp,
+				     talloc_tos(),
 				     &sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("SMB_VFS_FGET_NT_ACL [%s] failed: %s\n",
@@ -296,6 +296,8 @@ static int net_vfs_get_ntacl(struct net_context *net,
 
 	rc = 0;
 done:
+	TALLOC_FREE(sd);
+
 	if (fsp != NULL) {
 		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
