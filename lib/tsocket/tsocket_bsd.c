@@ -2613,18 +2613,10 @@ static void tstream_bsd_connect_fde_handler(struct tevent_context *ev,
 					struct tstream_bsd_connect_state);
 	struct samba_sockaddr *lrbsda = NULL;
 	int ret;
-	int error=0;
-	socklen_t len = sizeof(error);
 	int err;
 	bool retry;
 
-	ret = getsockopt(state->fd, SOL_SOCKET, SO_ERROR, &error, &len);
-	if (ret == 0) {
-		if (error != 0) {
-			errno = error;
-			ret = -1;
-		}
-	}
+	ret = samba_socket_sock_error(state->fd);
 	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
