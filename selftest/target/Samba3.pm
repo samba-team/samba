@@ -1970,6 +1970,7 @@ sub setup_fileserver
 	virusfilter:infected files = *infected*
 	virusfilter:infected file action = rename
 	virusfilter:scan on close = yes
+	vfs_default:VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS = no
 
 [volumeserialnumber]
 	path = $volume_serial_number_sharedir

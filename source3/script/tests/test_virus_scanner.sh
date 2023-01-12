@@ -26,25 +26,36 @@ check_infected_read()
 {
 	rm -rf "${sharedir:?}"/*
 
-	if ! touch "${sharedir}/infected.txt"; then
-		echo "ERROR: Cannot create ${sharedir}/infected.txt"
+	if ! mkdir "${sharedir}/read1"; then
+		echo "ERROR: Cannot create ${sharedir}/read1"
 		return 1
 	fi
 
-	${SMBCLIENT} "//${SERVER_IP}/${SHARE}" -U"${USER}"%"${PASSWORD}" -c "get infected.txt ${sharedir}/infected.download.txt"
+	if ! mkdir "${sharedir}/read1/read2"; then
+		echo "ERROR: Cannot create ${sharedir}/read1/read2"
+		return 1
+	fi
+
+	if ! touch "${sharedir}/read1/read2/infected.txt"; then
+		echo "ERROR: Cannot create ${sharedir}/read1/read2/infected.txt"
+		return 1
+	fi
+
+	${SMBCLIENT} "//${SERVER_IP}/${SHARE}" -U"${USER}"%"${PASSWORD}" -c "get read1/read2/infected.txt ${sharedir}/read1/read2/infected.download.txt"
 
 	# check that virusfilter:rename prefix/suffix was added
-	if [ ! -f "${sharedir}/virusfilter.infected.txt.infected" ]; then
-		echo "ERROR: ${sharedir}/virusfilter.infected.txt.infected is missing."
+	if [ ! -f "${sharedir}/read1/read2/virusfilter.infected.txt.infected" ]; then
+		echo "ERROR: ${sharedir}/read1/read2/virusfilter.infected.txt.infected is missing."
 		return 1
 	fi
 
 	# check that file was not downloaded
-	if [ -f "${sharedir}/infected.download.txt" ]; then
-		echo "ERROR: {sharedir}/infected.download.txt should not exist."
+	if [ -f "${sharedir}/read1/read2/infected.download.txt" ]; then
+		echo "ERROR: {sharedir}/read1/read2/infected.download.txt should not exist."
 		return 1
 	fi
 
+	rm -rf "${sharedir:?}"/*
 	return 0
 }
 
