@@ -1650,6 +1650,7 @@ struct tstream_bsd {
 	void *event_ptr;
 	struct tevent_fd *fde;
 	bool optimize_readv;
+	bool fail_readv_first_error;
 
 	void *readable_private;
 	void (*readable_handler)(void *private_data);
@@ -1676,6 +1677,25 @@ bool tstream_bsd_optimize_readv(struct tstream_context *stream,
 	return old;
 }
 
+bool tstream_bsd_fail_readv_first_error(struct tstream_context *stream,
+					bool on)
+{
+	struct tstream_bsd *bsds =
+		talloc_get_type(_tstream_context_data(stream),
+		struct tstream_bsd);
+	bool old;
+
+	if (bsds == NULL) {
+		/* not a bsd socket */
+		return false;
+	}
+
+	old = bsds->fail_readv_first_error;
+	bsds->fail_readv_first_error = on;
+
+	return old;
+}
+
 static void tstream_bsd_fde_handler(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
@@ -1692,10 +1712,11 @@ static void tstream_bsd_fde_handler(struct tevent_context *ev,
 		 * So we have to check TEVENT_FD_READ
 		 * as well as bsds->readable_handler
 		 *
-		 * We drain remaining data from the
-		 * recv queue if available.
+		 * We only drain remaining data from the
+		 * the recv queue if available and desired.
 		 */
 		if ((flags & TEVENT_FD_READ) &&
+		    !bsds->fail_readv_first_error &&
 		    (bsds->readable_handler != NULL))
 		{
 			/*

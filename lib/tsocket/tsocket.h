@@ -845,6 +845,28 @@ bool tstream_bsd_optimize_readv(struct tstream_context *stream,
 				bool on);
 
 /**
+ * @brief Request that tstream_readv_send() fails within pending data
+ *
+ * By default we allow pending data to be drained from the
+ * recv queue, before we report EPIPE when reaching EOF.
+ *
+ * For server applications it's typically useful to
+ * fail early in order to avoid useless work,
+ * as the response can't be transferred to the client anyway.
+ *
+ * @param[in]  stream   The tstream_context of a bsd socket, if this
+ *                      not a bsd socket the function does nothing.
+ *
+ * @param[in]  on       The boolean value to turn the early fail on and off.
+ *
+ * @return              The old boolean value.
+ *
+ * @see tstream_readv_send()
+ */
+bool tstream_bsd_fail_readv_first_error(struct tstream_context *stream,
+					bool on);
+
+/**
  * @brief Connect async to a TCP endpoint and create a tstream_context for the
  * stream based communication.
  *
