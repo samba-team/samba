@@ -1,0 +1,55 @@
+<samba:parameter name="wsp property file"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	<smbconfoption name="wsp property file"/> parameter.
+	This parameter specifies the file where additional WSP Windows Search Protocol properties 
+	are stored. The format of the file is a csv consisting of 10 comma separated columns. The
+	first 3 columns are required, the other columns are desirable but not necessary.
+	</para>
+	<variablelist>
+		<varlistentry>
+			<term>Property Name</term>
+			<listitem><para>A property name e.g. System.ItemUrl.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>GUID</term>
+			<listitem><para>A guid that identifies the propertyset the property belongs to.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>prop ID</term>
+			<listitem><para>A number that together with the GUID uniquely identifies the property.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>inInverted Index</term>
+			<listitem><para>Set to TRUE is the property is indexed.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>isColumn</term>
+			<listitem><para>Set to TRUE if the property is one that can be returned in rows returned from WSP query.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>type</term>
+			<listitem><para>One of
+			<emphasis>Boolean</emphasis>,<emphasis>Buffer</emphasis>,<emphasis>Byte</emphasis>,<emphasis>DateTime</emphasis>,<emphasis>Double</emphasis>,<emphasis>Int32</emphasis>,<emphasis>String</emphasis>,<emphasis>UInt16</emphasis>,<emphasis>UInt32</emphasis>,<emphasis>UInt64</emphasis> </para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>MaxSize</term>
+			<listitem><para>maximum size when stored.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>Vector Property</term>
+			<listitem><para>TRUE if this is a multivalue property.</para></listitem>
+                </varlistentry>
+		<varlistentry>
+			<term>Description</term>
+			<listitem><para>Description of what the property is used for.</para></listitem>
+                </varlistentry>
+	</variablelist>
+
+
+</description>
+<value type="default"/>
+</samba:parameter>
