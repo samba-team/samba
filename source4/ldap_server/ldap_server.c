@@ -338,6 +338,8 @@ static void ldapsrv_accept(struct stream_connection *c,
 		return;
 	}
 	socket_set_flags(c->socket, SOCKET_FLAG_NOCLOSE);
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(conn->sockets.raw, true);
 
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
