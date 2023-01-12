@@ -496,6 +496,8 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 				"kdc_tcp_accept: out of memory");
 		return;
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(kdc_conn->tstream, true);
 
 	kdc_conn->conn = conn;
 	kdc_conn->kdc_socket = kdc_socket;
