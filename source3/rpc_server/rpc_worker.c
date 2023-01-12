@@ -390,6 +390,8 @@ static void rpc_worker_new_client(
 				  strerror(errno));
 			goto fail;
 		}
+		/* as server we want to fail early */
+		tstream_bsd_fail_readv_first_error(tstream, true);
 	}
 	sock = -1;
 

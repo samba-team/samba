@@ -967,6 +967,8 @@ static struct tevent_req *rpc_host_bind_read_send(
 		close(sock_dup);
 		return tevent_req_post(req, ev);
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(state->plain, true);
 
 	if (transport == NCACN_NP) {
 		subreq = tstream_npa_accept_existing_send(
