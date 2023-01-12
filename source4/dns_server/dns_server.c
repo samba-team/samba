@@ -491,6 +491,8 @@ static void dns_tcp_accept(struct stream_connection *conn)
 				"dns_tcp_accept: out of memory");
 		return;
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(dns_conn->tstream, true);
 
 	dns_conn->conn = conn;
 	dns_conn->dns_socket = dns_socket;
