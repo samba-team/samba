@@ -314,7 +314,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 					xconn->client->raw_ev_ctx,
 					xconn,
 					xconn->transport.sock,
-					TEVENT_FD_READ,
+					TEVENT_FD_ERROR | TEVENT_FD_READ,
 					smbd_smb2_connection_handler,
 					xconn);
 	if (xconn->transport.fde == NULL) {
@@ -5126,7 +5126,24 @@ static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 		 */
 		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
 		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
+		TEVENT_FD_NOT_WANTERROR(xconn->transport.fde);
 		return NT_STATUS_OK;
+	}
+
+	if (fde_flags & TEVENT_FD_ERROR) {
+		ret = samba_socket_poll_or_sock_error(xconn->transport.sock);
+		if (ret == -1) {
+			err = errno;
+			status = map_nt_error_from_unix_common(err);
+			smbXsrv_connection_disconnect_transport(xconn,
+								status);
+			return status;
+		}
+		/* This should not happen */
+		status = NT_STATUS_REMOTE_DISCONNECT;
+		smbXsrv_connection_disconnect_transport(xconn,
+							status);
+		return status;
 	}
 
 	if (fde_flags & TEVENT_FD_WRITE) {
