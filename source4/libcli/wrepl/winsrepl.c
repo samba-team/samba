@@ -108,6 +108,8 @@ NTSTATUS wrepl_socket_donate_stream(struct wrepl_socket *wrepl_socket,
 	}
 
 	wrepl_socket->stream = talloc_move(wrepl_socket, stream);
+	/* as client we want to drain the recv queue on error */
+	tstream_bsd_fail_readv_first_error(wrepl_socket->stream, false);
 	return NT_STATUS_OK;
 }
 
