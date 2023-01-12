@@ -75,12 +75,13 @@ bld.SAMBA3_BINARY('nmblookup',
                  LIBNMB''')
 
 bld.SAMBA3_BINARY('smbcacls',
-                 source='smbcacls.c ../lib/util_sd.c',
+                 source='smbcacls.c',
                  deps='''
                  talloc
                  CMDLINE_S3
                  msrpc3
                  libcli_lsa3
+                 util_sd
                  krb5samba''')
 
 bld.SAMBA3_BINARY('smbcquotas',
@@ -102,13 +103,14 @@ bld.SAMBA3_BINARY('eventlogadm',
                  install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('sharesec',
-                 source='sharesec.c ../lib/util_sd.c',
+                 source='sharesec.c',
                  deps='''
                  talloc
                  msrpc3
                  libcli_lsa3
                  CMDLINE_S3
                  cmdline_contexts
+                 util_sd
                  ''')
 
 bld.SAMBA3_BINARY('log2pcap',
@@ -240,7 +242,6 @@ bld.SAMBA3_BINARY('net',
                  ../registry/reg_format.c
                  ../registry/reg_import.c
                  net_registry_util.c
-                 ../lib/util_sd.c
                  net_help_common.c''',
                  deps='''
                  talloc
@@ -285,6 +286,7 @@ bld.SAMBA3_BINARY('net',
                  common_auth
                  ADOUBLE
                  DNS_UTIL
+                 util_sd
                  ''')
 
 bld.SAMBA3_BINARY('mvxattr',
