@@ -240,6 +240,7 @@ bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str)
 static void print_ace_flags(FILE *f, uint8_t flags)
 {
 	char *str = talloc_strdup(NULL, "");
+	size_t len;
 
 	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
 		talloc_asprintf_addbuf(&str, "OI|");
@@ -264,9 +265,9 @@ static void print_ace_flags(FILE *f, uint8_t flags)
 	   and SEC_ACE_FLAG_FAILED_ACCESS ( 0x80 ) as they're
 	   audit ace flags. */
 
-	if (str[strlen(str)-1] == '|') {
-		str[strlen(str)-1] = '\0';
-		fprintf(f, "/%s/", str);
+	len = strlen(str);
+	if (len > 0) {
+		fprintf(f, "/%.*s/", (int)len-1, str);
 	} else {
 		fprintf(f, "/0x%x/", flags);
 	}
