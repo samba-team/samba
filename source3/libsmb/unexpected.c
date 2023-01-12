@@ -174,6 +174,8 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 		close(sock);
 		return;
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(client->sock, true);
 
 	client->server = server;
 
