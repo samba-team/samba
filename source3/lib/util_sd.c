@@ -241,45 +241,25 @@ static void print_ace_flags(FILE *f, uint8_t flags)
 {
 	char *str = talloc_strdup(NULL, "");
 
-	if (!str) {
+	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+		talloc_asprintf_addbuf(&str, "OI|");
+	}
+	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+		talloc_asprintf_addbuf(&str, "CI|");
+	}
+	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+		talloc_asprintf_addbuf(&str, "NP|");
+	}
+	if (flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+		talloc_asprintf_addbuf(&str, "IO|");
+	}
+	if (flags & SEC_ACE_FLAG_INHERITED_ACE) {
+		talloc_asprintf_addbuf(&str, "I|");
+	}
+	if (str == NULL) {
 		goto out;
 	}
 
-	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "OI|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "CI|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "NP|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "IO|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_INHERITED_ACE) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "I|");
-		if (!str) {
-			goto out;
-		}
-	}
 	/* Ignore define SEC_ACE_FLAG_SUCCESSFUL_ACCESS ( 0x40 )
 	   and SEC_ACE_FLAG_FAILED_ACCESS ( 0x80 ) as they're
 	   audit ace flags. */
