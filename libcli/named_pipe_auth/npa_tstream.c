@@ -1008,6 +1008,8 @@ int _tstream_npa_existing_socket(TALLOC_CTX *mem_ctx,
 	if (ret == -1) {
 		return -1;
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(transport, true);
 	return _tstream_npa_existing_stream(
 		mem_ctx, &transport, file_type, _stream, location);
 }
