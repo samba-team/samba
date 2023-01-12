@@ -479,6 +479,8 @@ static void ntp_signd_accept(struct stream_connection *conn)
 				"ntp_signd_accept: out of memory");
 		return;
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(ntp_signd_conn->tstream, true);
 
 	ntp_signd_conn->conn = conn;
 	ntp_signd_conn->ntp_signd = ntp_signd;
