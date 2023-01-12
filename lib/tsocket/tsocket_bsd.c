@@ -24,10 +24,8 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "system/select.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
-#include "lib/util/select.h"
 #include "lib/util/iov_buf.h"
 #include "lib/util/blocking.h"
 #include "lib/util/util_net.h"
@@ -173,103 +171,6 @@ static ssize_t tsocket_bsd_netlink_pending(int fd)
 }
 #endif
 
-static int tsocket_bsd_poll_error(int fd)
-{
-	struct pollfd pfd = {
-		.fd = fd,
-#ifdef POLLRDHUP
-		.events = POLLRDHUP, /* POLLERR and POLLHUP are not needed */
-#endif
-	};
-	int ret;
-
-	errno = 0;
-	ret = sys_poll_intr(&pfd, 1, 0);
-	if (ret == 0) {
-		return 0;
-	}
-	if (ret != 1) {
-		return POLLNVAL;
-	}
-
-	if (pfd.revents & POLLERR) {
-		return POLLERR;
-	}
-	if (pfd.revents & POLLHUP) {
-		return POLLHUP;
-	}
-#ifdef POLLRDHUP
-	if (pfd.revents & POLLRDHUP) {
-		return POLLRDHUP;
-	}
-#endif
-
-	/* should never be reached! */
-	return POLLNVAL;
-}
-
-static int tsocket_bsd_sock_error(int fd)
-{
-	int ret, error = 0;
-	socklen_t len = sizeof(error);
-
-	/*
-	 * if no data is available check if the socket is in error state. For
-	 * dgram sockets it's the way to return ICMP error messages of
-	 * connected sockets to the caller.
-	 */
-	ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len);
-	if (ret == -1) {
-		return ret;
-	}
-	if (error != 0) {
-		errno = error;
-		return -1;
-	}
-	return 0;
-}
-
-static int tsocket_bsd_error(int fd)
-{
-	int ret;
-	int poll_error = 0;
-
-	poll_error = tsocket_bsd_poll_error(fd);
-	if (poll_error == 0) {
-		return 0;
-	}
-
-#ifdef POLLRDHUP
-	if (poll_error == POLLRDHUP) {
-		errno = ECONNRESET;
-		return -1;
-	}
-#endif
-
-	if (poll_error == POLLHUP) {
-		errno = EPIPE;
-		return -1;
-	}
-
-	/*
-	 * POLLERR and POLLNVAL fallback to
-	 * getsockopt(fd, SOL_SOCKET, SO_ERROR)
-	 * and force EPIPE as fallback.
-	 */
-
-	errno = 0;
-	ret = tsocket_bsd_sock_error(fd);
-	if (ret == 0) {
-		errno = EPIPE;
-	}
-
-	if (errno == 0) {
-		errno = EPIPE;
-	}
-
-	return -1;
-}
-
 static ssize_t tsocket_bsd_pending(int fd)
 {
 	int ret;
@@ -290,7 +191,7 @@ static ssize_t tsocket_bsd_pending(int fd)
 		return value;
 	}
 
-	return tsocket_bsd_error(fd);
+	return samba_socket_poll_or_sock_error(fd);
 }
 
 static const struct tsocket_address_ops tsocket_address_bsd_ops;
@@ -1835,7 +1736,7 @@ static void tstream_bsd_fde_handler(struct tevent_context *ev,
 			 * error state.
 			 */
 			if (bsds->error == 0) {
-				int ret = tsocket_bsd_error(bsds->fd);
+				int ret = samba_socket_poll_or_sock_error(bsds->fd);
 
 				if (ret == -1) {
 					bsds->error = errno;
