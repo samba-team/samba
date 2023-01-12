@@ -274,6 +274,8 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 			return;
 		}
 		socket_set_flags(srv_conn->socket, SOCKET_FLAG_NOCLOSE);
+		/* as server we want to fail early */
+		tstream_bsd_fail_readv_first_error(dcesrv_conn->stream, true);
 	}
 
 	dcesrv_conn->local_address = srv_conn->local_address;
