@@ -66,6 +66,8 @@ static void named_pipe_accept(struct stream_connection *conn)
 				"named_pipe_accept: out of memory");
 		return;
 	}
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(plain_tstream, true);
 
 	subreq = tstream_npa_accept_existing_send(conn, conn->event.ctx,
 						  plain_tstream,
