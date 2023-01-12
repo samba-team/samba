@@ -133,6 +133,8 @@ static void wreplsrv_accept(struct stream_connection *conn)
 		return;
 	}
 	socket_set_flags(conn->socket, SOCKET_FLAG_NOCLOSE);
+	/* as server we want to fail early */
+	tstream_bsd_fail_readv_first_error(wrepl_conn->tstream, true);
 
 	wrepl_conn->conn = conn;
 	wrepl_conn->service = service;
@@ -387,6 +389,9 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 					    "wreplsrv_in_connection_merge: out of memory");
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/* we're now a server and want to fail early */
+	tstream_bsd_fail_readv_first_error(wrepl_in->tstream, true);
 
 	/*
 	 * The wrepl pdu's has the length as 4 byte (initial_read_size),
