@@ -7132,6 +7132,26 @@ class GPOTests(tests.TestCase):
                  b'service name="ftp" reject']
         self.assertIn(out.strip(), rules, 'Failed to set rich rule')
 
+        # Check that modifying the policy will enforce the correct settings
+        entries = [e for e in parser.pol_file.entries if e.data != 'home']
+        self.assertEquals(len(entries), len(parser.pol_file.entries)-1,
+                          'Failed to remove the home zone entry')
+        parser.pol_file.entries = entries
+        parser.pol_file.num_entries = len(entries)
+        # Stage the Registry.pol file with altered test data
+        unstage_file(reg_pol)
+        ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Enforce the altered policy
+        ext.process_group_policy([], gpos)
+
+        # Check that the home zone was removed
+        cmd = [firewall_cmd, '--get-zones']
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        out, err = p.communicate()
+        self.assertIn(b'work', out, 'Failed to apply zones')
+        self.assertNotIn(b'home', out, 'Failed to apply zones')
 
         # Verify RSOP does not fail
         ext.rsop([g for g in gpos if g.name == guid][0])
