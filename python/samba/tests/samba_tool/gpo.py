@@ -34,6 +34,8 @@ from io import StringIO
 import xml.etree.ElementTree as etree
 from tempfile import NamedTemporaryFile
 from time import sleep
+import re
+from samba.gp.gpclass import check_guid
 
 gpo_load_json = \
 b"""
@@ -1657,6 +1659,39 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertNotIn('samba.org', out, 'Homepage policy not removed')
         self.assertNotIn(ext_guids[0], out, 'Machine extension not unloaded')
         self.assertNotIn(ext_guids[1], out, 'User extension not unloaded')
+
+    def test_cse_register_unregister_list(self):
+        with NamedTemporaryFile() as f:
+            (result, out, err) = self.runsublevelcmd("gpo", ("cse",
+                                                     "register"),
+                                                     f.name, 'gp_test_ext',
+                                                     '--machine')
+            self.assertCmdSuccess(result, out, err, 'CSE register failed')
+
+            (result, out, err) = self.runsublevelcmd("gpo", ("cse",
+                                                     "list"))
+            self.assertIn(f.name, out, 'The test cse was not found')
+            self.assertIn('ProcessGroupPolicy : gp_test_ext', out,
+                          'The test cse was not found')
+            self.assertIn('MachinePolicy      : True', out,
+                          'The test cse was not enabled')
+            self.assertIn('UserPolicy         : False', out,
+                          'The test cse should not have User policy enabled')
+            cse_ext = re.findall('^UniqueGUID\s+:\s+(.*)', out)
+            self.assertEquals(len(cse_ext), 1,
+                              'The test cse GUID was not found')
+            cse_ext = cse_ext[0]
+            self.assertTrue(check_guid(cse_ext),
+                            'The test cse GUID was not formatted correctly')
+
+            (result, out, err) = self.runsublevelcmd("gpo", ("cse",
+                                                     "unregister"),
+                                                     cse_ext)
+            self.assertCmdSuccess(result, out, err, 'CSE unregister failed')
+
+            (result, out, err) = self.runsublevelcmd("gpo", ("cse",
+                                                     "list"))
+            self.assertNotIn(f.name, out, 'The test cse was still found')
 
     def setUp(self):
         """set up a temporary GPO to work with"""
