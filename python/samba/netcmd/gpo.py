@@ -84,6 +84,8 @@ from samba.netcmd.gpcommon import (
 )
 from samba.policies import RegistryGroupPolicies
 from samba.dcerpc.misc import REG_MULTI_SZ
+from samba.gp.gpclass import register_gp_extension, list_gp_extensions, \
+    unregister_gp_extension
 
 
 def gpo_flags_string(value):
@@ -4273,6 +4275,113 @@ samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow
                                    "not have sufficient privileges")
             raise
 
+class cmd_cse_register(Command):
+    """Register a Client Side Extension (CSE) on the current host
+
+This command takes a CSE filename as an arguement, and registers it for
+applying policy on the current host. This is not necessary for CSEs which
+are distributed with the current version of Samba, but is useful for installing
+experimental CSEs or custom built CSEs.
+
+Example:
+samba-tool gpo cse register ./gp_chromium_ext.py gp_chromium_ext --machine
+    """
+
+    synopsis = "%prog <cse_file> <cse_name> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    takes_options = [
+        Option("--machine", default=False, action='store_true',
+               help="Whether to register the CSE as Machine policy"),
+        Option("--user", default=False, action='store_true',
+               help="Whether to register the CSE as User policy"),
+    ]
+
+    takes_args = ["cse_file", "cse_name"]
+
+    def run(self, cse_file, cse_name, machine=False, user=False,
+            sambaopts=None, versionopts=None):
+        self.lp = sambaopts.get_loadparm()
+
+        if machine == False and user == False:
+            raise CommandError("Either --machine or --user must be selected")
+
+        ext_guid = "{%s}" % str(uuid.uuid4())
+        ext_path = os.path.realpath(cse_file)
+        ret = register_gp_extension(ext_guid, cse_name, ext_path,
+                                    smb_conf=self.lp.configfile,
+                                    machine=machine, user=user)
+        if not ret:
+            raise CommandError('Failed to register CSE "%s"' % cse_name)
+
+class cmd_cse_list(Command):
+    """List the registered Client Side Extensions (CSEs) on the current host
+
+This command lists the currently registered CSEs on the host.
+
+Example:
+samba-tool gpo cse list
+    """
+
+    synopsis = "%prog [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    def run(self, sambaopts=None, versionopts=None):
+        self.lp = sambaopts.get_loadparm()
+
+        cses = list_gp_extensions(self.lp.configfile)
+        for guid, gp_ext in cses.items():
+            self.outf.write("UniqueGUID         : %s\n" % guid)
+            self.outf.write("FileName           : %s\n" % gp_ext['DllName'])
+            self.outf.write("ProcessGroupPolicy : %s\n" % \
+                    gp_ext['ProcessGroupPolicy'])
+            self.outf.write("MachinePolicy      : %s\n" % \
+                    str(gp_ext['MachinePolicy']))
+            self.outf.write("UserPolicy         : %s\n\n" % \
+                    str(gp_ext['UserPolicy']))
+
+class cmd_cse_unregister(Command):
+    """Unregister a Client Side Extension (CSE) from the current host
+
+This command takes a unique GUID as an arguement (representing a registered
+CSE), and unregisters it for applying policy on the current host. Use the
+`samba-tool gpo cse list` command to determine the unique GUIDs of CSEs.
+
+Example:
+samba-tool gpo cse unregister {3F60F344-92BF-11ED-A1EB-0242AC120002}
+    """
+
+    synopsis = "%prog <guid> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    takes_args = ["guid"]
+
+    def run(self, guid, sambaopts=None, versionopts=None):
+        self.lp = sambaopts.get_loadparm()
+
+        ret = unregister_gp_extension(guid, self.lp.configfile)
+        if not ret:
+            raise CommandError('Failed to unregister CSE "%s"' % guid)
+
+class cmd_cse(SuperCommand):
+    """Manage Client Side Extensions"""
+    subcommands = {}
+    subcommands["register"] = cmd_cse_register()
+    subcommands["list"] = cmd_cse_list()
+    subcommands["unregister"] = cmd_cse_unregister()
+
 class cmd_access(SuperCommand):
     """Manage Host Access Group Policy Objects"""
     subcommands = {}
@@ -4317,3 +4426,4 @@ class cmd_gpo(SuperCommand):
     subcommands["restore"] = cmd_restore()
     subcommands["admxload"] = cmd_admxload()
     subcommands["manage"] = cmd_manage()
+    subcommands["cse"] = cmd_cse()
