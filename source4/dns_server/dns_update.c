@@ -459,7 +459,6 @@ static WERROR handle_one_update(struct dns_server *dns,
 					DEBUG(5, ("Skipping update\n"));
 					return WERR_OK;
 				}
-				break;
 			}
 
 			/*
