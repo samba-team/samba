@@ -44,25 +44,6 @@
 # define UWRAP_THREAD
 #endif
 
-# define UWRAP_LOCK(m) do { \
-	pthread_mutex_lock(&( m ## _mutex)); \
-} while(0)
-
-# define UWRAP_UNLOCK(m) do { \
-	pthread_mutex_unlock(&( m ## _mutex)); \
-} while(0)
-
-/* Add new global locks here please */
-# define UWRAP_LOCK_ALL \
-	UWRAP_LOCK(uwrap_id); \
-	UWRAP_LOCK(libc_symbol_binding); \
-	UWRAP_LOCK(libpthread_symbol_binding)
-
-# define UWRAP_UNLOCK_ALL \
-	UWRAP_UNLOCK(libpthread_symbol_binding); \
-	UWRAP_UNLOCK(libc_symbol_binding); \
-	UWRAP_UNLOCK(uwrap_id)
-
 #ifdef HAVE_CONSTRUCTOR_ATTRIBUTE
 #define CONSTRUCTOR_ATTRIBUTE __attribute__ ((constructor))
 #else
@@ -142,6 +123,19 @@ enum uwrap_dbglvl_e {
 	UWRAP_LOG_TRACE
 };
 
+#ifndef HAVE_GETPROGNAME
+static const char *getprogname(void)
+{
+#if defined(HAVE_PROGRAM_INVOCATION_SHORT_NAME)
+	return program_invocation_short_name;
+#elif defined(HAVE_GETEXECNAME)
+	return getexecname();
+#else
+	return NULL;
+#endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
+}
+#endif /* HAVE_GETPROGNAME */
+
 static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define UWRAP_LOG(dbglvl, ...) uwrap_log((dbglvl), __func__, __VA_ARGS__)
 
@@ -152,6 +146,7 @@ static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const ch
 	const char *d;
 	unsigned int lvl = 0;
 	const char *prefix = "UWRAP";
+	const char *progname = getprogname();
 
 	d = getenv("UID_WRAPPER_DEBUGLEVEL");
 	if (d != NULL) {
@@ -181,9 +176,14 @@ static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const ch
 			break;
 	}
 
+	if (progname == NULL) {
+		progname = "<unknown>";
+	}
+
 	fprintf(stderr,
-		"%s(%d) - %s: %s\n",
+		"%s[%s (%u)] - %s: %s\n",
 		prefix,
+		progname,
 		(int)getpid(),
 		function,
 		buffer);
@@ -240,6 +240,9 @@ typedef int (*__libc_getresgid)(gid_t *rgid, gid_t *egid, gid_t *sgid);
 typedef gid_t (*__libc_getegid)(void);
 
 typedef int (*__libc_getgroups)(int size, gid_t list[]);
+#ifdef HAVE___GETGROUPS_CHK
+typedef int (*__libc___getgroups_chk)(int size, gid_t list[], size_t listlen);
+#endif
 
 typedef int (*__libc_setgroups)(size_t size, const gid_t *list);
 
@@ -285,9 +288,34 @@ struct uwrap_libc_symbols {
 #endif
 	UWRAP_SYMBOL_ENTRY(getegid);
 	UWRAP_SYMBOL_ENTRY(getgroups);
+#ifdef HAVE___GETGROUPS_CHK
+	UWRAP_SYMBOL_ENTRY(__getgroups_chk);
+#endif
 	UWRAP_SYMBOL_ENTRY(setgroups);
 #ifdef HAVE_SYSCALL
 	UWRAP_SYMBOL_ENTRY(syscall);
+#endif
+};
+#undef UWRAP_SYMBOL_ENTRY
+
+#define UWRAP_SYMBOL_ENTRY(i)         \
+	union {                       \
+		__rtld_default_##i f; \
+		void *obj;            \
+	} _rtld_default_##i
+
+#ifdef HAVE_SYSCALL
+typedef bool (*__rtld_default_socket_wrapper_syscall_valid)(long int sysno);
+typedef long int (*__rtld_default_socket_wrapper_syscall_va)(long int sysno,
+							     va_list va);
+#endif
+
+struct uwrap_rtld_default_symbols {
+#ifdef HAVE_SYSCALL
+	UWRAP_SYMBOL_ENTRY(socket_wrapper_syscall_valid);
+	UWRAP_SYMBOL_ENTRY(socket_wrapper_syscall_va);
+#else
+	uint8_t dummy;
 #endif
 };
 #undef UWRAP_SYMBOL_ENTRY
@@ -342,6 +370,10 @@ struct uwrap {
 	} libc;
 
 	struct {
+		struct uwrap_rtld_default_symbols symbols;
+	} rtld_default;
+
+	struct {
 		void *handle;
 		struct uwrap_libpthread_symbols symbols;
 	} libpthread;
@@ -363,18 +395,127 @@ static UWRAP_THREAD struct uwrap_thread *uwrap_tls_id;
 /* The mutex or accessing the id */
 static pthread_mutex_t uwrap_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* The mutex for accessing the global libc.symbols */
-static pthread_mutex_t libc_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define uwrap_init_mutex(m) _uwrap_init_mutex(m, #m)
+static int _uwrap_init_mutex(pthread_mutex_t *m, const char *name)
+{
+	pthread_mutexattr_t ma;
+	bool need_destroy = false;
+	int ret = 0;
 
-/* The mutex for accessing the global libpthread.symbols */
-static pthread_mutex_t libpthread_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define __CHECK(cmd)                                    \
+	do {                                            \
+		ret = cmd;                              \
+		if (ret != 0) {                         \
+			UWRAP_LOG(UWRAP_LOG_ERROR,      \
+				  "%s: %s - failed %d", \
+				  name,                 \
+				  #cmd,                 \
+				  ret);                 \
+			goto done;                      \
+		}                                       \
+	} while (0)
+
+	*m = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	__CHECK(pthread_mutexattr_init(&ma));
+	need_destroy = true;
+	__CHECK(pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_ERRORCHECK));
+	__CHECK(pthread_mutex_init(m, &ma));
+done:
+	if (need_destroy) {
+		pthread_mutexattr_destroy(&ma);
+	}
+	return ret;
+}
+
+#define uwrap_mutex_lock(m) _uwrap_mutex_lock(m, #m, __func__, __LINE__)
+static void _uwrap_mutex_lock(pthread_mutex_t *mutex,
+			      const char *name,
+			      const char *caller,
+			      unsigned line)
+{
+	int ret;
+
+	ret = pthread_mutex_lock(mutex);
+	if (ret != 0) {
+		UWRAP_LOG(UWRAP_LOG_ERROR,
+			  "PID(%d):PPID(%d): %s(%u): Couldn't lock pthread "
+			  "mutex(%s) - %s",
+			  getpid(),
+			  getppid(),
+			  caller,
+			  line,
+			  name,
+			  strerror(ret));
+		abort();
+	}
+}
+
+#define uwrap_mutex_unlock(m) _uwrap_mutex_unlock(m, #m, __func__, __LINE__)
+static void _uwrap_mutex_unlock(pthread_mutex_t *mutex,
+				const char *name,
+				const char *caller,
+				unsigned line)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(mutex);
+	if (ret != 0) {
+		UWRAP_LOG(UWRAP_LOG_ERROR,
+			  "PID(%d):PPID(%d): %s(%u): Couldn't unlock pthread "
+			  "mutex(%s) - %s",
+			  getpid(),
+			  getppid(),
+			  caller,
+			  line,
+			  name,
+			  strerror(ret));
+		abort();
+	}
+}
+
+#define UWRAP_LOCK(m)                           \
+	do {                                    \
+		uwrap_mutex_lock(&(m##_mutex)); \
+	} while (0)
+
+#define UWRAP_UNLOCK(m)                           \
+	do {                                      \
+		uwrap_mutex_unlock(&(m##_mutex)); \
+	} while (0)
+
+/* Add new global locks here please */
+#define UWRAP_REINIT_ALL                                 \
+	do {                                             \
+		int ret;                                 \
+		ret = uwrap_init_mutex(&uwrap_id_mutex); \
+		if (ret != 0)                            \
+			exit(-1);                        \
+	} while (0)
+
+/* Add new global locks here please */
+#define UWRAP_LOCK_ALL                \
+	do {                          \
+		UWRAP_LOCK(uwrap_id); \
+	} while (0)
+
+#define UWRAP_UNLOCK_ALL                \
+	do {                            \
+		UWRAP_UNLOCK(uwrap_id); \
+	} while (0)
 
 /*********************************************************
  * UWRAP PROTOTYPES
  *********************************************************/
 
 bool uid_wrapper_enabled(void);
+#if ! defined(HAVE_CONSTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_INIT)
+/* xlC and other oldschool compilers support (only) this */
+#pragma init (uwrap_constructor)
+#endif
 void uwrap_constructor(void) CONSTRUCTOR_ATTRIBUTE;
+#if ! defined(HAVE_DESTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_FINI)
+#pragma fini (uwrap_destructor)
+#endif
 void uwrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
 
 /*********************************************************
@@ -383,8 +524,6 @@ void uwrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
 
 enum uwrap_lib {
     UWRAP_LIBC,
-    UWRAP_LIBNSL,
-    UWRAP_LIBSOCKET,
     UWRAP_LIBPTHREAD,
 };
 
@@ -417,8 +556,6 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 #endif
 
 	switch (lib) {
-	case UWRAP_LIBNSL:
-	case UWRAP_LIBSOCKET:
 	case UWRAP_LIBC:
 		handle = uwrap.libc.handle;
 		if (handle == NULL) {
@@ -445,7 +582,16 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 	case UWRAP_LIBPTHREAD:
 		handle = uwrap.libpthread.handle;
 		if (handle == NULL) {
+#ifdef RTLD_NEXT
+			/*
+			 * Because thread sanatizer also overloads
+			 * pthread_create() and pthread_exit() we need use
+			 * RTLD_NEXT instead of libpthread.so.0
+			 */
+			handle = uwrap.libpthread.handle = RTLD_NEXT;
+#else
 			handle = dlopen("libpthread.so.0", flags);
+#endif
 			if (handle != NULL) {
 				break;
 			}
@@ -455,7 +601,14 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 
 	if (handle == NULL) {
 #ifdef RTLD_NEXT
-		handle = uwrap.libc.handle = RTLD_NEXT;
+		switch (lib) {
+		case UWRAP_LIBC:
+			handle = uwrap.libc.handle = RTLD_NEXT;
+			break;
+		case UWRAP_LIBPTHREAD:
+			handle = uwrap.libpthread.handle = RTLD_NEXT;
+			break;
+		}
 #else
 		fprintf(stderr,
 			"Failed to dlopen library: %s\n",
@@ -486,20 +639,74 @@ static void *_uwrap_bind_symbol(enum uwrap_lib lib, const char *fn_name)
 }
 
 #define uwrap_bind_symbol_libc(sym_name) \
-	UWRAP_LOCK(libc_symbol_binding); \
 	if (uwrap.libc.symbols._libc_##sym_name.obj == NULL) { \
 		uwrap.libc.symbols._libc_##sym_name.obj = \
 			_uwrap_bind_symbol(UWRAP_LIBC, #sym_name); \
-	} \
-	UWRAP_UNLOCK(libc_symbol_binding)
+	}
 
 #define uwrap_bind_symbol_libpthread(sym_name) \
-	UWRAP_LOCK(libpthread_symbol_binding); \
 	if (uwrap.libpthread.symbols._libpthread_##sym_name.obj == NULL) { \
 		uwrap.libpthread.symbols._libpthread_##sym_name.obj = \
 			_uwrap_bind_symbol(UWRAP_LIBPTHREAD, #sym_name); \
-	} \
-	UWRAP_UNLOCK(libpthread_symbol_binding)
+	}
+
+#define uwrap_bind_symbol_rtld_default_optional(sym_name)                      \
+	if (uwrap.rtld_default.symbols._rtld_default_##sym_name.obj == NULL) { \
+		uwrap.rtld_default.symbols._rtld_default_##sym_name.obj =      \
+			dlsym(RTLD_DEFAULT, #sym_name);                        \
+	}
+
+/* DO NOT call this function during library initialization! */
+static void __uwrap_bind_symbol_all_once(void)
+{
+	uwrap_bind_symbol_libc(setuid);
+	uwrap_bind_symbol_libc(getuid);
+#ifdef HAVE_SETEUID
+	uwrap_bind_symbol_libc(seteuid);
+#endif
+#ifdef HAVE_SETREUID
+	uwrap_bind_symbol_libc(setreuid);
+#endif
+#ifdef HAVE_SETRESUID
+	uwrap_bind_symbol_libc(setresuid);
+#endif
+#ifdef HAVE_GETRESUID
+	uwrap_bind_symbol_libc(getresuid);
+#endif
+	uwrap_bind_symbol_libc(geteuid);
+	uwrap_bind_symbol_libc(setgid);
+	uwrap_bind_symbol_libc(getgid);
+#ifdef HAVE_SETEGID
+	uwrap_bind_symbol_libc(setegid);
+#endif
+#ifdef HAVE_SETREGID
+	uwrap_bind_symbol_libc(setregid);
+#endif
+
+#ifdef HAVE_SETRESGID
+	uwrap_bind_symbol_libc(setresgid);
+#endif
+#ifdef HAVE_GETRESGID
+	uwrap_bind_symbol_libc(setresgid);
+#endif
+	uwrap_bind_symbol_libc(getegid);
+	uwrap_bind_symbol_libc(getgroups);
+	uwrap_bind_symbol_libc(setgroups);
+#ifdef HAVE_SYSCALL
+	uwrap_bind_symbol_libc(syscall);
+	uwrap_bind_symbol_rtld_default_optional(socket_wrapper_syscall_valid);
+	uwrap_bind_symbol_rtld_default_optional(socket_wrapper_syscall_va);
+#endif
+	uwrap_bind_symbol_libpthread(pthread_create);
+	uwrap_bind_symbol_libpthread(pthread_exit);
+}
+
+static void uwrap_bind_symbol_all(void)
+{
+	static pthread_once_t all_symbol_binding_once = PTHREAD_ONCE_INIT;
+
+	pthread_once(&all_symbol_binding_once, __uwrap_bind_symbol_all_once);
+}
 
 /*
  * IMPORTANT
@@ -511,14 +718,14 @@ static void *_uwrap_bind_symbol(enum uwrap_lib lib, const char *fn_name)
  */
 static int libc_setuid(uid_t uid)
 {
-	uwrap_bind_symbol_libc(setuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setuid.f(uid);
 }
 
 static uid_t libc_getuid(void)
 {
-	uwrap_bind_symbol_libc(getuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_getuid.f();
 }
@@ -526,7 +733,7 @@ static uid_t libc_getuid(void)
 #ifdef HAVE_SETEUID
 static int libc_seteuid(uid_t euid)
 {
-	uwrap_bind_symbol_libc(seteuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_seteuid.f(euid);
 }
@@ -535,7 +742,7 @@ static int libc_seteuid(uid_t euid)
 #ifdef HAVE_SETREUID
 static int libc_setreuid(uid_t ruid, uid_t euid)
 {
-	uwrap_bind_symbol_libc(setreuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setreuid.f(ruid, euid);
 }
@@ -544,7 +751,7 @@ static int libc_setreuid(uid_t ruid, uid_t euid)
 #ifdef HAVE_SETRESUID
 static int libc_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
-	uwrap_bind_symbol_libc(setresuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setresuid.f(ruid, euid, suid);
 }
@@ -553,7 +760,7 @@ static int libc_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 #ifdef HAVE_GETRESUID
 static int libc_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
 {
-	uwrap_bind_symbol_libc(getresuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_getresuid.f(ruid, euid, suid);
 }
@@ -561,21 +768,21 @@ static int libc_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
 
 static uid_t libc_geteuid(void)
 {
-	uwrap_bind_symbol_libc(geteuid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_geteuid.f();
 }
 
 static int libc_setgid(gid_t gid)
 {
-	uwrap_bind_symbol_libc(setgid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setgid.f(gid);
 }
 
 static gid_t libc_getgid(void)
 {
-	uwrap_bind_symbol_libc(getgid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_getgid.f();
 }
@@ -583,7 +790,7 @@ static gid_t libc_getgid(void)
 #ifdef HAVE_SETEGID
 static int libc_setegid(gid_t egid)
 {
-	uwrap_bind_symbol_libc(setegid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setegid.f(egid);
 }
@@ -592,7 +799,7 @@ static int libc_setegid(gid_t egid)
 #ifdef HAVE_SETREGID
 static int libc_setregid(gid_t rgid, gid_t egid)
 {
-	uwrap_bind_symbol_libc(setregid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setregid.f(rgid, egid);
 }
@@ -601,7 +808,7 @@ static int libc_setregid(gid_t rgid, gid_t egid)
 #ifdef HAVE_SETRESGID
 static int libc_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 {
-	uwrap_bind_symbol_libc(setresgid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setresgid.f(rgid, egid, sgid);
 }
@@ -610,7 +817,7 @@ static int libc_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 #ifdef HAVE_GETRESGID
 static int libc_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
 {
-	uwrap_bind_symbol_libc(setresgid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_getresgid.f(rgid, egid, sgid);
 }
@@ -618,21 +825,32 @@ static int libc_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
 
 static gid_t libc_getegid(void)
 {
-	uwrap_bind_symbol_libc(getegid);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_getegid.f();
 }
 
 static int libc_getgroups(int size, gid_t list[])
 {
-	uwrap_bind_symbol_libc(getgroups);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_getgroups.f(size, list);
 }
 
+#ifdef HAVE___GETGROUPS_CHK
+static int libc___getgroups_chk(int size, gid_t list[], size_t listlen)
+{
+	uwrap_bind_symbol_libc(__getgroups_chk);
+
+	return uwrap.libc.symbols._libc___getgroups_chk.f(size,
+							  list,
+							  listlen);
+}
+#endif /* HAVE___GETGROUPS_CHK */
+
 static int libc_setgroups(size_t size, const gid_t *list)
 {
-	uwrap_bind_symbol_libc(setgroups);
+	uwrap_bind_symbol_all();
 
 	return uwrap.libc.symbols._libc_setgroups.f(size, list);
 }
@@ -645,7 +863,7 @@ static long int libc_vsyscall(long int sysno, va_list va)
 	long int rc;
 	int i;
 
-	uwrap_bind_symbol_libc(syscall);
+	uwrap_bind_symbol_all();
 
 	for (i = 0; i < 8; i++) {
 		args[i] = va_arg(va, long int);
@@ -663,7 +881,49 @@ static long int libc_vsyscall(long int sysno, va_list va)
 
 	return rc;
 }
+
+static bool uwrap_swrap_syscall_valid(long int sysno)
+{
+	uwrap_bind_symbol_all();
+
+	if (uwrap.rtld_default.symbols._rtld_default_socket_wrapper_syscall_valid.f == NULL) {
+		return false;
+	}
+
+	return uwrap.rtld_default.symbols._rtld_default_socket_wrapper_syscall_valid.f(
+						sysno);
+}
+
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
+static long int uwrap_swrap_syscall_va(long int sysno, va_list va)
+{
+	uwrap_bind_symbol_all();
+
+	if (uwrap.rtld_default.symbols._rtld_default_socket_wrapper_syscall_va.f == NULL) {
+		/*
+		 * Fallback to libc, if socket_wrapper_vsyscall is not
+		 * available.
+		 */
+		return libc_vsyscall(sysno, va);
+	}
+
+	return uwrap.rtld_default.symbols._rtld_default_socket_wrapper_syscall_va.f(
+						sysno,
+						va);
+}
 #endif
+
+static int libpthread_pthread_create(pthread_t *thread,
+				const pthread_attr_t *attr,
+				void *(*start_routine) (void *),
+				void *arg)
+{
+	uwrap_bind_symbol_all();
+	return uwrap.libpthread.symbols._libpthread_pthread_create.f(thread,
+								     attr,
+								     start_routine,
+								     arg);
+}
 
 /*
  * This part is "optimistic".
@@ -671,7 +931,7 @@ static long int libc_vsyscall(long int sysno, va_list va)
  */
 static void libpthread_pthread_exit(void *retval)
 {
-	uwrap_bind_symbol_libpthread(pthread_exit);
+	uwrap_bind_symbol_all();
 
 	uwrap.libpthread.symbols._libpthread_pthread_exit.f(retval);
 }
@@ -709,18 +969,6 @@ void pthread_exit(void *retval)
 
 	/* Calm down gcc warning. */
 	exit(666);
-}
-
-static int libpthread_pthread_create(pthread_t *thread,
-				const pthread_attr_t *attr,
-				void *(*start_routine) (void *),
-				void *arg)
-{
-	uwrap_bind_symbol_libpthread(pthread_create);
-	return uwrap.libpthread.symbols._libpthread_pthread_create.f(thread,
-								     attr,
-								     start_routine,
-								     arg);
 }
 
 struct uwrap_pthread_create_args {
@@ -928,6 +1176,12 @@ static void uwrap_thread_prepare(void)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
 
+	/*
+	 * We bind all symbols to avoid deadlocks of the fork is interrupted by
+	 * a signal handler using a symbol of this library.
+	 */
+	uwrap_bind_symbol_all();
+
 	UWRAP_LOCK_ALL;
 
 	/* uid_wrapper is loaded but not enabled */
@@ -964,9 +1218,10 @@ static void uwrap_thread_child(void)
 	struct uwrap_thread *id = uwrap_tls_id;
 	struct uwrap_thread *u = uwrap.ids;
 
+	UWRAP_REINIT_ALL;
+
 	/* uid_wrapper is loaded but not enabled */
 	if (id == NULL) {
-		UWRAP_UNLOCK_ALL;
 		return;
 	}
 
@@ -993,8 +1248,6 @@ static void uwrap_thread_child(void)
 	uwrap_export_ids(id);
 
 	id->enabled = true;
-
-	UWRAP_UNLOCK_ALL;
 }
 
 static unsigned long uwrap_get_xid_from_env(const char *envname)
@@ -2130,8 +2383,144 @@ int getgroups(int size, gid_t *list)
 	return uwrap_getgroups(size, list);
 }
 
+#ifdef HAVE___GETGROUPS_CHK
+static int uwrap___getgroups_chk(int size, gid_t *list, size_t listlen)
+{
+	if (size * sizeof(gid_t) > listlen) {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Buffer overflow detected");
+		abort();
+	}
+
+	return uwrap_getgroups(size, list);
+}
+
+int __getgroups_chk(int size, gid_t *list, size_t listlen);
+
+int __getgroups_chk(int size, gid_t *list, size_t listlen)
+{
+	if (!uid_wrapper_enabled()) {
+		return libc___getgroups_chk(size, list, listlen);
+	}
+
+	uwrap_init();
+	return uwrap___getgroups_chk(size, list, listlen);
+}
+#endif /* HAVE___GETGROUPS_CHK */
+
 #if (defined(HAVE_SYS_SYSCALL_H) || defined(HAVE_SYSCALL_H)) \
     && (defined(SYS_setreuid) || defined(SYS_setreuid32))
+static bool uwrap_is_uwrap_related_syscall(long int sysno)
+{
+	switch (sysno) {
+	/* gid */
+#ifdef __alpha__
+	case SYS_getxgid:
+		return true;
+#else
+	case SYS_getgid:
+		return true;
+#endif
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_getgid32:
+		return true;
+#endif
+#ifdef SYS_getegid
+	case SYS_getegid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_getegid32:
+		return true;
+#endif
+#endif /* SYS_getegid */
+	case SYS_setgid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setgid32:
+		return true;
+#endif
+	case SYS_setregid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setregid32:
+		return true;
+#endif
+#ifdef SYS_setresgid
+	case SYS_setresgid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setresgid32:
+		return true;
+#endif
+#endif /* SYS_setresgid */
+#if defined(SYS_getresgid) && defined(HAVE_GETRESGID)
+	case SYS_getresgid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_getresgid32:
+		return true;
+#endif
+#endif /* SYS_getresgid && HAVE_GETRESGID */
+
+	/* uid */
+#ifdef __alpha__
+	case SYS_getxuid:
+		return true;
+#else
+	case SYS_getuid:
+		return true;
+#endif
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_getuid32:
+		return true;
+#endif
+#ifdef SYS_geteuid
+	case SYS_geteuid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_geteuid32:
+		return true;
+#endif
+#endif /* SYS_geteuid */
+	case SYS_setuid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setuid32:
+		return true;
+#endif
+	case SYS_setreuid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setreuid32:
+		return true;
+#endif
+#ifdef SYS_setresuid
+	case SYS_setresuid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setresuid32:
+		return true;
+#endif
+#endif /* SYS_setresuid */
+#if defined(SYS_getresuid) && defined(HAVE_GETRESUID)
+	case SYS_getresuid:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_getresuid32:
+		return true;
+#endif
+#endif /* SYS_getresuid && HAVE_GETRESUID*/
+	/* groups */
+	case SYS_setgroups:
+		return true;
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+	case SYS_setgroups32:
+		return true;
+#endif
+	default:
+		return false;
+	}
+}
+
 static long int uwrap_syscall (long int sysno, va_list vp)
 {
 	long int rc;
@@ -2295,11 +2684,8 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			}
 			break;
 		default:
-			UWRAP_LOG(UWRAP_LOG_DEBUG,
-				  "UID_WRAPPER calling non-wrapped syscall %lu",
-				  sysno);
-
-			rc = libc_vsyscall(sysno, vp);
+			rc = -1;
+			errno = ENOSYS;
 			break;
 	}
 
@@ -2322,6 +2708,27 @@ long int syscall (long int sysno, ...)
 
 	va_start(va, sysno);
 
+	/*
+	 * We need to check for uwrap related syscall numbers before calling
+	 * uid_wrapper_enabled() otherwise we'd deadlock during the freebsd libc
+	 * fork() which calls syscall() after invoking uwrap_thread_prepare().
+	 */
+	if (!uwrap_is_uwrap_related_syscall(sysno)) {
+		/*
+		 * We need to give socket_wrapper a
+		 * chance to take over...
+		 */
+		if (uwrap_swrap_syscall_valid(sysno)) {
+			rc = uwrap_swrap_syscall_va(sysno, va);
+			va_end(va);
+			return rc;
+		}
+
+		rc = libc_vsyscall(sysno, va);
+		va_end(va);
+		return rc;
+	}
+
 	if (!uid_wrapper_enabled()) {
 		rc = libc_vsyscall(sysno, va);
 		va_end(va);
@@ -2333,6 +2740,39 @@ long int syscall (long int sysno, ...)
 	va_end(va);
 
 	return rc;
+}
+
+/* used by socket_wrapper */
+bool uid_wrapper_syscall_valid(long int sysno);
+bool uid_wrapper_syscall_valid(long int sysno)
+{
+	if (!uwrap_is_uwrap_related_syscall(sysno)) {
+		return false;
+	}
+
+	if (!uid_wrapper_enabled()) {
+		return false;
+	}
+
+	return true;
+}
+
+/* used by socket_wrapper */
+long int uid_wrapper_syscall_va(long int sysno, va_list va);
+long int uid_wrapper_syscall_va(long int sysno, va_list va)
+{
+	if (!uwrap_is_uwrap_related_syscall(sysno)) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	if (!uid_wrapper_enabled()) {
+		return libc_vsyscall(sysno, va);
+	}
+
+	uwrap_init();
+
+	return uwrap_syscall(sysno, va);
 }
 #endif /* HAVE_SYSCALL */
 #endif /* HAVE_SYS_SYSCALL_H || HAVE_SYSCALL_H */
@@ -2363,6 +2803,8 @@ void uwrap_constructor(void)
 		exit(-1);
 	}
 	glibc_malloc_lock_bug[0] = '\0';
+
+	UWRAP_REINIT_ALL;
 
 	/*
 	* If we hold a lock and the application forks, then the child
@@ -2405,11 +2847,19 @@ void uwrap_destructor(void)
 	}
 
 
-	if (uwrap.libc.handle != NULL) {
+	if (uwrap.libc.handle != NULL
+#ifdef RTLD_NEXT
+	    && uwrap.libc.handle != RTLD_NEXT
+#endif
+	   ) {
 		dlclose(uwrap.libc.handle);
 	}
 
-	if (uwrap.libpthread.handle != NULL) {
+	if (uwrap.libpthread.handle != NULL
+#ifdef RTLD_NEXT
+	    && uwrap.libpthread.handle != RTLD_NEXT
+#endif
+	   ) {
 		dlclose(uwrap.libpthread.handle);
 	}
 
