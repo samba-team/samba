@@ -361,7 +361,7 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 			return NULL;
 		}
 		res = talloc_asprintf(mem_ctx, "%s:%d:%d",
-					LDB_CONTROL_SORT_RESP_NAME,
+					LDB_CONTROL_ASQ_NAME,
 					control->critical,
 					rep_control->result);
 
