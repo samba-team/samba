@@ -53,6 +53,7 @@ def configure(conf):
         conf.CHECK_FUNCS('bindresvport')
         conf.CHECK_FUNCS('pledge')
         conf.CHECK_FUNCS('accept4')
+        conf.CHECK_FUNCS('sendmmsg recvmmsg')
         conf.CHECK_FUNCS('__close_nocancel')
 
         conf.CHECK_FUNCS_IN('bind',
@@ -63,6 +64,19 @@ def configure(conf):
         conf.CHECK_C_PROTOTYPE('accept',
                                'int accept(int s, struct sockaddr *addr, Psocklen_t addrlen)',
                                define='HAVE_ACCEPT_PSOCKLEN_T', headers='sys/types.h sys/socket.h')
+
+        # Linux legacy glibc < 2.21
+        conf.CHECK_C_PROTOTYPE('recvmmsg',
+                               'int recvmmsg(int __fd, struct mmsghdr *__vmessages, unsigned int __vlen, int __flags, const struct timespec *__tmo)',
+                               define='HAVE_RECVMMSG_CONST_TIMEOUT', headers='sys/types.h sys/socket.h')
+        # FreeBSD
+        conf.CHECK_C_PROTOTYPE('recvmmsg',
+                               'ssize_t recvmmsg(int __fd, struct mmsghdr * __restrict __vmessages, size_t __vlen, int __flags, const struct timespec * __restrict __tmo)',
+                               define='HAVE_RECVMMSG_SSIZE_T_CONST_TIMEOUT', headers='sys/types.h sys/socket.h')
+        # FreeBSD
+        conf.CHECK_C_PROTOTYPE('sendmmsg',
+                               'ssize_t sendmmsg(int __fd, struct mmsghdr * __restrict __vmessages, size_t __vlen, int __flags)',
+                               define='HAVE_SENDMMSG_SSIZE_T', headers='sys/types.h sys/socket.h')
 
         conf.CHECK_C_PROTOTYPE('ioctl',
                                'int ioctl(int s, int r, ...)',
