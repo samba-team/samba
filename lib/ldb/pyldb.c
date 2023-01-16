@@ -1291,6 +1291,11 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args, PyObject *kwar
 			return NULL;
 		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
+		if (controls[0] != NULL && parsed_controls == NULL) {
+			talloc_free(mem_ctx);
+			PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, ldb_ctx);
+			return NULL;
+		}
 		talloc_free(controls);
 	}
 
@@ -1440,6 +1445,11 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 			return NULL;
 		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
+		if (controls[0] != NULL && parsed_controls == NULL) {
+			talloc_free(mem_ctx);
+			PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, ldb_ctx);
+			return NULL;
+		}
 		talloc_free(controls);
 	}
 
@@ -1533,6 +1543,11 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args, PyObject *kwar
 			return NULL;
 		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
+		if (controls[0] != NULL && parsed_controls == NULL) {
+			talloc_free(mem_ctx);
+			PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, ldb_ctx);
+			return NULL;
+		}
 		talloc_free(controls);
 	}
 
@@ -1611,6 +1626,11 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 			return NULL;
 		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
+		if (controls[0] != NULL && parsed_controls == NULL) {
+			talloc_free(mem_ctx);
+			PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, ldb_ctx);
+			return NULL;
+		}
 		talloc_free(controls);
 	}
 
@@ -1973,6 +1993,11 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 			return NULL;
 		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
+		if (controls[0] != NULL && parsed_controls == NULL) {
+			talloc_free(mem_ctx);
+			PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, ldb_ctx);
+			return NULL;
+		}
 		talloc_free(controls);
 	}
 
@@ -2179,7 +2204,7 @@ static PyObject *py_ldb_search_iterator(PyLdbObject *self, PyObject *args, PyObj
 							    controls);
 		if (controls[0] != NULL && parsed_controls == NULL) {
 			Py_DECREF(py_iter);
-			PyErr_NoMemory();
+			PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, ldb_ctx);
 			return NULL;
 		}
 		talloc_free(controls);
