@@ -2786,7 +2786,7 @@ static void cli_start_connection_done(struct tevent_req *subreq);
    establishes a connection to after the negprot. 
    @param output_cli A fully initialised cli structure, non-null only on success
    @param dest_host The netbios name of the remote host
-   @param dest_ss (optional) The the destination IP, NULL for name based lookup
+   @param dest_ss (optional) The destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
 */
 
