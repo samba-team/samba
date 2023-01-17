@@ -663,8 +663,9 @@ static enum event_id_type get_add_member_event(uint32_t group_type)
  *
  * @param module The ldb module.
  * @param request The request being logged.
- * @param action Description of the action being performed.
- * @param user The linearized form of the users DN
+ * @param el element with new memberships.
+ * @param old_el element with previous memberships.
+ * @param group_type group type flags.
  * @param status the LDB status code for the processing of the request.
  *
  */
