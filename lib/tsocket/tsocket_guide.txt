@@ -216,7 +216,7 @@ state for this function. The tstream_readv_pdu engine will ask
 the next_vector function for the next iovec vector to be used.
 There is a tstream_readv_send/recv pair for each vector returned
 by the next_vector function. If the next_vector function detects
-it received a full pdu, it returns an empty vector. The the callback
+it received a full pdu, it returns an empty vector. The callback
 of the tevent_req (returned by tstream_readv_pdu_send()) is triggered.
 Note: the buffer allocation is completely up to the next_vector function
 and its private state.
