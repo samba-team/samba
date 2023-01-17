@@ -1352,7 +1352,7 @@ class cmd_domain_passwordsettings_set(Command):
         Option("--max-pwd-age",
                help="The maximum password age (<integer in days> | default).  Default is 43.", type=str),
         Option("--account-lockout-duration",
-               help="The length of time an account is locked out after exeeding the limit on bad password attempts (<integer in mins> | default).  Default is 30 mins.", type=str),
+               help="The length of time an account is locked out after exceeding the limit on bad password attempts (<integer in mins> | default).  Default is 30 mins.", type=str),
         Option("--account-lockout-threshold",
                help="The number of bad password attempts allowed before locking out the account (<integer> | default).  Default is 0 (never lock out).", type=str),
         Option("--reset-account-lockout-after",
