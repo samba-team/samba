@@ -65,7 +65,7 @@ fail:
 bool cli_credentials_set_cmdline_callbacks(struct cli_credentials *cred)
 {
 	/*
-	 * The there is no tty, then we will try to read the password from
+	 * If there is no tty, we will try to read the password from
 	 * stdin.
 	 */
 	return cli_credentials_set_password_callback(cred,
