@@ -414,18 +414,18 @@ static bool dlz_bind9_putnamedrr_torture_hook(struct test_expected_rr *expected,
 			} else if (strcmp(type, "cname") == 0 ||
 				 strcmp(type, "ptr") == 0   ||
 				 strcmp(type, "ns") == 0) {
-				if (! dns_name_equal(data, data2)) {
+				if (!samba_dns_name_equal(data, data2)) {
 					continue;
 				}
 			} else if (strcmp(type, "mx") == 0) {
 				/*
-				 * dns_name_equal works for MX records because
-				 * the space in "10 example.com." is
+				 * samba_dns_name_equal works for MX records
+				 * because the space in "10 example.com." is
 				 * theoretically OK as a DNS character. And we
 				 * need it because dlz will add the trailing
 				 * dot.
 				 */
-				if (! dns_name_equal(data, data2)) {
+				if (!samba_dns_name_equal(data, data2)) {
 					continue;
 				}
 			} else if (strcmp(data, data2) != 0) {
