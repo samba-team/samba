@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.18.  This is *not*
+This is the first pre release of Samba 4.19.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.18 will be the next version of the Samba suite.
+Samba 4.19 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -15,72 +15,6 @@ UPGRADING
 
 NEW FEATURES/CHANGES
 ====================
-
-More succinct samba-tool error messages
----------------------------------------
-
-Historically samba-tool has reported user error or misconfiguration by
-means of a Python traceback, showing you where in its code it noticed
-something was wrong, but not always exactly what is amiss. Now it
-tries harder to identify the true cause and restrict its output to
-describing that. Particular cases include:
-
- * a username or password is incorrect
- * an ldb database filename is wrong (including in smb.conf)
- * samba-tool dns: various zones or records do not exist
- * samba-tool ntacl: certain files are missing
- * the network seems to be down
- * bad --realm or --debug arguments
-
-Accessing the old samba-tool messages
--------------------------------------
-
-This is not new, but users are reminded they can get the full Python
-stack trace, along with other noise, by using the argument '-d3'.
-This may be useful when searching the web.
-
-The intention is that when samba-tool encounters an unrecognised
-problem (especially a bug), it will still output a Python traceback.
-If you encounter a problem that has been incorrectly identified by
-samba-tool, please report it on https://bugzilla.samba.org.
-
-Colour output with samba-tool --color
--------------------------------------
-
-For some time a few samba-tool commands have had a --color=yes|no|auto
-option, which determines whether the command outputs ANSI colour
-codes. Now all samba-tool commands support this option, which now also
-accepts 'always' and 'force' for 'yes', 'never' and 'none' for 'no',
-and 'tty' and 'if-tty' for 'auto' (this more closely matches
-convention). With --color=auto, or when --color is omitted, colour
-codes are only used when output is directed to a terminal.
-
-Most commands have very little colour in any case. For those that
-already used it, the defaults have changed slightly.
-
- * samba-tool drs showrepl: default is now 'auto', not 'no'
- 
- * samba-tool visualize: the interactions between --color-scheme,
-   --color, and --output have changed slightly. When --color-scheme is
-   set it overrides --color for the purpose of the output diagram, but
-   not for other output like error messages.
-
-No colour with NO_COLOR environment variable
---------------------------------------------
-
-With both samba-tool --color=auto (see above) and some other places
-where we use ANSI colour codes, the NO_COLOR environment variable will
-disable colour output. See https://no-color.org/ for a description of
-this variable. `samba-tool --color=always` will use colour regardless
-of NO_COLOR.
-
-New wbinfo option --change-secret-at
-------------------------------------
-
-The wbinfo command has a new option, --change-secret-at=<DOMAIN CONTROLLER>
-which forces the trust account password to be changed at a specified domain
-controller. If the specified domain controller cannot be contacted the
-password change fails rather than trying other DCs.
 
 
 REMOVED FEATURES
@@ -97,7 +31,7 @@ smb.conf changes
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.18#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.19#Release_blocking_bugs
 
 
 #######################################
