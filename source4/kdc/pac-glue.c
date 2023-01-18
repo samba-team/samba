@@ -23,6 +23,7 @@
 
 #include "lib/replace/replace.h"
 #include "lib/replace/system/kerberos.h"
+#include "lib/replace/system/filesys.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/talloc_stack.h"
@@ -1401,7 +1402,7 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
  * @param new_pac                   The new already allocated PAC
 
  * @return A Kerberos error code. If no PAC should be returned, the code will be
- * ENODATA!
+ * ENOATTR!
  */
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
@@ -1756,7 +1757,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	 * need to re-generate anything anyway.
 	 */
 	if (!samba_princ_needs_pac(server)) {
-		code = ENODATA;
+		code = ENOATTR;
 		goto done;
 	}
 
@@ -1779,7 +1780,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						  &requested_pac);
 		if (code != 0 || !requested_pac) {
 			if (!requested_pac) {
-				code = ENODATA;
+				code = ENOATTR;
 			}
 			goto done;
 		}

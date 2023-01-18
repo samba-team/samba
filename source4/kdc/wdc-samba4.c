@@ -29,6 +29,7 @@
 #include "sdb_hdb.h"
 #include "librpc/gen_ndr/auth.h"
 #include <krb5_locl.h>
+#include "lib/replace/system/filesys.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
@@ -361,7 +362,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 				   new_pac);
 	if (ret != 0) {
 		krb5_pac_free(context, new_pac);
-		if (ret == ENODATA) {
+		if (ret == ENOATTR) {
 			krb5_pac_free(context, *pac);
 			*pac = NULL;
 			ret = 0;

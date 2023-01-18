@@ -25,6 +25,7 @@
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "system/kerberos.h"
+#include "lib/replace/system/filesys.h"
 #include <com_err.h>
 #include <kdb.h>
 #include <kadm5/kadm_err.h>
@@ -640,7 +641,7 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    new_pac);
 	if (code != 0) {
 		krb5_pac_free(context, new_pac);
-		if (code == ENODATA) {
+		if (code == ENOATTR) {
 			krb5_pac_free(context, *pac);
 			*pac = NULL;
 			code = 0;
@@ -740,7 +741,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    old_pac,
 				    new_pac);
 	if (code != 0) {
-		if (code == ENODATA) {
+		if (code == ENOATTR) {
 			/*
 			 * We can't tell the KDC to not issue a PAC. It will
 			 * just return the newly allocated empty PAC.
