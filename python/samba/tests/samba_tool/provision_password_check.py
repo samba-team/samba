@@ -41,12 +41,12 @@ class ProvisionPasswordTestCase(SambaToolCmdTest):
     def test_short(self):
         (result, out, err) = self._provision_with_password("Fo0!_9")
         self.assertCmdFail(result)
-        self.assertRegexpMatches(err, r"minimum password length")
+        self.assertRegex(err, r"minimum password length")
 
     def test_low_quality(self):
         (result, out, err) = self._provision_with_password("aaaaaaaaaaaaaaaaa")
         self.assertCmdFail(result)
-        self.assertRegexpMatches(err, r"quality standards")
+        self.assertRegex(err, r"quality standards")
 
     def test_good(self):
         (result, out, err) = self._provision_with_password("Fo0!_9.")

@@ -59,7 +59,7 @@ class UrgentReplicationTests(samba.tests.TestCase):
 
         # urgent replication should not be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should not be enabled when modifying
         m = Message()
@@ -68,12 +68,12 @@ class UrgentReplicationTests(samba.tests.TestCase):
                                           "description")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should not be enabled when deleting
         self.delete_force(self.ldb, "cn=nonurgenttest,cn=users," + self.base_dn)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
     def test_nTDSDSA_object(self):
         """Test if the urgent replication is activated when handling a nTDSDSA object."""
@@ -104,7 +104,7 @@ systemFlags: 33554432""", ["relax:0"])
                                       "options")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=NTDS Settings test,cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration," + self.base_dn)
@@ -137,7 +137,7 @@ systemFlags: 33554432""", ["relax:0"])
                                           "systemFlags")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=test crossRef,CN=Partitions,CN=Configuration," + self.base_dn)
@@ -244,7 +244,7 @@ defaultHidingValue: TRUE""")
         # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "cn=test secret,cn=System," + self.base_dn)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
     def test_rIDManager_object(self):
         """Test if the urgent replication is activated when handling a rIDManager object."""
@@ -275,7 +275,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "CN=RID Manager test,CN=System," + self.base_dn)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
     def test_urgent_attributes(self):
         """Test if the urgent replication is activated when handling urgent attributes of an object."""
@@ -291,7 +291,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
 
         # urgent replication should NOT be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying userAccountControl
         m = Message()
@@ -328,12 +328,12 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
                                           FLAG_MOD_REPLACE, "description")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertNotEqual(res["uSNHighest"], res["uSNUrgent"])
 
 
 TestProgram(module=__name__, opts=subunitopts)

@@ -253,9 +253,9 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             self.assertIn('Moved computer "%s"' % computer["name"], out)
 
             found = self._find_computer(computer["name"])
-            self.assertNotEquals(found.get("dn"), olddn,
-                                 ("Moved computer '%s' still exists with the "
-                                  "same dn" % computer["name"]))
+            self.assertNotEqual(found.get("dn"), olddn,
+                                ("Moved computer '%s' still exists with the "
+                                 "same dn" % computer["name"]))
             computername = computer["name"].rstrip('$')
             newexpecteddn = ldb.Dn(self.samdb,
                                    "CN=%s,OU=%s,%s" %

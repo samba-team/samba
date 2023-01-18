@@ -144,8 +144,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         # We skip the check for self.get_service_description() as this
@@ -185,8 +185,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         # We skip the check for self.get_service_description() as this
@@ -227,8 +227,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -266,8 +266,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -297,8 +297,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Add", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
@@ -343,8 +343,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Delete", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         self.assertEqual(0, audit["statusCode"])
         self.assertEqual("Success", audit["status"])
@@ -383,8 +383,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Delete", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertEqual(ERR_NO_SUCH_OBJECT, audit["statusCode"])
         self.assertEqual("No such object", audit["status"])
         self.assertTrue(self.is_guid(audit["sessionId"]))
@@ -431,8 +431,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Add", audit["operation"])
         self.assertTrue(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -480,8 +480,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Delete", audit["operation"])
         self.assertTrue(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -514,8 +514,8 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])

@@ -113,8 +113,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=domain users,cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -129,8 +129,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=domain users,cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -154,8 +154,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_01 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -180,8 +180,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_02 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -208,8 +208,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_01 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -234,8 +234,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_01 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -261,8 +261,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=domain users,cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -277,8 +277,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=domain users,cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -304,8 +304,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_01 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -352,8 +352,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_01 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -369,8 +369,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=domain users,cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -386,8 +386,8 @@ class GroupAuditTests(AuditLogTestBase):
         group_dn = "cn=" + GROUP_NAME_01 + ",cn=users," + self.base_dn
         self.assertTrue(user_dn.lower(), audit["user"].lower())
         self.assertTrue(group_dn.lower(), audit["group"].lower())
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
