@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/wait.h"
+#include "system/dir.h"
 
 #include <tevent.h>
 
