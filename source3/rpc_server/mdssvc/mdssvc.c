@@ -932,6 +932,12 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 
 	scope = dalloc_get(path_scope, "char *", 0);
 	if (scope == NULL) {
+		scope = dalloc_get(path_scope,
+				   "DALLOC_CTX", 0,
+				   "char *", 0);
+	}
+	if (scope == NULL) {
+		DBG_ERR("Failed to parse kMDScopeArray\n");
 		goto error;
 	}
 
