@@ -190,12 +190,12 @@ class PreforkProcessRestartTests(TestCase):
         self.assertIsNotNone(new_pid)
 
         # check that the pid has changed
-        self.assertNotEquals(pid, new_pid)
+        self.assertNotEqual(pid, new_pid)
 
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("ldap", NUM_WORKERS)
         for x in range(NUM_WORKERS):
-            self.assertNotEquals(workers[x], new_workers[x])
+            self.assertNotEqual(workers[x], new_workers[x])
 
         # check that the previous server entries have been removed.
         self.check_for_duplicate_processes()
@@ -230,7 +230,7 @@ class PreforkProcessRestartTests(TestCase):
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("ldap", NUM_WORKERS)
         # process 0 should have a new pid the others should be unchanged
-        self.assertNotEquals(workers[0], new_workers[0])
+        self.assertNotEqual(workers[0], new_workers[0])
         self.assertEqual(workers[1], new_workers[1])
         self.assertEqual(workers[2], new_workers[2])
         self.assertEqual(workers[3], new_workers[3])
@@ -273,7 +273,7 @@ class PreforkProcessRestartTests(TestCase):
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("ldap", NUM_WORKERS)
         for x in range(NUM_WORKERS):
-            self.assertNotEquals(workers[x], new_workers[x])
+            self.assertNotEqual(workers[x], new_workers[x])
 
         # check that the previous server entries have been removed.
         self.check_for_duplicate_processes()
@@ -306,12 +306,12 @@ class PreforkProcessRestartTests(TestCase):
         self.assertIsNotNone(new_pid)
 
         # check that the pid has changed
-        self.assertNotEquals(pid, new_pid)
+        self.assertNotEqual(pid, new_pid)
 
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("rpc", NUM_WORKERS)
         for x in range(NUM_WORKERS):
-            self.assertNotEquals(workers[x], new_workers[x])
+            self.assertNotEqual(workers[x], new_workers[x])
 
         # check that the previous server entries have been removed.
         self.check_for_duplicate_processes()
@@ -347,7 +347,7 @@ class PreforkProcessRestartTests(TestCase):
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("rpc", NUM_WORKERS)
         # process 0 should have a new pid the others should be unchanged
-        self.assertNotEquals(workers[0], new_workers[0])
+        self.assertNotEqual(workers[0], new_workers[0])
         self.assertEqual(workers[1], new_workers[1])
         self.assertEqual(workers[2], new_workers[2])
         self.assertEqual(workers[3], new_workers[3])
@@ -390,7 +390,7 @@ class PreforkProcessRestartTests(TestCase):
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("rpc", NUM_WORKERS)
         for x in range(NUM_WORKERS):
-            self.assertNotEquals(workers[x], new_workers[x])
+            self.assertNotEqual(workers[x], new_workers[x])
 
         # check that the previous server entries have been removed.
         self.check_for_duplicate_processes()
@@ -434,7 +434,7 @@ class PreforkProcessRestartTests(TestCase):
         # check that the worker processes have restarted
         new_workers = self.get_worker_pids("echo", NUM_WORKERS)
         for x in range(NUM_WORKERS):
-            self.assertNotEquals(workers[x], new_workers[x])
+            self.assertNotEqual(workers[x], new_workers[x])
 
         # check that the previous server entries have been removed.
         self.check_for_duplicate_processes()

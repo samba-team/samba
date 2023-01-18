@@ -125,8 +125,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
         self.assertEqual("Change", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
@@ -154,8 +154,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEqual("Reset", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
@@ -195,8 +195,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEqual("Reset", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
@@ -232,8 +232,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEqual("Reset", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
@@ -266,8 +266,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
         self.assertEqual("Change", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -297,8 +297,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEqual("Reset", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
@@ -324,8 +324,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
         self.assertEqual("Reset", audit["action"])
         self.assertEqual(dn, audit["dn"])
-        self.assertRegexpMatches(audit["remoteAddress"],
-                                 self.remoteAddress)
+        self.assertRegex(audit["remoteAddress"],
+                         self.remoteAddress)
         session_id = self.get_session()
         self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()

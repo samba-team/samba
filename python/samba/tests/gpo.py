@@ -6341,8 +6341,8 @@ class GPOTests(tests.TestCase):
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
             ext.process_group_policy(del_gpos, [], f.name)
-            self.assertNotEquals(open(f.name, 'r').read(), text.text,
-                                 'The motd was not unapplied')
+            self.assertNotEqual(open(f.name, 'r').read(), text.text,
+                                'The motd was not unapplied')
 
         # Unstage the Registry.pol file
         unstage_file(manifest)
@@ -6394,8 +6394,8 @@ class GPOTests(tests.TestCase):
             gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
             ext.process_group_policy(del_gpos, [], f.name)
-            self.assertNotEquals(open(f.name, 'r').read(), text.text,
-                                 'The issue was not unapplied')
+            self.assertNotEqual(open(f.name, 'r').read(), text.text,
+                                'The issue was not unapplied')
 
         # Unstage the manifest.xml file
         unstage_file(manifest)
@@ -7066,16 +7066,16 @@ class GPOTests(tests.TestCase):
                               'Number of Chromium policies is incorrect')
             omanaged_file = managed_file
             managed_file = os.path.join(managed, managed_files[0])
-            self.assertNotEquals(omanaged_file, managed_file,
-                                 'The managed Chromium file did not change')
+            self.assertNotEqual(omanaged_file, managed_file,
+                                'The managed Chromium file did not change')
 
             recommended_files = os.listdir(recommended)
             self.assertEquals(len(recommended_files), 1,
                               'Number of Chromium policies is incorrect')
             orecommended_file = recommended_file
             recommended_file = os.path.join(recommended, recommended_files[0])
-            self.assertNotEquals(orecommended_file, recommended_file,
-                                 'The recommended Chromium file did not change')
+            self.assertNotEqual(orecommended_file, recommended_file,
+                                'The recommended Chromium file did not change')
 
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])

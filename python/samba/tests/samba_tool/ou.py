@@ -204,9 +204,9 @@ class OUCmdTestCase(SambaToolCmdTest):
             self.assertIn('Moved ou "%s"' % full_ou_dn, out)
 
             found = self._find_ou(ou["name"])
-            self.assertNotEquals(found.get("dn"), olddn,
-                                 "Moved ou '%s' still exists with the same dn" %
-                                 ou["name"])
+            self.assertNotEqual(found.get("dn"), olddn,
+                                "Moved ou '%s' still exists with the same dn" %
+                                ou["name"])
             newexpecteddn = ldb.Dn(self.samdb,
                                    "OU=%s,OU=%s,%s" %
                                    (ou["name"], parentou["name"],

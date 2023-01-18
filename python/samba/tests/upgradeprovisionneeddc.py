@@ -66,8 +66,8 @@ class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
                                               paths, smb_conf_path, lp)
         self.assertEqual(names.realm, "SAMBA.EXAMPLE.COM")
         self.assertEqual(str(names.rootdn).lower(), rootdn.lower())
-        self.assertNotEquals(names.policyid_dc, None)
-        self.assertNotEquals(names.ntdsguid, "")
+        self.assertNotEqual(names.policyid_dc, None)
+        self.assertNotEqual(names.ntdsguid, "")
 
 
 class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
@@ -158,7 +158,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         realm = self.lp.get("realm")
         basedn = "DC=%s" % realm.replace(".", ", DC=")
         oem = getOEMInfo(self.ldbs.sam, basedn)
-        self.assertNotEquals(oem, "")
+        self.assertNotEqual(oem, "")
 
     def test_update_dns_account(self):
         update_dns_account_password(self.ldbs.sam, self.ldbs.secrets,
@@ -170,7 +170,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         oem = getOEMInfo(self.ldbs.sam, basedn)
         updateOEMInfo(self.ldbs.sam, basedn)
         oem2 = getOEMInfo(self.ldbs.sam, basedn)
-        self.assertNotEquals(str(oem), str(oem2))
+        self.assertNotEqual(str(oem), str(oem2))
         self.assertTrue(re.match(".*upgrade to.*", str(oem2)))
 
     def tearDown(self):

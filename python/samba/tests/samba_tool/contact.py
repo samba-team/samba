@@ -241,9 +241,9 @@ class ContactCmdTestCase(SambaToolCmdTest):
             self.assertIn('Moved contact "%s"' % contact["expectedname"], out)
 
             found = self._find_contact(contact["expectedname"])
-            self.assertNotEquals(found.get("dn"), olddn,
-                                 ("Moved contact '%s' still exists with the "
-                                  "same dn" % contact["expectedname"]))
+            self.assertNotEqual(found.get("dn"), olddn,
+                                ("Moved contact '%s' still exists with the "
+                                 "same dn" % contact["expectedname"]))
             contactname = contact["expectedname"]
             newexpecteddn = ldb.Dn(self.samdb,
                                    "CN=%s,OU=%s,%s" %
