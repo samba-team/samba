@@ -1331,7 +1331,8 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1,
 		return memcmp(&rec1_in_addr6, &rec2_in_addr6, sizeof(rec1_in_addr6)) == 0;
 	}
 	case DNS_TYPE_CNAME:
-		return dns_name_equal(rec1->data.cname, rec2->data.cname);
+		return samba_dns_name_equal(rec1->data.cname,
+					    rec2->data.cname);
 	case DNS_TYPE_TXT:
 		if (rec1->data.txt.count != rec2->data.txt.count) {
 			return false;
@@ -1343,23 +1344,27 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1,
 		}
 		return true;
 	case DNS_TYPE_PTR:
-		return dns_name_equal(rec1->data.ptr, rec2->data.ptr);
+		return samba_dns_name_equal(rec1->data.ptr, rec2->data.ptr);
 	case DNS_TYPE_NS:
-		return dns_name_equal(rec1->data.ns, rec2->data.ns);
+		return samba_dns_name_equal(rec1->data.ns, rec2->data.ns);
 
 	case DNS_TYPE_SRV:
 		return rec1->data.srv.wPriority == rec2->data.srv.wPriority &&
 			rec1->data.srv.wWeight  == rec2->data.srv.wWeight &&
 			rec1->data.srv.wPort    == rec2->data.srv.wPort &&
-			dns_name_equal(rec1->data.srv.nameTarget, rec2->data.srv.nameTarget);
+			samba_dns_name_equal(rec1->data.srv.nameTarget,
+					     rec2->data.srv.nameTarget);
 
 	case DNS_TYPE_MX:
 		return rec1->data.mx.wPriority == rec2->data.mx.wPriority &&
-			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget);
+			samba_dns_name_equal(rec1->data.mx.nameTarget,
+					     rec2->data.mx.nameTarget);
 
 	case DNS_TYPE_SOA:
-		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) &&
-			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) &&
+		return samba_dns_name_equal(rec1->data.soa.mname,
+					    rec2->data.soa.mname) &&
+			samba_dns_name_equal(rec1->data.soa.rname,
+					     rec2->data.soa.rname) &&
 			rec1->data.soa.serial == rec2->data.soa.serial &&
 			rec1->data.soa.refresh == rec2->data.soa.refresh &&
 			rec1->data.soa.retry == rec2->data.soa.retry &&
@@ -1485,7 +1490,7 @@ exit:
 /*
   see if two DNS names are the same
  */
-bool dns_name_equal(const char *name1, const char *name2)
+bool samba_dns_name_equal(const char *name1, const char *name2)
 {
 	size_t len1 = strlen(name1);
 	size_t len2 = strlen(name2);
