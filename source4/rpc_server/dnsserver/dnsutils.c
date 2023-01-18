@@ -311,7 +311,7 @@ struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones, const c
 	struct dnsserver_zone *z = NULL;
 
 	for (z = zones; z; z = z->next) {
-		if (dns_name_equal(zone_name, z->name)) {
+		if (samba_dns_name_equal(zone_name, z->name)) {
 			break;
 		}
 	}

@@ -81,7 +81,7 @@ struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
 		if (tmp_key == NULL) {
 			continue;
 		}
-		if (dns_name_equal(name, tmp_key->name)) {
+		if (samba_dns_name_equal(name, tmp_key->name)) {
 			tkey = tmp_key;
 			break;
 		}
