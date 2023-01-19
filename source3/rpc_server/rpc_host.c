@@ -603,6 +603,15 @@ static void rpc_server_get_endpoints_done(struct tevent_req *subreq)
 		tevent_req_error(req, ret);
 		return;
 	}
+	/*
+	 * We need to limit the number of workers in order
+	 * to put the worker index into a 16-bit space,
+	 * in order to use a 16-bit association group space
+	 * per worker.
+	 */
+	if (state->num_workers > 65536) {
+		state->num_workers = 65536;
+	}
 
 	state->idle_seconds = smb_strtoul(
 		lines[1], NULL, 10, &ret, SMB_STR_FULL_STR_CONV);
@@ -1235,7 +1244,10 @@ static struct rpc_work_process *rpc_host_find_idle_worker(
 	 * All workers are busy. We need to expand the number of
 	 * workers because we were asked for an idle worker.
 	 */
-	if (num_workers+1 < num_workers) {
+	if (num_workers >= UINT16_MAX) {
+		/*
+		 * The worker index would not fix into 16-bits
+		 */
 		return NULL;
 	}
 	tmp = talloc_realloc(
@@ -1282,7 +1294,7 @@ again:
 
 	if (assoc_group_id != 0) {
 		size_t num_workers = talloc_array_length(server->workers);
-		uint8_t worker_index = assoc_group_id >> 24;
+		uint16_t worker_index = assoc_group_id >> 16;
 
 		if (worker_index >= num_workers) {
 			DBG_DEBUG("Invalid assoc group id %"PRIu32"\n",
@@ -1292,7 +1304,7 @@ again:
 		worker = &server->workers[worker_index];
 
 		if ((worker->pid == -1) || !worker->available) {
-			DBG_DEBUG("Requested worker index %"PRIu8": "
+			DBG_DEBUG("Requested worker index %"PRIu16": "
 				  "pid=%d, available=%d\n",
 				  worker_index,
 				  (int)worker->pid,

@@ -612,7 +612,7 @@ static struct dcesrv_assoc_group *rpc_worker_assoc_group_reference(
 	void *id_ptr = NULL;
 
 	/* find an association group given a assoc_group_id */
-	id_ptr = idr_find(conn->dce_ctx->assoc_groups_idr, id & 0xffffff);
+	id_ptr = idr_find(conn->dce_ctx->assoc_groups_idr, id & UINT16_MAX);
 	if (id_ptr == NULL) {
 		DBG_NOTICE("Failed to find assoc_group 0x%08x\n", id);
 		return NULL;
@@ -647,7 +647,7 @@ static int rpc_worker_assoc_group_destructor(
 
 	ret = idr_remove(
 		assoc_group->dce_ctx->assoc_groups_idr,
-		assoc_group->id & 0xffffff);
+		assoc_group->id & UINT16_MAX);
 	if (ret != 0) {
 		DBG_WARNING("Failed to remove assoc_group 0x%08x\n",
 			    assoc_group->id);
@@ -659,7 +659,7 @@ static int rpc_worker_assoc_group_destructor(
   allocate a new association group
  */
 static struct dcesrv_assoc_group *rpc_worker_assoc_group_new(
-	struct dcesrv_connection *conn, uint8_t worker_index)
+	struct dcesrv_connection *conn, uint16_t worker_index)
 {
 	struct dcesrv_context *dce_ctx = conn->dce_ctx;
 	const struct dcesrv_endpoint *endpoint = conn->endpoint;
@@ -673,6 +673,11 @@ static struct dcesrv_assoc_group *rpc_worker_assoc_group_new(
 		return NULL;
 	}
 
+	/*
+	 * We use 16-bit to encode the worker index,
+	 * have 16-bits left within the worker to form a
+	 * 32-bit association group id.
+	 */
 	id = idr_get_new_random(
 		dce_ctx->assoc_groups_idr, assoc_group, 1, UINT16_MAX);
 	if (id == -1) {
@@ -680,7 +685,7 @@ static struct dcesrv_assoc_group *rpc_worker_assoc_group_new(
 		DBG_WARNING("Out of association groups!\n");
 		return NULL;
 	}
-	assoc_group->id = (worker_index << 24) + id;
+	assoc_group->id = (((uint32_t)worker_index) << 16) | id;
 	assoc_group->transport = transport;
 	assoc_group->dce_ctx = dce_ctx;
 
@@ -698,10 +703,10 @@ static NTSTATUS rpc_worker_assoc_group_find(
 	uint32_t assoc_group_id = call->pkt.u.bind.assoc_group_id;
 
 	if (assoc_group_id != 0) {
-		uint8_t worker_index = (assoc_group_id & 0xff000000) >> 24;
+		uint16_t worker_index = (assoc_group_id & 0xffff0000) >> 16;
 		if (worker_index != w->status.worker_index) {
-			DBG_DEBUG("Wrong worker id %"PRIu8", "
-				  "expected %"PRIu8"\n",
+			DBG_DEBUG("Wrong worker id %"PRIu16", "
+				  "expected %"PRIu32"\n",
 				  worker_index,
 				  w->status.worker_index);
 			return NT_STATUS_NOT_FOUND;
@@ -801,7 +806,7 @@ static struct tevent_req *rpc_worker_send(
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
 	}
-	if ((worker_index < 0) || ((unsigned)worker_index > UINT32_MAX)) {
+	if ((worker_index < 0) || ((unsigned)worker_index > UINT16_MAX)) {
 		DBG_ERR("Invalid worker index %d\n", worker_index);
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);

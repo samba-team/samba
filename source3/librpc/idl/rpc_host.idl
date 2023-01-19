@@ -65,6 +65,10 @@ interface rpc_host_msg
 
 		/**
 		 * @brief Which of the processes of a helper prog is this from
+		 *
+		 * @note while this is uint32, we currently only support 16-bit
+		 * values, as we use it in the high 16-bits of the 32-bit
+		 * association group id.
 		 */
 		uint32 worker_index;
 
