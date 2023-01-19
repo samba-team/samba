@@ -90,6 +90,22 @@ which forces the trust account password to be changed at a specified domain
 controller. If the specified domain controller cannot be contacted the
 password change fails rather than trying other DCs.
 
+New option to change the NT ACL default location
+------------------------------------------------
+
+Usually the NT ACLs are stored in the security.NTACL extended
+attribute (xattr) of files and directories. The new
+"acl_xattr:security_acl_name" option allows to redefine the default
+location. The default "security.NTACL" is a protected location, which
+means the content of the security.NTACL attribute is not accessible
+from normal users outside of Samba. When this option is set to use a
+user-defined value, e.g. user.NTACL then any user can potentially
+access and overwrite this information. The module prevents access to
+this xattr over SMB, but the xattr may still be accessed by other
+means (eg local access, SSH, NFS). This option must only be used when
+this consequence is clearly understood and when specific precautions
+are taken to avoid compromising the ACL content.
+
 
 REMOVED FEATURES
 ================
@@ -100,6 +116,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  acl_xattr:security_acl_name             New             security.NTACL
 
 
 KNOWN ISSUES
