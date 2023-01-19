@@ -344,6 +344,11 @@ static NTSTATUS smbXsrv_open_global_parse_record(
 		goto done;
 	}
 
+	DBG_DEBUG("\n");
+	if (CHECK_DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
+	}
+
 	if (global_blob.version != SMBXSRV_VERSION_0) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		DEBUG(1,("Invalid record in smbXsrv_open_global.tdb:"
@@ -376,42 +381,22 @@ static NTSTATUS smbXsrv_open_global_verify_record(
 	TALLOC_CTX *mem_ctx,
 	struct smbXsrv_open_global0 **_global0)
 {
-	DATA_BLOB blob = { .data = val.dptr, .length = val.dsize, };
-	struct smbXsrv_open_globalB global_blob;
-	enum ndr_err_code ndr_err;
 	struct smbXsrv_open_global0 *global0 = NULL;
 	struct server_id_buf buf;
+	NTSTATUS status;
 
 	if (val.dsize == 0) {
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	ndr_err = ndr_pull_struct_blob(
-		&blob,
-		mem_ctx,
-		&global_blob,
-		(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_open_globalB);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_WARNING("key '%s' ndr_pull_struct_blob - %s\n",
+	status = smbXsrv_open_global_parse_record(mem_ctx, key, val, &global0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("smbXsrv_open_global_parse_record for %s failed: "
+			    "%s\n",
 			    tdb_data_dbg(key),
-			    ndr_map_error2string(ndr_err));
-		return ndr_map_error2ntstatus(ndr_err);
+			    nt_errstr(status));
+		return status;
 	}
-
-	DBG_DEBUG("\n");
-	if (CHECK_DEBUGLVL(10)) {
-		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
-	}
-
-	if (global_blob.version != SMBXSRV_VERSION_0) {
-		DBG_ERR("key '%s' use unsupported version %u\n",
-			tdb_data_dbg(key),
-			global_blob.version);
-		NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	global0 = global_blob.info.info0;
 	*_global0 = global0;
 
 	if (server_id_is_disconnected(&global0->server_id)) {
