@@ -65,6 +65,14 @@ already used it, the defaults have changed slightly.
    set it overrides --color for the purpose of the output diagram, but
    not for other output like error messages.
 
+New samba-tool dsacl subcommand for deleting ACES
+-------------------------------------------------
+
+The samba-tool dsacl tool can now delete entries in directory access
+control lists. The interface for 'samba-tool dsacl delete' is similar
+to that of 'samba-tool dsacl set', with the difference being that the
+ACEs described by the --sddl argument are deleted rather than added.
+
 No colour with NO_COLOR environment variable
 --------------------------------------------
 
