@@ -323,11 +323,10 @@ static NTSTATUS smbXsrv_open_global_allocate(
 
 static NTSTATUS smbXsrv_open_global_parse_record(
 	TALLOC_CTX *mem_ctx,
-	struct db_record *rec,
+	TDB_DATA key,
+	TDB_DATA val,
 	struct smbXsrv_open_global0 **global)
 {
-	TDB_DATA key = dbwrap_record_get_key(rec);
-	TDB_DATA val = dbwrap_record_get_value(rec);
 	DATA_BLOB blob = data_blob_const(val.dptr, val.dsize);
 	struct smbXsrv_open_globalB global_blob;
 	enum ndr_err_code ndr_err;
@@ -1325,10 +1324,13 @@ static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
 	struct smbXsrv_open_global_traverse_state *state =
 		(struct smbXsrv_open_global_traverse_state*)data;
 	struct smbXsrv_open_global0 *global = NULL;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	TDB_DATA val = dbwrap_record_get_value(rec);
 	NTSTATUS status;
 	int ret = -1;
 
-	status = smbXsrv_open_global_parse_record(talloc_tos(), rec, &global);
+	status = smbXsrv_open_global_parse_record(
+		talloc_tos(), key, val, &global);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -1374,7 +1376,7 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smbXsrv_open_global0 *op = NULL;
-	TDB_DATA val;
+	TDB_DATA key, val;
 	struct db_record *rec;
 	bool delete_open = false;
 	uint32_t global_id = persistent_id & UINT32_MAX;
@@ -1387,7 +1389,9 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 		goto done;
 	}
 
+	key = dbwrap_record_get_key(rec);
 	val = dbwrap_record_get_value(rec);
+
 	if (val.dsize == 0) {
 		DEBUG(10, ("smbXsrv_open_cleanup[global: 0x%08x] "
 			  "empty record in %s, skipping...\n",
@@ -1395,7 +1399,8 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 		goto done;
 	}
 
-	status = smbXsrv_open_global_parse_record(talloc_tos(), rec, &op);
+	status = smbXsrv_open_global_parse_record(
+		talloc_tos(), key, val, &op);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("smbXsrv_open_cleanup[global: 0x%08x] "
 			  "failed to read record: %s\n",
