@@ -398,7 +398,7 @@ WriteMakefile(
 
     if section:
         man = Utils.readf(os.path.join(bdir,'Makefile'))
-        m = re.search('MAN%sEXT\s+=\s+(\w+)' % section, man)
+        m = re.search(r'MAN%sEXT\s+=\s+(\w+)' % section, man)
         if not m:
             conf.end_msg('not found', color='YELLOW')
             return

@@ -237,10 +237,10 @@ def TO_LIST(str, delimiter=None):
 
 def subst_vars_error(string, env):
     '''substitute vars, throw an error if a variable is not defined'''
-    lst = re.split('(\$\{\w+\})', string)
+    lst = re.split(r'(\$\{\w+\})', string)
     out = []
     for v in lst:
-        if re.match('\$\{\w+\}', v):
+        if re.match(r'\$\{\w+\}', v):
             vname = v[2:-1]
             if not vname in env:
                 raise KeyError("Failed to find variable %s in %s in env %s <%s>" % (vname, string, env.__class__, str(env)))

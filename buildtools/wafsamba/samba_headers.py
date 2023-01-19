@@ -19,7 +19,7 @@ def header_install_path(header, header_path):
     return ''
 
 
-re_header = re.compile('^\s*#\s*include[ \t]*"([^"]+)"', re.I | re.M)
+re_header = re.compile(r'^\s*#\s*include[ \t]*"([^"]+)"', re.I | re.M)
 
 # a dictionary mapping source header paths to public header paths
 header_map = {}

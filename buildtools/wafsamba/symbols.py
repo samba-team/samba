@@ -119,9 +119,9 @@ def find_ldd_path(bld, libname, binary):
 
 
 # some regular expressions for parsing readelf output
-re_sharedlib = re.compile(b'Shared library: \[(.*)\]')
+re_sharedlib = re.compile(rb'Shared library: \[(.*)\]')
 # output from readelf could be `Library rpath` or `Libray runpath`
-re_rpath     = re.compile(b'Library (rpath|runpath): \[(.*)\]')
+re_rpath     = re.compile(rb'Library (rpath|runpath): \[(.*)\]')
 
 def get_libs(bld, binname):
     '''find the list of linked libraries for any binary or library

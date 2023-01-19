@@ -9,12 +9,12 @@ def subst_at_vars(task):
 
     s = task.inputs[0].read()
     # split on the vars
-    a = re.split('(@\w+@)', s)
+    a = re.split(r'(@\w+@)', s)
     out = []
     done_var = {}
     back_sub = [ ('PREFIX', '${prefix}'), ('EXEC_PREFIX', '${exec_prefix}')]
     for v in a:
-        if re.match('@\w+@', v):
+        if re.match(r'@\w+@', v):
             vname = v[1:-1]
             if not vname in task.env and vname.upper() in task.env:
                 vname = vname.upper()

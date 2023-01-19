@@ -21,16 +21,16 @@ version_key = lambda x: list(map(int, x.split(".")))
 def normalise_signature(sig):
     '''normalise a signature from gdb'''
     sig = sig.strip()
-    sig = re.sub('^\$[0-9]+\s=\s\{(.+)\}$', r'\1', sig)
-    sig = re.sub('^\$[0-9]+\s=\s\{(.+)\}(\s0x[0-9a-f]+\s<\w+>)+$', r'\1', sig)
-    sig = re.sub('^\$[0-9]+\s=\s(0x[0-9a-f]+)\s?(<\w+>)?$', r'\1', sig)
-    sig = re.sub('0x[0-9a-f]+', '0xXXXX', sig)
+    sig = re.sub(r'^\$[0-9]+\s=\s\{(.+)\}$', r'\1', sig)
+    sig = re.sub(r'^\$[0-9]+\s=\s\{(.+)\}(\s0x[0-9a-f]+\s<\w+>)+$', r'\1', sig)
+    sig = re.sub(r'^\$[0-9]+\s=\s(0x[0-9a-f]+)\s?(<\w+>)?$', r'\1', sig)
+    sig = re.sub(r'0x[0-9a-f]+', '0xXXXX', sig)
     sig = re.sub('", <incomplete sequence (\\\\[a-z0-9]+)>', r'\1"', sig)
 
     for t in abi_type_maps:
         # we need to cope with non-word characters in mapped types
         m = t
-        m = m.replace('*', '\*')
+        m = m.replace('*', r'\*')
         if m[-1].isalnum() or m[-1] == '_':
             m += '\\b'
         if m[0].isalnum() or m[0] == '_':
@@ -41,7 +41,7 @@ def normalise_signature(sig):
 
 def normalise_varargs(sig):
     '''cope with older versions of gdb'''
-    sig = re.sub(',\s\.\.\.', '', sig)
+    sig = re.sub(r',\s\.\.\.', '', sig)
     return sig
 
 
