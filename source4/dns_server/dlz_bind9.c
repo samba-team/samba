@@ -727,6 +727,11 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		}
 
 		if (!file_exist(state->options.url)) {
+			dlz_bind9_state->log(ISC_LOG_ERROR,
+					     "samba_dlz: dlz_create could not find '%s'; "
+					     "trying old location '%s/dns/sam.ldb' instead",
+					     state->options.url,
+					     lpcfg_private_dir(state->lp));
 			state->options.url = talloc_asprintf(state,
 							     "%s/dns/sam.ldb",
 							     lpcfg_private_dir(state->lp));
