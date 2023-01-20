@@ -572,7 +572,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 	/*
 	 * The "waiter" child.
 	 */
-	process_set_title("tfork waiter", "tfork waiter proces");
+	process_set_title("tfork waiter", "tfork waiter process");
 
 	CatchSignal(SIGCHLD, SIG_DFL);
 

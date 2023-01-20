@@ -2918,7 +2918,7 @@ done:
  * test SEC_FLAG_MAXIMUM_ALLOWED with not-granted access
  *
  * When access_mask contains SEC_FLAG_MAXIMUM_ALLOWED, the server must still
- * proces other bits from access_mask. Eg if access_mask contains a right that
+ * process other bits from access_mask. Eg if access_mask contains a right that
  * the requester doesn't have, the function must validate that against the
  * effective permissions.
  */

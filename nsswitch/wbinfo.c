@@ -2551,7 +2551,7 @@ int main(int argc, const char **argv, char **envp)
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &string_arg,
 			.val        = OPT_CHANGE_SECRET_AT,
-			.descrip    = "Change shared secret at Domain Controler" },
+			.descrip    = "Change shared secret at Domain Controller" },
 		{
 			.longName   = "ping-dc",
 			.shortName  = 'P',

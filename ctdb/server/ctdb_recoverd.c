@@ -395,7 +395,7 @@ static void ctdb_set_culprit_count(struct ctdb_recoverd *rec,
 				   struct ctdb_banning_state,
 				   len);
 		if (t == NULL) {
-			DBG_WARNING("Memory allocation errror");
+			DBG_WARNING("Memory allocation error");
 			return;
 		}
 		rec->banning_state = t;

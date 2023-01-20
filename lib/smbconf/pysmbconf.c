@@ -747,7 +747,7 @@ PyDoc_STRVAR(py_smbconf_doc,
 "types. Future, write based functions need a writable backend (registry).\n"
 "\n"
 "Note that the registry backend will be provided by a different\n"
-"library module from the source3 tree (implemenation TBD).\n");
+"library module from the source3 tree (implementation TBD).\n");
 
 static struct PyModuleDef moduledef = {
 	PyModuleDef_HEAD_INIT,
