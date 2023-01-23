@@ -1402,7 +1402,9 @@ plantestsuite("samba3.blackbox.chdir-cache", "simpleserver:local",
                os.path.join(bindir(), "smbclient"),
                os.path.join(bindir(), "smbcontrol"),
                '$SERVER_IP',
-               "error_inject"])
+               "error_inject",
+               '$PREFIX',
+               'simpleserver'])
 
 plantestsuite("samba3.blackbox.netfileenum", "simpleserver:local",
               [os.path.join(samba3srcdir,
