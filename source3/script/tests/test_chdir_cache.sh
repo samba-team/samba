@@ -9,7 +9,7 @@
 
 if [ $# -lt 5 ]; then
 	echo Usage: test_chdir_user.sh \
-		--configfile=SERVERCONFFILE SMBCLIENT SMBCONTROL SERVER SHARE
+		--configfile=SERVERCONFFILE SMBCLIENT SMBCONTROL SERVER SHARE PREFIX TESTENV
 	exit 1
 fi
 
@@ -23,14 +23,18 @@ SERVER=$1
 shift 1
 SHARE=$1
 shift 1
+PREFIX=${1}
+shift 1
+TESTENV=${1}
+shift 1
+
+PREFIX_ABS="$(readlink -f "${PREFIX}")"
 
 # Do not let deprecated option warnings muck this up
 SAMBA_DEPRECATED_SUPPRESS=1
 export SAMBA_DEPRECATED_SUPPRESS
 
 conf_dir=$(dirname ${SERVERCONFFILE})
-
-log_file=${conf_dir}/../smbd_test.log
 
 error_inject_conf=${conf_dir}/error_inject.conf
 rm -f ${error_inject_conf}
@@ -51,6 +55,12 @@ export CLI_FORCE_INTERACTIVE
 ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} -U${USER}%${PASSWORD} \
 	<smbclient-stdin >smbclient-stdout 2>smbclient-stderr &
 CLIENT_PID=$!
+
+log_file="${PREFIX_ABS}/${TESTENV}/smbd_test.log"
+# Add support for "SMBD_DONT_LOG_STDOUT=1"
+if [ -r "${PREFIX_ABS}/${TESTENV}/logs/log.smbd" ]; then
+	log_file="${PREFIX_ABS}/${TESTENV}/logs/log.smbd"
+fi
 
 # Count the number of chdir_current_service: vfs_ChDir.*failed: Permission denied
 # errors that are already in the log (should be zero).
