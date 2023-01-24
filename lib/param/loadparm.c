@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Parameter loading functions
    Copyright (C) Karl Auer 1993-1998
@@ -2146,7 +2146,7 @@ void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_OCTAL: {
-			int val = *(int *)ptr; 
+			int val = *(int *)ptr;
 			if (val == -1) {
 				fprintf(f, "-1");
 			} else {
@@ -3199,7 +3199,7 @@ struct loadparm_context *loadparm_init_global(bool load_default)
 /**
  * Initialise the global parameter structure.
  */
-struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx, 
+struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx,
 					  const struct loadparm_s3_helpers *s3_fns)
 {
 	struct loadparm_context *loadparm_context = talloc_zero(mem_ctx, struct loadparm_context);
@@ -3227,7 +3227,7 @@ const char *lp_default_path(void)
 }
 
 /**
- * Update the internal state of a loadparm context after settings 
+ * Update the internal state of a loadparm context after settings
  * have changed.
  */
 static bool lpcfg_update(struct loadparm_context *lp_ctx)
@@ -3273,7 +3273,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 			   lp_ctx->globals->syslog,
 			   lp_ctx->globals->syslog_only);
 
-	/* FIXME: This is a bit of a hack, but we can't use a global, since 
+	/* FIXME: This is a bit of a hack, but we can't use a global, since
 	 * not everything that uses lp also uses the socket library */
 	if (lpcfg_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {
 		setenv("SOCKET_TESTNONBLOCK", "1", 1);
@@ -3305,7 +3305,7 @@ bool lpcfg_load_default(struct loadparm_context *lp_ctx)
     path = lp_default_path();
 
     if (!file_exist(path)) {
-	    /* We allow the default smb.conf file to not exist, 
+	    /* We allow the default smb.conf file to not exist,
 	     * basically the equivalent of an empty file. */
 	    return lpcfg_update(lp_ctx);
     }
