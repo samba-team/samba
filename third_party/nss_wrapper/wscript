@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.13"
+VERSION="1.1.15"
 
 def configure(conf):
     if conf.CHECK_NSS_WRAPPER():
@@ -90,7 +90,7 @@ def build(bld):
         # Using private_library=True will add symbol version which
         # breaks preloading!
         bld.SAMBA_LIBRARY('nss_wrapper',
-                          source='nss_wrapper.c',
+                          source='nss_wrapper.c nss_utils.c',
                           deps='dl pthread',
                           install=False,
                           realname='libnss-wrapper.so')

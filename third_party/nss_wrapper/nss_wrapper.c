@@ -54,12 +54,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <limits.h>
 
 #include <netinet/in.h>
 
 #include <search.h>
 #include <assert.h>
 
+#include "nss_utils.h"
 /*
  * Defining _POSIX_PTHREAD_SEMANTICS before including pwd.h and grp.h  gives us
  * the posix getpwnam_r(), getpwuid_r(), getgrnam_r and getgrgid_r calls on
@@ -176,6 +178,9 @@ typedef nss_status_t NSS_STATUS;
 #else
 #define NWRAP_INET_ADDRSTRLEN INET_ADDRSTRLEN
 #endif
+
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
 
 static bool nwrap_initialized = false;
 static pthread_mutex_t nwrap_initialized_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -516,7 +521,7 @@ typedef NSS_STATUS (*__nss_getpwent_r)(struct passwd *result,
 				       size_t buflen,
 				       int *errnop);
 typedef NSS_STATUS (*__nss_endpwent)(void);
-typedef NSS_STATUS (*__nss_initgroups)(const char *user,
+typedef NSS_STATUS (*__nss_initgroups_dyn)(const char *user,
 				       gid_t group,
 				       long int *start,
 				       long int *size,
@@ -568,7 +573,7 @@ struct nwrap_nss_module_symbols {
 	NWRAP_NSS_MODULE_SYMBOL_ENTRY(getpwent_r);
 	NWRAP_NSS_MODULE_SYMBOL_ENTRY(endpwent);
 
-	NWRAP_NSS_MODULE_SYMBOL_ENTRY(initgroups);
+	NWRAP_NSS_MODULE_SYMBOL_ENTRY(initgroups_dyn);
 	NWRAP_NSS_MODULE_SYMBOL_ENTRY(getgrnam_r);
 	NWRAP_NSS_MODULE_SYMBOL_ENTRY(getgrgid_r);
 	NWRAP_NSS_MODULE_SYMBOL_ENTRY(setgrent);
@@ -606,8 +611,14 @@ struct nwrap_ops {
 					 struct passwd *pwdst, char *buf,
 					 size_t buflen, struct passwd **pwdstp);
 	void		(*nw_endpwent)(struct nwrap_backend *b);
-	int		(*nw_initgroups)(struct nwrap_backend *b,
-					 const char *user, gid_t group);
+	int		(*nw_initgroups_dyn)(struct nwrap_backend *b,
+					     const char *user,
+					     gid_t group,
+					     long int *start,
+					     long int *size,
+					     gid_t **groups,
+					     long int limit,
+					     int *errnop);
 	struct group *	(*nw_getgrnam)(struct nwrap_backend *b,
 				       const char *name);
 	int		(*nw_getgrnam_r)(struct nwrap_backend *b,
@@ -663,8 +674,14 @@ static int nwrap_files_getpwent_r(struct nwrap_backend *b,
 				  struct passwd *pwdst, char *buf,
 				  size_t buflen, struct passwd **pwdstp);
 static void nwrap_files_endpwent(struct nwrap_backend *b);
-static int nwrap_files_initgroups(struct nwrap_backend *b,
-				  const char *user, gid_t group);
+static int nwrap_files_initgroups_dyn(struct nwrap_backend *b,
+				      const char *user,
+				      gid_t group,
+				      long int *start,
+				      long int *size,
+				      gid_t **groups,
+				      long int limit,
+				      int *errnop);
 static struct group *nwrap_files_getgrnam(struct nwrap_backend *b,
 					  const char *name);
 static int nwrap_files_getgrnam_r(struct nwrap_backend *b,
@@ -730,8 +747,14 @@ static int nwrap_module_getgrgid_r(struct nwrap_backend *b,
 				   char *buf, size_t buflen, struct group **grdstp);
 static void nwrap_module_setgrent(struct nwrap_backend *b);
 static void nwrap_module_endgrent(struct nwrap_backend *b);
-static int nwrap_module_initgroups(struct nwrap_backend *b,
-				   const char *user, gid_t group);
+static int nwrap_module_initgroups_dyn(struct nwrap_backend *b,
+				       const char *user,
+				       gid_t group,
+				       long int *start,
+				       long int *size,
+				       gid_t **groups,
+				       long int limit,
+				       int *errnop);
 static struct hostent *nwrap_module_gethostbyaddr(struct nwrap_backend *b,
 						  const void *addr,
 						  socklen_t len, int type);
@@ -754,7 +777,7 @@ struct nwrap_ops nwrap_files_ops = {
 	.nw_getpwent	= nwrap_files_getpwent,
 	.nw_getpwent_r	= nwrap_files_getpwent_r,
 	.nw_endpwent	= nwrap_files_endpwent,
-	.nw_initgroups	= nwrap_files_initgroups,
+	.nw_initgroups_dyn	= nwrap_files_initgroups_dyn,
 	.nw_getgrnam	= nwrap_files_getgrnam,
 	.nw_getgrnam_r	= nwrap_files_getgrnam_r,
 	.nw_getgrgid	= nwrap_files_getgrgid,
@@ -780,7 +803,7 @@ struct nwrap_ops nwrap_module_ops = {
 	.nw_getpwent	= nwrap_module_getpwent,
 	.nw_getpwent_r	= nwrap_module_getpwent_r,
 	.nw_endpwent	= nwrap_module_endpwent,
-	.nw_initgroups	= nwrap_module_initgroups,
+	.nw_initgroups_dyn	= nwrap_module_initgroups_dyn,
 	.nw_getgrnam	= nwrap_module_getgrnam,
 	.nw_getgrnam_r	= nwrap_module_getgrnam_r,
 	.nw_getgrgid	= nwrap_module_getgrgid,
@@ -819,6 +842,14 @@ static int nwrap_convert_he_ai(const struct hostent *he,
 			       const struct addrinfo *hints,
 			       struct addrinfo **pai,
 			       bool skip_canonname);
+
+#ifdef HAVE_GETGROUPLIST
+static int nwrap_getgrouplist(const char *user,
+			      gid_t group,
+			      long int *size,
+			      gid_t **groupsp,
+			      long int limit);
+#endif
 
 /*
  * VECTORS
@@ -1826,7 +1857,7 @@ nwrap_bind_nss_module_symbols(struct nwrap_backend *b)
 	nwrap_nss_module_bind_symbol(setpwent);
 	nwrap_nss_module_bind_symbol(getpwent_r);
 	nwrap_nss_module_bind_symbol(endpwent);
-	nwrap_nss_module_bind_symbol2(initgroups, initgroups_dyn);
+	nwrap_nss_module_bind_symbol(initgroups_dyn);
 	nwrap_nss_module_bind_symbol(getgrnam_r);
 	nwrap_nss_module_bind_symbol(getgrgid_r);
 	nwrap_nss_module_bind_symbol(setgrent);
@@ -2983,93 +3014,6 @@ static void nwrap_gr_unload(struct nwrap_cache *nwrap)
 	nwrap_gr->idx = 0;
 }
 
-static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
-			   char *buf, size_t buflen, struct group **dstp)
-{
-	char *p = NULL;
-	uintptr_t align = 0;
-	unsigned int gr_mem_cnt = 0;
-	unsigned i;
-	size_t total_len;
-	size_t gr_name_len = strlen(src->gr_name) + 1;
-	size_t gr_passwd_len = strlen(src->gr_passwd) + 1;
-	union {
-		char *ptr;
-		char **data;
-	} g_mem;
-
-	for (i = 0; src->gr_mem[i] != NULL; i++) {
-		gr_mem_cnt++;
-	}
-
-	/* Align the memory for storing pointers */
-	align = __alignof__(char *) - ((p - (char *)0) % __alignof__(char *));
-	total_len = align +
-		    (1 + gr_mem_cnt) * sizeof(char *) +
-		    gr_name_len + gr_passwd_len;
-
-	if (total_len > buflen) {
-		errno = ERANGE;
-		return -1;
-	}
-	buflen -= total_len;
-
-	/* gr_mem */
-	p = buf + align;
-	g_mem.ptr = p;
-	dst->gr_mem = g_mem.data;
-
-	/* gr_name */
-	p += (1 + gr_mem_cnt) * sizeof(char *);
-	dst->gr_name = p;
-
-	/* gr_passwd */
-	p += gr_name_len;
-	dst->gr_passwd = p;
-
-	/* gr_mem[x] */
-	p += gr_passwd_len;
-
-	/* gr_gid */
-	dst->gr_gid = src->gr_gid;
-
-	memcpy(dst->gr_name, src->gr_name, gr_name_len);
-
-	memcpy(dst->gr_passwd, src->gr_passwd, gr_passwd_len);
-
-	/* Set the terminating entry */
-	dst->gr_mem[gr_mem_cnt] = NULL;
-
-	/* Now add the group members content */
-	total_len = 0;
-	for (i = 0; i < gr_mem_cnt; i++) {
-		size_t len = strlen(src->gr_mem[i]) + 1;
-
-		dst->gr_mem[i] = p;
-		total_len += len;
-		p += len;
-	}
-
-	if (total_len > buflen) {
-		errno = ERANGE;
-		return -1;
-	}
-
-	for (i = 0; i < gr_mem_cnt; i++) {
-		size_t len = strlen(src->gr_mem[i]) + 1;
-
-		memcpy(dst->gr_mem[i],
-		       src->gr_mem[i],
-		       len);
-	}
-
-	if (dstp != NULL) {
-		*dstp = dst;
-	}
-
-	return 0;
-}
-
 static struct nwrap_entlist *nwrap_entlist_init(struct nwrap_entdata *ed)
 {
 	struct nwrap_entlist *el;
@@ -3691,27 +3635,21 @@ static struct spwd *nwrap_files_getspnam(const char *name)
 #endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 /* misc functions */
-static int nwrap_files_initgroups(struct nwrap_backend *b,
-				  const char *user,
-				  gid_t group)
+static int nwrap_files_initgroups_dyn(struct nwrap_backend *b,
+				      const char *user,
+				      gid_t group,
+				      long int *start,
+				      long int *size,
+				      gid_t **groups,
+				      long int limit,
+				      int *errnop)
 {
 	struct group *grp;
-	gid_t *groups;
-	int size = 1;
-	int rc;
+	int i = 0;
 
-	groups = (gid_t *)malloc(size * sizeof(gid_t));
-	if (groups == NULL) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "Out of memory");
-		errno = ENOMEM;
-		return -1;
-	}
-	groups[0] = group;
-
+	(void)errnop; /* unused */
 	nwrap_files_setgrent(b);
 	while ((grp = nwrap_files_getgrent(b)) != NULL) {
-		int i = 0;
-
 		NWRAP_LOG(NWRAP_LOG_DEBUG,
 			  "Inspecting %s for group membership",
 			  grp->gr_name);
@@ -3724,33 +3662,31 @@ static int nwrap_files_initgroups(struct nwrap_backend *b,
 					  user,
 					  grp->gr_name);
 
-				groups = (gid_t *)realloc(groups,
-							  (size + 1) * sizeof(gid_t));
-				if (groups == NULL) {
-					NWRAP_LOG(NWRAP_LOG_ERROR,
-						  "Out of memory");
-					errno = ENOMEM;
-					return -1;
-				}
+				if (*start == *size) {
+					long int newsize;
+					gid_t *newgroups;
 
-				groups[size] = grp->gr_gid;
-				size++;
+					newsize = 2 * (*size);
+					if (limit > 0 && newsize > limit) {
+						newsize = MAX(limit, *size);
+					}
+					newgroups = (gid_t *) realloc((*groups),
+							newsize * sizeof(**groups));
+					if (!newgroups) {
+						errno = ENOMEM;
+						return -1;
+					}
+					*groups = newgroups;
+					*size = newsize;
+				}
+				(*groups)[*start] = grp->gr_gid;
+				(*start)++;
 			}
 		}
 	}
 
 	nwrap_files_endgrent(b);
-
-	NWRAP_LOG(NWRAP_LOG_DEBUG,
-		  "%s is member of %d groups",
-		  user, size);
-
-	/* This really only works if uid_wrapper is loaded */
-	rc = setgroups(size, groups);
-
-	free(groups);
-
-	return rc;
+	return *start;
 }
 
 /* group functions */
@@ -4587,24 +4523,26 @@ static void nwrap_module_endpwent(struct nwrap_backend *b)
 	b->symbols->_nss_endpwent.f();
 }
 
-static int nwrap_module_initgroups(struct nwrap_backend *b,
-				   const char *user, gid_t group)
+static int nwrap_module_initgroups_dyn(struct nwrap_backend *b,
+				       const char *user,
+				       gid_t group,
+				       long int *start,
+				       long int *size,
+				       gid_t **groups,
+				       long int limit,
+				       int *errnop)
 {
-	gid_t *groups;
-	long int start;
-	long int size;
-
-	if (b->symbols->_nss_initgroups.f == NULL) {
+	if (b->symbols->_nss_initgroups_dyn.f == NULL) {
 		return NSS_STATUS_UNAVAIL;
 	}
 
-	return b->symbols->_nss_initgroups.f(user,
+	return b->symbols->_nss_initgroups_dyn.f(user,
 					     group,
-					     &start,
-					     &size,
-					     &groups,
-					     0,
-					     &errno);
+					     start,
+					     size,
+					     groups,
+					     limit,
+					     errnop);
 }
 
 static struct group *nwrap_module_getgrnam(struct nwrap_backend *b,
@@ -5305,20 +5243,49 @@ void endpwent(void)
 
 static int nwrap_initgroups(const char *user, gid_t group)
 {
-	size_t i;
+#if defined(NGROUPS_MAX) && NGROUPS_MAX == 0
+	/* No extra groups allowed.  */
+	return 0;
+#elif !defined(HAVE_GETGROUPLIST)
+	return 0;
+#else
+	long int size;
+	long int limit;
+	gid_t *groups;
+	int ngroups;
+	int result;
+	const char *env = getenv("UID_WRAPPER");
 
-	for (i=0; i < nwrap_main_global->num_backends; i++) {
-		struct nwrap_backend *b = &nwrap_main_global->backends[i];
-		int rc;
-
-		rc = b->ops->nw_initgroups(b, user, group);
-		if (rc == 0) {
-			return 0;
-		}
+	if (env == NULL || env[0] != '1') {
+		NWRAP_LOG(NWRAP_LOG_WARN,
+			  "initgroups() requires uid_wrapper to work!");
+		return 0;
 	}
 
-	errno = ENOENT;
-	return -1;
+	limit = sysconf(_SC_NGROUPS_MAX);
+	if (limit > 0) {
+		size = MIN(limit, 64);
+	} else {
+		size = 16;
+	}
+
+	groups = (gid_t *)malloc(size * sizeof(gid_t));
+	if (groups == NULL) {
+		/* No more memory.  */
+		return -1;
+	}
+
+	ngroups = nwrap_getgrouplist(user, group, &size, &groups, limit);
+
+	/* Try to set the maximum number of groups the kernel can handle.  */
+	do {
+		result = setgroups(ngroups, groups);
+	} while (result == -1 && errno == EINVAL && --ngroups > 0);
+
+	free(groups);
+
+	return result;
+#endif
 }
 
 int initgroups(const char *user, gid_t group)
@@ -5616,81 +5583,85 @@ void endgrent(void)
  ***************************************************************************/
 
 #ifdef HAVE_GETGROUPLIST
-static int nwrap_getgrouplist(const char *user, gid_t group,
-			      gid_t *groups, int *ngroups)
+static int nwrap_getgrouplist(const char *user,
+			      gid_t group,
+			      long int *size,
+			      gid_t **groupsp,
+			      long int limit)
 {
-	struct group *grp;
-	gid_t *groups_tmp;
-	int count = 1;
+	enum nss_status status = NSS_STATUS_UNAVAIL;
+	/* Start is one, because we have the first group as parameter.  */
+	long int start = 1;
+	size_t i;
 
-	NWRAP_LOG(NWRAP_LOG_DEBUG, "getgrouplist called for %s", user);
+	/* Never store more than the starting *SIZE number of elements.  */
+	assert(*size > 0);
+	(*groupsp)[0] = group;
 
-	groups_tmp = (gid_t *)malloc(count * sizeof(gid_t));
-	if (!groups_tmp) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "Out of memory");
-		errno = ENOMEM;
-		return -1;
-	}
-	groups_tmp[0] = group;
+	for (i = 0; i < nwrap_main_global->num_backends; i++) {
+		struct nwrap_backend *b = &nwrap_main_global->backends[i];
+		long int prev_start = start;
+		long int cnt = prev_start;
 
-	nwrap_setgrent();
-	while ((grp = nwrap_getgrent()) != NULL) {
-		int i = 0;
+		status = b->ops->nw_initgroups_dyn(b,
+						   user,
+						   group,
+						   &start,
+						   size,
+						   groupsp,
+						   limit,
+						   &errno);
 
-		NWRAP_LOG(NWRAP_LOG_DEBUG,
-			  "Inspecting %s for group membership",
-			  grp->gr_name);
+		/* Remove duplicates.  */
+		while (cnt < start) {
+			long int inner;
+			for (inner = 0; inner < prev_start; ++inner)
+				if ((*groupsp)[inner] == (*groupsp)[cnt])
+					break;
 
-		for (i=0; grp->gr_mem && grp->gr_mem[i] != NULL; i++) {
-
-			if (group != grp->gr_gid &&
-			    (strcmp(user, grp->gr_mem[i]) == 0)) {
-
-				NWRAP_LOG(NWRAP_LOG_DEBUG,
-					  "%s is member of %s",
-					  user,
-					  grp->gr_name);
-
-				groups_tmp = (gid_t *)realloc(groups_tmp, (count + 1) * sizeof(gid_t));
-				if (!groups_tmp) {
-					NWRAP_LOG(NWRAP_LOG_ERROR,
-						  "Out of memory");
-					errno = ENOMEM;
-					return -1;
-				}
-				groups_tmp[count] = grp->gr_gid;
-
-				count++;
-			}
+			if (inner < prev_start)
+				(*groupsp)[cnt] = (*groupsp)[--start];
+			else
+				++cnt;
 		}
+		NWRAP_LOG(NWRAP_LOG_DEBUG,
+			  "Resource '%s' returned status=%d and increased "
+			  "count of groups to %ld",
+			  b->name,
+			  status,
+			  start);
 	}
-
-	nwrap_endgrent();
-
-	NWRAP_LOG(NWRAP_LOG_DEBUG,
-		  "%s is member of %d groups",
-		  user, *ngroups);
-
-	if (*ngroups < count) {
-		*ngroups = count;
-		free(groups_tmp);
-		return -1;
-	}
-
-	*ngroups = count;
-	memcpy(groups, groups_tmp, count * sizeof(gid_t));
-	free(groups_tmp);
-
-	return count;
+	return start;
 }
 
 int getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
 {
+	long int size;
+	int total, retval;
+	gid_t *newgroups;
+
 	if (!nss_wrapper_enabled()) {
 		return libc_getgrouplist(user, group, groups, ngroups);
 	}
 
-	return nwrap_getgrouplist(user, group, groups, ngroups);
+	size = MAX(1, *ngroups);
+	newgroups = (gid_t *)malloc(size * sizeof(gid_t));
+	if (newgroups == NULL) {
+		return -1;
+	}
+
+	total = nwrap_getgrouplist(user, group, &size, &newgroups, -1);
+
+	if (groups != NULL) {
+		memcpy(groups, newgroups, MIN(*ngroups, total) * sizeof(gid_t));
+	}
+
+	free(newgroups);
+
+	retval = total > *ngroups ? -1 : total;
+	*ngroups = total;
+
+	return retval;
 }
 #endif
 
@@ -6499,13 +6470,25 @@ void nwrap_destructor(void)
 
 		/* libc */
 		if (m->libc != NULL) {
-			if (m->libc->handle != NULL) {
+			if (m->libc->handle != NULL
+#ifdef RTLD_NEXT
+			    && m->libc->handle != RTLD_NEXT
+#endif
+			   ) {
 				dlclose(m->libc->handle);
 			}
-			if (m->libc->nsl_handle != NULL) {
+			if (m->libc->nsl_handle != NULL
+#ifdef RTLD_NEXT
+			    && m->libc->nsl_handle != RTLD_NEXT
+#endif
+			   ) {
 				dlclose(m->libc->nsl_handle);
 			}
-			if (m->libc->sock_handle != NULL) {
+			if (m->libc->sock_handle != NULL
+#ifdef RTLD_NEXT
+			    && m->libc->sock_handle != RTLD_NEXT
+#endif
+			   ) {
 				dlclose(m->libc->sock_handle);
 			}
 			SAFE_FREE(m->libc);
