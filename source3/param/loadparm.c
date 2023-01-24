@@ -79,6 +79,7 @@
 #include "auth/credentials/credentials.h"
 #include "source3/lib/substitute.h"
 #include "source3/librpc/gen_ndr/ads.h"
+#include "lib/util/time_basic.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -2408,8 +2409,15 @@ bool lp_file_list_changed(void)
 				return true;
 			}
 		} else {
-			time_t mod_time;
+			struct timespec mod_time = {
+				.tv_sec = 0,
+			};
+			struct timeval_buf tbuf = {
+				.buf = {0},
+			};
 			char *n2 = NULL;
+			struct stat sb = {0};
+			int rc;
 
 			n2 = talloc_sub_basic(talloc_tos(),
 					      get_current_username(),
@@ -2419,19 +2427,29 @@ bool lp_file_list_changed(void)
 				return false;
 			}
 			DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
-				     f->name, n2, ctime(&f->modtime)));
+				     f->name, n2,
+				     timespec_string_buf(&f->modtime,
+							 true,
+							 &tbuf)));
 
-			mod_time = file_modtime(n2);
+			rc = stat(n2, &sb);
+			if (rc == 0) {
+				mod_time = get_mtimespec(&sb);
+			}
 
-			if (mod_time &&
-			    ((f->modtime != mod_time) ||
+			if (mod_time.tv_sec > 0 &&
+			    ((timespec_compare(&mod_time, &f->modtime) != 0) ||
 			     (f->subfname == NULL) ||
 			     (strcmp(n2, f->subfname) != 0)))
 			{
+				f->modtime = mod_time;
+
 				DEBUGADD(6,
 					 ("file %s modified: %s\n", n2,
-					  ctime(&mod_time)));
-				f->modtime = mod_time;
+					  timespec_string_buf(&f->modtime,
+							      true,
+							      &tbuf)));
+
 				TALLOC_FREE(f->subfname);
 				f->subfname = talloc_strdup(f, n2);
 				if (f->subfname == NULL) {

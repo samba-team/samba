@@ -1009,6 +1009,8 @@ void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
 			     const char *fname, const char *subfname)
 {
 	struct file_lists *f = *list;
+	struct stat sb = {0};
+	int rc;
 
 	while (f) {
 		if (f->name && !strcmp(f->name, fname))
@@ -1017,7 +1019,7 @@ void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
 	}
 
 	if (!f) {
-		f = talloc(mem_ctx, struct file_lists);
+		f = talloc_zero(mem_ctx, struct file_lists);
 		if (!f)
 			goto fail;
 		f->next = *list;
@@ -1032,12 +1034,14 @@ void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
 			goto fail;
 		}
 		*list = f;
-		f->modtime = file_modtime(subfname);
-	} else {
-		time_t t = file_modtime(subfname);
-		if (t)
-			f->modtime = t;
 	}
+
+	rc = stat(subfname, &sb);
+	if (rc != 0) {
+		return;
+	}
+	f->modtime = get_mtimespec(&sb);
+
 	return;
 
 fail:
