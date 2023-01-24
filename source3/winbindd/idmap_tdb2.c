@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    idmap TDB2 backend, used for clustered Samba setups.
@@ -263,7 +263,7 @@ static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map 
 	unsigned long v;
 
 	cmd = talloc_asprintf(ctx, "%s ", ctx->script);
-	NT_STATUS_HAVE_NO_MEMORY(cmd);	
+	NT_STATUS_HAVE_NO_MEMORY(cmd);
 
 	va_start(ap, fmt);
 	cmd = talloc_vasprintf_append(cmd, fmt, ap);
@@ -289,12 +289,12 @@ static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map 
 		map->xid.type = ID_TYPE_UID;
 	} else if (sscanf(line, "GID:%lu", &v) == 1) {
 		map->xid.id   = v;
-		map->xid.type = ID_TYPE_GID;		
+		map->xid.type = ID_TYPE_GID;
 	} else if (strncmp(line, "SID:S-", 6) == 0) {
 		if (!string_to_sid(map->sid, &line[4])) {
 			DEBUG(0,("Bad SID in '%s' from idmap script %s\n",
 				 line, ctx->script));
-			return NT_STATUS_NONE_MAPPED;			
+			return NT_STATUS_NONE_MAPPED;
 		}
 	} else {
 		DEBUG(0,("Bad reply '%s' from idmap script %s\n",
@@ -308,7 +308,7 @@ static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map 
 
 
 /*
-  Single id to sid lookup function. 
+  Single id to sid lookup function.
 */
 static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *map)
 {
@@ -407,7 +407,7 @@ done:
 
 
 /*
- Single sid to id lookup function. 
+ Single sid to id lookup function.
 */
 static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_domain *dom, struct id_map *map)
 {

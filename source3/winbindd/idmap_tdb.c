@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    idmap TDB backend
@@ -376,7 +376,7 @@ done:
 **********************************************************************/
 
 /*****************************
- Initialise idmap database. 
+ Initialise idmap database.
 *****************************/
 
 static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom)
