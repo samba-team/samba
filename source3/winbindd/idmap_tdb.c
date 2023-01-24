@@ -295,7 +295,6 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	char *tdbfile = NULL;
 	struct db_context *db = NULL;
 	int32_t version;
-	bool config_error = false;
 	struct idmap_tdb_common_context *ctx;
 
 	ctx = talloc_get_type(dom->private_data,
@@ -335,13 +334,6 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	}
 
 	if (version != IDMAP_VERSION) {
-		if (config_error) {
-			DEBUG(0,("Upgrade of IDMAP_VERSION from %d to %d is not "
-				 "possible with incomplete configuration\n",
-				 version, IDMAP_VERSION));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
 		if (dbwrap_transaction_start(db) != 0) {
 			DEBUG(0, ("Unable to start upgrade transaction!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
