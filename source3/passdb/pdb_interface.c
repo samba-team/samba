@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett			2002
@@ -62,14 +62,14 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 				  enum lsa_SidType *psid_name_use,
 				  uid_t *uid, gid_t *gid);
 
-NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) 
+NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init)
 {
 	struct pdb_init_function_entry *entry = NULL;
 
 	if(version != PASSDB_INTERFACE_VERSION) {
 		DEBUG(0,("Can't register passdb backend!\n"
 			 "You tried to register a passdb module with PASSDB_INTERFACE_VERSION %d, "
-			 "while this version of samba uses version %d\n", 
+			 "while this version of samba uses version %d\n",
 			 version,PASSDB_INTERFACE_VERSION));
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
@@ -159,7 +159,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 	entry = pdb_find_backend_entry(module_name);
 
 	/* Try to find a module that contains this module */
-	if (!entry) { 
+	if (!entry) {
 		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
 		if(NT_STATUS_IS_OK(smb_probe_module("pdb", module_name)) && !(entry = pdb_find_backend_entry(module_name))) {
 			DEBUG(0,("Plugin is available, but doesn't register passdb backend %s\n", module_name));
@@ -169,7 +169,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 	}
 
 	/* No such backend found */
-	if(!entry) { 
+	if(!entry) {
 		DEBUG(0,("No builtin nor plugin backend for %s found\n", module_name));
 		SAFE_FREE(module_name);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -179,7 +179,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 
 	nt_status = entry->init(methods, module_location);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", 
+		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n",
 			selected, nt_errstr(nt_status)));
 		SAFE_FREE(module_name);
 		return nt_status;
@@ -196,7 +196,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
  Return an already initialized pdb_methods structure
 *******************************************************************/
 
-static struct pdb_methods *pdb_get_methods_reload( bool reload ) 
+static struct pdb_methods *pdb_get_methods_reload( bool reload )
 {
 	static struct pdb_methods *pdb = NULL;
 	const char *backend = lp_passdb_backend();
@@ -329,7 +329,7 @@ static bool pdb_try_account_unlock(struct samu *sampass)
  *
  * @return               True on success, false on error.
  */
-bool pdb_getsampwnam(struct samu *sam_acct, const char *username) 
+bool pdb_getsampwnam(struct samu *sam_acct, const char *username)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	struct samu *for_cache;
@@ -378,7 +378,7 @@ static bool guest_user_info( struct samu *user )
 
 	pwd = Get_Pwnam_alloc(talloc_tos(), guestname);
 	if (pwd == NULL) {
-		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n", 
+		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n",
 			guestname));
 		return False;
 	}
@@ -479,7 +479,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 			return NT_STATUS_NO_SUCH_USER;
 		}
 
-		/* lowercase the username before creating the Unix account for 
+		/* lowercase the username before creating the Unix account for
 		   compatibility with previous Samba releases */
 		fstrcpy( name2, name );
 		if (!strlower_m( name2 )) {
@@ -608,7 +608,7 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	 * the unix side
 	 */
 
-	/* always lower case the username before handing it off to 
+	/* always lower case the username before handing it off to
 	   external scripts */
 
 	fstrcpy( username, pdb_get_username(sam_acct) );
@@ -666,13 +666,13 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 	return status;
 }
 
-NTSTATUS pdb_add_sam_account(struct samu *sam_acct) 
+NTSTATUS pdb_add_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->add_sam_account(pdb, sam_acct);
 }
 
-NTSTATUS pdb_update_sam_account(struct samu *sam_acct) 
+NTSTATUS pdb_update_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 
@@ -681,7 +681,7 @@ NTSTATUS pdb_update_sam_account(struct samu *sam_acct)
 	return pdb->update_sam_account(pdb, sam_acct);
 }
 
-NTSTATUS pdb_delete_sam_account(struct samu *sam_acct) 
+NTSTATUS pdb_delete_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	const struct dom_sid *user_sid = pdb_get_user_sid(sam_acct);
@@ -894,7 +894,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 	struct pdb_methods *pdb = pdb_get_methods();
 	NTSTATUS result;
 
-	result = pdb->enum_group_members(pdb, mem_ctx, 
+	result = pdb->enum_group_members(pdb, mem_ctx,
 			sid, pp_member_rids, p_num_members);
 
 	/* special check for rid 513 */
@@ -1029,7 +1029,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
-	/* 
+	/*
 	 * ok, the group exist, the user exist, the user is not in the group,
 	 * we can (finally) add it to the group !
 	 */
@@ -1098,7 +1098,7 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
 
-	/* 
+	/*
 	 * ok, the group exist, the user exist, the user is in the group,
 	 * we can (finally) delete it from the group!
 	 */
@@ -1196,7 +1196,7 @@ bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value)
 	status = pdb->get_account_policy(pdb, type, value);
 	unbecome_root();
 
-	return NT_STATUS_IS_OK(status);	
+	return NT_STATUS_IS_OK(status);
 }
 
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value)
@@ -1217,13 +1217,13 @@ bool pdb_get_seq_num(time_t *seq_num)
 	return NT_STATUS_IS_OK(pdb->get_seq_num(pdb, seq_num));
 }
 
-/* 
+/*
  * Instead of passing down a gid or uid, this function sends down a pointer
- * to a unixid. 
+ * to a unixid.
  *
  * This acts as an in-out variable so that the idmap functions can correctly
  * receive ID_TYPE_BOTH, filling in cache details correctly rather than forcing
- * the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+ * the cache to store ID_TYPE_UID or ID_TYPE_GID.
  */
 bool pdb_id_to_sid(struct unixid *id, struct dom_sid *sid)
 {
@@ -1300,7 +1300,7 @@ bool pdb_new_rid(uint32_t *rid)
 		return False;
 	}
 
-	/* Attempt to get an unused RID (max tires is 250...yes that it is 
+	/* Attempt to get an unused RID (max tires is 250...yes that it is
 	   and arbitrary number I pulkled out of my head).   -- jerry */
 
 	for ( i=0; allocated_rid==0 && i<250; i++ ) {
@@ -1330,7 +1330,7 @@ bool pdb_new_rid(uint32_t *rid)
 }
 
 /***************************************************************
-  Initialize the static context (at smbd startup etc). 
+  Initialize the static context (at smbd startup etc).
 
   If uninitialised, context will auto-init on first use.
  ***************************************************************/
@@ -1619,7 +1619,7 @@ static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, uint
 	struct passwd *pwd;
 	bool winbind_env;
 	bool ret = False;
- 
+
 	*pp_uids = NULL;
 	*p_num = 0;
 
@@ -1844,7 +1844,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 
 	TALLOC_FREE(map);
 
-	/* Windows will always map RID 513 to something.  On a non-domain 
+	/* Windows will always map RID 513 to something.  On a non-domain
 	   controller, this gets mapped to SERVER\None. */
 
 	if (uid || gid) {
@@ -2030,7 +2030,7 @@ static bool pdb_search_grouptype(struct pdb_methods *methods,
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(methods->enum_group_mapping(methods, sid, type, 
+	if (!NT_STATUS_IS_OK(methods->enum_group_mapping(methods, sid, type,
 							 &state->groups, &state->num_groups,
 							 True))) {
 		DEBUG(0, ("Could not enum groups\n"));
@@ -2168,7 +2168,7 @@ bool pdb_get_trusteddom_pw(const char *domain, char** pwd, struct dom_sid *sid,
 			   time_t *pass_last_set_time)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->get_trusteddom_pw(pdb, domain, pwd, sid, 
+	return pdb->get_trusteddom_pw(pdb, domain, pwd, sid,
 			pass_last_set_time);
 }
 
@@ -2200,14 +2200,14 @@ NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 }
 
 /*******************************************************************
- the defaults for trustdom methods: 
+ the defaults for trustdom methods:
  these simply call the original passdb/secrets.c actions,
  to be replaced by pdb_ldap.
  *******************************************************************/
 
 static bool pdb_default_get_trusteddom_pw(struct pdb_methods *methods,
-					  const char *domain, 
-					  char** pwd, 
+					  const char *domain,
+					  char** pwd,
 					  struct dom_sid *sid,
 	        	 		  time_t *pass_last_set_time)
 {
@@ -2225,22 +2225,22 @@ static NTSTATUS pdb_default_get_trusteddom_creds(struct pdb_methods *methods,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static bool pdb_default_set_trusteddom_pw(struct pdb_methods *methods, 
-					  const char* domain, 
+static bool pdb_default_set_trusteddom_pw(struct pdb_methods *methods,
+					  const char* domain,
 					  const char* pwd,
 					  const struct dom_sid *sid)
 {
 	return secrets_store_trusted_domain_password(domain, pwd, sid);
 }
 
-static bool pdb_default_del_trusteddom_pw(struct pdb_methods *methods, 
+static bool pdb_default_del_trusteddom_pw(struct pdb_methods *methods,
 					  const char *domain)
 {
 	return trusted_domain_password_delete(domain);
 }
 
 static NTSTATUS pdb_default_enum_trusteddoms(struct pdb_methods *methods,
-					     TALLOC_CTX *mem_ctx, 
+					     TALLOC_CTX *mem_ctx,
 					     uint32_t *num_domains,
 					     struct trustdom_info ***domains)
 {
@@ -2617,11 +2617,11 @@ static NTSTATUS pdb_default_delete_secret(struct pdb_methods *methods,
 /*******************************************************************
  Create a pdb_methods structure and initialize it with the default
  operations.  In this way a passdb module can simply implement
- the functionality it cares about.  However, normally this is done 
+ the functionality it cares about.  However, normally this is done
  in groups of related functions.
 *******************************************************************/
 
-NTSTATUS make_pdb_method( struct pdb_methods **methods ) 
+NTSTATUS make_pdb_method( struct pdb_methods **methods )
 {
 	/* allocate memory for the structure as its own talloc CTX */
 

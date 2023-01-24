@@ -1,21 +1,21 @@
 /*
- * Unix SMB/CIFS implementation. 
+ * Unix SMB/CIFS implementation.
  * SMB parameters and setup
- * Copyright (C) Andrew Tridgell       1992-1998 
+ * Copyright (C) Andrew Tridgell       1992-1998
  * Modified by Jeremy Allison          1995.
  * Modified by Gerald (Jerry) Carter   2000-2001,2003
  * Modified by Andrew Bartlett         2002.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 3 of the License, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -32,10 +32,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/* 
+/*
    smb_passwd is analogous to sam_passwd used everywhere
    else.  However, smb_passwd is limited to the information
-   stored by an smbpasswd entry 
+   stored by an smbpasswd entry
  */
 
 struct smb_passwd
@@ -82,7 +82,7 @@ static void gotalarm_sig(int signum)
 }
 
 /***************************************************************
- Lock or unlock a fd for a known lock type. Abandon after waitsecs 
+ Lock or unlock a fd for a known lock type. Abandon after waitsecs
  seconds.
 ****************************************************************/
 
@@ -172,7 +172,7 @@ static bool pw_file_unlock(int fd, int *plock_depth)
 
 static void pdb_init_smb(struct smb_passwd *user)
 {
-	if (user == NULL) 
+	if (user == NULL)
 		return;
 	ZERO_STRUCTP (user);
 
@@ -379,7 +379,7 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 	}
 
 	pdb_init_smb(pw_buf);
-	pw_buf->acct_ctrl = ACB_NORMAL;  
+	pw_buf->acct_ctrl = ACB_NORMAL;
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
@@ -423,10 +423,10 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 
 		/*
 		 * The line we have should be of the form :-
-		 * 
+		 *
 		 * username:uid:32hex bytes:[Account type]:LCT-12345678....other flags presently
 		 * ignored....
-		 * 
+		 *
 		 * or,
 		 *
 		 * username:uid:32hex bytes:32hex bytes:[Account type]:LCT-12345678....ignored....
@@ -517,7 +517,7 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 			}
 		}
 
-		/* 
+		/*
 		 * Now check if the NT compatible password is
 		 * available.
 		 */
@@ -560,7 +560,7 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 					}
 					if(i == 8) {
 						/*
-						 * p points at 8 characters of hex digits - 
+						 * p points at 8 characters of hex digits -
 						 * read into a time_t as the seconds since
 						 * 1970 that the password was last changed.
 						 */
@@ -598,7 +598,7 @@ static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
 	char *new_entry;
 	char *p;
 
-	new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 
+	new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 +
 				NEW_PW_FORMAT_SPACE_PADDED_LEN + 1 + 13 + 2;
 
 	if((new_entry = (char *)SMB_MALLOC( new_entry_length )) == NULL) {
@@ -643,7 +643,7 @@ static NTSTATUS add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state,
 	size_t new_entry_length;
 	char *new_entry;
 	off_t offpos;
- 
+
 	/* Open the smbpassword file - for update. */
 	fp = startsmbfilepwent(pfile, PWF_UPDATE, &smbpasswd_state->pw_file_lock_depth);
 
@@ -672,8 +672,8 @@ static NTSTATUS add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state,
 	/* Ok - entry doesn't exist. We can add it */
 
 	/* Create a new smb passwd entry and set it to the given password. */
-	/* 
-	 * The add user write needs to be atomic - so get the fd from 
+	/*
+	 * The add user write needs to be atomic - so get the fd from
 	 * the fp and do a raw write() call.
 	 */
 	fd = fileno(fp);
@@ -696,7 +696,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 	new_entry_length = strlen(new_entry);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("add_smbfilepwd_entry(%d): new_entry_len %d made line |%s|", 
+	DEBUG(100, ("add_smbfilepwd_entry(%d): new_entry_len %d made line |%s|",
 			fd, (int)new_entry_length, new_entry));
 #endif
 
@@ -708,7 +708,7 @@ Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 		/* Remove the entry we just wrote. */
 		if(ftruncate(fd, offpos) == -1) {
 			DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
-Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
+Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 				newpwd->smb_name, strerror(errno)));
 		}
 
@@ -827,10 +827,10 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 
 		/*
 		 * The line we have should be of the form :-
-		 * 
+		 *
 		 * username:uid:[32hex bytes]:....other flags presently
 		 * ignored....
-		 * 
+		 *
 		 * or,
 		 *
 		 * username:uid:[32hex bytes]:[32hex bytes]:[attributes]:LCT-XXXXXXXX:...ignored.
@@ -935,7 +935,7 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 		return False;
 	}
 
-	/* 
+	/*
 	 * Now check if the account info and the password last
 	 * change time is available.
 	 */
@@ -1009,9 +1009,9 @@ This is no longer supported.!\n", pwd->smb_name));
 
 	/* Add on the account info bits and the time of last password change. */
 	if(got_pass_last_set_time) {
-		slprintf(&ascii_p16[strlen(ascii_p16)], 
+		slprintf(&ascii_p16[strlen(ascii_p16)],
 			sizeof(ascii_p16)-(strlen(ascii_p16)+1),
-			"%s:LCT-%08X:", 
+			"%s:LCT-%08X:",
 			encode_bits, (uint32_t)pwd->pass_last_set_time );
 		wr_len = strlen(ascii_p16);
 	}
@@ -1033,7 +1033,7 @@ This is no longer supported.!\n", pwd->smb_name));
 	 * seekpos.
 	 */
 
-	/* The mod user write needs to be atomic - so get the fd from 
+	/* The mod user write needs to be atomic - so get the fd from
 		the fp and do a raw write() call.
 	 */
 
@@ -1060,7 +1060,7 @@ This is no longer supported.!\n", pwd->smb_name));
 		fclose(fp);
 		return False;
 	}
- 
+
 	if (lseek(fd, pwd_seekpos, SEEK_SET) != pwd_seekpos) {
 		DEBUG(0, ("mod_smbfilepwd_entry: seek fail on file %s.\n", pfile));
 		pw_file_unlock(lockfd,&smbpasswd_state->pw_file_lock_depth);
@@ -1196,7 +1196,7 @@ static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
 {
 	uint32_t rid;
 
-	if (sampass == NULL) 
+	if (sampass == NULL)
 		return False;
 	ZERO_STRUCTP(smb_pw);
 
@@ -1229,13 +1229,13 @@ static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
 	smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
 
 	return True;
-}	
+}
 
 /*********************************************************************
  Create a struct samu from a smb_passwd struct
  ********************************************************************/
 
-static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state, 
+static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			      struct samu *sam_pass, const struct smb_passwd *pw_buf)
 {
 	struct passwd *pwfile;
@@ -1272,7 +1272,7 @@ static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 }
 
 /*****************************************************************
- Functions to be implemented by the new passdb API 
+ Functions to be implemented by the new passdb API
  ****************************************************************/
 
 /****************************************************************
@@ -1281,7 +1281,7 @@ static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state,
  the correct entry
  ***************************************************************/
 
-static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods, 
+static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 				  struct samu *sam_acct, const char *username)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1441,7 +1441,7 @@ static NTSTATUS smbpasswd_delete_sam_account (struct pdb_methods *my_methods, st
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods, 
+static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 					      struct samu *old_acct,
 					      const char *newname)
 {
@@ -1460,8 +1460,8 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( !pdb_copy_sam_account( new_acct, old_acct ) 
-		|| !pdb_set_username(new_acct, newname, PDB_CHANGED)) 
+	if ( !pdb_copy_sam_account( new_acct, old_acct )
+		|| !pdb_set_username(new_acct, newname, PDB_CHANGED))
 	{
 		goto done;
 	}
@@ -1530,7 +1530,7 @@ done:
 	if (new_acct)
 		TALLOC_FREE(new_acct);
 
-	return (ret);	
+	return (ret);
 }
 
 static uint32_t smbpasswd_capabilities(struct pdb_methods *methods)
@@ -1538,7 +1538,7 @@ static uint32_t smbpasswd_capabilities(struct pdb_methods *methods)
 	return 0;
 }
 
-static void free_private_data(void **vp) 
+static void free_private_data(void **vp)
 {
 	struct smbpasswd_privates **privates = (struct smbpasswd_privates**)vp;
 
@@ -1724,7 +1724,7 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_smbpasswd_init(TALLOC_CTX *ctx) 
+NTSTATUS pdb_smbpasswd_init(TALLOC_CTX *ctx)
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
 }
