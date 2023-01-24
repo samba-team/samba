@@ -1,9 +1,9 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    time handling functions
 
    Copyright (C) Andrew Tridgell 		1992-2004
-   Copyright (C) Stefan (metze) Metzmacher	2002   
+   Copyright (C) Stefan (metze) Metzmacher	2002
    Copyright (C) Jeremy Allison			2007
    Copyright (C) Andrew Bartlett                2011
 
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -137,12 +137,12 @@ This takes GMT as input
 **/
 _PUBLIC_ void unix_to_nt_time(NTTIME *nt, time_t t)
 {
-	uint64_t t2; 
+	uint64_t t2;
 
 	if (t == (time_t)-1) {
 		*nt = (NTTIME)-1LL;
 		return;
-	}	
+	}
 
 	if (t == TIME_T_MAX || t == INT64_MAX) {
 		*nt = 0x7fffffffffffffffLL;
@@ -152,7 +152,7 @@ _PUBLIC_ void unix_to_nt_time(NTTIME *nt, time_t t)
 	if (t == 0) {
 		*nt = 0;
 		return;
-	}		
+	}
 
 	t2 = t;
 	t2 += TIME_FIXUP_CONSTANT_INT;
@@ -167,8 +167,8 @@ check if it's a null unix time
 **/
 _PUBLIC_ bool null_time(time_t t)
 {
-	return t == 0 || 
-		t == (time_t)0xFFFFFFFF || 
+	return t == 0 ||
+		t == (time_t)0xFFFFFFFF ||
 		t == (time_t)-1;
 }
 
@@ -271,7 +271,7 @@ void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *hour,in
 {
 	uint32_t p0,p1,p2,p3;
 
-	p0=date&0xFF; p1=((date&0xFF00)>>8)&0xFF; 
+	p0=date&0xFF; p1=((date&0xFF00)>>8)&0xFF;
 	p2=((date&0xFF0000)>>16)&0xFF; p3=((date&0xFF000000)>>24)&0xFF;
 
 	*second = 2*(p0 & 0x1F);
@@ -295,11 +295,11 @@ _PUBLIC_ time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset)
 	dos_date = IVAL(date_ptr,0);
 
 	if (dos_date == 0) return (time_t)0;
-  
+
 	interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
 			   &t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
 	t.tm_isdst = -1;
-  
+
 	ret = timegm(&t);
 
 	ret += zone_offset;
@@ -693,7 +693,7 @@ _PUBLIC_ struct timeval timeval_current_ofs_usec(uint32_t usecs)
 }
 
 /**
-  compare two timeval structures. 
+  compare two timeval structures.
   Return -1 if tv1 < tv2
   Return 0 if tv1 == tv2
   Return 1 if tv1 > tv2
@@ -723,7 +723,7 @@ _PUBLIC_ bool timeval_expired(const struct timeval *tv)
 */
 _PUBLIC_ double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
 {
-	return (tv2->tv_sec - tv1->tv_sec) + 
+	return (tv2->tv_sec - tv1->tv_sec) +
 	       (tv2->tv_usec - tv1->tv_usec)*1.0e-6;
 }
 
@@ -806,7 +806,7 @@ _PUBLIC_ struct timeval timeval_until(const struct timeval *tv1,
 */
 _PUBLIC_ NTTIME timeval_to_nttime(const struct timeval *tv)
 {
-	return 10*(tv->tv_usec + 
+	return 10*(tv->tv_usec +
 		  ((TIME_FIXUP_CONSTANT + (uint64_t)tv->tv_sec) * 1000000));
 }
 
@@ -828,7 +828,7 @@ _PUBLIC_ void nttime_to_timeval(struct timeval *tv, NTTIME t)
 		tv->tv_usec = 0;
 		return;
 	}
-	
+
 	tv->tv_usec = t - tv->tv_sec*1000000;
 }
 
@@ -938,8 +938,8 @@ bool nt_time_equal(NTTIME *t1, NTTIME *t2)
 
 bool null_timespec(struct timespec ts)
 {
-	return ts.tv_sec == 0 || 
-		ts.tv_sec == (time_t)0xFFFFFFFF || 
+	return ts.tv_sec == 0 ||
+		ts.tv_sec == (time_t)0xFFFFFFFF ||
 		ts.tv_sec == (time_t)-1;
 }
 
@@ -992,7 +992,7 @@ struct timespec timespec_min(const struct timespec *ts1,
 }
 
 /****************************************************************************
-  compare two timespec structures. 
+  compare two timespec structures.
   Return -1 if ts1 < ts2
   Return 0 if ts1 == ts2
   Return 1 if ts1 > ts2
