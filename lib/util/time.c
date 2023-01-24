@@ -397,7 +397,7 @@ const char *timespec_string_buf(const struct timespec *tp,
 		}
 	} else if (!hires) {
 		len = snprintf(buf->buf, sizeof(buf->buf),
-			       "%04d/%02d/%02d %02d:%02d:%02d",
+			       "%04d-%02d-%02d %02d:%02d:%02d",
 			       1900 + tm->tm_year,
 			       tm->tm_mon + 1,
 			       tm->tm_mday,
@@ -406,7 +406,7 @@ const char *timespec_string_buf(const struct timespec *tp,
 			       tm->tm_sec);
 	} else {
 		len = snprintf(buf->buf, sizeof(buf->buf),
-			       "%04d/%02d/%02d %02d:%02d:%02d.%09ld",
+			       "%04d-%02d-%02d %02d:%02d:%02d.%09ld",
 			       1900 + tm->tm_year,
 			       tm->tm_mon + 1,
 			       tm->tm_mday,
