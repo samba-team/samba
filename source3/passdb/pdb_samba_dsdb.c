@@ -1592,7 +1592,8 @@ static NTSTATUS pdb_samba_dsdb_delete_alias(struct pdb_methods *m,
 	}
 
 	if (ldb_transaction_start(state->ldb) != LDB_SUCCESS) {
-		DEBUG(0, ("Failed to start transaction in dsdb_add_domain_alias(): %s\n", ldb_errstring(state->ldb)));
+		DBG_ERR("Failed to start transaction: %s\n",
+			ldb_errstring(state->ldb));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
