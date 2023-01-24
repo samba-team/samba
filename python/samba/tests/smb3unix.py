@@ -189,8 +189,9 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                              'SMB2_FIND_POSIX_INFORMATION failed to list contents')
 
         finally:
-            for fname in test_files:
-                self.delete_test_file(c, fname)
+            if len(test_files) > 0:
+                for fname in test_files:
+                    self.delete_test_file(c, fname)
 
             self.disable_smb3unix()
 
@@ -283,6 +284,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.disable_smb3unix()
 
     def test_posix_perm_files(self):
+        test_files = {}
         try:
             self.enable_smb3unix()
 
@@ -294,7 +296,6 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 posix=True)
             self.assertTrue(c.have_posix())
 
-            test_files = {}
             for perm in range(0o600, 0o7777+1):
                 # Owner write permission is required or cleanup will fail, and
                 # owner read is required to list the file if O_PATH is disabled
@@ -332,8 +333,9 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                                          (test_files[fname], found_files[fname]))
 
         finally:
-            for fname in test_files.keys():
-                self.delete_test_file(c, '\\%s' % fname)
+            if len(test_files) > 0:
+                for fname in test_files.keys():
+                    self.delete_test_file(c, '\\%s' % fname)
 
             self.disable_smb3unix()
 
