@@ -102,7 +102,7 @@ struct file_lists {
 	struct file_lists *next;
 	char *name;
 	char *subfname;
-	time_t modtime;
+	struct timespec modtime;
 };
 
 #define DEFAULT_NAME_RESOLVE_ORDER "lmhosts wins host bcast"
