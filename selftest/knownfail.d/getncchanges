@@ -5,6 +5,4 @@ samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegri
 samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_and_anc\(promoted_dc\)
 samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_multivalued_links\(promoted_dc\)
 # New tests for GetNCChanges with a GUID and a bad DN, like Azure AD Cloud Sync
-^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_InvalidDestDSA_and_GUID
-^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_InvalidDestDSA_and_GUID_RID_ALLOC
 ^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_DummyDN_valid_GUID_REPL_SECRET

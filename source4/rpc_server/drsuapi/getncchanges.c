@@ -2774,9 +2774,45 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-        /* Perform access checks. */
-	/* TODO: we need to support a sync on a specific non-root
-	 * DN. We'll need to find the real partition root here */
+	/*
+	 * Help our tests pass by pre-checking the
+	 * destination_dsa_guid before the NC permissions.  Info on
+	 * valid DSA GUIDs is not sensitive so this isn't a leak
+	 */
+	switch (req10->extended_op) {
+	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
+	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_REQ_PDC:
+	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
+	{
+		const char *attrs[] = { NULL };
+
+		ret = samdb_get_ntds_obj_by_guid(mem_ctx,
+						 sam_ctx,
+						 &req10->destination_dsa_guid,
+						 attrs,
+						 NULL);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			/*
+			 * Error out with an EXOP error but success at
+			 * the top level return value
+			 */
+			r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_UNKNOWN_CALLER;
+			return WERR_OK;
+		} else if (ret != LDB_SUCCESS) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		break;
+	}
+	case DRSUAPI_EXOP_REPL_SECRET:
+	case DRSUAPI_EXOP_REPL_OBJ:
+	case DRSUAPI_EXOP_NONE:
+		break;
+	}
+
+	/* Perform access checks. */
 	ncRoot = req10->naming_context;
 	if (ncRoot == NULL) {
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges with no NC\n"));
