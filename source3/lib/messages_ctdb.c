@@ -76,6 +76,21 @@ static int messaging_ctdb_recv(
 
 struct messaging_ctdb_context *global_ctdb_context;
 
+static int global_ctdb_ctx_destructor(struct messaging_ctdb_context *ctx)
+{
+	if (ctx != NULL) {
+		struct messaging_ctdb_fde_ev *fde_ev = NULL;
+		for (fde_ev = ctx->fde_evs;
+		     fde_ev != NULL;
+		     fde_ev = fde_ev->next) {
+			if (fde_ev->ctx == ctx) {
+				fde_ev->ctx = NULL;
+			}
+		}
+	}
+	return 0;
+}
+
 int messaging_ctdb_init(const char *sockname, int timeout, uint64_t unique_id,
 			void (*recv_cb)(struct tevent_context *ev,
 					const uint8_t *msg, size_t msg_len,
@@ -94,6 +109,10 @@ int messaging_ctdb_init(const char *sockname, int timeout, uint64_t unique_id,
 	if (ctx == NULL) {
 		return ENOMEM;
 	}
+
+	talloc_set_destructor(ctx,
+			      global_ctdb_ctx_destructor);
+
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = private_data;
 
