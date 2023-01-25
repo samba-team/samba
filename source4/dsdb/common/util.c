@@ -3546,9 +3546,49 @@ int drsuapi_DsReplicaCursor_compare(const struct drsuapi_DsReplicaCursor *c1,
 	return GUID_compare(&c1->source_dsa_invocation_id, &c2->source_dsa_invocation_id);
 }
 
+/*
+ * Return the NTDS object for a GUID, confirming it is in the
+ * configuration partition and a nTDSDSA object
+ */
+int samdb_get_ntds_obj_by_guid(TALLOC_CTX *mem_ctx,
+			       struct ldb_context *sam_ctx,
+			       const struct GUID *objectGUID,
+			       const char **attrs,
+			       struct ldb_message **msg)
+{
+	int ret;
+	struct ldb_result *res;
+	struct GUID_txt_buf guid_buf;
+	char *guid_str = GUID_buf_string(objectGUID, &guid_buf);
+	struct ldb_dn *config_dn = NULL;
+
+	config_dn = ldb_get_config_basedn(sam_ctx);
+	if (config_dn == NULL) {
+		return ldb_operr(sam_ctx);
+	}
+
+	ret = dsdb_search(sam_ctx,
+			  mem_ctx,
+			  &res,
+			  config_dn,
+			  LDB_SCOPE_SUBTREE,
+			  attrs,
+			  DSDB_SEARCH_ONE_ONLY,
+			  "objectGUID=%s",
+			  guid_str);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (msg) {
+		*msg = talloc_steal(mem_ctx, res->msgs[0]);
+	}
+	TALLOC_FREE(res);
+	return ret;
+}
+
 
 /*
-  see if a computer identified by its invocationId is a RODC
+  see if a computer identified by its objectGUID is a RODC
 */
 int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bool *is_rodc)
 {
@@ -3557,20 +3597,15 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bo
 	   3) if not present then not a RODC
 	   4) if present and TRUE then is a RODC
 	*/
-	struct ldb_dn *config_dn;
 	const char *attrs[] = { "msDS-isRODC", NULL };
 	int ret;
-	struct ldb_result *res;
+	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(sam_ctx);
 
-	config_dn = ldb_get_config_basedn(sam_ctx);
-	if (!config_dn) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(sam_ctx);
-	}
-
-	ret = dsdb_search(sam_ctx, tmp_ctx, &res, config_dn, LDB_SCOPE_SUBTREE, attrs,
-			  DSDB_SEARCH_ONE_ONLY, "objectGUID=%s", GUID_string(tmp_ctx, objectGUID));
+	ret = samdb_get_ntds_obj_by_guid(tmp_ctx,
+					 sam_ctx,
+					 objectGUID,
+					 attrs, &msg);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		*is_rodc = false;
@@ -3586,7 +3621,7 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bo
 		return ret;
 	}
 
-	ret = ldb_msg_find_attr_as_bool(res->msgs[0], "msDS-isRODC", 0);
+	ret = ldb_msg_find_attr_as_bool(msg, "msDS-isRODC", 0);
 	*is_rodc = (ret == 1);
 
 	talloc_free(tmp_ctx);
