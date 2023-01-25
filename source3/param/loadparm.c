@@ -4849,6 +4849,10 @@ uint32_t lp_get_async_dns_timeout(void)
 
 bool lp_smb3_unix_extensions(void)
 {
+	/*
+	 * FIXME: If this gets always enabled, check source3/selftest/tests.py
+	 * and source3/wscript for HAVE_SMB3_UNIX_EXTENSIONS.
+	 */
 #if defined(DEVELOPER)
 	return lp__smb3_unix_extensions();
 #else
