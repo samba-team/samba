@@ -1201,6 +1201,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
 	WERROR werr;
+	struct GUID_txt_buf guid_buf;
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
 		 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot)));
@@ -1231,7 +1232,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 					 ntds_attrs,
 					 &ntds_msg);
 	if (ret != LDB_SUCCESS) {
-		goto failed;
+		goto dest_dsa_error;
 	}
 
 	ntds_dn = ntds_msg->dn;
@@ -1245,7 +1246,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				 "serverReference", machine_dn);
 
 	if (ret != LDB_SUCCESS) {
-		goto failed;
+		goto dest_dsa_error;
 	}
 
 	/*
@@ -1346,6 +1347,15 @@ failed:
 		 ldb_dn_get_linearized(obj_dn), dom_sid_string(mem_ctx, user_sid)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
 	return WERR_DS_DRA_BAD_DN;
+
+dest_dsa_error:
+	DBG_WARNING("Failed secret replication for %s by RODC %s as dest_dsa_guid %s is invalid\n",
+		    ldb_dn_get_linearized(obj_dn),
+		    dom_sid_string(mem_ctx, user_sid),
+		    GUID_buf_string(&req10->destination_dsa_guid,
+				    &guid_buf));
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
+	return WERR_DS_DRA_DB_ERROR;
 }
 
 /*
