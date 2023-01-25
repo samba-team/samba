@@ -1180,11 +1180,88 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(ac->module, down_req);
 }
 
+static int descriptor_rename_callback(struct ldb_request *req,
+				      struct ldb_reply *ares)
+{
+	struct descriptor_context *ac = NULL;
+	struct ldb_context *ldb = NULL;
+	struct ldb_dn *newdn = req->op.rename.newdn;
+	struct GUID guid;
+	struct ldb_dn *nc_root;
+	struct GUID parent_guid = { .time_low = 0 };
+	int ret;
+
+	ac = talloc_get_type_abort(req->context, struct descriptor_context);
+	ldb = ldb_module_get_ctx(ac->module);
+
+	if (!ares) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	if (ares->type != LDB_REPLY_DONE) {
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	ret = dsdb_module_guid_by_dn(ac->module,
+				     newdn,
+				     &guid,
+				     req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ret);
+	}
+	ret = dsdb_find_nc_root(ldb, req, newdn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ret);
+	}
+
+	/*
+	 * After a successful rename, force SD propagation on this
+	 * record (get a new inherited SD from the potentially new
+	 * parent
+	 *
+	 * We don't know the parent guid here (it is filled in as
+	 * all-zero in the initialiser above), but we're not in a hot
+	 * code path here, as the "descriptor" module is located above
+	 * the "repl_meta_data", only originating changes are handled
+	 * here.
+	 *
+	 * If it turns out to be a problem we may search for the new
+	 * parent guid.
+	 */
+
+	ret = dsdb_module_schedule_sd_propagation(ac->module,
+						  nc_root,
+						  guid,
+						  parent_guid,
+						  true);
+	if (ret != LDB_SUCCESS) {
+		ret = ldb_operr(ldb);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ret);
+	}
+
+	return ldb_module_done(ac->req, ares->controls,
+			       ares->response, ares->error);
+}
+
+
+
+
 static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
+	struct descriptor_context *ac = NULL;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *olddn = req->op.rename.olddn;
 	struct ldb_dn *newdn = req->op.rename.newdn;
+	struct ldb_request *down_req;
 	int ret;
 
 	/* do not manipulate our control entries */
@@ -1195,49 +1272,28 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_rename: %s\n",
 		  ldb_dn_get_linearized(olddn));
 
-	if (ldb_dn_compare(olddn, newdn) != 0) {
-		struct ldb_dn *nc_root;
-		struct GUID guid;
-
-		ret = dsdb_find_nc_root(ldb, req, newdn, &nc_root);
-		if (ret != LDB_SUCCESS) {
-			return ldb_oom(ldb);
-		}
-
-		ret = dsdb_module_guid_by_dn(module,
-					     olddn,
-					     &guid,
-					     req);
-		if (ret == LDB_SUCCESS) {
-			/*
-			 * Without disturbing any errors if the olddn
-			 * does not exit, force SD propagation on
-			 * this record (get a new inherited SD from
-			 * the potentially new parent
-			 *
-			 * We don't now the parent guid here,
-			 * but we're not in a hot code path here,
-			 * as the "descriptor" module is located
-			 * above the "repl_meta_data", only
-			 * originating changes are handled here.
-			 *
-			 * If it turns out to be a problem we may
-			 * search for the new parent guid.
-			 */
-			struct GUID parent_guid = { .time_low = 0 };
-
-			ret = dsdb_module_schedule_sd_propagation(module,
-								  nc_root,
-								  guid,
-								  parent_guid,
-								  true);
-			if (ret != LDB_SUCCESS) {
-				return ldb_operr(ldb);
-			}
-		}
+	if (ldb_dn_compare(olddn, newdn) == 0) {
+		/* No special work required for a case-only rename */
+		return ldb_next_request(module, req);
 	}
 
-	return ldb_next_request(module, req);
+	ac = descriptor_init_context(module, req);
+	if (ac == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	ret = ldb_build_rename_req(&down_req, ldb, ac,
+				   req->op.rename.olddn,
+				   req->op.rename.newdn,
+				   req->controls,
+				   ac, descriptor_rename_callback,
+				   req);
+	LDB_REQ_SET_LOCATION(down_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(module, down_req);
 }
 
 static void descriptor_changes_parser(TDB_DATA key, TDB_DATA data, void *private_data)
