@@ -92,6 +92,8 @@ have_inotify = ("HAVE_INOTIFY" in config_hash)
 have_ldwrap = ("HAVE_LDWRAP" in config_hash)
 with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
 
+have_smb3_unix_extensions = ("HAVE_SMB3_UNIX_EXTENSIONS" in config_hash)
+
 def is_module_enabled(module):
     if module in config_hash["STRING_SHARED_MODULES"]:
         return True
@@ -1708,7 +1710,8 @@ for t in CLUSTERED_LOCAL_TESTS:
          smbtorture3,
          "-N 1000 -o 2000"])
 
-planpythontestsuite("fileserver", "samba.tests.smb3unix")
+if have_smb3_unix_extensions:
+    planpythontestsuite("fileserver", "samba.tests.smb3unix")
 planpythontestsuite("fileserver", "samba.tests.reparsepoints")
 planpythontestsuite("fileserver_smb1", "samba.tests.smb2symlink")
 planpythontestsuite("fileserver_smb1", "samba.tests.smb1posix")

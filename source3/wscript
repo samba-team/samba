@@ -111,6 +111,7 @@ def configure(conf):
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
         conf.env.developer = True
+        conf.DEFINE('HAVE_SMB3_UNIX_EXTENSIONS', '1')
 
     if sys.platform != 'openbsd5':
         conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
