@@ -2830,7 +2830,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	user_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
-	/* all clients must have GUID_DRS_GET_CHANGES */
+	/*
+	 * all clients must have GUID_DRS_GET_CHANGES.  This finds the
+	 * actual NC root of the given value and checks that, allowing
+	 * REPL_OBJ to work safely
+	 */
 	werr = drs_security_access_check_nc_root(sam_ctx,
 						 mem_ctx,
 						 session_info->security_token,
