@@ -608,6 +608,11 @@ plantestsuite("samba3.wbinfo_user_info", env,
                             "nsswitch/tests/test_wbinfo_user_info.sh"),
                '$DOMAIN', '$REALM', '$DOMAIN', 'alice', 'alice', 'jane', 'jane.doe', env])
 
+plantestsuite("samba3.winbind_call_depth_trace", env,
+              [os.path.join(srcdir(),
+                            "source3/script/tests/test_winbind_call_depth_trace.sh"),
+               smbcontrol, configuration, '$PREFIX', env])
+
 env = "fl2008r2dc:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [os.path.join(srcdir(),

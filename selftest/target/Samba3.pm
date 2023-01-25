@@ -2854,6 +2854,7 @@ sub provision($$)
 	lock directory = $lockdir
 	log file = $logdir/log.\%m
 	log level = $server_log_level
+	winbind debug traceid = yes
 	debug pid = yes
         max log size = 0
 
