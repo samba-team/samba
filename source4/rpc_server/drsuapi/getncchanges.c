@@ -1188,9 +1188,11 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 {
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req10->naming_context;
 	struct ldb_dn *obj_dn = NULL;
+	struct ldb_message *ntds_msg = NULL;
 	struct ldb_dn *ntds_dn = NULL, *server_dn = NULL;
 	struct ldb_dn *rodc_dn, *krbtgt_link_dn;
 	int ret;
+	const char *ntds_attrs[] = { NULL };
 	const char *rodc_attrs[] = { "msDS-KrbTgtLink",
 				     "msDS-NeverRevealGroup",
 				     "msDS-RevealOnDemandGroup",
@@ -1223,12 +1225,16 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	 *
 	 * If we are the RODC, we will check that this matches the SID.
 	 */
-	ret = dsdb_find_dn_by_guid(b_state->sam_ctx_system, mem_ctx,
-				   &req10->destination_dsa_guid, 0,
-				   &ntds_dn);
+	ret = samdb_get_ntds_obj_by_guid(mem_ctx,
+					 b_state->sam_ctx_system,
+					 &req10->destination_dsa_guid,
+					 ntds_attrs,
+					 &ntds_msg);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
+
+	ntds_dn = ntds_msg->dn;
 
 	server_dn = ldb_dn_get_parent(mem_ctx, ntds_dn);
 	if (server_dn == NULL) {
