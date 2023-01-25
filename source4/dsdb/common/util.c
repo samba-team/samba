@@ -3161,18 +3161,14 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	int ret;
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
-	char *guid_str = GUID_string(mem_ctx, guid);
-
-	if (!guid_str) {
-		return ldb_operr(ldb);
-	}
+	struct GUID_txt_buf buf;
+	char *guid_str = GUID_buf_string(guid, &buf);
 
 	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 			  DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 			  DSDB_SEARCH_SHOW_EXTENDED_DN |
 			  DSDB_SEARCH_ONE_ONLY | dsdb_flags,
 			  "objectGUID=%s", guid_str);
-	talloc_free(guid_str);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
