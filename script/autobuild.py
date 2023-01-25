@@ -1673,14 +1673,16 @@ The top commit for the tree that was built was:
 
 ''' % (log_base, failed_tag, log_base, failed_tag, log_base, top_commit_msg)
 
-    if add_log_tail:
-        f = open("%s/%s.stdout" % (gitroot, failed_tag), 'r')
+    log_stdout = "%s/%s.stdout" % (gitroot, failed_tag)
+    if add_log_tail and os.access(log_stdout, os.R_OK):
+        f = open(log_stdout, 'r')
         lines = f.readlines()
         log_tail = "".join(lines[-50:])
         num_lines = len(lines)
-        if num_lines < 50:
+        log_stderr = "%s/%s.stderr" % (gitroot, failed_tag)
+        if num_lines < 50 and os.access(log_stderr, os.R_OK):
             # Also include stderr (compile failures) if < 50 lines of stdout
-            f = open("%s/%s.stderr" % (gitroot, failed_tag), 'r')
+            f = open(log_stderr, 'r')
             log_tail += "".join(f.readlines()[-(50 - num_lines):])
 
         text += '''
