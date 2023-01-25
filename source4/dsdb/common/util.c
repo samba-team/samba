@@ -3574,7 +3574,7 @@ int samdb_get_ntds_obj_by_guid(TALLOC_CTX *mem_ctx,
 			  LDB_SCOPE_SUBTREE,
 			  attrs,
 			  DSDB_SEARCH_ONE_ONLY,
-			  "objectGUID=%s",
+			  "(&(objectGUID=%s)(objectClass=nTDSDSA))",
 			  guid_str);
 	if (ret != LDB_SUCCESS) {
 		return ret;
