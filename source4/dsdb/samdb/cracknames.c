@@ -1625,7 +1625,6 @@ WERROR dcesrv_drsuapi_ListInfoServer(struct ldb_context *sam_ctx, TALLOC_CTX *me
 	int ret, i;
 	const char *str;
 	const char *attrs[] = {
-		"dn",
 		"dNSHostName",
 		"serverReference",
 		NULL
