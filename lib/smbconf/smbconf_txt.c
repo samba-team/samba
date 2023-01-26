@@ -184,12 +184,23 @@ static sbcErr smbconf_txt_load_file(struct smbconf_ctx *ctx)
 {
 	sbcErr err;
 	uint64_t new_csn;
+	int rc;
+	struct timespec mt = {0};
 
 	if (!file_exist(ctx->path)) {
 		return SBC_ERR_BADFILE;
 	}
 
-	new_csn = (uint64_t)file_modtime(ctx->path);
+	rc = file_modtime(ctx->path, &mt);
+	if (rc != 0) {
+		/*
+		 * Not worth mapping errno returned
+		 * in rc to SBC_ERR_XXX. Just assume
+		 * access denied.
+		 */
+		return SBC_ERR_ACCESS_DENIED;
+	}
+	new_csn = (uint64_t)mt.tv_sec;
 	if (new_csn == pd(ctx)->csn) {
 		return SBC_ERR_OK;
 	}
@@ -275,11 +286,14 @@ static void smbconf_txt_get_csn(struct smbconf_ctx *ctx,
 				struct smbconf_csn *csn,
 				const char *service, const char *param)
 {
+	struct timespec mt = {0};
+
 	if (csn == NULL) {
 		return;
 	}
 
-	csn->csn = (uint64_t)file_modtime(ctx->path);
+	(void)file_modtime(ctx->path, &mt);
+	csn->csn = (uint64_t)mt.tv_sec;
 }
 
 /**
