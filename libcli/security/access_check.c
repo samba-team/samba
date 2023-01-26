@@ -432,7 +432,7 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 	return NT_STATUS_OK;
 }
 
-static const struct GUID *get_ace_object_type(struct security_ace *ace)
+static const struct GUID *get_ace_object_type(const struct security_ace *ace)
 {
 	if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
 		return &ace->object.object.type.type;
@@ -450,7 +450,7 @@ static const struct GUID *get_ace_object_type(struct security_ace *ace)
  *                            rights to the object/attribute
  * @returns NT_STATUS_OK, unless access was denied
  */
-static NTSTATUS check_object_specific_access(struct security_ace *ace,
+static NTSTATUS check_object_specific_access(const struct security_ace *ace,
 					     struct object_tree *tree,
 					     bool *grant_access)
 {
@@ -521,7 +521,7 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 					    uint32_t access_desired,
 					    uint32_t *access_granted,
 					    struct object_tree *tree,
-					    struct dom_sid *replace_sid,
+					    const struct dom_sid *replace_sid,
 					    enum implicit_owner_rights implicit_owner_rights)
 {
 	uint32_t i;
@@ -580,8 +580,8 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 
 	/* check each ace in turn. */
 	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
-		struct dom_sid *trustee;
-		struct security_ace *ace = &sd->dacl->aces[i];
+		const struct dom_sid *trustee;
+		const struct security_ace *ace = &sd->dacl->aces[i];
 		NTSTATUS status;
 		bool grant_access = false;
 
