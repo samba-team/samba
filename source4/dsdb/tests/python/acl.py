@@ -244,9 +244,9 @@ class AclAddTests(AclTests):
         # !!! We should not be able to do that, but however beacuse of ACE ordering our inherited Deny ACE
         # !!! comes after explicit (A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA) that comes from somewhere
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
-        self.assertTrue(len(res) > 0)
+        self.assertGreater(len(res), 0)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
-        self.assertTrue(len(res) > 0)
+        self.assertGreater(len(res), 0)
 
     def test_add_u2(self):
         """Testing OU with the regular user that has no rights granted over the OU """
@@ -311,10 +311,10 @@ class AclAddTests(AclTests):
                                 grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         # Make sure we have successfully created the two objects -- user and group
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
-        self.assertTrue(len(res) > 0)
+        self.assertGreater(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s,%s)" % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
-        self.assertTrue(len(res) > 0)
+        self.assertGreater(len(res), 0)
 
     def test_add_c1(self):
         """Testing adding a computer object with the rights of regular user granted the right 'Create Computer child objects' """
@@ -3871,8 +3871,8 @@ class AclSearchTests(AclTests):
         self.sd_utils.modify_sd_on_dn(object_dn, desc_sddl)
         # Verify all inheritable ACEs are gone
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
-        self.assertFalse("CI" in desc_sddl)
-        self.assertFalse("OI" in desc_sddl)
+        self.assertNotIn("CI", desc_sddl)
+        self.assertNotIn("OI", desc_sddl)
 
     def tearDown(self):
         super(AclSearchTests, self).tearDown()
@@ -3900,35 +3900,35 @@ class AclSearchTests(AclTests):
         self.assertEqual(len(res), 1)
         # verify some of the attributes
         # don't care about values
-        self.assertTrue("ldapServiceName" in res[0])
-        self.assertTrue("namingContexts" in res[0])
-        self.assertTrue("isSynchronized" in res[0])
-        self.assertTrue("dsServiceName" in res[0])
-        self.assertTrue("supportedSASLMechanisms" in res[0])
-        self.assertTrue("isGlobalCatalogReady" in res[0])
-        self.assertTrue("domainControllerFunctionality" in res[0])
-        self.assertTrue("serverName" in res[0])
+        self.assertIn("ldapServiceName", res[0])
+        self.assertIn("namingContexts", res[0])
+        self.assertIn("isSynchronized", res[0])
+        self.assertIn("dsServiceName", res[0])
+        self.assertIn("supportedSASLMechanisms", res[0])
+        self.assertIn("isGlobalCatalogReady", res[0])
+        self.assertIn("domainControllerFunctionality", res[0])
+        self.assertIn("serverName", res[0])
 
     def test_search_anonymous2(self):
         """Make sure we cannot access anything else"""
         anonymous = SamDB(url=ldaphost, credentials=self.creds_tmp, lp=lp)
         try:
-            res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_SUBTREE)
+            anonymous.search("", expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         except LdbError as e15:
             (num, _) = e15.args
             self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
         try:
-            res = anonymous.search(self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
+            anonymous.search(self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         except LdbError as e16:
             (num, _) = e16.args
             self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
         try:
-            res = anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
-                                   scope=SCOPE_SUBTREE)
+            anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
+                             scope=SCOPE_SUBTREE)
         except LdbError as e17:
             (num, _) = e17.args
             self.assertEqual(num, ERR_OPERATIONS_ERROR)
@@ -3946,14 +3946,14 @@ class AclSearchTests(AclTests):
         res = anonymous.search("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn,
                                expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         self.assertEqual(len(res), 1)
-        self.assertTrue("dn" in res[0])
-        self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin,
-                                           "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn))
+        self.assertIn("dn", res[0])
+        self.assertEqual(res[0]["dn"], Dn(self.ldb_admin,
+                                          "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn))
         res = anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
                                scope=SCOPE_SUBTREE)
         self.assertEqual(len(res), 1)
-        self.assertTrue("dn" in res[0])
-        self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin, self.configuration_dn))
+        self.assertIn("dn", res[0])
+        self.assertEqual(res[0]["dn"], Dn(self.ldb_admin, self.configuration_dn))
 
     def test_search1(self):
         """Make sure users can see us if given LC to user and group"""
@@ -4640,8 +4640,6 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
         self.sd_utils.modify_sd_on_dn(self.get_user_dn(self.user_with_wp), sddl)
         mod = "(A;;WP;;;PS)"
         self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
-        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
-        sddl = desc.as_sddl(self.domain_sid)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -4662,8 +4660,6 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
         """Make sure WP has no influence"""
         mod = "(D;;WP;;;PS)"
         self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
-        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
-        sddl = desc.as_sddl(self.domain_sid)
         self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
@@ -4731,8 +4727,8 @@ userPassword: thatsAcomplPASS2
             # This fails on Windows 2000 domain level with constraint violation
         except LdbError as e28:
             (num, _) = e28.args
-            self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
-                            num == ERR_UNWILLING_TO_PERFORM)
+            self.assertIn(num, (ERR_CONSTRAINT_VIOLATION,
+                                ERR_UNWILLING_TO_PERFORM))
         else:
             self.fail()
 
@@ -4928,19 +4924,19 @@ class AclExtendedTests(AclTests):
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertNotEqual(len(res), 0)
-        self.assertFalse("nTSecurityDescriptor" in res[0].keys())
+        self.assertNotIn("nTSecurityDescriptor", res[0].keys())
         # grant RC to u2 - still no access
         mod = "(A;;RC;;;%s)" % str(self.user_sid2)
         self.sd_utils.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertNotEqual(len(res), 0)
-        self.assertFalse("nTSecurityDescriptor" in res[0].keys())
+        self.assertNotIn("nTSecurityDescriptor", res[0].keys())
         # u3 is member of administrators group, should be able to read sd
         res = self.ldb_user3.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertEqual(len(res), 1)
-        self.assertTrue("nTSecurityDescriptor" in res[0].keys())
+        self.assertIn("nTSecurityDescriptor", res[0].keys())
 
 
 class AclUndeleteTests(AclTests):
@@ -5013,7 +5009,7 @@ class AclUndeleteTests(AclTests):
         msg.dn = Dn(self.ldb_user, olddn)
         msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
         msg["distinguishedName"] = MessageElement([newdn], FLAG_MOD_REPLACE, "distinguishedName")
-        res = self.ldb_user.modify(msg, ["show_recycled:1"])
+        self.ldb_user.modify(msg, ["show_recycled:1"])
 
     def undelete_deleted_with_mod(self, olddn, newdn):
         msg = Message()
@@ -5021,7 +5017,7 @@ class AclUndeleteTests(AclTests):
         msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
         msg["distinguishedName"] = MessageElement([newdn], FLAG_MOD_REPLACE, "distinguishedName")
         msg["url"] = MessageElement(["www.samba.org"], FLAG_MOD_REPLACE, "url")
-        res = self.ldb_user.modify(msg, ["show_deleted:1"])
+        self.ldb_user.modify(msg, ["show_deleted:1"])
 
     def test_undelete(self):
         # it appears the user has to have LC on the old parent to be able to move the object
