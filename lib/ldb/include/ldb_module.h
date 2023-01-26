@@ -513,6 +513,10 @@ struct ldb_extended_match_rule
 int ldb_register_extended_match_rule(struct ldb_context *ldb,
 				     const struct ldb_extended_match_rule *rule);
 
+void ldb_msg_element_mark_inaccessible(struct ldb_message_element *el);
+bool ldb_msg_element_is_inaccessible(const struct ldb_message_element *el);
+void ldb_msg_remove_inaccessible(struct ldb_message *msg);
+
 /*
  * these pack/unpack functions are exposed in the library for use by
  * ldb tools like ldbdump and for use in tests,
