@@ -441,9 +441,15 @@ _PUBLIC_ int create_unlink_tmp(const char *dir);
 _PUBLIC_ bool file_exist(const char *fname);
 
 /**
- Check a files mod time.
-**/
-_PUBLIC_ time_t file_modtime(const char *fname);
+ * @brief Return a files modification time.
+ *
+ * @param fname  The name of the file.
+ *
+ * @param mt     A pointer to store the modification time.
+ *
+ * @return 0 on success, errno otherwise.
+ */
+_PUBLIC_ int file_modtime(const char *fname, struct timespec *mt);
 
 /**
  Check if a directory exists.

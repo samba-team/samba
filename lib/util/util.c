@@ -116,17 +116,24 @@ _PUBLIC_ bool file_exist(const char *fname)
 }
 
 /**
- Check a files mod time.
-**/
-
-_PUBLIC_ time_t file_modtime(const char *fname)
+ * @brief Return a files modification time.
+ *
+ * @param fname  The name of the file.
+ *
+ * @param mt     A pointer to store the modification time.
+ *
+ * @return 0 on success, errno otherwise.
+ */
+_PUBLIC_ int file_modtime(const char *fname, struct timespec *mt)
 {
-	struct stat st;
-  
-	if (stat(fname,&st) != 0) 
-		return(0);
+	struct stat st = {0};
 
-	return(st.st_mtime);
+	if (stat(fname, &st) != 0) {
+		return errno;
+	}
+
+	*mt = get_mtimespec(&st);
+	return 0;
 }
 
 /**
