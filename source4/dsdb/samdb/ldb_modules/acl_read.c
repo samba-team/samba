@@ -70,14 +70,6 @@ struct aclread_private {
 	struct ldb_val sd_cached_blob;
 };
 
-static void aclread_mark_inaccesslible(struct ldb_message_element *el) {
-	el->flags |= LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE;
-}
-
-static bool aclread_is_inaccessible(struct ldb_message_element *el) {
-	return el->flags & LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE;
-}
-
 /*
  * the object has a parent, so we have to check for visibility
  *
@@ -558,11 +550,9 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	struct aclread_context *ac;
-	struct ldb_message *ret_msg;
 	struct ldb_message *msg;
 	int ret;
-	size_t num_of_attrs = 0;
-	unsigned int i, k = 0;
+	unsigned int i;
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
 	TALLOC_CTX *tmp_ctx;
@@ -652,26 +642,26 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 						      msg->elements[i].name) == 0;
 			/* these attributes were added to perform access checks and must be removed */
 			if (is_objectsid && ac->added_objectSid) {
-				aclread_mark_inaccesslible(&msg->elements[i]);
+				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				continue;
 			}
 			if (is_instancetype && ac->added_instanceType) {
-				aclread_mark_inaccesslible(&msg->elements[i]);
+				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				continue;
 			}
 			if (is_objectclass && ac->added_objectClass) {
-				aclread_mark_inaccesslible(&msg->elements[i]);
+				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				continue;
 			}
 			if (is_sd && ac->added_nTSecurityDescriptor) {
-				aclread_mark_inaccesslible(&msg->elements[i]);
+				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				continue;
 			}
 
 			access_mask = get_attr_access_mask(attr, ac->sd_flags);
 
 			if (access_mask == 0) {
-				aclread_mark_inaccesslible(&msg->elements[i]);
+				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				continue;
 			}
 
@@ -716,7 +706,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 						return LDB_SUCCESS;
 					}
 				} else {
-					aclread_mark_inaccesslible(&msg->elements[i]);
+					ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				}
 			} else if (ret != LDB_SUCCESS) {
 				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
@@ -759,44 +749,12 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			}
 		}
 
-		for (i=0; i < msg->num_elements; i++) {
-			if (!aclread_is_inaccessible(&msg->elements[i])) {
-				num_of_attrs++;
-			}
-		}
-		/*create a new message to return*/
-		ret_msg = ldb_msg_new(ac->req);
-		ret_msg->dn = msg->dn;
-		talloc_steal(ret_msg, msg->dn);
-		ret_msg->num_elements = num_of_attrs;
-		if (num_of_attrs > 0) {
-			ret_msg->elements = talloc_array(ret_msg,
-							 struct ldb_message_element,
-							 num_of_attrs);
-			if (ret_msg->elements == NULL) {
-				return ldb_oom(ldb);
-			}
-			for (i=0; i < msg->num_elements; i++) {
-				bool to_remove = aclread_is_inaccessible(&msg->elements[i]);
-				if (!to_remove) {
-					ret_msg->elements[k] = msg->elements[i];
-					talloc_steal(ret_msg->elements, msg->elements[i].name);
-					talloc_steal(ret_msg->elements, msg->elements[i].values);
-					k++;
-				}
-			}
-			/*
-			 * This should not be needed, but some modules
-			 * may allocate values on the wrong context...
-			 */
-			talloc_steal(ret_msg->elements, msg);
-		} else {
-			ret_msg->elements = NULL;
-		}
+		ldb_msg_remove_inaccessible(msg);
+
 		talloc_free(tmp_ctx);
 
 		ac->num_entries++;
-		return ldb_module_send_entry(ac->req, ret_msg, ares->controls);
+		return ldb_module_send_entry(ac->req, msg, ares->controls);
 	case LDB_REPLY_REFERRAL:
 		return ldb_module_send_referral(ac->req, ares->referral);
 	case LDB_REPLY_DONE:
