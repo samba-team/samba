@@ -225,98 +225,6 @@ static NTSTATUS smbXsrv_open_local_lookup(struct smbXsrv_open_table *table,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbXsrv_open_global_verify_record(
-	TDB_DATA key,
-	TDB_DATA val,
-	TALLOC_CTX *mem_ctx,
-	struct smbXsrv_open_global0 **_global0);
-
-static NTSTATUS smbXsrv_open_global_allocate(
-	struct db_context *db, struct smbXsrv_open_global0 *global)
-{
-	uint32_t i;
-	uint32_t last_free = 0;
-	const uint32_t min_tries = 3;
-
-	/*
-	 * Here we just randomly try the whole 32-bit space
-	 *
-	 * We use just 32-bit, because we want to reuse the
-	 * ID for SRVSVC.
-	 */
-	for (i = 0; i < UINT32_MAX; i++) {
-		struct smbXsrv_open_global_key_buf key_buf;
-		struct smbXsrv_open_global0 *tmp_global0 = NULL;
-		TDB_DATA key, val;
-		uint32_t id;
-		NTSTATUS status;
-
-		if (i >= min_tries && last_free != 0) {
-			id = last_free;
-		} else {
-			generate_nonce_buffer((uint8_t *)&id, sizeof(id));
-			id = MAX(id, 1);
-			id = MIN(id, UINT32_MAX-1);
-		}
-
-		key = smbXsrv_open_global_id_to_key(id, &key_buf);
-
-		global->db_rec = dbwrap_fetch_locked(db, global, key);
-		if (global->db_rec == NULL) {
-			return NT_STATUS_INSUFFICIENT_RESOURCES;
-		}
-		val = dbwrap_record_get_value(global->db_rec);
-
-		status = smbXsrv_open_global_verify_record(
-			key, val, talloc_tos(), &tmp_global0);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-			/*
-			 * Found an empty slot
-			 */
-			global->open_global_id = id;
-			return NT_STATUS_OK;
-		}
-
-		TALLOC_FREE(tmp_global0);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FATAL_APP_EXIT)) {
-			/*
-			 * smbd crashed
-			 */
-			status = dbwrap_record_delete(global->db_rec);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_WARNING("dbwrap_record_delete() failed "
-					    "for record %"PRIu32": %s\n",
-					    id,
-					    nt_errstr(status));
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-			}
-
-			if ((i < min_tries) && (last_free == 0)) {
-				/*
-				 * Remember "id" as free but also try
-				 * others to not recycle ids too
-				 * quickly.
-				 */
-				last_free = id;
-			}
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("smbXsrv_open_global_verify_record() "
-				    "failed for %s: %s, ignoring\n",
-				    tdb_data_dbg(key),
-				    nt_errstr(status));
-		}
-
-		TALLOC_FREE(global->db_rec);
-	}
-
-	/* should not be reached */
-	return NT_STATUS_INTERNAL_ERROR;
-}
-
 static NTSTATUS smbXsrv_open_global_parse_record(
 	TALLOC_CTX *mem_ctx,
 	TDB_DATA key,
@@ -466,6 +374,92 @@ static NTSTATUS smbXsrv_open_global_store(struct smbXsrv_open_global0 *global)
 	TALLOC_FREE(global->db_rec);
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS smbXsrv_open_global_allocate(
+	struct db_context *db, struct smbXsrv_open_global0 *global)
+{
+	uint32_t i;
+	uint32_t last_free = 0;
+	const uint32_t min_tries = 3;
+
+	/*
+	 * Here we just randomly try the whole 32-bit space
+	 *
+	 * We use just 32-bit, because we want to reuse the
+	 * ID for SRVSVC.
+	 */
+	for (i = 0; i < UINT32_MAX; i++) {
+		struct smbXsrv_open_global_key_buf key_buf;
+		struct smbXsrv_open_global0 *tmp_global0 = NULL;
+		TDB_DATA key, val;
+		uint32_t id;
+		NTSTATUS status;
+
+		if (i >= min_tries && last_free != 0) {
+			id = last_free;
+		} else {
+			generate_nonce_buffer((uint8_t *)&id, sizeof(id));
+			id = MAX(id, 1);
+			id = MIN(id, UINT32_MAX-1);
+		}
+
+		key = smbXsrv_open_global_id_to_key(id, &key_buf);
+
+		global->db_rec = dbwrap_fetch_locked(db, global, key);
+		if (global->db_rec == NULL) {
+			return NT_STATUS_INSUFFICIENT_RESOURCES;
+		}
+		val = dbwrap_record_get_value(global->db_rec);
+
+		status = smbXsrv_open_global_verify_record(
+			key, val, talloc_tos(), &tmp_global0);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			/*
+			 * Found an empty slot
+			 */
+			global->open_global_id = id;
+			return NT_STATUS_OK;
+		}
+
+		TALLOC_FREE(tmp_global0);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FATAL_APP_EXIT)) {
+			/*
+			 * smbd crashed
+			 */
+			status = dbwrap_record_delete(global->db_rec);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("dbwrap_record_delete() failed "
+					    "for record %"PRIu32": %s\n",
+					    id,
+					    nt_errstr(status));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			if ((i < min_tries) && (last_free == 0)) {
+				/*
+				 * Remember "id" as free but also try
+				 * others to not recycle ids too
+				 * quickly.
+				 */
+				last_free = id;
+			}
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("smbXsrv_open_global_verify_record() "
+				    "failed for %s: %s, ignoring\n",
+				    tdb_data_dbg(key),
+				    nt_errstr(status));
+		}
+
+		TALLOC_FREE(global->db_rec);
+	}
+
+	/* should not be reached */
+	return NT_STATUS_INTERNAL_ERROR;
 }
 
 static NTSTATUS smbXsrv_open_global_lookup(struct smbXsrv_open_table *table,
