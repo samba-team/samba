@@ -372,9 +372,77 @@ static NTSTATUS smbXsrv_open_global_store(
 	return NT_STATUS_OK;
 }
 
+struct smbXsrv_open_global_allocate_state {
+	uint32_t id;
+	struct smbXsrv_open_global0 *global;
+	NTSTATUS status;
+};
+
+static void smbXsrv_open_global_allocate_fn(
+	struct db_record *rec, TDB_DATA oldval, void *private_data)
+{
+	struct smbXsrv_open_global_allocate_state *state = private_data;
+	struct smbXsrv_open_global0 *global = state->global;
+	struct smbXsrv_open_global0 *tmp_global0 = NULL;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+
+	state->status = smbXsrv_open_global_verify_record(
+		key, oldval, talloc_tos(), &tmp_global0);
+
+	if (NT_STATUS_IS_OK(state->status)) {
+		/*
+		 * Found an existing record
+		 */
+		TALLOC_FREE(tmp_global0);
+		state->status = NT_STATUS_RETRY;
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(state->status, NT_STATUS_NOT_FOUND)) {
+		/*
+		 * Found an empty slot
+		 */
+		global->open_global_id = state->id;
+		global->open_persistent_id = state->id;
+
+		state->status = smbXsrv_open_global_store(
+			rec, key, (TDB_DATA) { .dsize = 0, }, state->global);
+		if (!NT_STATUS_IS_OK(state->status)) {
+			DBG_WARNING("smbXsrv_open_global_store() for "
+				    "id %"PRIu32" failed: %s\n",
+				    state->id,
+				    nt_errstr(state->status));
+		}
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(state->status, NT_STATUS_FATAL_APP_EXIT)) {
+		NTSTATUS status;
+
+		TALLOC_FREE(tmp_global0);
+
+		/*
+		 * smbd crashed
+		 */
+		status = dbwrap_record_delete(rec);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("dbwrap_record_delete() failed "
+				    "for record %"PRIu32": %s\n",
+				    state->id,
+				    nt_errstr(status));
+			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			return;
+		}
+		return;
+	}
+}
+
 static NTSTATUS smbXsrv_open_global_allocate(
 	struct db_context *db, struct smbXsrv_open_global0 *global)
 {
+	struct smbXsrv_open_global_allocate_state state = {
+		.global = global,
+	};
 	uint32_t i;
 	uint32_t last_free = 0;
 	const uint32_t min_tries = 3;
@@ -387,66 +455,38 @@ static NTSTATUS smbXsrv_open_global_allocate(
 	 */
 	for (i = 0; i < UINT32_MAX; i++) {
 		struct smbXsrv_open_global_key_buf key_buf;
-		struct smbXsrv_open_global0 *tmp_global0 = NULL;
-		TDB_DATA key, val;
-		uint32_t id;
+		TDB_DATA key;
 		NTSTATUS status;
 
 		if (i >= min_tries && last_free != 0) {
-			id = last_free;
+			state.id = last_free;
 		} else {
-			generate_nonce_buffer((uint8_t *)&id, sizeof(id));
-			id = MAX(id, 1);
-			id = MIN(id, UINT32_MAX-1);
+			generate_nonce_buffer(
+				(uint8_t *)&state.id, sizeof(state.id));
+			state.id = MAX(state.id, 1);
+			state.id = MIN(state.id, UINT32_MAX-1);
 		}
 
-		key = smbXsrv_open_global_id_to_key(id, &key_buf);
+		key = smbXsrv_open_global_id_to_key(state.id, &key_buf);
 
-		global->db_rec = dbwrap_fetch_locked(db, global, key);
-		if (global->db_rec == NULL) {
-			return NT_STATUS_INSUFFICIENT_RESOURCES;
+		status = dbwrap_do_locked(
+			db, key, smbXsrv_open_global_allocate_fn, &state);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("dbwrap_do_locked() failed: %s\n",
+				    nt_errstr(status));
+			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
-		val = dbwrap_record_get_value(global->db_rec);
 
-		status = smbXsrv_open_global_verify_record(
-			key, val, talloc_tos(), &tmp_global0);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		if (NT_STATUS_IS_OK(state.status)) {
 			/*
-			 * Found an empty slot
+			 * Found an empty slot, done.
 			 */
-			global->open_global_id = id;
-			global->open_persistent_id = id;
-
-			status = smbXsrv_open_global_store(
-				global->db_rec,
-				key,
-				(TDB_DATA) { .dsize = 0, },
-				global);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_WARNING("smbXsrv_open_global_store() for "
-					    "id %"PRIu32" failed: %s\n",
-					    id,
-					    nt_errstr(status));
-			}
-			TALLOC_FREE(global->db_rec);
-			return status;
+			DBG_DEBUG("Found slot %"PRIu32"\n", state.id);
+			return NT_STATUS_OK;
 		}
 
-		TALLOC_FREE(tmp_global0);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FATAL_APP_EXIT)) {
-			/*
-			 * smbd crashed
-			 */
-			status = dbwrap_record_delete(global->db_rec);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_WARNING("dbwrap_record_delete() failed "
-					    "for record %"PRIu32": %s\n",
-					    id,
-					    nt_errstr(status));
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-			}
+		if (NT_STATUS_EQUAL(state.status, NT_STATUS_FATAL_APP_EXIT)) {
 
 			if ((i < min_tries) && (last_free == 0)) {
 				/*
@@ -454,18 +494,23 @@ static NTSTATUS smbXsrv_open_global_allocate(
 				 * others to not recycle ids too
 				 * quickly.
 				 */
-				last_free = id;
+				last_free = state.id;
 			}
+			continue;
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("smbXsrv_open_global_verify_record() "
-				    "failed for %s: %s, ignoring\n",
-				    tdb_data_dbg(key),
-				    nt_errstr(status));
+		if (NT_STATUS_EQUAL(state.status, NT_STATUS_RETRY)) {
+			/*
+			 * Normal collision, try next
+			 */
+			DBG_DEBUG("Found record for id %"PRIu32"\n",
+				  state.id);
+			continue;
 		}
 
-		TALLOC_FREE(global->db_rec);
+		DBG_WARNING("smbXsrv_open_global_allocate_fn() failed: %s\n",
+			    nt_errstr(state.status));
+		return state.status;
 	}
 
 	/* should not be reached */
