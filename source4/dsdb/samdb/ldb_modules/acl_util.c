@@ -97,8 +97,8 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 
 int acl_check_access_on_attribute(struct ldb_module *module,
 				  TALLOC_CTX *mem_ctx,
-				  struct security_descriptor *sd,
-				  struct dom_sid *rp_sid,
+				  const struct security_descriptor *sd,
+				  const struct dom_sid *rp_sid,
 				  uint32_t access_mask,
 				  const struct dsdb_attribute *attr,
 				  const struct dsdb_class *objectclass)
