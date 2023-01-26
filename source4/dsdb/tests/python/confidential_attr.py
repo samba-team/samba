@@ -25,6 +25,9 @@ sys.path.insert(0, "bin/python")
 
 import samba
 import os
+import random
+import statistics
+import time
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
@@ -1021,5 +1024,164 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # check we still can't see the objects
         self.assert_conf_attr_searches(has_rights_to=0)
         self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+
+    def test_timing_attack(self):
+        # Create the machine account.
+        mach_name = f'conf_timing_{random.randint(0, 0xffff)}'
+        mach_dn = Dn(self.ldb_admin, f'CN={mach_name},{self.ou}')
+        details = {
+            'dn': mach_dn,
+            'objectclass': 'computer',
+            'sAMAccountName': f'{mach_name}$',
+        }
+        self.ldb_admin.add(details)
+
+        # Get the machine account's GUID.
+        res = self.ldb_admin.search(mach_dn,
+                                    attrs=['objectGUID'],
+                                    scope=SCOPE_BASE)
+        mach_guid = res[0].get('objectGUID', idx=0)
+
+        # Now we can create an msFVE-RecoveryInformation object that is a child
+        # of the machine account object.
+        recovery_dn = Dn(self.ldb_admin, str(mach_dn))
+        recovery_dn.add_child('CN=recovery_info')
+
+        secret_pw = 'Secret007'
+        not_secret_pw = 'Secret008'
+
+        secret_pw_utf8 = secret_pw.encode('utf-8')
+
+        # The crucial attribute, msFVE-RecoveryPassword, is a confidential
+        # attribute.
+        conf_attr = 'msFVE-RecoveryPassword'
+
+        m = Message(recovery_dn)
+        m['objectClass'] = 'msFVE-RecoveryInformation'
+        m['msFVE-RecoveryGuid'] = mach_guid
+        m[conf_attr] = secret_pw
+        self.ldb_admin.add(m)
+
+        attrs = [conf_attr]
+
+        # Search for the confidential attribute as administrator, ensuring it
+        # is visible.
+        res = self.ldb_admin.search(recovery_dn,
+                                    attrs=attrs,
+                                    scope=SCOPE_BASE)
+        self.assertEqual(1, len(res))
+        pw = res[0].get(conf_attr, idx=0)
+        self.assertEqual(secret_pw_utf8, pw)
+
+        # Repeat the search with an expression matching on the confidential
+        # attribute. This should also work.
+        res = self.ldb_admin.search(
+            recovery_dn,
+            attrs=attrs,
+            expression=f'({conf_attr}={secret_pw})',
+            scope=SCOPE_BASE)
+        self.assertEqual(1, len(res))
+        pw = res[0].get(conf_attr, idx=0)
+        self.assertEqual(secret_pw_utf8, pw)
+
+        # Search for the attribute as an unprivileged user. It should not be
+        # visible.
+        user_res = self.ldb_user.search(recovery_dn,
+                                        attrs=attrs,
+                                        scope=SCOPE_BASE)
+        pw = user_res[0].get(conf_attr, idx=0)
+        # The attribute should be None.
+        self.assertIsNone(pw)
+
+        # We use LDAP_MATCHING_RULE_TRANSITIVE_EVAL to create a search
+        # expression that takes a long time to execute, by setting off another
+        # search each time it is evaluated. It makes no difference that the
+        # object on which we're searching has no 'member' attribute.
+        dummy_dn = 'cn=user,cn=users,dc=samba,dc=example,dc=com'
+        slow_subexpr = f'(member:1.2.840.113556.1.4.1941:={dummy_dn})'
+        slow_expr = f'(|{slow_subexpr * 100})'
+
+        # The full search expression. It comprises a match on the confidential
+        # attribute joined by an AND to our slow search expression, The AND
+        # operator is short-circuiting, so if our first subexpression fails to
+        # match, we'll bail out of the search early. Otherwise, we'll evaluate
+        # the slow part; as its subexpressions are joined by ORs, and will all
+        # fail to match, every one of them will need to be evaluated. By
+        # measuring how long the search takes, we'll be able to infer whether
+        # the confidential attribute matched or not.
+
+        # This is bad if we are not an administrator, and are able to use this
+        # to determine the values of confidential attributes. Therefore we need
+        # to ensure we can't observe any difference in timing.
+        correct_expr = f'(&({conf_attr}={secret_pw}){slow_expr})'
+        wrong_expr = f'(&({conf_attr}={not_secret_pw}){slow_expr})'
+
+        def standard_uncertainty_bounds(times):
+            mean = statistics.mean(times)
+            stdev = statistics.stdev(times, mean)
+
+            return (mean - stdev, mean + stdev)
+
+        # Perform a number of searches with both correct and incorrect
+        # expressions, and return the uncertainty bounds for each.
+        def time_searches(samdb):
+            warmup_samples = 3
+            samples = 10
+            matching_times = []
+            non_matching_times = []
+
+            for _ in range(warmup_samples):
+                samdb.search(recovery_dn,
+                             attrs=attrs,
+                             expression=correct_expr,
+                             scope=SCOPE_BASE)
+
+            for _ in range(samples):
+                # Measure the time taken for a search, for both a matching and
+                # a non-matching search expression.
+
+                prev = time.time()
+                samdb.search(recovery_dn,
+                             attrs=attrs,
+                             expression=correct_expr,
+                             scope=SCOPE_BASE)
+                now = time.time()
+                matching_times.append(now - prev)
+
+                prev = time.time()
+                samdb.search(recovery_dn,
+                             attrs=attrs,
+                             expression=wrong_expr,
+                             scope=SCOPE_BASE)
+                now = time.time()
+                non_matching_times.append(now - prev)
+
+            matching = standard_uncertainty_bounds(matching_times)
+            non_matching = standard_uncertainty_bounds(non_matching_times)
+            return matching, non_matching
+
+        def assertRangesDistinct(a, b):
+            a0, a1 = a
+            b0, b1 = b
+            self.assertLess(min(a1, b1), max(a0, b0))
+
+        def assertRangesOverlap(a, b):
+            a0, a1 = a
+            b0, b1 = b
+            self.assertGreaterEqual(min(a1, b1), max(a0, b0))
+
+        # For an administrator, the uncertainty bounds for matching and
+        # non-matching searches should be distinct. This shows that the two
+        # cases are distinguishable, and therefore that confidential attributes
+        # are visible.
+        admin_matching, admin_non_matching = time_searches(self.ldb_admin)
+        assertRangesDistinct(admin_matching, admin_non_matching)
+
+        # The user cannot view the confidential attribute, so the uncertainty
+        # bounds for matching and non-matching searches must overlap. The two
+        # cases must be indistinguishable.
+        user_matching, user_non_matching = time_searches(self.ldb_user)
+        assertRangesOverlap(user_matching, user_non_matching)
+
 
 TestProgram(module=__name__, opts=subunitopts)
