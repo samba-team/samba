@@ -1464,11 +1464,18 @@ void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element 
 */
 void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
 {
-	struct ldb_message_element *el;
+	unsigned int i;
+	unsigned int num_del = 0;
 
-	while ((el = ldb_msg_find_element(msg, attr)) != NULL) {
-		ldb_msg_remove_element(msg, el);
+	for (i = 0; i < msg->num_elements; ++i) {
+		if (ldb_attr_cmp(msg->elements[i].name, attr) == 0) {
+			++num_del;
+		} else if (num_del) {
+			msg->elements[i - num_del] = msg->elements[i];
+		}
 	}
+
+	msg->num_elements -= num_del;
 }
 
 /*
