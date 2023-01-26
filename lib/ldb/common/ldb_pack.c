@@ -610,6 +610,7 @@ static int ldb_unpack_data_flags_v1(struct ldb_context *ldb,
 	}
 
 	if (flags & LDB_UNPACK_DATA_FLAG_NO_ATTRS) {
+		message->num_elements = 0;
 		return 0;
 	}
 	
@@ -838,6 +839,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 	}
 
 	if (flags & LDB_UNPACK_DATA_FLAG_NO_ATTRS) {
+		message->num_elements = 0;
 		return 0;
 	}
 
