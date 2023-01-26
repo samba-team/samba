@@ -2672,8 +2672,8 @@ class SdAutoInheritTests(DescriptorTests):
         ou_sddl2 = ou_sd2.as_sddl(self.domain_sid)
         sub_sddl2 = sub_sd2.as_sddl(self.domain_sid)
 
-        self.assertFalse(ou_sddl2 == ou_sddl0)
-        self.assertFalse(sub_sddl2 == sub_sddl0)
+        self.assertNotEqual(ou_sddl2, ou_sddl0)
+        self.assertNotEqual(sub_sddl2, sub_sddl0)
 
         if ace not in ou_sddl2:
             print("ou0: %s" % ou_sddl0)
