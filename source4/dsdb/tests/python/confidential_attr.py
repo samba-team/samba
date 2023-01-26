@@ -24,7 +24,6 @@ import sys
 sys.path.insert(0, "bin/python")
 
 import samba
-import os
 import random
 import statistics
 import time
@@ -136,9 +135,9 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # sanity-check the flag is not already set (this'll cause problems if
         # previous test run didn't clean up properly)
         search_flags = self.get_attr_search_flags(self.attr_dn)
-        self.assertTrue(int(search_flags) & SEARCH_FLAG_CONFIDENTIAL == 0,
-                        "{0} searchFlags already {1}".format(self.conf_attr,
-                                                             search_flags))
+        self.assertEqual(0, int(search_flags) & SEARCH_FLAG_CONFIDENTIAL,
+                         "{0} searchFlags already {1}".format(self.conf_attr,
+                                                              search_flags))
 
     def tearDown(self):
         super(ConfidentialAttrCommon, self).tearDown()
@@ -208,9 +207,9 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         for attr in attr_filters:
             res = samdb.search(self.test_dn, expression=expr,
                                scope=SCOPE_SUBTREE, attrs=attr)
-            self.assertTrue(len(res) == expected_num,
-                            "%u results, not %u for search %s, attr %s" %
-                            (len(res), expected_num, expr, str(attr)))
+            self.assertEqual(len(res), expected_num,
+                             "%u results, not %u for search %s, attr %s" %
+                             (len(res), expected_num, expr, str(attr)))
 
     # return a selection of searches that match exactly against the test object
     def get_exact_match_searches(self):
@@ -352,25 +351,6 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         return expected_results
 
-    # Returns the expected negative (i.e. '!') search behaviour when talking to
-    # a DC with DC_MODE_RETURN_NONE behaviour, i.e. we assert that users
-    # without rights cannot see objects in '!' searches at all
-    def negative_searches_return_none(self, has_rights_to=0):
-        expected_results = {}
-
-        # the 'match-all' searches should only return the objects we have
-        # access rights to (if any)
-        for search in self.get_negative_match_all_searches():
-            expected_results[search] = has_rights_to
-
-        # for inverse matches, we should NOT be told about any objects at all
-        inverse_searches = self.get_inverse_match_searches()
-        inverse_searches += ["(!({0}=*))".format(self.conf_attr)]
-        for search in inverse_searches:
-            expected_results[search] = 0
-
-        return expected_results
-
     # Returns the expected negative (i.e. '!') search behaviour. This varies
     # depending on what type of DC we're talking to (i.e. Windows or Samba)
     # and what access rights the user has.
@@ -403,7 +383,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # checks whether the confidential attribute is present
         res = samdb.search(self.conf_dn, expression="(objectClass=*)",
                            scope=SCOPE_SUBTREE, attrs=attrs)
-        self.assertTrue(len(res) == 1)
+        self.assertEqual(1, len(res))
 
         attr_returned = False
         for msg in res:
@@ -586,9 +566,9 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         for attr in attr_filters:
             res = samdb.search(self.test_dn, expression=expr,
                                scope=SCOPE_SUBTREE, attrs=attr)
-            self.assertTrue(len(res) == expected_num,
-                            "%u results, not %u for search %s, attr %s" %
-                            (len(res), expected_num, expr, str(attr)))
+            self.assertEqual(len(res), expected_num,
+                             "%u results, not %u for search %s, attr %s" %
+                             (len(res), expected_num, expr, str(attr)))
 
             # assert we haven't revealed the hidden test-object
             if excl_testobj:
@@ -604,7 +584,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
 
         # make sure the test object is not returned if we've been denied rights
         # to it via an ACE
-        excl_testobj = True if has_rights_to == "deny-one" else False
+        excl_testobj = has_rights_to == "deny-one"
 
         # these first few searches we just expect to match against the one
         # object under test that we're trying to guess the value of
@@ -624,24 +604,6 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         for search in self.get_match_all_searches():
             self.assert_search_result(expected_num, search, samdb,
                                       excl_testobj)
-
-    # override method specifically for deny ACL test cases. Instead of being
-    # granted access to either no objects or only one, we are being denied
-    # access to only one object (but can still access the rest).
-    def negative_searches_return_none(self, has_rights_to=0):
-        expected_results = {}
-
-        # on Samba we will see the objects we have rights to, but the one we
-        # are denied access to will be hidden
-        searches = self.get_negative_match_all_searches()
-        searches += self.get_inverse_match_searches()
-        for search in searches:
-            expected_results[search] = self.total_objects - 1
-
-        # The wildcard returns the objects without this attribute as normal.
-        search = "(!({0}=*))".format(self.conf_attr)
-        expected_results[search] = self.total_objects - self.objects_with_attr
-        return expected_results
 
     # override method specifically for deny ACL test cases
     def negative_searches_return_all(self, has_rights_to=0,
@@ -783,7 +745,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         for attr in self.attr_filters:
             res = samdb.search(base_dn, expression=search, scope=SCOPE_SUBTREE,
                                attrs=attr, controls=self.dirsync)
-            self.assertTrue(len(res) == expected_num,
+            self.assertEqual(len(res), expected_num,
                             "%u results, not %u for search %s, attr %s" %
                             (len(res), expected_num, search, str(attr)))
 
@@ -797,7 +759,8 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         expr = self.single_obj_filter
         res = samdb.search(self.base_dn, expression=expr, scope=SCOPE_SUBTREE,
                            attrs=attrs, controls=self.dirsync)
-        self.assertTrue(len(res) == 1 or no_result_ok)
+        if not no_result_ok:
+            self.assertEqual(1, len(res))
 
         attr_returned = False
         for msg in res:
@@ -888,7 +851,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         search_flags = int(self.get_attr_search_flags(self.attr_dn))
 
         # check we've already set the confidential flag
-        self.assertTrue(search_flags & SEARCH_FLAG_CONFIDENTIAL != 0)
+        self.assertNotEqual(0, search_flags & SEARCH_FLAG_CONFIDENTIAL)
         search_flags |= SEARCH_FLAG_PRESERVEONDELETE
 
         self.set_attr_search_flags(self.attr_dn, str(search_flags))
@@ -964,7 +927,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # now delete the users (except for the user whose LDB connection
         # we're currently using)
         for user in self.all_users:
-            if user != self.user:
+            if user is not self.user:
                 self.ldb_admin.delete(self.get_user_dn(user))
 
         # check we still can't see the objects
