@@ -261,6 +261,112 @@ static bool test_event_context(struct torture_context *test,
 	return true;
 }
 
+static void fde_handler_do_read(struct tevent_context *ev_ctx, struct tevent_fd *f,
+			uint16_t flags, void *private_data)
+{
+	int *fd = (int *)private_data;
+	char c = 0;
+
+	do_read(fd[0], &c, 1);
+	fde_count++;
+}
+
+static void fde_handler_do_write(struct tevent_context *ev_ctx, struct tevent_fd *f,
+			uint16_t flags, void *private_data)
+{
+	int *fd = (int *)private_data;
+	char c = 0;
+
+	do_write(fd[1], &c, 1);
+}
+
+static void fde_handler_ignore(struct tevent_context *ev_ctx, struct tevent_fd *f,
+			uint16_t flags, void *private_data)
+{
+}
+
+static bool test_fd_speedX(struct torture_context *test,
+			   const void *test_data,
+			   size_t additional_fdes)
+{
+	struct tevent_context *ev_ctx = NULL;
+	int fd[2] = { -1, -1 };
+	const char *backend = (const char *)test_data;
+	struct tevent_fd *fde_read = NULL;
+	struct tevent_fd *fde_write = NULL;
+	int finished=0;
+	struct timeval t;
+	size_t i;
+	int ret;
+
+	ev_ctx = test_tevent_context_init_byname(test, backend);
+	if (ev_ctx == NULL) {
+		torture_comment(test, "event backend '%s' not supported\n", backend);
+		return true;
+	}
+
+	torture_comment(test, "backend '%s' - test_fd_speed%zu\n",
+			backend, 1 + additional_fdes);
+
+	/* reset globals */
+	fde_count = 0;
+
+	/* create a pipe */
+	ret = pipe(fd);
+	torture_assert_int_equal(test, ret, 0, "pipe failed");
+
+	fde_read = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_READ,
+				 fde_handler_do_read, fd);
+
+	fde_write = tevent_add_fd(ev_ctx, ev_ctx, fd[1], TEVENT_FD_WRITE,
+				  fde_handler_do_write, fd);
+
+	for (i = 0; i < additional_fdes; i++) {
+		tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_WRITE,
+			      fde_handler_ignore, fd);
+		tevent_add_fd(ev_ctx, ev_ctx, fd[1], TEVENT_FD_READ,
+			      fde_handler_ignore, fd);
+	}
+
+	tevent_fd_set_auto_close(fde_read);
+	tevent_fd_set_auto_close(fde_write);
+
+	tevent_add_timer(ev_ctx, ev_ctx, timeval_current_ofs(600,0),
+			 finished_handler, &finished);
+
+	t = timeval_current();
+	while (!finished && fde_count < 1000000) {
+		errno = 0;
+		if (tevent_loop_once(ev_ctx) == -1) {
+			TALLOC_FREE(ev_ctx);
+			torture_fail(test, talloc_asprintf(test, "Failed event loop %s\n", strerror(errno)));
+			return false;
+		}
+	}
+
+	talloc_free(fde_read);
+	talloc_free(fde_write);
+
+	torture_comment(test, "Got %.2f pipe events\n", (double)fde_count);
+	torture_comment(test, "Got %.2f pipe events/sec\n", fde_count/timeval_elapsed(&t));
+
+	talloc_free(ev_ctx);
+
+	return true;
+}
+
+static bool test_fd_speed1(struct torture_context *test,
+			   const void *test_data)
+{
+	return test_fd_speedX(test, test_data, 0);
+}
+
+static bool test_fd_speed2(struct torture_context *test,
+			   const void *test_data)
+{
+	return test_fd_speedX(test, test_data, 1);
+}
+
 struct test_event_fd1_state {
 	struct torture_context *tctx;
 	const char *backend;
@@ -1864,6 +1970,14 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "context",
 					       test_event_context,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "fd_speed1",
+					       test_fd_speed1,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "fd_speed2",
+					       test_fd_speed2,
 					       (const void *)list[i]);
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "fd1",
