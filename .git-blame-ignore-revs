@@ -1,0 +1,9 @@
+# This file contains a list of git revisions that "git blame" should ignore.
+# It's mostly useful to ignore commits that just do reformatting.
+
+# See https://michaelheap.com/git-ignore-rev/
+
+# To use locally, run:
+# git config --global blame.ignoreRevsFile .git-blame-ignore-revs
+
+bfa9624946a35e5645effbb20e02abba2c34a8c2
