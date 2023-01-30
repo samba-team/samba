@@ -157,6 +157,27 @@ do { \
 } while (0)
 
 /*
+ * like DLIST_DEMOTE(), but optimized
+ * for short lists with 0, 1 or 2 elements
+ */
+#define DLIST_DEMOTE_SHORT(list, p) \
+do { \
+	if ((list) == NULL) { \
+		/* no reason to demote, just add */ \
+		DLIST_ADD(list, p); \
+	} else if ((list)->prev == (p)) { \
+		/* optimize if p is last */ \
+	} else if ((list) == (p)) { \
+		/* optimize if p is first */ \
+		(list)->prev->next = (p); \
+		(list) = (p)->next; \
+		(p)->next = NULL; \
+	} else { \
+		DLIST_DEMOTE(list, p); \
+	} \
+} while (0)
+
+/*
    concatenate two lists - putting all elements of the 2nd list at the
    end of the first list.
 */
