@@ -4,9 +4,8 @@
 
    Copyright (C) Andrew Tridgell 1998-2010
 
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+     ** NOTE! The following LGPL license applies to this file (*dlinklist.h).
+     ** This does NOT imply that all of Samba is released under the LGPL
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
