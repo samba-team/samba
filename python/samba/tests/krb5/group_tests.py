@@ -1879,7 +1879,7 @@ class GroupTests(KDCBaseTest):
                                               'groupType')
         samdb.modify(msg)
 
-    # Create an arrangement on groups based on a configuration specified in a
+    # Create an arrangement of groups based on a configuration specified in a
     # test case. 'user_principal' is a principal representing the user account;
     # 'trust_principal', a principal representing the account of a user from
     # another domain.
