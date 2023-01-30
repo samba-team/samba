@@ -60,9 +60,6 @@ etags:
 ctags:
 	$(WAF) ctags
 
-pydoctor:
-	$(WAF) pydoctor
-
 bin/%:: FORCE
 	$(WAF) --targets=`basename $@`
 FORCE:

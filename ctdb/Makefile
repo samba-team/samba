@@ -75,9 +75,6 @@ ctags:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) ctags
 
-pydoctor:
-	$(WAF) pydoctor
-
 bin/%:: FORCE
 	$(WAF) --targets=`basename $@`
 FORCE:

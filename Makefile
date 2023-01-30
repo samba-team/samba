@@ -97,9 +97,6 @@ etags:
 ctags:
 	$(WAF) ctags
 
-pydoctor:
-	$(WAF) pydoctor
-
 pep8:
 	$(WAF) pep8
 

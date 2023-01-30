@@ -465,28 +465,6 @@ def build(bld):
     samba_version.load_version(env=bld.env, is_install=bld.is_install)
 
 
-def pydoctor(ctx):
-    '''build python apidocs'''
-    bp = os.path.abspath('bin/python')
-    mpaths = {}
-    modules = ['talloc', 'tdb', 'ldb']
-    for m in modules:
-        f = os.popen("PYTHONPATH=%s python -c 'import %s; print %s.__file__'" % (bp, m, m), 'r')
-        try:
-            mpaths[m] = f.read().strip()
-        finally:
-            f.close()
-    mpaths['main'] = bp
-    cmd = ('PYTHONPATH=%(main)s pydoctor --introspect-c-modules --project-name=Samba '
-           '--project-url=http://www.samba.org --make-html --docformat=restructuredtext '
-           '--add-package bin/python/samba ' + ''.join('--add-module %s ' % n for n in modules))
-    cmd = cmd % mpaths
-    print("Running: %s" % cmd)
-    status = os.system(cmd)
-    if os.WEXITSTATUS(status):
-        raise Errors.WafError('pydoctor failed')
-
-
 def pep8(ctx):
     '''run pep8 validator'''
     cmd='PYTHONPATH=bin/python pep8 -r bin/python/samba'
@@ -494,21 +472,6 @@ def pep8(ctx):
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
         raise Errors.WafError('pep8 failed')
-
-
-def wafdocs(ctx):
-    '''build wafsamba apidocs'''
-    from samba_utils import recursive_dirlist
-    os.system('pwd')
-    list = recursive_dirlist('../buildtools/wafsamba', '.', pattern='*.py')
-
-    print(list)
-    cmd='PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext' +\
-        "".join(' --add-module %s' % f for f in list)
-    print("Running: %s" % cmd)
-    status = os.system(cmd)
-    if os.WEXITSTATUS(status):
-        raise Errors.WafError('wafdocs failed')
 
 
 def dist():
