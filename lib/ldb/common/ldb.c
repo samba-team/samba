@@ -117,6 +117,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 			return NULL;
 		}
 		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
+		tevent_set_max_debug_level(ev_ctx, TEVENT_DEBUG_TRACE);
 		tevent_loop_allow_nesting(ev_ctx);
 	}
 
@@ -745,6 +746,7 @@ struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
 			return NULL;
 		}
 		tevent_set_debug(h->event_context, ldb_tevent_debug, ldb);
+		tevent_set_max_debug_level(h->event_context, TEVENT_DEBUG_TRACE);
 		tevent_loop_allow_nesting(h->event_context);
 	}
 
