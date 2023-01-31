@@ -206,7 +206,7 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 	DEBUG(4,("DsReplicaUpdateRefs for host '%s' with GUID %s options 0x%08x nc=%s\n",
 		 req->dest_dsa_dns_name, GUID_string(mem_ctx, &req->dest_dsa_guid),
 		 req->options,
-		 drs_ObjectIdentifier_to_string(mem_ctx, req->naming_context)));
+		 drs_ObjectIdentifier_to_debug_string(mem_ctx, req->naming_context)));
 
 	/*
 	 * 4.1.26.2 Server Behavior of the IDL_DRSUpdateRefs Method
@@ -228,14 +228,18 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 	ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx, sam_ctx, req->naming_context,
 						     &dn_normalised, &nc_root);
 	if (ret != LDB_SUCCESS) {
-		DBG_WARNING("Didn't find a nc for %s\n",
-			    ldb_dn_get_linearized(dn_normalised));
+		DBG_WARNING("Didn't find a nc for %s: %s\n",
+			    drs_ObjectIdentifier_to_debug_string(mem_ctx,
+								 req->naming_context),
+			    ldb_errstring(sam_ctx));
 		return WERR_DS_DRA_BAD_NC;
 	}
 	if (ldb_dn_compare(dn_normalised, nc_root) != 0) {
-		DBG_NOTICE("dn %s is not equal to %s\n",
+		DBG_NOTICE("dn %s is not equal to %s (from %s)\n",
 			   ldb_dn_get_linearized(dn_normalised),
-			   ldb_dn_get_linearized(nc_root));
+			   ldb_dn_get_linearized(nc_root),
+			   drs_ObjectIdentifier_to_debug_string(mem_ctx,
+								req->naming_context));
 		return WERR_DS_DRA_BAD_NC;
 	}
 
