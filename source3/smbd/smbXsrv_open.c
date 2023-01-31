@@ -1412,7 +1412,7 @@ static void smbXsrv_open_cleanup_fn(
 	struct db_record *rec, TDB_DATA oldval, void *private_data)
 {
 	struct smbXsrv_open_cleanup_state *state = private_data;
-	struct smbXsrv_open_global0 *op = NULL;
+	struct smbXsrv_open_global0 *global = NULL;
 	TDB_DATA key = dbwrap_record_get_key(rec);
 	bool delete_open = false;
 
@@ -1426,7 +1426,7 @@ static void smbXsrv_open_cleanup_fn(
 	}
 
 	state->status = smbXsrv_open_global_parse_record(
-		talloc_tos(), key, oldval, &op);
+		talloc_tos(), key, oldval, &global);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_WARNING("[global: %x08x] "
 			    "smbXsrv_open_global_parse_record() in %s "
@@ -1438,15 +1438,15 @@ static void smbXsrv_open_cleanup_fn(
 		goto do_delete;
 	}
 
-	if (server_id_is_disconnected(&op->server_id)) {
+	if (server_id_is_disconnected(&global->server_id)) {
 		struct timeval now = timeval_current();
 		struct timeval disconnect_time;
 		struct timeval_buf buf;
 		int64_t tdiff;
 
-		nttime_to_timeval(&disconnect_time, op->disconnect_time);
+		nttime_to_timeval(&disconnect_time, global->disconnect_time);
 		tdiff = usec_time_diff(&now, &disconnect_time);
-		delete_open = (tdiff >= 1000*op->durable_timeout_msec);
+		delete_open = (tdiff >= 1000*global->durable_timeout_msec);
 
 		DBG_DEBUG("[global: 0x%08x] "
 			  "disconnected at [%s] %"PRIi64"s ago with "
@@ -1457,14 +1457,14 @@ static void smbXsrv_open_cleanup_fn(
 					  false,
 					  &buf),
 			  tdiff/1000000,
-			  op->durable_timeout_msec / 1000,
+			  global->durable_timeout_msec / 1000,
 			  delete_open ? "" : " not");
-	} else if (!serverid_exists(&op->server_id)) {
+	} else if (!serverid_exists(&global->server_id)) {
 		struct server_id_buf idbuf;
 		DBG_DEBUG("[global: 0x%08x] "
 			  "server[%s] does not exist\n",
 			  state->global_id,
-			  server_id_str_buf(op->server_id, &idbuf));
+			  server_id_str_buf(global->server_id, &idbuf));
 		delete_open = true;
 	}
 
