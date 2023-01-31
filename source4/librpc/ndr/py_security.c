@@ -68,7 +68,6 @@ static PyObject *py_dom_sid_split(PyObject *py_self, PyObject *args)
 	return Py_BuildValue("(OI)", py_domain_sid, rid);
 }
 
-#if PY_MAJOR_VERSION >= 3
 static PyObject *py_dom_sid_richcmp(PyObject *py_self, PyObject *py_other, int op)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self), *other;
@@ -93,25 +92,6 @@ static PyObject *py_dom_sid_richcmp(PyObject *py_self, PyObject *py_other, int o
 	Py_INCREF(Py_NotImplemented);
 	return Py_NotImplemented;
 }
-#else
-static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
-{
-	struct dom_sid *self = pytalloc_get_ptr(py_self), *other;
-	int val;
-
-	other = pytalloc_get_ptr(py_other);
-	if (other == NULL)
-		return -1;
-
-	val =  dom_sid_compare(self, other);
-	if (val > 0) {
-		return 1;
-	} else if (val < 0) {
-		return -1;
-	}
-	return 0;
-}
-#endif
 
 static PyObject *py_dom_sid_str(PyObject *py_self)
 {
@@ -160,11 +140,7 @@ static void py_dom_sid_patch(PyTypeObject *type)
 	type->tp_init = py_dom_sid_init;
 	type->tp_str = py_dom_sid_str;
 	type->tp_repr = py_dom_sid_repr;
-#if PY_MAJOR_VERSION >= 3
 	type->tp_richcompare = py_dom_sid_richcmp;
-#else
-	type->tp_compare = py_dom_sid_cmp;
-#endif
 	PyType_AddMethods(type, py_dom_sid_extra_methods);
 }
 
