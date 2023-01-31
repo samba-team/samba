@@ -84,8 +84,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 						      const char *attr_name);
 static PyTypeObject PyLdbBytesType;
 
-#if PY_MAJOR_VERSION >= 3
-
 #define PYARG_STR_UNI "es"
 
 static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
@@ -97,12 +95,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	Py_DECREF(args);
 	return result;
 }
-#else
-#define PyLdbBytes_FromStringAndSize PyString_FromStringAndSize
-
-#define PYARG_STR_UNI "et"
-
-#endif
 
 static PyObject *richcmp(int cmp_val, int op)
 {
@@ -4348,7 +4340,6 @@ static PyMethodDef py_ldb_global_methods[] = {
 
 #define MODULE_DOC "An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server."
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
 	PyModuleDef_HEAD_INIT,
 	.m_name = "ldb",
@@ -4356,7 +4347,6 @@ static struct PyModuleDef moduledef = {
 	.m_size = -1,
 	.m_methods = py_ldb_global_methods,
 };
-#endif
 
 static PyObject* module_init(void)
 {
@@ -4394,11 +4384,7 @@ static PyObject* module_init(void)
 	if (PyType_Ready(&PyLdbControl) < 0)
 		return NULL;
 
-#if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
-#else
-	m = Py_InitModule3("ldb", py_ldb_global_methods, MODULE_DOC);
-#endif
 	if (m == NULL)
 		return NULL;
 
@@ -4520,16 +4506,8 @@ static PyObject* module_init(void)
 	return m;
 }
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit_ldb(void);
 PyMODINIT_FUNC PyInit_ldb(void)
 {
 	return module_init();
 }
-#else
-void initldb(void);
-void initldb(void)
-{
-	module_init();
-}
-#endif
