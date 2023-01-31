@@ -864,7 +864,7 @@ static const struct tstream_context_ops tstream_tls_ops = {
 	.disconnect_recv	= tstream_tls_disconnect_recv,
 };
 
-struct tstream_tls_params {
+struct tstream_tls_params_internal {
 	gnutls_certificate_credentials_t x509_cred;
 	gnutls_dh_params_t dh_params;
 	const char *tls_priority;
@@ -873,7 +873,11 @@ struct tstream_tls_params {
 	const char *peer_name;
 };
 
-static int tstream_tls_params_destructor(struct tstream_tls_params *tlsp)
+struct tstream_tls_params {
+	struct tstream_tls_params_internal *internal;
+};
+
+static int tstream_tls_params_internal_destructor(struct tstream_tls_params_internal *tlsp)
 {
 	if (tlsp->x509_cred) {
 		gnutls_certificate_free_credentials(tlsp->x509_cred);
@@ -887,8 +891,10 @@ static int tstream_tls_params_destructor(struct tstream_tls_params *tlsp)
 	return 0;
 }
 
-bool tstream_tls_params_enabled(struct tstream_tls_params *tlsp)
+bool tstream_tls_params_enabled(struct tstream_tls_params *tls_params)
 {
+	struct tstream_tls_params_internal *tlsp = tls_params->internal;
+
 	return tlsp->tls_enabled;
 }
 
@@ -900,33 +906,42 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 				   const char *peer_name,
 				   struct tstream_tls_params **_tlsp)
 {
-	struct tstream_tls_params *tlsp;
+	struct tstream_tls_params *__tlsp = NULL;
+	struct tstream_tls_params_internal *tlsp = NULL;
 	int ret;
 
-	tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
-	NT_STATUS_HAVE_NO_MEMORY(tlsp);
+	__tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
+	if (__tlsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	talloc_set_destructor(tlsp, tstream_tls_params_destructor);
+	tlsp = talloc_zero(__tlsp, struct tstream_tls_params_internal);
+	if (tlsp == NULL) {
+		TALLOC_FREE(__tlsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(tlsp, tstream_tls_params_internal_destructor);
+	__tlsp->internal = tlsp;
 
 	tlsp->verify_peer = verify_peer;
 	if (peer_name != NULL) {
 		tlsp->peer_name = talloc_strdup(tlsp, peer_name);
 		if (tlsp->peer_name == NULL) {
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else if (tlsp->verify_peer >= TLS_VERIFY_PEER_CA_AND_NAME) {
 		DEBUG(0,("TLS failed to missing peer_name - "
 			 "with 'tls verify peer = %s'\n",
 			 tls_verify_peer_string(tlsp->verify_peer)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	ret = gnutls_certificate_allocate_credentials(&tlsp->x509_cred);
 	if (ret != GNUTLS_E_SUCCESS) {
 		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -937,7 +952,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		if (ret < 0) {
 			DEBUG(0,("TLS failed to initialise cafile %s - %s\n",
 				 ca_file, gnutls_strerror(ret)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	} else if (tlsp->verify_peer >= TLS_VERIFY_PEER_CA_ONLY) {
@@ -945,7 +960,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 			 "with 'tls verify peer = %s'\n",
 			 ca_file,
 			 tls_verify_peer_string(tlsp->verify_peer)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
@@ -956,7 +971,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		if (ret < 0) {
 			DEBUG(0,("TLS failed to initialise crlfile %s - %s\n",
 				 crl_file, gnutls_strerror(ret)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	} else if (tlsp->verify_peer >= TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE) {
@@ -964,19 +979,19 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 			 "with 'tls verify peer = %s'\n",
 			 crl_file,
 			 tls_verify_peer_string(tlsp->verify_peer)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	tlsp->tls_priority = talloc_strdup(tlsp, tls_priority);
 	if (tlsp->tls_priority == NULL) {
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	tlsp->tls_enabled = true;
 
-	*_tlsp = tlsp;
+	*_tlsp = __tlsp;
 	return NT_STATUS_OK;
 }
 
@@ -987,13 +1002,14 @@ struct tstream_tls_connect_state {
 struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     struct tstream_context *plain_stream,
-					     struct tstream_tls_params *tls_params,
+					     struct tstream_tls_params *_tls_params,
 					     const char *location)
 {
 	struct tevent_req *req;
 	struct tstream_tls_connect_state *state;
 	const char *error_pos;
 	struct tstream_tls *tlss;
+	struct tstream_tls_params_internal *tls_params = NULL;
 	int ret;
 	unsigned int flags = GNUTLS_CLIENT;
 
@@ -1013,6 +1029,23 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	ZERO_STRUCTP(tlss);
 	talloc_set_destructor(tlss, tstream_tls_destructor);
+
+	/*
+	 * Note we need to make sure x509_cred and dh_params
+	 * from tstream_tls_params_internal stay alive for
+	 * the whole lifetime of this session!
+	 *
+	 * See 'man gnutls_credentials_set' and
+	 * 'man gnutls_certificate_set_dh_params'.
+	 *
+	 * Note: here we use talloc_reference() in a way
+	 *       that does not expose it to the caller.
+	 *
+	 */
+	tls_params = talloc_reference(tlss, _tls_params->internal);
+	if (tevent_req_nomem(tls_params, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	tlss->plain_stream = plain_stream;
 	tlss->verify_peer = tls_params->verify_peer;
@@ -1125,24 +1158,44 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *tls_priority,
 				   struct tstream_tls_params **_tlsp)
 {
-	struct tstream_tls_params *tlsp;
+	struct tstream_tls_params *__tlsp = NULL;
+	struct tstream_tls_params_internal *tlsp = NULL;
 	int ret;
 	struct stat st;
 
 	if (!enabled || key_file == NULL || *key_file == 0) {
-		tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
-		NT_STATUS_HAVE_NO_MEMORY(tlsp);
-		talloc_set_destructor(tlsp, tstream_tls_params_destructor);
+		__tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
+		if (__tlsp == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		tlsp = talloc_zero(__tlsp, struct tstream_tls_params_internal);
+		if (tlsp == NULL) {
+			TALLOC_FREE(__tlsp);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		talloc_set_destructor(tlsp, tstream_tls_params_internal_destructor);
+		__tlsp->internal = tlsp;
 		tlsp->tls_enabled = false;
 
-		*_tlsp = tlsp;
+		*_tlsp = __tlsp;
 		return NT_STATUS_OK;
 	}
 
-	tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
-	NT_STATUS_HAVE_NO_MEMORY(tlsp);
+	__tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
+	if (__tlsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	talloc_set_destructor(tlsp, tstream_tls_params_destructor);
+	tlsp = talloc_zero(__tlsp, struct tstream_tls_params_internal);
+	if (tlsp == NULL) {
+		TALLOC_FREE(__tlsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_set_destructor(tlsp, tstream_tls_params_internal_destructor);
+	__tlsp->internal = tlsp;
 
 	if (!file_exist(ca_file)) {
 		tls_cert_generate(tlsp, dns_host_name,
@@ -1160,13 +1213,14 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 			  key_file,
 			  (unsigned int)st.st_uid, geteuid(),
 			  (unsigned int)(st.st_mode & 0777), 0600));
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	ret = gnutls_certificate_allocate_credentials(&tlsp->x509_cred);
 	if (ret != GNUTLS_E_SUCCESS) {
 		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1177,7 +1231,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 		if (ret < 0) {
 			DEBUG(0,("TLS failed to initialise cafile %s - %s\n",
 				 ca_file, gnutls_strerror(ret)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	}
@@ -1189,7 +1243,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 		if (ret < 0) {
 			DEBUG(0,("TLS failed to initialise crlfile %s - %s\n",
 				 crl_file, gnutls_strerror(ret)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	}
@@ -1200,14 +1254,14 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 	if (ret != GNUTLS_E_SUCCESS) {
 		DEBUG(0,("TLS failed to initialise certfile %s and keyfile %s - %s\n",
 			 cert_file, key_file, gnutls_strerror(ret)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	ret = gnutls_dh_params_init(&tlsp->dh_params);
 	if (ret != GNUTLS_E_SUCCESS) {
 		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1220,7 +1274,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 		if (!dhparms.data) {
 			DEBUG(0,("TLS failed to read DH Parms from %s - %d:%s\n",
 				 dhp_file, errno, strerror(errno)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 		dhparms.size = size;
@@ -1231,7 +1285,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 		if (ret != GNUTLS_E_SUCCESS) {
 			DEBUG(0,("TLS failed to import pkcs3 %s - %s\n",
 				 dhp_file, gnutls_strerror(ret)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	} else {
@@ -1239,7 +1293,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 		if (ret != GNUTLS_E_SUCCESS) {
 			DEBUG(0,("TLS failed to generate dh_params - %s\n",
 				 gnutls_strerror(ret)));
-			talloc_free(tlsp);
+			TALLOC_FREE(__tlsp);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 	}
@@ -1248,13 +1302,13 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 
 	tlsp->tls_priority = talloc_strdup(tlsp, tls_priority);
 	if (tlsp->tls_priority == NULL) {
-		talloc_free(tlsp);
+		TALLOC_FREE(__tlsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	tlsp->tls_enabled = true;
 
-	*_tlsp = tlsp;
+	*_tlsp = __tlsp;
 	return NT_STATUS_OK;
 }
 
@@ -1265,13 +1319,14 @@ struct tstream_tls_accept_state {
 struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct tstream_context *plain_stream,
-					    struct tstream_tls_params *tlsp,
+					    struct tstream_tls_params *_tlsp,
 					    const char *location)
 {
 	struct tevent_req *req;
 	struct tstream_tls_accept_state *state;
 	struct tstream_tls *tlss;
 	const char *error_pos;
+	struct tstream_tls_params_internal *tlsp = NULL;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1290,6 +1345,22 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 	}
 	ZERO_STRUCTP(tlss);
 	talloc_set_destructor(tlss, tstream_tls_destructor);
+
+	/*
+	 * Note we need to make sure x509_cred and dh_params
+	 * from tstream_tls_params_internal stay alive for
+	 * the whole lifetime of this session!
+	 *
+	 * See 'man gnutls_credentials_set' and
+	 * 'man gnutls_certificate_set_dh_params'.
+	 *
+	 * Note: here we use talloc_reference() in a way
+	 *       that does not expose it to the caller.
+	 */
+	tlsp = talloc_reference(tlss, _tlsp->internal);
+	if (tevent_req_nomem(tlsp, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	tlss->plain_stream = plain_stream;
 
