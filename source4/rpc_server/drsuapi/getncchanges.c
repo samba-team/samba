@@ -1098,7 +1098,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 						     NULL);
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("RID Alloc request for invalid DN %s: %s\n",
-			drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context),
+			drs_ObjectIdentifier_to_debug_string(mem_ctx, req10->naming_context),
 			ldb_strerror(ret));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
@@ -1106,8 +1106,9 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 
 	if (ldb_dn_compare(req_dn, *rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
-		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
-			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
+		DBG_ERR("RID Alloc request for wrong DN %s\n",
+			drs_ObjectIdentifier_to_debug_string(mem_ctx,
+							     req10->naming_context));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -1200,7 +1201,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	WERROR werr;
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
-		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
+		 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot)));
 
 	/*
 	 * we need to work out if we will allow this DC to
@@ -1268,7 +1269,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 							NULL);
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("RevealSecretRequest for for invalid DN %s\n",
-			 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot));
+			 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot));
 		goto failed;
 	}
 
@@ -1353,7 +1354,7 @@ static WERROR getncchanges_repl_obj(struct drsuapi_bind_state *b_state,
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req10->naming_context;
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_OBJ extended op on %s\n",
-		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
+		 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot)));
 
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	return WERR_OK;
@@ -1387,8 +1388,9 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 						     &req_dn, NULL);
 	if (ret != LDB_SUCCESS) {
 		/* that is not a valid dn */
-		DEBUG(0,(__location__ ": FSMO role transfer request for invalid DN %s\n",
-			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
+		DBG_ERR("FSMO role transfer request for invalid DN %s: %s\n",
+			drs_ObjectIdentifier_to_debug_string(mem_ctx, req10->naming_context),
+			ldb_strerror(ret));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -1416,7 +1418,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	if (ret != LDB_SUCCESS) {
 		/* that is not a valid dn */
 		DBG_ERR("FSMO role transfer request for invalid DN %s: %s\n",
-			drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context),
+			drs_ObjectIdentifier_to_debug_string(mem_ctx, req10->naming_context),
 			ldb_strerror(ret));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
@@ -2906,7 +2908,7 @@ allowed:
 			 * implicitly but not got the DN out
 			 */
 			DBG_ERR("Bad DN '%s'\n",
-				drs_ObjectIdentifier_to_string(mem_ctx, ncRoot));
+				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot));
 			return WERR_DS_DRA_INVALID_PARAMETER;
 		}
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
@@ -3063,7 +3065,7 @@ allowed:
 	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
 	    ldb_dn_is_null(getnc_state->ncRoot_dn)) {
 		DEBUG(0,(__location__ ": Bad DN '%s'\n",
-			 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
+			 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot)));
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
@@ -3502,7 +3504,8 @@ allowed:
 					  &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed UpdateRefs on %s for %s in DsGetNCChanges - %s\n",
-				 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot), ureq.dest_dsa_dns_name,
+				 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+				 ureq.dest_dsa_dns_name,
 				 win_errstr(werr)));
 		}
 	}
@@ -3632,7 +3635,8 @@ allowed:
 	DEBUG(r->out.ctr->ctr6.more_data?4:2,
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
 	       (unsigned long long)(req10->highwatermark.highest_usn+1),
-	       req10->replica_flags, drs_ObjectIdentifier_to_string(mem_ctx, ncRoot),
+	       req10->replica_flags,
+	       drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
 	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->num_records:i,
 	       r->out.ctr->ctr6.linked_attributes_count,

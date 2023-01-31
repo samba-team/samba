@@ -359,10 +359,12 @@ int dsdb_dn_string_comparison(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
-  format a drsuapi_DsReplicaObjectIdentifier naming context as a string
+ * format a drsuapi_DsReplicaObjectIdentifier naming context as a string for debugging
+ *
+ * When forming a DN for DB access you must use drs_ObjectIdentifier_to_dn()
  */
-char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
-				     struct drsuapi_DsReplicaObjectIdentifier *nc)
+char *drs_ObjectIdentifier_to_debug_string(TALLOC_CTX *mem_ctx,
+					   struct drsuapi_DsReplicaObjectIdentifier *nc)
 {
 	char *ret = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -386,20 +388,146 @@ char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
-					  struct ldb_context *ldb,
-					  struct drsuapi_DsReplicaObjectIdentifier *nc)
+/*
+ * Safely convert a drsuapi_DsReplicaObjectIdentifier into an LDB DN
+ *
+ * We need to have GUID and SID prority and not allow extended
+ * components in the DN.
+ *
+ * We must also totally honour the prority even if the string DN is not valid or able to parse as a DN.
+ */
+static struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
+						 struct ldb_context *ldb,
+						 struct drsuapi_DsReplicaObjectIdentifier *nc)
 {
-	char *dn_string = drs_ObjectIdentifier_to_string(mem_ctx, nc);
-	struct ldb_dn *new_dn;
-	new_dn = ldb_dn_new(mem_ctx, ldb, dn_string);
-	talloc_free(dn_string);
-	return new_dn;
+	struct ldb_dn *new_dn = NULL;
+
+	if (!GUID_all_zero(&nc->guid)) {
+		struct GUID_txt_buf buf;
+		char *guid = GUID_buf_string(&nc->guid, &buf);
+
+		new_dn = ldb_dn_new_fmt(mem_ctx,
+					ldb,
+					"<GUID=%s>",
+					guid);
+		if (new_dn == NULL) {
+			DBG_ERR("Failed to prepare drs_ObjectIdentifier "
+				"GUID %s into a DN\n",
+				guid);
+			return NULL;
+		}
+
+		return new_dn;
+	}
+
+	if (nc->__ndr_size_sid != 0 && nc->sid.sid_rev_num != 0) {
+		struct dom_sid_buf buf;
+		char *sid = dom_sid_str_buf(&nc->sid, &buf);
+
+		new_dn = ldb_dn_new_fmt(mem_ctx,
+					ldb,
+					"<SID=%s>",
+					sid);
+		if (new_dn == NULL) {
+			DBG_ERR("Failed to prepare drs_ObjectIdentifier "
+				"SID %s into a DN\n",
+				sid);
+			return NULL;
+		}
+		return new_dn;
+	}
+
+	if (nc->__ndr_size_dn != 0 && nc->dn) {
+		int dn_comp_num = 0;
+		bool new_dn_valid = false;
+
+		new_dn = ldb_dn_new(mem_ctx, ldb, nc->dn);
+		if (new_dn == NULL) {
+			/* Set to WARNING as this is user-controlled, don't print the value into the logs */
+			DBG_WARNING("Failed to parse string DN in "
+				    "drs_ObjectIdentifier into an LDB DN\n");
+			return NULL;
+		}
+
+		new_dn_valid = ldb_dn_validate(new_dn);
+		if (!new_dn_valid) {
+			/*
+			 * Set to WARNING as this is user-controlled,
+			 * but can print the value into the logs as it
+			 * parsed a bit
+			 */
+			DBG_WARNING("Failed to validate string DN [%s] in "
+				    "drs_ObjectIdentifier as an LDB DN\n",
+				    ldb_dn_get_linearized(new_dn));
+			return NULL;
+		}
+
+		dn_comp_num = ldb_dn_get_comp_num(new_dn);
+		if (dn_comp_num <= 0) {
+			/*
+			 * Set to WARNING as this is user-controlled,
+			 * but can print the value into the logs as it
+			 * parsed a bit
+			 */
+			DBG_WARNING("DN [%s] in drs_ObjectIdentifier "
+				    "must have 1 or more components\n",
+				    ldb_dn_get_linearized(new_dn));
+			return NULL;
+		}
+
+		if (ldb_dn_is_special(new_dn)) {
+			/*
+			 * Set to WARNING as this is user-controlled,
+			 * but can print the value into the logs as it
+			 * parsed a bit
+			 */
+			DBG_WARNING("New string DN [%s] in "
+				    "drs_ObjectIdentifier is a "
+				    "special LDB DN\n",
+				    ldb_dn_get_linearized(new_dn));
+			return NULL;
+		}
+
+		/*
+		 * We want this just to be a string DN, extended
+		 * components are manually handled above
+		 */
+		if (ldb_dn_has_extended(new_dn)) {
+			/*
+			 * Set to WARNING as this is user-controlled,
+			 * but can print the value into the logs as it
+			 * parsed a bit
+			 */
+			DBG_WARNING("Refusing to parse New string DN [%s] in "
+				    "drs_ObjectIdentifier as an "
+				    "extended LDB DN "
+				    "(GUIDs and SIDs should be in the "
+				    ".guid and .sid IDL elelements, "
+				    "not in the string\n",
+				    ldb_dn_get_extended_linearized(mem_ctx,
+								   new_dn,
+								   1));
+			return NULL;
+		}
+		return new_dn;
+	}
+
+	DBG_WARNING("Refusing to parse empty string DN "
+		    "(and no GUID or SID) "
+		    "drs_ObjectIdentifier into a empty "
+		    "(eg RootDSE) LDB DN\n");
+	return NULL;
 }
 
 /*
  * Safely convert a drsuapi_DsReplicaObjectIdentifier into a validated
  * LDB DN of an existing DB entry, and/or find the NC root
+ *
+ * We need to have GUID and SID prority and not allow extended
+ * components in the DN.
+ *
+ * We must also totally honour the prority even if the string DN is
+ * not valid or able to parse as a DN.
  *
  * Finally, we must return the DN as found in the DB, as otherwise a
  * subsequence ldb_dn_compare(dn, nc_root) will fail (as this is based
