@@ -9,7 +9,4 @@ samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegri
 ^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_InvalidNC_DummyDN_InvalidGUID_REPL_SECRET
 ^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_InvalidNC_DummyDN_InvalidGUID_REPL_OBJ
 ^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_InvalidDestDSA_and_GUID_RID_ALLOC
-^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_DummyDN_valid_GUID_REPL_OBJ
 ^samba4.drs.getnc_exop.python\(.*\).getnc_exop.DrsReplicaSyncTestCase.test_DummyDN_valid_GUID_REPL_SECRET
-^samba4.drs.getncchanges.python\(.*\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_InvalidNC_DummyDN_InvalidGUID_full_repl
-^samba4.drs.repl_rodc.python\(.*\).repl_rodc.DrsRodcTestCase.test_admin_repl_secrets_DummyDN_GUID
