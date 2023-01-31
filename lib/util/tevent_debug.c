@@ -88,6 +88,17 @@ void samba_tevent_set_debug(struct tevent_context *ev, const char *name)
 	void *p = discard_const(name);
 	samba_tevent_setup_abort_fn();
 	tevent_set_debug(ev, samba_tevent_debug, p);
+
+	/* these values should match samba_tevent_debug() */
+	if (CHECK_DEBUGLVL(50)) {
+		tevent_set_max_debug_level(ev, TEVENT_DEBUG_TRACE);
+	} else if (CHECK_DEBUGLVL(2)) {
+		tevent_set_max_debug_level(ev, TEVENT_DEBUG_WARNING);
+	} else if (CHECK_DEBUGLVL(1)) {
+		tevent_set_max_debug_level(ev, TEVENT_DEBUG_ERROR);
+	} else {
+		tevent_set_max_debug_level(ev, TEVENT_DEBUG_FATAL);
+	}
 }
 
 struct tevent_context *samba_tevent_context_init(TALLOC_CTX *mem_ctx)
