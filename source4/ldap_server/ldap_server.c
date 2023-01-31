@@ -1263,7 +1263,6 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 #ifdef WITH_LDAPI_PRIV_SOCKET
 	char *priv_dir;
 #endif
-	const char *dns_host_name;
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
 
@@ -1293,16 +1292,16 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 	ldap_service->current_ev = task->event_ctx;
 	ldap_service->current_msg = task->msg_ctx;
 
-	dns_host_name = talloc_asprintf(ldap_service, "%s.%s",
+	ldap_service->dns_host_name = talloc_asprintf(ldap_service, "%s.%s",
 					lpcfg_netbios_name(task->lp_ctx),
 					lpcfg_dnsdomain(task->lp_ctx));
-	if (dns_host_name == NULL) {
+	if (ldap_service->dns_host_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
 
 	status = tstream_tls_params_server(ldap_service,
-					   dns_host_name,
+					   ldap_service->dns_host_name,
 					   lpcfg_tls_enabled(task->lp_ctx),
 					   lpcfg_tls_keyfile(ldap_service, task->lp_ctx),
 					   lpcfg_tls_certfile(ldap_service, task->lp_ctx),

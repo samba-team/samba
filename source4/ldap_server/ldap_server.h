@@ -114,6 +114,7 @@ struct ldapsrv_call {
 #define LDAP_SERVER_MAX_CHUNK_SIZE ((size_t)(25 * 1024 * 1024))
 
 struct ldapsrv_service {
+	const char *dns_host_name;
 	struct tstream_tls_params *tls_params;
 	struct tevent_queue *call_queue;
 	struct ldapsrv_connection *connections;
