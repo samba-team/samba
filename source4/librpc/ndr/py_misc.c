@@ -21,7 +21,6 @@
 #include "python/py3compat.h"
 #include "librpc/gen_ndr/misc.h"
 
-#if PY_MAJOR_VERSION >= 3
 static PyObject *py_GUID_richcmp(PyObject *py_self, PyObject *py_other, int op)
 {
 	int ret;
@@ -45,25 +44,6 @@ static PyObject *py_GUID_richcmp(PyObject *py_self, PyObject *py_other, int op)
 	Py_INCREF(Py_NotImplemented);
 	return Py_NotImplemented;
 }
-#else
-static int py_GUID_cmp(PyObject *py_self, PyObject *py_other)
-{
-	int ret;
-	struct GUID *self = pytalloc_get_ptr(py_self), *other;
-	other = pytalloc_get_ptr(py_other);
-	if (other == NULL)
-		return -1;
-
-	ret = GUID_compare(self, other);
-	if (ret < 0) {
-		return -1;
-	} else if (ret > 0) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-#endif
 
 static PyObject *py_GUID_str(PyObject *py_self)
 {
@@ -126,11 +106,7 @@ static void py_GUID_patch(PyTypeObject *type)
 	type->tp_init = py_GUID_init;
 	type->tp_str = py_GUID_str;
 	type->tp_repr = py_GUID_repr;
-#if PY_MAJOR_VERSION >= 3
 	type->tp_richcompare = py_GUID_richcmp;
-#else
-	type->tp_compare = py_GUID_cmp;
-#endif
 }
 
 #define PY_GUID_PATCH py_GUID_patch
