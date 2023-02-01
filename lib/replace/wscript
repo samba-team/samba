@@ -44,7 +44,6 @@ def configure(conf):
     conf.CHECK_HEADERS('locale.h ndir.h pwd.h')
     conf.CHECK_HEADERS('shadow.h sys/acl.h')
     conf.CHECK_HEADERS('sys/attributes.h attr/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
-    conf.CHECK_HEADERS('port.h')
     conf.CHECK_HEADERS('sys/fcntl.h sys/filio.h sys/filsys.h sys/fs/s5param.h')
     conf.CHECK_HEADERS('sys/id.h sys/ioctl.h sys/ipc.h sys/mman.h sys/mode.h sys/ndir.h sys/priv.h')
     conf.CHECK_HEADERS('sys/resource.h sys/security.h sys/shm.h sys/statfs.h sys/statvfs.h sys/termio.h')
@@ -482,7 +481,6 @@ def configure(conf):
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups syscall setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
-    conf.CHECK_FUNCS('port_create')
     conf.CHECK_FUNCS('getprogname')
     if not conf.CHECK_FUNCS('copy_file_range'):
         conf.CHECK_CODE('''
@@ -707,9 +705,6 @@ syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
 
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
         conf.DEFINE('HAVE_EPOLL', 1)
-
-    if conf.CONFIG_SET('HAVE_PORT_CREATE') and conf.CONFIG_SET('HAVE_PORT_H'):
-        conf.DEFINE('HAVE_SOLARIS_PORTS', 1)
 
     if conf.CHECK_FUNCS('eventfd', headers='sys/eventfd.h'):
         conf.DEFINE('HAVE_EVENTFD', 1)
