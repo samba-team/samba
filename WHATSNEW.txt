@@ -6,7 +6,7 @@ intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.18 will be the next version of the Samba suite...
+Samba 4.18 will be the next version of the Samba suite.
 
 
 UPGRADING
