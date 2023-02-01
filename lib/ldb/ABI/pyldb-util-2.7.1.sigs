@@ -1,0 +1,3 @@
+pyldb_Dn_FromDn: PyObject *(struct ldb_dn *)
+pyldb_Object_AsDn: bool (TALLOC_CTX *, PyObject *, struct ldb_context *, struct ldb_dn **)
+pyldb_check_type: bool (PyObject *, const char *)
