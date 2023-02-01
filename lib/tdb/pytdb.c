@@ -31,8 +31,6 @@
 /* Include tdb headers */
 #include <tdb.h>
 
-#define Py_TPFLAGS_HAVE_ITER 0
-
 /* discard signature of 'func' in favour of 'target_sig' */
 #define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
 
@@ -754,7 +752,7 @@ static PyTypeObject PyTdb = {
 	.tp_dealloc = (destructor)tdb_object_dealloc,
 	.tp_as_mapping = &tdb_object_mapping,
 	.tp_as_sequence = &tdb_object_seq,
-	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_ITER,
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
 	.tp_iter = PY_DISCARD_FUNC_SIG(getiterfunc,tdb_object_iter),
 };
 
