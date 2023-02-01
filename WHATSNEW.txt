@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.18.  This is *not*
+This is the second release candidate of Samba 4.18.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -123,6 +123,20 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   acl_xattr:security_acl_name             New             security.NTACL
+
+
+CHANGES SINCE 4.18.0rc1
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 10635: Office365 azure Password Sync not working.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15286: auth3_generate_session_info_pac leaks wbcAuthUserInfo.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15293: With clustering enabled samba-bgqd can core dump due to use
+     after free.
 
 
 KNOWN ISSUES
