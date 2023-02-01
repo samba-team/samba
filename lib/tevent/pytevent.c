@@ -26,9 +26,7 @@
 #include "replace.h"
 #include <tevent.h>
 
-#if PY_MAJOR_VERSION >= 3
 #define PyLong_FromLong PyLong_FromLong
-#endif
 
 /* discard signature of 'func' in favour of 'target_sig' */
 #define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
@@ -736,7 +734,6 @@ static PyMethodDef tevent_methods[] = {
 
 #define MODULE_DOC PyDoc_STR("Python wrapping of talloc-maintained objects.")
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
 	PyModuleDef_HEAD_INIT,
 	.m_name = "_tevent",
@@ -744,7 +741,6 @@ static struct PyModuleDef moduledef = {
 	.m_size = -1,
 	.m_methods = tevent_methods,
 };
-#endif
 
 PyObject * module_init(void);
 PyObject * module_init(void)
@@ -769,11 +765,7 @@ PyObject * module_init(void)
 	if (PyType_Ready(&TeventFd_Type) < 0)
 		return NULL;
 
-#if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
-#else
-	m = Py_InitModule3("_tevent", tevent_methods, MODULE_DOC);
-#endif
 	if (m == NULL)
 		return NULL;
 
@@ -800,16 +792,8 @@ PyObject * module_init(void)
 	return m;
 }
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit__tevent(void);
 PyMODINIT_FUNC PyInit__tevent(void)
 {
 	return module_init();
 }
-#else
-void init_tevent(void);
-void init_tevent(void)
-{
-	module_init();
-}
-#endif
