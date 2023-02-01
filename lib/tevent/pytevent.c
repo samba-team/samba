@@ -26,7 +26,6 @@
 #include "replace.h"
 #include <tevent.h>
 
-#define PyLong_FromLong PyLong_FromLong
 
 /* discard signature of 'func' in favour of 'target_sig' */
 #define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
