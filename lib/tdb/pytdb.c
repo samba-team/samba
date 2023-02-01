@@ -31,9 +31,7 @@
 /* Include tdb headers */
 #include <tdb.h>
 
-#if PY_MAJOR_VERSION >= 3
 #define Py_TPFLAGS_HAVE_ITER 0
-#endif
 
 /* discard signature of 'func' in favour of 'target_sig' */
 #define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
@@ -337,26 +335,6 @@ static int obj_contains(PyTdbObject *self, PyObject *py_key)
 	return 0;
 }
 
-#if PY_MAJOR_VERSION < 3
-static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
-{
-	int ret;
-	PyObject *py_key;
-	PyErr_TDB_RAISE_IF_CLOSED(self);
-
-	if (!PyArg_ParseTuple(args, "O", &py_key))
-		return NULL;
-
-	ret = obj_contains(self, py_key);
-	if (ret == -1)
-		return NULL;
-	if (ret)
-		Py_RETURN_TRUE;
-	Py_RETURN_FALSE;
-
-}
-#endif
-
 static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 {
 	TDB_DATA key, value;
@@ -566,21 +544,13 @@ static PyMethodDef tdb_object_methods[] = {
 		"Return the next key in this database." },
 	{ "delete", (PyCFunction)obj_delete, METH_VARARGS, "S.delete(key) -> None\n"
 		"Delete an entry." },
-#if PY_MAJOR_VERSION < 3
-	{ "has_key", (PyCFunction)obj_has_key, METH_VARARGS, "S.has_key(key) -> None\n"
-		"Check whether key exists in this database." },
-#endif
 	{ "store", (PyCFunction)obj_store, METH_VARARGS, "S.store(key, data, flag=REPLACE) -> None"
 		"Store data." },
 	{ "storev", (PyCFunction)obj_storev, METH_VARARGS, "S.storev(key, data, flag=REPLACE) -> None"
 		"Store several data." },
 	{ "add_flags", (PyCFunction)obj_add_flags, METH_VARARGS, "S.add_flags(flags) -> None" },
 	{ "remove_flags", (PyCFunction)obj_remove_flags, METH_VARARGS, "S.remove_flags(flags) -> None" },
-#if PY_MAJOR_VERSION >= 3
 	{ "keys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.keys() -> iterator" },
-#else
-	{ "iterkeys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
-#endif
 	{ "clear", (PyCFunction)obj_clear, METH_NOARGS, "S.clear() -> None\n"
 		"Wipe the entire database." },
 	{ "repack", (PyCFunction)obj_repack, METH_NOARGS, "S.repack() -> None\n"
@@ -801,7 +771,6 @@ static PyMethodDef tdb_methods[] = {
 
 #define MODULE_DOC "simple key-value database that supports multiple writers."
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     .m_name = "tdb",
@@ -809,7 +778,6 @@ static struct PyModuleDef moduledef = {
     .m_size = -1,
     .m_methods = tdb_methods,
 };
-#endif
 
 PyObject* module_init(void);
 PyObject* module_init(void)
@@ -822,11 +790,7 @@ PyObject* module_init(void)
 	if (PyType_Ready(&PyTdbIterator) < 0)
 		return NULL;
 
-#if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
-#else
-	m = Py_InitModule3("tdb", tdb_methods, MODULE_DOC);
-#endif
 	if (m == NULL)
 		return NULL;
 
@@ -861,16 +825,8 @@ PyObject* module_init(void)
 }
 
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit_tdb(void);
 PyMODINIT_FUNC PyInit_tdb(void)
 {
     return module_init();
 }
-#else
-void inittdb(void);
-void inittdb(void)
-{
-    module_init();
-}
-#endif
