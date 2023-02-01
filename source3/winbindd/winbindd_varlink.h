@@ -26,6 +26,18 @@
 
 #define WB_VL_SERVICE_NAME "org.samba.winbind"
 
+#define WB_VL_REPLY_ERROR_NO_RECORD_FOUND \
+	"io.systemd.UserDatabase.NoRecordFound"
+#define WB_VL_REPLY_ERROR_BAD_SERVICE \
+	"io.systemd.UserDatabase.BadService"
+#define WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE \
+	"io.systemd.UserDatabase.ServiceNotAvailable"
+#define WB_VL_REPLY_ERROR_CONFLICTING_RECORD_FOUND \
+	"io.systemd.UserDatabase.ConflictingRecordFound"
+#define WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED \
+	"io.systemd.UserDatabase.EnumerationNotSupported"
+
+
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 
 #endif /* _SOURCE3_WINBIND_VARLINK_H_ */

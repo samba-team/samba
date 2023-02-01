@@ -23,6 +23,33 @@
 
 #define WB_VL_SOCKET_DIR  "/run/systemd/userdb"
 
+static const char s_interface[] =
+"interface io.systemd.UserDatabase\n"
+""
+"method GetUserRecord("
+"  uid: ?int,"
+"  userName: ?string,"
+"  service: string"
+") -> (record: object, incomplete: bool)\n"
+""
+"method GetGroupRecord("
+"  gid: ?int,"
+"  groupName: ?string,"
+"  service: string"
+") -> (record: object, incomplete: bool)\n"
+""
+"method GetMemberships("
+"  userName: ?string,"
+"  groupName: ?string,"
+"  service: string"
+") -> (userName: string, groupName: string)\n"
+""
+"error NoRecordFound ()\n"
+"error BadService ()\n"
+"error ServiceNotAvailable ()\n"
+"error ConflictingRecordFound ()\n"
+"error EnumerationNotSupported ()\n";
+
 struct wb_vl_state {
 	VarlinkService *service;
 	struct tevent_context *ev_ctx;
@@ -30,6 +57,38 @@ struct wb_vl_state {
 	int fd;
 };
 
+static long io_systemd_getuserrecord(VarlinkService *service,
+				     VarlinkCall *call,
+				     VarlinkObject *parameters,
+				     uint64_t flags,
+				     void *userdata)
+{
+	return varlink_call_reply_error(call,
+			WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+			NULL);
+}
+
+static long io_systemd_getgrouprecord(VarlinkService *service,
+				      VarlinkCall *call,
+				      VarlinkObject *parameters,
+				      uint64_t flags,
+				      void *userdata)
+{
+	return varlink_call_reply_error(call,
+			WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+			NULL);
+}
+
+static long io_systemd_getmemberships(VarlinkService *service,
+				      VarlinkCall *call,
+				      VarlinkObject *parameters,
+				      uint64_t flags,
+				      void *userdata)
+{
+	return varlink_call_reply_error(call,
+			WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+			NULL);
+}
 
 static void varlink_listen_fde_handler(struct tevent_context *ev,
 				       struct tevent_fd *fde,
@@ -107,6 +166,17 @@ bool winbind_setup_varlink(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(uri);
 	if (rc < 0) {
 		DBG_ERR("Failed to create Varlink service: %s\n",
+			varlink_error_string(rc));
+		goto fail;
+	}
+
+	rc = varlink_service_add_interface(state->service, s_interface,
+			"GetUserRecord", io_systemd_getuserrecord, state,
+			"GetGroupRecord", io_systemd_getgrouprecord, state,
+			"GetMemberships", io_systemd_getmemberships, state,
+			NULL);
+	if (rc < 0) {
+		DBG_ERR("Failed to add Varlink interface: %s\n",
 			varlink_error_string(rc));
 		goto fail;
 	}
