@@ -171,6 +171,13 @@ bld.SAMBA3_MODULE('idmap_script',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_script'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_script'))
 
+bld.SAMBA3_SUBSYSTEM('VARLINK',
+                     source='''
+                            winbindd_varlink.c
+                            ''',
+                     deps='talloc tevent varlink',
+                     enabled=bld.env.with_systemd_userdb)
+
 bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     source='''
                     winbindd_group.c
@@ -274,6 +281,7 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     TDB_VALIDATE
                     MESSAGING
                     LIBLSA
+                    VARLINK
                     ''')
 
 bld.SAMBA3_BINARY('winbindd',

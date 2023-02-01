@@ -55,6 +55,10 @@
 #include "winbindd_traceid.h"
 #include "lib/util/util_process.h"
 
+#if defined(WITH_SYSTEMD_USERDB)
+#include "winbindd_varlink.h"
+#endif
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -1079,6 +1083,16 @@ static bool winbindd_setup_listeners(void)
 		goto failed;
 	}
 	tevent_fd_set_auto_close(fde);
+
+#if defined(WITH_SYSTEMD_USERDB)
+	if (lp_winbind_varlink_service()) {
+		/* Setup varlink socket */
+		if (!winbind_setup_varlink(global_event_context(),
+					   global_event_context())) {
+			goto failed;
+		}
+	}
+#endif
 
 	winbindd_scrub_clients_handler(global_event_context(), NULL,
 				       timeval_current(), NULL);
