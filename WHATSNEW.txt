@@ -106,6 +106,12 @@ means (eg local access, SSH, NFS). This option must only be used when
 this consequence is clearly understood and when specific precautions
 are taken to avoid compromising the ACL content.
 
+Azure Active Directory / Office365 synchronisation improvements
+--------------------------------------------------------------
+
+Use of the Azure AD Connect cloud sync tool is now supported for
+password hash synchronisation, allowing Samba AD Domains to synchronise
+passwords with this popular cloud environment.
 
 REMOVED FEATURES
 ================
