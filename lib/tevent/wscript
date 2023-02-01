@@ -93,9 +93,6 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_EPOLL'):
         SRC += ' tevent_epoll.c'
 
-    if bld.CONFIG_SET('HAVE_SOLARIS_PORTS'):
-        SRC += ' tevent_port.c'
-
     if bld.env.standalone_tevent:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         private_library = False
