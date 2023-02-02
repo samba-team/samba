@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/mkdir_p.h"
 #include "winbindd_varlink.h"
 
 #define WB_VL_SOCKET_DIR  "/run/systemd/userdb"
@@ -84,6 +85,15 @@ bool winbind_setup_varlink(TALLOC_CTX *mem_ctx,
 					   "winbind varlink",
 					   "service name",
 					   WB_VL_SERVICE_NAME);
+
+	/* Create socket directory, useful in containers */
+	rc = mkdir_p(socket_dir,
+		     S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+	if (rc && errno != EEXIST) {
+		DBG_ERR("Could not create socket directory %s: %s\n",
+			socket_dir, strerror(errno));
+		goto fail;
+	}
 
 	uri = talloc_asprintf(state, "unix:%s/%s", socket_dir, socket_name);
 
