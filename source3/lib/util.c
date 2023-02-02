@@ -1443,19 +1443,8 @@ bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 
 bool ms_has_wild(const char *s)
 {
-	char c;
-
-	while ((c = *s++)) {
-		switch (c) {
-		case '*':
-		case '?':
-		case '<':
-		case '>':
-		case '"':
-			return True;
-		}
-	}
-	return False;
+	const char *found = strpbrk(s, "*?<>\"");
+	return (found != NULL);
 }
 
 bool ms_has_wild_w(const smb_ucs2_t *s)
