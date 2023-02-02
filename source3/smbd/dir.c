@@ -73,7 +73,6 @@ struct dptr_struct {
 	bool expect_close;
 	char *wcard;
 	uint32_t attr;
-	struct smb_filename *smb_dname;
 	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
 	bool did_stat; /* Optimisation for non-wcard searches. */
 	bool priv;     /* Directory handle opened with privilege. */
@@ -144,7 +143,7 @@ const char *dptr_path(struct smbd_server_connection *sconn, int key)
 {
 	struct dptr_struct *dptr = dptr_get(sconn, key);
 	if (dptr)
-		return(dptr->smb_dname->base_name);
+		return(dptr->dir_hnd->dir_smb_fname->base_name);
 	return(NULL);
 }
 
@@ -251,12 +250,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dptr->smb_dname = cp_smb_filename(dptr, fsp->fsp_name);
-	if (dptr->smb_dname == NULL) {
-		TALLOC_FREE(dptr);
-		TALLOC_FREE(dir_hnd);
-		return NT_STATUS_NO_MEMORY;
-	}
 	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
@@ -459,7 +452,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	pathreal = talloc_asprintf(ctx,
 				"%s/%s",
-				dptr->smb_dname->base_name,
+				dptr->dir_hnd->dir_smb_fname->base_name,
 				dptr->wcard);
 	if (!pathreal)
 		return NULL;
@@ -468,7 +461,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	smb_fname_base = (struct smb_filename) {
 		.base_name = pathreal,
 		.flags = dptr->dir_hnd->fsp->fsp_name->flags,
-		.twrp = dptr->smb_dname->twrp,
+		.twrp = dptr->dir_hnd->fsp->fsp_name->twrp,
 	};
 
 	if (vfs_stat(dptr->conn, &smb_fname_base) == 0) {
@@ -707,8 +700,10 @@ files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
 	wire_offset = IVAL(buf,1);
 	seekoff = map_wire_to_dir_offset(dptr, wire_offset);
 	SeekDir(dptr->dir_hnd,seekoff);
-	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
-		key, dptr->smb_dname->base_name, (int)seekoff));
+	DBG_NOTICE("fetching dirptr %d for path %s at offset %ld\n",
+		   key,
+		   dptr->dir_hnd->dir_smb_fname->base_name,
+		   seekoff);
 	return dptr->dir_hnd->fsp;
 }
 
@@ -729,8 +724,8 @@ files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,
 		return NULL;
 	}
 	DBG_NOTICE("fetching dirptr %d for path %s\n",
-		dptr_num,
-		dptr->smb_dname->base_name);
+		   dptr_num,
+		   dptr->dir_hnd->dir_smb_fname->base_name);
 	return dptr->dir_hnd->fsp;
 }
 
@@ -774,7 +769,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	connection_struct *conn = dirptr->conn;
 	size_t slashlen;
 	size_t pathlen;
-	const char *dpath = dirptr->smb_dname->base_name;
+	const char *dpath = dirptr->dir_hnd->dir_smb_fname->base_name;
 	bool dirptr_path_is_dot = ISDOT(dpath);
 	NTSTATUS status;
 	int ret;
@@ -805,7 +800,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		dname = dptr_ReadDirName(ctx, dirptr, &cur_offset, &sbuf);
 
 		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%ld] => dname [%s]\n",
-			  smb_fname_str_dbg(dirptr->smb_dname), (long)dirptr,
+			  smb_fname_str_dbg(dirptr->dir_hnd->dir_smb_fname),
+			  (long)dirptr,
 			  cur_offset, dname ? dname : "(finished)");
 
 		if (dname == NULL) {
@@ -865,12 +861,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		/* Create smb_fname with NULL stream_name. */
-		smb_fname = synthetic_smb_fname(talloc_tos(),
-						pathreal,
-						NULL,
-						&sbuf,
-						dirptr->smb_dname->twrp,
-						dirptr->smb_dname->flags);
+		smb_fname = synthetic_smb_fname(
+			talloc_tos(),
+			pathreal,
+			NULL,
+			&sbuf,
+			dirptr->dir_hnd->dir_smb_fname->twrp,
+			dirptr->dir_hnd->dir_smb_fname->flags);
 		TALLOC_FREE(pathreal);
 		if (smb_fname == NULL) {
 			TALLOC_FREE(dname);
@@ -895,12 +892,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		/* Create smb_fname with NULL stream_name. */
-		atname = synthetic_smb_fname(talloc_tos(),
-					     dname,
-					     NULL,
-					     &smb_fname->st,
-					     dirptr->smb_dname->twrp,
-					     dirptr->smb_dname->flags);
+		atname = synthetic_smb_fname(
+			talloc_tos(),
+			dname,
+			NULL,
+			&smb_fname->st,
+			dirptr->dir_hnd->dir_smb_fname->twrp,
+			dirptr->dir_hnd->dir_smb_fname->flags);
 		if (atname == NULL) {
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
