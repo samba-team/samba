@@ -1481,7 +1481,7 @@ bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 
 /*******************************************************************
  A wrapper that handles case sensitivity and the special handling
- of the ".." name. Varient that is only called by old search code which requires
+ of the ".." name. Variant that is only called by old search code which requires
  pattern translation.
 *******************************************************************/
 
