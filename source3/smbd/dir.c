@@ -267,8 +267,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
-	if ((req != NULL && req->posix_pathnames) ||
-			(wcard[0] == '.' && wcard[1] == 0)) {
+	if ((req != NULL && req->posix_pathnames) || ISDOT(wcard)) {
 		dptr->has_wild = True;
 	} else {
 		dptr->has_wild = ms_has_wild(dptr->wcard);
