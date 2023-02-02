@@ -550,7 +550,6 @@ static int traverse_connections(const struct connections_data *crec,
 			break;
 		default:
 			encryption = "???";
-			result = -1;
 			break;
 		}
 		encryption_degree = CRYPTO_DEGREE_FULL;
@@ -572,7 +571,6 @@ static int traverse_connections(const struct connections_data *crec,
 			break;
 		default:
 			signing = "???";
-			result = -1;
 			break;
 		}
 		signing_degree = CRYPTO_DEGREE_FULL;
