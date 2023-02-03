@@ -135,9 +135,7 @@ static void print_pcap_header(FILE *out)
 static void print_pcap_packet(FILE *out, unsigned char *data, long length,
 			      long caplen)
 {
-	static int i = 0;
 	struct tcpdump_packet p;
-	i++;
 	p.ts.tv_usec = 0;
 	p.ts.tv_sec = 0;
 	p.caplen = caplen;
