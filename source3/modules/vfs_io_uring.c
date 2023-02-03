@@ -66,13 +66,13 @@ struct vfs_io_uring_request {
 	struct vfs_io_uring_request **list_head;
 	struct vfs_io_uring_config *config;
 	struct tevent_req *req;
-	struct io_uring_sqe sqe;
-	struct io_uring_cqe cqe;
 	void (*completion_fn)(struct vfs_io_uring_request *cur,
 			      const char *location);
 	struct timespec start_time;
 	struct timespec end_time;
 	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
+	struct io_uring_sqe sqe;
+	struct io_uring_cqe cqe;
 };
 
 static void vfs_io_uring_finish_req(struct vfs_io_uring_request *cur,
@@ -417,11 +417,11 @@ static void vfs_io_uring_fd_handler(struct tevent_context *ev,
 }
 
 struct vfs_io_uring_pread_state {
-	struct vfs_io_uring_request ur;
 	struct files_struct *fsp;
 	off_t offset;
 	struct iovec iov;
 	size_t nread;
+	struct vfs_io_uring_request ur;
 };
 
 static void vfs_io_uring_pread_submit(struct vfs_io_uring_pread_state *state);
@@ -565,11 +565,11 @@ static ssize_t vfs_io_uring_pread_recv(struct tevent_req *req,
 }
 
 struct vfs_io_uring_pwrite_state {
-	struct vfs_io_uring_request ur;
 	struct files_struct *fsp;
 	off_t offset;
 	struct iovec iov;
 	size_t nwritten;
+	struct vfs_io_uring_request ur;
 };
 
 static void vfs_io_uring_pwrite_submit(struct vfs_io_uring_pwrite_state *state);
