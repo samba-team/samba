@@ -1475,7 +1475,9 @@ _PUBLIC_ int cli_credentials_get_aes256_key(struct cli_credentials *cred,
 	int ret;
 	const char *password = NULL;
 	krb5_data cleartext_data;
-	krb5_data salt_data;
+	krb5_data salt_data = {
+		.length = 0,
+	};
 	krb5_keyblock key;
 
 	if (cred->password_will_be_nt_hash) {
