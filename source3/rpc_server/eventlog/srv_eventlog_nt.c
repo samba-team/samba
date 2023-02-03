@@ -631,7 +631,6 @@ NTSTATUS _eventlog_ReadEventLogW(struct pipes_struct *p,
 				 struct eventlog_ReadEventLogW *r)
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
-	uint32_t num_records_read = 0;
 	int bytes_left, record_number;
 	uint32_t elog_read_type, elog_read_dir;
 
@@ -726,8 +725,6 @@ NTSTATUS _eventlog_ReadEventLogW(struct pipes_struct *p,
 		memcpy(&r->out.data[*(r->out.sent_size)],
 		       blob.data, blob.length);
 		*(r->out.sent_size) += blob.length;
-
-		num_records_read++;
 	}
 
 	if (r->in.offset == 0 && record_number == 0 && *r->out.sent_size == 0) {
