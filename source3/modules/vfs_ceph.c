@@ -464,7 +464,7 @@ static int cephwrap_close(struct vfs_handle_struct *handle, files_struct *fsp)
 	int result;
 
 	DBG_DEBUG("[CEPH] close(%p, %p)\n", handle, fsp);
-	result = ceph_close(handle->data, fsp_get_io_fd(fsp));
+	result = ceph_close(handle->data, fsp_get_pathref_fd(fsp));
 	DBG_DEBUG("[CEPH] close(...) = %d\n", result);
 
 	WRAP_RETURN(result);
@@ -788,9 +788,10 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 {
 	int result = -1;
 	struct ceph_statx stx;
+	int fd = fsp_get_pathref_fd(fsp);
 
-	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fsp_get_io_fd(fsp));
-	result = ceph_fstatx(handle->data, fsp_get_io_fd(fsp), &stx,
+	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fd);
+	result = ceph_fstatx(handle->data, fd, &stx,
 				SAMBA_STATX_ATTR_MASK, 0);
 	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
 	if (result < 0) {
