@@ -760,7 +760,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 	struct smb_filename *full_fname = NULL;
 	bool have_opath = false;
 	bool became_root = false;
-	glfs_fd_t *glfd;
+	glfs_fd_t *glfd = NULL;
 	glfs_fd_t *pglfd = NULL;
 	glfs_fd_t **p_tmp;
 
