@@ -193,6 +193,7 @@ others:
     - script/autobuild.py tevent   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/tevent
     - script/autobuild.py samba-xc $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/samba-xc
     - script/autobuild.py docs-xml $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/docs-xml
+    - make -C coverity
 
 .shared_template_build_only:
   extends: .shared_template
