@@ -3261,13 +3261,9 @@ static NTSTATUS smb1_create(struct cli_state *cli,
 {
 	uint16_t vwv[3] = { 0, 0, 0};
 	uint8_t *bytes = NULL;
-	uint16_t accessmode = 0;
 	uint16_t *return_words = NULL;
 	uint8_t return_wcount = 0;
 	NTSTATUS status;
-
-	accessmode = (DENY_NONE<<4);
-	accessmode |= DOS_OPEN_RDONLY;
 
 	PUSH_LE_U16(vwv + 0, 0, FILE_ATTRIBUTE_NORMAL);
 
