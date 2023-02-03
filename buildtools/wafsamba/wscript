@@ -189,6 +189,11 @@ Currently the only tested value is 'smbtorture,smbd/smbd' for Samba'''),
         action="store_true",
         dest='undefined_sanitizer',
         default=False)
+    gr.add_option('--memory-sanitizer',
+        help=("Enable memory behaviour sanitizer compile and linker flags"),
+        action="store_true",
+        dest='memory_sanitizer',
+        default=False)
     gr.add_option('--enable-libfuzzer',
                   help=("Build fuzzing binaries (use ADDITIONAL_CFLAGS to specify compiler options for libFuzzer or use CC=honggfuzz/hfuzz-cc)"),
                   action="store_true", dest='enable_libfuzzer', default=False)

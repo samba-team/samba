@@ -830,8 +830,10 @@ int main(void) {
     if (Options.options.address_sanitizer or
         Options.options.undefined_sanitizer):
         conf.ADD_CFLAGS('-g -O1', testflags=True)
-    if Options.options.address_sanitizer:
+    if (Options.options.address_sanitizer
+       or Options.options.memory_sanitizer):
         conf.ADD_CFLAGS('-fno-omit-frame-pointer', testflags=True)
+    if Options.options.address_sanitizer:
         conf.ADD_CFLAGS('-fsanitize=address', testflags=True)
         conf.ADD_LDFLAGS('-fsanitize=address', testflags=True)
         conf.env['ADDRESS_SANITIZER'] = True
@@ -842,6 +844,13 @@ int main(void) {
         conf.ADD_LDFLAGS('-fsanitize=undefined', testflags=True)
         conf.env['UNDEFINED_SANITIZER'] = True
 
+    # MemorySanitizer is only available if you build with clang
+    if Options.options.memory_sanitizer:
+        conf.ADD_CFLAGS('-g -O2', testflags=True)
+        conf.ADD_CFLAGS('-fsanitize=memory', testflags=True)
+        conf.ADD_CFLAGS('-fsanitize-memory-track-origins=2', testflags=True)
+        conf.ADD_LDFLAGS('-fsanitize=memory')
+        conf.env['MEMORY_SANITIZER'] = True
 
     # Let people pass an additional ADDITIONAL_{CFLAGS,LDFLAGS}
     # environment variables which are only used the for final build.
@@ -986,7 +995,9 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
 
 @conf
 def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
-    if Options.options.address_sanitizer or Options.options.enable_libfuzzer:
+    if (Options.options.address_sanitizer
+       or Options.options.memory_sanitizer
+       or Options.options.enable_libfuzzer):
         # Sanitizers can rely on symbols undefined at library link time and the
         # symbols used for fuzzers are only defined by compiler wrappers.
         return
