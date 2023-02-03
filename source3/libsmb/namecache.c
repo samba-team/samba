@@ -126,7 +126,7 @@ static int ipstr_list_parse(TALLOC_CTX *ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samba_sockaddr *sa_list = NULL;
 	char *token_str = NULL;
-	size_t i, count;
+	size_t count;
 	size_t array_size;
 
 	*sa_list_out = NULL;
@@ -141,8 +141,10 @@ static int ipstr_list_parse(TALLOC_CTX *ctx,
 	}
 
 	count = 0;
-	for (i=0; next_token_talloc(frame, &ipstr_list, &token_str,
-				IPSTR_LIST_SEP); i++ ) {
+	while (next_token_talloc(frame,
+				 &ipstr_list,
+				 &token_str,
+				 IPSTR_LIST_SEP)) {
 		bool ok;
 		char *s = token_str;
 		char *p = strrchr(token_str, ':');
