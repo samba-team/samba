@@ -364,8 +364,6 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 		goto local_path;
 	}
 
-	servicename = servicename;
-
 	DBG_DEBUG("servicename: %s\n", servicename);
 
 	if(p == NULL) {
