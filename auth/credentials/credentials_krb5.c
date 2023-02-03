@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Handle user credentials (as regards krb5)
@@ -6,17 +6,17 @@
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -192,9 +192,9 @@ static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
 				    ccc->ccache);
 }
 
-_PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 				     struct loadparm_context *lp_ctx,
-				     struct smb_krb5_context **smb_krb5_context) 
+				     struct smb_krb5_context **smb_krb5_context)
 {
 	int ret;
 	if (cred->smb_krb5_context) {
@@ -215,7 +215,7 @@ _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 /* For most predictable behaviour, this needs to be called directly after the cli_credentials_init(),
  * otherwise we may still have references to the old smb_krb5_context in a credential cache etc
  */
-_PUBLIC_ NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
+_PUBLIC_ NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred,
 					  struct smb_krb5_context *smb_krb5_context)
 {
 	if (smb_krb5_context == NULL) {
@@ -231,7 +231,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred,
 	return NT_STATUS_OK;
 }
 
-static int cli_credentials_set_from_ccache(struct cli_credentials *cred, 
+static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 					   struct ccache_container *ccache,
 					   enum credentials_obtained obtained,
 					   const char **error_string)
@@ -246,7 +246,7 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = krb5_cc_get_principal(ccache->smb_krb5_context->krb5_context, 
+	ret = krb5_cc_get_principal(ccache->smb_krb5_context->krb5_context,
 				    ccache->ccache, &princ);
 
 	if (ret) {
@@ -255,7 +255,7 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 									     ret, cred));
 		return ret;
 	}
-	
+
 	ret = krb5_unparse_name(ccache->smb_krb5_context->krb5_context, princ, &name);
 	if (ret) {
 		(*error_string) = talloc_asprintf(cred, "failed to unparse principal from ccache: %s\n",
@@ -289,7 +289,7 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 	return 0;
 }
 
-_PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 					struct loadparm_context *lp_ctx,
 					const char *name,
 					enum credentials_obtained obtained,
@@ -594,7 +594,7 @@ _PUBLIC_ bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred
 }
 
 
-static int cli_credentials_new_ccache(struct cli_credentials *cred, 
+static int cli_credentials_new_ccache(struct cli_credentials *cred,
 				      struct loadparm_context *lp_ctx,
 				      char *ccache_name,
 				      struct ccache_container **_ccc,
@@ -625,10 +625,10 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 		must_free_cc_name = true;
 
 		if (lpcfg_parm_bool(lp_ctx, NULL, "credentials", "krb5_cc_file", false)) {
-			ccache_name = talloc_asprintf(ccc, "FILE:/tmp/krb5_cc_samba_%u_%p", 
+			ccache_name = talloc_asprintf(ccc, "FILE:/tmp/krb5_cc_samba_%u_%p",
 						      (unsigned int)getpid(), ccc);
 		} else {
-			ccache_name = talloc_asprintf(ccc, "MEMORY:%p", 
+			ccache_name = talloc_asprintf(ccc, "MEMORY:%p",
 						      ccc);
 		}
 
@@ -639,7 +639,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 		}
 	}
 
-	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name, 
+	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name,
 			      &ccc->ccache);
 	if (ret) {
 		(*error_string) = talloc_asprintf(cred, "failed to resolve a krb5 ccache (%s): %s\n",
@@ -666,7 +666,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 	return 0;
 }
 
-_PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 					      struct tevent_context *event_ctx,
 					      struct loadparm_context *lp_ctx,
 					      char *ccache_name,
@@ -675,12 +675,12 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 {
 	krb5_error_code ret;
 	enum credentials_obtained obtained;
-	
+
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred, lp_ctx);
 	}
 
-	if (cred->ccache_obtained >= cred->ccache_threshold && 
+	if (cred->ccache_obtained >= cred->ccache_threshold &&
 	    cred->ccache_obtained > CRED_UNINITIALISED) {
 		time_t lifetime;
 		bool expired = false;
@@ -696,7 +696,7 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 					  cli_credentials_get_principal(cred, cred)));
 				expired = true;
 			} else if (lifetime < 300) {
-				DEBUG(3, ("Ticket in credentials cache for %s will shortly expire (%u secs), will refresh\n", 
+				DEBUG(3, ("Ticket in credentials cache for %s will shortly expire (%u secs), will refresh\n",
 					  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
 				expired = true;
 			}
@@ -707,9 +707,9 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 			return ret;
 		}
 
-		DEBUG(5, ("Ticket in credentials cache for %s will expire in %u secs\n", 
+		DEBUG(5, ("Ticket in credentials cache for %s will expire in %u secs\n",
 			  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
-		
+
 		if (!expired) {
 			*ccc = cred->ccache;
 			return 0;
@@ -730,9 +730,9 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 		return ret;
 	}
 
-	ret = cli_credentials_set_from_ccache(cred, *ccc, 
+	ret = cli_credentials_set_from_ccache(cred, *ccc,
 					      obtained, error_string);
-	
+
 	cred->ccache = *ccc;
 	cred->ccache_obtained = cred->principal_obtained;
 	if (ret) {
@@ -742,7 +742,7 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 	return 0;
 }
 
-_PUBLIC_ int cli_credentials_get_ccache(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_ccache(struct cli_credentials *cred,
 					struct tevent_context *event_ctx,
 					struct loadparm_context *lp_ctx,
 					struct ccache_container **ccc,
@@ -761,7 +761,7 @@ static void cli_credentials_unconditionally_invalidate_client_gss_creds(struct c
 	cred->client_gss_creds_obtained = CRED_UNINITIALISED;
 }
 
-void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred, 
+void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 						 enum credentials_obtained obtained)
 {
 	/* If the caller just changed the username/password etc, then
@@ -794,7 +794,7 @@ static void cli_credentials_unconditionally_invalidate_ccache(struct cli_credent
 	cli_credentials_unconditionally_invalidate_client_gss_creds(cred);
 }
 
-_PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred, 
+_PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 				       enum credentials_obtained obtained)
 {
 	/* If the caller just changed the username/password etc, then
@@ -814,7 +814,7 @@ _PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 		cred->ccache_threshold  = obtained;
 	}
 
-	cli_credentials_invalidate_client_gss_creds(cred, 
+	cli_credentials_invalidate_client_gss_creds(cred,
 						    obtained);
 }
 
@@ -825,7 +825,7 @@ static int free_gssapi_creds(struct gssapi_creds_container *gcc)
 	return 0;
 }
 
-_PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 						  struct tevent_context *event_ctx,
 						  struct loadparm_context *lp_ctx,
 						  struct gssapi_creds_container **_gcc,
@@ -841,12 +841,12 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 #endif
 	krb5_enctype *etypes = NULL;
 
-	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
+	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold &&
 	    cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
 		bool expired = false;
 		OM_uint32 lifetime = 0;
 		gss_cred_usage_t usage = 0;
-		maj_stat = gss_inquire_cred(&min_stat, cred->client_gss_creds->creds, 
+		maj_stat = gss_inquire_cred(&min_stat, cred->client_gss_creds->creds,
 					    NULL, &lifetime, &usage, NULL);
 		if (maj_stat == GSS_S_CREDENTIALS_EXPIRED) {
 			DEBUG(3, ("Credentials for %s expired, must refresh credentials cache\n", cli_credentials_get_principal(cred, cred)));
@@ -862,9 +862,9 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		if (expired) {
 			cli_credentials_unconditionally_invalidate_client_gss_creds(cred);
 		} else {
-			DEBUG(5, ("GSSAPI credentials for %s will expire in %u secs\n", 
+			DEBUG(5, ("GSSAPI credentials for %s will expire in %u secs\n",
 				  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
-		
+
 			*_gcc = cred->client_gss_creds;
 			return 0;
 		}
@@ -994,13 +994,13 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 
    This grabs the credentials both 'intact' and getting the krb5
    ccache out of it.  This routine can be generalised in future for
-   the case where we deal with GSSAPI mechs other than krb5.  
+   the case where we deal with GSSAPI mechs other than krb5.
 
    On sucess, the caller must not free gssapi_cred, as it now belongs
    to the credentials system.
 */
 
- int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
 					  struct loadparm_context *lp_ctx,
 					  gss_cred_id_t gssapi_cred,
 					  enum credentials_obtained obtained,
@@ -1047,8 +1047,8 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	if (ret == 0) {
 		gcc->creds = gssapi_cred;
 		talloc_set_destructor(gcc, free_gssapi_creds);
-		
-		/* set the clinet_gss_creds_obtained here, as it just 
+
+		/* set the clinet_gss_creds_obtained here, as it just
 		   got set to UNINITIALISED by the calls above */
 		cred->client_gss_creds_obtained = obtained;
 		cred->client_gss_creds = gcc;
@@ -1146,7 +1146,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ct
  * attached to this context.  If this hasn't been done or set before,
  * it will be generated from the password.
  */
-_PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 					struct loadparm_context *lp_ctx,
 					struct keytab_container **_ktc)
 {
@@ -1162,7 +1162,7 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	char *salt_principal = NULL;
 	uint32_t uac_flags = 0;
 
-	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
+	if (cred->keytab_obtained >= (MAX(cred->principal_obtained,
 					  cred->username_obtained))) {
 		*_ktc = cred->keytab;
 		return 0;
@@ -1237,7 +1237,7 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ret;
 	}
 
-	cred->keytab_obtained = (MAX(cred->principal_obtained, 
+	cred->keytab_obtained = (MAX(cred->principal_obtained,
 				     cred->username_obtained));
 
 	/* We make this keytab up based on a password.  Therefore
@@ -1255,7 +1255,7 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 /* Given the name of a keytab (presumably in the format
  * FILE:/etc/krb5.keytab), open it and attach it */
 
-_PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 					     struct loadparm_context *lp_ctx,
 					     const char *keytab_name,
 					     enum credentials_obtained obtained)
@@ -1296,7 +1296,7 @@ _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 
 /* Get server gss credentials (in gsskrb5, this means the keytab) */
 
-_PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 						  struct loadparm_context *lp_ctx,
 						  struct gssapi_creds_container **_gcc)
 {
@@ -1375,7 +1375,7 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 	return ret;
 }
 
-/** 
+/**
  * Set Kerberos KVNO
  */
 
@@ -1395,12 +1395,12 @@ _PUBLIC_ int cli_credentials_get_kvno(struct cli_credentials *cred)
 }
 
 
-const char *cli_credentials_get_salt_principal(struct cli_credentials *cred) 
+const char *cli_credentials_get_salt_principal(struct cli_credentials *cred)
 {
 	return cred->salt_principal;
 }
 
-_PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal) 
+_PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal)
 {
 	talloc_free(cred->salt_principal);
 	cred->salt_principal = talloc_strdup(cred, principal);
