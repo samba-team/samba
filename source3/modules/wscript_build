@@ -143,7 +143,10 @@ bld.SAMBA3_MODULE('vfs_default_quota',
 
 module_cflags=''
 if bld.CONFIG_SET('HAVE_WNO_STRICT_OVERFLOW'):
-    module_cflags='-Wno-strict-overflow'
+    module_cflags += ' -Wno-strict-overflow'
+
+if bld.CONFIG_SET('HAVE_WNO_UNUSED_BUT_SET_VARIABLE'):
+    module_cflags += ' -Wno-unused-but-set-variable'
 
 bld.SAMBA3_MODULE('vfs_readonly',
                  subsystem='vfs',

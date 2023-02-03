@@ -131,6 +131,9 @@ def configure(conf):
     if conf.CHECK_CFLAGS('-Wno-strict-overflow'):
         conf.define('HAVE_WNO_STRICT_OVERFLOW', '1')
 
+    if conf.CHECK_CFLAGS('-Wno-unused-but-set-variable'):
+        conf.define('HAVE_WNO_UNUSED_BUT_SET_VARIABLE', '1')
+
     if conf.CHECK_CFLAGS('-Wuse-after-free=1'):
         conf.define('HAVE_WUSE_AFTER_FREE_1', '1')
 
