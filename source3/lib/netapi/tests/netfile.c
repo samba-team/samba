@@ -37,9 +37,6 @@ static NET_API_STATUS test_netfileenum(const char *hostname,
 	uint8_t *buffer = NULL;
 	int i;
 
-	struct FILE_INFO_2 *i2 = NULL;
-	struct FILE_INFO_3 *i3 = NULL;
-
 	printf("testing NetFileEnum level %d\n", level);
 
 	do {
@@ -55,10 +52,8 @@ static NET_API_STATUS test_netfileenum(const char *hostname,
 		if (status == 0 || status == ERROR_MORE_DATA) {
 			switch (level) {
 				case 2:
-					i2 = (struct FILE_INFO_2 *)buffer;
 					break;
 				case 3:
-					i3 = (struct FILE_INFO_3 *)buffer;
 					break;
 				default:
 					return -1;
@@ -76,10 +71,8 @@ static NET_API_STATUS test_netfileenum(const char *hostname,
 
 				switch (level) {
 					case 2:
-						i2++;
 						break;
 					case 3:
-						i3++;
 						break;
 				}
 			}
