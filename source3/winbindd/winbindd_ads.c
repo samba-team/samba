@@ -1396,7 +1396,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	uint32_t		i;
 	uint32_t		flags;
 	struct rpc_pipe_client *cli;
-	int ret_count;
 	struct dcerpc_binding_handle *b;
 
 	DEBUG(3,("ads: trusted_domains\n"));
@@ -1444,7 +1443,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	/* Copy across names and sids */
 
-	ret_count = 0;
 	for (i = 0; i < trusts->count; i++) {
 		struct netr_DomainTrust *trust = &trusts->array[i];
 		struct winbindd_domain d;
@@ -1491,7 +1489,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			d.domain_trust_attribs = trust->trust_attributes;
 
 			wcache_tdc_add_domain( &d );
-			ret_count++;
 		} else if (domain_is_forest_root(domain)) {
 			/* Check if we already have this record. If
 			 * we are following our forest root that is not
@@ -1513,7 +1510,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 					trust->trust_attributes;
 
 				wcache_tdc_add_domain( &d );
-				ret_count++;
 			}
 			TALLOC_FREE(exist);
 		} else {
@@ -1554,7 +1550,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			trust->trust_attributes = d.domain_trust_attribs;
 
 			wcache_tdc_add_domain( &d );
-			ret_count++;
 		}
 	}
 	return result;
