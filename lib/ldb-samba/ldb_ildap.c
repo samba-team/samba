@@ -476,10 +476,17 @@ static int ildb_search(struct ildb_context *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (req->op.search.scope == LDB_SCOPE_DEFAULT) {
+	switch (req->op.search.scope) {
+	case LDB_SCOPE_DEFAULT:
+	case LDB_SCOPE_SUBTREE:
 		msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SUB;
-	} else {
-		msg->r.SearchRequest.scope = req->op.search.scope;
+		break;
+	case LDB_SCOPE_BASE:
+		msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_BASE;
+		break;
+	case LDB_SCOPE_ONELEVEL:
+		msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SINGLE;
+		break;
 	}
 
 	msg->r.SearchRequest.deref  = LDAP_DEREFERENCE_NEVER;
