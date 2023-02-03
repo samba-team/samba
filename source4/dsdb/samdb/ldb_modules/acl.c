@@ -2765,7 +2765,7 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->constructed_attrs) {
-			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
+			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn,
 						    acl_attrs,
 						    DSDB_FLAG_NEXT_MODULE |
 						    DSDB_FLAG_AS_SYSTEM |
