@@ -1,0 +1,16 @@
+#
+# GitLeaks Repo Specific Configuration
+#
+# This allowlist is used to help Red Hat ignore false positives during its code
+# scans.
+
+[allowlist]
+  paths = [
+    '''docs-xml/manpages/smbstatus.1.xml''',
+    '''selftests/*''',
+    '''source3/script/tests/*''',
+    '''source4/dsdb/tests/*''',
+    '''source4/torture/*''',
+    '''testprogs/blackbox/*''',
+    '''tests/*''',
+  ]
