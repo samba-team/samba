@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
 
    Virtual lp system for printer testing
 
    Copyright (C) Tim Potter 2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -53,7 +53,7 @@ static void usage(void)
 
 /* Return an array of vlp jobs that is the printer queue */
 
-static void get_job_list(char *printer, struct vlp_job **job_list, 
+static void get_job_list(char *printer, struct vlp_job **job_list,
 			 int *num_jobs)
 {
 	fstring keystr;
@@ -68,7 +68,7 @@ static void get_job_list(char *printer, struct vlp_job **job_list,
 
 /* Store an array of vl jobs for the queue */
 
-static void set_job_list(char *printer, struct vlp_job *job_list, 
+static void set_job_list(char *printer, struct vlp_job *job_list,
 			 int num_jobs)
 {
 	fstring keystr;
@@ -172,10 +172,10 @@ static int lpq_command(int argc, char **argv)
 	for (i = 0; i < num_jobs; i++) {
 		if (job_list[i].deleted) continue;
 		printf("%d\t%d\t%d\t%ld\t%s\t%s\n", job_list[i].jobid,
-		       job_list[i].size, 
-		       (i == 0 && job_list[i].status == LPQ_QUEUED) ? 
+		       job_list[i].size,
+		       (i == 0 && job_list[i].status == LPQ_QUEUED) ?
 		       LPQ_SPOOLING : job_list[i].status,
-		       (long int)job_list[i].submit_time, job_list[i].owner, 
+		       (long int)job_list[i].submit_time, job_list[i].owner,
 		       job_list[i].jobname);
 		job_count++;
 	}
