@@ -141,7 +141,7 @@ static int lpq_command(int argc, char **argv)
 {
 	char *printer;
 	struct vlp_job *job_list = NULL;
-	int i, num_jobs, job_count = 0;
+	int i, num_jobs;
 
 	if (argc != 2) {
 		printf("Usage: lpq <printername>\n");
@@ -177,7 +177,6 @@ static int lpq_command(int argc, char **argv)
 		       LPQ_SPOOLING : job_list[i].status,
 		       (long int)job_list[i].submit_time, job_list[i].owner,
 		       job_list[i].jobname);
-		job_count++;
 	}
 
 	free(job_list);
