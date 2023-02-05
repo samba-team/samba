@@ -378,7 +378,7 @@ def configure(conf):
     conf.CHECK_CODE('printf("hello world")',
                     define='HAVE_SIMPLE_C_PROG',
                     mandatory=True,
-                    execute=True,
+                    execute=not conf.env.CROSS_COMPILE,
                     headers='stdio.h',
                     msg='Checking simple C program')
 
