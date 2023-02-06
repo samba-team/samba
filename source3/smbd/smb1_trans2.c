@@ -1059,7 +1059,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				req,
 				fsp, /* fsp */
 				False,
-				True,
 				mask,
 				dirtype,
 				&fsp->dptr);

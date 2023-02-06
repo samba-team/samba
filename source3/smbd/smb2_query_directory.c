@@ -426,7 +426,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 				     NULL, /* req */
 				     fsp,
 				     false, /* old_handle */
-				     false, /* expect_close */
 				     state->in_file_name, /* wcard */
 				     state->dirtype,
 				     &fsp->dptr);

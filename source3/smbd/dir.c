@@ -69,7 +69,6 @@ struct dptr_struct {
 	int dnum;
 	struct connection_struct *conn;
 	struct smb_Dir *dir_hnd;
-	bool expect_close;
 	char *wcard;
 	uint32_t attr;
 	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
@@ -209,7 +208,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
 		bool old_handle,
-		bool expect_close,
 		const char *wcard,
 		uint32_t attr,
 		struct dptr_struct **dptr_ret)
@@ -250,7 +248,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 
 	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
-	dptr->expect_close = expect_close;
 	dptr->wcard = talloc_strdup(dptr, wcard);
 	if (!dptr->wcard) {
 		TALLOC_FREE(dptr);
@@ -312,8 +309,8 @@ NTSTATUS dptr_create(connection_struct *conn,
 	DLIST_ADD(sconn->searches.dirptrs, dptr);
 
 done:
-	DBG_INFO("creating new dirptr [%d] for path [%s], expect_close = %d\n",
-		 dptr->dnum, fsp_str_dbg(fsp), expect_close);
+	DBG_INFO("creating new dirptr [%d] for path [%s]\n",
+		 dptr->dnum, fsp_str_dbg(fsp));
 
 	*dptr_ret = dptr;
 

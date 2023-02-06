@@ -1179,7 +1179,6 @@ void reply_search(struct smb_request *req)
 					NULL, /* req */
 					fsp, /* fsp */
 					True,
-					expect_close,
 					mask,
 					dirtype,
 					&fsp->dptr);

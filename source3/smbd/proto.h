@@ -187,7 +187,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
 		bool old_handle,
-		bool expect_close,
 		const char *wcard,
 		uint32_t attr,
 		struct dptr_struct **dptr_ret);
