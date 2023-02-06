@@ -37,6 +37,9 @@
 #define WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED \
 	"io.systemd.UserDatabase.EnumerationNotSupported"
 
+NTSTATUS wb_vl_fake_cli_state(VarlinkCall *call,
+			      const char *service,
+			      struct winbindd_cli_state *cli);
 
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 

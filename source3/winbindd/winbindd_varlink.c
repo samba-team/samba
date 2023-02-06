@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "winbindd.h"
 #include "lib/util/mkdir_p.h"
 #include "winbindd_varlink.h"
 
@@ -56,6 +57,58 @@ struct wb_vl_state {
 	struct tevent_fd *fde;
 	int fd;
 };
+
+static int get_peer_creds(int fd, uid_t *uid, gid_t *gid, pid_t *pid)
+{
+#if defined(HAVE_PEERCRED)
+	struct ucred cr;
+	socklen_t crl = sizeof(struct ucred);
+	int ret;
+
+	ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl);
+	if (ret == 0) {
+		*uid = cr.uid;
+		*gid = cr.gid;
+		*pid = cr.pid;
+	}
+	return ret;
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+NTSTATUS wb_vl_fake_cli_state(VarlinkCall *call,
+			      const char *service,
+			      struct winbindd_cli_state *cli)
+{
+	int fd;
+	int ret;
+	uid_t uid;
+	gid_t gid;
+	pid_t pid;
+
+	fd = varlink_call_get_connection_fd(call);
+	if (fd < 0) {
+		DBG_ERR("varlink_call_get_connection_fd failed: %d (%s)\n",
+			fd, varlink_error_string(fd));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ret = get_peer_creds(fd, &uid, &gid, &pid);
+	if (ret < 0) {
+		int saved_errno = errno;
+		DBG_ERR("Failed to get peer credentials: %s\n",
+			strerror(saved_errno));
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+	cli->sock = fd;
+	cli->pid = pid;
+
+	strncpy(cli->client_name, service, sizeof(cli->client_name));
+
+	return NT_STATUS_OK;
+}
 
 static long io_systemd_getuserrecord(VarlinkService *service,
 				     VarlinkCall *call,
