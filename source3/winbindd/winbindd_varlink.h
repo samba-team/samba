@@ -67,6 +67,13 @@ NTSTATUS wb_vl_user_by_name_and_uid(TALLOC_CTX *mem_ctx,
 				    const char *user_name,
 				    int64_t gid);
 
+/* GetGroupRecord */
+NTSTATUS wb_vl_group_enumerate(TALLOC_CTX *state,
+			       struct tevent_context *ev_ctx,
+			       VarlinkCall *call,
+			       uint64_t flags,
+			       const char *service);
+
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 
 #endif /* _SOURCE3_WINBIND_VARLINK_H_ */
