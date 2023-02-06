@@ -416,6 +416,15 @@ static long io_systemd_getmemberships(VarlinkService *service,
 						    flags,
 						    parm_service,
 						    parm_groupname);
+	} else if (parm_username != NULL && parm_groupname != NULL) {
+		/* Check membership */
+		status = wb_vl_membership_check(state,
+						state->ev_ctx,
+						call,
+						flags,
+						parm_service,
+						parm_username,
+						parm_groupname);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
