@@ -53,6 +53,12 @@ NTSTATUS wb_vl_user_by_uid(TALLOC_CTX *mem_ctx,
 			   uint64_t flags,
 			   const char *service,
 			   int64_t gid);
+NTSTATUS wb_vl_user_by_name(TALLOC_CTX *mem_ctx,
+			    struct tevent_context *ev_ctx,
+			    VarlinkCall *call,
+			    uint64_t flags,
+			    const char *service,
+			    const char *user_name);
 
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 

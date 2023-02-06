@@ -188,6 +188,14 @@ static long io_systemd_getuserrecord(VarlinkService *service,
 					   flags,
 					   parm_service,
 					   parm_uid);
+	} else if (parm_name != NULL && parm_uid == -1) {
+		/* getpwnam */
+		status = wb_vl_user_by_name(state,
+					    state->ev_ctx,
+					    call,
+					    flags,
+					    parm_service,
+					    parm_name);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
