@@ -99,6 +99,12 @@ NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
 				     VarlinkCall *call,
 				     uint64_t flags,
 				     const char *service);
+NTSTATUS wb_vl_memberships_by_user(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev_ctx,
+				   VarlinkCall *call,
+				   uint64_t flags,
+				   const char *service,
+				   const char *user_name);
 
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 

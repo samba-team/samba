@@ -400,6 +400,14 @@ static long io_systemd_getmemberships(VarlinkService *service,
 						     call,
 						     flags,
 						     parm_service);
+	} else if (parm_username != NULL && parm_groupname == NULL) {
+		/* List user groups */
+		status = wb_vl_memberships_by_user(state,
+						   state->ev_ctx,
+						   call,
+						   flags,
+						   parm_service,
+						   parm_username);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

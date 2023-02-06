@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "lib/util/string_wrappers.h"
 #include "winbindd_varlink.h"
 
 static void membership_reply(VarlinkCall *call,
@@ -388,6 +389,240 @@ NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, membership_enum_setgrent_done, s);
+
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(s);
+	return status;
+}
+
+/******************************************************************************
+ * List user groups
+ *****************************************************************************/
+
+struct memberships_by_user_state {
+	struct winbindd_cli_state *fake_cli;
+	struct winbindd_request *fake_req;
+	struct tevent_context *ev_ctx;
+	VarlinkCall *call;
+	const char *username;
+
+	uint32_t num_gids;
+	gid_t *gids;
+};
+
+static int
+memberships_by_user_state_destructor(struct memberships_by_user_state *s)
+{
+	if (s->call != NULL) {
+		s->call = varlink_call_unref(s->call);
+	}
+
+	return 0;
+}
+
+static void memberships_by_user_getgrgid_done(struct tevent_req *req)
+{
+	struct memberships_by_user_state *s =
+		tevent_req_callback_data(req, struct memberships_by_user_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_getgrgid_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getgrgid failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (s->gids == NULL) {
+		/*
+		 * We freed the array in the last winbindd_getgrgid_send
+		 * call to flag it was the last one
+		 */
+		membership_reply(s->call,
+				 s->username,
+				 response->data.gr.gr_name,
+				 false);
+		goto out;
+	}
+
+	membership_reply(s->call, s->username, response->data.gr.gr_name, true);
+	TALLOC_FREE(response);
+
+	s->num_gids--;
+
+	ZERO_STRUCTP(s->fake_req);
+	s->fake_req->cmd = WINBINDD_GETGRGID;
+	s->fake_req->data.uid = s->gids[s->num_gids - 1];
+
+	if (s->num_gids - 1 == 0) {
+		/* Flag this is the last winbindd_getgrgid_send call */
+		TALLOC_FREE(s->gids);
+	}
+
+	req = winbindd_getgrgid_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+	tevent_req_set_callback(req, memberships_by_user_getgrgid_done, s);
+	return;
+out:
+	TALLOC_FREE(s);
+}
+
+static void memberships_by_user_getgroups_done(struct tevent_req *req)
+{
+	struct memberships_by_user_state *s =
+		tevent_req_callback_data(req, struct memberships_by_user_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_getgroups_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getgroups failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (response->data.num_entries == 0) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	}
+
+	s->num_gids = response->data.num_entries;
+	s->gids = talloc_move(s, &response->extra_data.data);
+	TALLOC_FREE(response);
+
+	ZERO_STRUCTP(s->fake_req);
+	s->fake_req->cmd = WINBINDD_GETGRGID;
+	s->fake_req->data.uid = s->gids[s->num_gids - 1];
+
+	req = winbindd_getgrgid_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+	tevent_req_set_callback(req, memberships_by_user_getgrgid_done, s);
+	return;
+out:
+	TALLOC_FREE(s);
+}
+
+NTSTATUS wb_vl_memberships_by_user(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev_ctx,
+				   VarlinkCall *call,
+				   uint64_t flags,
+				   const char *service,
+				   const char *user_name)
+{
+	struct memberships_by_user_state *s = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	/* Check if group expansion is enabled */
+	if (!lp_winbind_expand_groups()) {
+		varlink_call_reply_error(
+			call,
+			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
+			NULL);
+		return NT_STATUS_OK;
+	}
+
+	/* Check more flag is set */
+	if (!(flags & VARLINK_CALL_MORE)) {
+		DBG_WARNING("Request without more flag set\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	s = talloc_zero(mem_ctx, struct memberships_by_user_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, memberships_by_user_state_destructor);
+
+	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
+	if (s->fake_cli == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->fake_req = talloc_zero(s, struct winbindd_request);
+	if (s->fake_req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->username = talloc_strdup(s, user_name);
+	if (s->username == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->ev_ctx = ev_ctx;
+	s->call = varlink_call_ref(call);
+
+	status = wb_vl_fake_cli_state(call, service, s->fake_cli);
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Failed to create fake winbindd_cli_state: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	s->fake_req->cmd = WINBINDD_GETGROUPS;
+	fstrcpy(s->fake_req->data.username, user_name);
+	req = winbindd_getgroups_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(req, memberships_by_user_getgroups_done, s);
 
 	return NT_STATUS_OK;
 fail:
