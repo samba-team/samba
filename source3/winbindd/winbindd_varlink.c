@@ -196,6 +196,15 @@ static long io_systemd_getuserrecord(VarlinkService *service,
 					    flags,
 					    parm_service,
 					    parm_name);
+	} else if (parm_name != NULL && parm_uid >= 0) {
+		/* getgrnam + getgrgid */
+		status = wb_vl_user_by_name_and_uid(state,
+						    state->ev_ctx,
+						    call,
+						    flags,
+						    parm_service,
+						    parm_name,
+						    parm_uid);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
