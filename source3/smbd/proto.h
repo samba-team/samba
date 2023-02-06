@@ -188,7 +188,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		files_struct *fsp,
 		bool old_handle,
 		bool expect_close,
-		uint16_t spid,
 		const char *wcard,
 		uint32_t attr,
 		struct dptr_struct **dptr_ret);

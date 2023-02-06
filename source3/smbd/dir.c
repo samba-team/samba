@@ -67,7 +67,6 @@ struct smb_Dir {
 struct dptr_struct {
 	struct dptr_struct *next, *prev;
 	int dnum;
-	uint16_t spid;
 	struct connection_struct *conn;
 	struct smb_Dir *dir_hnd;
 	bool expect_close;
@@ -211,7 +210,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		files_struct *fsp,
 		bool old_handle,
 		bool expect_close,
-		uint16_t spid,
 		const char *wcard,
 		uint32_t attr,
 		struct dptr_struct **dptr_ret)
@@ -252,7 +250,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 
 	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
-	dptr->spid = spid;
 	dptr->expect_close = expect_close;
 	dptr->wcard = talloc_strdup(dptr, wcard);
 	if (!dptr->wcard) {

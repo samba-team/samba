@@ -1060,7 +1060,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				fsp, /* fsp */
 				False,
 				True,
-				req->smbpid,
 				mask,
 				dirtype,
 				&fsp->dptr);
