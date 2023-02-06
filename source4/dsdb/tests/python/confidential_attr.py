@@ -924,12 +924,12 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         self.assert_negative_searches(has_rights_to="all",
                                       samdb=self.ldb_admin)
 
-    def get_guid(self, dn):
+    def get_guid_string(self, dn):
         """Returns an object's GUID (in string format)"""
         res = self.ldb_admin.search(base=dn, attrs=["objectGUID"],
                                     scope=SCOPE_BASE)
         guid = res[0]['objectGUID'][0]
-        return self.ldb_admin.schema_format_value("objectGUID", guid)
+        return self.ldb_admin.schema_format_value("objectGUID", guid).decode('utf-8')
 
     def make_attr_preserve_on_delete(self):
         """Marks the attribute under test as being preserve on delete"""
@@ -978,7 +978,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # deleted objects, but only from this particular test run. We can do
         # this by matching lastKnownParent against this test case's OU, which
         # will match any deleted child objects.
-        ou_guid = self.get_guid(self.ou)
+        ou_guid = self.get_guid_string(self.ou)
         deleted_filter = "(lastKnownParent=<GUID={0}>)".format(ou_guid)
 
         # the extra-filter will get combined via AND with the search expression
