@@ -352,3 +352,123 @@ fail:
 	TALLOC_FREE(s);
 	return status;
 }
+
+/******************************************************************************
+ * User by uid
+ *****************************************************************************/
+
+struct user_by_uid_state {
+	struct tevent_context *ev_ctx;
+	struct winbindd_request *fake_req;
+	struct winbindd_cli_state *fake_cli;
+	VarlinkCall *call;
+};
+
+static int user_by_uid_state_destructor(struct user_by_uid_state *s)
+{
+	if (s->call != NULL) {
+		s->call = varlink_call_unref(s->call);
+	}
+
+	return 0;
+}
+
+static void user_by_uid_getpwuid_done(struct tevent_req *req)
+{
+	struct user_by_uid_state *s =
+		tevent_req_callback_data(req, struct user_by_uid_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_getpwuid_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	} else if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getgrgid failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	user_record_reply(s->call, &response->data.pw, false);
+
+out:
+	TALLOC_FREE(s);
+}
+
+NTSTATUS wb_vl_user_by_uid(TALLOC_CTX *mem_ctx,
+			   struct tevent_context *ev_ctx,
+			   VarlinkCall *call,
+			   uint64_t flags,
+			   const char *service,
+			   int64_t uid)
+{
+	struct user_by_uid_state *s = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	s = talloc_zero(mem_ctx, struct user_by_uid_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, user_by_uid_state_destructor);
+
+	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
+	if (s->fake_cli == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->fake_req = talloc_zero(s, struct winbindd_request);
+	if (s->fake_req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->ev_ctx = ev_ctx;
+	s->call = varlink_call_ref(call);
+
+	status = wb_vl_fake_cli_state(call, service, s->fake_cli);
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Failed to create fake winbindd_cli_state: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	s->fake_req->cmd = WINBINDD_GETPWUID;
+	s->fake_req->data.uid = uid;
+
+	req = winbindd_getpwuid_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(req, user_by_uid_getpwuid_done, s);
+
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(s);
+	return status;
+}
