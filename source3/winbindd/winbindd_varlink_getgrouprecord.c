@@ -624,3 +624,188 @@ fail:
 	TALLOC_FREE(s);
 	return status;
 }
+
+/******************************************************************************
+ * Group by name and gid
+ * Search by name first, if found, check gid matches.
+ * If not found, search by gid and check name.
+ *****************************************************************************/
+
+struct group_by_name_gid_state {
+	struct tevent_context *ev_ctx;
+	struct winbindd_request *fake_req;
+	struct winbindd_cli_state *fake_cli;
+	VarlinkCall *call;
+	const char *name;
+	gid_t gid;
+};
+
+static int group_by_name_gid_state_destructor(struct group_by_name_gid_state *s)
+{
+	if (s->call != NULL) {
+		s->call = varlink_call_unref(s->call);
+	}
+
+	return 0;
+}
+
+static void group_by_name_gid_getgrnamgid_done(struct tevent_req *req)
+{
+	struct group_by_name_gid_state *s =
+		tevent_req_callback_data(req, struct group_by_name_gid_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	switch (s->fake_req->cmd) {
+	case WINBINDD_GETGRNAM:
+		status = winbindd_getgrnam_recv(req, response);
+		break;
+	case WINBINDD_GETGRGID:
+		status = winbindd_getgrgid_recv(req, response);
+		break;
+	default:
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		TALLOC_FREE(req);
+		goto out;
+	}
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		/*
+		 * If name search did not find the group, fall back to gid.
+		 * If gid search fails too no record found will be returned.
+		 */
+		if (s->fake_req->cmd == WINBINDD_GETGRNAM) {
+			ZERO_STRUCTP(s->fake_req);
+			s->fake_req->cmd = WINBINDD_GETGRGID;
+			s->fake_req->data.uid = s->gid;
+			req = winbindd_getgrgid_send(s,
+						     s->ev_ctx,
+						     s->fake_cli,
+						     s->fake_req);
+			if (req == NULL) {
+				DBG_ERR("No memory\n");
+				varlink_call_reply_error(
+					s->call,
+					WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+					NULL);
+				goto out;
+			}
+			tevent_req_set_callback(
+				req,
+				group_by_name_gid_getgrnamgid_done,
+				s);
+			return;
+		}
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	} else if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getgr[nam|sid] failed: %s\n",
+			nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (response->data.gr.gr_gid != s->gid ||
+	    !strequal(response->data.gr.gr_name, s->name)) {
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_CONFLICTING_RECORD_FOUND,
+			NULL);
+		goto out;
+	}
+
+	group_record_reply(s->call,
+			   &response->data.gr,
+			   response->extra_data.data,
+			   false);
+out:
+	TALLOC_FREE(s);
+}
+
+NTSTATUS wb_vl_group_by_name_and_gid(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev_ctx,
+				     VarlinkCall *call,
+				     uint64_t flags,
+				     const char *service,
+				     const char *group_name,
+				     int64_t gid)
+{
+	struct group_by_name_gid_state *s = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	s = talloc_zero(mem_ctx, struct group_by_name_gid_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, group_by_name_gid_state_destructor);
+
+	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
+	if (s->fake_cli == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->fake_req = talloc_zero(s, struct winbindd_request);
+	if (s->fake_req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->name = talloc_strdup(s, group_name);
+	if (s->name == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->ev_ctx = ev_ctx;
+	s->gid = gid;
+	s->call = varlink_call_ref(call);
+
+	status = wb_vl_fake_cli_state(call, service, s->fake_cli);
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Failed to create fake winbindd_cli_state: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	s->fake_req->cmd = WINBINDD_GETGRNAM;
+	fstrcpy(s->fake_req->data.username, group_name);
+
+	req = winbindd_getgrnam_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(req, group_by_name_gid_getgrnamgid_done, s);
+
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(s);
+	return status;
+}
