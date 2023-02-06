@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "lib/util/string_wrappers.h"
 #include "winbindd_varlink.h"
 
 static void group_record_reply(VarlinkCall *call,
@@ -494,6 +495,129 @@ NTSTATUS wb_vl_group_by_gid(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, group_by_gid_getgrgid_done, s);
+
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(s);
+	return status;
+}
+
+/******************************************************************************
+ * Group by name
+ *****************************************************************************/
+
+struct group_by_name_state {
+	struct tevent_context *ev_ctx;
+	struct winbindd_request *fake_req;
+	struct winbindd_cli_state *fake_cli;
+	VarlinkCall *call;
+};
+
+static int group_by_name_state_destructor(struct group_by_name_state *s)
+{
+	if (s->call != NULL) {
+		s->call = varlink_call_unref(s->call);
+	}
+
+	return 0;
+}
+
+static void group_by_name_getgrnam_done(struct tevent_req *req)
+{
+	struct group_by_name_state *s =
+		tevent_req_callback_data(req, struct group_by_name_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_getgrnam_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	} else if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getgrnam failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	group_record_reply(s->call,
+			   &response->data.gr,
+			   response->extra_data.data,
+			   false);
+
+out:
+	TALLOC_FREE(s);
+}
+
+NTSTATUS wb_vl_group_by_name(TALLOC_CTX *mem_ctx,
+			     struct tevent_context *ev_ctx,
+			     VarlinkCall *call,
+			     uint64_t flags,
+			     const char *service,
+			     const char *group_name)
+{
+	struct group_by_name_state *s = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	s = talloc_zero(mem_ctx, struct group_by_name_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, group_by_name_state_destructor);
+
+	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
+	if (s->fake_cli == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->fake_req = talloc_zero(s, struct winbindd_request);
+	if (s->fake_req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->ev_ctx = ev_ctx;
+	s->call = varlink_call_ref(call);
+
+	status = wb_vl_fake_cli_state(call, service, s->fake_cli);
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Failed to create fake winbindd_cli_state: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	s->fake_req->cmd = WINBINDD_GETGRNAM;
+	fstrcpy(s->fake_req->data.username, group_name);
+
+	req = winbindd_getgrnam_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(req, group_by_name_getgrnam_done, s);
 
 	return NT_STATUS_OK;
 fail:

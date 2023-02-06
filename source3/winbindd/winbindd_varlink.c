@@ -297,6 +297,14 @@ static long io_systemd_getgrouprecord(VarlinkService *service,
 					    flags,
 					    parm_service,
 					    parm_gid);
+	} else if (parm_name != NULL && parm_gid == -1) {
+		/* getgrnam */
+		status = wb_vl_group_by_name(state,
+					     state->ev_ctx,
+					     call,
+					     flags,
+					     parm_service,
+					     parm_name);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
