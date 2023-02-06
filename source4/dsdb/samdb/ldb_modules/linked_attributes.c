@@ -104,7 +104,7 @@ static int handle_verify_name_control(TALLOC_CTX *ctx, struct ldb_context *ldb,
 	 * If we are a GC let's remove the control,
 	 * if there is a specified GC check that is us.
 	 */
-	struct ldb_verify_name_control *lvnc = (struct ldb_verify_name_control *)control->data;
+	struct ldb_verify_name_control *lvnc = talloc_get_type_abort(control->data, struct ldb_verify_name_control);
 	if (samdb_is_gc(ldb)) {
 		/* Because we can't easily talloc a struct ldb_dn*/
 		struct ldb_dn **dn = talloc_array(ctx, struct ldb_dn *, 1);
