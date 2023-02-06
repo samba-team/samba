@@ -48,6 +48,7 @@
 struct extended_search_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
+	struct ldb_parse_tree *tree;
 	struct ldb_dn *basedn;
 	struct ldb_dn *dn;
 	char *wellknown_object;
@@ -200,7 +201,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						      ldb_module_get_ctx(ac->module), ac->req,
 						      ac->basedn,
 						      ac->req->op.search.scope,
-						      ac->req->op.search.tree,
+						      ac->tree,
 						      ac->req->op.search.attrs,
 						      ac->req->controls,
 						      ac, extended_final_callback, 
@@ -515,10 +516,13 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
  */
 static int extended_dn_fix_filter(struct ldb_module *module,
 				  struct ldb_request *req,
-				  uint32_t default_dsdb_flags)
+				  uint32_t default_dsdb_flags,
+				  struct ldb_parse_tree **down_tree)
 {
 	struct extended_dn_filter_ctx *filter_ctx;
 	int ret;
+
+	*down_tree = NULL;
 
 	filter_ctx = talloc_zero(req, struct extended_dn_filter_ctx);
 	if (filter_ctx == NULL) {
@@ -550,12 +554,12 @@ static int extended_dn_fix_filter(struct ldb_module *module,
 	filter_ctx->test_only = false;
 	filter_ctx->matched   = false;
 
-	req->op.search.tree = ldb_parse_tree_copy_shallow(req, req->op.search.tree);
-	if (req->op.search.tree == NULL) {
+	*down_tree = ldb_parse_tree_copy_shallow(req, req->op.search.tree);
+	if (*down_tree == NULL) {
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
-	ret = ldb_parse_tree_walk(req->op.search.tree, extended_dn_filter_callback, filter_ctx);
+	ret = ldb_parse_tree_walk(*down_tree, extended_dn_filter_callback, filter_ctx);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(filter_ctx);
 		return ret;
@@ -572,7 +576,8 @@ static int extended_dn_fix_filter(struct ldb_module *module,
 static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
 {
 	struct extended_search_context *ac;
-	struct ldb_request *down_req;
+	struct ldb_request *down_req = NULL;
+	struct ldb_parse_tree *down_tree = NULL;
 	int ret;
 	struct ldb_dn *base_dn = NULL;
 	enum ldb_scope base_dn_scope = LDB_SCOPE_BASE;
@@ -595,7 +600,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	}
 
 	if (req->operation == LDB_SEARCH) {
-		ret = extended_dn_fix_filter(module, req, dsdb_flags);
+		ret = extended_dn_fix_filter(module, req, dsdb_flags, &down_tree);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -603,7 +608,25 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 	if (!ldb_dn_has_extended(dn)) {
 		/* Move along there isn't anything to see here */
-		return ldb_next_request(module, req);
+		if (down_tree == NULL) {
+			down_req = req;
+		} else {
+			ret = ldb_build_search_req_ex(&down_req,
+						      ldb_module_get_ctx(module), req,
+						      req->op.search.base,
+						      req->op.search.scope,
+						      down_tree,
+						      req->op.search.attrs,
+						      req->controls,
+						      req, dsdb_next_callback,
+						      req);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			LDB_REQ_SET_LOCATION(down_req);
+		}
+
+		return ldb_next_request(module, down_req);
 	} else {
 		/* It looks like we need to map the DN */
 		const struct ldb_val *sid_val, *guid_val, *wkguid_val;
@@ -690,6 +713,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		
 		ac->module = module;
 		ac->req = req;
+		ac->tree = (down_tree != NULL) ? down_tree : req->op.search.tree;
 		ac->dn = dn;
 		ac->basedn = NULL;  /* Filled in if the search finds the DN by SID/GUID etc */
 		ac->wellknown_object = wellknown_object;
