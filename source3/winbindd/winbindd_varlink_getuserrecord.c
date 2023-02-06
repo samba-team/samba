@@ -1,0 +1,354 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   Copyright (C) Samuel Cabrero <scabrero@samba.org> 2023
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "winbindd.h"
+#include "winbindd_varlink.h"
+
+static void
+user_record_reply(VarlinkCall *call, struct winbindd_pw *pw, bool continues)
+{
+	VarlinkObject *record = NULL;
+	VarlinkObject *out = NULL;
+	const char *service_name = NULL;
+
+	service_name = lp_parm_const_string(-1,
+					    "winbind varlink",
+					    "service name",
+					    WB_VL_SERVICE_NAME);
+
+	varlink_object_new(&record);
+	varlink_object_set_string(record, "service", service_name);
+	varlink_object_set_string(record, "userName", pw->pw_name);
+	varlink_object_set_int(record, "uid", pw->pw_uid);
+	varlink_object_set_int(record, "gid", pw->pw_gid);
+	if (strlen(pw->pw_dir) > 0) {
+		varlink_object_set_string(record, "homeDirectory", pw->pw_dir);
+	}
+	if (strlen(pw->pw_shell) > 0) {
+		varlink_object_set_string(record, "shell", pw->pw_shell);
+	}
+	if (strlen(pw->pw_gecos) > 0) {
+		varlink_object_set_string(record, "realName", pw->pw_gecos);
+	}
+
+	varlink_object_new(&out);
+	varlink_object_set_object(out, "record", record);
+	varlink_object_set_bool(out, "incomplete", false);
+
+	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
+	varlink_object_unref(out);
+}
+
+/******************************************************************************
+ * User enumeration
+ *****************************************************************************/
+
+struct user_enum_state {
+	struct tevent_context *ev_ctx;
+	struct winbindd_request *fake_req;
+	struct winbindd_cli_state *fake_cli;
+	VarlinkCall *call;
+
+	struct winbindd_pw *last_pw;
+};
+
+static int user_enum_state_destructor(struct user_enum_state *s)
+{
+	if (s->call != NULL) {
+		s->call = varlink_call_unref(s->call);
+	}
+
+	return 0;
+}
+
+static void user_enum_endpwent_done(struct tevent_req *req)
+{
+	struct user_enum_state *s =
+		tevent_req_callback_data(req, struct user_enum_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_endpwent_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_endpwent failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (s->last_pw == NULL) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	}
+
+	user_record_reply(s->call, s->last_pw, false);
+
+out:
+	TALLOC_FREE(s);
+}
+
+static void user_enum_getpwent_done(struct tevent_req *req)
+{
+	struct user_enum_state *s =
+		tevent_req_callback_data(req, struct user_enum_state);
+	struct winbindd_response *response = NULL;
+	struct winbindd_pw *pws = NULL;
+	NTSTATUS status;
+	uint32_t i;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_getpwent_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		ZERO_STRUCTP(s->fake_req);
+		s->fake_req->cmd = WINBINDD_ENDPWENT;
+		req = winbindd_endpwent_send(s,
+					     s->ev_ctx,
+					     s->fake_cli,
+					     s->fake_req);
+		if (req == NULL) {
+			DBG_ERR("No memory\n");
+			varlink_call_reply_error(
+				s->call,
+				WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+				NULL);
+			goto out;
+		}
+		tevent_req_set_callback(req, user_enum_endpwent_done, s);
+		return;
+	} else if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getpwent failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (response->data.num_entries == 0) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	}
+
+	/*
+	 * We got a new chunk, send the last entry from previous chunk with
+	 * continue flag set
+	 */
+	if (s->last_pw != NULL) {
+		user_record_reply(s->call, s->last_pw, true);
+	}
+
+	/*
+	 * Send returned records except last one because we don't know if
+	 * will be more coming and the continue flag must be set
+	 *
+	 * The returned winbindd_pw structs start at the beginning of the
+	 * extra data.
+	 */
+	pws = (struct winbindd_pw *)response->extra_data.data;
+
+	for (i = 0; i < response->data.num_entries - 1; i++) {
+		struct winbindd_pw *pw = &pws[i];
+		user_record_reply(s->call, pw, true);
+	}
+
+	s->last_pw = talloc_zero(s, struct winbindd_pw);
+	if (s->last_pw == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	/* Save last one */
+	*s->last_pw = pws[i];
+
+	/* Get next chunk */
+	TALLOC_FREE(response);
+	ZERO_STRUCTP(s->fake_req);
+	s->fake_req->cmd = WINBINDD_GETPWENT;
+	s->fake_req->data.num_entries = 500;
+	req = winbindd_getpwent_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+	tevent_req_set_callback(req, user_enum_getpwent_done, s);
+	return;
+out:
+	TALLOC_FREE(s);
+}
+
+static void user_enum_setpwent_done(struct tevent_req *req)
+{
+	struct user_enum_state *s =
+		tevent_req_callback_data(req, struct user_enum_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_setpwent_recv(req, response);
+	TALLOC_FREE(req);
+	TALLOC_FREE(response);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_setpwent failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	ZERO_STRUCTP(s->fake_req);
+	s->fake_req->cmd = WINBINDD_GETPWENT;
+	s->fake_req->data.num_entries = 500;
+
+	req = winbindd_getpwent_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+	tevent_req_set_callback(req, user_enum_getpwent_done, s);
+	return;
+out:
+	TALLOC_FREE(s);
+}
+
+NTSTATUS wb_vl_user_enumerate(TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev_ctx,
+			      VarlinkCall *call,
+			      uint64_t flags,
+			      const char *service)
+{
+	struct user_enum_state *s = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	/* Check if enumeration enabled */
+	if (!lp_winbind_enum_users()) {
+		varlink_call_reply_error(
+			call,
+			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
+			NULL);
+		return NT_STATUS_OK;
+	}
+
+	/* Check more flag is set */
+	if (!(flags & VARLINK_CALL_MORE)) {
+		DBG_WARNING("Enum request without more flag set\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	s = talloc_zero(mem_ctx, struct user_enum_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, user_enum_state_destructor);
+
+	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
+	if (s->fake_cli == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->fake_req = talloc_zero(s, struct winbindd_request);
+	if (s->fake_req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->ev_ctx = ev_ctx;
+	s->call = varlink_call_ref(call);
+
+	status = wb_vl_fake_cli_state(call, service, s->fake_cli);
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Failed to create fake winbindd_cli_state: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	s->fake_req->cmd = WINBINDD_SETPWENT;
+	req = winbindd_setpwent_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(req, user_enum_setpwent_done, s);
+
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(s);
+	return status;
+}

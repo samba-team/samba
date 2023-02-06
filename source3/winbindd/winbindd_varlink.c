@@ -116,9 +116,82 @@ static long io_systemd_getuserrecord(VarlinkService *service,
 				     uint64_t flags,
 				     void *userdata)
 {
-	return varlink_call_reply_error(call,
-			WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
-			NULL);
+	struct wb_vl_state *state =
+		talloc_get_type_abort(userdata, struct wb_vl_state);
+	const char *parm_name = NULL;
+	const char *parm_service = NULL;
+	const char *service_name = NULL;
+	int64_t parm_uid = -1;
+	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
+	long rc;
+
+	rc = varlink_object_get_string(parameters, "service", &parm_service);
+	if (rc < 0) {
+		DBG_ERR("Failed to get service parameter: %s\n",
+			varlink_error_string(rc));
+		varlink_call_reply_error(call,
+					 WB_VL_REPLY_ERROR_BAD_SERVICE,
+					 NULL);
+		return 0;
+	}
+
+	service_name = lp_parm_const_string(-1,
+					    "winbind varlink",
+					    "service name",
+					    WB_VL_SERVICE_NAME);
+
+	if (!strequal(parm_service, service_name)) {
+		varlink_call_reply_error(call,
+					 WB_VL_REPLY_ERROR_BAD_SERVICE,
+					 NULL);
+		return 0;
+	}
+
+	rc = varlink_object_get_string(parameters, "userName", &parm_name);
+	if (rc < 0 && rc != -VARLINK_ERROR_UNKNOWN_FIELD) {
+		DBG_ERR("Failed to get name parameter: %ld (%s)\n",
+			rc,
+			varlink_error_string(rc));
+		goto fail;
+	}
+
+	rc = varlink_object_get_int(parameters, "uid", &parm_uid);
+	if (rc < 0 && rc != -VARLINK_ERROR_UNKNOWN_FIELD) {
+		DBG_ERR("Failed to get uid parameter: %ld (%s)\n",
+			rc,
+			varlink_error_string(rc));
+		goto fail;
+	}
+
+	DBG_DEBUG("GetUserRecord call parameters: service='%s', "
+		  "userName='%s', uid='%" PRId64 "'\n",
+		  parm_service,
+		  parm_name,
+		  parm_uid);
+
+	/*
+	 * The wb_vl_user_* functions will reply theirselves when return
+	 * NT_STATUS_OK
+	 */
+	if (parm_name == NULL && parm_uid == -1) {
+		/* Enumeration */
+		status = wb_vl_user_enumerate(state,
+					      state->ev_ctx,
+					      call,
+					      flags,
+					      parm_service);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		goto fail;
+	}
+
+	return 0;
+fail:
+	varlink_call_reply_error(call,
+				 WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+				 NULL);
+	return 0;
 }
 
 static long io_systemd_getgrouprecord(VarlinkService *service,

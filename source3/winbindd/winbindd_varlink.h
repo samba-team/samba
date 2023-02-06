@@ -41,6 +41,13 @@ NTSTATUS wb_vl_fake_cli_state(VarlinkCall *call,
 			      const char *service,
 			      struct winbindd_cli_state *cli);
 
+/* GetUserRecord */
+NTSTATUS wb_vl_user_enumerate(TALLOC_CTX *state,
+			      struct tevent_context *ev_ctx,
+			      VarlinkCall *call,
+			      uint64_t flags,
+			      const char *service);
+
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 
 #endif /* _SOURCE3_WINBIND_VARLINK_H_ */
