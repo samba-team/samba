@@ -35,6 +35,7 @@
 #include "util_tdb.h"
 #include "../lib/util/pidfile.h"
 #include "serverid.h"
+#include "lib/util/server_id_db.h"
 #include "cmdline_contexts.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
@@ -1642,6 +1643,8 @@ static struct server_id parse_dest(struct messaging_context *msg,
 		.pid = (uint64_t)-1,
 	};
 	pid_t pid;
+	struct server_id_db *names_db = NULL;
+	bool ok;
 
 	/* Zero is a special return value for broadcast to all processes */
 
@@ -1674,6 +1677,16 @@ static struct server_id parse_dest(struct messaging_context *msg,
 		return pid_to_procid(pid);
 	}
 
+	names_db = messaging_names_db(msg);
+	if (names_db == NULL) {
+		goto fail;
+	}
+	ok = server_id_db_lookup_one(names_db, dest, &result);
+	if (ok) {
+		return result;
+	}
+
+fail:
 	fprintf(stderr,"Can't find pid for destination '%s'\n", dest);
 
 	return result;
