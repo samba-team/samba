@@ -93,6 +93,13 @@ NTSTATUS wb_vl_group_by_name_and_gid(TALLOC_CTX *mem_ctx,
 				     const char *group_name,
 				     int64_t gid);
 
+/* GetMemberships */
+NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev_ctx,
+				     VarlinkCall *call,
+				     uint64_t flags,
+				     const char *service);
+
 bool winbind_setup_varlink(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 
 #endif /* _SOURCE3_WINBIND_VARLINK_H_ */

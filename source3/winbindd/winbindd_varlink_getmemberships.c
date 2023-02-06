@@ -1,0 +1,396 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   Copyright (C) Samuel Cabrero <scabrero@samba.org> 2023
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "winbindd.h"
+#include "winbindd_varlink.h"
+
+static void membership_reply(VarlinkCall *call,
+			     const char *username,
+			     const char *groupname,
+			     bool continues)
+{
+	VarlinkObject *out = NULL;
+
+	varlink_object_new(&out);
+	varlink_object_set_string(out, "userName", username);
+	varlink_object_set_string(out, "groupName", groupname);
+
+	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
+	varlink_object_unref(out);
+}
+
+static void member_list_reply(VarlinkCall *call,
+			      struct winbindd_gr *gr,
+			      char *gr_members,
+			      bool continues)
+{
+	char *name = NULL;
+	char *p = NULL;
+	int i;
+
+	for ((name = strtok_r(gr_members, ",", &p)), i = 0; name != NULL;
+	     name = strtok_r(NULL, ",", &p), i++) {
+		if (i == gr->num_gr_mem) {
+			break;
+		}
+		membership_reply(call,
+				 name,
+				 gr->gr_name,
+				 continues || ((i + 1) < gr->num_gr_mem));
+	}
+}
+
+/******************************************************************************
+ * Membership enumeration
+ *****************************************************************************/
+
+struct membership_enum_state {
+	struct tevent_context *ev_ctx;
+	struct winbindd_request *fake_req;
+	struct winbindd_cli_state *fake_cli;
+	VarlinkCall *call;
+
+	struct winbindd_gr *last_gr;
+	char *last_members;
+};
+
+static int membership_enum_state_destructor(struct membership_enum_state *s)
+{
+	if (s->call != NULL) {
+		s->call = varlink_call_unref(s->call);
+	}
+
+	return 0;
+}
+
+static void membership_enum_endgrent_done(struct tevent_req *req)
+{
+	struct membership_enum_state *s =
+		tevent_req_callback_data(req, struct membership_enum_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_endgrent_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_endgrent failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (s->last_gr == NULL || s->last_gr->num_gr_mem == 0) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	}
+
+	member_list_reply(s->call, s->last_gr, s->last_members, false);
+out:
+	TALLOC_FREE(s);
+}
+
+static void membership_enum_getgrent_done(struct tevent_req *req)
+{
+	struct membership_enum_state *s =
+		tevent_req_callback_data(req, struct membership_enum_state);
+	struct winbindd_response *response = NULL;
+	struct winbindd_gr *grs = NULL;
+	char *member_data = NULL;
+	NTSTATUS status;
+	uint32_t i;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_getgrent_recv(req, response);
+	TALLOC_FREE(req);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		ZERO_STRUCTP(s->fake_req);
+		s->fake_req->cmd = WINBINDD_ENDGRENT;
+		req = winbindd_endgrent_send(s,
+					     s->ev_ctx,
+					     s->fake_cli,
+					     s->fake_req);
+		if (req == NULL) {
+			DBG_ERR("No memory\n");
+			varlink_call_reply_error(
+				s->call,
+				WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+				NULL);
+			goto out;
+		}
+		tevent_req_set_callback(req, membership_enum_endgrent_done, s);
+		return;
+	} else if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_getgrent failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	if (response->data.num_entries == 0) {
+		varlink_call_reply_error(s->call,
+					 WB_VL_REPLY_ERROR_NO_RECORD_FOUND,
+					 NULL);
+		goto out;
+	}
+
+	/*
+	 * The returned winbindd_gr structs start at the beginning of the
+	 * extra data.
+	 */
+	grs = (struct winbindd_gr *)response->extra_data.data;
+
+	/* The memberships stats after all returned winbindd_gr structs */
+	member_data = (char *)response->extra_data.data +
+		      response->data.num_entries * sizeof(struct winbindd_gr);
+
+	for (i = 0; i < response->data.num_entries; i++) {
+		struct winbindd_gr *gr = &grs[i];
+		char *gr_members = &member_data[gr->gr_mem_ofs];
+
+		/* Skip groups without members */
+		if (gr->num_gr_mem == 0) {
+			continue;
+		}
+
+		/*
+		 * When the first group with members from the current batch is
+		 * found, send the saved one with continue flag set and save
+		 * the first one from the current batch.
+		 *
+		 * If there are no more groups with members in this batch,
+		 * the saved one will be sent either in the endgrent callback
+		 * or in the next getgrent batch.
+		 */
+		if (s->last_gr != NULL) {
+			member_list_reply(s->call,
+					  s->last_gr,
+					  s->last_members,
+					  true);
+			TALLOC_FREE(s->last_gr);
+			TALLOC_FREE(s->last_members);
+		}
+
+		if (s->last_gr == NULL) {
+			s->last_gr = talloc_zero(s, struct winbindd_gr);
+			if (s->last_gr == NULL) {
+				DBG_ERR("No memory\n");
+				varlink_call_reply_error(
+					s->call,
+					WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+					NULL);
+				goto out;
+			}
+			*s->last_gr = grs[i];
+			s->last_members = talloc_strdup(
+				s,
+				&member_data[s->last_gr->gr_mem_ofs]);
+			if (s->last_members == NULL) {
+				DBG_ERR("No memory\n");
+				varlink_call_reply_error(
+					s->call,
+					WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+					NULL);
+				goto out;
+			}
+
+			continue;
+		}
+
+		member_list_reply(s->call, gr, gr_members, true);
+	}
+
+	/* Get next chunk */
+	TALLOC_FREE(response);
+	ZERO_STRUCTP(s->fake_req);
+	s->fake_req->cmd = WINBINDD_GETGRENT;
+	s->fake_req->data.num_entries = 500;
+	req = winbindd_getgrent_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+	tevent_req_set_callback(req, membership_enum_getgrent_done, s);
+	return;
+out:
+	TALLOC_FREE(s);
+}
+
+static void membership_enum_setgrent_done(struct tevent_req *req)
+{
+	struct membership_enum_state *s =
+		tevent_req_callback_data(req, struct membership_enum_state);
+	struct winbindd_response *response = NULL;
+	NTSTATUS status;
+
+	/* winbindd_*_recv functions expect a talloc-allocated response */
+	response = talloc_zero(s, struct winbindd_response);
+	if (response == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	status = winbindd_setgrent_recv(req, response);
+	TALLOC_FREE(req);
+	TALLOC_FREE(response);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("winbindd_setgrent failed: %s\n", nt_errstr(status));
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+
+	ZERO_STRUCTP(s->fake_req);
+	s->fake_req->cmd = WINBINDD_GETGRENT;
+	s->fake_req->data.num_entries = 500;
+
+	req = winbindd_getgrent_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+			s->call,
+			WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+			NULL);
+		goto out;
+	}
+	tevent_req_set_callback(req, membership_enum_getgrent_done, s);
+	return;
+out:
+	TALLOC_FREE(s);
+}
+
+NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev_ctx,
+				     VarlinkCall *call,
+				     uint64_t flags,
+				     const char *service)
+{
+	struct membership_enum_state *s = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	/* Check if enumeration enabled */
+	if (!lp_winbind_enum_groups()) {
+		varlink_call_reply_error(
+			call,
+			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
+			NULL);
+		return NT_STATUS_OK;
+	}
+
+	/* Check if group expansion is enabled */
+	if (!lp_winbind_expand_groups()) {
+		varlink_call_reply_error(
+			call,
+			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
+			NULL);
+		return NT_STATUS_OK;
+	}
+
+	/* Check more flag is set */
+	if (!(flags & VARLINK_CALL_MORE)) {
+		DBG_WARNING("Enum request without more flag set\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	s = talloc_zero(mem_ctx, struct membership_enum_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, membership_enum_state_destructor);
+
+	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
+	if (s->fake_cli == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->fake_req = talloc_zero(s, struct winbindd_request);
+	if (s->fake_req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	s->ev_ctx = ev_ctx;
+	s->call = varlink_call_ref(call);
+
+	status = wb_vl_fake_cli_state(call, service, s->fake_cli);
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Failed to create fake winbindd_cli_state: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	s->fake_req->cmd = WINBINDD_SETGRENT;
+	req = winbindd_setgrent_send(s, s->ev_ctx, s->fake_cli, s->fake_req);
+	if (req == NULL) {
+		DBG_ERR("No memory\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(req, membership_enum_setgrent_done, s);
+
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(s);
+	return status;
+}
