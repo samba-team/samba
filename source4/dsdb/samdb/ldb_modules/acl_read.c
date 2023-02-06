@@ -268,7 +268,7 @@ static int aclread_get_sd_from_ldb_message(struct aclread_context *ac,
 	struct ldb_message_element *sd_element;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct aclread_private *private_data
-		= talloc_get_type(ldb_module_get_private(ac->module),
+		= talloc_get_type_abort(ldb_module_get_private(ac->module),
 				  struct aclread_private);
 	enum ndr_err_code ndr_err;
 
@@ -568,7 +568,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	const struct dsdb_class *objectclass;
 	bool suppress_result = false;
 
-	ac = talloc_get_type(req->context, struct aclread_context);
+	ac = talloc_get_type_abort(req->context, struct aclread_context);
 	ldb = ldb_module_get_ctx(ac->module);
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR );
