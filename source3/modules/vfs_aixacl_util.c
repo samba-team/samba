@@ -26,20 +26,18 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 {
 	struct acl_entry *acl_entry;
 	struct ace_id *idp;
-	
+
 	struct smb_acl_t *result = sys_acl_init(mem_ctx);
 	struct smb_acl_entry *ace;
 	int i;
-	
+
 	if (result == NULL) {
 		return NULL;
 	}
-	
+
 	/* Point to the first acl entry in the acl */
 	acl_entry =  file_acl->acl_ext;
 
-
-	
 	DEBUG(10,("acl_entry is %p\n",(void *)acl_entry));
 	DEBUG(10,("acl_last(file_acl) id %p\n",(void *)acl_last(file_acl)));
 
@@ -62,20 +60,19 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 
 			idp = acl_entry->ace_id;
 			DEBUG(10,("idp->id_data is %d\n",idp->id_data[0]));
-			
+
 			result->acl = talloc_realloc(result, result->acl, struct smb_acl_entry, result->count+1);
 			if (result == NULL) {
 				DEBUG(0, ("talloc_realloc failed\n"));
 				errno = ENOMEM;
 				return NULL;
 			}
-			
 
 			DEBUG(10,("idp->id_type is %d\n",idp->id_type));
 			ace = &result->acl[result->count];
-			
+
 			ace->a_type = idp->id_type;
-							
+
 			switch(ace->a_type) {
 			case ACEID_USER: {
 			ace->info.user.uid = idp->id_data[0];
@@ -83,7 +80,7 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 			ace->a_type = SMB_ACL_USER;
 			break;
 			}
-		
+
 			case ACEID_GROUP: {
 			ace->info.group.gid = idp->id_data[0];
 			DEBUG(10,("case ACEID_GROUP ace->info.group.gid is %d\n",ace->info.group.gid));
@@ -117,16 +114,16 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 			 	TALLOC_FREE(result);
 				return(0);
 			}
-		
+
 			result->count++;
 			ace->a_perm |= (ace->a_perm & S_IRUSR) ? SMB_ACL_READ : 0;
 			ace->a_perm |= (ace->a_perm & S_IWUSR) ? SMB_ACL_WRITE : 0;
 			ace->a_perm |= (ace->a_perm & S_IXUSR) ? SMB_ACL_EXECUTE : 0;
 			DEBUG(10,("ace->a_perm is %d\n",ace->a_perm));
-			
+
 			DEBUG(10,("acl_entry = %p\n",(void *)acl_entry));
 			DEBUG(10,("The ace_type is %d\n",acl_entry->ace_type));
- 
+
 			acl_entry = acl_nxt(acl_entry);
 		}
 	} /* end of if enabled */
@@ -146,13 +143,13 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 			DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 			return NULL;
 		}
-			
+
 		ace = &result->acl[result->count];
-		
+
 		ace->info.user.uid = 0;
 		ace->info.group.gid = 0;
 		DEBUG(10,("ace->info.user.uid = %d\n",ace->info.user.uid));
-		
+
 		switch(i) {
 		case 2:
 			ace->a_perm = file_acl->g_access << 6;
@@ -163,12 +160,12 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 			ace->a_perm = file_acl->o_access << 6;
 			ace->a_type = SMB_ACL_OTHER;
 			break;
- 
+
 		case 1:
 			ace->a_perm = file_acl->u_access << 6;
 			ace->a_type = SMB_ACL_USER_OBJ;
 			break;
- 
+
 		default:
 			return(NULL);
 
@@ -176,17 +173,14 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 		ace->a_perm |= ((ace->a_perm & S_IRUSR) ? SMB_ACL_READ : 0);
 		ace->a_perm |= ((ace->a_perm & S_IWUSR) ? SMB_ACL_WRITE : 0);
 		ace->a_perm |= ((ace->a_perm & S_IXUSR) ? SMB_ACL_EXECUTE : 0);
-		
+
 		memcpy(&result->acl[result->count],ace,sizeof(struct smb_acl_entry));
 		result->count++;
 		DEBUG(10,("ace->a_perm = %d\n",ace->a_perm));
 		DEBUG(10,("ace->a_type = %d\n",ace->a_type));
 	}
 
-
 	return result;
-
-
 }
 
 static ushort aixacl_smb_to_aixperm(SMB_ACL_PERM_T a_perm)
@@ -211,7 +205,7 @@ struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 	unsigned int id_type;
 	unsigned int acl_length;
 	int	i;
- 
+
 	DEBUG(10,("Entering aixacl_smb_to_aixacl\n"));
 	/* AIX has no default ACL */
 	if(acltype == SMB_ACL_TYPE_DEFAULT)
@@ -226,7 +220,7 @@ struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 	}
 
 	memset(file_acl,0,BUFSIZ);
- 
+
 	file_acl->acl_len = ACL_SIZ;
 	file_acl->acl_mode = S_IXACL;
 
