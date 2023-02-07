@@ -683,7 +683,6 @@ _PUBLIC_ NTSTATUS authsam_update_user_info_dc(TALLOC_CTX *mem_ctx,
 	 */
 	status = authsam_domain_group_filter(mem_ctx, &filter);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(user_info_dc);
 		return status;
 	}
 

@@ -1083,6 +1083,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						samdb,
 						user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(user_info_dc);
 		return nt_status;
 	}
 
@@ -1091,6 +1092,13 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						  _resource_groups,
 						  group_inclusion,
 						  pac_blob, NULL);
+
+	/*
+	 * The infomation from this is now in the PAC, this memory is
+	 * not used any longer and not passed to the caller
+	 */
+	TALLOC_FREE(user_info_dc);
+
 	return nt_status;
 }
 
