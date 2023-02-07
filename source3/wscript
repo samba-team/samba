@@ -1649,18 +1649,6 @@ int main(void) {
                     define='HAVE_UNSHARE_CLONE_FS',
                     msg='for Linux unshare(CLONE_FS)')
 
-    # Check for mallinfo
-    conf.CHECK_CODE('''
-    struct mallinfo mi;
-    int tmp;
-
-    mi = mallinfo();
-    tmp = mi.arena + mi.ordblks + mi.smblks + mi.hblks +
-          mi.hblkhd + mi.usmblks + mi.fsmblks +  mi.uordblks +
-          mi.fordblks + mi.keepcost;
-    return tmp;
-    ''', 'HAVE_MALLINFO', msg="Checking for mallinfo()", headers='malloc.h')
-
     #
     # cluster support (CTDB)
     #

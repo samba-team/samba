@@ -76,12 +76,37 @@ static void talloc_report_printf_helper(
 void talloc_full_report_printf(TALLOC_CTX *root, FILE *f)
 {
 	talloc_report_depth_cb(root, 0, -1, talloc_report_printf_helper, f);
-
-#ifdef HAVE_MALLINFO
+#if defined(HAVE_MALLINFO2)
 	{
-		struct mallinfo mi;
+		struct mallinfo2 mi2 = mallinfo2();
 
-		mi = mallinfo();
+		fprintf(f,
+			"mallinfo:\n"
+			"    arena: %zu\n"
+			"    ordblks: %zu\n"
+			"    smblks: %zu\n"
+			"    hblks: %zu\n"
+			"    hblkhd: %zu\n"
+			"    usmblks: %zu\n"
+			"    fsmblks: %zu\n"
+			"    uordblks: %zu\n"
+			"    fordblks: %zu\n"
+			"    keepcost: %zu\n",
+			mi2.arena,
+			mi2.ordblks,
+			mi2.smblks,
+			mi2.hblks,
+			mi2.hblkhd,
+			mi2.usmblks,
+			mi2.fsmblks,
+			mi2.uordblks,
+			mi2.fordblks,
+			mi2.keepcost);
+	}
+#elif defined(HAVE_MALLINFO)
+	{
+		struct mallinfo mi = mallinfo();
+
 		fprintf(f,
 			"mallinfo:\n"
 			"    arena: %d\n"
@@ -105,5 +130,5 @@ void talloc_full_report_printf(TALLOC_CTX *root, FILE *f)
 			mi.fordblks,
 			mi.keepcost);
 	}
-#endif /* HAVE_MALLINFO */
+#endif /* HAVE_MALLINFO2 or HAVE_MALLINFO */
 }

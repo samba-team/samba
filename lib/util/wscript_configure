@@ -122,6 +122,18 @@ conf.CHECK_CODE('struct statvfs buf; buf.f_flags = 0',
                 local_include=False,
                 execute=False)
 
+# Check for mallinfo2() first and fallback to mallinfo() if not found
+body = '''mi.arena + mi.ordblks + mi.smblks + mi.hblks + mi.hblkhd +
+    mi.usmblks + mi.fsmblks +  mi.uordblks + mi.fordblks + mi.keepcost'''
+if not conf.CHECK_CODE('''struct mallinfo2 mi = mallinfo2(); return %s;'''
+                       % body, 'HAVE_MALLINFO2',
+                       msg="Checking for mallinfo2()",
+                       headers='malloc.h'):
+    conf.CHECK_CODE('''struct mallinfo mi = mallinfo(); return %s;'''
+                    % body, 'HAVE_MALLINFO',
+                    msg="Checking for mallinfo()",
+                    headers='malloc.h')
+
 #
 # systemd removed the libsystemd-daemon and libsystemd-journal libraries. In newer
 # versions it is only libsystemd. As waf pkg-config handling does not provide
