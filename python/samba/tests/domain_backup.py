@@ -367,7 +367,10 @@ class DomainBackupBase(BlackboxTestCase):
     def cleanup_tempdir(self):
         for filename in os.listdir(self.tempdir):
             filepath = os.path.join(self.tempdir, filename)
-            shutil.rmtree(filepath)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
+            elif os.path.isdir(filepath):
+                shutil.rmtree(filepath)
 
     def run_cmd(self, args):
         """Executes a samba-tool backup/restore command"""
