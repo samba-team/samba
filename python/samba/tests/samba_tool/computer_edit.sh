@@ -60,7 +60,7 @@ add_attribute_base64()
 #!/usr/bin/env bash
 computer_ldif="\$1"
 
-grep -v '^$' \$computer_ldif > \${computer_ldif}.tmp
+grep -v '^\$' \$computer_ldif > \${computer_ldif}.tmp
 echo "displayName:: $display_name_b64" >> \${computer_ldif}.tmp
 
 mv \${computer_ldif}.tmp \$computer_ldif
@@ -100,7 +100,7 @@ add_attribute_base64_control()
 #!/usr/bin/env bash
 computer_ldif="\$1"
 
-grep -v '^$' \$computer_ldif > \${computer_ldif}.tmp
+grep -v '^\$' \$computer_ldif > \${computer_ldif}.tmp
 echo "displayName:: $display_name_con_b64" >> \${computer_ldif}.tmp
 
 mv \${computer_ldif}.tmp \$computer_ldif
