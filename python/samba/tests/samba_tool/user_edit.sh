@@ -31,10 +31,12 @@ display_name_con_b64="dGVzdCAHIHN0cmluZwo="
 tmpeditor=$(mktemp --suffix .sh -p ${SELFTEST_TMPDIR} samba-tool-editor-XXXXXXXX)
 chmod +x $tmpeditor
 
+TEST_USER="$(mktemp -u sambatoolXXXXXX)"
+
 create_test_user()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
-		user create sambatool1 --random-password \
+		user create ${TEST_USER} --random-password \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -49,7 +51,7 @@ $SED -i -e 's/userAccountControl: 512/userAccountControl: 514/' $user_ldif
 	EOF
 
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
-		user edit sambatool1 --editor=$tmpeditor \
+		user edit ${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -68,13 +70,13 @@ mv \${user_ldif}.tmp \$user_ldif
 EOF
 
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
-		sambatool1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 get_attribute_base64()
 {
-	$samba_ldbsearch '(sAMAccountName=sambatool1)' displayName \
+	$samba_ldbsearch "(sAMAccountName=${TEST_USER})" displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -89,7 +91,7 @@ grep -v '^displayName' \$user_ldif >> \${user_ldif}.tmp
 mv \${user_ldif}.tmp \$user_ldif
 EOF
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
-		sambatool1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -107,14 +109,14 @@ echo "displayName:: $display_name_con_b64" >> \${user_ldif}.tmp
 mv \${user_ldif}.tmp \$user_ldif
 EOF
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
-		sambatool1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 get_attribute_base64_control()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
-		sambatool1 --attributes=displayName \
+		${TEST_USER} --attributes=displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -122,7 +124,7 @@ get_attribute_force_no_base64()
 {
 	# LDB_FLAG_FORCE_NO_BASE64_LDIF should be used here.
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
-		sambatool1 --attributes=displayName \
+		${TEST_USER} --attributes=displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -138,7 +140,7 @@ sed -i -e 's/displayName:: $display_name_con_b64/displayName: $display_name/' \
 	\$user_ldif
 EOF
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
-		sambatool1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -157,21 +159,21 @@ sed -i -e 's/displayName: $display_name/displayName: $display_name_new/' \
 EOF
 
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
-		sambatool1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 get_changed_attribute_force_no_base64()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
-		sambatool1 --attributes=displayName \
+		${TEST_USER} --attributes=displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 delete_user()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
-		user delete sambatool1 \
+		user delete ${TEST_USER} \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
