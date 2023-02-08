@@ -28,13 +28,15 @@ display_name_new="Renamed Bjoern"
 # echo -e "test \a string" | base64
 display_name_con_b64="dGVzdCAHIHN0cmluZwo="
 
+TEST_USER="$(mktemp -u testcontactXXXXXX)"
+
 tmpeditor=$(mktemp --suffix .sh -p $SELFTEST_TMPDIR samba-tool-editor-XXXXXXXX)
 chmod +x $tmpeditor
 
 create_test_contact()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
-		contact create testcontact1 \
+		contact create ${TEST_USER} \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -53,13 +55,13 @@ mv \${contact_ldif}.tmp \$contact_ldif
 EOF
 
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact edit \
-		testcontact1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 get_attribute_base64()
 {
-	$samba_ldbsearch '(&(objectClass=contact)(name=testcontact1))' \
+	$samba_ldbsearch "(&(objectClass=contact)(name=${TEST_USER}))" \
 		displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
@@ -75,7 +77,7 @@ grep -v '^displayName' \$contact_ldif >> \${contact_ldif}.tmp
 mv \${contact_ldif}.tmp \$contact_ldif
 EOF
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact edit \
-		testcontact1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -93,14 +95,14 @@ echo "displayName:: $display_name_con_b64" >> \${contact_ldif}.tmp
 mv \${contact_ldif}.tmp \$contact_ldif
 EOF
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact edit \
-		testcontact1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 get_attribute_base64_control()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact show \
-		testcontact1 --attributes=displayName \
+		${TEST_USER} --attributes=displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -108,7 +110,7 @@ get_attribute_force_no_base64()
 {
 	# LDB_FLAG_FORCE_NO_BASE64_LDIF should be used here.
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact show \
-		testcontact1 --attributes=displayName \
+		${TEST_USER} --attributes=displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -124,7 +126,7 @@ sed -i -e 's/displayName:: $display_name_con_b64/displayName: $display_name/' \
 	\$contact_ldif
 EOF
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact edit \
-		testcontact1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
@@ -143,21 +145,21 @@ sed -i -e 's/displayName: $display_name/displayName: $display_name_new/' \
 EOF
 
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact edit \
-		testcontact1 --editor=$tmpeditor \
+		${TEST_USER} --editor=$tmpeditor \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 get_changed_attribute_force_no_base64()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool contact show \
-		testcontact1 --attributes=displayName \
+		${TEST_USER} --attributes=displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
 delete_contact()
 {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
-		contact delete testcontact1 \
+		contact delete ${TEST_USER} \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
