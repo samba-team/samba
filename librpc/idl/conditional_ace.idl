@@ -1,0 +1,442 @@
+#include "idl_types.h"
+
+/*
+  IDL structures and constants for conditional aces.
+*/
+
+import "security.idl";
+
+interface conditional_ace
+{
+	/*
+	 * Conditional ACEs have an expression at the end of the ACE.
+	 * We know it is there because the ACE type has CALLBACK in
+	 * its name, and we know how long it is because the size field
+	 * in the ACE points somewhere beyond the otherwise accounted
+	 * for objects:
+	 *
+	 *  | type | flags | size | access_mask | trustee |       |
+	 *                    `---------------------------------->|
+	 *
+	 * If the first 4 bytes of the extra bit (called "coda" in our
+	 * structs) are {'a', 'r', 't', 'x'}, the callback ACE is a
+	 * conditional ACE. On Windows it is possible to register
+	 * other kinds of callback ACEs with different magic strings
+	 * that get handled by callback functions. There is little
+	 * evidence of this ever happening, but that explains the
+	 * name.
+	 *
+	 * After the "artx", a conditional ACE consists of a series of
+	 * tokens that describe an expression tree in reverse Polish
+	 * order. The expression can work with claim and SID values
+	 * from the security token, comparing them to each other and
+	 * to literal values. [MS-DTYP] is reasonably clear about how
+	 * they work.
+	 */
+
+	/*
+	 * Token types from [MS-DTYP] 2.4.4.17 "Conditional ACEs".
+	 */
+	typedef [enum8bit] enum {
+		/*
+		 * Microsoft counts padding zeroes as a kind of token.
+		 * There should be up to three of these at the end, to
+		 * round out the size to a multiple of four.
+		 */
+		CONDITIONAL_ACE_TOKEN_INVALID_OR_PADDING = 0x00,
+
+		/* Literal tokens
+		 * ==============
+		 *
+		 * Literal integers. These are *all* stored using 10
+		 * bytes:
+		 *
+		 * - 8 bytes for the value, limited to the correct range
+		 *   (e.g. -128 to 127 for INT8)
+		 * - 1 byte for sign, probably just used for display
+		 * - 1 byte for base, just used for display
+		 *
+		 * SDDL integers are all stored using 64 bits, but
+		 * different token types can be used to pretend they
+		 * have smaller width. In comparisons (which is all
+		 * they can be used for) the type does not matter. The
+		 * only special thing a non-64 bit literal can do is
+		 * to cause a parsing error by being out of range (it
+		 * is an open question as to how you would end up with
+		 * short integers, let alone invalid ones, as the SDDL
+		 * syntax does not have a way of specifying them).
+		 */
+		CONDITIONAL_ACE_TOKEN_INT8          = 0x01,
+		CONDITIONAL_ACE_TOKEN_INT16         = 0x02,
+		CONDITIONAL_ACE_TOKEN_INT32         = 0x03,
+		CONDITIONAL_ACE_TOKEN_INT64         = 0x04,
+
+		/*
+		 * Literal strings and structured types.
+		 *
+		 * These have an unsigned 32 bit byte length, followed
+		 * by data.
+		 *
+		 * for unicode the data is UTF-16.
+		 * octet strings are bytes.
+		 * the composite type is a list type.
+		 * the sid type has an ordinary binary sid after the length.
+		 */
+		CONDITIONAL_ACE_TOKEN_UNICODE       = 0x10,
+		CONDITIONAL_ACE_TOKEN_OCTET_STRING  = 0x18,
+		CONDITIONAL_ACE_TOKEN_COMPOSITE     = 0x50,
+		CONDITIONAL_ACE_TOKEN_SID           = 0x51,
+
+		CONDITIONAL_ACE_LOCAL_ATTRIBUTE     = 0xf8,
+		CONDITIONAL_ACE_USER_ATTRIBUTE      = 0xf9,
+		CONDITIONAL_ACE_RESOURCE_ATTRIBUTE  = 0xfa,
+		CONDITIONAL_ACE_DEVICE_ATTRIBUTE    = 0xfb,
+
+		/*
+		 * Unary relational operator tokens
+		 * ================================
+		 *
+		 * For the membership ops, the operand can be a single
+		 * SID or a composite list of SIDs.
+		 *
+		 * Member_Of: true if the security token user SIDs
+		 * array contains all of the SIDs in the operand.
+		 */
+		CONDITIONAL_ACE_TOKEN_MEMBER_OF                 = 0x89,
+		/*
+		 * Device_Member_Of: true if the security token device
+		 * SIDs array contains all of the SIDs in the operand.
+		 */
+		CONDITIONAL_ACE_TOKEN_DEVICE_MEMBER_OF          = 0x8a,
+		/*
+		 * Member_Of_Any: true if the user SIDs array contains any of
+		 * the SIDs in the operand.
+		 */
+		CONDITIONAL_ACE_TOKEN_MEMBER_OF_ANY             = 0x8b,
+		/*
+		 * Device_Member_Of_Any: true if the device SIDs array
+		 * contains any of the SIDs in the operand.
+		 */
+		CONDITIONAL_ACE_TOKEN_DEVICE_MEMBER_OF_ANY      = 0x8c,
+
+		/*
+		 * Logical inverses of the member-of crew.
+		 */
+		CONDITIONAL_ACE_TOKEN_NOT_MEMBER_OF             = 0x90,
+		CONDITIONAL_ACE_TOKEN_NOT_DEVICE_MEMBER_OF      = 0x91,
+		CONDITIONAL_ACE_TOKEN_NOT_MEMBER_OF_ANY         = 0x92,
+		CONDITIONAL_ACE_TOKEN_NOT_DEVICE_MEMBER_OF_ANY  = 0x93,
+
+		/*
+		 * Binary relational operators
+		 * ===========================
+		 *
+		 * The left hand side argument (LHS) is an attribute.
+		 * The RHS is an attribute or a value or composite
+		 * list of values (depending on the operation).
+		 *
+		 * If the types mismatch, the result is UNKNOWN.
+		 */
+		CONDITIONAL_ACE_TOKEN_EQUAL             = 0x80, /* == */
+		CONDITIONAL_ACE_TOKEN_NOT_EQUAL         = 0x81, /* != */
+		CONDITIONAL_ACE_TOKEN_LESS_THAN         = 0x82, /* <  */
+		CONDITIONAL_ACE_TOKEN_LESS_OR_EQUAL     = 0x83, /* <= */
+		CONDITIONAL_ACE_TOKEN_GREATER_THAN      = 0x84, /* >  */
+		CONDITIONAL_ACE_TOKEN_GREATER_OR_EQUAL  = 0x85, /* >= */
+
+		/*
+		 * "contains" implies "all of", in contrast to the "any of"
+		 * operators.
+		 */
+		CONDITIONAL_ACE_TOKEN_CONTAINS          = 0x86,
+		CONDITIONAL_ACE_TOKEN_ANY_OF            = 0x88,
+		CONDITIONAL_ACE_TOKEN_NOT_CONTAINS      = 0x8e,
+		CONDITIONAL_ACE_TOKEN_NOT_ANY_OF        = 0x8f,
+
+		/*
+		 * Unary logical operators
+		 * =======================
+		 *
+		 * The operand for the existence operators must be a
+		 * local attribute or a resource attribute.
+		 */
+		CONDITIONAL_ACE_TOKEN_EXISTS           = 0x87, /* Exists */
+		CONDITIONAL_ACE_TOKEN_NOT_EXISTS       = 0x8d, /* Not_Exists */
+		/* NOT operator */
+		CONDITIONAL_ACE_TOKEN_NOT              = 0xa2, /* ! */
+
+		/*
+		 * Binary logical operators
+		 * ========================
+		 */
+		CONDITIONAL_ACE_TOKEN_AND              = 0xa0, /* && */
+		CONDITIONAL_ACE_TOKEN_OR               = 0xa1, /* || */
+
+		/*
+		 * Samba specific pseudo-tokens
+		 * ============================
+		 *
+		 * In running the conditional ace we maintain a stack
+		 * that is used as operands to the operators. Some of
+		 * the values on the stack are literals found inline
+		 * in the data, some are primitives resulting from
+		 * attribute look-up operations, and some are logical
+		 * results from comparison operations, which are in
+		 * the ternary form just mentioned. [MS-DTYP]
+		 * describes no token form for these ternary values,
+		 * as they are not used on the wire (that is, you
+		 * can't have a literal 'true' in a conditional ace).
+		 * So we add a token representation for Boolean result
+		 * types to use on the stack, using an available
+		 * opcode. The result of a lookup can also be 'NULL',
+		 * or an error, and we have opcodes for those too.
+		 *
+		 * These token types raise an error if they show up in
+		 * a conditional ACE, just like any other unknown
+		 * token type. They are for internal use only.
+		 *
+		 * In [MS-DTYP] these are called "Result Value".
+		 */
+
+		CONDITIONAL_ACE_SAMBA_RESULT_BOOL      = 0x0f,
+		CONDITIONAL_ACE_SAMBA_RESULT_NULL      = 0x0e,
+		CONDITIONAL_ACE_SAMBA_RESULT_ERROR     = 0x0d,
+
+		/*
+		 * Samba specific parentheses pseudo-tokens
+		 * ========================================
+		 *
+		 * These are useful for compiling SDDL, but will never show
+		 * up in the compiled ACE or during evaluation.
+		 */
+		CONDITIONAL_ACE_SAMBA_SDDL_PAREN       = 0x09,
+		CONDITIONAL_ACE_SAMBA_SDDL_PAREN_END   = 0x08
+	} token_type;
+
+	/*
+	 * Integer attributes.
+	 * ==================
+	 *
+	 * Integers are stored with a base indicator and a sign
+	 * indicator.
+	 *
+	 * Integer base is stored for display purposes. For example,
+	 * the number 17 will be shown as "021" with option 1, "17"
+	 * with 2, and "0x11" with 3. Comparisons are not affected.
+	 */
+	typedef [enum8bit] enum {
+		CONDITIONAL_ACE_INT_BASE_8     = 0x01,
+		CONDITIONAL_ACE_INT_BASE_10    = 0x02,
+		CONDITIONAL_ACE_INT_BASE_16    = 0x03
+	} int_base;
+
+	/*
+	 * Integer sign, mostly for display purposes[1]. It seems
+	 * negative numbers should be flagged here as negative (i.e.
+	 * with 2), while positive numbers should be flagged with
+	 * "none" (3), unless you want them to show up with a plus
+	 * sign in SDDL.
+	 *
+	 * [1] it is possible this has some real significance, perhaps
+	 * acting as an unsigned flag. TO BE DETERMINED.
+	 */
+	typedef [enum8bit] enum {
+		CONDITIONAL_ACE_INT_SIGN_POSITIVE     = 0x01,
+		CONDITIONAL_ACE_INT_SIGN_NEGATIVE     = 0x02,
+		CONDITIONAL_ACE_INT_SIGN_NONE         = 0x03
+	} int_sign;
+
+	/*
+	 * Ternary logical values
+	 *
+	 * Conditional ACEs use a ternary logic where values can be
+	 * unknown as well as true or false.
+	 *
+	 * The "Bool" result token can take any of these three values.
+	 * There is no literal Boolean value, but an integer of value
+	 * 0 or 1 can be compared with a Boolean result.
+	 */
+	typedef enum {
+		 ACE_CONDITION_FALSE                    =  0,
+		 ACE_CONDITION_TRUE                     =  1,
+		 ACE_CONDITION_UNKNOWN                  = -1
+	} ternary_logic_value;
+	/*
+	 * Sub-structures for struct ace_condition_token -> data,
+	 * which vary according to the token->type.
+	 *
+	 * These are not used on the wire.
+	 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		int64 value;
+	} ace_condition_result;
+
+	typedef struct {
+		int64 value;
+		uint8 base;
+		uint8 sign;
+	} ace_condition_int;
+
+	typedef struct {
+		[string, charset(UTF16)]uint8 *value;
+		uint32 length;
+	} ace_condition_unicode;
+
+	typedef struct {
+		uint8 *bytes;
+		uint32 length;
+	} ace_condition_bytes;
+
+	typedef struct {
+		dom_sid *sid;
+	} ace_condition_sid;
+
+	/*
+	 * The composite type has an array of sub-tokens, which can
+	 * themselves be composites containing composites, though this
+	 * is unlikely to be useful when dealing with claims.
+	 */
+	typedef struct {
+		ace_condition_token *tokens;
+		uint32 n_members;
+	} ace_condition_composite;
+
+	/*
+	 * Operators have no data, but it is sometimes helpful for
+	 * SDDL compilation messages to record the position in the
+	 * string.
+	 */
+	typedef struct {
+		uint32 sddl_position;
+	} ace_condition_op;
+
+	/*
+	 * struct ace_condition_sddl_op is not as real token, but is
+	 * used in compiling sddl. The idea is, for example, that if
+	 * popping with a ')' doesn't match the right '(', the details
+	 * of the '(' are there for the error message.
+	 */
+	typedef struct {
+		uint32 start;
+		uint32 position;
+	} ace_condition_sddl_op;
+
+
+	typedef [nodiscriminant] union {
+		[case(CONDITIONAL_ACE_TOKEN_SID)] ace_condition_sid sid;
+		[case(CONDITIONAL_ACE_TOKEN_COMPOSITE)]ace_condition_composite composite;
+		[case(CONDITIONAL_ACE_TOKEN_OCTET_STRING)] ace_condition_bytes bytes;
+		[case(CONDITIONAL_ACE_TOKEN_UNICODE)]ace_condition_unicode unicode;
+
+		[case(CONDITIONAL_ACE_LOCAL_ATTRIBUTE)]ace_condition_unicode local_attr;
+		[case(CONDITIONAL_ACE_USER_ATTRIBUTE)]ace_condition_unicode user_attr;
+		[case(CONDITIONAL_ACE_DEVICE_ATTRIBUTE)]ace_condition_unicode device_attr;
+		[case(CONDITIONAL_ACE_RESOURCE_ATTRIBUTE)]ace_condition_unicode resource_attr;
+
+		[case(CONDITIONAL_ACE_TOKEN_INT64)]ace_condition_int int64;
+		[case(CONDITIONAL_ACE_TOKEN_INT32)]ace_condition_int int32;
+		[case(CONDITIONAL_ACE_TOKEN_INT16)]ace_condition_int int16;
+		[case(CONDITIONAL_ACE_TOKEN_INT8)]ace_condition_int int8;
+		[case(CONDITIONAL_ACE_SAMBA_SDDL_PAREN)]ace_condition_sddl_op sddl_op;
+
+		[case(CONDITIONAL_ACE_SAMBA_RESULT_BOOL)]ace_condition_result result;
+		 /* NULL and Error results are empty */
+		[case(CONDITIONAL_ACE_SAMBA_RESULT_NULL)]ace_condition_result result_null;
+		[case(CONDITIONAL_ACE_SAMBA_RESULT_ERROR)]ace_condition_result result_error;
+
+		/* operations */
+		[case(CONDITIONAL_ACE_TOKEN_MEMBER_OF)]ace_condition_op member_of;
+		[case(CONDITIONAL_ACE_TOKEN_DEVICE_MEMBER_OF)]ace_condition_op device_member_of;
+		[case(CONDITIONAL_ACE_TOKEN_MEMBER_OF_ANY)]ace_condition_op member_of_any;
+		[case(CONDITIONAL_ACE_TOKEN_DEVICE_MEMBER_OF_ANY)]ace_condition_op device_member_of_any;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_MEMBER_OF)]ace_condition_op not_member_of;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_DEVICE_MEMBER_OF)]ace_condition_op not_device_member_of;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_MEMBER_OF_ANY)]ace_condition_op not_member_of_any;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_DEVICE_MEMBER_OF_ANY)]ace_condition_op not_device_member_of_any;
+		[case(CONDITIONAL_ACE_TOKEN_EQUAL)]ace_condition_op equal;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_EQUAL)]ace_condition_op not_equal;
+		[case(CONDITIONAL_ACE_TOKEN_LESS_THAN)]ace_condition_op less_than;
+		[case(CONDITIONAL_ACE_TOKEN_LESS_OR_EQUAL)]ace_condition_op less_or_equal;
+		[case(CONDITIONAL_ACE_TOKEN_GREATER_THAN)]ace_condition_op greater_than;
+		[case(CONDITIONAL_ACE_TOKEN_GREATER_OR_EQUAL)]ace_condition_op greater_or_equal;
+		[case(CONDITIONAL_ACE_TOKEN_CONTAINS)]ace_condition_op contains;
+		[case(CONDITIONAL_ACE_TOKEN_ANY_OF)]ace_condition_op any_of;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_CONTAINS)]ace_condition_op not_contains;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_ANY_OF)]ace_condition_op not_any_of;
+		[case(CONDITIONAL_ACE_TOKEN_AND)]ace_condition_op and;
+		[case(CONDITIONAL_ACE_TOKEN_OR)]ace_condition_op or;
+		[case(CONDITIONAL_ACE_TOKEN_NOT)]ace_condition_op not;
+		[case(CONDITIONAL_ACE_TOKEN_EXISTS)]ace_condition_op exists;
+		[case(CONDITIONAL_ACE_TOKEN_NOT_EXISTS)]ace_condition_op not_exists;
+
+		[default] ace_condition_op op;
+	} ace_condition_token_data;
+
+	/*
+	 * struct ace_condition_token is the fundamental building
+	 * block of a conditional ACE expression.
+	 */
+	typedef [public] struct {
+		[switch_is(type)] ace_condition_token_data data;
+		uint16 flags;
+		token_type type;
+	} ace_condition_token;
+
+	/*
+	 * The expression as a whole is an just an array of tokens.
+	 *
+	 * But because we are always going to need a stack for
+	 * evaluating the expression, we allocate that and keep it
+	 * handy.
+	 */
+	typedef [public] struct {
+		ace_condition_token *tokens;
+		ace_condition_token *stack;
+		uint32 length;
+	} ace_condition_script;
+
+	/*
+	 * Flags for ace_condition_token.flags field.
+	 *
+	 * The following two flags from security claims are used:
+	 *
+	 * const uint8 CLAIM_SECURITY_ATTRIBUTE_NON_INHERITABLE      = 1;
+	 * const uint8 CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE = 2;
+	 *
+	 * CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR is set when a token
+	 * value on the stack is set from an attribute lookup.
+	 *
+	 * This is necessary because for binary relational operators
+	 * (MS-DTYP 2.4.4.17.6), the left-hand argument must be an
+	 * attribute lookup, but by the time we have come to the
+	 * operator that argument has been resolved into an ordinary
+	 * token. So we set the flag so the operator can know.
+	 */
+	const uint32 CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR = 0x8000;
+
+	/*
+	 * The maximum size of the conditional ACE conditions in the
+	 * binary form. There is an absolute limit of slightly less
+	 * than 64k, as the security descriptor, the ACL, and the ace
+	 * all have 16 bit length fields, and each adds some overhead.
+	 *
+	 * In practice, a couple of hundred bytes would do, and people
+	 * making extremely large conditional expressions probably
+	 * don't have good intentions.
+	 */
+	const int CONDITIONAL_ACE_MAX_LENGTH = 10000;
+	/*
+	 * CONDITIONAL_ACE_MAX_TOKENS is another arbitrarily chosen
+	 * number used to allocate token arrays and stacks.
+	 *
+	 * The relationship between the number of tokens and the byte
+	 * length is variable, depending on the nature of the
+	 * conditions. An operator token takes up one byte in the
+	 * binary format (which CONDITIONAL_ACE_MAX_LENGTH above
+	 * measures), an integer 10 bytes, and attributes and strings
+	 * at least two bytes per character plus four for the length.
+	 * SIDs are stored as struct dom_sid, around sixty-eight
+	 * bytes, plus a four byte length field.
+	 */
+	const int CONDITIONAL_ACE_MAX_TOKENS = 2000;
+}

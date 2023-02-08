@@ -148,6 +148,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
 bld.SAMBA_PIDL_LIST('PIDL',
 		    '''
                     windows_event_ids.idl
+                    conditional_ace.idl
                     ''',
                     options='--header --ndr-parser --python',
                     output_dir='../gen_ndr',
