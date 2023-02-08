@@ -336,7 +336,9 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
 
     def test_move(self):
-        full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
+        full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest_grp"))
+        self.addCleanup(self.samdb.delete, full_ou_dn, ["tree_delete:1"])
+
         (result, out, err) = self.runsubcmd("ou", "add", full_ou_dn)
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "There shouldn't be any error message")
@@ -362,10 +364,6 @@ class GroupCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err, "Error running move")
             self.assertIn('Moved group "%s" into "%s"' %
                           (group["name"], new_dn), out)
-
-        (result, out, err) = self.runsubcmd("ou", "delete", full_ou_dn)
-        self.assertCmdSuccess(result, out, err,
-                              "Failed to delete ou '%s'" % full_ou_dn)
 
     def test_show(self):
         """Assert that we can show a group correctly."""
