@@ -1,0 +1,28 @@
+<samba:parameter name="winbind varlink service"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+<para>This setting controls whether <citerefentry><refentrytitle>winbind</refentrytitle>
+<manvolnum>8</manvolnum></citerefentry> will listen for User/Group record lookup
+from <citerefentry><refentrytitle>nss-systemd</refentrytitle>
+<manvolnum>8</manvolnum></citerefentry> via Varlink, offering an alternative
+to nss_winbind.</para>
+
+<para>For more information about User/Group record lookup via Varlink see
+https://systemd.io/USER_GROUP_API/ and <citerefentry><refentrytitle>nss-systemd
+</refentrytitle><manvolnum>8</manvolnum></citerefentry> manpage.</para>
+
+<para><warning><para><citerefentry><refentrytitle>Systemd</refentrytitle>
+<manvolnum>1</manvolnum></citerefentry> versions prior 253 consider the default
+<smbconfoption name="winbind separator"/> '\' an unsafe character in the
+GetMemberhips reply. To workaround the issue it is recommended to set it to '+'
+for example.</para></warning></para>
+
+<para><warning><para>This setting has no effect in platforms or distributions without
+<citerefentry><refentrytitle>systemd</refentrytitle><manvolnum>1</manvolnum>
+</citerefentry>.</para></warning></para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
