@@ -61,7 +61,7 @@ add_attribute_base64()
 #!/usr/bin/env bash
 user_ldif="\$1"
 
-grep -v '^$' \$user_ldif > \${user_ldif}.tmp
+grep -v '^\$' \$user_ldif > \${user_ldif}.tmp
 echo "displayName:: $display_name_b64" >> \${user_ldif}.tmp
 
 mv \${user_ldif}.tmp \$user_ldif
@@ -101,7 +101,7 @@ add_attribute_base64_control()
 #!/usr/bin/env bash
 user_ldif="\$1"
 
-grep -v '^$' \$user_ldif > \${user_ldif}.tmp
+grep -v '^\$' \$user_ldif > \${user_ldif}.tmp
 echo "displayName:: $display_name_con_b64" >> \${user_ldif}.tmp
 
 mv \${user_ldif}.tmp \$user_ldif
