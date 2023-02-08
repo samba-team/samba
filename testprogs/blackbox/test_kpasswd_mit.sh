@@ -55,7 +55,7 @@ export CONFIG
 testit "reset password policies beside of minimum password age of 0 days" \
 	$VALGRIND $PYTHON $samba_tool domain passwordsettings set $CONFIG --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=$(expr $failed + 1)
 
-TEST_USERNAME="samson"
+TEST_USERNAME="$(mktemp -u samson-XXXXXX)"
 TEST_PASSWORD="testPaSS@00%"
 TEST_PASSWORD_NEW="testPaSS@01%"
 TEST_PASSWORD_SHORT="secret"
