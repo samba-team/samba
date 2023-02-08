@@ -30,7 +30,9 @@ class NetAdsDnsTests(BlackboxTestCase):
     def setUp(self):
         super(NetAdsDnsTests, self).setUp()
         nameserver = os.environ["DC_SERVER_IP"]
-        self.resolver = dns.resolver.Resolver()
+        # filename=None will disable reading /etc/resolv.conf. The file might
+        # not exist e.g. on build or CI systems.
+        self.resolver = dns.resolver.Resolver(filename=None)
         self.resolver.nameservers = [nameserver]
 
     def parse_output(self, output):
