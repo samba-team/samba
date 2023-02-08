@@ -62,6 +62,11 @@ class UserCmdTestCase(SambaToolCmdTest):
         self.users.append(self._randomUnixUser({"name": "unixuser3"}))
         self.users.append(self._randomUnixUser({"name": "unixuser4"}))
 
+        # Make sure users don't exist
+        for user in self.users:
+            if self._find_user(user["name"]):
+                self.runsubcmd("user", "delete", user["name"])
+
         # setup the 12 users and ensure they are correct
         for user in self.users:
             (result, out, err) = user["createUserFn"](user)
@@ -999,6 +1004,10 @@ sAMAccountName: %s
                         "gecos": gecos,
                         "loginShell": u[6],
                         })
+
+        # Remove user if it already exists
+        if self._find_user(u[0]):
+            self.runsubcmd("user", "delete", u[0])
         # check if --rfc2307-from-nss sets the same values as we got from pwd.getpwuid()
         (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
                                             "--surname=%s" % user["surname"],
@@ -1023,6 +1032,10 @@ sAMAccountName: %s
         #
         # get a user with all random posix attributes
         user = self._randomPosixUser({"name": u[0]})
+
+        # Remove user if it already exists
+        if self._find_user(u[0]):
+            self.runsubcmd("user", "delete", u[0])
         # create a user with posix attributes from nss but override all of them with the
         # random ones just obtained
         (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
