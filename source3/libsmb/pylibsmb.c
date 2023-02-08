@@ -271,7 +271,13 @@ static bool py_cli_state_setup_mt_ev(struct py_cli_state *self)
 		goto fail;
 	}
 
+#if PY_VERSION_HEX < 0x03070000
+	/*
+	 * Should be explicitly called in 3.6 and older, see
+	 * https://docs.python.org/3/c-api/init.html#c.PyEval_InitThreads
+	 */
 	PyEval_InitThreads();
+#endif
 
 	ret = pthread_create(&t->id, NULL, py_cli_state_poll_thread, self);
 	if (ret != 0) {
