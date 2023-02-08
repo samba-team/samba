@@ -708,7 +708,9 @@ sAMAccountName: %s
             self.assertGreater(pwd_expires_time, pwd_last_set_time)
 
     def test_move(self):
-        full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
+        full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest_usr"))
+        self.addCleanup(self.samdb.delete, full_ou_dn, ["tree_delete:1"])
+
         (result, out, err) = self.runsubcmd("ou", "add", full_ou_dn)
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "There shouldn't be any error message")
@@ -734,10 +736,6 @@ sAMAccountName: %s
             self.assertCmdSuccess(result, out, err, "Error running move")
             self.assertIn('Moved user "%s" into "%s"' %
                           (user["name"], new_dn), out)
-
-        (result, out, err) = self.runsubcmd("ou", "delete", full_ou_dn)
-        self.assertCmdSuccess(result, out, err,
-                              "Failed to delete ou '%s'" % full_ou_dn)
 
     def test_rename_surname_initials_givenname(self):
         """rename the existing surname and given name and add missing
