@@ -309,6 +309,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void group_enumerate_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct group_enum_state *s =
+		talloc_get_type_abort(userdata, struct group_enum_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_group_enumerate(TALLOC_CTX *mem_ctx,
 			       struct tevent_context *ev_ctx,
 			       VarlinkCall *call,
@@ -373,6 +380,10 @@ NTSTATUS wb_vl_group_enumerate(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, group_enum_setgrent_done, s);
+
+	varlink_call_set_connection_closed_callback(call,
+						    group_enumerate_conn_closed,
+						    s);
 
 	return NT_STATUS_OK;
 fail:
@@ -443,6 +454,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void group_by_gid_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct group_by_gid_state *s =
+		talloc_get_type_abort(userdata, struct group_by_gid_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_group_by_gid(TALLOC_CTX *mem_ctx,
 			    struct tevent_context *ev_ctx,
 			    VarlinkCall *call,
@@ -495,6 +513,10 @@ NTSTATUS wb_vl_group_by_gid(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, group_by_gid_getgrgid_done, s);
+
+	varlink_call_set_connection_closed_callback(call,
+						    group_by_gid_conn_closed,
+						    s);
 
 	return NT_STATUS_OK;
 fail:
@@ -566,6 +588,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void group_by_name_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct group_by_name_state *s =
+		talloc_get_type_abort(userdata, struct group_by_name_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_group_by_name(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev_ctx,
 			     VarlinkCall *call,
@@ -618,6 +647,10 @@ NTSTATUS wb_vl_group_by_name(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, group_by_name_getgrnam_done, s);
+
+	varlink_call_set_connection_closed_callback(call,
+						    group_by_name_conn_closed,
+						    s);
 
 	return NT_STATUS_OK;
 fail:
@@ -742,6 +775,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void group_by_name_gid_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct group_by_name_gid_state *s =
+		talloc_get_type_abort(userdata, struct group_by_name_gid_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_group_by_name_and_gid(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev_ctx,
 				     VarlinkCall *call,
@@ -803,6 +843,11 @@ NTSTATUS wb_vl_group_by_name_and_gid(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, group_by_name_gid_getgrnamgid_done, s);
+
+	varlink_call_set_connection_closed_callback(
+		call,
+		group_by_name_gid_conn_closed,
+		s);
 
 	return NT_STATUS_OK;
 fail:

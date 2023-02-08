@@ -316,6 +316,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void memberships_enumerate_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct memberships_enum_state *s =
+		talloc_get_type_abort(userdata, struct memberships_enum_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev_ctx,
 				     VarlinkCall *call,
@@ -389,6 +396,11 @@ NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, membership_enum_setgrent_done, s);
+
+	varlink_call_set_connection_closed_callback(
+		call,
+		memberships_enumerate_conn_closed,
+		s);
 
 	return NT_STATUS_OK;
 fail:
@@ -550,6 +562,14 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void memberships_by_user_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct memberships_by_user_state *s =
+		talloc_get_type_abort(userdata,
+				      struct memberships_by_user_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_memberships_by_user(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev_ctx,
 				   VarlinkCall *call,
@@ -623,6 +643,11 @@ NTSTATUS wb_vl_memberships_by_user(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, memberships_by_user_getgroups_done, s);
+
+	varlink_call_set_connection_closed_callback(
+		call,
+		memberships_by_user_conn_closed,
+		s);
 
 	return NT_STATUS_OK;
 fail:
@@ -705,6 +730,14 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void memberships_by_group_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct memberships_by_group_state *s =
+		talloc_get_type_abort(userdata,
+				      struct memberships_by_group_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_memberships_by_group(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev_ctx,
 				    VarlinkCall *call,
@@ -779,6 +812,11 @@ NTSTATUS wb_vl_memberships_by_group(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, memberships_by_group_getgrnam_done, s);
+
+	varlink_call_set_connection_closed_callback(
+		call,
+		memberships_by_group_conn_closed,
+		s);
 
 	return NT_STATUS_OK;
 fail:
@@ -879,6 +917,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void membership_check_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct membership_check_state *s =
+		talloc_get_type_abort(userdata, struct membership_check_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_membership_check(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
 				VarlinkCall *call,
@@ -961,6 +1006,11 @@ NTSTATUS wb_vl_membership_check(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, membership_check_getgrnam_done, s);
+
+	varlink_call_set_connection_closed_callback(
+		call,
+		membership_check_conn_closed,
+		s);
 
 	return NT_STATUS_OK;
 fail:

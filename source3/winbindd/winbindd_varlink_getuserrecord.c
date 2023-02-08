@@ -283,6 +283,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void user_enum_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct user_enum_state *s =
+		talloc_get_type_abort(userdata, struct user_enum_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_user_enumerate(TALLOC_CTX *mem_ctx,
 			      struct tevent_context *ev_ctx,
 			      VarlinkCall *call,
@@ -347,6 +354,10 @@ NTSTATUS wb_vl_user_enumerate(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, user_enum_setpwent_done, s);
+
+	varlink_call_set_connection_closed_callback(call,
+						    user_enum_conn_closed,
+						    s);
 
 	return NT_STATUS_OK;
 fail:
@@ -415,6 +426,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void user_by_uid_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct user_by_uid_state *s =
+		talloc_get_type_abort(userdata, struct user_by_uid_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_user_by_uid(TALLOC_CTX *mem_ctx,
 			   struct tevent_context *ev_ctx,
 			   VarlinkCall *call,
@@ -467,6 +485,10 @@ NTSTATUS wb_vl_user_by_uid(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, user_by_uid_getpwuid_done, s);
+
+	varlink_call_set_connection_closed_callback(call,
+						    user_by_uid_conn_closed,
+						    s);
 
 	return NT_STATUS_OK;
 fail:
@@ -534,6 +556,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void user_by_name_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct user_by_name_state *s =
+		talloc_get_type_abort(userdata, struct user_by_name_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_user_by_name(TALLOC_CTX *mem_ctx,
 			    struct tevent_context *ev_ctx,
 			    VarlinkCall *call,
@@ -586,6 +615,10 @@ NTSTATUS wb_vl_user_by_name(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, user_by_name_getpwnam_done, s);
+
+	varlink_call_set_connection_closed_callback(call,
+						    user_by_name_conn_closed,
+						    s);
 
 	return NT_STATUS_OK;
 fail:
@@ -707,6 +740,13 @@ out:
 	TALLOC_FREE(s);
 }
 
+static void user_by_name_uid_conn_closed(VarlinkCall *call, void *userdata)
+{
+	struct user_by_name_uid_state *s =
+		talloc_get_type_abort(userdata, struct user_by_name_uid_state);
+	TALLOC_FREE(s);
+}
+
 NTSTATUS wb_vl_user_by_name_and_uid(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev_ctx,
 				    VarlinkCall *call,
@@ -768,6 +808,11 @@ NTSTATUS wb_vl_user_by_name_and_uid(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(req, user_by_name_uid_getpwnamuid_done, s);
+
+	varlink_call_set_connection_closed_callback(
+		call,
+		user_by_name_uid_conn_closed,
+		s);
 
 	return NT_STATUS_OK;
 fail:
