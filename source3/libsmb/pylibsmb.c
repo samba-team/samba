@@ -2111,7 +2111,8 @@ static PyObject *py_cli_notify_get_changes(struct py_cli_notify_state *self,
 static PyMethodDef py_cli_notify_state_methods[] = {
 	{
 		.ml_name = "get_changes",
-		.ml_meth = (PyCFunction)py_cli_notify_get_changes,
+		.ml_meth = (PY_DISCARD_FUNC_SIG(PyCFunction,
+			    py_cli_notify_get_changes)),
 		.ml_flags = METH_VARARGS|METH_KEYWORDS,
 		.ml_doc  = "Wait for change notifications: \n"
 			   "N.get_changes(wait=BOOLEAN) -> "
@@ -3122,7 +3123,7 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "smb1_stat(path) -> stat info",
 	},
 	{ "fsctl",
-	  (PyCFunction)py_cli_fsctl,
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_fsctl),
 	  METH_VARARGS|METH_KEYWORDS,
 	  "fsctl(fnum, ctl_code, in_bytes, max_out) -> out_bytes",
 	},
