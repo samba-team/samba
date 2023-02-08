@@ -76,7 +76,7 @@ test_keytab()
 	return 0
 }
 
-TEST_USER=nettestuser
+TEST_USER="$(mktemp -u keytabtestuserXXXXXX)"
 TEST_PASSWORD=testPaSS@01%
 
 EXPECTED_NKEYS=3
@@ -129,7 +129,7 @@ echo "$samba_kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN"
 testit "kinit with SPN from keytab" $VALGRIND $samba_kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN || failed=$(expr $failed + 1)
 
 # cleanup
-testit "delete user $TEST_USER" $VALGRIND $PYTHON $samba_tool user delete nettestuser --use-krb5-ccache="${KRB5CCNAME}" "$@" || failed=$(expr $failed + 1)
+testit "delete user $TEST_USER" $VALGRIND $PYTHON $samba_tool user delete "${TEST_USER}" --use-krb5-ccache="${KRB5CCNAME}" "$@" || failed=$(expr $failed + 1)
 
 $samba_kdestroy
 rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab $PREFIX/tmpkeytab-2 $PREFIX/tmpkeytab-server
