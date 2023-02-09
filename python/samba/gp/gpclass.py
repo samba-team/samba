@@ -677,8 +677,10 @@ def apply_gp(lp, creds, store, gp_extensions, username, target, force=False):
                                 del_gpos, changed_gpos)
         except Exception as e:
             log.error('Failed to apply extension  %s' % str(ext))
-            log.error('Message was: %s: %s' % (type(e).__name__, str(e)))
-            log.debug(traceback.format_exc())
+            _, _, tb = sys.exc_info()
+            filename, line_number, _, _ = traceback.extract_tb(tb)[-1]
+            log.error('%s:%d: %s: %s' % (filename, line_number,
+                                         type(e).__name__, str(e)))
             continue
     for gpo_obj in gpos:
         if not gpo_obj.file_sys_path:
