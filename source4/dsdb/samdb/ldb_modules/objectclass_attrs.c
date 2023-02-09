@@ -452,6 +452,14 @@ static int attr_handler2(struct oc_context *ac)
 			return ldb_operr(ldb);
 		}
 
+		if (attr->linkID & 1) {
+			/*
+			 * We need to allow backlinks on all objects
+			 * even if the schema doesn't allow it.
+			 */
+			continue;
+		}
+
 		/* We can use "str_list_check" with "strcmp" here since the
 		 * attribute information from the schema are always equal
 		 * up-down-cased. */
