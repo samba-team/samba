@@ -402,8 +402,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);
 				}
-				if (remove_value &&
-				    !ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS)) {
+				if (remove_value && !have_reveal_control) {
 					/* we show these with REVEAL
 					   to allow dbcheck to find and
 					   cleanup these orphaned links */
