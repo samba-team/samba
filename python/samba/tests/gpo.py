@@ -6946,12 +6946,88 @@ class GPOTests(tests.TestCase):
                                  policy_data['policies'][name],
                                  'Policies were not applied')
 
+            # Check that modifying the policy will enforce the correct settings
+            entries = [e for e in parser.pol_file.entries \
+                       if e.valuename != 'AppUpdateURL']
+            for e in entries:
+                if e.valuename == 'AppAutoUpdate':
+                    e.data = 0
+            parser.pol_file.entries = entries
+            parser.pol_file.num_entries = len(entries)
+            # Stage the Registry.pol file with altered test data
+            unstage_file(reg_pol)
+            ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+            # Enforce the altered policy
+            ext.process_group_policy([], gpos)
+
+            # Check that the App Update policy was altered
+            with open(policies_file, 'r') as r:
+                policy_data = json.load(r)
+            self.assertIn('policies', policy_data, 'Policies were not applied')
+            keys = list(expected_policy_data['policies'].keys())
+            keys.remove('AppUpdateURL')
+            keys.sort()
+            policy_keys = list(policy_data['policies'].keys())
+            policy_keys.sort()
+            self.assertEqual(keys, policy_keys, 'Firefox policies are incorrect')
+            for name in policy_data['policies'].keys():
+                self.assertNotEqual(name, 'AppUpdateURL',
+                                    'Failed to remove AppUpdateURL policy')
+                if name == 'AppAutoUpdate':
+                    self.assertEqual(False, policy_data['policies'][name],
+                                     'Failed to alter AppAutoUpdate policy')
+                    continue
+                self.assertEqual(expected_policy_data['policies'][name],
+                                 policy_data['policies'][name],
+                                 'Policies were not applied')
+
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
             # Check that a call to gpupdate --rsop also succeeds
             ret = rsop(self.lp)
             self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
+            # Unapply the policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            if os.path.exists(policies_file):
+                data = json.load(open(policies_file, 'r'))
+                if 'policies' in data.keys():
+                    self.assertEqual(len(data['policies'].keys()), 0,
+                                     'The policy was not unapplied')
+
+            # Initialize the cache with old style existing policies,
+            # ensure they are overwritten.
+            old_cache = {'policies': {}}
+            ext.cache_add_attribute(guid, 'policies.json',
+                                    json.dumps(old_cache))
+            with open(policies_file, 'w') as w:
+                w.write(firefox_json_expected)
+
+            # Overwrite policy
+            ext.process_group_policy([], gpos)
+
+            # Check that policy was overwritten
+            with open(policies_file, 'r') as r:
+                policy_data = json.load(r)
+            self.assertIn('policies', policy_data, 'Policies were not applied')
+            policy_keys = list(policy_data['policies'].keys())
+            policy_keys.sort()
+            self.assertEqual(keys, policy_keys, 'Firefox policies are incorrect')
+            for name in policy_data['policies'].keys():
+                self.assertNotEqual(name, 'AppUpdateURL',
+                                    'Failed to remove AppUpdateURL policy')
+                if name == 'AppAutoUpdate':
+                    self.assertEqual(False, policy_data['policies'][name],
+                                     'Failed to overwrite AppAutoUpdate policy')
+                    continue
+                self.assertEqual(expected_policy_data['policies'][name],
+                                 policy_data['policies'][name],
+                                 'Policies were not applied')
 
             # Unapply the policy
             gp_db = store.get_gplog(machine_creds.get_username())
