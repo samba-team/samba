@@ -2902,9 +2902,10 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
-	
-	/* Set the pending write time to a value with ns. */
-	SET_INFO_FILE_NS(finfo1, time(NULL) + 86400, 103, cli->tree, fnum1);
+
+	/* Set the pending write time to a value with non zero msec. */
+	SET_INFO_FILE_NS(finfo1, time(NULL) + 86400, 103 * NTTIME_MSEC,
+			 cli->tree, fnum1);
 
 	/* Get the current pending write time by fnum. */
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
