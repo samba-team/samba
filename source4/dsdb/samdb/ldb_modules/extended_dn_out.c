@@ -344,11 +344,13 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 			struct dsdb_dn *dsdb_dn = NULL;
 			struct ldb_val *plain_dn = &msg->elements[i].values[j];
 			bool is_deleted_objects = false;
+			uint32_t rmd_flags;
 
 			/* this is a fast method for detecting deleted
 			   linked attributes, working on the unparsed
 			   ldb_val */
-			if (dsdb_dn_is_deleted_val(plain_dn) && !have_reveal_control) {
+			rmd_flags = dsdb_dn_val_rmd_flags(plain_dn);
+			if (rmd_flags & DSDB_RMD_FLAG_DELETED && !have_reveal_control) {
 				/* it's a deleted linked attribute,
 				  and we don't have the reveal control */
 				/* we won't keep this one, so not incrementing k */
