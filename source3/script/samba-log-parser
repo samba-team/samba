@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+#
+#######################################################################
+#
+# A script to parse samba (especially winbind) logfiles.
+# Trace files should be in a non-syslog format (debug syslog format = no).
+#
+#    --traceid  ...  Specify the traceid of the request to parse
+#    --pid      ...  Specify the pid
+#    --merge    ...  Merge logs by timestamp
+#    --flow     ...  Show the request/sub-request call flow
+#    --flow-compact ... Show the request/sub-request call flow without dcerpc
+#
+#
+# Copyright (c) 2023      Andreas Schneider <asn@samba.org>
+# Copyright (c) 2023      Pavel Filipenský <pfilipen@redhat.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+# Requires: ???
+
+import sys
+import os
+import re
+from argparse import ArgumentParser
+from collections import defaultdict
+
+# Trace record consists of a trace header followed by one or more text lines.
+# Each trace header contains a traceid, which is the main identifier for this
+# tool. A single traceid is either provided via command line option --traceid
+# or a list of traceids is derived from the PID specified via option --pid.
+# Creating and evaluating list of traceids from PID can be tricky:
+# The traceid can appear in a trace record before trace record containing the
+# PID is processed. So when we see a new traceid we are not sure if it belongs
+# to the traced PID.
+# The PID appears only in the main winbind process (log.winbind). If a
+# directory with many log files should be processed, we process the files in
+# random order.
+# It might happen that e.g. log.wb-ADDOMAIN is processed before log.winbind so
+# we do not know the list of traceids yet.
+# To make all this easy we put into memory all trace records and do the final
+# traceid filtering only after all files are read. This can require lot of
+# memory if files are big.
+
+
+def process_file(record_list, traceid_set, fname, opid, otraceid):
+    with open(fname, "r") as infile:
+        data = infile.readlines()
+    pid = None
+    traceid = 0
+    traceid_prev = None
+    undecided_traceid = False
+    date = ""
+    record_lines = []
+
+    # If traceid option was provided the traceid_set will contain just it
+    if otraceid:
+        traceid_set.add(otraceid)
+
+    RE_HEADER = re.compile(
+        r"^\[(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{6}).*?, .*, "
+        r"traceid=([0-9]+).*\]")
+    RE_INTERFACE_VERSION = re.compile(
+        r"^\s+winbindd_interface_version: \[\S* \((\d+)\)\]")
+    RE_ASYNC_REQUEST = re.compile(
+        r"^\s+process_request_send: "
+        r"\[\S* \((\d+)\)\] Handling async request:")
+    # Example of a header line
+    # [2023/05/01 07:40:45.439049,  3, pid=418844, effective(0, 0), real(0, 0), class=winbind, traceid=37] ../../source3/winbindd/winbindd_misc.c:355(winbindd_interface_version)
+    for line in data:
+        header = RE_HEADER.search(line)
+        if header:
+            # Append all previous trace lines of a record if the traceid is in
+            # the list.
+            if record_lines:
+                record_list.append((date, traceid, record_lines, fname))
+                record_lines = []
+            # Remember the new date and the new traceid
+            date = header.group(1)
+            traceid = header.group(2)
+            if traceid != traceid_prev:
+                traceid_prev = traceid
+                undecided_traceid = True
+        if opid:
+            # Search for lines that identify a new winbind client and the
+            # client PID
+
+            # winbindd_interface_version: [nss_winbind (500725)]: request interface version (version = 32)
+            # process_request_send: [nss_winbind (500725)] Handling async request: SETPWENT
+            interface_version = RE_INTERFACE_VERSION.search(line)
+            async_request = RE_ASYNC_REQUEST.search(line)
+            if interface_version:
+                pid = interface_version.group(1)
+                if undecided_traceid:
+                    if pid == opid:
+                        traceid_set.add(traceid)
+                    undecided_traceid = False
+            if async_request:
+                pid = async_request.group(1)
+                if undecided_traceid:
+                    if pid == opid:
+                        traceid_set.add(traceid)
+                    undecided_traceid = False
+        # For --breakdown add every traceid
+        if not opid and not otraceid:
+            traceid_set.add(traceid)
+
+        record_lines.append(line)
+
+
+def filter_traceids(record_list, traceid_set):
+    llist = []
+    for (d, t, li, f) in record_list:
+        if t in traceid_set:
+            llist.append((d, t, li, f))
+    return llist
+
+
+def filter_flow(record_list):
+    local_list = []
+    for (date, traceid, lines, filename) in record_list:
+        for line in lines:
+            isflow = re.search(r"^(\s+)flow: (.*)", line)
+            if isflow:
+                local_list.append(isflow.group(1) + isflow.group(2))
+    return local_list
+
+
+def filter_flowcompact(flist):
+    local_list = []
+    end_marker = None
+    for fl in flist:
+        if not end_marker:
+            local_list.append(fl)
+            dcerpc_start = re.search(r"^(\s+)-> dcerpc_", fl)
+            if dcerpc_start:
+                end_marker = dcerpc_start.group(1)
+        else:
+            dcerpc_end = re.search(r"^" + end_marker + "<- dcerpc_", fl)
+            if dcerpc_end:
+                end_marker = None
+                local_list.append(fl)
+    return local_list
+
+
+def print_record_list(record_list, file):
+    f_prev = None
+    for (date, traceid, lines, filename) in record_list:
+        # Inform about filename change
+        if filename != f_prev:
+            print("-" * 72, file=file)
+            print("FILE: ", filename, file=file)
+            print("-" * 72, file=file)
+        for line in lines:
+            print(line, end='', file=file)
+        f_prev = filename
+
+# record_list  ... list of quadruplets <date, traceid, [trace lines], filename>
+# flow_list    ... lines from record_list with 'flow' traces
+# traceid_set  ... list of traceids we want to trace
+#                  with --traceid   ... there is a single traceids
+#                  with --pid       ... there are all traceids for the PID
+#                  with --breakdown ... there are all traceids
+
+
+def setup_parser():
+    parser = ArgumentParser()
+
+    parser.add_argument(
+        "path",
+        type=str,
+        help="logfile or directory"
+    )
+    parser.add_argument(
+        "--traceid",
+        dest="traceid",
+        help="specify the traceid of the trace records",
+        metavar="ID"
+    )
+    parser.add_argument(
+        "--pid",
+        dest="pid",
+        help="specify the pid of winbind client",
+        metavar="PID"
+    )
+    parser.add_argument(
+        "--breakdown",
+        action="store_true",
+        dest="breakdown",
+        default=False,
+        help="breakdown the traces into per traceid files"
+    )
+    parser.add_argument(
+        "--merge",
+        action="store_true",
+        dest="merge",
+        default=False,
+        help="merge logs by timestamp"
+    )
+    parser.add_argument(
+        "--flow",
+        action="store_true",
+        dest="flow",
+        default=False,
+        help="show the request/sub-request flow traces"
+    )
+    parser.add_argument(
+        "--flow-compact",
+        action="store_true",
+        dest="flowcompact",
+        default=False,
+        help="show the request/sub-request flow traces without dcerpc details"
+    )
+    return parser
+
+
+def main(): # noqa
+    record_list = []
+    flow_list = []
+    traceid_set = set()
+
+    parser = setup_parser()
+    options = parser.parse_args()
+
+    if not options.traceid and not options.pid and not options.breakdown:
+        print("One of --traceid or --pid is needed or --breakdown.")
+        sys.exit(1)
+    elif options.traceid and options.pid:
+        print("Only one of --traceid or --pid or --breakdown is allowed.")
+        sys.exit(1)
+
+    if options.flow and not options.traceid:
+        print("Option --flow can be used only together with --traceid.")
+        sys.exit(1)
+
+    if options.flowcompact and not options.traceid:
+        print("Option --flow-compact can be used only together with "
+              "--traceid.")
+        sys.exit(1)
+
+    if options.flow and options.flowcompact:
+        print("Only one of --flow or --flow-compact is allowed.")
+        sys.exit(1)
+
+    if not options.path:
+        print("Path to logfile or directory with logs is needed.")
+        sys.exit(1)
+
+    path = options.path
+    if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            for name in files:
+                process_file(
+                    record_list,
+                    traceid_set,
+                    os.path.join(root, name),
+                    options.pid,
+                    options.traceid,
+                )
+    elif os.path.isfile(path):
+        process_file(
+            record_list,
+            traceid_set,
+            path,
+            options.pid,
+            options.traceid
+        )
+    else:
+        print(path, "Path is neither file or directory.")
+        sys.exit(1)
+
+    # Keep only records with matching traceids
+    if not options.breakdown:
+        record_list = filter_traceids(record_list, traceid_set)
+
+    if options.breakdown:
+        for traceid in traceid_set:
+            # Full
+            with open("%s.full" % traceid, "w") as full_f:
+                full_l = filter_traceids(record_list, {traceid})
+                if options.merge:
+                    full_l.sort()
+                print_record_list(full_l, full_f)
+            # Flow
+            with open("%s.flow" % traceid, "w") as flow_f:
+                flow_l = filter_flow(full_l)
+                for fl in flow_l:
+                    print(fl, file=flow_f)
+            # Flow compact
+            with open("%s.flowcompact" % traceid, "w") as flowcompact_f:
+                flowcompact_l = filter_flowcompact(flow_l)
+                for fl in flowcompact_l:
+                    print(fl, file=flowcompact_f)
+    elif options.flow:
+        flow_list = filter_flow(record_list)
+        for fl in flow_list:
+            print(fl)
+    elif options.flowcompact:
+        flow_list = filter_flow(record_list)
+        flow_list = filter_flowcompact(flow_list)
+        for fl in flow_list:
+            print(fl)
+    else:
+        if options.merge:
+            record_list.sort()
+        print_record_list(record_list, sys.stdout)
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
