@@ -1361,7 +1361,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	sfinfo.basic_info.in.access_time = 0; \
 	unix_to_nt_time(&sfinfo.basic_info.in.write_time, (wrtime)); \
 	sfinfo.basic_info.in.change_time = 0; \
-	sfinfo.basic_info.in.attrib = finfo1.basic_info.out.attrib; \
+	sfinfo.basic_info.in.attrib = finfo.basic_info.out.attrib; \
 	_status = smb_raw_setfileinfo(tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(_status)) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": setfileinfo failed: %s", \
@@ -1383,7 +1383,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	unix_to_nt_time(&sfinfo.basic_info.in.write_time, (wrtime)); \
 	sfinfo.basic_info.in.write_time += (ns); \
 	sfinfo.basic_info.in.change_time = 0; \
-	sfinfo.basic_info.in.attrib = finfo1.basic_info.out.attrib; \
+	sfinfo.basic_info.in.attrib = finfo.basic_info.out.attrib; \
 	_status = smb_raw_setfileinfo(tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(_status)) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": setfileinfo failed: %s", \
@@ -2904,7 +2904,7 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 	
 	/* Set the pending write time to a value with ns. */
-	SET_INFO_FILE_NS(finfo, time(NULL) + 86400, 103, cli->tree, fnum1);
+	SET_INFO_FILE_NS(finfo1, time(NULL) + 86400, 103, cli->tree, fnum1);
 
 	/* Get the current pending write time by fnum. */
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
