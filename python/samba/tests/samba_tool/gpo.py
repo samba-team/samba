@@ -266,6 +266,9 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]),
                                                 "--restore-metadata")
 
+            self.assertCmdSuccess(result, out, err,
+                                  "Ensure gpo restore successful")
+
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
 
             (result, out, err) = self.runsubcmd("gpo", "backup", gpo_guid,
@@ -320,6 +323,9 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]),
                                                 "--restore-metadata")
 
+            self.assertCmdSuccess(result, out, err,
+                                  "Ensure gpo restore successful")
+
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid1 = gpo_guid
 
@@ -341,6 +347,9 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]),
                                                 "--restore-metadata")
+
+            self.assertCmdSuccess(result, out, err,
+                                  "Ensure gpo restore successful")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid2 = gpo_guid
@@ -405,6 +414,9 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]),
                                                 "--restore-metadata")
 
+            self.assertCmdSuccess(result, out, err,
+                                  "Ensure gpo restore successful")
+
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid1 = gpo_guid
 
@@ -424,6 +436,9 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]),
                                                 "--restore-metadata")
+
+            self.assertCmdSuccess(result, out, err,
+                                  "Ensure gpo restore successful")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid2 = gpo_guid
