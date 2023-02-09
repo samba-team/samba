@@ -303,6 +303,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 * interpret the list with) */
 	for (i = 0; ac->schema && i < msg->num_elements; i++) {
 		bool make_extended_dn;
+		bool bl_requested = true;
 		const struct dsdb_attribute *attribute;
 
 		attribute = dsdb_attribute_by_lDAPDisplayName(ac->schema, msg->elements[i].name);
@@ -338,6 +339,20 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 			make_extended_dn = (strcmp(attribute->syntax->ldap_oid, DSDB_SYNTAX_OR_NAME) != 0);
 		}
 
+		if (attribute->linkID & 1 &&
+		    attribute->bl_maybe_invisible &&
+		    !have_reveal_control)
+		{
+			const char * const *attrs = ac->req->op.search.attrs;
+
+			if (attrs != NULL) {
+				bl_requested = is_attr_in_list(attrs,
+						attribute->lDAPDisplayName);
+			} else {
+				bl_requested = false;
+			}
+		}
+
 		for (k = 0, j = 0; j < msg->elements[i].num_values; j++) {
 			const char *dn_str;
 			struct ldb_dn *dn;
@@ -356,7 +371,15 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 				/* we won't keep this one, so not incrementing k */
 				continue;
 			}
-
+			if (rmd_flags & DSDB_RMD_FLAG_HIDDEN_BL && !bl_requested) {
+				/*
+				 * Hidden backlinks are not revealed unless
+				 * requested.
+				 *
+				 * we won't keep this one, so not incrementing k
+				 */
+				continue;
+			}
 
 			dsdb_dn = dsdb_dn_parse_trusted(msg, ldb, plain_dn, attribute->syntax->ldap_oid);
 
