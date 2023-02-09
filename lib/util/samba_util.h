@@ -544,14 +544,6 @@ char *smb_xstrndup(const char *s, size_t n);
 _PUBLIC_ void *smb_memdup(const void *p, size_t size);
 
 /**
- * Write a password to the log file.
- *
- * @note Only actually does something if DEBUG_PASSWORD was defined during
- * compile-time.
- */
-_PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len);
-
-/**
  * see if a range of memory is all zero. A NULL pointer is considered
  * to be all zero
  */
