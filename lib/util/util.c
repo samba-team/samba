@@ -828,6 +828,17 @@ _PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 #endif
 }
 
+static void dump_data_addbuf_cb(const char *buf, void *private_data)
+{
+	char **str = private_data;
+	talloc_asprintf_addbuf(str, "%s", buf);
+}
+
+_PUBLIC_ void dump_data_addbuf(const uint8_t *buf, size_t buflen, char **str)
+{
+	dump_data_cb(buf, buflen, false, dump_data_addbuf_cb, str);
+}
+
 
 /**
  * see if a range of memory is all zero. A NULL pointer is considered
