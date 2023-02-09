@@ -268,6 +268,26 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 		return smbd_smb2_request_error(smb2req, status);
 	}
 
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		char *str = talloc_asprintf(
+			talloc_tos(),
+			"\nGot %"PRIu32" create blobs\n",
+			in_context_blobs.num_blobs);
+		uint32_t i;
+
+		for (i=0; i<in_context_blobs.num_blobs; i++) {
+			struct smb2_create_blob *b =
+				&in_context_blobs.blobs[i];
+			talloc_asprintf_addbuf(&str, "[%"PRIu32"]\n", i);
+			dump_data_addbuf(
+				(uint8_t *)b->tag, strlen(b->tag), &str);
+			dump_data_addbuf(
+				b->data.data, b->data.length, &str);
+		}
+		DBG_DEBUG("%s", str);
+		TALLOC_FREE(str);
+	}
+
 	tsubreq = smbd_smb2_create_send(smb2req,
 				       smb2req->sconn->ev_ctx,
 				       smb2req,
