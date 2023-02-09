@@ -190,7 +190,65 @@ static void membership_enum_getgrent_done(struct tevent_req *req)
 	member_data = (char *)response->extra_data.data +
 		      response->data.num_entries * sizeof(struct winbindd_gr);
 
+	/*
+	 * Advance to the first group with members and save it, sending the
+	 * previously saved if there was one.
+	 */
 	for (i = 0; i < response->data.num_entries; i++) {
+		struct winbindd_gr *gr = &grs[i];
+		if (gr->num_gr_mem != 0) {
+			break;
+		}
+	}
+
+	if (i == response->data.num_entries) {
+		/* No group with members in this chunk, get next */
+		goto next_getgrent;
+	}
+
+	/*
+	 * There is at least one group with members in this chunk. If we have a
+	 * saved one from the previous chunk, send it with continue flag set
+	 * and save this one. It will be sent either in the endgrent callback
+	 * or in the next getgrent batch if there is a group with members in
+	 * that batch.
+	 */
+	if (s->last_gr != NULL) {
+		member_list_reply(s->call,
+				s->last_gr,
+				s->last_members,
+				true);
+		TALLOC_FREE(s->last_gr);
+		TALLOC_FREE(s->last_members);
+	}
+
+	s->last_gr = talloc_zero(s, struct winbindd_gr);
+	if (s->last_gr == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+				s->call,
+				WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+				NULL);
+		goto out;
+	}
+	*s->last_gr = grs[i];
+	s->last_members = talloc_strdup(
+			s,
+			&member_data[s->last_gr->gr_mem_ofs]);
+	if (s->last_members == NULL) {
+		DBG_ERR("No memory\n");
+		varlink_call_reply_error(
+				s->call,
+				WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
+				NULL);
+		goto out;
+	}
+
+	/* Advance to the next group */
+	i++;
+
+	/* and send the rest of groups with members in this chunk */
+	for (; i < response->data.num_entries; i++) {
 		struct winbindd_gr *gr = &grs[i];
 		char *gr_members = &member_data[gr->gr_mem_ofs];
 
@@ -199,53 +257,11 @@ static void membership_enum_getgrent_done(struct tevent_req *req)
 			continue;
 		}
 
-		/*
-		 * When the first group with members from the current batch is
-		 * found, send the saved one with continue flag set and save
-		 * the first one from the current batch.
-		 *
-		 * If there are no more groups with members in this batch,
-		 * the saved one will be sent either in the endgrent callback
-		 * or in the next getgrent batch.
-		 */
-		if (s->last_gr != NULL) {
-			member_list_reply(s->call,
-					  s->last_gr,
-					  s->last_members,
-					  true);
-			TALLOC_FREE(s->last_gr);
-			TALLOC_FREE(s->last_members);
-		}
-
-		if (s->last_gr == NULL) {
-			s->last_gr = talloc_zero(s, struct winbindd_gr);
-			if (s->last_gr == NULL) {
-				DBG_ERR("No memory\n");
-				varlink_call_reply_error(
-					s->call,
-					WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
-					NULL);
-				goto out;
-			}
-			*s->last_gr = grs[i];
-			s->last_members = talloc_strdup(
-				s,
-				&member_data[s->last_gr->gr_mem_ofs]);
-			if (s->last_members == NULL) {
-				DBG_ERR("No memory\n");
-				varlink_call_reply_error(
-					s->call,
-					WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
-					NULL);
-				goto out;
-			}
-
-			continue;
-		}
 
 		member_list_reply(s->call, gr, gr_members, true);
 	}
 
+next_getgrent:
 	/* Get next chunk */
 	TALLOC_FREE(response);
 	ZERO_STRUCTP(s->fake_req);
