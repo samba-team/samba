@@ -5796,9 +5796,12 @@ class GPOTests(tests.TestCase):
 
     def test_gp_motd(self):
         local_path = self.lp.cache_path('gpo_cache')
-        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
-        reg_pol = os.path.join(local_path, policies, guid,
+        guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
+                 '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
+        reg_pol = os.path.join(local_path, policies, guids[0],
                                'MACHINE/REGISTRY.POL')
+        reg_pol2 = os.path.join(local_path, policies, guids[1],
+                                'MACHINE/REGISTRY.POL')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -5830,10 +5833,38 @@ class GPOTests(tests.TestCase):
         ret = stage_file(reg_pol, ndr_pack(stage))
         self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
 
+        # Stage the other Registry.pol
+        stage = preg.file()
+        e3 = preg.entry()
+        e3.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Messages'
+        e3.valuename = b'motd'
+        e3.type = 1
+        e3.data = b'This should overwrite the first policy'
+        stage.num_entries = 1
+        stage.entries = [e3]
+        ret = stage_file(reg_pol2, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol2)
+
         # Process all gpos, with temp output directory
         with TemporaryDirectory() as dname:
             ext.process_group_policy([], gpos, dname)
             motd_file = os.path.join(dname, 'motd')
+            self.assertTrue(os.path.exists(motd_file),
+                            'Message of the day file not created')
+            data = open(motd_file, 'r').read()
+            self.assertEquals(data, e3.data, 'Message of the day not applied')
+            issue_file = os.path.join(dname, 'issue')
+            self.assertTrue(os.path.exists(issue_file),
+                            'Login Prompt Message file not created')
+            data = open(issue_file, 'r').read()
+            self.assertEquals(data, e2.data, 'Login Prompt Message not applied')
+
+            # Force apply with removal of second GPO
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = gp_db.get_applied_settings([guids[1]])
+            gpos = [gpo for gpo in gpos if gpo.name != guids[1]]
+            ext.process_group_policy(del_gpos, gpos, dname)
+
             self.assertTrue(os.path.exists(motd_file),
                             'Message of the day file not created')
             data = open(motd_file, 'r').read()
@@ -5849,7 +5880,6 @@ class GPOTests(tests.TestCase):
             self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Unapply policy, and ensure the test files are removed
-            gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
             ext.process_group_policy(del_gpos, [], dname)
             data = open(motd_file, 'r').read()
