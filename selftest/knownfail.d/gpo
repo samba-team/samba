@@ -2,3 +2,4 @@
 ^samba.tests.gpo.samba.tests.gpo.GPOTests.test_gp_firefox_ext
 ^samba.tests.gpo.samba.tests.gpo.GPOTests.test_gp_motd
 ^samba.tests.gpo.samba.tests.gpo.GPOTests.test_vgp_motd
+^samba.tests.gpo.samba.tests.gpo.GPOTests.test_vgp_issue

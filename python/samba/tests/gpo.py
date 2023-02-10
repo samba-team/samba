@@ -6385,8 +6385,11 @@ class GPOTests(tests.TestCase):
 
     def test_vgp_issue(self):
         local_path = self.lp.cache_path('gpo_cache')
-        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
-        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+        guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
+                 '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
+        manifest = os.path.join(local_path, policies, guids[0], 'MACHINE',
+            'VGP/VTLA/UNIX/ISSUE/MANIFEST.XML')
+        manifest2 = os.path.join(local_path, policies, guids[1], 'MACHINE',
             'VGP/VTLA/UNIX/ISSUE/MANIFEST.XML')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
@@ -6415,9 +6418,31 @@ class GPOTests(tests.TestCase):
         ret = stage_file(manifest, etree.tostring(stage))
         self.assertTrue(ret, 'Could not create the target %s' % manifest)
 
+        # Stage the other manifest.xml
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        version = etree.SubElement(policysetting, 'version')
+        version.text = '1'
+        data = etree.SubElement(policysetting, 'data')
+        filename = etree.SubElement(data, 'filename')
+        filename.text = 'issue'
+        text2 = etree.SubElement(data, 'text')
+        text2.text = 'This test message overwrites the first'
+        ret = stage_file(manifest2, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest2)
+
         # Process all gpos, with temp output directory
         with NamedTemporaryFile() as f:
             ext.process_group_policy([], gpos, f.name)
+            self.assertEquals(open(f.name, 'r').read(), text2.text,
+                              'The issue was not applied')
+
+            # Force apply with removal of second GPO
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = gp_db.get_applied_settings([guids[1]])
+            gpos = [gpo for gpo in gpos if gpo.name != guids[1]]
+            ext.process_group_policy(del_gpos, gpos, f.name)
+
             self.assertEquals(open(f.name, 'r').read(), text.text,
                               'The issue was not applied')
 
@@ -6426,7 +6451,6 @@ class GPOTests(tests.TestCase):
             self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
-            gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
             ext.process_group_policy(del_gpos, [], f.name)
             self.assertNotEqual(open(f.name, 'r').read(), text.text,
