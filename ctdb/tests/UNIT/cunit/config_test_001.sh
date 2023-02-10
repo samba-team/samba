@@ -30,7 +30,7 @@ database_state_dbdir=$(ctdb-config get \
 ok <<EOF
 [logging]
 	# location = ${logging_location}
-	# log level = ERROR
+	# log level = NOTICE
 [cluster]
 	# transport = tcp
 	# node address = 

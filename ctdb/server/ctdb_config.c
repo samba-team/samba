@@ -145,7 +145,7 @@ int ctdbd_config_load(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	logging_conf_init(conf, "NOTICE");
+	logging_conf_init(conf, NULL);
 	cluster_conf_init(conf);
 	database_conf_init(conf);
 	event_conf_init(conf);

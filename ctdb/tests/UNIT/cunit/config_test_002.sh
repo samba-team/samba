@@ -19,7 +19,7 @@ cat > "$conffile" <<EOF
 EOF
 
 ok <<EOF
-ERROR
+NOTICE
 EOF
 unit_test ctdb-config get "logging" "log level"
 

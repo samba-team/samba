@@ -26,7 +26,7 @@
 #include "common/logging_conf.h"
 
 #define LOGGING_LOCATION_DEFAULT	"file:" LOGDIR "/log.ctdb"
-#define LOGGING_LOG_LEVEL_DEFAULT	"ERROR"
+#define LOGGING_LOG_LEVEL_DEFAULT	"NOTICE"
 
 static bool logging_conf_validate_log_level(const char *key,
 					    const char *old_loglevel,
