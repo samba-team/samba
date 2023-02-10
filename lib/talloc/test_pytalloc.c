@@ -181,7 +181,6 @@ static PyTypeObject DBaseObject_Type = {
 
 #define MODULE_DOC PyDoc_STR("Test utility module for pytalloc")
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     .m_name = "_test_pytalloc",
@@ -189,7 +188,6 @@ static struct PyModuleDef moduledef = {
     .m_size = -1,
     .m_methods = test_talloc_methods,
 };
-#endif
 
 static PyObject *module_init(void);
 static PyObject *module_init(void)
@@ -207,11 +205,7 @@ static PyObject *module_init(void)
 		return NULL;
 	}
 
-#if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
-#else
-	m = Py_InitModule3("_test_pytalloc", test_talloc_methods, MODULE_DOC);
-#endif
 
 	if (m == NULL) {
 		return NULL;
@@ -229,16 +223,8 @@ static PyObject *module_init(void)
 }
 
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit__test_pytalloc(void);
 PyMODINIT_FUNC PyInit__test_pytalloc(void)
 {
 	return module_init();
 }
-#else
-void init_test_pytalloc(void);
-void init_test_pytalloc(void)
-{
-	module_init();
-}
-#endif

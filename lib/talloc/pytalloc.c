@@ -101,9 +101,9 @@ static void pytalloc_dealloc(PyObject* self)
 }
 
 /**
- * Default (but only slightly more useful than the default) implementation of cmp.
+ * Default objects do not support ordered comparisons, but talloc
+ * objects do, sorting by pointers clustered by type.
  */
-#if PY_MAJOR_VERSION >= 3
 static PyObject *pytalloc_default_richcmp(PyObject *obj1, PyObject *obj2, int op)
 {
 	void *ptr1;
@@ -131,17 +131,6 @@ static PyObject *pytalloc_default_richcmp(PyObject *obj1, PyObject *obj2, int op
 	Py_INCREF(Py_NotImplemented);
 	return Py_NotImplemented;
 }
-#else
-static int pytalloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
-{
-	pytalloc_Object *obj1 = (pytalloc_Object *)_obj1,
-					 *obj2 = (pytalloc_Object *)_obj2;
-	if (obj1->ob_type != obj2->ob_type)
-		return ((char *)obj1->ob_type - (char *)obj2->ob_type);
-
-	return ((char *)pytalloc_get_ptr(obj1) - (char *)pytalloc_get_ptr(obj2));
-}
-#endif
 
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",
@@ -150,11 +139,7 @@ static PyTypeObject TallocObject_Type = {
 	.tp_dealloc = (destructor)pytalloc_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_repr = pytalloc_default_repr,
-#if PY_MAJOR_VERSION >= 3
 	.tp_richcompare = pytalloc_default_richcmp,
-#else
-	.tp_compare = pytalloc_default_cmp,
-#endif
 };
 
 /**
@@ -181,9 +166,9 @@ static void pytalloc_base_dealloc(PyObject* self)
 }
 
 /**
- * Default (but only slightly more useful than the default) implementation of cmp.
+ * Default objects do not support ordered comparisons, but talloc
+ * objects do, sorting by pointers clustered by type.
  */
-#if PY_MAJOR_VERSION >= 3
 static PyObject *pytalloc_base_default_richcmp(PyObject *obj1, PyObject *obj2, int op)
 {
 	void *ptr1;
@@ -211,17 +196,6 @@ static PyObject *pytalloc_base_default_richcmp(PyObject *obj1, PyObject *obj2, i
 	Py_INCREF(Py_NotImplemented);
 	return Py_NotImplemented;
 }
-#else
-static int pytalloc_base_default_cmp(PyObject *_obj1, PyObject *_obj2)
-{
-	pytalloc_BaseObject *obj1 = (pytalloc_BaseObject *)_obj1,
-					 *obj2 = (pytalloc_BaseObject *)_obj2;
-	if (obj1->ob_type != obj2->ob_type)
-		return ((char *)obj1->ob_type - (char *)obj2->ob_type);
-
-	return ((char *)pytalloc_get_ptr(obj1) - (char *)pytalloc_get_ptr(obj2));
-}
-#endif
 
 static PyTypeObject TallocBaseObject_Type = {
 	.tp_name = "talloc.BaseObject",
@@ -230,11 +204,7 @@ static PyTypeObject TallocBaseObject_Type = {
 	.tp_dealloc = (destructor)pytalloc_base_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_repr = pytalloc_base_default_repr,
-#if PY_MAJOR_VERSION >= 3
 	.tp_richcompare = pytalloc_base_default_richcmp,
-#else
-	.tp_compare = pytalloc_base_default_cmp,
-#endif
 };
 
 static PyTypeObject TallocGenericObject_Type = {
@@ -247,7 +217,6 @@ static PyTypeObject TallocGenericObject_Type = {
 
 #define MODULE_DOC PyDoc_STR("Python wrapping of talloc-maintained objects.")
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     .m_name = "talloc",
@@ -255,7 +224,6 @@ static struct PyModuleDef moduledef = {
     .m_size = -1,
     .m_methods = talloc_methods,
 };
-#endif
 
 static PyObject *module_init(void);
 static PyObject *module_init(void)
@@ -271,11 +239,7 @@ static PyObject *module_init(void)
 	if (PyType_Ready(&TallocGenericObject_Type) < 0)
 		return NULL;
 
-#if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
-#else
-	m = Py_InitModule3("talloc", talloc_methods, MODULE_DOC);
-#endif
 	if (m == NULL)
 		return NULL;
 
@@ -298,16 +262,8 @@ err:
 	return NULL;
 }
 
-#if PY_MAJOR_VERSION >= 3
 PyMODINIT_FUNC PyInit_talloc(void);
 PyMODINIT_FUNC PyInit_talloc(void)
 {
 	return module_init();
 }
-#else
-void inittalloc(void);
-void inittalloc(void)
-{
-	module_init();
-}
-#endif
