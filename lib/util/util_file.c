@@ -175,13 +175,20 @@ _PUBLIC_ char *fd_load(int fd, size_t *psize, size_t maxsize, TALLOC_CTX *mem_ct
 	size_t size = 0;
 	size_t chunk = 1024;
 	int err;
+	int fd_dup;
 
 	if (maxsize == 0) {
 		maxsize = SIZE_MAX;
 	}
 
-	file = fdopen(fd, "r");
+	fd_dup = dup(fd);
+	if (fd_dup == -1) {
+		return NULL;
+	}
+
+	file = fdopen(fd_dup, "r");
 	if (file == NULL) {
+		close(fd_dup);
 		return NULL;
 	}
 
