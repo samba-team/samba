@@ -5712,9 +5712,12 @@ class GPOTests(tests.TestCase):
 
     def test_smb_conf_ext(self):
         local_path = self.lp.cache_path('gpo_cache')
-        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
-        reg_pol = os.path.join(local_path, policies, guid,
+        guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
+                 '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
+        reg_pol = os.path.join(local_path, policies, guids[0],
                                'MACHINE/REGISTRY.POL')
+        reg_pol2 = os.path.join(local_path, policies, guids[1],
+                                'MACHINE/REGISTRY.POL')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -5751,6 +5754,20 @@ class GPOTests(tests.TestCase):
         ret = stage_file(reg_pol, ndr_pack(stage))
         self.assertTrue(ret, 'Failed to create the Registry.pol file')
 
+        # Stage the other Registry.pol
+        entries = []
+        e = preg.entry()
+        e.keyname = 'Software\\Policies\\Samba\\smb_conf\\apply group policies'
+        e.type = 4
+        e.data = 0
+        e.valuename = 'apply group policies'
+        entries.append(e)
+        stage = preg.file()
+        stage.num_entries = len(entries)
+        stage.entries = entries
+        ret = stage_file(reg_pol2, ndr_pack(stage))
+        self.assertTrue(ret, 'Failed to create the Registry.pol file')
+
         with NamedTemporaryFile(suffix='_smb.conf') as f:
             copyfile(self.lp.configfile, f.name)
             lp = LoadParm(f.name)
@@ -5759,6 +5776,22 @@ class GPOTests(tests.TestCase):
             ext = gp_smb_conf_ext(lp, machine_creds,
                                   machine_creds.get_username(), store)
             ext.process_group_policy([], gpos)
+            lp = LoadParm(f.name)
+
+            template_homedir = lp.get('template homedir')
+            self.assertEquals(template_homedir, '/home/samba/%D/%U',
+                              'template homedir was not applied')
+            apply_group_policies = lp.get('apply group policies')
+            self.assertFalse(apply_group_policies,
+                            'apply group policies was not applied')
+            ldap_timeout = lp.get('ldap timeout')
+            self.assertEquals(ldap_timeout, 9999, 'ldap timeout was not applied')
+
+            # Force apply with removal of second GPO
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = gp_db.get_applied_settings([guids[1]])
+            gpos = [gpo for gpo in gpos if gpo.name != guids[1]]
+            ext.process_group_policy(del_gpos, gpos)
             lp = LoadParm(f.name)
 
             template_homedir = lp.get('template homedir')
@@ -5775,7 +5808,6 @@ class GPOTests(tests.TestCase):
             self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
-            gp_db = store.get_gplog(machine_creds.get_username())
             del_gpos = get_deleted_gpos_list(gp_db, [])
             ext.process_group_policy(del_gpos, [])
 
