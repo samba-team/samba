@@ -747,7 +747,7 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 		 * ucf_flags_from_smb_request() to
 		 * return UCF_POSIX_PATHNAMES in ucf_flags.
 		 */
-		state->smb1req->posix_pathnames = true;
+		state->smb1req->posix_pathnames = (state->posx != NULL);
 	}
 
 	return NT_STATUS_OK;
