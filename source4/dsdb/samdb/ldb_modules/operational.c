@@ -1100,6 +1100,9 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	/* build a query for PSO objects that apply to any of the SIDs given */
 	sid_filter = talloc_strdup(mem_ctx, "");
+	if (sid_filter == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	for (i = 0; sid_filter && i < num_sids; i++) {
 		struct dom_sid_buf sid_buf;
@@ -1108,10 +1111,9 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			sid_filter,
 			"(msDS-PSOAppliesTo=<SID=%s>)",
 			dom_sid_str_buf(&sid_array[i].sid, &sid_buf));
-	}
-
-	if (sid_filter == NULL) {
-		return ldb_oom(ldb);
+		if (sid_filter == NULL) {
+			return ldb_oom(ldb);
+		}
 	}
 
 	/* only PSOs located in the Password Settings Container are valid */
