@@ -21,18 +21,16 @@ from samba.netcmd.main import samba_tool
 import samba.getopt as options
 
 from samba.auth import system_session
-from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
+from samba.credentials import DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_INVALID_CREDENTIALS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE
-from samba import gensec, dsdb
+from samba import dsdb
 from samba.samdb import SamDB
-import samba.tests
 from samba.tests import delete_force
 from samba.dcerpc import security, samr
-from samba.ndr import ndr_unpack
 from samba.tests.pso import PasswordSettings
 from samba.net import Net
 from samba import NTSTATUSError, ntstatus
