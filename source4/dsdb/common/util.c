@@ -5396,7 +5396,7 @@ static const char * const secret_attributes[] = {
 bool dsdb_attr_in_rodc_fas(const struct dsdb_attribute *sa)
 {
 	/* they never get secret attributes */
-	if (is_attr_in_list(secret_attributes, sa->lDAPDisplayName)) {
+	if (ldb_attr_in_list(secret_attributes, sa->lDAPDisplayName)) {
 		return false;
 	}
 
@@ -5549,18 +5549,6 @@ bool dsdb_attr_in_parse_tree(struct ldb_parse_tree *tree,
                return false;
        }
        return false;
-}
-
-bool is_attr_in_list(const char * const * attrs, const char *attr)
-{
-	unsigned int i;
-
-	for (i = 0; attrs[i]; i++) {
-		if (ldb_attr_cmp(attrs[i], attr) == 0)
-			return true;
-	}
-
-	return false;
 }
 
 int dsdb_werror_at(struct ldb_context *ldb, int ldb_ecode, WERROR werr,

@@ -346,7 +346,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 			const char * const *attrs = ac->req->op.search.attrs;
 
 			if (attrs != NULL) {
-				bl_requested = is_attr_in_list(attrs,
+				bl_requested = ldb_attr_in_list(attrs,
 						attribute->lDAPDisplayName);
 			} else {
 				bl_requested = false;
@@ -554,11 +554,11 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 		}
 
 		/* check if attrs only is specified, in that case check whether we need to modify them */
-		if (req->op.search.attrs && !is_attr_in_list(req->op.search.attrs, "*")) {
-			if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
+		if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
+			if (! ldb_attr_in_list(req->op.search.attrs, "objectGUID")) {
 				ac->remove_guid = true;
 			}
-			if (! is_attr_in_list(req->op.search.attrs, "objectSid")) {
+			if (! ldb_attr_in_list(req->op.search.attrs, "objectSid")) {
 				ac->remove_sid = true;
 			}
 			if (ac->remove_guid || ac->remove_sid) {

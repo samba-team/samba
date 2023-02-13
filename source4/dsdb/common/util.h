@@ -45,8 +45,6 @@
 #define DSDB_REPLMD_VANISH_LINKS              0x10000
 #define DSDB_MARK_REQ_UNTRUSTED               0x20000
 
-bool is_attr_in_list(const char * const * attrs, const char *attr);
-
 #define DSDB_SECRET_ATTRIBUTES_EX(sep) \
 	"pekList" sep \
 	"msDS-ExecuteScriptPassword" sep \
