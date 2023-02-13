@@ -2126,21 +2126,21 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
         update_forest_info.entries = entries
 
         if enable_all:
-            for i, r in enumerate(update_forest_info.entries):
+            for r in update_forest_info.entries:
                 if r.type != lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME:
                     continue
-                if update_forest_info.entries[i].flags == 0:
+                if r.flags == 0:
                     continue
-                update_forest_info.entries[i].time = 0
-                update_forest_info.entries[i].flags &= ~lsa.LSA_TLN_DISABLED_MASK
-            for i, r in enumerate(update_forest_info.entries):
+                r.time = 0
+                r.flags &= ~lsa.LSA_TLN_DISABLED_MASK
+            for r in update_forest_info.entries:
                 if r.type != lsa.LSA_FOREST_TRUST_DOMAIN_INFO:
                     continue
-                if update_forest_info.entries[i].flags == 0:
+                if r.flags == 0:
                     continue
-                update_forest_info.entries[i].time = 0
-                update_forest_info.entries[i].flags &= ~lsa.LSA_NB_DISABLED_MASK
-                update_forest_info.entries[i].flags &= ~lsa.LSA_SID_DISABLED_MASK
+                r.time = 0
+                r.flags &= ~lsa.LSA_NB_DISABLED_MASK
+                r.flags &= ~lsa.LSA_SID_DISABLED_MASK
 
         for tln in enable_tln:
             idx = None
