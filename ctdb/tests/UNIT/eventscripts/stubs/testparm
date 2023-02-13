@@ -44,29 +44,22 @@ fi
 # the global one, unless some other file is specified.
 
 file=""
-parameter=""
+param=""
 for i; do
 	case "$i" in
-	--parameter-name=*) parameter="${i#--parameter-name=}" ;;
+	--parameter-name=*) param="${i#--parameter-name=}" ;;
 	-*) : ;;
 	*) file="$i" ;;
 	esac
 done
 
-# Just hard-code parameter requests for now.  Later on they could be
-# parsed out of the file.
-case "$parameter" in
-security)
-	echo "ADS"
+# Parse out parameter request
+if [ -n "$param" ]; then
+	sed -n \
+	    -e "s|^[[:space:]]*${param}[[:space:]]*=[[:space:]]\(..*\)|\1|p" \
+	    "${file:-"${CTDB_SYS_ETCDIR}/samba/smb.conf"}"
 	exit 0
-	;;
-smb*ports)
-	echo "445 139"
-	exit 0
-	;;
-?*) not_implemented "--parameter-name=$parameter" ;;
-	# Fall through if $parameter not set
-esac
+fi
 
 if [ -n "$file" ]; then
 	# This should include the shares, since this is used when the

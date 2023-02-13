@@ -109,21 +109,24 @@ testparm_background_update()
 	testparm_foreground_update "$_timeout" >/dev/null 2>&1 </dev/null &
 }
 
-testparm_cat()
+testparm_get ()
 {
-	testparm -s "$smbconf_cache" "$@" 2>/dev/null
+	_param="$1"
+
+	sed -n \
+	    -e "s|^[[:space:]]*${_param}[[:space:]]*=[[:space:]]\(..*\)|\1|p" \
+	    "$smbconf_cache"
+
 }
 
 list_samba_shares()
 {
-	testparm_cat |
-		sed -n -e 's@^[[:space:]]*path[[:space:]]*=[[:space:]]@@p' |
-		sed -e 's/"//g'
+	testparm_get "path" | sed -e 's/"//g'
 }
 
 list_samba_ports()
 {
-	testparm_cat --parameter-name="smb ports"
+	testparm_get "smb ports"
 }
 
 ###########################
