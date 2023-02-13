@@ -891,6 +891,12 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			"%s:%c,",
 			dom_sid_str_buf(&sid, &buf),
 			pcolon[1]);
+		if (us_acl == NULL) {
+			d_fprintf(stderr,
+				  _("net usershare add: talloc_asprintf_append() failed\n"));
+			TALLOC_FREE(ctx);
+			return -1;
+		}
 
 		/* Move to the next ACL entry. */
 		if (pcolon[2] == ',') {
@@ -964,6 +970,13 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 
 	/* Create the in-memory image of the file. */
 	file_img = talloc_strdup(ctx, "#VERSION 2\npath=");
+	if (file_img == NULL) {
+		d_fprintf(stderr,
+			  _("net usershare add: talloc_strdup() failed\n"));
+		TALLOC_FREE(ctx);
+		close(tmpfd);
+		return -1;
+	}
 	file_img = talloc_asprintf_append(file_img,
 			"%s\ncomment=%s\nusershare_acl=%s\n"
 			"guest_ok=%c\nsharename=%s\n",
@@ -972,6 +985,13 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			us_acl,
 			guest_ok ? 'y' : 'n',
 			cp_sharename);
+	if (file_img == NULL) {
+		d_fprintf(stderr,
+			  _("net usershare add: talloc_asprintf_append() failed\n"));
+		TALLOC_FREE(ctx);
+		close(tmpfd);
+		return -1;
+	}
 
 	to_write = strlen(file_img);
 
