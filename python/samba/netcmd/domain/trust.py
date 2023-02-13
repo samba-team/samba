@@ -1036,6 +1036,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
         incoming_blob = generate_AuthInOutBlob(incoming_secret, update_time)
         outgoing_blob = generate_AuthInOutBlob(outgoing_secret, update_time)
 
+        local_tdo_handle = None
+        remote_tdo_handle = None
+
         try:
             if remote_trust_info:
                 self.outf.write("Creating remote TDO.\n")
