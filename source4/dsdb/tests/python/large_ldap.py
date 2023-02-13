@@ -98,7 +98,6 @@ class ManyLDAPTest(samba.tests.TestCase):
             self.fail(msg="This test is only valid on ldap")
 
         count = 0
-        msg1 = None
         search1 = self.ldb.search_iterator(base=self.ou_dn,
                                            expression="(ou=" + self.OU_NAME_MANY + "*)",
                                            scope=ldb.SCOPE_SUBTREE,
@@ -107,7 +106,7 @@ class ManyLDAPTest(samba.tests.TestCase):
         for reply in search1:
             self.assertIsInstance(reply, ldb.Message)
             count += 1
-        res1 = search1.result()
+        search1.result()
 
         # Check we got everything
         self.assertEqual(count, 2001)
@@ -161,7 +160,6 @@ class LargeLDAPTest(samba.tests.TestCase):
             self.fail(msg="This test is only valid on ldap")
 
         count = 0
-        msg1 = None
         search1 = self.ldb.search_iterator(base=self.ou_dn,
                                            expression="(sAMAccountName=" + self.USER_NAME + "*)",
                                            scope=ldb.SCOPE_SUBTREE,
@@ -171,14 +169,13 @@ class LargeLDAPTest(samba.tests.TestCase):
             self.assertIsInstance(reply, ldb.Message)
             count += 1
 
-        res1 = search1.result()
+        search1.result()
 
         self.assertEqual(count, 200)
 
         # Now try breaking the 256MB limit
 
         count_jpeg = 0
-        msg1 = None
         search1 = self.ldb.search_iterator(base=self.ou_dn,
                                            expression="(sAMAccountName=" + self.USER_NAME + "*)",
                                            scope=ldb.SCOPE_SUBTREE,
@@ -186,7 +183,6 @@ class LargeLDAPTest(samba.tests.TestCase):
         try:
             for reply in search1:
                 self.assertIsInstance(reply, ldb.Message)
-                msg1 = reply
                 count_jpeg += 1
         except LdbError as err:
             enum = err.args[0]
@@ -206,7 +202,6 @@ class LargeLDAPTest(samba.tests.TestCase):
         # Now try for just 100MB (server will do some chunking for this)
 
         count_jpeg2 = 0
-        msg1 = None
         try:
             search1 = self.ldb.search_iterator(base=self.ou_dn,
                                                expression="(sAMAccountName=" + self.USER_NAME + "1*)",
@@ -219,7 +214,6 @@ class LargeLDAPTest(samba.tests.TestCase):
 
         for reply in search1:
             self.assertIsInstance(reply, ldb.Message)
-            msg1 = reply
             count_jpeg2 += 1
 
         # Assert we got some entries
@@ -231,7 +225,6 @@ class LargeLDAPTest(samba.tests.TestCase):
             self.fail(msg="This test is only valid on ldap")
 
         count = 0
-        msg1 = None
         search1 = self.ldb.search_iterator(base=self.ou_dn,
                                            expression="(&(objectClass=user)(sAMAccountName=" + self.USER_NAME + "*))",
                                            scope=ldb.SCOPE_SUBTREE,
@@ -240,14 +233,13 @@ class LargeLDAPTest(samba.tests.TestCase):
         for reply in search1:
             self.assertIsInstance(reply, ldb.Message)
             count += 1
-        res1 = search1.result()
+        search1.result()
 
         self.assertEqual(count, 200)
 
         # Now try breaking the 256MB limit
 
         count_jpeg = 0
-        msg1 = None
         search1 = self.ldb.search_iterator(base=self.ou_dn,
                                            expression="(&(objectClass=user)(sAMAccountName=" + self.USER_NAME + "*))",
                                            scope=ldb.SCOPE_SUBTREE,
