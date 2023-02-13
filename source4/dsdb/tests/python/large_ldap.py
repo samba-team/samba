@@ -34,14 +34,9 @@ import samba.getopt as options
 from samba.auth import system_session
 from samba import ldb, sd_utils
 from samba.samdb import SamDB
-from samba.ndr import ndr_unpack
-from samba import gensec
-from samba.credentials import Credentials
 import samba.tests
 
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
-from ldb import ERR_TIME_LIMIT_EXCEEDED, ERR_ADMIN_LIMIT_EXCEEDED, ERR_UNWILLING_TO_PERFORM
-from ldb import Message
+from ldb import LdbError
 
 parser = optparse.OptionParser("large_ldap.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
