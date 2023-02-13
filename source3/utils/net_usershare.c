@@ -961,7 +961,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	if (fchmod(tmpfd, 0644) == -1) {
 		d_fprintf(stderr,
 			  _("net usershare add: failed to fchmod tmp file %s "
-			    "to 0644n"),
+			    "to 0644\n"),
 			  full_path_tmp );
 		TALLOC_FREE(ctx);
 		close(tmpfd);
