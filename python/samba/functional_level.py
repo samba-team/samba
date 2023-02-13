@@ -50,7 +50,7 @@ def level_to_string(level):
         return "invalid"
     strings = {
         DS_DOMAIN_FUNCTION_2000: "2000",
-        DS_DOMAIN_FUNCTION_2003_MIXED: \
+        DS_DOMAIN_FUNCTION_2003_MIXED:
             "2003 with mixed domains/interim (NT4 DC support)",
         DS_DOMAIN_FUNCTION_2003: "2003",
         DS_DOMAIN_FUNCTION_2008: "2008",

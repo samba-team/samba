@@ -307,9 +307,9 @@ class cmd_domain_provision(Command):
 
         if use_xattrs == "yes":
             eadb = False
-        elif use_xattrs == "auto" and use_ntvfs == False:
+        elif use_xattrs == "auto" and not use_ntvfs:
             eadb = False
-        elif use_ntvfs == False:
+        elif not use_ntvfs:
             raise CommandError("--use-xattrs=no requires --use-ntvfs (not supported for production use).  "
                                "Please re-run with --use-xattrs omitted.")
         elif use_xattrs == "auto" and not lp.get("posix:eadb"):
