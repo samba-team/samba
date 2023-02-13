@@ -1185,8 +1185,8 @@ int ldb_modify_default_callback(struct ldb_request *req, struct ldb_reply *ares)
   \param attrs the search attributes for the query (pass NULL if none required)
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
-  \param the parent request if any
+  \param callback the callback function to handle the async replies
+  \param parent the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1224,8 +1224,8 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
   \param message contains the entry to be added
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
-  \param the parent request if any
+  \param callback the callback function to handle the async replies
+  \param parent the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1248,8 +1248,8 @@ int ldb_build_add_req(struct ldb_request **ret_req,
   \param message contains the entry to be modified
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
-  \param the parent request if any
+  \param callback the callback function to handle the async replies
+  \param parent the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1272,8 +1272,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
   \param dn the DN to be deleted
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
-  \param the parent request if any
+  \param callback the callback function to handle the async replies
+  \param parent the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1297,8 +1297,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
   \param newdn the new DN
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
-  \param the parent request if any
+  \param callback the callback function to handle the async replies
+  \param parent the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1470,8 +1470,8 @@ int ldb_extended_default_callback(struct ldb_request *req, struct ldb_reply *are
   it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
-  \param the parent request if any
+  \param callback the callback function to handle the async replies
+  \param parent the parent request if any
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
