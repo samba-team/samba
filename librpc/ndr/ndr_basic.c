@@ -1016,12 +1016,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ipv6address(struct ndr_pull *ndr, int ndr_fl
 	uint8_t addr[IPV6_BYTES];
 	char *addr_str = talloc_strdup(ndr->current_mem_ctx, "");
 	int i;
+	NDR_ERR_HAVE_NO_MEMORY(addr_str);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, ndr_flags, addr, IPV6_BYTES));
 	for (i = 0; i < IPV6_BYTES; ++i) {
 		addr_str = talloc_asprintf_append(addr_str, "%02x", addr[i]);
+		NDR_ERR_HAVE_NO_MEMORY(addr_str);
 		/* We need a ':' every second byte but the last one */
 		if (i%2 == 1 && i != (IPV6_BYTES - 1)) {
 			addr_str = talloc_strdup_append(addr_str, ":");
+			NDR_ERR_HAVE_NO_MEMORY(addr_str);
 		}
 	}
 	*address = addr_str;
