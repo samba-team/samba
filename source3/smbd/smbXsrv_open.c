@@ -246,7 +246,7 @@ static NTSTATUS smbXsrv_open_global_parse_record(
 
 	if (global_blob.info.info0 == NULL) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		DEBUG(1,("Invalid record in smbXsrv_tcon_global.tdb:"
+		DEBUG(1,("Invalid record in smbXsrv_open_global.tdb:"
 			 "key '%s' info0 NULL pointer - %s\n",
 			 tdb_data_dbg(key),
 			 nt_errstr(status)));
