@@ -3421,6 +3421,10 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 		else
 			element_str = talloc_asprintf_append(element_str, ",%s", PyUnicode_AsUTF8(repr));
 		Py_DECREF(repr);
+
+		if (element_str == NULL) {
+			return PyErr_NoMemory();
+		}
 	}
 
 	if (element_str != NULL) {
