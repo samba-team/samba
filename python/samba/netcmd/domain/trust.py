@@ -495,7 +495,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
 
     def run(self, domain, sambaopts=None, versionopts=None, localdcopts=None):
 
-        local_server = self.setup_local_server(sambaopts, localdcopts)
+        self.setup_local_server(sambaopts, localdcopts)
         try:
             local_lsa = self.new_local_lsa_connection()
         except RuntimeError as error:
@@ -631,7 +631,7 @@ class cmd_domain_trust_modify(DomainTrustCommand):
         if num_modifications == 0:
             raise CommandError("modification arguments are required, try --help")
 
-        local_server = self.setup_local_server(sambaopts, localdcopts)
+        self.setup_local_server(sambaopts, localdcopts)
         try:
             local_lsa = self.new_local_lsa_connection()
         except RuntimeError as error:
@@ -933,10 +933,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
         try:
             lsaString.string = local_trust_info.domain_name.string
-            local_old_netbios = \
-                local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                                       lsaString,
-                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                   lsaString,
+                                                   lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
         except NTSTATUSError as error:
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
@@ -946,10 +945,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
         try:
             lsaString.string = local_trust_info.netbios_name.string
-            local_old_dns = \
-                local_lsa.QueryTrustedDomainInfoByName(local_policy,
-                                                       lsaString,
-                                                       lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            local_lsa.QueryTrustedDomainInfoByName(local_policy,
+                                                   lsaString,
+                                                   lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
         except NTSTATUSError as error:
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
@@ -960,10 +958,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
         if remote_trust_info:
             try:
                 lsaString.string = remote_trust_info.domain_name.string
-                remote_old_netbios = \
-                    remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
-                                                            lsaString,
-                                                            lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+                remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
+                                                        lsaString,
+                                                        lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
                 raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
             except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
@@ -973,10 +970,9 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
             try:
                 lsaString.string = remote_trust_info.netbios_name.string
-                remote_old_dns = \
-                    remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
-                                                            lsaString,
-                                                            lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+                remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
+                                                        lsaString,
+                                                        lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
                 raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
             except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
@@ -1211,13 +1207,13 @@ class cmd_domain_trust_create(DomainTrustCommand):
         if remote_tdo_handle is not None:
             try:
                 remote_lsa.Close(remote_tdo_handle)
-            except RuntimeError as error:
+            except RuntimeError:
                 pass
             remote_tdo_handle = None
         if local_tdo_handle is not None:
             try:
                 local_lsa.Close(local_tdo_handle)
-            except RuntimeError as error:
+            except RuntimeError:
                 pass
             local_tdo_handle = None
 
@@ -1261,7 +1257,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
             remote_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
             remote_policy_access |= lsa.LSA_POLICY_CREATE_SECRET
 
-        local_server = self.setup_local_server(sambaopts, localdcopts)
+        self.setup_local_server(sambaopts, localdcopts)
         try:
             local_lsa = self.new_local_lsa_connection()
         except RuntimeError as error:
@@ -1294,7 +1290,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
 
         if remote_policy_access is not None:
             try:
-                remote_server = self.setup_remote_server(credopts, domain)
+                self.setup_remote_server(credopts, domain)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "failed to locate remote server")
 
@@ -1815,14 +1811,14 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             for s in enable_sid_str:
                 try:
                     sid = security.dom_sid(s)
-                except (ValueError, TypeError) as error:
+                except (ValueError, TypeError):
                     raise CommandError("value[%s] specified for --enable-sid is not a valid SID" % s)
                 enable_sid.append(sid)
             disable_sid = []
             for s in disable_sid_str:
                 try:
                     sid = security.dom_sid(s)
-                except (ValueError, TypeError) as error:
+                except (ValueError, TypeError):
                     raise CommandError("value[%s] specified for --disable-sid is not a valid SID" % s)
                 disable_sid.append(sid)
             if len(enable_sid) > 0:
@@ -1937,7 +1933,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             update_spn_vals.extend(stored_spn_vals)
 
             for upn in add_upn:
-                for i, v in enumerate(update_upn_vals):
+                for v in update_upn_vals:
                     if str(v).lower() == upn.lower():
                         raise CommandError("Entry already present for "
                                            "value[%s] specified for "
@@ -1959,7 +1955,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                 replace_upn = True
 
             for spn in add_spn:
-                for i, v in enumerate(update_spn_vals):
+                for v in update_spn_vals:
                     if str(v).lower() == spn.lower():
                         raise CommandError("Entry already present for "
                                            "value[%s] specified for "

@@ -68,7 +68,6 @@ class cmd_domain_demote(Command):
             verbose=False, quiet=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        net = Net(creds, lp, server=credopts.ipaddress)
 
         logger = self.get_logger(verbose=verbose, quiet=quiet)
 
@@ -193,8 +192,6 @@ class cmd_domain_demote(Command):
             raise CommandError("Unable to find object with samaccountName = %s$"
                                " in the remote dc" % netbios_name.upper())
 
-        olduac = uac
-
         uac &= ~(UF_SERVER_TRUST_ACCOUNT |
                  UF_TRUSTED_FOR_DELEGATION |
                  UF_PARTIAL_SECRETS_ACCOUNT)
@@ -218,7 +215,6 @@ class cmd_domain_demote(Command):
 
             raise CommandError("Error while changing account control", e)
 
-        parent = msg.dn.parent()
         dc_name = res[0].dn.get_rdn_value()
         rdn = "CN=%s" % dc_name
 
@@ -329,7 +325,7 @@ class cmd_domain_demote(Command):
             try:
                 remote_samdb.delete(ldb.Dn(remote_samdb,
                                            "%s,%s" % (s, str(newdn))))
-            except ldb.LdbError as l:
+            except ldb.LdbError:
                 pass
 
         # get dns host name for target server to demote, remove dns references

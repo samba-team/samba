@@ -261,7 +261,7 @@ class cmd_domain_provision(Command):
 
         try:
             dom_for_fun_level = functional_level.string_to_level(function_level)
-        except KeyError as e:
+        except KeyError:
             raise CommandError(f"'{function_level}' is not a valid domain level")
 
         if adprep_level is None:

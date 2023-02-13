@@ -61,7 +61,6 @@ class cmd_domain_dcpromo(Command):
             backend_store=None, backend_store_size=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        net = Net(creds, lp, server=credopts.ipaddress)
 
         logger = self.get_logger(verbose=verbose, quiet=quiet)
 
