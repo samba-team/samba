@@ -22,7 +22,7 @@ class BasePasswordTestCase(PasswordTestCase):
             pass
 
     def _open_samr_user(self, res):
-        self.assertTrue("objectSid" in res[0])
+        self.assertIn("objectSid", res[0])
 
         (domain_sid, rid) = ndr_unpack(security.dom_sid, res[0]["objectSid"][0]).split()
         self.assertEqual(self.domain_sid, domain_sid)
@@ -31,9 +31,9 @@ class BasePasswordTestCase(PasswordTestCase):
 
     def _check_attribute(self, res, name, value):
         if value is None:
-            self.assertTrue(name not in res[0],
-                            msg="attr[%s]=%r on dn[%s]" %
-                            (name, res[0], res[0].dn))
+            self.assertNotIn(name, res[0],
+                             msg="attr[%s]=%r on dn[%s]" %
+                             (name, res[0], res[0].dn))
             return
 
         if isinstance(value, tuple):
@@ -45,17 +45,17 @@ class BasePasswordTestCase(PasswordTestCase):
             return
 
         if mode == "absent":
-            self.assertFalse(name in res[0],
+            self.assertNotIn(name, res[0],
                              msg="attr[%s] not missing on dn[%s]" %
                              (name, res[0].dn))
             return
 
-        self.assertTrue(name in res[0],
-                        msg="attr[%s] missing on dn[%s]" %
-                        (name, res[0].dn))
-        self.assertTrue(len(res[0][name]) == 1,
-                        msg="attr[%s]=%r on dn[%s]" %
-                        (name, res[0][name], res[0].dn))
+        self.assertIn(name, res[0],
+                      msg="attr[%s] missing on dn[%s]" %
+                      (name, res[0].dn))
+        self.assertEqual(1, len(res[0][name]),
+                         msg="attr[%s]=%r on dn[%s]" %
+                         (name, res[0][name], res[0].dn))
 
         self.debug("%s = '%s'" % (name, res[0][name][0]))
 
@@ -70,22 +70,22 @@ class BasePasswordTestCase(PasswordTestCase):
                    (name, v, value, res[0].dn, v - value,
                     ('less' if v < value else 'greater')))
 
-            self.assertTrue(v == value, msg)
+            self.assertEqual(v, value, msg)
             return
 
         if mode == "greater":
             v = int(res[0][name][0])
-            self.assertTrue(v > int(value),
-                            msg="attr[%s]=[%s] <= [%s] on dn[%s] (diff %d)" %
-                            (name, v, int(value), res[0].dn, v - int(value)))
+            self.assertGreater(v, int(value),
+                               msg="attr[%s]=[%s] <= [%s] on dn[%s] (diff %d)" %
+                               (name, v, int(value), res[0].dn, v - int(value)))
             return
         if mode == "less":
             v = int(res[0][name][0])
-            self.assertTrue(v < int(value),
+            self.assertLess(v, int(value),
                             msg="attr[%s]=[%s] >= [%s] on dn[%s] (diff %d)" %
                             (name, v, int(value), res[0].dn, v - int(value)))
             return
-        self.assertEqual(mode, not mode, "Invalid Mode[%s]" % mode)
+        self.fail("Invalid Mode[%s]" % mode)
 
     def _check_account_initial(self, userdn):
         self._check_account(userdn,
@@ -130,7 +130,7 @@ class BasePasswordTestCase(PasswordTestCase):
         time.sleep(0.01)
 
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
-        self.assertTrue(len(res) == 1)
+        self.assertEqual(1, len(res))
         self._check_attribute(res, "badPwdCount", badPwdCount)
         self._check_attribute(res, "lockoutTime", lockoutTime)
         self._check_attribute(res, "badPasswordTime", badPasswordTime)
