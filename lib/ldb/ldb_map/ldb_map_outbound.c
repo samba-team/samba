@@ -546,6 +546,7 @@ static bool ldb_parse_tree_check_splittable(const struct ldb_parse_tree *tree)
 /* Collect a list of attributes required to match a given parse tree. */
 static int ldb_parse_tree_collect_attrs(struct ldb_module *module, void *mem_ctx, const char ***attrs, const struct ldb_parse_tree *tree)
 {
+	const char *attr = NULL;
 	const char **new_attrs;
 	unsigned int i;
 	int ret;
@@ -570,7 +571,11 @@ static int ldb_parse_tree_collect_attrs(struct ldb_module *module, void *mem_ctx
 		return ldb_parse_tree_collect_attrs(module, mem_ctx, attrs, tree->u.isnot.child);
 
 	default:			/* single attribute in tree */
-		new_attrs = ldb_attr_list_copy_add(mem_ctx, *attrs, tree->u.equality.attr);
+		attr = ldb_parse_tree_get_attr(tree);
+		new_attrs = ldb_attr_list_copy_add(mem_ctx, *attrs, attr);
+		if (new_attrs == NULL) {
+			return ldb_module_oom(module);
+		}
 		talloc_free(*attrs);
 		*attrs = new_attrs;
 		return 0;

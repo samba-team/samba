@@ -799,27 +799,27 @@ char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, const struct ldb_parse_tree *tre
 		ret = s;
 		return ret;
 	case LDB_OP_GREATER:
-		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		s = ldb_binary_encode(mem_ctx, tree->u.comparison.value);
 		if (s == NULL) return NULL;
 		ret = talloc_asprintf(mem_ctx, "(%s>=%s)", 
-				      tree->u.equality.attr, s);
+				      tree->u.comparison.attr, s);
 		talloc_free(s);
 		return ret;
 	case LDB_OP_LESS:
-		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		s = ldb_binary_encode(mem_ctx, tree->u.comparison.value);
 		if (s == NULL) return NULL;
 		ret = talloc_asprintf(mem_ctx, "(%s<=%s)", 
-				      tree->u.equality.attr, s);
+				      tree->u.comparison.attr, s);
 		talloc_free(s);
 		return ret;
 	case LDB_OP_PRESENT:
 		ret = talloc_asprintf(mem_ctx, "(%s=*)", tree->u.present.attr);
 		return ret;
 	case LDB_OP_APPROX:
-		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		s = ldb_binary_encode(mem_ctx, tree->u.comparison.value);
 		if (s == NULL) return NULL;
 		ret = talloc_asprintf(mem_ctx, "(%s~=%s)", 
-				      tree->u.equality.attr, s);
+				      tree->u.comparison.attr, s);
 		talloc_free(s);
 		return ret;
 	case LDB_OP_EXTENDED:
@@ -895,11 +895,15 @@ static int parse_tree_attr_replace(struct ldb_parse_tree *tree, void *private_co
 	struct parse_tree_attr_replace_ctx *ctx = private_context;
 	switch (tree->operation) {
 	case LDB_OP_EQUALITY:
+		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
+			tree->u.equality.attr = ctx->replace;
+		}
+		break;
 	case LDB_OP_GREATER:
 	case LDB_OP_LESS:
 	case LDB_OP_APPROX:
-		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
-			tree->u.equality.attr = ctx->replace;
+		if (ldb_attr_cmp(tree->u.comparison.attr, ctx->attr) == 0) {
+			tree->u.comparison.attr = ctx->replace;
 		}
 		break;
 	case LDB_OP_SUBSTRING:
