@@ -135,7 +135,6 @@ static const struct smbd_smb2_dispatch_table {
 		.as_root = true,
 	},{
 		.opcode = SMB2_OP_KEEPALIVE,
-		.as_root = true,
 	},{
 		.opcode = SMB2_OP_QUERY_DIRECTORY,
 		.need_session = true,
@@ -3415,7 +3414,7 @@ skipped_signing:
 		SMB_ASSERT(call->fileid_ofs == 0);
 		/* This call needs to be run as root */
 		change_to_root_user();
-	} else {
+	} else if (opcode != SMB2_OP_KEEPALIVE) {
 		SMB_ASSERT(call->need_tcon);
 	}
 
