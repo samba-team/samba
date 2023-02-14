@@ -87,11 +87,6 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 		return LDB_SUCCESS;
 	}
 
-	if (ldb_msg_element_is_inaccessible(el)) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
 	/*
 	 * If the value to match is present in the attribute values of the
 	 * current entry being visited, set matched to true and return OK
