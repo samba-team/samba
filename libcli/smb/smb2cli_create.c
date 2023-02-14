@@ -429,6 +429,7 @@ static void smb2cli_create_done(struct tevent_req *subreq)
 	body = (uint8_t *)iov[1].iov_base;
 
 	state->cr.oplock_level  = CVAL(body, 2);
+	state->cr.flags         = CVAL(body, 3);
 	state->cr.create_action = IVAL(body, 4);
 	state->cr.creation_time = BVAL(body, 8);
 	state->cr.last_access_time = BVAL(body, 16);

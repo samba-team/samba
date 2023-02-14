@@ -40,6 +40,7 @@ struct smb2_create_blobs {
 
 struct smb_create_returns {
 	uint8_t oplock_level;
+	uint8_t flags;
 	uint32_t create_action;
 	NTTIME creation_time;
 	NTTIME last_access_time;
