@@ -99,11 +99,6 @@ static int ldb_match_present(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	if (ldb_msg_element_is_inaccessible(el)) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
 	a = ldb_schema_attribute_by_name(ldb, el->name);
 	if (!a) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
@@ -141,11 +136,6 @@ static int ldb_match_comparison(struct ldb_context *ldb,
 
 	el = ldb_msg_find_element(msg, tree->u.comparison.attr);
 	if (el == NULL) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
-	if (ldb_msg_element_is_inaccessible(el)) {
 		*matched = false;
 		return LDB_SUCCESS;
 	}
@@ -216,11 +206,6 @@ static int ldb_match_equality(struct ldb_context *ldb,
 	   operation without the attribute type defined */
 	el = ldb_msg_find_element(msg, tree->u.equality.attr);
 	if (el == NULL) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
-	if (ldb_msg_element_is_inaccessible(el)) {
 		*matched = false;
 		return LDB_SUCCESS;
 	}
@@ -425,11 +410,6 @@ static int ldb_match_substring(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	if (ldb_msg_element_is_inaccessible(el)) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
 	for (i = 0; i < el->num_values; i++) {
 		int ret;
 		ret = ldb_wildcard_compare(ldb, tree, el->values[i], matched);
@@ -499,11 +479,6 @@ static int ldb_match_bitmask(struct ldb_context *ldb,
 	/* find the message element */
 	el = ldb_msg_find_element(msg, attribute_to_match);
 	if (el == NULL) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
-	if (ldb_msg_element_is_inaccessible(el)) {
 		*matched = false;
 		return LDB_SUCCESS;
 	}
@@ -596,6 +571,26 @@ static int ldb_match_extended(struct ldb_context *ldb,
 			      &tree->u.extended.value, matched);
 }
 
+static bool ldb_must_suppress_match(const struct ldb_message *msg,
+				    const struct ldb_parse_tree *tree)
+{
+	const char *attr = NULL;
+	struct ldb_message_element *el = NULL;
+
+	attr = ldb_parse_tree_get_attr(tree);
+	if (attr == NULL) {
+		return false;
+	}
+
+	/* find the message element */
+	el = ldb_msg_find_element(msg, attr);
+	if (el == NULL) {
+		return false;
+	}
+
+	return ldb_msg_element_is_inaccessible(el);
+}
+
 /*
   Check if a particular message will match the given filter
 
@@ -618,6 +613,17 @@ int ldb_match_message(struct ldb_context *ldb,
 	if (scope != LDB_SCOPE_BASE && ldb_dn_is_special(msg->dn)) {
 		/* don't match special records except on base searches */
 		return LDB_SUCCESS;
+	}
+
+	/*
+	 * Suppress matches on confidential attributes (handled
+	 * manually in extended matches as these can do custom things
+	 * like read other parts of the DB or other attributes).
+	 */
+	if (tree->operation != LDB_OP_EXTENDED) {
+		if (ldb_must_suppress_match(msg, tree)) {
+			return LDB_SUCCESS;
+		}
 	}
 
 	switch (tree->operation) {
