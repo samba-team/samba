@@ -742,7 +742,7 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 	/* We got access denied here. If we're already root,
 	   or we didn't need to do a chown, or the fsp isn't
 	   open with WRITE_OWNER access, just return. */
-	if (get_current_uid(handle->conn) == 0 || chown_needed == false ||
+	if (get_current_uid(handle->conn) == 0 || !chown_needed ||
 	    !(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
