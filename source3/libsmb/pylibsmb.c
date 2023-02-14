@@ -991,9 +991,11 @@ static PyObject *py_cli_create_returns(const struct smb_create_returns *r)
 	PyObject *v = NULL;
 
 	v = Py_BuildValue(
-		"{sLsLsLsLsLsLsLsLsL}",
+		"{sLsLsLsLsLsLsLsLsLsL}",
 		"oplock_level",
 		(unsigned long long)r->oplock_level,
+		"flags",
+		(unsigned long long)r->flags,
 		"create_action",
 		(unsigned long long)r->create_action,
 		"creation_time",
