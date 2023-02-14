@@ -1005,7 +1005,6 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 	struct dirsync_context *dsc;
 	struct ldb_context *ldb;
 	struct ldb_parse_tree *new_tree = req->op.search.tree;
-	uint32_t flags = 0;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	const char **attrs;
@@ -1117,13 +1116,8 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 			return ret;
 		}
 		talloc_free(acl_res);
-	} else {
-		flags |= DSDB_ACL_CHECKS_DIRSYNC_FLAG;
-
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
+	} else if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	dsc->functional_level = dsdb_functional_level(ldb);
@@ -1394,7 +1388,6 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 				      req->controls,
 				      dsc, dirsync_search_callback,
 				      req);
-	ldb_req_set_custom_flags(down_req, flags);
 	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
