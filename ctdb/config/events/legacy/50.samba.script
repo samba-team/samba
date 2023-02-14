@@ -123,8 +123,7 @@ list_samba_shares()
 
 list_samba_ports()
 {
-	testparm_cat --parameter-name="smb ports" |
-		sed -e 's@,@ @g'
+	testparm_cat --parameter-name="smb ports"
 }
 
 ###########################

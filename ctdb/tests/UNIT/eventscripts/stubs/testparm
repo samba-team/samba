@@ -61,7 +61,7 @@ security)
 	exit 0
 	;;
 smb*ports)
-	echo "445, 139"
+	echo "445 139"
 	exit 0
 	;;
 ?*) not_implemented "--parameter-name=$parameter" ;;
