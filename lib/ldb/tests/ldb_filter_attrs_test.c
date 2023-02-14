@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <setjmp.h>
 #include <cmocka.h>
 
@@ -96,10 +97,10 @@ static void test_filter_attrs_one_attr_matched(void **state)
 
 	const char *attrs[] = {"foo", NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
@@ -130,9 +131,9 @@ static void test_filter_attrs_one_attr_matched(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "foo");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value));
+			 strlen(value));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value, sizeof(value));
+			    value, strlen(value));
 }
 
 /*
@@ -148,10 +149,10 @@ static void test_filter_attrs_one_attr_matched_of_many(void **state)
 
 	const char *attrs[] = {"foo", "bar", "baz", NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
@@ -182,9 +183,9 @@ static void test_filter_attrs_one_attr_matched_of_many(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "foo");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value));
+			 strlen(value));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value, sizeof(value));
+			    value, strlen(value));
 }
 
 /*
@@ -201,15 +202,15 @@ static void test_filter_attrs_two_attr_matched_attrs(void **state)
 	/* deliberately the other order */
 	const char *attrs[] = {"bar", "foo", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 
 	/* foo and bar are the other order to in attrs */
@@ -251,15 +252,15 @@ static void test_filter_attrs_two_attr_matched_attrs(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "foo");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value1));
+			 strlen(value1));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value1, sizeof(value1));
+			    value1, strlen(value1));
 	assert_string_equal(filtered_msg->elements[1].name, "bar");
 	assert_int_equal(filtered_msg->elements[1].num_values, 1);
 	assert_int_equal(filtered_msg->elements[1].values[0].length,
-			 sizeof(value2));
+			 strlen(value2));
 	assert_memory_equal(filtered_msg->elements[1].values[0].data,
-			    value2, sizeof(value2));
+			    value2, strlen(value2));
 }
 
 /*
@@ -276,15 +277,15 @@ static void test_filter_attrs_two_attr_matched_one_attr(void **state)
 	/* deliberately the other order */
 	const char *attrs[] = {"bar", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 
 	/* foo and bar are the other order to in attrs */
@@ -326,9 +327,9 @@ static void test_filter_attrs_two_attr_matched_one_attr(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "bar");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value2));
+			 strlen(value2));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value2, sizeof(value2));
+			    value2, strlen(value2));
 }
 
 /*
@@ -345,15 +346,15 @@ static void test_filter_attrs_two_dup_attr_matched_one_attr(void **state)
 	/* deliberately the other order */
 	const char *attrs[] = {"bar", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 
 	/* foo and bar are the other order to in attrs */
@@ -400,15 +401,15 @@ static void test_filter_attrs_two_dup_attr_matched_dup(void **state)
 
 	const char *attrs[] = {"bar", "bar", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 
 	/* foo and bar are the other order to in attrs */
@@ -445,15 +446,15 @@ static void test_filter_attrs_two_dup_attr_matched_dup(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "bar");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value1));
+			 strlen(value1));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value1, sizeof(value1));
+			    value1, strlen(value1));
 	assert_string_equal(filtered_msg->elements[1].name, "bar");
 	assert_int_equal(filtered_msg->elements[1].num_values, 1);
 	assert_int_equal(filtered_msg->elements[1].values[0].length,
-			 sizeof(value2));
+			 strlen(value2));
 	assert_memory_equal(filtered_msg->elements[1].values[0].data,
-			    value2, sizeof(value2));
+			    value2, strlen(value2));
 }
 
 /*
@@ -469,15 +470,15 @@ static void test_filter_attrs_two_dup_attr_matched_one_of_two(void **state)
 
 	const char *attrs[] = {"bar", "foo", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 
 	/* foo and bar are the other order to in attrs */
@@ -514,15 +515,15 @@ static void test_filter_attrs_two_dup_attr_matched_one_of_two(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "bar");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value1));
+			 strlen(value1));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value1, sizeof(value1));
+			    value1, strlen(value1));
 	assert_string_equal(filtered_msg->elements[1].name, "bar");
 	assert_int_equal(filtered_msg->elements[1].num_values, 1);
 	assert_int_equal(filtered_msg->elements[1].values[0].length,
-			 sizeof(value2));
+			 strlen(value2));
 	assert_memory_equal(filtered_msg->elements[1].values[0].data,
-			    value2, sizeof(value2));
+			    value2, strlen(value2));
 }
 
 /*
@@ -538,15 +539,15 @@ static void test_filter_attrs_two_dup_attr_matched_star(void **state)
 
 	const char *attrs[] = {"*", "foo", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 
 	/* foo and bar are the other order to in attrs */
@@ -586,15 +587,15 @@ static void test_filter_attrs_two_dup_attr_matched_star(void **state)
 	assert_string_equal(filtered_msg->elements[0].name, "bar");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
 	assert_int_equal(filtered_msg->elements[0].values[0].length,
-			 sizeof(value1));
+			 strlen(value1));
 	assert_memory_equal(filtered_msg->elements[0].values[0].data,
-			    value1, sizeof(value1));
+			    value1, strlen(value1));
 	assert_string_equal(filtered_msg->elements[1].name, "bar");
 	assert_int_equal(filtered_msg->elements[1].num_values, 1);
 	assert_int_equal(filtered_msg->elements[1].values[0].length,
-			 sizeof(value2));
+			 strlen(value2));
 	assert_memory_equal(filtered_msg->elements[1].values[0].data,
-			    value2, sizeof(value2));
+			    value2, strlen(value2));
 	/*
 	 * assert the ldb_filter_attrs does not modify filtered_msg.dn
 	 * in this case
@@ -619,10 +620,10 @@ static void test_filter_attrs_one_attr_matched_star(void **state)
 
 	const char *attrs[] = {"*", NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
@@ -676,15 +677,15 @@ static void test_filter_attrs_two_attr_matched_star(void **state)
 
 	const char *attrs[] = {"*", NULL};
 
-	uint8_t value1[] = "The value.......end";
-	uint8_t value2[] = "The value..MUST.end";
+	char value1[] = "The value.......end";
+	char value2[] = "The value..MUST.end";
 	struct ldb_val value_1 = {
-		.data   = value1,
-		.length = (sizeof(value1))
+		.data   = (uint8_t *)value1,
+		.length = strlen(value1)
 	};
 	struct ldb_val value_2 = {
-		.data   = value2,
-		.length = (sizeof(value2))
+		.data   = (uint8_t *)value2,
+		.length = strlen(value2)
 	};
 	struct ldb_message_element elements[] = {
 		{
@@ -750,10 +751,10 @@ static void test_filter_attrs_one_attr_matched_star_no_dn(void **state)
 
 	const char *attrs[] = {"*", NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
@@ -789,10 +790,10 @@ static void test_filter_attrs_one_attr_matched_star_dn(void **state)
 
 	const char *attrs[] = {"*", "distinguishedName", NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
@@ -844,10 +845,10 @@ static void test_filter_attrs_one_attr_matched_dn(void **state)
 
 	const char *attrs[] = {"distinguishedName", NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
@@ -894,10 +895,10 @@ static void test_filter_attrs_one_attr_empty_list(void **state)
 
 	const char *attrs[] = {NULL};
 
-	uint8_t value[] = "The value.......end";
+	char value[] = "The value.......end";
 	struct ldb_val value_1 = {
-		.data   = value,
-		.length = (sizeof(value))
+		.data   = (uint8_t *)value,
+		.length = strlen(value)
 	};
 	struct ldb_message_element element_1 = {
 		.name = "foo",
