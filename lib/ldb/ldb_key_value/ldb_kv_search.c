@@ -158,7 +158,8 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 			talloc_free(data_parse.data);
 		}
 
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %*.*s\n",
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  __location__ ": Invalid data for index %*.*s\n",
 			  (int)key.length, (int)key.length, key.data);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
