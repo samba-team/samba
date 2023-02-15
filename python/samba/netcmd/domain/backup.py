@@ -56,6 +56,7 @@ from samba.dsdb import _dsdb_load_udv_v2
 from samba.ndr import ndr_pack
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba import safe_tarfile as tarfile
+import hashlib
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -131,6 +132,14 @@ def get_timestamp():
 def backup_filepath(targetdir, name, time_str):
     filename = 'samba-backup-%s-%s.tar.bz2' % (name, time_str)
     return os.path.join(targetdir, filename)
+
+
+def create_sha256sum(filename):
+    hash = hashlib.new('sha256')
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            hash.update(chunk)
+    return hash.hexdigest()
 
 
 def create_backup_tar(logger, tmpdir, backup_filepath):
@@ -1228,19 +1237,35 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         os.remove(backup_fn)
 
         logger.info('building backup tar')
+
+        chksum_list = []
+
         for path in all_files:
             arc_path = self.get_arc_path(path, paths)
 
             if os.path.exists(path + self.backup_ext):
                 logger.info('   adding backup ' + arc_path + self.backup_ext +
                             ' to tar and deleting file')
+                chksum_list.append(
+                    "%s  %s" % (create_sha256sum(path + self.backup_ext),
+                                arc_path))
                 tar.add(path + self.backup_ext, arcname=arc_path)
                 os.remove(path + self.backup_ext)
             elif path.endswith('.ldb') or path.endswith('.tdb'):
                 logger.info('   skipping ' + arc_path)
             elif os.path.isfile(path):
                 logger.info('   adding misc file ' + arc_path)
+                chksum_list.append("%s  %s" %
+                                   (create_sha256sum(path),
+                                    arc_path))
                 tar.add(path, arcname=arc_path)
+
+        chksum_filepath = os.path.join(temp_tar_dir, "SHA256SUM")
+        with open(chksum_filepath, "w") as f:
+            for c in chksum_list:
+                f.write(c + '\n')
+        tar.add(chksum_filepath, os.path.basename(chksum_filepath))
+        os.remove(chksum_filepath)
 
         tar.close()
         os.rename(temp_tar_name,
