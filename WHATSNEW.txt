@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.18.  This is *not*
+This is the third release candidate of Samba 4.18.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -123,6 +123,28 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   acl_xattr:security_acl_name             New             security.NTACL
+
+
+CHANGES SINCE 4.18.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15301: Improve file_modtime() and issues around smb3 unix test.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15299: Spotlight doesn't work with latest macOS Ventura.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15298: Build failure on solaris with tevent 0.14.0 (and ldb 2.7.0).
+     (tevent 0.14.1 and ldb 2.7.1 are already released...)
+
+o  John Mulligan <jmulligan@redhat.com>
+   * BUG 15307: vfs_ceph incorrectly uses fsp_get_io_fd() instead of
+     fsp_get_pathref_fd() in close and fstat.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15291: test_chdir_cache.sh doesn't work with SMBD_DONT_LOG_STDOUT=1.
+   * BUG 15301: Improve file_modtime() and issues around smb3 unix test.
 
 
 CHANGES SINCE 4.18.0rc1
