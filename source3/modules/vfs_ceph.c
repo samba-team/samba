@@ -66,16 +66,95 @@
 	return _res \
 
 /*
- * We mount only one file system and then all shares are assumed to be in that.
- * FIXME: If we want to support more than one FS, then we have to deal with
- * this differently.
+ * Track unique connections, as virtual mounts, to cephfs file systems.
+ * Individual mounts will be set on the handle->data attribute, but
+ * the mounts themselves will be shared so as not to spawn extra mounts
+ * to the same cephfs.
  *
- * So, cmount tells us if we have been this way before and whether
- * we need to mount ceph and cmount_cnt tells us how many times we have
- * connected
+ * Individual mounts are IDed by a 'cookie' value that is a string built
+ * from identifying parameters found in smb.conf.
  */
-static struct ceph_mount_info * cmount = NULL;
-static uint32_t cmount_cnt = 0;
+
+static struct cephmount_cached {
+	char *cookie;
+	uint32_t count;
+	struct ceph_mount_info *mount;
+	struct cephmount_cached *next, *prev;
+} *cephmount_cached;
+
+static int cephmount_cache_add(const char *cookie,
+			       struct ceph_mount_info *mount)
+{
+	struct cephmount_cached *entry = NULL;
+
+	entry = talloc_zero(NULL, struct cephmount_cached);
+	if (entry == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	entry->cookie = talloc_strdup(entry, cookie);
+	if (entry->cookie == NULL) {
+		talloc_free(entry);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	entry->mount = mount;
+	entry->count = 1;
+
+	DBG_DEBUG("adding mount cache entry for %s\n", entry->cookie);
+	DLIST_ADD(cephmount_cached, entry);
+	return 0;
+}
+
+static struct ceph_mount_info *cephmount_cache_update(const char *cookie)
+{
+	struct cephmount_cached *entry = NULL;
+
+	for (entry = cephmount_cached; entry; entry = entry->next) {
+		if (strcmp(entry->cookie, cookie) == 0) {
+			entry->count++;
+			DBG_DEBUG("updated mount cache: count is [%"
+				  PRIu32 "]\n", entry->count);
+			return entry->mount;
+		}
+	}
+
+	errno = ENOENT;
+	return NULL;
+}
+
+static int cephmount_cache_remove(struct ceph_mount_info *mount)
+{
+	struct cephmount_cached *entry = NULL;
+
+	for (entry = cephmount_cached; entry; entry = entry->next) {
+		if (entry->mount == mount) {
+			if (--entry->count) {
+				DBG_DEBUG("updated mount cache: count is [%"
+					  PRIu32 "]\n", entry->count);
+				return entry->count;
+			}
+
+			DBG_DEBUG("removing mount cache entry for %s\n",
+				  entry->cookie);
+			DLIST_REMOVE(cephmount_cached, entry);
+			talloc_free(entry);
+			return 0;
+		}
+	}
+	errno = ENOENT;
+	return -1;
+}
+
+static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx, const int snum)
+{
+	const char *conf_file =
+	    lp_parm_const_string(snum, "ceph", "config_file", ".");
+	const char *user_id = lp_parm_const_string(snum, "ceph", "user_id", "");
+	return talloc_asprintf(mem_ctx, "(%s/%s)", conf_file, user_id);
+}
 
 static struct ceph_mount_info *cephmount_mount_fs(const int snum)
 {
@@ -145,62 +224,66 @@ static struct ceph_mount_info *cephmount_mount_fs(const int snum)
    is sure to try and execute them.  These stubs are used to prevent
    this possibility. */
 
-static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *service, const char *user)
+static int cephwrap_connect(struct vfs_handle_struct *handle,
+			    const char *service, const char *user)
 {
+	int ret = 0;
+	struct ceph_mount_info *cmount = NULL;
 	int snum = SNUM(handle->conn);
+	char *cookie = cephmount_get_cookie(handle, snum);
+	if (cookie == NULL) {
+		return -1;
+	}
 
-	if (cmount) {
-		handle->data = cmount; /* We have been here before */
-		cmount_cnt++;
-		return 0;
+	cmount = cephmount_cache_update(cookie);
+	if (cmount != NULL) {
+		goto connect_ok;
 	}
 
 	cmount = cephmount_mount_fs(snum);
 	if (cmount == NULL) {
-		/* errno has been set in cephmount_mount_fs */
-		return -1;
+		ret = -1;
+		goto connect_fail;
 	}
-	/*
-	 * encode mount context/state into our vfs/connection holding structure
-	 * cmount is a ceph_mount_t*
-	 */
-	handle->data = cmount;
-	cmount_cnt++;
+	ret = cephmount_cache_add(cookie, cmount);
+	if (ret) {
+		goto connect_fail;
+	}
 
+      connect_ok:
+	handle->data = cmount;
 	/*
 	 * Unless we have an async implementation of getxattrat turn this off.
 	 */
 	lp_do_parameter(SNUM(handle->conn), "smbd async dosmode", "false");
-
-	return 0;
+      connect_fail:
+	talloc_free(cookie);
+	return ret;
 }
 
 static void cephwrap_disconnect(struct vfs_handle_struct *handle)
 {
-	int ret;
-
-	if (!cmount) {
-		DBG_ERR("[CEPH] Error, ceph not mounted\n");
+	int ret = cephmount_cache_remove(handle->data);
+	if (ret < 0) {
+		DBG_ERR("failed to remove ceph mount from cache: %s\n",
+			strerror(errno));
+		return;
+	}
+	if (ret > 0) {
+		DBG_DEBUG("mount cache entry still in use\n");
 		return;
 	}
 
-	/* Should we unmount/shutdown? Only if the last disconnect? */
-	if (--cmount_cnt) {
-		DBG_DEBUG("[CEPH] Not shuting down CEPH because still more connections\n");
-		return;
-	}
-
-	ret = ceph_unmount(cmount);
+	ret = ceph_unmount(handle->data);
 	if (ret < 0) {
 		DBG_ERR("[CEPH] failed to unmount: %s\n", strerror(-ret));
 	}
 
-	ret = ceph_release(cmount);
+	ret = ceph_release(handle->data);
 	if (ret < 0) {
 		DBG_ERR("[CEPH] failed to release: %s\n", strerror(-ret));
 	}
-
-	cmount = NULL;  /* Make it safe */
+	handle->data = NULL;
 }
 
 /* Disk operations */
