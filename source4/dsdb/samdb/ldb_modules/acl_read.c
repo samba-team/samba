@@ -79,6 +79,7 @@ struct aclread_private {
 	struct security_descriptor *sd_cached;
 	struct ldb_val sd_cached_blob;
 	const char **password_attrs;
+	size_t num_password_attrs;
 };
 
 struct access_check_context {
@@ -512,22 +513,18 @@ static int aclread_get_sd_from_ldb_message(struct aclread_context *ac,
 /* Check whether the attribute is a password attribute. */
 static bool attr_is_secret(const char *attr, const struct aclread_private *private_data)
 {
-	unsigned i;
+	const char **found = NULL;
 
 	if (private_data->password_attrs == NULL) {
 		return false;
 	}
 
-	for (i = 0; private_data->password_attrs[i] != NULL; ++i) {
-		const char *password_attr = private_data->password_attrs[i];
-		if (ldb_attr_cmp(attr, password_attr) != 0) {
-			continue;
-		}
-
-		return true;
-	}
-
-	return false;
+	BINARY_ARRAY_SEARCH_V(private_data->password_attrs,
+			      private_data->num_password_attrs,
+			      attr,
+			      ldb_attr_cmp,
+			      found);
+	return found != NULL;
 }
 
 /*
@@ -1128,6 +1125,14 @@ static int acl_redact_msg_for_filter(struct ldb_module *module, struct ldb_reque
 	return LDB_SUCCESS;
 }
 
+static int ldb_attr_cmp_fn(const void *_a, const void *_b)
+{
+	const char * const *a = _a;
+	const char * const *b = _b;
+
+	return ldb_attr_cmp(*a, *b);
+}
+
 static int aclread_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -1188,7 +1193,7 @@ static int aclread_init(struct ldb_module *module)
 	}
 	p->password_attrs = talloc_array(p, const char *,
 			password_attributes->num_values +
-			ARRAY_SIZE(secret_attrs) + 1);
+			ARRAY_SIZE(secret_attrs));
 	if (!p->password_attrs) {
 		talloc_free(mem_ctx);
 		return ldb_oom(ldb);
@@ -1223,7 +1228,10 @@ static int aclread_init(struct ldb_module *module)
 		}
 		n++;
 	}
-	p->password_attrs[n] = NULL;
+	p->num_password_attrs = n;
+
+	/* Sort the password attributes so we can use binary search. */
+	TYPESAFE_QSORT(p->password_attrs, p->num_password_attrs, ldb_attr_cmp_fn);
 
 	ret = ldb_register_redact_callback(ldb, acl_redact_msg_for_filter, module);
 	if (ret != LDB_SUCCESS) {
@@ -1247,19 +1255,25 @@ done:
 								  module,
 								  NULL);
 		if (!userPassword_support) {
+			const char **found = NULL;
+
 			/*
 			 * Remove the userPassword attribute, as it is not
 			 * considered secret.
 			 */
-			for (i = 0; p->password_attrs[i] != NULL; ++i) {
-				if (ldb_attr_cmp(p->password_attrs[i], "userPassword") == 0) {
-					break;
-				}
-			}
+			BINARY_ARRAY_SEARCH_V(p->password_attrs,
+					      p->num_password_attrs,
+					      "userPassword",
+					      ldb_attr_cmp,
+					      found);
+			if (found != NULL) {
+				size_t found_idx = found - p->password_attrs;
 
-			/* Shift following elements backwards by one. */
-			for (; p->password_attrs[i] != NULL; ++i) {
-				p->password_attrs[i] = p->password_attrs[i + 1];
+				/* Shift following elements backwards by one. */
+				for (i = found_idx; i < p->num_password_attrs - 1; ++i) {
+					p->password_attrs[i] = p->password_attrs[i + 1];
+				}
+				--p->num_password_attrs;
 			}
 		}
 	}
