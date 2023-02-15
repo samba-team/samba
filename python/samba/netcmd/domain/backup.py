@@ -1238,7 +1238,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                 os.remove(path + self.backup_ext)
             elif path.endswith('.ldb') or path.endswith('.tdb'):
                 logger.info('   skipping ' + arc_path)
-            else:
+            elif os.path.isfile(path):
                 logger.info('   adding misc file ' + arc_path)
                 tar.add(path, arcname=arc_path)
 
