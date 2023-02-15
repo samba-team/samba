@@ -77,6 +77,68 @@
 static struct ceph_mount_info * cmount = NULL;
 static uint32_t cmount_cnt = 0;
 
+static struct ceph_mount_info *cephmount_mount_fs(const int snum)
+{
+	int ret;
+	char buf[256];
+	struct ceph_mount_info *mnt = NULL;
+	/* if config_file and/or user_id are NULL, ceph will use defaults */
+	const char *conf_file =
+	    lp_parm_const_string(snum, "ceph", "config_file", NULL);
+	const char *user_id =
+	    lp_parm_const_string(snum, "ceph", "user_id", NULL);
+
+	DBG_DEBUG("[CEPH] calling: ceph_create\n");
+	ret = ceph_create(&mnt, user_id);
+	if (ret) {
+		errno = -ret;
+		return NULL;
+	}
+
+	DBG_DEBUG("[CEPH] calling: ceph_conf_read_file with %s\n",
+		  (conf_file == NULL ? "default path" : conf_file));
+	ret = ceph_conf_read_file(mnt, conf_file);
+	if (ret) {
+		goto err_cm_release;
+	}
+
+	DBG_DEBUG("[CEPH] calling: ceph_conf_get\n");
+	ret = ceph_conf_get(mnt, "log file", buf, sizeof(buf));
+	if (ret < 0) {
+		goto err_cm_release;
+	}
+
+	/* libcephfs disables POSIX ACL support by default, enable it... */
+	ret = ceph_conf_set(mnt, "client_acl_type", "posix_acl");
+	if (ret < 0) {
+		goto err_cm_release;
+	}
+	/* tell libcephfs to perform local permission checks */
+	ret = ceph_conf_set(mnt, "fuse_default_permissions", "false");
+	if (ret < 0) {
+		goto err_cm_release;
+	}
+
+	DBG_DEBUG("[CEPH] calling: ceph_mount\n");
+	ret = ceph_mount(mnt, NULL);
+	if (ret >= 0) {
+		goto cm_done;
+	}
+
+      err_cm_release:
+	ceph_release(mnt);
+	mnt = NULL;
+	DBG_DEBUG("[CEPH] Error mounting fs: %s\n", strerror(-ret));
+      cm_done:
+	/*
+	 * Handle the error correctly. Ceph returns -errno.
+	 */
+	if (ret) {
+		errno = -ret;
+	}
+	return mnt;
+}
+
 /* Check for NULL pointer parameters in cephwrap_* functions */
 
 /* We don't want to have NULL function pointers lying around.  Someone
@@ -85,11 +147,7 @@ static uint32_t cmount_cnt = 0;
 
 static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *service, const char *user)
 {
-	int ret;
-	char buf[256];
 	int snum = SNUM(handle->conn);
-	const char *conf_file;
-	const char *user_id;
 
 	if (cmount) {
 		handle->data = cmount; /* We have been here before */
@@ -97,46 +155,11 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 		return 0;
 	}
 
-	/* if config_file and/or user_id are NULL, ceph will use defaults */
-	conf_file = lp_parm_const_string(snum, "ceph", "config_file", NULL);
-	user_id = lp_parm_const_string(snum, "ceph", "user_id", NULL);
-
-	DBG_DEBUG("[CEPH] calling: ceph_create\n");
-	ret = ceph_create(&cmount, user_id);
-	if (ret) {
-		goto err_out;
+	cmount = cephmount_mount_fs(snum);
+	if (cmount == NULL) {
+		/* errno has been set in cephmount_mount_fs */
+		return -1;
 	}
-
-	DBG_DEBUG("[CEPH] calling: ceph_conf_read_file with %s\n",
-		  (conf_file == NULL ? "default path" : conf_file));
-	ret = ceph_conf_read_file(cmount, conf_file);
-	if (ret) {
-		goto err_cm_release;
-	}
-
-	DBG_DEBUG("[CEPH] calling: ceph_conf_get\n");
-	ret = ceph_conf_get(cmount, "log file", buf, sizeof(buf));
-	if (ret < 0) {
-		goto err_cm_release;
-	}
-
-	/* libcephfs disables POSIX ACL support by default, enable it... */
-	ret = ceph_conf_set(cmount, "client_acl_type", "posix_acl");
-	if (ret < 0) {
-		goto err_cm_release;
-	}
-	/* tell libcephfs to perform local permission checks */
-	ret = ceph_conf_set(cmount, "fuse_default_permissions", "false");
-	if (ret < 0) {
-		goto err_cm_release;
-	}
-
-	DBG_DEBUG("[CEPH] calling: ceph_mount\n");
-	ret = ceph_mount(cmount, NULL);
-	if (ret < 0) {
-		goto err_cm_release;
-	}
-
 	/*
 	 * encode mount context/state into our vfs/connection holding structure
 	 * cmount is a ceph_mount_t*
@@ -150,16 +173,6 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 	lp_do_parameter(SNUM(handle->conn), "smbd async dosmode", "false");
 
 	return 0;
-
-err_cm_release:
-	ceph_release(cmount);
-	cmount = NULL;
-err_out:
-	/*
-	 * Handle the error correctly. Ceph returns -errno.
-	 */
-	DBG_DEBUG("[CEPH] Error return: %s\n", strerror(-ret));
-	WRAP_RETURN(ret);
 }
 
 static void cephwrap_disconnect(struct vfs_handle_struct *handle)
