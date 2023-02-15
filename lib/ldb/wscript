@@ -634,7 +634,6 @@ def test(ctx):
                  'ldb_msg_test',
                  'ldb_tdb_mod_op_test',
                  'ldb_tdb_guid_mod_op_test',
-                 'ldb_msg_test',
                  'ldb_tdb_kv_ops_test',
                  'ldb_tdb_test',
                  'ldb_match_test',
@@ -644,7 +643,9 @@ def test(ctx):
                  # on operations which the TDB backend does not currently
                  # support
                  # 'ldb_key_value_sub_txn_tdb_test'
-                 'ldb_parse_test']
+                 'ldb_parse_test',
+                 'ldb_filter_attrs_test',
+                 ]
 
     # if LIB_LDAP and LIB_LBER defined, then we can test ldb_ldap backend
     # behavior regression for bz#14413
