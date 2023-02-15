@@ -118,8 +118,8 @@
 		<listitem>
 		<para>
 			Allows one to explicitly set the client ID used for the
-			CephFS mount handle. Empty by default (CephFS uses the
-			process id).
+			CephFS mount handle. Empty by default (use the libcephfs
+			client default).
 		</para>
 		<para>
 			Example: ceph:user_id = samba
