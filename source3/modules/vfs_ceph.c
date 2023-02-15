@@ -153,7 +153,27 @@ static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx, const int snum)
 	const char *conf_file =
 	    lp_parm_const_string(snum, "ceph", "config_file", ".");
 	const char *user_id = lp_parm_const_string(snum, "ceph", "user_id", "");
-	return talloc_asprintf(mem_ctx, "(%s/%s)", conf_file, user_id);
+	const char *fsname =
+	    lp_parm_const_string(snum, "ceph", "filesystem", "");
+	return talloc_asprintf(mem_ctx, "(%s/%s/%s)", conf_file, user_id,
+			       fsname);
+}
+
+static int cephmount_select_fs(struct ceph_mount_info *mnt, const char *fsname)
+{
+	/*
+	 * ceph_select_filesystem was added in ceph 'nautilus' (v14).
+	 * Earlier versions of libcephfs will lack that API function.
+	 * At the time of this writing (Feb 2023) all versions of ceph
+	 * supported by ceph upstream have this function.
+	 */
+#if defined(HAVE_CEPH_SELECT_FILESYSTEM)
+	DBG_DEBUG("[CEPH] calling: ceph_select_filesystem with %s\n", fsname);
+	return ceph_select_filesystem(mnt, fsname);
+#else
+	DBG_ERR("[CEPH] ceph_select_filesystem not available\n");
+	return -ENOTSUP;
+#endif
 }
 
 static struct ceph_mount_info *cephmount_mount_fs(const int snum)
@@ -166,6 +186,8 @@ static struct ceph_mount_info *cephmount_mount_fs(const int snum)
 	    lp_parm_const_string(snum, "ceph", "config_file", NULL);
 	const char *user_id =
 	    lp_parm_const_string(snum, "ceph", "user_id", NULL);
+	const char *fsname =
+	    lp_parm_const_string(snum, "ceph", "filesystem", NULL);
 
 	DBG_DEBUG("[CEPH] calling: ceph_create\n");
 	ret = ceph_create(&mnt, user_id);
@@ -196,6 +218,17 @@ static struct ceph_mount_info *cephmount_mount_fs(const int snum)
 	ret = ceph_conf_set(mnt, "fuse_default_permissions", "false");
 	if (ret < 0) {
 		goto err_cm_release;
+	}
+	/*
+	 * select a cephfs file system to use:
+	 * In ceph, multiple file system support has been stable since 'pacific'.
+	 * Permit different shares to access different file systems.
+	 */
+	if (fsname != NULL) {
+		ret = cephmount_select_fs(mnt, fsname);
+		if (ret < 0) {
+			goto err_cm_release;
+		}
 	}
 
 	DBG_DEBUG("[CEPH] calling: ceph_mount\n");

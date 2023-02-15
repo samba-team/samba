@@ -1698,6 +1698,8 @@ int main() {
             conf.CHECK_FUNCS_IN('ceph_statx', 'cephfs',
                                 headers='cephfs/libcephfs.h')):
             conf.DEFINE('HAVE_CEPH', '1')
+            conf.CHECK_FUNCS_IN('ceph_select_filesystem', 'cephfs',
+                                headers='cephfs/libcephfs.h')
         else:
             Logs.warn('''Ceph support disabled due to --without-acl-support
                       or lack of ceph_statx support''')
