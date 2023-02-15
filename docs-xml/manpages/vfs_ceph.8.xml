@@ -127,6 +127,21 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>ceph:filesystem = fs_name</term>
+		<listitem>
+		<para>
+			Allows one to explicitly select the CephFS file system
+			to use when the Ceph cluster supports more than one
+			file system. Empty by default (use the default file system
+			of the Ceph cluster).
+		</para>
+		<para>
+			Example: ceph:filesystem = myfs2
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 
 </refsect1>
