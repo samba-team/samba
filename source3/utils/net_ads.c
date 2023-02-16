@@ -1892,7 +1892,8 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
-			   "net ads dns register [hostname [IP [IP...]]]\n"
+			   "net ads dns register [hostname [IP [IP...]]] "
+			   "[--force] [--dns-ttl TTL]\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Register hostname with DNS\n"));
