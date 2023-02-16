@@ -12,7 +12,7 @@ import tempfile
 import shutil
 import subprocess
 
-from samba.netcmd.main import cmd_sambatool
+from samba.netcmd.main import samba_tool
 
 # We try to use the test infrastructure of Samba 4.3+, but if it
 # doesn't work, we are probably in a back-ported patch and trying to
@@ -95,10 +95,10 @@ class UserTests(samba.tests.TestCase):
             self._test_provision_subprocess()
 
     def test_02_00_provision_cmd_sambatool(self):
-        cmd = cmd_sambatool.subcommands['domain'].subcommands['provision']
-        result = cmd._run("samba-tool domain provision",
-                          '--targetdir=%s' % self.tmpdir,
-                          '--use-ntvfs')
+        result = samba_tool('domain', 'provision',
+                            '--targetdir=%s' % self.tmpdir,
+                            '--use-ntvfs')
+        self.assertIsNone(result)
 
     def test_03_00_provision_server_role(self):
         for role in ('member', 'server', 'member', 'standalone'):
