@@ -1178,6 +1178,140 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 	return status;
 }
 
+struct cli_smb1_posix_mknod_state {
+	uint8_t data[100];
+};
+
+static void cli_smb1_posix_mknod_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_smb1_posix_mknod_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname,
+	mode_t mode,
+	dev_t dev)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb1_posix_mknod_state *state = NULL;
+	mode_t type = mode & S_IFMT;
+	uint32_t smb_unix_type = 0xFFFFFFFF;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_smb1_posix_mknod_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	/*
+	 * Set all sizes/times/ids to no change.
+	 */
+	memset(state->data, 0xff, 56);
+
+	switch (type) {
+	case S_IFREG:
+		smb_unix_type = UNIX_TYPE_FILE;
+		break;
+	case S_IFDIR:
+		smb_unix_type = UNIX_TYPE_DIR;
+		break;
+	case S_IFLNK:
+		smb_unix_type = UNIX_TYPE_SYMLINK;
+		break;
+	case S_IFCHR:
+		smb_unix_type = UNIX_TYPE_CHARDEV;
+		break;
+	case S_IFBLK:
+		smb_unix_type = UNIX_TYPE_BLKDEV;
+		break;
+	case S_IFIFO:
+		smb_unix_type = UNIX_TYPE_FIFO;
+		break;
+	case S_IFSOCK:
+		smb_unix_type = UNIX_TYPE_SOCKET;
+		break;
+	}
+	PUSH_LE_U32(state->data, 56, smb_unix_type);
+
+	if ((type == S_IFCHR) || (type == S_IFBLK)) {
+		PUSH_LE_U64(state->data, 60, unix_dev_major(dev));
+		PUSH_LE_U64(state->data, 68, unix_dev_minor(dev));
+	}
+
+	PUSH_LE_U32(state->data, 84, unix_perms_to_wire(mode));
+
+	subreq = cli_setpathinfo_send(
+		state,
+		ev,
+		cli,
+		SMB_SET_FILE_UNIX_BASIC,
+		fname,
+		state->data,
+		sizeof(state->data));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb1_posix_mknod_done, req);
+	return req;
+}
+
+static void cli_smb1_posix_mknod_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setpathinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static NTSTATUS cli_smb1_posix_mknod_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct cli_mknod_state {
+	uint8_t dummy;
+};
+
+static void cli_mknod_done1(struct tevent_req *subreq);
+
+struct tevent_req *cli_mknod_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname,
+	mode_t mode,
+	dev_t dev)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_mknod_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_mknod_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (cli->requested_posix_capabilities != 0) {
+		subreq = cli_smb1_posix_mknod_send(
+			state, ev, cli, fname, mode, dev);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_mknod_done1, req);
+		return req;
+	}
+
+	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	return tevent_req_post(req, ev);
+}
+
+static void cli_mknod_done1(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb1_posix_mknod_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_mknod_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 /****************************************************************************
  Rename a file.
 ****************************************************************************/

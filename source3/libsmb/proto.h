@@ -327,6 +327,14 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 			const char *fname,
 			uid_t uid,
 			gid_t gid);
+struct tevent_req *cli_mknod_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname,
+	mode_t mode,
+	dev_t dev);
+NTSTATUS cli_mknod_recv(struct tevent_req *req);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct cli_state *cli,
