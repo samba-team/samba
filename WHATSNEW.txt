@@ -1,4 +1,80 @@
                    ==============================
+                   Release Notes for Samba 4.16.9
+                         February 16, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.16 release series.
+
+
+Changes since 4.16.8
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14808: smbc_getxattr() return value is incorrect.
+   * BUG 15172: Compound SMB2 FLUSH+CLOSE requests from MacOSX are not handled
+     correctly.
+   * BUG 15210: synthetic_pathref AFP_AfpInfo failed errors.
+   * BUG 15226: samba-tool gpo listall fails IPv6 only - finddcs() fails to find
+     DC when there is only an AAAA record for the DC in DNS.
+   * BUG 15236: smbd crashes if an FSCTL request is done on a stream handle.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15299: Spotlight doesn't work with latest macOS Ventura.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 15240: CVE-2022-38023 [SECURITY] Samba should refuse RC4 (aka md5)
+     based SChannel on NETLOGON.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15243: %U for include directive doesn't work for share listing
+     (netshareenum).
+   * BUG 15266: Shares missing from netshareenum response in samba 4.17.4.
+   * BUG 15269: ctdb: use-after-free in run_proc.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15243: %U for include directive doesn't work for share listing
+     (netshareenum).
+   * BUG 15266: Shares missing from netshareenum response in samba 4.17.4.
+   * BUG 15280: irpc_destructor may crash during shutdown.
+   * BUG 15286: auth3_generate_session_info_pac leaks wbcAuthUserInfo.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15268: smbclient segfaults with use after free on an optimized build.
+
+o  Andrew Walker <awalker@ixsystems.com>
+   * BUG 15164: Leak in wbcCtxPingDc2.
+   * BUG 15265: Access based share enum does not work in Samba 4.16+.
+   * BUG 15267: Crash during share enumeration.
+   * BUG 15271: rep_listxattr on FreeBSD does not properly check for reads off
+     end of returned buffer.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.16.8
                          December 15, 2022
                    ==============================
@@ -145,8 +221,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.16.7
                          November 15, 2022
