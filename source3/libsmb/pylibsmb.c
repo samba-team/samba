@@ -2508,6 +2508,73 @@ static PyObject *py_smb_smb1_symlink(
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_smb_smb1_stat(
+	struct py_cli_state *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *fname = NULL;
+	struct tevent_req *req = NULL;
+	struct stat_ex sbuf = { .st_ex_nlink = 0, };
+
+	if (!PyArg_ParseTuple(args, "s:smb1_stat", &fname)) {
+		return NULL;
+	}
+
+	req = cli_posix_stat_send(NULL, self->ev, self->cli, fname);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_posix_stat_recv(req, &sbuf);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	return Py_BuildValue(
+		"{sLsLsLsLsLsLsLsLsLsLsLsLsLsLsLsLsLsLsLsL}",
+		"dev",
+		(unsigned long long)sbuf.st_ex_dev,
+		"ino",
+		(unsigned long long)sbuf.st_ex_ino,
+		"mode",
+		(unsigned long long)sbuf.st_ex_mode,
+		"nlink",
+		(unsigned long long)sbuf.st_ex_nlink,
+		"uid",
+		(unsigned long long)sbuf.st_ex_uid,
+		"gid",
+		(unsigned long long)sbuf.st_ex_gid,
+		"rdev",
+		(unsigned long long)sbuf.st_ex_size,
+		"atime_sec",
+		(unsigned long long)sbuf.st_ex_atime.tv_sec,
+		"atime_nsec",
+		(unsigned long long)sbuf.st_ex_atime.tv_nsec,
+		"mtime_sec",
+		(unsigned long long)sbuf.st_ex_mtime.tv_sec,
+		"mtime_nsec",
+		(unsigned long long)sbuf.st_ex_mtime.tv_nsec,
+		"ctime_sec",
+		(unsigned long long)sbuf.st_ex_ctime.tv_sec,
+		"ctime_nsec",
+		(unsigned long long)sbuf.st_ex_ctime.tv_nsec,
+		"btime_sec",
+		(unsigned long long)sbuf.st_ex_btime.tv_sec,
+		"btime_nsec",
+		(unsigned long long)sbuf.st_ex_btime.tv_nsec,
+		"cached_dos_attributes",
+		(unsigned long long)sbuf.cached_dos_attributes,
+		"blksize",
+		(unsigned long long)sbuf.st_ex_blksize,
+		"blocks",
+		(unsigned long long)sbuf.st_ex_blocks,
+		"flags",
+		(unsigned long long)sbuf.st_ex_flags,
+		"iflags",
+		(unsigned long long)sbuf.st_ex_iflags);
+}
+
 static PyObject *py_cli_mknod(
 	struct py_cli_state *self, PyObject *args, PyObject *kwds)
 {
@@ -2702,6 +2769,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	  (PyCFunction)py_smb_smb1_symlink,
 	  METH_VARARGS,
 	  "smb1_symlink(target, newname) -> None",
+	},
+	{ "smb1_stat",
+	  (PyCFunction)py_smb_smb1_stat,
+	  METH_VARARGS,
+	  "smb1_stat(path) -> stat info",
 	},
 	{ "fsctl",
 	  (PyCFunction)py_cli_fsctl,
