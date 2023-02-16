@@ -2508,6 +2508,49 @@ static PyObject *py_smb_smb1_symlink(
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_cli_mknod(
+	struct py_cli_state *self, PyObject *args, PyObject *kwds)
+{
+	char *fname = NULL;
+	int mode = 0, major = 0, minor = 0, dev = 0;
+	struct tevent_req *req = NULL;
+	static const char *kwlist[] = {
+		"fname", "mode", "major", "minor", NULL,
+	};
+	NTSTATUS status;
+	bool ok;
+
+	ok = ParseTupleAndKeywords(
+		args,
+		kwds,
+		"sI|II:mknod",
+		kwlist,
+		&fname,
+		&mode,
+		&major,
+		&minor);
+	if (!ok) {
+		return NULL;
+	}
+
+#if defined(HAVE_MAKEDEV)
+	dev = makedev(major, minor);
+#endif
+
+	req = cli_mknod_send(
+		NULL, self->ev, self->cli, fname, mode, dev);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_mknod_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_cli_fsctl(
 	struct py_cli_state *self, PyObject *args, PyObject *kwds)
 {
@@ -2664,6 +2707,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	  (PyCFunction)py_cli_fsctl,
 	  METH_VARARGS|METH_KEYWORDS,
 	  "fsctl(fnum, ctl_code, in_bytes, max_out) -> out_bytes",
+	},
+	{ "mknod",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_mknod),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "mknod(path, mode | major, minor)",
 	},
 	{ NULL, NULL, 0, NULL }
 };
