@@ -252,7 +252,7 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 	GET_VALUES(nte, "unicodePwd");
 
 	/*
-	 * Even as Samba contiuues to ignore the LM hash, and reset it
+	 * Even as Samba continues to ignore the LM hash, and reset it
 	 * when practical, we keep the constraint that it must be a 16
 	 * byte value if specified.
 	 */
@@ -2879,7 +2879,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 	/*
 	 * First check the old password is correct, for password
 	 * changes when this hasn't already been checked by a
-	 * trustwrothy layer above
+	 * trustworthy layer above
 	 */
 	if (!io->ac->pwd_reset && !(io->ac->change
 				    && io->ac->change->old_password_checked == DSDB_PASSWORD_CHECKED_AND_CORRECT)) {
