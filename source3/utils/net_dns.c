@@ -30,9 +30,13 @@
 *********************************************************************/
 
 DNS_ERROR DoDNSUpdate(char *pszServerName,
-		      const char *pszDomainName, const char *pszHostName,
-		      const struct sockaddr_storage *sslist, size_t num_addrs,
-		      uint32_t flags, bool remove_host)
+		      const char *pszDomainName,
+		      const char *pszHostName,
+		      const struct sockaddr_storage *sslist,
+		      size_t num_addrs,
+		      uint32_t flags,
+		      uint32_t ttl,
+		      bool remove_host)
 {
 	DNS_ERROR err;
 	struct dns_connection *conn;
@@ -91,8 +95,13 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		 * First try without signing
 		 */
 
-		err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
-						sslist, num_addrs, &req);
+		err = dns_create_update_request(mem_ctx,
+						pszDomainName,
+						pszHostName,
+						sslist,
+						num_addrs,
+						ttl,
+						&req);
 		if (!ERR_DNS_IS_OK(err)) goto error;
 
 		err = dns_update_transaction(mem_ctx, conn, req, &resp);
@@ -115,8 +124,13 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		gss_ctx_id_t gss_context;
 		char *keyname;
 
-		err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
-						sslist, num_addrs, &req);
+		err = dns_create_update_request(mem_ctx,
+						pszDomainName,
+						pszHostName,
+						sslist,
+						num_addrs,
+						ttl,
+						&req);
 		if (!ERR_DNS_IS_OK(err)) goto error;
 
 		if (!(keyname = dns_generate_keyname( mem_ctx ))) {

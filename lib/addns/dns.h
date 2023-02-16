@@ -290,6 +290,7 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *hostname,
 				    const struct sockaddr_storage *ip_addr,
 				    size_t num_adds,
+				    uint32_t ttl,
 				    struct dns_update_request **preq);
 
 /* from dnssock.c */

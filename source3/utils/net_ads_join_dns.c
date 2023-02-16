@@ -56,6 +56,11 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 	fstring dns_server;
 	const char *dnsdomain = NULL;
 	char *root_domain = NULL;
+	uint32_t ttl = 3600;
+
+	if (c->opt_dns_ttl > 0) {
+		ttl = MIN(c->opt_dns_ttl, UINT32_MAX);
+	}
 
 	if ( (dnsdomain = strchr_m( machine_name, '.')) == NULL ) {
 		d_printf(_("No DNS domain configured for %s. "
@@ -158,6 +163,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 		                      addrs,
 				      num_addrs,
 				      flags,
+				      ttl,
 				      remove_host);
 		if (ERR_DNS_IS_OK(dns_err)) {
 			status = NT_STATUS_OK;

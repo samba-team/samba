@@ -1225,6 +1225,13 @@ static struct functable net_func[] = {
 			.arg        = &c->opt_follow_symlink,
 			.descrip    = "follow symlinks",
 		},
+		/* Options for 'net ads dns register' */
+		{
+			.longName   = "dns-ttl",
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &c->opt_dns_ttl,
+			.descrip    = "TTL in seconds of DNS records",
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS

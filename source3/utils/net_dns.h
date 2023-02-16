@@ -33,9 +33,12 @@
 #include "../lib/addns/dns.h"
 
 DNS_ERROR DoDNSUpdate(char *pszServerName,
-		      const char *pszDomainName, const char *pszHostName,
+		      const char *pszDomainName,
+		      const char *pszHostName,
 		      const struct sockaddr_storage *sslist,
 		      size_t num_addrs,
-		      uint32_t flags, bool remove_host);
+		      uint32_t flags,
+		      uint32_t ttl,
+		      bool remove_host);
 
 #endif /* defined(HAVE_KRB5) */

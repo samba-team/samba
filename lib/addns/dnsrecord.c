@@ -408,6 +408,7 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *hostname,
 				    const struct sockaddr_storage *ss_addrs,
 				    size_t num_addrs,
+				    uint32_t ttl,
 				    struct dns_update_request **preq)
 {
 	struct dns_update_request *req = NULL;
@@ -448,11 +449,19 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 
 		switch(ss_addrs[i].ss_family) {
 		case AF_INET:
-			err = dns_create_a_record(req, hostname, 3600, &ss_addrs[i], &rec);
+			err = dns_create_a_record(req,
+						  hostname,
+						  ttl,
+						  &ss_addrs[i],
+						  &rec);
 			break;
 #ifdef HAVE_IPV6
 		case AF_INET6:
-			err = dns_create_aaaa_record(req, hostname, 3600, &ss_addrs[i], &rec);
+			err = dns_create_aaaa_record(req,
+						     hostname,
+						     ttl,
+						     &ss_addrs[i],
+						     &rec);
 			break;
 #endif
 		default:

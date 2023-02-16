@@ -90,6 +90,7 @@ struct net_context {
 	int opt_continue_on_error;
 	int opt_recursive;
 	int opt_follow_symlink;
+	int opt_dns_ttl;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;
