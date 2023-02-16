@@ -958,7 +958,6 @@ static struct tevent_req *cli_posix_chown_chmod_internal_send(TALLOC_CTX *mem_ct
 	}
 
 	memset(state->data, 0xff, 40); /* Set all sizes/times to no change. */
-	memset(&state->data[40], '\0', 60);
 	SIVAL(state->data,40,uid);
 	SIVAL(state->data,48,gid);
 	SIVAL(state->data,84,mode);
