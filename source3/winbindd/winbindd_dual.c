@@ -1811,13 +1811,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 	}
 
-	/*
-	 * We are in idmap child, bring primary domain online.
-	 */
-	if (is_idmap_child(child)) {
-		set_domain_online_request(primary_domain);
-	}
-
 	/* We might be in the idmap child...*/
 	if (child->domain && !(child->domain->internal) &&
 	    lp_winbind_offline_logon()) {
