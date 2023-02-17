@@ -241,7 +241,7 @@ class UserTests(samba.tests.TestCase):
                                 scope=SCOPE_BASE,
                                 attrs=['cn'])
             except LdbError as e:
-                (num, msg) = e
+                (num, msg) = e.args
                 if num != ERR_NO_SUCH_OBJECT:
                     raise
 
