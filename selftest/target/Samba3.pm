@@ -2106,6 +2106,7 @@ sub setup_fileserver_smb1
 [global]
 	client min protocol = CORE
 	server min protocol = LANMAN1
+	check parent directory delete on close = yes
 
 [hidenewfiles]
 	path = $prefix_abs/share
