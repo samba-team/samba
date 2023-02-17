@@ -1153,6 +1153,14 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		char *substitute = NULL;
 		size_t unparsed = 0;
 
+		status = normalize_filename_case(conn, dirname, ucf_flags);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("normalize_filename_case %s failed: %s\n",
+				dirname,
+				nt_errstr(status));
+			goto fail;
+		}
+
 		status = openat_pathref_dirfsp_nosymlink(
 			mem_ctx,
 			conn,
