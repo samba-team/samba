@@ -697,9 +697,10 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 {
 	struct idmap_tdb_common_context *commoncfg;
 	NTSTATUS ret;
-	int i;
-	int num_tomap = 0;
-	int num_mapped = 0;
+	size_t i;
+	size_t num_tomap = 0;
+	size_t num_mapped = 0;
+	size_t num_required = 0;
 
 	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
@@ -713,6 +714,12 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 
 	for (i = 0; ids[i]; i++) {
 		ret = idmap_autorid_sid_to_id(commoncfg, dom, ids[i]);
+		if (NT_STATUS_EQUAL(ret, NT_STATUS_SOME_NOT_MAPPED) &&
+		    ids[i]->status == ID_REQUIRE_TYPE)
+		{
+			num_required++;
+			continue;
+		}
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
 			struct dom_sid_buf buf;
@@ -729,6 +736,8 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 
 	if (num_tomap == num_mapped) {
 		return NT_STATUS_OK;
+	} else if (num_required > 0) {
+		return STATUS_SOME_UNMAPPED;
 	} else if (num_mapped == 0) {
 		return NT_STATUS_NONE_MAPPED;
 	}
