@@ -193,6 +193,15 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         finally:
             c.deltree(testdir)
 
+    def test_libsmb_TortureDirCaseSensitive(self):
+        c = libsmb.Conn(self.server_ip, "lowercase", self.lp, self.creds)
+        c.mkdir("subdir")
+        c.mkdir("subdir/b")
+        ret = c.chkpath("SubDir/b")
+        c.rmdir("subdir/b")
+        c.rmdir("subdir")
+        self.assertTrue(ret)
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
