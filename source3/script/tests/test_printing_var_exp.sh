@@ -20,6 +20,7 @@ incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/common_test_fns.inc
 
 smbclient="$BINDIR/smbclient"
+rpcclient="$BINDIR/rpcclient"
 
 test_var_expansion()
 {
@@ -54,8 +55,39 @@ test_var_expansion()
 	return 0
 }
 
+test_empty_queue()
+{
+	# Try several times until the bgqd daemon updates the print queue status
+	tries="3"
+	for i in $(seq 1 $tries); do
+		echo "Try $i"
+		JOBS=$($rpcclient ncacn_np:$SERVER_IP \
+			-U $DOMAIN/$USERNAME%$PASSWORD \
+			-c "enumjobs print_var_exp 2")
+		if [ $? -ne 0 ]; then
+			return 1
+		fi
+		if [[ -z $JOBS ]]; then
+			return 0
+		fi
+		if [[ $i -gt $tries ]]; then
+			echo "Print queue not empty after $tries seconds:"
+			echo $JOBS
+			echo "Queue must be empty before leaving this test or" \
+			     "following ones may fail."
+			return 1
+		fi
+		sleep 1
+	done
+	return 0
+}
+
 testit "Test variable expansion for '%U', '%u' and '%D'" \
 	test_var_expansion ||
+	failed=$(expr $failed + 1)
+
+testit "Test queue is empty" \
+	test_empty_queue ||
 	failed=$(expr $failed + 1)
 
 exit $failed
