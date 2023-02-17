@@ -117,7 +117,7 @@ SAMBA_VERSION_RELEASE_NICKNAME=
 #                                                      #
 # <MAJOR>.<MINOR>.<RELEASE>[...]-<VENDOR_SUFFIX>       #
 #                                                      #
-# Note the '-' is automaticaly added                   #
+# Note the '-' is automatically added                  #
 #                                                      #
 # e.g. SAMBA_VERSION_VENDOR_SUFFIX=VendorVersion       #
 #  ->  "3.0.0rc2-VendorVersion"                        #
