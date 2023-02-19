@@ -2869,11 +2869,31 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 	struct loadparm_context *lp_ctx =
 		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 				struct loadparm_context);
+	struct dsdb_encrypted_connection_state *opaque_connection_state =
+		ldb_get_opaque(ldb,DSDB_OPAQUE_ENCRYPTED_CONNECTION_STATE_NAME);
 
 	*werror = WERR_INVALID_PARAMETER;
 
 	if (!io->ac->update_password) {
 		return LDB_SUCCESS;
+	}
+
+	/*
+	 * Prevent update password on an insecure connection.
+	 * The opaque is added in the ldap backend init.
+	 */
+	if (opaque_connection_state != NULL &&
+	    !opaque_connection_state->using_encrypted_connection) {
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+		*werror = WERR_GEN_FAILURE;
+		ldb_asprintf_errstring(ldb,
+				       "%08X: SvcErr: DSID-031A126C, "
+				       "problem 5003 (WILL_NOT_PERFORM), "
+				       "data 0\n"
+				       "Password modification over LDAP "
+				       "must be over an encrypted connection",
+				       W_ERROR_V(*werror));
+		return ret;
 	}
 
 	/*

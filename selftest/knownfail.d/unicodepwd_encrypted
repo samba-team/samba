@@ -1,2 +1,0 @@
-^samba4.unicodepwd_encrypted\(.*\).__main__.UnicodePwdEncryptedConnectionTests.test_simple_bind_plain
-^samba4.unicodepwd_encrypted\(.*\).__main__.UnicodePwdEncryptedConnectionTests.test_without_seal

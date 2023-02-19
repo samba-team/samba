@@ -186,6 +186,11 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 			      char **errstring)
 {
+	bool using_tls = conn->sockets.active == conn->sockets.tls;
+	bool using_seal = conn->gensec != NULL && gensec_have_feature(conn->gensec,
+								      GENSEC_FEATURE_SEAL);
+	struct dsdb_encrypted_connection_state *opaque_connection_state = NULL;
+
 	int ret = samdb_connect_url(conn,
 				    conn->connection->event.ctx,
 				    conn->lp_ctx,
@@ -196,6 +201,24 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 				    &conn->ldb,
 				    errstring);
 	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+	 * We can safely call ldb_set_opaque() on this ldb as we have
+	 * set remote_address above which avoids the ldb handle cache
+	 */
+	opaque_connection_state = talloc_zero(conn, struct dsdb_encrypted_connection_state);
+	if (opaque_connection_state == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	opaque_connection_state->using_encrypted_connection = using_tls || using_seal;
+	ret = ldb_set_opaque(conn->ldb,
+			     DSDB_OPAQUE_ENCRYPTED_CONNECTION_STATE_NAME,
+			     opaque_connection_state);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("ldb_set_opaque() failed to store our "
+			"encrypted connection state!");
 		return ret;
 	}
 
