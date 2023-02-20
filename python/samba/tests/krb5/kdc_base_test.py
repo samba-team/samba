@@ -897,12 +897,15 @@ class KDCBaseTest(RawKerberosTest):
             self.assertIsNotNone(members)
         elif members is None:
             members = ()
+        else:
+            members = map(lambda s: s.decode('utf-8'), members)
 
         # Use a set so we can handle the same group being added twice.
         members = set(members)
 
         self.assertNotIsInstance(account_dn, ldb.Dn,
                                  'ldb.MessageElement does not support ldb.Dn')
+        self.assertNotIsInstance(account_dn, bytes)
 
         if isinstance(account_dn, str):
             members.add(account_dn)
