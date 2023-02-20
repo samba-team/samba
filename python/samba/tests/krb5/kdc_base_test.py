@@ -1075,6 +1075,19 @@ class KDCBaseTest(RawKerberosTest):
         # Return the mapping from group IDs to principals.
         return groups
 
+    def map_to_sid(self, val, mapping, domain_sid):
+        if isinstance(val, int):
+            # If it's an integer, we assume it's a RID, and prefix the domain
+            # SID.
+            return f'{domain_sid}-{val}'
+
+        if val in mapping:
+            # Or if we have a mapping for it, apply that.
+            return mapping[val].sid
+
+        # Otherwise leave it unmodified.
+        return val
+
     # Return SIDs from principal placeholders based on a supplied mapping.
     def map_sids(self, sids, mapping, domain_sid):
         if sids is None:
@@ -1088,15 +1101,8 @@ class KDCBaseTest(RawKerberosTest):
                                                         mapping,
                                                         domain_sid)))
             else:
-                sid, sid_type, attrs = entry
-                if isinstance(sid, int):
-                    # If it's an integer, we assume it's a RID, and prefix the
-                    # domain SID.
-                    sid = f'{domain_sid}-{sid}'
-                elif sid in mapping:
-                    # Or if we have a mapping for it, apply that. Otherwise
-                    # leave it unmodified.
-                    sid = mapping[sid].sid
+                val, sid_type, attrs = entry
+                sid = self.map_to_sid(val, mapping, domain_sid)
 
                 # There's no point expecting the 'Claims Valid' SID to be
                 # present if we don't support claims. Filter it out to give the
