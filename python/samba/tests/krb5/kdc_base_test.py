@@ -1088,6 +1088,10 @@ class KDCBaseTest(RawKerberosTest):
         # Otherwise leave it unmodified.
         return val
 
+    def map_to_dn(self, val, mapping, domain_sid):
+        sid = self.map_to_sid(val, mapping, domain_sid)
+        return ldb.Dn(self.get_samdb(), f'<SID={sid}>')
+
     # Return SIDs from principal placeholders based on a supplied mapping.
     def map_sids(self, sids, mapping, domain_sid):
         if sids is None:
