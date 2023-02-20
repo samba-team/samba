@@ -1885,30 +1885,26 @@ class GroupTests(KDCBaseTest):
     # another domain.
     def setup_groups(self,
                      samdb,
+                     preexisting_groups,
                      group_setup,
-                     user_principal,
-                     trust_principal,
-                     primary_group):
-        # Initialise the group mapping with the user principal.
-        groups = {
-            self.user: user_principal,
-            self.trust_user: trust_principal,
-        }
+                     primary_groups):
+        groups = dict(preexisting_groups)
 
-        primary_group_type = None
+        primary_group_types = {}
 
         # Create each group and add it to the group mapping.
         for group_id, (group_type, _) in group_setup.items():
-            self.assertIsNot(group_id, self.user,
-                             "don't specify user placeholder")
+            self.assertNotIn(group_id, preexisting_groups,
+                             "don't specify placeholders")
             self.assertNotIn(group_id, groups,
                              'group ID specified more than once')
 
-            if primary_group is not None and group_id == primary_group:
+            if primary_groups is not None and (
+                    group_id in primary_groups.values()):
                 # Windows disallows setting a domain-local group as a primary
                 # group, unless we create it as Universal first and change it
                 # back to Domain-Local later.
-                primary_group_type = group_type
+                primary_group_types[group_id] = group_type
                 group_type = GroupType.UNIVERSAL
 
             groups[group_id] = self.create_group_principal(samdb, group_type)
@@ -1937,13 +1933,14 @@ class GroupTests(KDCBaseTest):
             self.add_to_group(principal_members, dn, 'member',
                               expect_attr=False)
 
-        # Set the user's primary group.
-        if primary_group is not None:
-            primary_sid = groups[primary_group].sid
-            self.set_primary_group(samdb, user_principal.dn, primary_sid)
+        # Set primary groups.
+        if primary_groups is not None:
+            for user, primary_group in primary_groups.items():
+                primary_sid = groups[primary_group].sid
+                self.set_primary_group(samdb, user.dn, primary_sid)
 
-        # Change the primary group to its actual group type.
-        if primary_group_type is not None:
+        # Change the primary groups to their actual group types.
+        for primary_group, primary_group_type in primary_group_types.items():
             self.set_group_type(samdb,
                                 groups[primary_group].dn,
                                 primary_group_type)
@@ -2060,13 +2057,23 @@ class GroupTests(KDCBaseTest):
         target_supported_etypes = target_creds.tgs_supported_enctypes
         realm = target_creds.get_realm()
 
+        # Initialise the group mapping with the user and trust principals.
         user_principal = Principal(user_dn, user_sid)
         trust_principal = Principal(None, trust_user_sid)
+        preexisting_groups = {
+            self.user: user_principal,
+            self.trust_user: trust_principal,
+        }
+        if primary_group is not None:
+            primary_groups = {
+                user_principal: primary_group,
+            }
+        else:
+            primary_groups = None
         groups = self.setup_groups(samdb,
+                                   preexisting_groups,
                                    group_setup,
-                                   user_principal,
-                                   trust_principal,
-                                   primary_group)
+                                   primary_groups)
         del group_setup
 
         if tgs_user_sid is None:
