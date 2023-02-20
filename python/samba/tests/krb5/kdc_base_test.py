@@ -59,6 +59,9 @@ from samba.dsdb import (
     DS_GUID_COMPUTERS_CONTAINER,
     DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
     DS_GUID_USERS_CONTAINER,
+    GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
+    GTYPE_SECURITY_GLOBAL_GROUP,
+    GTYPE_SECURITY_UNIVERSAL_GROUP,
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_NO_AUTH_DATA_REQUIRED,
     UF_NORMAL_ACCOUNT,
@@ -111,6 +114,22 @@ from samba.tests.krb5.rfc4120_constants import (
 
 global_asn1_print = False
 global_hexdump = False
+
+
+class GroupType(Enum):
+    GLOBAL = GTYPE_SECURITY_GLOBAL_GROUP
+    DOMAIN_LOCAL = GTYPE_SECURITY_DOMAIN_LOCAL_GROUP
+    UNIVERSAL = GTYPE_SECURITY_UNIVERSAL_GROUP
+
+
+# This simple class encapsulates the DN and SID of a Principal.
+class Principal:
+    def __init__(self, dn, sid):
+        if dn is not None and not isinstance(dn, ldb.Dn):
+            raise AssertionError(f'expected {dn} to be an ldb.Dn')
+
+        self.dn = dn
+        self.sid = sid
 
 
 class KDCBaseTest(RawKerberosTest):
@@ -925,6 +944,159 @@ class KDCBaseTest(RawKerberosTest):
         samdb.modify(msg)
 
         return cleanup
+
+    # Create a new group and return a Principal object representing it.
+    def create_group_principal(self, samdb, group_type):
+        name = self.get_new_username()
+        dn = self.create_group(samdb, name, gtype=group_type.value)
+        sid = self.get_objectSid(samdb, dn)
+
+        return Principal(ldb.Dn(samdb, dn), sid)
+
+    def set_group_type(self, samdb, dn, gtype):
+        group_type = common.normalise_int32(gtype.value)
+        msg = ldb.Message(dn)
+        msg['groupType'] = ldb.MessageElement(group_type,
+                                              ldb.FLAG_MOD_REPLACE,
+                                              'groupType')
+        samdb.modify(msg)
+
+    def set_primary_group(self, samdb, dn, primary_sid,
+                          expected_error=None,
+                          expected_werror=None):
+        # Get the RID to be set as our primary group.
+        primary_rid = primary_sid.rsplit('-', 1)[1]
+
+        # Find out our current primary group.
+        res = samdb.search(dn,
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['primaryGroupId'])
+        orig_msg = res[0]
+
+        # Prepare to modify the attribute.
+        msg = ldb.Message(dn)
+        msg['primaryGroupId'] = ldb.MessageElement(str(primary_rid),
+                                                   ldb.FLAG_MOD_REPLACE,
+                                                   'primaryGroupId')
+
+        # We'll remove the primaryGroupId attribute after the test, to avoid
+        # problems in the teardown if the user outlives the group.
+        remove_msg = samdb.msg_diff(msg, orig_msg)
+        self.addCleanup(samdb.modify, remove_msg)
+
+        # Set primaryGroupId.
+        if expected_error is None:
+            self.assertIsNone(expected_werror)
+
+            samdb.modify(msg)
+        else:
+            self.assertIsNotNone(expected_werror)
+
+            with self.assertRaises(
+                    ldb.LdbError,
+                    msg='expected setting primary group to fail'
+            ) as err:
+                samdb.modify(msg)
+
+            error, estr = err.exception.args
+            self.assertEqual(expected_error, error)
+            self.assertIn(f'{expected_werror:08X}', estr)
+
+    # Create an arrangement of groups based on a configuration specified in a
+    # test case. 'user_principal' is a principal representing the user account;
+    # 'trust_principal', a principal representing the account of a user from
+    # another domain.
+    def setup_groups(self,
+                     samdb,
+                     preexisting_groups,
+                     group_setup,
+                     primary_groups):
+        groups = dict(preexisting_groups)
+
+        primary_group_types = {}
+
+        # Create each group and add it to the group mapping.
+        for group_id, (group_type, _) in group_setup.items():
+            self.assertNotIn(group_id, preexisting_groups,
+                             "don't specify placeholders")
+            self.assertNotIn(group_id, groups,
+                             'group ID specified more than once')
+
+            if primary_groups is not None and (
+                    group_id in primary_groups.values()):
+                # Windows disallows setting a domain-local group as a primary
+                # group, unless we create it as Universal first and change it
+                # back to Domain-Local later.
+                primary_group_types[group_id] = group_type
+                group_type = GroupType.UNIVERSAL
+
+            groups[group_id] = self.create_group_principal(samdb, group_type)
+
+        # Map a group ID to that group's DN, and generate an
+        # understandable error message if the mapping fails.
+        def group_id_to_dn(group_id):
+            try:
+                group = groups[group_id]
+            except KeyError:
+                self.fail(f"included group member '{group_id}', but it is not "
+                          f"specified in {groups.keys()}")
+            else:
+                if group.dn is not None:
+                    return str(group.dn)
+
+                return f'<SID={group.sid}>'
+
+        # Populate each group's members.
+        for group_id, (_, members) in group_setup.items():
+            # Get the group's DN and the mapped DNs of its members.
+            dn = groups[group_id].dn
+            principal_members = map(group_id_to_dn, members)
+
+            # Add the members to the group.
+            self.add_to_group(principal_members, dn, 'member',
+                              expect_attr=False)
+
+        # Set primary groups.
+        if primary_groups is not None:
+            for user, primary_group in primary_groups.items():
+                primary_sid = groups[primary_group].sid
+                self.set_primary_group(samdb, user.dn, primary_sid)
+
+        # Change the primary groups to their actual group types.
+        for primary_group, primary_group_type in primary_group_types.items():
+            self.set_group_type(samdb,
+                                groups[primary_group].dn,
+                                primary_group_type)
+
+        # Return the mapping from group IDs to principals.
+        return groups
+
+    # Return SIDs from principal placeholders based on a supplied mapping.
+    def map_sids(self, sids, mapping, domain_sid):
+        if sids is None:
+            return None
+
+        mapped_sids = set()
+        for sid, sid_type, attrs in sids:
+            if isinstance(sid, int):
+                # If it's an integer, we assume it's a RID, and prefix the
+                # domain SID.
+                sid = f'{domain_sid}-{sid}'
+            elif sid in mapping:
+                # Or if we have a mapping for it, apply that. Otherwise leave
+                # it unmodified.
+                sid = mapping[sid].sid
+
+            # There's no point expecting the 'Claims Valid' SID to be present
+            # if we don't support claims. Filter it out to give the tests a
+            # chance of passing.
+            if not self.kdc_claims_support and (
+                    sid == security.SID_CLAIMS_VALID):
+                continue
+
+            mapped_sids.add((sid, sid_type, attrs))
+
+        return mapped_sids
 
     def get_cached_creds(self, *,
                          account_type,
