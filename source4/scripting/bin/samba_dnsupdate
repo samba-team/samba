@@ -285,12 +285,13 @@ def check_dns_name(d):
         except IOError:
             return False
 
-        for line in dns_file:
-            line = line.strip()
-            if line == '' or line[0] == "#":
-                continue
-            if line.lower() == str(d).lower():
-                return True
+        with dns_file:
+            for line in dns_file:
+                line = line.strip()
+                if line == '' or line[0] == "#":
+                    continue
+                if line.lower() == str(d).lower():
+                    return True
         return False
 
     try:
@@ -428,14 +429,13 @@ def call_nsupdate(d, op="add"):
             rfile = open(opts.use_file, 'r+')
         except IOError:
             # Perhaps create it
-            open(opts.use_file, 'w+')
+            open(opts.use_file, 'w+').close()
             # Open it for reading again, in case someone else got to it first
             rfile = open(opts.use_file, 'r+')
         fcntl.lockf(rfile, fcntl.LOCK_EX)
         (file_dir, file_name) = os.path.split(opts.use_file)
         (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
         wfile = os.fdopen(tmp_fd, 'a')
-        rfile.seek(0)
         for line in rfile:
             if op == "delete":
                 l = parse_dns_line(line, {})
@@ -444,8 +444,9 @@ def call_nsupdate(d, op="add"):
             wfile.write(line)
         if op == "add":
             wfile.write(str(d)+"\n")
+        rfile.close()
+        wfile.close()
         os.rename(tmpfile, opts.use_file)
-        fcntl.lockf(rfile, fcntl.LOCK_UN)
         return
 
     if opts.verbose:
@@ -747,7 +748,7 @@ try:
     cfile = open(dns_update_cache, 'r+')
 except IOError:
     # Perhaps create it
-    open(dns_update_cache, 'w+')
+    open(dns_update_cache, 'w+').close()
     # Open it for reading again, in case someone else got to it first
     cfile = open(dns_update_cache, 'r+')
 fcntl.lockf(cfile, fcntl.LOCK_EX)
@@ -761,6 +762,8 @@ for line in cfile:
     if str(c) not in cache_set:
         cache_list.append(c)
         cache_set.add(str(c))
+
+cfile.close()
 
 site_specific_rec = []
 
@@ -783,6 +786,8 @@ for line in file:
     if str(d) not in dup_set:
         dns_list.append(d)
         dup_set.add(str(d))
+
+file.close()
 
 # Perform automatic site coverage by default
 auto_coverage = True
@@ -948,9 +953,8 @@ if rebuild_cache:
         if opts.verbose:
             print("Adding %s to %s" % (str(d), file_name))
         wfile.write(str(d)+"\n")
-    wfile.flush()
+    wfile.close()
     os.rename(tmpfile, dns_update_cache)
-fcntl.lockf(cfile, fcntl.LOCK_UN)
 
 # delete the ccache if we created it
 if ccachename is not None:
