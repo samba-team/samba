@@ -1799,10 +1799,6 @@ class GroupTests(KDCBaseTest):
 
         return Principal(ldb.Dn(samdb, dn), sid)
 
-    claims_valid_sid = (security.SID_CLAIMS_VALID,
-                        SidType.EXTRA_SID,
-                        default_attrs)
-
     # Return SIDs from principal placeholders based on a supplied mapping.
     def map_sids(self, sids, mapping, domain_sid):
         if sids is None:
