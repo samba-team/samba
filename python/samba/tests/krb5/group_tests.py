@@ -1889,7 +1889,7 @@ class GroupTests(KDCBaseTest):
                      user_principal,
                      trust_principal,
                      primary_group):
-        # Initialiase the group mapping with the user principal.
+        # Initialise the group mapping with the user principal.
         groups = {
             self.user: user_principal,
             self.trust_user: trust_principal,
