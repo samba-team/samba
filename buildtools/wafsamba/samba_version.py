@@ -235,22 +235,22 @@ also accepted as dictionary entries here
 def samba_version_file(version_file, path, env=None, is_install=True):
     '''Parse the version information from a VERSION file'''
 
-    f = open(version_file, 'r')
-    version_dict = {}
-    for line in f:
-        line = line.strip()
-        if line == '':
-            continue
-        if line.startswith("#"):
-            continue
-        try:
-            split_line = line.split("=")
-            if split_line[1] != "":
-                value = split_line[1].strip('"')
-                version_dict[split_line[0]] = value
-        except:
-            print("Failed to parse line %s from %s" % (line, version_file))
-            raise
+    with open(version_file, 'r') as f:
+        version_dict = {}
+        for line in f:
+            line = line.strip()
+            if line == '':
+                continue
+            if line.startswith("#"):
+                continue
+            try:
+                split_line = line.split("=")
+                if split_line[1] != "":
+                    value = split_line[1].strip('"')
+                    version_dict[split_line[0]] = value
+            except:
+                print("Failed to parse line %s from %s" % (line, version_file))
+                raise
 
     return SambaVersion(version_dict, path, env=env, is_install=is_install)
 
