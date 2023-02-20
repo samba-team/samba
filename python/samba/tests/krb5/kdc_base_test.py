@@ -1077,24 +1077,31 @@ class KDCBaseTest(RawKerberosTest):
             return None
 
         mapped_sids = set()
-        for sid, sid_type, attrs in sids:
-            if isinstance(sid, int):
-                # If it's an integer, we assume it's a RID, and prefix the
-                # domain SID.
-                sid = f'{domain_sid}-{sid}'
-            elif sid in mapping:
-                # Or if we have a mapping for it, apply that. Otherwise leave
-                # it unmodified.
-                sid = mapping[sid].sid
 
-            # There's no point expecting the 'Claims Valid' SID to be present
-            # if we don't support claims. Filter it out to give the tests a
-            # chance of passing.
-            if not self.kdc_claims_support and (
-                    sid == security.SID_CLAIMS_VALID):
-                continue
+        for entry in sids:
+            if isinstance(entry, frozenset):
+                mapped_sids.add(frozenset(self.map_sids(entry,
+                                                        mapping,
+                                                        domain_sid)))
+            else:
+                sid, sid_type, attrs = entry
+                if isinstance(sid, int):
+                    # If it's an integer, we assume it's a RID, and prefix the
+                    # domain SID.
+                    sid = f'{domain_sid}-{sid}'
+                elif sid in mapping:
+                    # Or if we have a mapping for it, apply that. Otherwise
+                    # leave it unmodified.
+                    sid = mapping[sid].sid
 
-            mapped_sids.add((sid, sid_type, attrs))
+                # There's no point expecting the 'Claims Valid' SID to be
+                # present if we don't support claims. Filter it out to give the
+                # tests a chance of passing.
+                if not self.kdc_claims_support and (
+                        sid == security.SID_CLAIMS_VALID):
+                    continue
+
+                mapped_sids.add((sid, sid_type, attrs))
 
         return mapped_sids
 
