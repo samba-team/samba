@@ -1559,7 +1559,7 @@ planoldpythontestsuite(env, "getnc_schema",
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # This test can be sensitive to the DC joins and replications done in
-# "samba_tool_drs" so run this is run against schema_pair_dc/schema_dc
+# "samba_tool_drs" so it is run against schema_pair_dc/schema_dc
 # not the set of environments connected with ad_dc.
 
 # This will show the replication state of ad_dc
