@@ -292,7 +292,7 @@ def cmd_testonly(opt):
     if env.ADDRESS_SANITIZER:
         # We try to find the correct libasan automatically
         libasan = Utils.cmd_output(
-            'ldd bin/texpect | grep libasan| cut -f 3 -d \ ',
+            r'ldd bin/texpect | grep libasan| cut -f 3 -d \ ',
             silent=True).strip()
         libasan = libasan.decode('utf8')
 
