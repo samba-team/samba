@@ -786,7 +786,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 	p += U32_LEN;
 
 	/* First fields are fixed: num_elements, DN length */
-	if (p + U32_LEN * 2 > end_p) {
+	if (U32_LEN * 2 > end_p - p) {
 		errno = EIO;
 		goto failed;
 	}
@@ -797,7 +797,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 	len = PULL_LE_U32(p, 0);
 	p += U32_LEN;
 
-	if (p + len + NULL_PAD_BYTE_LEN > end_p) {
+	if (len + NULL_PAD_BYTE_LEN > end_p - p) {
 		errno = EIO;
 		goto failed;
 	}
@@ -826,7 +826,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 	len = PULL_LE_U32(p, 0) + NULL_PAD_BYTE_LEN;
 	p += U32_LEN;
 
-	if (p + len > end_p) {
+	if (len > end_p - p) {
 		errno = EIO;
 		goto failed;
 	}
@@ -892,10 +892,10 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 		struct ldb_message_element *element = NULL;
 
 		/* Sanity check: minimum element size */
-		if (p + (U32_LEN * 2) + /* attr name len, num values */
+		if ((U32_LEN * 2) + /* attr name len, num values */
 			(U8_LEN * 2) + /* value length width, one val length */
 			(NULL_PAD_BYTE_LEN * 2) /* null for attr name + val */
-			> value_section_p) {
+			> value_section_p - p) {
 			errno = EIO;
 			goto failed;
 		}
@@ -916,7 +916,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 		 * val_len_width is the width specifier
 		 * for the variable length encoding
 		 */
-		if (p + U32_LEN + U8_LEN > value_section_p) {
+		if (U32_LEN + U8_LEN > value_section_p - p) {
 			errno = EIO;
 			goto failed;
 		}
@@ -956,8 +956,8 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 		val_len_width = *p;
 		p += U8_LEN;
 
-		if (p + val_len_width * element->num_values >
-		    value_section_p) {
+		if (val_len_width * element->num_values >
+		    value_section_p - p) {
 			errno = EIO;
 			goto failed;
 		}
@@ -994,7 +994,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 				errno = EIO;
 				goto failed;
 			}
-			if (q + len + NULL_PAD_BYTE_LEN > end_p) {
+			if (len + NULL_PAD_BYTE_LEN > end_p - q) {
 				errno = EIO;
 				goto failed;
 			}
