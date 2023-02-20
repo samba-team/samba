@@ -119,8 +119,6 @@ sub_vars = get_subst_vars(samdb)
 # get the list of SPN entries we should have
 spn_update_list = lp.private_path('spn_update_list')
 
-file = open(spn_update_list, "r")
-
 spn_list = []
 
 has_forest_dns = False
@@ -141,16 +139,17 @@ if len(res) == 1:
 
 
 # build the spn list
-for line in file:
-    line = line.strip()
-    if line == '' or line[0] == "#":
-        continue
-    if re.match(r".*/DomainDnsZones\..*", line) and not has_domain_dns:
-        continue
-    if re.match(r".*/ForestDnsZones\..*", line) and not has_forest_dns:
-        continue
-    line = samba.substitute_var(line, sub_vars)
-    spn_list.append(line)
+with open(spn_update_list, "r") as file:
+    for line in file:
+        line = line.strip()
+        if line == '' or line[0] == "#":
+            continue
+        if re.match(r".*/DomainDnsZones\..*", line) and not has_domain_dns:
+            continue
+        if re.match(r".*/ForestDnsZones\..*", line) and not has_forest_dns:
+            continue
+        line = samba.substitute_var(line, sub_vars)
+        spn_list.append(line)
 
 # get the current list of SPNs in our sam
 res = samdb.search(base=samdb.get_default_basedn(),
