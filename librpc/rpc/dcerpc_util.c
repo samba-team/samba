@@ -710,7 +710,7 @@ const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 		if (strncasecmp(p, "\\pipe\\", 6) == 0) {
 			p += 6;
 		}
-		if (strncmp(p, "\\", 1) == 0) {
+		if (p[0] == '\\') {
 			p += 1;
 		}
 	}
