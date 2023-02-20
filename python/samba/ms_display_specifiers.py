@@ -176,9 +176,9 @@ def read_ms_ldif(filename):
     out = []
 
     from io import open
-    f = open(filename, "r", encoding='latin-1')
-    for entry in __read_raw_entries(f):
-        out.append(__write_ldif_one(__transform_entry(entry)))
+    with open(filename, "r", encoding='latin-1') as f:
+        for entry in __read_raw_entries(f):
+            out.append(__write_ldif_one(__transform_entry(entry)))
 
     return "\n\n".join(out) + "\n\n"
 
