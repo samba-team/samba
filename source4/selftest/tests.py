@@ -278,8 +278,8 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
 
 # Tests for the DFS referral calls implementation
 for t in smbtorture4_testsuites("dfs."):
-    plansmbtorture4testsuite(t, "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
-    plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
+    plansmbtorture4testsuite(t, "ad_dc_ntvfs", r'//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
+    plansmbtorture4testsuite(t, "ad_dc_smb1", r'//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 # Tests for the NET API (net.api.become.dc tested below against all the roles)
 net_tests = list(filter(lambda x: "net.api.become.dc" not in x, smbtorture4_testsuites("net.")))
@@ -321,7 +321,7 @@ for env in all_fl_envs:
     plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME', 'rpc.lsa.secrets'], "samba4.rpc.lsa.secrets on %s with Kerberos" % (transport,))
     plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', "--option=clientusespnegoprincipal=yes", '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.rpc.lsa.secrets on %s with Kerberos - use target principal" % (transport,))
     plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[target_principal=dcom/$NETBIOSNAME]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.lsa.secrets on %s with Kerberos - netbios name principal dcom" % (transport,))
-    plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[target_principal=$NETBIOSNAME\$]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.lsa.secrets on %s with Kerberos - netbios name principal dollar" % (transport,))
+    plansmbtorture4testsuite('rpc.lsa.secrets', env, [r"%s:$SERVER[target_principal=$NETBIOSNAME\$]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.lsa.secrets on %s with Kerberos - netbios name principal dollar" % (transport,))
     plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[target_principal=$NETBIOSNAME]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.lsa.secrets on %s with Kerberos - netbios name principal" % (transport,))
     plansmbtorture4testsuite('rpc.lsa.secrets.none*', env, ["%s:$SERVER" % transport, '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', "--option=gensec:fake_gssapi_krb5=yes", '--option=gensec:gssapi_krb5=no', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.rpc.lsa.secrets on %s with Kerberos - use Samba3 style login" % transport)
     plansmbtorture4testsuite('rpc.lsa.secrets.none*', env, ["%s:$SERVER" % transport, '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', "--option=gensec:fake_gssapi_krb5=yes", '--option=gensec:gssapi_krb5=no', '--option=gensec:target_hostname=$NETBIOSNAME', '--option=gensec_krb5:send_authenticator_checksum=false'], "samba4.rpc.lsa.secrets on %s with Kerberos - use raw-krb5-no-authenticator-checksum style login" % transport)
@@ -446,10 +446,10 @@ for proto in protocols:
         [ "--option=torture:clientprotocol=%s" % proto],
         "samba4.%s.baduser.%s" % (t, proto))
 
-plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
+plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", r'//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 for t in smbtorture4_testsuites("rap."):
-    plansmbtorture4testsuite(t, "ad_dc_ntvfs", '//$SERVER/IPC\$ -U$USERNAME%$PASSWORD')
+    plansmbtorture4testsuite(t, "ad_dc_ntvfs", r'//$SERVER/IPC\$ -U$USERNAME%$PASSWORD')
 
 # Tests against the NTVFS CIFS backend
 for t in base + raw:
@@ -659,7 +659,7 @@ plantestsuite("samba4.blackbox.locktest(ad_dc_ntvfs)", "ad_dc_ntvfs", [os.path.j
 plantestsuite("samba4.blackbox.masktest", "ad_dc_ntvfs", [os.path.join(samba4srcdir, "torture/tests/test_masktest.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX'])
 plantestsuite("samba4.blackbox.gentest(ad_dc_ntvfs)", "ad_dc_ntvfs", [os.path.join(samba4srcdir, "torture/tests/test_gentest.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', "$PREFIX"])
 plantestsuite("samba4.blackbox.rfc2307_mapping(ad_dc_ntvfs:local)", "ad_dc_ntvfs:local", [os.path.join(samba4srcdir, "../nsswitch/tests/test_rfc2307_mapping.sh"), '$DOMAIN', '$USERNAME', '$PASSWORD', "$SERVER", "$UID_RFC2307TEST", "$GID_RFC2307TEST", configuration])
-plantestsuite("samba4.blackbox.chgdcpass", "chgdcpass", [os.path.join(bbdir, "test_chgdcpass.sh"), '$SERVER', "CHGDCPASS\$", '$REALM', '$DOMAIN', '$PREFIX/chgdcpass', "aes256-cts-hmac-sha1-96", '$PREFIX/chgdcpass', smbclient3])
+plantestsuite("samba4.blackbox.chgdcpass", "chgdcpass", [os.path.join(bbdir, "test_chgdcpass.sh"), '$SERVER', r"CHGDCPASS\$", '$REALM', '$DOMAIN', '$PREFIX/chgdcpass', "aes256-cts-hmac-sha1-96", '$PREFIX/chgdcpass', smbclient3])
 plantestsuite("samba4.blackbox.samba_upgradedns(chgdcpass:local)", "chgdcpass:local", [os.path.join(bbdir, "test_samba_upgradedns.sh"), '$SERVER', '$REALM', '$PREFIX', '$SELFTEST_PREFIX/chgdcpass'])
 plantestsuite("samba4.blackbox.net_ads", "ad_dc:client", [os.path.join(bbdir, "test_net_ads.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS'])
 plantestsuite("samba4.blackbox.net_offlinejoin", "ad_dc:client", [os.path.join(bbdir, "test_net_offline.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS'])
@@ -1492,7 +1492,7 @@ plansmbtorture4testsuite(t, "vampire_dc", ['$SERVER', '-U$USERNAME%$PASSWORD', '
 for env in ['rodc', 'offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
     plansmbtorture4testsuite('rpc.echo', env, ['ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo")
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "yes", '-P', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo")
-    plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestallowed\ account%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testallowed")
+    plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", r'-Utestallowed\ account%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testallowed")
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestdenied%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testdenied")
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', binpath('smbclient')])
 
@@ -1502,7 +1502,7 @@ plantestsuite("samba.blackbox.rpcclient_samlogon", "rodc:local", [os.path.join(s
                                                                   "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
 
 plantestsuite("samba.blackbox.rpcclient_samlogon_testallowed", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
-                                                                              "testallowed\ account", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+                                                                              r"testallowed\ account", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
 
 plantestsuite("samba.blackbox.rpcclient_samlogon_testdenied", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
                                                                              "testdenied", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
@@ -1676,10 +1676,10 @@ plansmbtorture4testsuite('krb5.kdc', "rodc", ['ncacn_np:$SERVER_IP', "-k", "yes"
                                               '--option=torture:krb5-upn=testdenied_upn@$REALM.upn',
                                               '--option=torture:expect_rodc=true'],
                          "samba4.krb5.kdc with account DENIED permission to replicate to an RODC")
-plansmbtorture4testsuite('krb5.kdc', "rodc", ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestallowed\ account%$PASSWORD',
+plansmbtorture4testsuite('krb5.kdc', "rodc", ['ncacn_np:$SERVER_IP', "-k", "yes", r'-Utestallowed\ account%$PASSWORD',
                                               '--workgroup=$DOMAIN', '--realm=$REALM',
                                               '--option=torture:expect_machine_account=true',
-                                              '--option=torture:krb5-upn=testallowed\ upn@$REALM',
+                                              r'--option=torture:krb5-upn=testallowed\ upn@$REALM',
                                               '--option=torture:krb5-hostname=testallowed',
                                               '--option=torture:expect_rodc=true',
                                               '--option=torture:expect_cached_at_rodc=true'],
