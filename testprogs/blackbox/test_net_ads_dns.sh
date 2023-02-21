@@ -159,4 +159,40 @@ testit_grep_count \
 	dig @$SERVER +short -t aaaa $MACHINENAME.$REALM ||
 	failed=$(expr $failed + 1)
 
+# Tests with --dns-ttl option
+testit "net ads dns register with default TTL" \
+	$net_tool ads dns register $MACHINENAME.$REALM $IPADDRMAC -P ||
+	failed=$(expr $failed + 1)
+TTL=$(dig @$SERVER.$REALM +noall +ttlid +answer -t A $MACHINENAME.$REALM |
+	awk '{ print $2 }')
+testit "Verify default TTL of 3600 seconds" \
+	test "$TTL" = "3600" ||
+	failed=$(expr $failed + 1)
+
+testit "Update record with TTL of 60 seconds" \
+	$net_tool ads dns register --dns-ttl 60 --force $MACHINENAME.$REALM $IPADDRMAC -P ||
+	failed=$(expr $failed + 1)
+TTL=$(dig @$SERVER.$REALM +noall +ttlid +answer -t A $MACHINENAME.$REALM |
+	awk '{ print $2 }')
+testit "Verify new TTL of 60 seconds" \
+	test "$TTL" = "60" ||
+	failed=$(expr $failed + 1)
+
+testit "We should be able to unregister the name $MACHINENAME.$REALM $IPADDRESS" \
+	$VALGRIND $net_tool ads dns unregister $MACHINENAME.$REALM -P ||
+	failed=$(expr $failed + 1)
+
+testit_grep_count \
+	"The name $MACHINENAME.$REALM ($IPADDRESS) should not be there any longer" \
+	"$IPADDRESS" \
+	0 \
+	dig @$SERVER.$REALM +short -t A $MACHINENAME.$REALM ||
+	failed=$(expr $failed + 1)
+testit_grep_count \
+	"The name $MACHINENAME.$REALM ($IP6ADDRESS) should not be there any longer" \
+	"$IP6ADDRESS" \
+	0 \
+	dig @$SERVER.$REALM +short -t AAAA $MACHINENAME.$REALM ||
+	failed=$(expr $failed + 1)
+
 testok $0 $failed
