@@ -562,6 +562,9 @@ class RawKerberosTest(TestCaseInTempDir):
         RESOURCE_SID = object()  # in resource_groups
         PRIMARY_GID = object()  # the (sole) primary group
 
+        def __repr__(self):
+            return self.__str__()
+
     pac_checksum_types = {krb5pac.PAC_TYPE_SRV_CHECKSUM,
                           krb5pac.PAC_TYPE_KDC_CHECKSUM,
                           krb5pac.PAC_TYPE_TICKET_CHECKSUM,
