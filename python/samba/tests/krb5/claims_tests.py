@@ -77,6 +77,77 @@ class ClaimsTests(KDCBaseTest):
     def get_binary_dn(self):
         return 'B:8:01010101:' + self.get_sample_dn()
 
+    def setup_claims(self, all_claims):
+        expected_claims = {}
+        unexpected_claims = set()
+
+        details = {}
+
+        for claim in all_claims:
+            # Make a copy to avoid modifying the original.
+            claim = dict(claim)
+
+            claim_id = self.get_new_username()
+
+            expected = claim.pop('expected', False)
+            expected_values = claim.pop('expected_values', None)
+            if not expected:
+                self.assertIsNone(expected_values,
+                                  'claim not expected, '
+                                  'but expected values provided')
+
+            values = claim.pop('values', None)
+            if values is not None:
+                def get_placeholder(val):
+                    if val is self.sample_dn:
+                        return self.get_sample_dn()
+                    elif val is self.binary_dn:
+                        return self.get_binary_dn()
+                    else:
+                        return val
+
+                def ldb_transform(val):
+                    if val is True:
+                        return 'TRUE'
+                    elif val is False:
+                        return 'FALSE'
+                    elif isinstance(val, int):
+                        return str(val)
+                    else:
+                        return val
+
+                values_type = type(values)
+                values = values_type(map(get_placeholder, values))
+                transformed_values = values_type(map(ldb_transform, values))
+
+                attribute = claim['attribute']
+                if attribute in details:
+                    self.assertEqual(details[attribute], transformed_values,
+                                     'conflicting values set for attribute')
+                details[attribute] = transformed_values
+
+                if expected_values is None:
+                    expected_values = values
+
+            if expected:
+                self.assertIsNotNone(expected_values,
+                                     'expected claim, but no value(s) set')
+                value_type = claim['value_type']
+
+                expected_claims[claim_id] = {
+                    'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                    'type': value_type,
+                    'values': expected_values,
+                }
+            else:
+                unexpected_claims.add(claim_id)
+
+            self.create_claim(claim_id, **claim)
+
+        details = ((k, v) for k, v in details.items())
+
+        return details, expected_claims, unexpected_claims
+
     def remove_client_claims(self, ticket):
         def modify_pac_fn(pac):
             pac_buffers = pac.buffers
@@ -525,74 +596,10 @@ class ClaimsTests(KDCBaseTest):
         else:
             self.fail(f'Unknown class "{account_class}"')
 
-        expected_claims = {}
-        unexpected_claims = set()
-
-        details = {}
-
         all_claims = case.pop('claims')
-        for claim in all_claims:
-            # Make a copy to avoid modifying the original.
-            claim = dict(claim)
-
-            claim_id = self.get_new_username()
-
-            expected = claim.pop('expected', False)
-            expected_values = claim.pop('expected_values', None)
-            if not expected:
-                self.assertIsNone(expected_values,
-                                  'claim not expected, '
-                                  'but expected values provided')
-
-            values = claim.pop('values', None)
-            if values is not None:
-                def get_placeholder(val):
-                    if val is self.sample_dn:
-                        return self.get_sample_dn()
-                    elif val is self.binary_dn:
-                        return self.get_binary_dn()
-                    else:
-                        return val
-
-                def ldb_transform(val):
-                    if val is True:
-                        return 'TRUE'
-                    elif val is False:
-                        return 'FALSE'
-                    elif isinstance(val, int):
-                        return str(val)
-                    else:
-                        return val
-
-                values_type = type(values)
-                values = values_type(map(get_placeholder, values))
-                transformed_values = values_type(map(ldb_transform, values))
-
-                attribute = claim['attribute']
-                if attribute in details:
-                    self.assertEqual(details[attribute], transformed_values,
-                                     'conflicting values set for attribute')
-                details[attribute] = transformed_values
-
-                if expected_values is None:
-                    expected_values = values
-
-            if expected:
-                self.assertIsNotNone(expected_values,
-                                     'expected claim, but no value(s) set')
-                value_type = claim['value_type']
-
-                expected_claims[claim_id] = {
-                    'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
-                    'type': value_type,
-                    'values': expected_values,
-                }
-            else:
-                unexpected_claims.add(claim_id)
-
-            self.create_claim(claim_id, **claim)
-
-        details = ((k, v) for k, v in details.items())
+        (details,
+         expected_claims,
+         unexpected_claims) = self.setup_claims(all_claims)
         creds = self.get_cached_creds(account_type=account_type,
                                       opts={
                                           'additional_details': details,
