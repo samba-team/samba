@@ -716,7 +716,7 @@ if 'SOCKET_WRAPPER_DIR' not in os.environ:
 try:
     file = open(dns_update_list, "r")
 except OSError as e:
-    if opts.update_cache:
+    if opts.update_list:
         print("The specified update list does not exist")
     else:
         print("The server update list was not found, "
