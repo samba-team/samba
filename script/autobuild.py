@@ -282,7 +282,7 @@ tasks = {
     "samba-mit-build": {
         "git-clone-required": True,
         "sequence": [
-            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc --with-systemd-userdb" + samba_configure_params),
             ("make", "make -j"),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
             ("chmod-R-a-w", "chmod -R a-w ."),

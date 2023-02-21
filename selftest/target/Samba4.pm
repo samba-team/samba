@@ -821,6 +821,10 @@ sub provision_raw_step1($$)
         idmap_ldb:use rfc2307=yes
 	winbind enum users = yes
 	winbind enum groups = yes
+	winbind expand groups = 1
+
+	winbind varlink : socket directory = $ctx->{winbindd_socket_dir}
+	winbind varlink : service name = org.samba.selftest
 
         rpc server port:netlogon = 1026
 	include system krb5 conf = no
@@ -2165,6 +2169,9 @@ sub provision_ad_dc()
 	dsdb event notification = true
 	dsdb password event notification = true
 	dsdb group change notification = true
+
+	winbind varlink service = yes
+
         $smbconf_args
 ";
 

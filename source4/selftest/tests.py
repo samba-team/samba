@@ -2250,3 +2250,8 @@ if have_cluster_support:
     planpythontestsuite("clusteredmember:local",
                         "samba.tests.blackbox.rpcd_witness_samba_only",
                         environ=cluster_environ)
+
+if 'WITH_SYSTEMD_USERDB' in config_hash:
+    planpythontestsuite("ad_dc:local", "samba.tests.varlink.getuserrecord")
+    planpythontestsuite("ad_dc:local", "samba.tests.varlink.getgrouprecord")
+    planpythontestsuite("ad_dc:local", "samba.tests.varlink.getmemberships")
