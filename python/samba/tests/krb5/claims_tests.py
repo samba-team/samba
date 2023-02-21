@@ -82,6 +82,7 @@ class ClaimsTests(KDCBaseTest):
         unexpected_claims = set()
 
         details = {}
+        mod_msg = ldb.Message()
 
         for claim in all_claims:
             # Make a copy to avoid modifying the original.
@@ -129,6 +130,14 @@ class ClaimsTests(KDCBaseTest):
                 if expected_values is None:
                     expected_values = values
 
+            mod_values = claim.pop('mod_values', None)
+            if mod_values is not None:
+                flag = (ldb.FLAG_MOD_REPLACE
+                        if values is not None else ldb.FLAG_MOD_ADD)
+                mod_msg[attribute] = ldb.MessageElement(mod_values,
+                                                        flag,
+                                                        attribute)
+
             if expected:
                 self.assertIsNotNone(expected_values,
                                      'expected claim, but no value(s) set')
@@ -146,7 +155,7 @@ class ClaimsTests(KDCBaseTest):
 
         details = ((k, v) for k, v in details.items())
 
-        return details, expected_claims, unexpected_claims
+        return details, mod_msg, expected_claims, unexpected_claims
 
     def remove_client_claims(self, ticket):
         def modify_pac_fn(pac):
@@ -597,7 +606,7 @@ class ClaimsTests(KDCBaseTest):
             self.fail(f'Unknown class "{account_class}"')
 
         all_claims = case.pop('claims')
-        (details,
+        (details, _,
          expected_claims,
          unexpected_claims) = self.setup_claims(all_claims)
         creds = self.get_cached_creds(account_type=account_type,
