@@ -53,13 +53,34 @@ echo "Starting ..."
 
 testit "admin user should be able to add a DNS entry $NAME.$REALM $IPADDRESS $IP6ADDRESS" $VALGRIND $net_tool ads dns register $NAME.$REALM $IPADDRESS $IP6ADDRESS -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
-testit "We should be able to see the new name $NAME.$REALM $IPADDRESS" dig @$SERVER +short -t a $NAME.$REALM | grep -q $IPADDRESS || failed=$(expr $failed + 1)
-testit "We should be able to see the new name $NAME.$REALM $IP6ADDRESS" dig @$SERVER +short -t aaaa $NAME.$REALM | grep -q $IP6ADDRESS || failed=$(expr $failed + 1)
+testit_grep_count \
+	"We should be able to see the new name $NAME.$REALM $IPADDRESS" \
+	"$IPADDRESS" \
+	1 \
+	dig @$SERVER +short -t a $NAME.$REALM ||
+	failed=$(expr $failed + 1)
+testit_grep_count \
+	"We should be able to see the new name $NAME.$REALM $IP6ADDRESS" \
+	"$IP6ADDRESS" \
+	1 \
+	dig @$SERVER +short -t aaaa $NAME.$REALM ||
+	failed=$(expr $failed + 1)
 
 testit "We should be able to unregister the name $NAME.$REALM" $VALGRIND $net_tool ads dns unregister $NAME.$REALM -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
-testit "The name $NAME.$REALM $IPADDRESS should not be there any longer" dig @$SERVER +short -t a $NAME.$REALM | grep -q $IPADDRESS && failed=$(expr $failed + 1)
-testit "The name $NAME.$REALM $IP6ADDRESS should not be there any longer" dig @$SERVER +short -t aaaa $NAME.$REALM | grep -q $IP6ADDRESS && failed=$(expr $failed + 1)
+testit_grep_count \
+	"The name $NAME.$REALM $IPADDRESS should not be there any longer" \
+	"$IPADDRESS" \
+	0 \
+	dig @$SERVER +short -t a $NAME.$REALM ||
+	failed=$(expr $failed + 1)
+
+testit_grep_count \
+	"The name $NAME.$REALM $IP6ADDRESS should not be there any longer" \
+	"$IP6ADDRESS" \
+	0 \
+	dig @$SERVER +short -t aaaa $NAME.$REALM ||
+	failed=$(expr $failed + 1)
 
 # prime the kpasswd server, see "git blame" for an explanation
 $VALGRIND $net_tool user add $UNPRIVUSER $UNPRIVPASS -U$DC_USERNAME%$DC_PASSWORD
@@ -83,14 +104,29 @@ testit "Unprivileged users should be able to add new names" $net_tool ads dns re
 # This should work as well
 testit "machine account should be able to add a DNS entry net ads dns register membername.$REALM $IPADDRMAC -P " $net_tool ads dns register membername.$REALM $IPADDRMAC -P || failed=$(expr $failed + 1)
 
-testit "We should be able to see the new name membername.$REALM" dig @$SERVER +short -t a membername.$REALM | grep -q $IPADDRMAC || failed=$(expr $failed + 1)
+testit_grep_count \
+	"We should be able to see the new name membername.$REALM" \
+	"$IPADDRMAC" \
+	1 \
+	dig @$SERVER +short -t a membername.$REALM ||
+	failed=$(expr $failed + 1)
 
 #Unprivileged users should not be able to overwrite other's names
 testit_expect_failure "Unprivileged users should not be able to modify existing names" $net_tool ads dns register membername.$REALM $UNPRIVIP -U$UNPRIVUSER%$UNPRIVPASS || failed=$(expr $failed + 1)
 
 testit "We should be able to unregister the name $NAME.$REALM $IPADDRESS" $VALGRIND $net_tool ads dns unregister $NAME.$REALM -P || failed=$(expr $failed + 1)
 
-testit "The name $NAME.$REALM ($IPADDRESS) should not be there any longer" dig @$SERVER +short -t a $NAME.$REALM | grep -q $IPADDRESS && failed=$(expr $failed + 1)
-testit "The name $NAME.$REALM ($IP6ADDRESS) should not be there any longer" dig @$SERVER +short -t aaaa $NAME.$REALM | grep -q $IP6ADDRESS && failed=$(expr $failed + 1)
+testit_grep_count \
+	"The name $NAME.$REALM ($IPADDRESS) should not be there any longer" \
+	"$IPADDRESS" \
+	0 \
+	dig @$SERVER +short -t a $NAME.$REALM ||
+	failed=$(expr $failed + 1)
+testit_grep_count \
+	"The name $NAME.$REALM ($IP6ADDRESS) should not be there any longer" \
+	"$IP6ADDRESS" \
+	0 \
+	dig @$SERVER +short -t aaaa $NAME.$REALM ||
+	failed=$(expr $failed + 1)
 
 exit $failed
