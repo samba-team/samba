@@ -116,6 +116,9 @@ testit_expect_failure "Unprivileged users should not be able to modify existing 
 
 testit "We should be able to unregister the name $NAME.$REALM $IPADDRESS" $VALGRIND $net_tool ads dns unregister $NAME.$REALM -P || failed=$(expr $failed + 1)
 
+# Remove the unprivileged user, which is not required anymore
+$VALGRIND $net_tool user delete $UNPRIVUSER -U$DC_USERNAME%$DC_PASSWORD
+
 testit_grep_count \
 	"The name $NAME.$REALM ($IPADDRESS) should not be there any longer" \
 	"$IPADDRESS" \
