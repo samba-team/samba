@@ -42,9 +42,9 @@ IPADDRESS=10.1.4.111
 IP6ADDRESS=fd00:1a1a::1:5ee:bad:c0de
 IPADDRMAC=10.1.4.124
 UNPRIVIP=10.1.4.130
-NAME=testname
-UNPRIVNAME=unprivname
-UNPRIVUSER=unprivuser
+NAME=testname.$$
+UNPRIVNAME=unprivname.$$
+UNPRIVUSER=unprivuser.$$
 UNPRIVPASS=UnPrivPass1
 
 # These tests check that privileged users can add DNS names and that
