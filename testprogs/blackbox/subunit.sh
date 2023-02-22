@@ -146,8 +146,9 @@ testit_grep_count()
 	    printf 'GREP: "%s" found "%d" times, expected "%d" in output:\n%s'\
 		   "$grep" "$found" "$num" "$output" |
 		subunit_fail_test "$name"
+	    return 1
 	fi
-	return $status
+	return 0
 }
 
 testit_expect_failure()
@@ -188,6 +189,7 @@ testit_expect_failure_grep()
 		subunit_pass_test "$name"
 	else
 		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
+		return 1
 	fi
 	return 0
 }
