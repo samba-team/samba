@@ -55,4 +55,4 @@ testit_expect_failure_grep "add_duplicate_special_group" "Failed to add group.*a
 
 cleanup_output_directories
 
-exit $failed
+testok $0 $failed
