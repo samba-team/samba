@@ -159,4 +159,4 @@ testit_grep_count \
 	dig @$SERVER +short -t aaaa $MACHINENAME.$REALM ||
 	failed=$(expr $failed + 1)
 
-exit $failed
+testok $0 $failed
