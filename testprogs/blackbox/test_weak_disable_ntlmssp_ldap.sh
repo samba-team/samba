@@ -38,4 +38,4 @@ testit_expect_failure_grep "net_ads_search.ntlm" "We can't fallback to NTLMSSP, 
 
 unset GNUTLS_FORCE_FIPS_MODE
 
-exit $failed
+testok $0 $failed
