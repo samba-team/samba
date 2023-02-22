@@ -22,7 +22,6 @@ import drs_base
 from samba.dcerpc import drsuapi
 from samba import drs_utils
 import os
-import re
 import json
 import ldb
 import random
