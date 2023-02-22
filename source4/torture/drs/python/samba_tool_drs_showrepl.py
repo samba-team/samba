@@ -291,7 +291,6 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
             else:
                 os.environ['NO_COLOR'] = old_no_color
 
-
     def test_samba_tool_showrepl_summary_forced_failure(self):
         """Tests 'samba-tool drs showrepl --summary' command when we break the
         network on purpose.
