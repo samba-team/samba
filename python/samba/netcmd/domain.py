@@ -4444,9 +4444,10 @@ class cmd_domain_functional_prep(Command):
             if own_dn != master:
                 raise CommandError("This server is not the infrastructure master.")
 
-        if forest_prep:
+        exception_encountered = None
+
+        if forest_prep and exception_encountered is None:
             samdb.transaction_start()
-            error_encountered = False
             try:
                 from samba.forest_update import ForestUpdate
                 forest = ForestUpdate(samdb, fix=True)
@@ -4460,11 +4461,10 @@ class cmd_domain_functional_prep(Command):
             except Exception as e:
                 print("Exception: %s" % e)
                 samdb.transaction_cancel()
-                error_encountered = True
+                exception_encountered = e
 
-        if domain_prep:
+        if domain_prep and exception_encountered is None:
             samdb.transaction_start()
-            error_encountered = False
             try:
                 from samba.domain_update import DomainUpdate
 
@@ -4477,13 +4477,14 @@ class cmd_domain_functional_prep(Command):
             except Exception as e:
                 print("Exception: %s" % e)
                 samdb.transaction_cancel()
-                error_encountered = True
+                exception_encountered = e
 
         if updates_allowed_overridden:
             lp.set("dsdb:schema update allowed", "no")
 
-        if error_encountered:
-            raise CommandError('Failed to perform functional prep')
+        if exception_encountered is not None:
+            raise CommandError('Failed to perform functional prep: %r' %
+                               exception_encountered)
 
 
 class cmd_domain(SuperCommand):
