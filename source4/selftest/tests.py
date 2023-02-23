@@ -34,7 +34,10 @@ from selftesthelpers import smbtorture4, ntlm_auth3, samba3srcdir
 print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
 
 
-def plansmbtorture4testsuite(name, env, options, modname=None, environ={}):
+def plansmbtorture4testsuite(name, env, options, modname=None, environ=None):
+    if environ is None:
+        environ = {}
+
     return selftesthelpers.plansmbtorture4testsuite(name,
                                                     env,
                                                     options,
@@ -862,7 +865,13 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
 
 
-def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
+def planoldpythontestsuite(env, module, name=None, extra_path=None, environ=None, extra_args=None):
+    if extra_path is None:
+        extra_path = []
+    if environ is None:
+        environ = {}
+    if extra_args is None:
+        extra_args = []
     environ = dict(environ)
     py_path = list(extra_path)
     if py_path:

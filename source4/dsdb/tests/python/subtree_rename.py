@@ -89,7 +89,10 @@ class SubtreeRenameTests(samba.tests.TestCase):
         if not opts.no_cleanup:
             self.delete_ous()
 
-    def add_object(self, cn, objectclass, ou=None, more_attrs={}):
+    def add_object(self, cn, objectclass, ou=None, more_attrs=None):
+        if more_attrs is None:
+            more_attrs = {}
+
         dn = "CN=%s,%s" % (cn, ou)
         attrs = {'cn': cn,
                  'objectclass': objectclass,
@@ -99,7 +102,10 @@ class SubtreeRenameTests(samba.tests.TestCase):
 
         return dn
 
-    def add_objects(self, n, objectclass, prefix=None, ou=None, more_attrs={}):
+    def add_objects(self, n, objectclass, prefix=None, ou=None, more_attrs=None):
+        if more_attrs is None:
+            more_attrs = {}
+
         if prefix is None:
             prefix = objectclass
         dns = []

@@ -60,7 +60,10 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
     def GUID_string(self, guid):
         return get_string(self.samdb.schema_format_value("objectGUID", guid))
 
-    def search_guid(self, guid, attrs=["*"]):
+    def search_guid(self, guid, attrs=None):
+        if attrs is None:
+            attrs = ["*"]
+
         res = self.samdb.search(base="<GUID=%s>" % self.GUID_string(guid),
                                 scope=SCOPE_BASE, attrs=attrs,
                                 controls=["show_deleted:1"])

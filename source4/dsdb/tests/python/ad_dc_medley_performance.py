@@ -246,8 +246,10 @@ class UserTests(samba.tests.TestCase):
                     raise
 
     def search_expression_list(self, expressions, rounds,
-                               attrs=['cn'],
+                               attrs=None,
                                scope=SCOPE_SUBTREE):
+        if attrs is None:
+            attrs = ['cn']
         for expression in expressions:
             t = time.time()
             for i in range(rounds):

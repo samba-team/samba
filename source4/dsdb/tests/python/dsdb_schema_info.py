@@ -165,7 +165,10 @@ systemOnly: FALSE
 """
         return ldif
 
-    def test_AddModifyClass(self, controls=[], class_pre="schemaInfo-Class-"):
+    def test_AddModifyClass(self, controls=None, class_pre="schemaInfo-Class-"):
+        if controls is None:
+            controls = []
+
         # get initial schemaInfo
         schi_before = self._getSchemaInfo()
 

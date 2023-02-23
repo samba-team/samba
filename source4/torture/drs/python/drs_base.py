@@ -341,7 +341,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         return ctr
 
-    def _check_replication(self, expected_dns, replica_flags, expected_links=[],
+    def _check_replication(self, expected_dns, replica_flags, expected_links=None,
                            drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
                            highwatermark=None, uptodateness_vector=None,
                            more_flags=0, more_data=False,
@@ -353,6 +353,8 @@ class DrsBaseTestCase(SambaToolCmdTest):
         """
         Makes sure that replication returns the specific error given.
         """
+        if expected_links is None:
+            expected_links = []
 
         # send a DsGetNCChanges to the DC
         ctr6 = self._get_replication(replica_flags,
@@ -380,13 +382,19 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         return dn_list
 
-    def _check_ctr6(self, ctr6, expected_dns=[], expected_links=[],
+    def _check_ctr6(self, ctr6, expected_dns=None, expected_links=None,
                     dn_ordered=True, links_ordered=True,
                     more_data=False, nc_object_count=0,
                     nc_linked_attributes_count=0, drs_error=0):
         """
         Check that a ctr6 matches the specified parameters.
         """
+        if expected_dns is None:
+            expected_dns = []
+
+        if expected_links is None:
+            expected_links = []
+
         ctr6_raw_dns = self._get_ctr6_dn_list(ctr6)
 
         # filter out changes to the RID Set objects, as these can happen
@@ -506,7 +514,9 @@ class DrsBaseTestCase(SambaToolCmdTest):
         (drs_handle, supported_extensions) = drs_DsBind(drs)
         return (drs, drs_handle)
 
-    def get_partial_attribute_set(self, attids=[drsuapi.DRSUAPI_ATTID_objectClass]):
+    def get_partial_attribute_set(self, attids=None):
+        if attids is None:
+            attids = [drsuapi.DRSUAPI_ATTID_objectClass]
         partial_attribute_set = drsuapi.DsPartialAttributeSet()
         partial_attribute_set.attids = attids
         partial_attribute_set.num_attids = len(attids)

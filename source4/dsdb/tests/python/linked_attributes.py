@@ -74,7 +74,10 @@ class LATests(samba.tests.TestCase):
         if not opts.no_cleanup:
             self.samdb.delete(self.ou, ['tree_delete:1'])
 
-    def add_object(self, cn, objectclass, more_attrs={}):
+    def add_object(self, cn, objectclass, more_attrs=None):
+        if more_attrs is None:
+            more_attrs = {}
+
         dn = "CN=%s,%s" % (cn, self.ou)
         attrs = {'cn': cn,
                  'objectclass': objectclass,
@@ -84,7 +87,9 @@ class LATests(samba.tests.TestCase):
 
         return dn
 
-    def add_objects(self, n, objectclass, prefix=None, more_attrs={}):
+    def add_objects(self, n, objectclass, prefix=None, more_attrs=None):
+        if more_attrs is None:
+            more_attrs = {}
         if prefix is None:
             prefix = objectclass
         dns = []

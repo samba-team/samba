@@ -42,8 +42,11 @@ import random
 import time
 
 
-def drs_get_rodc_partial_attribute_set(samdb, samdb1, exceptions=[]):
+def drs_get_rodc_partial_attribute_set(samdb, samdb1, exceptions=None):
     '''get a list of attributes for RODC replication'''
+    if exceptions is None:
+        exceptions = []
+
     partial_attribute_set = drsuapi.DsPartialAttributeSet()
     partial_attribute_set.version = 1
 

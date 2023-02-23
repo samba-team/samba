@@ -336,8 +336,11 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         super(OwnerGroupDescriptorTests, self).tearDown()
         self.deleteAll()
 
-    def check_user_belongs(self, user_dn, groups=[]):
+    def check_user_belongs(self, user_dn, groups=None):
         """ Test whether user is member of the expected group(s) """
+        if groups is None:
+            groups = []
+
         if groups != []:
             # User is member of at least one additional group
             res = self.ldb_admin.search(user_dn, attrs=["memberOf"])
