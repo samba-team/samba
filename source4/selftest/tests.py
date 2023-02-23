@@ -1554,7 +1554,8 @@ planoldpythontestsuite(env, "getnc_schema",
 # not the set of environments connected with ad_dc.
 
 # This will show the replication state of ad_dc
-planoldpythontestsuite("promoted_dc:local", "samba_tool_drs_showrepl",
+env = "schema_pair_dc"
+planoldpythontestsuite("%s:local" % env, "samba_tool_drs_showrepl",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.samba_tool_drs_showrepl.python(%s)" % env,
                        environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
