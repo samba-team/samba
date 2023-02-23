@@ -4193,6 +4193,10 @@ class cmd_domain_schema_upgrade(Command):
                                             ': add')
                 line = line.lower().replace(': ntdsschemamodify',
                                             ': modify')
+                line = line.lower().replace(': ntdsschemamodrdn',
+                                            ': modrdn')
+                line = line.lower().replace(': ntdsschemadelete',
+                                            ': delete')
 
             if values[0].lower() in ['rdnattid', 'subclassof',
                                      'systemposssuperiors',
