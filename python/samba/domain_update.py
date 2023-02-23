@@ -182,13 +182,20 @@ revision: %d
         :param op: Integer update number
         :return: True if update exists else False
         """
+        update_dn = "CN=%s,%s" % (update_map[op], self.domainupdate_container)
         try:
-            res = self.samdb.search(base=self.domainupdate_container,
-                                    expression="(CN=%s)" % update_map[op])
-        except ldb.LdbError:
+            res = self.samdb.search(base=update_dn,
+                                    scope=ldb.SCOPE_BASE,
+                                    attrs=[])
+        except ldb.LdbError as e:
+            (num, msg) = e.args
+            if num != ldb.ERR_NO_SUCH_OBJECT:
+                raise
             return False
 
-        return len(res) == 1
+        assert len(res) == 1
+        print("Skip Domain Update %u: %s" % (op, update_map[op]))
+        return True
 
     def update_add(self, op):
         """
@@ -198,6 +205,7 @@ revision: %d
         self.samdb.add_ldif("""dn: CN=%s,%s
 objectClass: container
 """ % (update_map[op], str(self.domainupdate_container)))
+        print("Applied Domain Update %u: %s" % (op, update_map[op]))
 
     def insert_ace_into_dacl(self, dn, existing_sddl, ace):
         """
