@@ -150,7 +150,7 @@ otherLoginWorkstations: AFTER"
 
         self.ldb.modify_ldif("""
 dn: """ + self.user_sid_dn + """
-changetype: delete
+changetype: modify
 delete: otherLoginWorkstations
 """)
 
