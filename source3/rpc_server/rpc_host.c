@@ -2182,7 +2182,7 @@ static void rpc_host_report_readiness(
 {
 	struct rpc_host_state *state = talloc_get_type_abort(
 		private_data, struct rpc_host_state);
-	int i, num_fds = talloc_array_length(state->ready_signal_fds);
+	size_t i, num_fds = talloc_array_length(state->ready_signal_fds);
 
 	if (!state->is_ready) {
 		DBG_DEBUG("Not yet ready\n");
