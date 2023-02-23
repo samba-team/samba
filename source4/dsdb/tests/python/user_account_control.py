@@ -96,7 +96,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                                  UF_SERVER_TRUST_ACCOUNT]:
                 account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
                 for objectclass in ["computer", "user"]:
-                    for name in [("oc_uac_lock$", "withdollar"), \
+                    for name in [("oc_uac_lock$", "withdollar"),
                         ("oc_uac_lock", "plain")]:
                         test_name = f"{account_type_str}_{objectclass}_{priv[1]}_{name[1]}"
                         cls.generate_dynamic_test("test_objectclass_uac_dollar_lock",
@@ -1282,7 +1282,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         try:
             self.admin_samdb.add(msg_dict)
-            if (objectclass == "user" \
+            if (objectclass == "user"
                 and account_type != UF_NORMAL_ACCOUNT):
                 self.fail("Able to create {account_type_str} on {objectclass}")
         except LdbError as e:

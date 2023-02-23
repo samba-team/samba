@@ -329,11 +329,11 @@ class PrivAttrsTests(samba.tests.TestCase):
                 except LdbError as e5:
                     (enum, estr) = e5.args
                     if "unpriv-add-error" in attrs[test_name]:
-                        self.assertGotLdbError(attrs[test_name]["unpriv-add-error"], \
-                                         enum)
+                        self.assertGotLdbError(attrs[test_name]["unpriv-add-error"],
+                                               enum)
                     else:
-                        self.assertGotLdbError(attrs[test_name]["unpriv-error"], \
-                                         enum)
+                        self.assertGotLdbError(attrs[test_name]["unpriv-error"],
+                                               enum)
             elif "only-2" in attrs[test_name] and \
                  attrs[test_name]["only-2"] != objectclass:
                 try:
