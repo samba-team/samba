@@ -59,6 +59,7 @@
 		<arg choice="opt">-f|--force</arg>
 		<arg choice="opt">--request-timeout seconds</arg>
 		<arg choice="opt">-t|--timeout seconds</arg>
+		<arg choice="opt">--dns-ttl TTL-IN-SECONDS</arg>
 		<arg choice="opt">-i|--stdin</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -387,6 +388,18 @@
 		<term>--follow-symlinks</term>
 		<listitem><para>Follow symlinks encountered while traversing a
 		directory.</para></listitem>
+		</varlistentry>
+
+		<!-- Options for net ads dns register (and ads join) -->
+		<varlistentry>
+		<term>--dns-ttl TTL-IN-SECONDS</term>
+		<listitem><para>
+		Specify the Time to Live (TTL) of DNS records.
+		DNS records will be created or updated with the given TTL.
+		The TTL is specified in seconds. Can be used with "net ads dns
+		register" and "net ads join".
+		The default is 3600 seconds.
+		</para></listitem>
 		</varlistentry>
 
 		&cmdline.common.samba.client;
