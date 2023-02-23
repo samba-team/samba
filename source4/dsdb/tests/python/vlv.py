@@ -365,15 +365,15 @@ class VLVTests(VLVTestsBase):
                 index_map[k] = i
 
         keys = []
-        for k in gte_order:
-            if k in index_map:
-                i = index_map[k]
-                gte_map[k] = i
+        for o in gte_order:
+            if o in index_map:
+                i = index_map[o]
+                gte_map[o] = i
                 for k in keys:
                     gte_map[k] = i
                 keys = []
             else:
-                keys.append(k)
+                keys.append(o)
 
         for k in keys:
             gte_map[k] = len(expected_order)
