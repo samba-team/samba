@@ -36,6 +36,15 @@ def noop(description, attributes, sd):
 
 # ACE addition updates (ignored in forest_update.py)
 def parse_grant(description, attributes, sd):
+    # Granting the "CN=Send-As,CN=Extended-Rights" to gMSA accounts.
+    if (description.startswith("Granting the ") and
+        description.endswith("to gMSA accounts.") and
+        (attributes and attributes.lower() == 'n/a') and
+        (sd and sd.lower() == 'n/a')):
+        return ('modify', extract_dn_or_none(description),
+                ['add: appliesTo', 'appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057'],
+                None)
+
     return ('modify', None, [], sd if sd.lower() != 'n/a' else None)
 
 
@@ -102,6 +111,11 @@ def extract_dn(text):
     # This should probably be also fixed upstream
     if dn == 'CN=ad://ext/AuthenticationSilo,CN=Claim Types,CN=Claims Configuration,CN=Services':
         return 'CN=ad://ext/AuthenticationSilo,CN=Claim Types,CN=Claims Configuration,CN=Services,${CONFIG_DN}'
+
+    # Granting the "CN=Send-As,CN=Extended-Rights" to gMSA accounts.
+    if dn.endswith(',CN=Extended-Rights" to gMSA accounts.'):
+        dn = dn.replace('" to gMSA accounts.', '')
+        return dn + ",${CONFIG_DN}"
 
     return dn
 
@@ -204,9 +218,20 @@ def read_ms_markdown(in_file, out_folder=None, out_dict=None):
 
     with open(in_file) as update_file:
         # There is a hidden ClaimPossibleValues in this md file
-        html = markdown.markdown(re.sub(r'CN=<forest root domain.*?>',
-                                        '${FOREST_ROOT_DOMAIN}',
-                                        update_file.read()),
+        content = update_file.read()
+
+        content = re.sub(r'<p>',
+                         '<br />',
+                         content)
+        content = re.sub(r'CN=\\<forest root domain',
+                         'CN=<forest root domain',
+                         content)
+
+        content = re.sub(r'CN=<forest root domain.*?>',
+                         '${FOREST_ROOT_DOMAIN}',
+                         content)
+
+        html = markdown.markdown(content,
                                  output_format='xhtml')
 
     html = html.replace('CN=Schema,%ws', '${SCHEMA_DN}')
@@ -214,10 +239,18 @@ def read_ms_markdown(in_file, out_folder=None, out_dict=None):
     tree = ET.fromstring('<root>' + html + '</root>')
 
     for node in tree:
-        if node.text and node.text.startswith('|Operation'):
+        if not node.text:
+            continue
+        updates = None
+        if node.text.startswith('|Operation'):
             # Strip first and last |
             updates = [x[1:len(x) - 1].split('|') for x in
                        get_string(ET.tostring(node, method='text')).splitlines()]
+        elif node.text.startswith('| Operation'):
+            # Strip first and last |
+            updates = [x[2:len(x) - 2].split(' | ') for x in
+                       get_string(ET.tostring(node, method='text')).splitlines()]
+        if updates:
             for update in updates[2:]:
                 output = re.match('Operation (\d+): {(.*)}', update[0])
                 if output:
