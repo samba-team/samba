@@ -90,6 +90,8 @@ def __read_folded_line(f, buffer):
     """ reads a line from an LDIF file, unfolding it"""
     line = buffer
 
+    attr_type_re = re.compile("^([A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])::?")
+
     while True:
         l = f.readline()
 
@@ -110,6 +112,12 @@ def __read_folded_line(f, buffer):
                     # eof, definitely won't be folded
                     break
             else:
+                if l[:1] != "#" and l != "\n" and l != "":
+                    m = attr_type_re.match(l)
+                    if not m:
+                        line = line + " " + l
+                        continue
+
                 # marks end of a folded line
                 # line contains the now unfolded line
                 # buffer contains the start of the next possibly folded line
@@ -124,7 +132,8 @@ def __read_raw_entries(f):
     import sys
 
     # will not match options after the attribute type
-    attr_type_re = re.compile("^([A-Za-z]+[A-Za-z0-9-]*):")
+    # attributes in the schema definition have at least two chars
+    attr_type_re = re.compile("^([A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])::?")
 
     buffer = ""
 

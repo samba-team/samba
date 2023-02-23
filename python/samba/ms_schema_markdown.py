@@ -51,6 +51,10 @@ def read_ms_markdown(in_file, out_folder):
 
                 out_path = os.path.join(out_folder, innertext(node).strip())
                 ldf = open(out_path, 'w')
+            elif node.tag == 'h2':
+                if ldf is not None:
+                    ldf.close()
+                    ldf = None
             elif node.tag == 'p' and ldf is not None:
                 ldf.write(innertext(node).replace('```', '') + '\n')
     finally:
