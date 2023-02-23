@@ -161,7 +161,9 @@ is_git_file = _init_git_file_finder()
 def script_iterator(d=BASEDIR, cache=None,
                     shebang_filter=None,
                     filename_filter=None,
-                    subdirs=TEST_DIRS):
+                    subdirs=None):
+    if subdirs is None:
+        subdirs = TEST_DIRS
     if not cache:
         safename = re.compile(r'\W+').sub
         for subdir in subdirs:

@@ -361,7 +361,7 @@ lockoutTime: 0
 
     def add_remove_group_members(self, groupname, members,
                                  add_members_operation=True,
-                                 member_types=[ 'user', 'group', 'computer' ],
+                                 member_types=None,
                                  member_base_dn=None):
         """Adds or removes group members
 
@@ -370,6 +370,8 @@ lockoutTime: 0
         :param add_members_operation: Defines if its an add or remove
             operation
         """
+        if member_types is None:
+            member_types = ['user', 'group', 'computer']
 
         groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (
             ldb.binary_encode(groupname), "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
@@ -473,10 +475,12 @@ member: %s
         msg.add(el)
 
     def fullname_from_names(self, given_name=None, initials=None, surname=None,
-                            old_attrs={}, fallback_default=""):
+                            old_attrs=None, fallback_default=""):
         """Prepares new combined fullname, using the name parts.
         Used for things like displayName or cn.
         Use the original name values, if no new one is specified."""
+        if old_attrs is None:
+            old_attrs = {}
 
         attrs = {"givenName": given_name,
                  "initials": initials,

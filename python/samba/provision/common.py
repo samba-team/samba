@@ -42,7 +42,7 @@ def setup_path(file):
     return os.path.join(setup_dir(), file)
 
 
-def setup_add_ldif(ldb, ldif_path, subst_vars=None, controls=["relax:0"]):
+def setup_add_ldif(ldb, ldif_path, subst_vars=None, controls=None):
     """Setup a ldb in the private dir.
 
     :param ldb: LDB file to import data into
@@ -50,18 +50,22 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None, controls=["relax:0"]):
     :param subst_vars: Optional variables to subsitute in LDIF.
     :param nocontrols: Optional list of controls, can be None for no controls
     """
+    if controls is None:
+        controls = ["relax:0"]
     assert isinstance(ldif_path, str)
     data = read_and_sub_file(ldif_path, subst_vars)
     ldb.add_ldif(data, controls)
 
 
-def setup_modify_ldif(ldb, ldif_path, subst_vars=None, controls=["relax:0"]):
+def setup_modify_ldif(ldb, ldif_path, subst_vars=None, controls=None):
     """Modify a ldb in the private dir.
 
     :param ldb: LDB object.
     :param ldif_path: LDIF file path.
     :param subst_vars: Optional dictionary with substitution variables.
     """
+    if controls is None:
+        controls = ["relax:0"]
     data = read_and_sub_file(ldif_path, subst_vars)
     ldb.modify_ldif(data, controls)
 

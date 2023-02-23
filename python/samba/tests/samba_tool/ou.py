@@ -261,10 +261,11 @@ class OUCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, str(obj.dn),
                                      "object '%s' not found" % obj.dn)
 
-    def _randomOU(self, base={}):
+    def _randomOU(self, base=None):
         """create an ou with random attribute values, you can specify base
         attributes"""
-
+        if base is None:
+            base = {}
         ou = {
             "name": self.randomName(),
             "description": self.randomName(count=100),

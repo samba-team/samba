@@ -3272,9 +3272,34 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
     def run(self, domain=None, sambaopts=None, localdcopts=None, versionopts=None,
             refresh=None, enable_all=False,
-            enable_tln=[], disable_tln=[], add_tln_ex=[], delete_tln_ex=[],
-            enable_sid_str=[], disable_sid_str=[], enable_nb=[], disable_nb=[],
-            add_upn=[], delete_upn=[], add_spn=[], delete_spn=[]):
+            enable_tln=None, disable_tln=None, add_tln_ex=None, delete_tln_ex=None,
+            enable_sid_str=None, disable_sid_str=None, enable_nb=None, disable_nb=None,
+            add_upn=None, delete_upn=None, add_spn=None, delete_spn=None):
+
+        if enable_tln is None:
+            enable_tln = []
+        if disable_tln is None:
+            disable_tln = []
+        if add_tln_ex is None:
+            add_tln_ex = []
+        if delete_tln_ex is None:
+            delete_tln_ex = []
+        if enable_sid_str is None:
+            enable_sid_str = []
+        if disable_sid_str is None:
+            disable_sid_str = []
+        if enable_nb is None:
+            enable_nb = []
+        if disable_nb is None:
+            disable_nb = []
+        if add_upn is None:
+            add_upn = []
+        if delete_upn is None:
+            delete_upn = []
+        if add_spn is None:
+            add_spn = []
+        if delete_spn is None:
+            delete_spn = []
 
         require_update = False
 

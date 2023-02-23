@@ -96,7 +96,10 @@ class cmd_dbcheck(Command):
             quick_membership_checks=False,
             reset_well_known_acls=False,
             selftest_check_expired_tombstones=False,
-            yes_rules=[]):
+            yes_rules=None):
+
+        if yes_rules is None:
+            yes_rules = []
 
         lp = sambaopts.get_loadparm()
 

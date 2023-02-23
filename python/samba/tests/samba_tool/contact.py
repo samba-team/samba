@@ -392,9 +392,11 @@ class ContactCmdTestCase(SambaToolCmdTest):
                                                 "--display-name=%s" % old_displayname)
             self.assertCmdSuccess(result, out, err)
 
-    def _randomContact(self, base={}):
+    def _randomContact(self, base=None):
         """Create a contact with random attribute values, you can specify base
         attributes"""
+        if base is None:
+            base = {}
 
         # No name attributes are given here, because the object name will
         # be made from the sn, givenName and initials attributes, if no name
@@ -405,9 +407,11 @@ class ContactCmdTestCase(SambaToolCmdTest):
         contact.update(base)
         return contact
 
-    def _randomOU(self, base={}):
+    def _randomOU(self, base=None):
         """Create an ou with random attribute values, you can specify base
         attributes."""
+        if base is None:
+            base = {}
 
         ou = {
             "name": self.randomName(),

@@ -42,7 +42,9 @@ class slogm(object):
     '''
     Structured log message class
     '''
-    def __init__(self, message, kwargs=dict()):
+    def __init__(self, message, kwargs=None):
+        if kwargs is None:
+            kwargs = {}
         self.message = message
         self.kwargs = kwargs
         if not isinstance(self.kwargs, dict):
@@ -64,35 +66,47 @@ def message_with_code(mtype, message):
 
 class log(object):
     @staticmethod
-    def info(message, data={}):
+    def info(message, data=None):
+        if data is None:
+            data = {}
         msg = message_with_code('I', message)
         logger.info(slogm(msg, data))
         return msg
 
     @staticmethod
-    def warning(message, data={}):
+    def warning(message, data=None):
+        if data is None:
+            data = {}
         msg = message_with_code('W', message)
         logger.warning(slogm(msg, data))
         return msg
 
     @staticmethod
-    def warn(message, data={}):
+    def warn(message, data=None):
+        if data is None:
+            data = {}
         return log.warning(message, data)
 
     @staticmethod
-    def error(message, data={}):
+    def error(message, data=None):
+        if data is None:
+            data = {}
         msg = message_with_code('E', message)
         logger.error(slogm(msg, data))
         return msg
 
     @staticmethod
-    def fatal(message, data={}):
+    def fatal(message, data=None):
+        if data is None:
+            data = {}
         msg = message_with_code('F', message)
         logger.fatal(slogm(msg, data))
         return msg
 
     @staticmethod
-    def debug(message, data={}):
+    def debug(message, data=None):
+        if data is None:
+            data = {}
         msg = message_with_code('D', message)
         logger.debug(slogm(msg, data))
         return msg

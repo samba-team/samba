@@ -1188,7 +1188,9 @@ class TrafficModel(object):
         self.cumulative_duration = 0.0
         self.packet_rate = [0, 1]
 
-    def learn(self, conversations, dns_opcounts={}):
+    def learn(self, conversations, dns_opcounts=None):
+        if dns_opcounts is None:
+            dns_opcounts = {}
         prev = 0.0
         cum_duration = 0.0
         key = (NON_PACKET,) * (self.n - 1)

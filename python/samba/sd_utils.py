@@ -77,8 +77,10 @@ class SDUtils(object):
             desc_sddl = desc_sddl + ace
         self.modify_sd_on_dn(object_dn, desc_sddl, ["show_deleted:1"])
 
-    def get_sd_as_sddl(self, object_dn, controls=[]):
+    def get_sd_as_sddl(self, object_dn, controls=None):
         """Return object nTSecutiryDescriptor in SDDL format
         """
+        if controls is None:
+            controls = []
         desc = self.read_sd_on_dn(object_dn, controls + ["show_deleted:1"])
         return desc.as_sddl(self.domain_sid)

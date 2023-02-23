@@ -161,7 +161,9 @@ def fetch_certification_authorities(ldb):
         result.append(data)
     return result
 
-def fetch_template_attrs(ldb, name, attrs=['msPKI-Minimal-Key-Size']):
+def fetch_template_attrs(ldb, name, attrs=None):
+    if attrs is None:
+        attrs = ['msPKI-Minimal-Key-Size']
     basedn = ldb.get_default_basedn()
     dn = 'CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,%s' % basedn
     expr = '(cn=%s)' % name

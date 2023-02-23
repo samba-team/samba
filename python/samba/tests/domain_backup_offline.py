@@ -152,7 +152,9 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
 
         self.ldapcmp(self.prov_dir, self.extract_dir)
 
-    def ldapcmp(self, prov_dir, ex_dir, args=[]):
+    def ldapcmp(self, prov_dir, ex_dir, args=None):
+        if args is None:
+            args = []
         sam_fn = os.path.join("private", "sam.ldb")
         url1 = "tdb://" + os.path.join(os.path.realpath(prov_dir), sam_fn)
         url2 = "tdb://" + os.path.join(os.path.realpath(ex_dir), sam_fn)

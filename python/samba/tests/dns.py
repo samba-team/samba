@@ -1221,7 +1221,9 @@ class TestZones(DNSTest):
                         Aging=int(bool(enable)),
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
 
-    def test_set_aging(self, enable=True, name='agingtest', txt=['test txt']):
+    def test_set_aging(self, enable=True, name='agingtest', txt=None):
+        if txt is None:
+            txt = ['test txt']
         self.set_aging(enable=True)
         settings = self.ldap_get_zone_settings()
         self.assertTrue(settings['aging_state'] is not None)

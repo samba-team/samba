@@ -761,9 +761,13 @@ class cmd_load(GPOCommand):
     ]
 
     def run(self, gpo, H=None, content=None,
-            machine_exts=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
-            user_exts=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
+            machine_exts=None,
+            user_exts=None,
             replace=False, sambaopts=None, credopts=None, versionopts=None):
+        if machine_exts is None:
+            machine_exts = ['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}']
+        if user_exts is None:
+            user_exts = ['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}']
         if content is None:
             policy_defs = json.loads(sys.stdin.read())
         elif os.path.exists(content):
@@ -848,8 +852,12 @@ class cmd_remove(GPOCommand):
             help="A user extension name to remove from gPCUserExtensionNames")
     ]
 
-    def run(self, gpo, H=None, content=None, machine_exts=[], user_exts=[],
+    def run(self, gpo, H=None, content=None, machine_exts=None, user_exts=None,
             sambaopts=None, credopts=None, versionopts=None):
+        if machine_exts is None:
+            machine_exts = []
+        if user_exts is None:
+            user_exts = []
         if content is None:
             policy_defs = json.loads(sys.stdin.read())
         elif os.path.exists(content):

@@ -475,7 +475,7 @@ class gp_applier(object):
         '''
         pass
 
-    def clean(self, guid, keep=[], remove=[], **kwargs):
+    def clean(self, guid, keep=None, remove=None, **kwargs):
         '''Cleanup old removed attributes
         keep    - A list of attributes to keep
         remove  - A single attribute to remove, or a list of attributes to
@@ -487,6 +487,11 @@ class gp_applier(object):
         '''
         # Clean syntax is, either provide a single remove attribute,
         # or a list of either removal attributes or keep attributes.
+        if keep is None:
+            keep = []
+        if remove is None:
+            remove = []
+
         if type(remove) != list:
             value = self.cache_get_attribute_value(guid, remove)
             if value is not None:

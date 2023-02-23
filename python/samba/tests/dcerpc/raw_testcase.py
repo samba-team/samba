@@ -842,9 +842,11 @@ class RawDCERPCTest(TestCase):
                      rpc_vers_minor=0,
                      pfc_flags=(samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                                 samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST),
-                     drep=[samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0],
+                     drep=None,
                      ndr_print=None, hexdump=None):
 
+        if drep is None:
+            drep = [samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0]
         if getattr(payload, 'auth_info', None):
             ai = payload.auth_info
         else:
@@ -950,9 +952,11 @@ class RawDCERPCTest(TestCase):
                    rpc_vers_minor=0,
                    pfc_flags=(samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
                               samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST),
-                   drep=[samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0],
+                   drep=None,
                    auth_length=None):
 
+        if drep is None:
+            drep = [samba.dcerpc.dcerpc.DCERPC_DREP_LE, 0, 0, 0]
         self.assertIsNotNone(p, "No valid pdu")
 
         if getattr(p.u, 'auth_info', None):
@@ -984,10 +988,12 @@ class RawDCERPCTest(TestCase):
                       max_xmit_frag=None,
                       max_recv_frag=None,
                       assoc_group_id=0,
-                      ctx_list=[],
+                      ctx_list=None,
                       auth_info=b"",
                       ndr_print=None, hexdump=None):
 
+        if ctx_list is None:
+            ctx_list = []
         if max_xmit_frag is None:
             max_xmit_frag=self.max_xmit_frag
         if max_recv_frag is None:
@@ -1015,10 +1021,12 @@ class RawDCERPCTest(TestCase):
                        max_xmit_frag=None,
                        max_recv_frag=None,
                        assoc_group_id=0,
-                       ctx_list=[],
+                       ctx_list=None,
                        auth_info=b"",
                        ndr_print=None, hexdump=None):
 
+        if ctx_list is None:
+            ctx_list = []
         if max_xmit_frag is None:
             max_xmit_frag=self.max_xmit_frag
         if max_recv_frag is None:

@@ -1100,8 +1100,10 @@ sAMAccountName: %s
             self.assertCmdSuccess(result, out, err, "Error running user unlock")
             self.assertEqual(err, "", "Shouldn't be any error messages")
 
-    def _randomUser(self, base={}):
+    def _randomUser(self, base=None):
         """create a user with random attribute values, you can specify base attributes"""
+        if base is None:
+            base = {}
         user = {
             "name": self.randomName(),
             "password": self.random_password(16),
@@ -1117,9 +1119,11 @@ sAMAccountName: %s
         user.update(base)
         return user
 
-    def _randomPosixUser(self, base={}):
+    def _randomPosixUser(self, base=None):
         """create a user with random attribute values and additional RFC2307
         attributes, you can specify base attributes"""
+        if base is None:
+            base = {}
         user = self._randomUser({})
         user.update(base)
         posixAttributes = {
@@ -1135,9 +1139,11 @@ sAMAccountName: %s
         user.update(base)
         return user
 
-    def _randomUnixUser(self, base={}):
+    def _randomUnixUser(self, base=None):
         """create a user with random attribute values and additional RFC2307
         attributes, you can specify base attributes"""
+        if base is None:
+            base = {}
         user = self._randomUser({})
         user.update(base)
         posixAttributes = {

@@ -94,7 +94,9 @@ class SiteCoverageTests(samba.tests.TestCase):
         self.sites[dn] = name
         return dn, name.lower()
 
-    def _add_site_link(self, name, links=[], cost=100):
+    def _add_site_link(self, name, links=None, cost=100):
+        if links is None:
+            links = []
         dn = "CN={0},CN=IP,CN=Inter-Site Transports,CN=Sites,{1}".format(
             name, self.samdb.get_config_basedn()
         )

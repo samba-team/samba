@@ -95,8 +95,10 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
                                         good_password,
                                         "username")
 
-    def _randomUser(self, base={}):
+    def _randomUser(self, base=None):
         """create a user with random attribute values, you can specify base attributes"""
+        if base is None:
+            base = {}
         user = {
             "name": self.randomName(),
         }

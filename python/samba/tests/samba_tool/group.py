@@ -574,11 +574,13 @@ template """
         self.assertTrue("Total groups: {0}".format(total_groups) in out,
                         "Total groups not reported correctly")
 
-    def _random_user(self, base={}):
+    def _random_user(self, base=None):
         '''
         create a user with random attribute values, you can specify
         base attributes
         '''
+        if base is None:
+            base = {}
         user = {
             "name": self.randomName(),
             "password": self.random_password(16),

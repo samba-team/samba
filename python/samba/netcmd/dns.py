@@ -111,7 +111,10 @@ class DnsConnWrapper:
                 "DnssrvUpdateRecord2"}:
             return attr
 
-        def f(*args, messages={}):
+        def f(*args, messages=None):
+            if messages is None:
+                messages = {}
+
             try:
                 return attr(*args)
             except WERRORError as e:

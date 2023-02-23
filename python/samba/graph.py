@@ -133,7 +133,7 @@ def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
     return vmap, replacements
 
 
-def compile_graph_key(key_items, nodes_above=[], elisions=None,
+def compile_graph_key(key_items, nodes_above=None, elisions=None,
                       prefix='key_', width=2):
     """Generate a dot file snippet that acts as a legend for a graph.
 
@@ -148,6 +148,8 @@ def compile_graph_key(key_items, nodes_above=[], elisions=None,
     (True) or edge (False). Style is a dot style string for the edge
     or vertex. label is the text associated with the key item.
     """
+    if nodes_above is None:
+        nodes_above = []
     edge_lines = []
     edge_names = []
     vertex_lines = []
