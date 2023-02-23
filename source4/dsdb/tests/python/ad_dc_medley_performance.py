@@ -253,8 +253,8 @@ class UserTests(samba.tests.TestCase):
             for i in range(rounds):
                 self.ldb.search(self.ou,
                                 expression=expression,
-                                scope=SCOPE_SUBTREE,
-                                attrs=['cn'])
+                                scope=scope,
+                                attrs=attrs)
             print('%d runs %s took %s' % (i, expression,
                                           time.time() - t),
                   file=sys.stderr)
