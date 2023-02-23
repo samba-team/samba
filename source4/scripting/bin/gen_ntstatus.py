@@ -84,16 +84,16 @@ def generatePythonFile(out_file, errors):
     out_file.write("MODULE_INIT_FUNC(ntstatus)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m;\n\n")
-    out_file.write("\tm = PyModule_Create(&moduledef);\n");
-    out_file.write("\tif (m == NULL)\n");
-    out_file.write("\t\treturn NULL;\n\n");
+    out_file.write("\tm = PyModule_Create(&moduledef);\n")
+    out_file.write("\tif (m == NULL)\n")
+    out_file.write("\t\treturn NULL;\n\n")
     for err in errors:
         line = """\tPyModule_AddObject(m, \"%s\", 
                   \t\tPyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
-    out_file.write("\n");
-    out_file.write("\treturn m;\n");
-    out_file.write("}\n");
+    out_file.write("\n")
+    out_file.write("\treturn m;\n")
+    out_file.write("}\n")
 
 def transformErrorName( error_name ):
     if error_name.startswith("STATUS_"):
@@ -114,7 +114,7 @@ def transformErrorName( error_name ):
 # [3]: The name of the output generated source file with C arrays
 # [4]: The name of the output generated python file
 def main ():
-    input_file = None;
+    input_file = None
 
     if len(sys.argv) == 5:
         input_file =  sys.argv[1]

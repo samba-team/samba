@@ -46,7 +46,7 @@ def escapeString( input ):
 def parseErrorDescriptions( input_file, isWinError ):
     # read in the data
     fileContents = open(input_file,"r")
-    count = 0;
+    count = 0
     for line in fileContents:
         content = line.strip().split(None,1)
         # start new error definition ?
@@ -168,7 +168,7 @@ def generateSourceFile(out_file):
     out_file.write("};\n")
     out_file.write("\n")
     out_file.write("const char *hresult_errstr_const(HRESULT err_code)\n")
-    out_file.write("{\n");
+    out_file.write("{\n")
     out_file.write("	const char *result = NULL;\n")
     out_file.write("	int i;\n")
     out_file.write("	for (i = 0; i < ARRAY_SIZE(hresult_errs); ++i) {\n")
@@ -186,7 +186,7 @@ def generateSourceFile(out_file):
     out_file.write("};\n")
     out_file.write("\n")
     out_file.write("const char *hresult_errstr(HRESULT err_code)\n")
-    out_file.write("{\n");
+    out_file.write("{\n")
     out_file.write("	static char msg[22];\n")
     out_file.write("	int i;\n")
     out_file.write("\n")
@@ -206,7 +206,7 @@ def generateSourceFile(out_file):
 # pasted into a text file
 
 def main ():
-    input_file1 = None;
+    input_file1 = None
     filename = "hresult"
     headerfile_name = filename + ".h"
     sourcefile_name = filename + ".c"

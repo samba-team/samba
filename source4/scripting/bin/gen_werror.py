@@ -82,16 +82,16 @@ def generatePythonFile(out_file, errors):
     out_file.write("MODULE_INIT_FUNC(werror)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m;\n\n")
-    out_file.write("\tm = PyModule_Create(&moduledef);\n");
-    out_file.write("\tif (m == NULL)\n");
-    out_file.write("\t\treturn NULL;\n\n");
+    out_file.write("\tm = PyModule_Create(&moduledef);\n")
+    out_file.write("\tif (m == NULL)\n")
+    out_file.write("\t\treturn NULL;\n\n")
     for err in errors:
         line = """\tPyModule_AddObject(m, \"%s\",
                   \t\tPyLong_FromUnsignedLongLong(W_ERROR_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
-    out_file.write("\n");
-    out_file.write("\treturn m;\n");
-    out_file.write("}\n");
+    out_file.write("\n")
+    out_file.write("\treturn m;\n")
+    out_file.write("}\n")
 
 def transformErrorName( error_name ):
     if error_name.startswith("WERR_"):
