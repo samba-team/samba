@@ -27,9 +27,9 @@ def run(cmd):
 def flush_cache(sids=[], uids=[], gids=[]):
     for sid in sids:
         os.system(netcmd + (" cache del IDMAP/SID2XID/%s" % (sid)))
-    for uids in uids:
+    for uid in uids:
         os.system(netcmd + (" cache del IDMAP/UID2SID/%s" % (uid)))
-    for gids in gids:
+    for gid in gids:
         os.system(netcmd + (" cache del IDMAP/GID2SID/%s" % (gid)))
 
 
