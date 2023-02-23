@@ -31,12 +31,80 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2016,
 )
 
-MIN_UPDATE = 45
-MAX_UPDATE = 135
+MIN_UPDATE = 11
+MAX_UPDATE = 142
 
 update_map = {
-    # Missing updates from 2008 + 2008 R2
-    53: "134428a8-0043-48a6-bcda-63310d9ec4dd",
+    # Missing updates from 2008
+    11: "27a03717-5963-48fc-ba6f-69faa33e70ed",
+    12: "3467dae5-dedd-4648-9066-f48ac186b20a",
+    13: "33b7ee33-1386-47cf-baa1-b03e06473253",
+    14: "e9ee8d55-c2fb-4723-a333-c80ff4dfbf45",
+    15: "ccfae63a-7fb5-454c-83ab-0e8e1214974e",
+    16: "ad3c7909-b154-4c16-8bf7-2c3a7870bb3d",
+    17: "26ad2ebf-f8f5-44a4-b97c-a616c8b9d09a",
+    18: "4444c516-f43a-4c12-9c4b-b5c064941d61",
+    19: "436a1a4b-f41a-46e6-ac86-427720ef29f3",
+    20: "b2b7fb45-f50d-41bc-a73b-8f580f3b636a",
+    21: "1bdf6366-c3db-4d0b-b8cb-f99ba9bce20f",
+    22: "63c0f51a-067c-4640-8a4f-044fb33f1049",
+    23: "dae441c0-366e-482e-98d9-60a99a1898cc",
+    24: "7dd09ca6-f0d6-43bf-b7f8-ef348f435617",
+    25: "6b800a81-affe-4a15-8e41-6ea0c7aa89e4",
+    26: "dd07182c-3174-4c95-902a-d64fee285bbf",
+    27: "ffa5ee3c-1405-476d-b344-7ad37d69cc25",
+    28: "099f1587-af70-49c6-ab6c-7b3e82be0fe2",
+    29: "1a3f6b15-55f2-4752-ba27-3d38a8232c4d",
+    30: "dee21a17-4e8e-4f40-a58c-c0c009b685a7",
+    31: "9bd98bb4-4047-4de5-bf4c-7bd1d0f6d21d",
+    32: "3fe80fbf-bf39-4773-b5bd-3e5767a30d2d",
+    33: "f02915e2-9141-4f73-b8e7-2804662782da",
+    34: "39902c52-ef24-4b4b-8033-2c9dfdd173a2",
+    35: "20bf09b4-6d0b-4cd1-9c09-4231edf1209b",
+    36: "94f238bb-831c-11d6-977b-00c04f613221",
+    37: "94f238bc-831c-11d6-977b-00c04f613221",
+    38: "94f238bd-831c-11d6-977b-00c04f613221",
+    39: "94f238be-831c-11d6-977b-00c04f613221",
+    40: "94f238bf-831c-11d6-977b-00c04f613221",
+    41: "94f238c0-831c-11d6-977b-00c04f613221",
+    42: "eda27b47-e610-11d6-9793-00c04f613221",
+    43: "eda27b48-e610-11d6-9793-00c04f613221",
+    44: "eda27b49-e610-11d6-9793-00c04f613221",
+    45: "eda27b4a-e610-11d6-9793-00c04f613221",
+    46: "26d9c510-e61a-11d6-9793-00c04f613221",
+    47: "26d9c511-e61a-11d6-9793-00c04f613221",
+    48: "ea08c04c-f474-4212-b19e-5e754f9210d4",
+    49: "4c0672a2-437c-4944-b953-5db8f111d665",
+    50: "4c022fd1-adab-4d84-a7f1-9580f03da856",
+    51: "c03b1f37-c240-4910-93c8-1544a452b4b5",
+    52: "560cf82d-9572-48a3-9024-6f2b56f1f866",
+    53: "abd97102-88dd-4013-a009-0e2c2f967ff6",
+    54: "134428a8-0043-48a6-bcda-63310d9ec4dd",
+    55: "d668ad1f-cedd-4565-ab02-9385926ce4f5",
+    56: "8f86b825-c322-4101-adc4-579f12d445db",
+    57: "9fea28ff-387f-4d57-866d-3893c50f373f",
+    58: "782370ce-3d38-438d-8b0c-464220a3039d",
+    59: "002fb291-0d00-4b0c-8c00-fe7f50ce6f8d",
+    60: "dcb3c95d-deb7-4c51-ad13-43a7d5d06fc7",
+    61: "ef010a1e-bd88-48c8-a7af-2affd250d77d",
+    62: "bd3413c0-9559-469b-9f3d-51d7faabd81a",
+    63: "f814097b-3e3d-49ba-8a3a-092c25085f06",
+    64: "6eb8eaf9-3403-4ba5-8b4b-ce349a4680ad",
+    65: "07e57d28-ad40-44fc-8334-8a0dc119b3f4",
+    66: "6fd48655-1698-497a-ac8d-8267ce01c80b",
+    67: "10338d31-2423-4dff-b4b5-ef025144b01f",
+    68: "a96e2ed5-7a7c-4d5c-9d5d-965eca0051da",
+    69: "613bd063-e8e9-4a62-8f4c-cda566f7eb6f",
+    70: "2a858903-5696-4364-b4e5-4cac027ca7a6",
+    71: "0fc5a978-0059-4b0a-9dc2-9896e8e389a1",
+    72: "4d753a29-26ac-4d1a-bc80-311f947e4f0a",
+    73: "3b3adbdb-4485-4559-aed8-9811c4bf90e4",
+    74: "56040c71-fe93-4037-8fe9-1a4d1a283009",
+    75: "caa2bfad-0cca-483b-8d00-347f943292a8",
+    76: "2b9e0609-6d75-498a-9727-c9fcc93f0e42",
+    77: "96541a16-910a-4b66-acde-720a0dff03c7",
+    78: "429a6334-1a00-4515-bf48-676deb55954a",
+    # Windows Server 2008 R2 - version 5
     79: "21ae657c-6649-43c4-bbb3-7f184fdf58c1",
     80: "dca8f425-baae-47cd-b424-e3f6c76ed08b",
     81: "a662b036-dbbe-4166-b4ba-21abea17f9cc",
@@ -96,13 +164,13 @@ update_map = {
     134: "d32f499f-3026-4af0-a5bd-13fe5a331bd2",
     135: "38618886-98ee-4e42-8cf1-d9a2cd9edf8b",
     # Windows Server 2016 - version 16
-    136: "328092FB-16E7-4453-9AB8-7592DB56E9C4",
-    137: "3A1C887F-DF0A-489F-B3F2-2D0409095F6E",
-    138: "232E831F-F988-4444-8E3E-8A352E2FD411",
-    139: "DDDDCF0C-BEC9-4A5A-AE86-3CFE6CC6E110",
-    140: "A0A45AAC-5550-42DF-BB6A-3CC5C46B52F2",
-    141: "3E7645F3-3EA5-4567-B35A-87630449C70C",
-    142: "E634067B-E2C4-4D79-B6E8-73C619324D5E"
+    136: "328092fb-16e7-4453-9ab8-7592db56e9c4",
+    137: "3a1c887f-df0a-489f-b3f2-2d0409095f6e",
+    138: "232e831f-f988-4444-8e3e-8a352e2fd411",
+    139: "ddddcf0c-bec9-4a5a-ae86-3cfe6cc6e110",
+    140: "a0a45aac-5550-42df-bb6a-3cc5c46b52f2",
+    141: "3e7645f3-3ea5-4567-b35a-87630449c70c",
+    142: "e634067b-e2c4-4d79-b6e8-73c619324d5e",
 }
 
 functional_level_to_max_update = {
@@ -226,6 +294,8 @@ revision: %d
                 self.operation_ldif(op)
             elif 131 <= op <= 134:
                 self.operation_ldif(op)
+            elif 136 <= op <= 142:
+                self.operation_ldif(op)
             else:
                 # No LDIF file exists for the change
                 getattr(self, "operation_%d" % op)(op)
@@ -248,6 +318,8 @@ revision: %d
             elif 91 <= op <= 126:
                 self.operation_ldif(op)
             elif 131 <= op <= 134:
+                self.operation_ldif(op)
+            elif 136 <= op <= 142:
                 self.operation_ldif(op)
             else:
                 # No LDIF file exists for the change
@@ -290,7 +362,16 @@ objectClass: container
             # Assume we have applied it (we have no double checks for these)
             return True
 
-        ldif = self.stored_ldif[update_map[op]]
+        guid = update_map[op]
+        if guid in self.stored_ldif:
+            ldif = self.stored_ldif[guid]
+        elif guid.lower() in self.stored_ldif:
+            ldif = self.stored_ldif[guid.lower()]
+        elif guid.upper() in self.stored_ldif:
+            ldif = self.stored_ldif[guid.upper()]
+        else:
+            raise ForestUpdateException("OPERATION %d: ldif for %s not found" %
+                                        (op, guid))
 
         sub_ldif = samba.substitute_var(ldif, {"CONFIG_DN":
                                                str(self.config_dn),
@@ -435,7 +516,11 @@ msDS-ClaimIsValueSpaceRestricted: FALSE
     # THE FOLLOWING ARE MISSING UPDATES FROM 2008 + 2008 R2
     #
 
-    def operation_53(self, op):
+    def operation_11(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
+
+    def operation_54(self, op):
         if self.add_update_container and not self.update_exists(op):
             self.update_add(op)
 

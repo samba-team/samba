@@ -4452,7 +4452,7 @@ class cmd_domain_functional_prep(Command):
                 from samba.forest_update import ForestUpdate
                 forest = ForestUpdate(samdb, fix=True)
 
-                forest.check_updates_iterator([53, 79, 80, 81, 82, 83])
+                forest.check_updates_iterator([11, 54, 79, 80, 81, 82, 83])
                 forest.check_updates_functional_level(target_level,
                                                       DS_DOMAIN_FUNCTION_2008_R2,
                                                       update_revision=True)
