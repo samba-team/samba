@@ -587,7 +587,7 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.discardMessages()
         self.ldb.modify_ldif(
             "dn: " + dn + "\n" +
-            "changetype: delete\n" +
+            "changetype: modify\n" +
             "delete: carLicense\n" +
             "carLicense: license-03\n" +
             "carLicense: license-04\n")
@@ -613,7 +613,7 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.discardMessages()
         self.ldb.modify_ldif(
             "dn: " + dn + "\n" +
-            "changetype: delete\n" +
+            "changetype: modify\n" +
             "replace: carLicense\n" +
             "carLicense: license-05\n" +
             "carLicense: license-06\n")
