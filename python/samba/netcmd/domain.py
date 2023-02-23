@@ -1094,10 +1094,10 @@ class cmd_domain_level(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("-q", "--quiet", help="Be quiet", action="store_true"),  # unused
-        Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
-               help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)"),
-        Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2"],
-               help="The domain function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2)")
+        Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2", "2016"],
+               help="The forest function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2 | 2016)"),
+        Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2", "2012", "2012_R2", "2016"],
+               help="The domain function level (2003 | 2008 | 2008_R2 | 2012 | 2012_R2 | 2016)")
     ]
 
     takes_args = ["subcommand"]
