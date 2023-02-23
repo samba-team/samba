@@ -514,8 +514,15 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	if (attr->isSingleValued) {
 		a->flags |= LDB_ATTR_FLAG_SINGLE_VALUE;
 	}
-	
-	if (attr->searchFlags & SEARCH_FLAG_ATTINDEX) {
+
+	/*
+	 * Is the attribute indexed? By treating confidential attributes as
+	 * unindexed, we force searches to go through the unindexed search path,
+	 * avoiding observable timing differences.
+	 */
+	if (attr->searchFlags & SEARCH_FLAG_ATTINDEX &&
+	    !(attr->searchFlags & SEARCH_FLAG_CONFIDENTIAL))
+	{
 		a->flags |= LDB_ATTR_FLAG_INDEXED;
 	}
 
