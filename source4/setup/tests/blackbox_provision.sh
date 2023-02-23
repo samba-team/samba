@@ -28,6 +28,14 @@ rm -rf $PREFIX/simple-dc
 testit "simple-dc-guids" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --domain-guid=6054d36d-2bfd-44f1-a9cd-32cfbb06480b --ntds-guid=b838f255-c8aa-4fe8-9402-b7d61ca3bd1b --invocationid=6d4cff9a-2bbf-4b4c-98a2-36242ddb0bd6 --targetdir=$PREFIX/simple-dc --use-ntvfs
 rm -rf $PREFIX/simple-dc-2008r2-schema
 testit "simple-dc-2008r2-schema" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc-2008r2-schema --use-ntvfs --base-schema=2008_R2
+rm -rf $PREFIX/simple-dc-2012-schema
+testit "simple-dc-2012-schema" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc-2012-schema --use-ntvfs --base-schema=2012
+rm -rf $PREFIX/simple-dc-2012r2-schema
+testit "simple-dc-2012r2-schema" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc-2012r2-schema --use-ntvfs --base-schema=2012_R2
+rm -rf $PREFIX/simple-dc-2016-schema
+testit "simple-dc-2016-schema" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc-2016-schema --use-ntvfs --base-schema=2016
+rm -rf $PREFIX/simple-dc-2019-schema
+testit "simple-dc-2019-schema" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc-2019-schema --use-ntvfs --base-schema=2019
 rm -rf $PREFIX/simple-member
 testit "simple-member" $PYTHON $BINDIR/samba-tool domain provision --server-role="member" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-member --use-ntvfs
 rm -rf $PREFIX/simple-standalone
@@ -42,8 +50,11 @@ reprovision()
 
 testit "reprovision" reprovision
 
-V_2012_R2=69
 V_2008_R2=47
+V_2012=56
+V_2012_R2=69
+V_2016=87
+V_2019=88
 
 check_baseschema()
 {
@@ -72,11 +83,15 @@ check_baseschema()
 }
 
 tname="schema version"
-testit "$tname simple-default" check_baseschema simple-default $V_2012_R2
-testit "$tname simple-dc" check_baseschema simple-dc $V_2012_R2
-testit "$tname simple-member" check_baseschema simple-member $V_2012_R2
-testit "$tname simple-standalone" check_baseschema simple-standalone $V_2012_R2
+testit "$tname simple-default" check_baseschema simple-default $V_2019
+testit "$tname simple-dc" check_baseschema simple-dc $V_2019
+testit "$tname simple-member" check_baseschema simple-member $V_2019
+testit "$tname simple-standalone" check_baseschema simple-standalone $V_2019
 testit "$tname simple-dc-2008r2-schema" check_baseschema simple-dc-2008r2-schema $V_2008_R2
+testit "$tname simple-dc-2012-schema" check_baseschema simple-dc-2012-schema $V_2012
+testit "$tname simple-dc-2012r2-schema" check_baseschema simple-dc-2012r2-schema $V_2012_R2
+testit "$tname simple-dc-2016-schema" check_baseschema simple-dc-2016-schema $V_2016
+testit "$tname simple-dc-2019-schema" check_baseschema simple-dc-2019-schema $V_2019
 
 rm -rf $PREFIX/simple-default
 rm -rf $PREFIX/simple-dc
@@ -84,5 +99,10 @@ rm -rf $PREFIX/blank-dc
 rm -rf $PREFIX/simple-member
 rm -rf $PREFIX/simple-standalone
 rm -rf $PREFIX/partitions-only-dc
+rm -rf $PREFIX/simple-dc-2008r2-schema
+rm -rf $PREFIX/simple-dc-2012-schema
+rm -rf $PREFIX/simple-dc-2012r2-schema
+rm -rf $PREFIX/simple-dc-2016-schema
+rm -rf $PREFIX/simple-dc-2019-schema
 
 exit $failed
