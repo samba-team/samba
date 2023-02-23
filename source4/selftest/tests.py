@@ -1540,6 +1540,8 @@ for env in ['chgdcpass', 'schema_pair_dc']:
                            name="samba4.drs.samba_tool_drs_critical.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+
+env = "schema_pair_dc"
 planoldpythontestsuite(env, "getnc_schema",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.getnc_schema.python(%s)" % env,
