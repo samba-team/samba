@@ -314,7 +314,7 @@ def sanitychecks(samdb, names):
         print("Found %d domain controllers. For the moment "
               "upgradeprovision is not able to handle an upgrade on a "
               "domain with more than one DC. Please demote the other "
-              "DC(s) before upgrading") % len(res)
+              "DC(s) before upgrading" % len(res))
         return False
     else:
         return True
