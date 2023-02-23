@@ -742,7 +742,6 @@ def add_missing_entries(ref_samdb, samdb, names, basedn, list):
                       provision
     :param samdb: Ldb object representing the SAM db of the upgraded
                   provision
-    :param dn: DN of the object to be added
     :param names: List of key provision parameters
     :param basedn: DN of the partition to be updated
     :param list: List of DN to be added in the upgraded provision"""
@@ -1081,7 +1080,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
     This function will also add the missing object and update existing object
     to add or remove attributes that were missing.
 
-    :param ref_sambdb: An LDB object conntected to the sam.ldb of the
+    :param ref_samdb: An LDB object connected to the sam.ldb of the
                        reference provision
     :param samdb: An LDB object connected to the sam.ldb of the update
                   provision
@@ -1343,7 +1342,7 @@ def simple_update_basesamdb(newpaths, paths, names):
 def update_samdb(ref_samdb, samdb, names, provisionUSNs, schema, prereloadfunc):
     """Upgrade the SAM DB contents for all the provision partitions
 
-    :param ref_sambdb: An LDB object conntected to the sam.ldb of the reference
+    :param ref_samdb: An LDB object connected to the sam.ldb of the reference
                        provision
     :param samdb: An LDB object connected to the sam.ldb of the update
                   provision
