@@ -4139,9 +4139,9 @@ class cmd_domain_schema_upgrade(Command):
         Option("-q", "--quiet", help="Be quiet", action="store_true"),  # unused
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--schema", type="choice", metavar="SCHEMA",
-               choices=["2012", "2012_R2"],
-               help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
-               default="2012_R2"),
+               choices=["2012", "2012_R2", "2016", "2019"],
+               help="The schema file to upgrade to. Default is (Windows) 2019.",
+               default="2019"),
         Option("--ldf-file", type=str, default=None,
                help="Just apply the schema updates in the adprep/.LDF file(s) specified"),
         Option("--base-dir", type=str, default=None,
