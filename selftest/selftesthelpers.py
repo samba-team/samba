@@ -66,13 +66,15 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmd, environ={}):
+def plantestsuite(name, env, cmd, environ=None):
     """Plan a test suite.
 
     :param name: Testsuite name
     :param env: Environment to run the testsuite in
     :param cmdline: Command line to run
     """
+    if environ is None:
+        environ = {}
     print("-- TEST --")
     if env == "none":
         fullname = name
@@ -149,7 +151,13 @@ def planperltestsuite(name, path):
         skiptestsuite(name, "Test::More not available")
 
 
-def planpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
+def planpythontestsuite(env, module, name=None, extra_path=None, environ=None, extra_args=None):
+    if extra_path is None:
+        extra_path = []
+    if environ is None:
+        environ = {}
+    if extra_args is None:
+        extra_args = []
     environ = dict(environ)
     py_path = list(extra_path)
     if py_path is not None:
@@ -192,7 +200,9 @@ smbtorture4_options = [
 ] + get_env_torture_options()
 
 
-def plansmbtorture4testsuite(name, env, options, target, modname=None, environ={}):
+def plansmbtorture4testsuite(name, env, options, target, modname=None, environ=None):
+    if environ is None:
+        environ = {}
     if modname is None:
         modname = "samba4.%s" % name
     if isinstance(options, list):
