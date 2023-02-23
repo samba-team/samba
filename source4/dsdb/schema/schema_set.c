@@ -221,7 +221,14 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			break;
 		}
 
-		if (attr->searchFlags & SEARCH_FLAG_ATTINDEX) {
+		/*
+		 * Is the attribute indexed? By treating confidential attributes
+		 * as unindexed, we force searches to go through the unindexed
+		 * search path, avoiding observable timing differences.
+		 */
+		if (attr->searchFlags & SEARCH_FLAG_ATTINDEX &&
+		    !(attr->searchFlags & SEARCH_FLAG_CONFIDENTIAL))
+		{
 			/*
 			 * When preparing to downgrade Samba, we need to write
 			 * out an LDB without the new key word ORDERED_INTEGER.

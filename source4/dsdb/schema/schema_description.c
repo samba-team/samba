@@ -160,6 +160,13 @@ char *schema_attribute_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_at
 					       attribute->rangeUpper,
 					       GUID_hexstring(tmp_ctx, &attribute->schemaIDGUID),
 					       GUID_hexstring(tmp_ctx, &attribute->attributeSecurityGUID),
+					       /*
+						* We actually ignore the indexed
+						* flag for confidential
+						* attributes, but we'll include
+						* it for the purposes of
+						* description.
+						*/
 					       (attribute->searchFlags & SEARCH_FLAG_ATTINDEX),
 					       attribute->systemOnly);
 	talloc_free(tmp_ctx);

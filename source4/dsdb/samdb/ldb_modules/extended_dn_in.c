@@ -423,7 +423,15 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	guid_val = ldb_dn_get_extended_component(dn, "GUID");
 	sid_val  = ldb_dn_get_extended_component(dn, "SID");
 
-	if (!guid_val && !sid_val && (attribute->searchFlags & SEARCH_FLAG_ATTINDEX)) {
+	/*
+	 * Is the attribute indexed? By treating confidential attributes
+	 * as unindexed, we force searches to go through the unindexed
+	 * search path, avoiding observable timing differences.
+	 */
+	if (!guid_val && !sid_val &&
+	    (attribute->searchFlags & SEARCH_FLAG_ATTINDEX) &&
+	    !(attribute->searchFlags & SEARCH_FLAG_CONFIDENTIAL))
+	{
 		/* if it is indexed, then fixing the string DN will do
 		   no good here, as we will not find the attribute in
 		   the index. So for now fall through to a standard DN
