@@ -899,10 +899,12 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
                     private_headers=None,
                     header_path=None,
                     vars=None,
-                    dep_vars=[],
+                    dep_vars=None,
                     always=False):
     '''A generic source generator target'''
 
+    if dep_vars is None:
+        dep_vars = []
     if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
         return
 

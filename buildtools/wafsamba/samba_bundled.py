@@ -104,12 +104,14 @@ def LIB_MUST_BE_PRIVATE(conf, libname):
 
 @conf
 def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
-        maxversion=None, version_blacklist=[],
+        maxversion=None, version_blacklist=None,
         onlyif=None, implied_deps=None, pkg=None):
     '''check if a library is available as a system library.
 
     This only tries using pkg-config
     '''
+    if version_blacklist is None:
+        version_blacklist = []
     return conf.CHECK_BUNDLED_SYSTEM(libname,
                                      minversion=minversion,
                                      maxversion=maxversion,
@@ -120,7 +122,7 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
 
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
-                         maxversion=None, version_blacklist=[],
+                         maxversion=None, version_blacklist=None,
                          checkfunctions=None, headers=None, checkcode=None,
                          onlyif=None, implied_deps=None,
                          require_headers=True, pkg=None, set_target=True):
@@ -129,6 +131,8 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     tries by testing for a specified function in the specified lib
     '''
     # We always do a logic validation of 'onlyif' first
+    if version_blacklist is None:
+        version_blacklist = []
     missing = []
     if onlyif:
         for l in samba_utils.TO_LIST(onlyif):
