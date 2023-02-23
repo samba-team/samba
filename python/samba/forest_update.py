@@ -294,7 +294,14 @@ objectClass: container
             print("UPDATE (LDIF) ------ OPERATION %d" % op)
             print(sub_ldif)
 
-        self.samdb.modify_ldif(sub_ldif)
+        try:
+            self.samdb.modify_ldif(sub_ldif)
+        except ldb.LdbError as e:
+            (num, msg) = e.args
+            if num != ldb.ERR_ATTRIBUTE_OR_VALUE_EXISTS:
+                raise e
+            pass
+
         if self.add_update_container:
             self.update_add(op)
 
