@@ -16,6 +16,19 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+SMB Server performance improvements
+-----------------------------------
+
+The security improvements in recent releases
+(4.13, 4.14, 4.15, 4.16), mainly as protection against symlink races,
+caused performance regressions for metadata heavy workloads.
+
+While 4.17 already improved the situation quite a lot,
+with 4.18 the locking overhead for contended path based operations
+is reduced by an additional factor of ~ 3 compared to 4.17.
+It means the throughput of open/close
+operations reached the level of 4.12 again.
+
 More succinct samba-tool error messages
 ---------------------------------------
 
