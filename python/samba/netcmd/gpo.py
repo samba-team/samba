@@ -1651,7 +1651,7 @@ class cmd_restore(cmd_create):
                 entities_content = entities_file.read()
 
                 # Do a basic regex test of the entities file format
-                if re.match('(\s*<!ENTITY\s*[a-zA-Z0-9_]+\s*.*?>)+\s*\Z',
+                if re.match(r'(\s*<!ENTITY\s*[a-zA-Z0-9_]+\s*.*?>)+\s*\Z',
                             entities_content, flags=re.MULTILINE) is None:
                     raise CommandError("Entities file does not appear to "
                                        "conform to format\n"
