@@ -992,6 +992,121 @@ class GroupTests(KDCBaseTest):
             },
         },
         {
+            'test': 'user group addition; tgs-req to krbtgt',
+            'groups': {
+                # The user is a member of the group...
+                'foo': (GroupType.UNIVERSAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            'tgs:sids': {
+                # ...but the user's PAC still lacks the group SID.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                # The group SID should be omitted when a TGS-REQ is
+                # performed.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'user group addition; tgs-req to service',
+            'groups': {
+                'foo': (GroupType.UNIVERSAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            # Likewise, but to a service.
+            'tgs:to_krbtgt': False,
+            'tgs:sids': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'nested group addition; tgs-req to krbtgt',
+            'groups': {
+                # A Domain-local group contains a Universal group, of which the
+                # user is now a member...
+                'dom-local': (GroupType.DOMAIN_LOCAL, {'universal'}),
+                'universal': (GroupType.UNIVERSAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': True,
+            'tgs:sids': {
+                # ...but the user's PAC still lacks the group SID.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                # The group SID should still be missing when a TGS-REQ is
+                # performed.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'nested group addition; compression; tgs-req to service',
+            'groups': {
+                # A Domain-local group contains a Universal group, of which the
+                # user is now a member...
+                'dom-local': (GroupType.DOMAIN_LOCAL, {'universal'}),
+                'universal': (GroupType.UNIVERSAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            'tgs:sids': {
+                # ...but the user's PAC still lacks the group SID.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                # Both SIDs should be omitted from the PAC when a TGS-REQ is
+                # performed.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
+            'test': 'nested group addition; no compression; tgs-req to service',
+            'groups': {
+                'dom-local': (GroupType.DOMAIN_LOCAL, {'universal'}),
+                'universal': (GroupType.UNIVERSAL, {user}),
+            },
+            'as:to_krbtgt': True,
+            'tgs:to_krbtgt': False,
+            # The same again, but with the server not supporting compression.
+            'tgs:compression': False,
+            'tgs:sids': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+        },
+        {
             'test': 'resource sids given; tgs-req to krbtgt',
             'groups': {
                 # A couple of independent domain-local groups.

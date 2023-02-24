@@ -142,3 +142,11 @@
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_tgs_claims_remove_claims.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_tgs_claims_remove_claims_to_krbtgt.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_tgs_claims_to_krbtgt.ad_dc
+#
+# Group tests
+#
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_compression_tgs_req_to_service.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_no_compression_tgs_req_to_service.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_tgs_req_to_krbtgt.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_user_group_addition_tgs_req_to_krbtgt.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_user_group_addition_tgs_req_to_service.ad_dc

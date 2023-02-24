@@ -2130,3 +2130,11 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_tgs_None_supported_18_23_17_requested_member_account_stored_aes_rc4
 ^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_tgs_None_supported_18_23_requested_member_account_stored_aes_rc4
 ^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_etype_tgs_None_supported_18__requested_member_account_stored_aes_rc4
+#
+# Group tests
+#
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_compression_tgs_req_to_service.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_no_compression_tgs_req_to_service.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_tgs_req_to_krbtgt.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_user_group_addition_tgs_req_to_krbtgt.ad_dc
+^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_user_group_addition_tgs_req_to_service.ad_dc
