@@ -624,10 +624,10 @@ def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
     # Reset signing state
     creds.set_smb_signing(saved_signing_state)
     cache_path = lp.cache_path('gpo_cache')
-    for gpo in gpos:
-        if not gpo.file_sys_path:
+    for gpo_obj in gpos:
+        if not gpo_obj.file_sys_path:
             continue
-        cache_gpo_dir(conn, cache_path, check_safe_path(gpo.file_sys_path))
+        cache_gpo_dir(conn, cache_path, check_safe_path(gpo_obj.file_sys_path))
 
 
 def get_deleted_gpos_list(gp_db, gpos):
@@ -740,10 +740,10 @@ def rsop(lp, creds, store, gp_extensions, username, target):
     print('Resultant Set of Policy')
     print('%s Policy\n' % target)
     term_width = shutil.get_terminal_size(fallback=(120, 50))[0]
-    for gpo in gpos:
-        if gpo.display_name.strip() == 'Local Policy':
+    for gpo_obj in gpos:
+        if gpo_obj.display_name.strip() == 'Local Policy':
             continue # We never apply local policy
-        print('GPO: %s' % gpo.display_name)
+        print('GPO: %s' % gpo_obj.display_name)
         print('='*term_width)
         for ext in gp_extensions:
             ext = ext(lp, creds, username, store)
@@ -754,7 +754,7 @@ def rsop(lp, creds, store, gp_extensions, username, target):
                 cse_name = ext.__module__.split('.')[-1]
             print('  CSE: %s' % cse_name)
             print('  ' + ('-'*int(term_width/2)))
-            for section, settings in ext.rsop(gpo).items():
+            for section, settings in ext.rsop(gpo_obj).items():
                 print('    Policy Type: %s' % section)
                 print('    ' + ('-'*int(term_width/2)))
                 print(__rsop_vals(settings).lstrip('\n'))
