@@ -747,7 +747,7 @@ def rsop(lp, creds, store, gp_extensions, username, target):
         print('='*term_width)
         for ext in gp_extensions:
             ext = ext(lp, creds, username, store)
-            cse_name_m = re.findall("'([\w\.]+)'", str(type(ext)))
+            cse_name_m = re.findall(r"'([\w\.]+)'", str(type(ext)))
             if len(cse_name_m) > 0:
                 cse_name = cse_name_m[-1].split('.')[-1]
             else:
