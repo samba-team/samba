@@ -2264,7 +2264,6 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message *msg;
-	struct ldb_message *filtered_msg;
 	unsigned int i;
 	unsigned int num_keys = 0;
 	uint8_t previous_guid_key[LDB_KV_GUID_KEY_SIZE] = {0};
@@ -2456,27 +2455,31 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			continue;
 		}
 
-		filtered_msg = ldb_msg_new(ac);
-		if (filtered_msg == NULL) {
-			TALLOC_FREE(keys);
-			TALLOC_FREE(msg);
+		ret = ldb_msg_add_distinguished_name(msg);
+		if (ret == -1) {
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-
-		filtered_msg->dn = talloc_steal(filtered_msg, msg->dn);
 
 		/* filter the attributes that the user wants */
-		ret = ldb_kv_filter_attrs(ldb, msg, ac->attrs, filtered_msg);
-
-		talloc_free(msg);
-
-		if (ret == -1) {
-			TALLOC_FREE(filtered_msg);
+		ret = ldb_kv_filter_attrs_in_place(msg, ac->attrs);
+		if (ret != LDB_SUCCESS) {
 			talloc_free(keys);
+			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ldb_module_send_entry(ac->req, filtered_msg, NULL);
+		ldb_msg_shrink_to_fit(msg);
+
+		/* Ensure the message elements are all talloc'd. */
+		ret = ldb_msg_elements_take_ownership(msg);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(keys);
+			talloc_free(msg);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldb_module_send_entry(ac->req, msg, NULL);
 		if (ret != LDB_SUCCESS) {
 			/* Regardless of success or failure, the msg
 			 * is the callbacks responsibility, and should

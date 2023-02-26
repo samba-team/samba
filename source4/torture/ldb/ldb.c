@@ -1634,7 +1634,6 @@ static bool torture_ldb_unpack_and_filter(struct torture_context *torture,
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	struct ldb_context *ldb;
 	struct ldb_val data = *discard_const_p(struct ldb_val, data_p);
-	struct ldb_message *unpack_msg = ldb_msg_new(mem_ctx);
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	const char *lookup_names[] = {"instanceType", "nonexistent",
 				      "whenChanged", "objectClass",
@@ -1649,18 +1648,15 @@ static bool torture_ldb_unpack_and_filter(struct torture_context *torture,
 		       "Failed to init samba");
 
 	torture_assert_int_equal(torture,
-				 ldb_unpack_data(ldb, &data, unpack_msg),
+				 ldb_unpack_data(ldb, &data, msg),
 				 0, "ldb_unpack_data failed");
 
-	torture_assert_int_equal(torture, unpack_msg->num_elements, 13,
+	torture_assert_int_equal(torture, msg->num_elements, 13,
 				 "Got wrong count of elements");
 
-	msg->dn = talloc_steal(msg, unpack_msg->dn);
-
 	torture_assert_int_equal(torture,
-				 ldb_filter_attrs(ldb, unpack_msg,
-						  lookup_names, msg),
-				 0, "ldb_kv_filter_attrs failed");
+				 ldb_filter_attrs_in_place(msg, lookup_names),
+				 0, "ldb_filter_attrs_in_place failed");
 
 	/* Compare data in binary form */
 	torture_assert_int_equal(torture, msg->num_elements, 6,
