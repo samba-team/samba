@@ -292,15 +292,13 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 
 /*
  * filter the specified list of attributes from msg,
- * adding requested attributes, and perhaps all for *,
- * but not the DN to filtered_msg.
+ * adding requested attributes, and perhaps all for *.
+ * The DN will not be added if it is missing.
  */
-int ldb_kv_filter_attrs(struct ldb_context *ldb,
-			const struct ldb_message *msg,
-			const char *const *attrs,
-			struct ldb_message *filtered_msg)
+int ldb_kv_filter_attrs_in_place(struct ldb_message *msg,
+				 const char *const *attrs)
 {
-	return ldb_filter_attrs(ldb, msg, attrs, filtered_msg);
+	return ldb_filter_attrs_in_place(msg, attrs);
 }
 
 /*
@@ -313,7 +311,7 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 {
 	struct ldb_context *ldb;
 	struct ldb_kv_context *ac;
-	struct ldb_message *msg, *filtered_msg;
+	struct ldb_message *msg;
 	struct timeval now;
 	int ret, timeval_cmp;
 	bool matched;
@@ -410,25 +408,31 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 		return 0;
 	}
 
-	filtered_msg = ldb_msg_new(ac);
-	if (filtered_msg == NULL) {
-		TALLOC_FREE(msg);
+	ret = ldb_msg_add_distinguished_name(msg);
+	if (ret == -1) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	filtered_msg->dn = talloc_steal(filtered_msg, msg->dn);
-
 	/* filter the attributes that the user wants */
-	ret = ldb_kv_filter_attrs(ldb, msg, ac->attrs, filtered_msg);
-	talloc_free(msg);
-
-	if (ret == -1) {
-		TALLOC_FREE(filtered_msg);
+	ret = ldb_kv_filter_attrs_in_place(msg, ac->attrs);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		ac->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
 
-	ret = ldb_module_send_entry(ac->req, filtered_msg, NULL);
+	ldb_msg_shrink_to_fit(msg);
+
+	/* Ensure the message elements are all talloc'd. */
+	ret = ldb_msg_elements_take_ownership(msg);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		ac->error = LDB_ERR_OPERATIONS_ERROR;
+		return -1;
+	}
+
+	ret = ldb_module_send_entry(ac->req, msg, NULL);
 	if (ret != LDB_SUCCESS) {
 		ac->request_terminated = true;
 		/* the callback failed, abort the operation */
@@ -491,7 +495,7 @@ static int ldb_kv_search_full(struct ldb_kv_context *ctx)
 static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 					 struct ldb_kv_context *ctx)
 {
-	struct ldb_message *msg, *filtered_msg;
+	struct ldb_message *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
 	const char *dn_linearized;
 	const char *msg_dn_linearized;
@@ -549,12 +553,6 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	dn_linearized = ldb_dn_get_linearized(ctx->base);
 	msg_dn_linearized = ldb_dn_get_linearized(msg->dn);
 
-	filtered_msg = ldb_msg_new(ctx);
-	if (filtered_msg == NULL) {
-		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	if (strcmp(dn_linearized, msg_dn_linearized) == 0) {
 		/*
 		 * If the DN is exactly the same string, then
@@ -562,36 +560,42 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 		 * returned result, as it has already been
 		 * casefolded
 		 */
-		filtered_msg->dn = ldb_dn_copy(filtered_msg, ctx->base);
+		struct ldb_dn *dn = ldb_dn_copy(msg, ctx->base);
+		if (dn != NULL) {
+			msg->dn = dn;
+		}
 	}
 
-	/*
-	 * If the ldb_dn_copy() failed, or if we did not choose that
-	 * optimisation (filtered_msg is zeroed at allocation),
-	 * steal the one from the unpack
-	 */
-	if (filtered_msg->dn == NULL) {
-		filtered_msg->dn = talloc_steal(filtered_msg, msg->dn);
+	ret = ldb_msg_add_distinguished_name(msg);
+	if (ret == -1) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/*
 	 * filter the attributes that the user wants.
 	 */
-	ret = ldb_kv_filter_attrs(ldb, msg, ctx->attrs, filtered_msg);
-	if (ret == -1) {
+	ret = ldb_kv_filter_attrs_in_place(msg, ctx->attrs);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
-		filtered_msg = NULL;
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ldb_msg_shrink_to_fit(msg);
+
+	/* Ensure the message elements are all talloc'd. */
+	ret = ldb_msg_elements_take_ownership(msg);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/*
-	 * Remove any extended components possibly copied in from
-	 * msg->dn, we just want the casefold components
+	 * Remove any extended components, we just want the casefold components
 	 */
-	ldb_dn_remove_extended_components(filtered_msg->dn);
-	talloc_free(msg);
+	ldb_dn_remove_extended_components(msg->dn);
 
-	ret = ldb_module_send_entry(ctx->req, filtered_msg, NULL);
+	ret = ldb_module_send_entry(ctx->req, msg, NULL);
 	if (ret != LDB_SUCCESS) {
 		/* Regardless of success or failure, the msg
 		 * is the callbacks responsiblity, and should
