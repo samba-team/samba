@@ -183,10 +183,14 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	}
 
 	if (requested_rangenum >= globalcfg.maxranges) {
-		DEBUG(1, ("Not enough ranges available: New range %u must be "
-			  "smaller than configured maximum number of ranges "
-			  "(%u).\n",
-			  requested_rangenum, globalcfg.maxranges));
+		DBG_WARNING("Not enough ranges available: New range %u can't "
+			    "be allocated. Consider increasing the range "
+			    "[%u-%u] by %u.\n",
+			   requested_rangenum,
+			   globalcfg.minvalue,
+			   globalcfg.minvalue +
+				(globalcfg.maxranges * globalcfg.rangesize),
+			   globalcfg.rangesize);
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
