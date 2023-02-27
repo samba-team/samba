@@ -545,6 +545,39 @@ static int check_search_ops_access(struct aclread_context *ac,
 	return ret;
 }
 
+/*
+ * Whether this attribute was added to perform access checks and must be
+ * removed.
+ */
+static bool should_remove_attr(const char *attr, const struct aclread_context *ac)
+{
+	if (ac->added_nTSecurityDescriptor &&
+	    ldb_attr_cmp("nTSecurityDescriptor", attr) == 0)
+	{
+		return true;
+	}
+
+	if (ac->added_objectSid &&
+	    ldb_attr_cmp("objectSid", attr) == 0)
+	{
+		return true;
+	}
+
+	if (ac->added_instanceType &&
+	    ldb_attr_cmp("instanceType", attr) == 0)
+	{
+		return true;
+	}
+
+	if (ac->added_objectClass &&
+	    ldb_attr_cmp("objectClass", attr) == 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
@@ -619,7 +652,6 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		/* for every element in the message check RP */
 		for (i=0; i < msg->num_elements; i++) {
 			const struct dsdb_attribute *attr;
-			bool is_sd, is_objectsid, is_instancetype, is_objectclass;
 			uint32_t access_mask;
 			attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 								 msg->elements[i].name);
@@ -631,28 +663,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
-			is_sd = ldb_attr_cmp("nTSecurityDescriptor",
-					      msg->elements[i].name) == 0;
-			is_objectsid = ldb_attr_cmp("objectSid",
-						    msg->elements[i].name) == 0;
-			is_instancetype = ldb_attr_cmp("instanceType",
-						       msg->elements[i].name) == 0;
-			is_objectclass = ldb_attr_cmp("objectClass",
-						      msg->elements[i].name) == 0;
-			/* these attributes were added to perform access checks and must be removed */
-			if (is_objectsid && ac->added_objectSid) {
-				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
-				continue;
-			}
-			if (is_instancetype && ac->added_instanceType) {
-				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
-				continue;
-			}
-			if (is_objectclass && ac->added_objectClass) {
-				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
-				continue;
-			}
-			if (is_sd && ac->added_nTSecurityDescriptor) {
+			/* Remove attributes added to perform access checks. */
+			if (should_remove_attr(msg->elements[i].name, ac)) {
 				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
 				continue;
 			}
