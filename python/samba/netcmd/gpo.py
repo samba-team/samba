@@ -4286,10 +4286,14 @@ samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow
 class cmd_cse_register(Command):
     """Register a Client Side Extension (CSE) on the current host
 
-This command takes a CSE filename as an arguement, and registers it for
+This command takes a CSE filename as an argument, and registers it for
 applying policy on the current host. This is not necessary for CSEs which
 are distributed with the current version of Samba, but is useful for installing
 experimental CSEs or custom built CSEs.
+The <cse_file> argument MUST be a permanent location for the CSE. The register
+command does not copy the file to some other directory. The samba-gpupdate
+command will execute the CSE from the exact location specified from this
+command.
 
 Example:
 samba-tool gpo cse register ./gp_chromium_ext.py gp_chromium_ext --machine
@@ -4359,7 +4363,7 @@ samba-tool gpo cse list
 class cmd_cse_unregister(Command):
     """Unregister a Client Side Extension (CSE) from the current host
 
-This command takes a unique GUID as an arguement (representing a registered
+This command takes a unique GUID as an argument (representing a registered
 CSE), and unregisters it for applying policy on the current host. Use the
 `samba-tool gpo cse list` command to determine the unique GUIDs of CSEs.
 
