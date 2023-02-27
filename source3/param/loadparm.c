@@ -753,7 +753,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.ldap_debug_level = 0;
 	Globals.ldap_debug_threshold = 10;
 
-	Globals.client_ldap_sasl_wrapping = ADS_AUTH_SASL_SIGN;
+	Globals.client_ldap_sasl_wrapping = ADS_AUTH_SASL_SEAL;
 
 	Globals.ldap_server_require_strong_auth =
 		LDAP_SERVER_REQUIRE_STRONG_AUTH_YES;
