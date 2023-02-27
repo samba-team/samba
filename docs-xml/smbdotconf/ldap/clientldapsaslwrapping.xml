@@ -18,25 +18,24 @@
 	</para>
 	
 	<para>
-	This option is needed in the case of Domain Controllers enforcing 
-	the usage of signed LDAP connections (e.g. Windows 2000 SP3 or higher).
-	LDAP sign and seal can be controlled with the registry key
-	"<literal>HKLM\System\CurrentControlSet\Services\</literal>
-	<literal>NTDS\Parameters\LDAPServerIntegrity</literal>"
-	on the Windows server side.  
+	This option is needed firstly to secure the privacy of
+	administrative connections from <command>samba-tool</command>,
+	including in particular new or reset passwords for users. For
+	this reason the default is <emphasis>seal</emphasis>.</para>
+
+	<para>Additionally, <command>winbindd</command> and the
+	<command>net</command> tool can use LDAP to communicate with
+	Domain Controllers, so this option also controls the level of
+	privacy for those connections.  All supported AD DC versions
+	will enforce the usage of at least signed LDAP connections by
+	default, so a value of at least <emphasis>sign</emphasis> is
+	required in practice.
 	</para>
 
 	<para>
-	Depending on the used KRB5 library (MIT and older Heimdal versions)
-	it is possible that the message "integrity only" is not supported. 
-	In this case, <emphasis>sign</emphasis> is just an alias for 
-	<emphasis>seal</emphasis>.
-	</para>
-
-	<para>
-	The default value is <emphasis>sign</emphasis>. That implies synchronizing the time
+	The default value is <emphasis>seal</emphasis>. That implies synchronizing the time
 	with the KDC in the case of using <emphasis>Kerberos</emphasis>.
 	</para>
 </description>
-<value type="default">sign</value>
+<value type="default">seal</value>
 </samba:parameter>
