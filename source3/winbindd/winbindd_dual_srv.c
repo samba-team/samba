@@ -541,6 +541,21 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 			include_local_groups = true;
 		}
 		break;
+	case ROLE_DOMAIN_MEMBER:
+		/*
+		 * This is needed for GETGRENT to show also e.g. BUILTIN/users.
+		 * Otherwise the test_membership_user (smbtorture
+		 * local.nss.membership) would fail (getgrouplist() would
+		 * reports BUILTIN/users).
+		 */
+		if (domain->internal) {
+			/*
+			 * we want to include local groups
+			 * for BUILTIN and LOCALSAM
+			 */
+			include_local_groups = true;
+		}
+		break;
 	default:
 		/*
 		 * We might include local groups in more
