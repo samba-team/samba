@@ -70,6 +70,13 @@ struct aclread_private {
 	struct ldb_val sd_cached_blob;
 };
 
+struct access_check_context {
+	struct security_descriptor *sd;
+	struct dom_sid sid_buf;
+	const struct dom_sid *sid;
+	const struct dsdb_class *objectclass;
+};
+
 /*
  * the object has a parent, so we have to check for visibility
  *
@@ -254,7 +261,7 @@ static int aclread_check_object_visible(struct aclread_context *ac,
  */
 
 static int aclread_get_sd_from_ldb_message(struct aclread_context *ac,
-					   struct ldb_message *acl_res,
+					   const struct ldb_message *acl_res,
 					   struct security_descriptor **sd)
 {
 	struct ldb_message_element *sd_element;
@@ -358,7 +365,7 @@ static uint32_t get_attr_access_mask(const struct dsdb_attribute *attr,
 struct parse_tree_aclread_ctx {
 	struct aclread_context *ac;
 	TALLOC_CTX *mem_ctx;
-	struct dom_sid *sid;
+	const struct dom_sid *sid;
 	struct ldb_dn *dn;
 	struct security_descriptor *sd;
 	const struct dsdb_class *objectclass;
@@ -372,7 +379,7 @@ static int check_attr_access_rights(TALLOC_CTX *mem_ctx, const char *attr_name,
 				    struct aclread_context *ac,
 				    struct security_descriptor *sd,
 				    const struct dsdb_class *objectclass,
-				    struct dom_sid *sid, struct ldb_dn *dn)
+				    const struct dom_sid *sid, struct ldb_dn *dn)
 {
 	int ret;
 	const struct dsdb_attribute *attr = NULL;
@@ -449,6 +456,69 @@ static const char * parse_tree_get_attr(struct ldb_parse_tree *tree)
 	return attr;
 }
 
+static int setup_access_check_context(struct aclread_context *ac,
+				      const struct ldb_message *msg,
+				      struct access_check_context *ctx)
+{
+	int ret;
+
+	/*
+	 * Fetch the schema so we can check which attributes are
+	 * considered confidential.
+	 */
+	if (ac->schema == NULL) {
+		struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+
+		/* Cache the schema for later use. */
+		ac->schema = dsdb_get_schema(ldb, ac);
+
+		if (ac->schema == NULL) {
+			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+					 "aclread_callback: Error obtaining schema.");
+		}
+	}
+
+	/* Fetch the object's security descriptor. */
+	ret = aclread_get_sd_from_ldb_message(ac, msg, &ctx->sd);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug_set(ldb_module_get_ctx(ac->module), LDB_DEBUG_FATAL,
+			      "acl_read: cannot get descriptor of %s: %s\n",
+			      ldb_dn_get_linearized(msg->dn), ldb_strerror(ret));
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (ctx->sd == NULL) {
+		ldb_debug_set(ldb_module_get_ctx(ac->module), LDB_DEBUG_FATAL,
+			      "acl_read: cannot get descriptor of %s (attribute not found)\n",
+			      ldb_dn_get_linearized(msg->dn));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/*
+	 * Get the most specific structural object class for the ACL check
+	 */
+	ctx->objectclass = dsdb_get_structural_oc_from_msg(ac->schema, msg);
+	if (ctx->objectclass == NULL) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+				       "acl_read: Failed to find a structural class for %s",
+				       ldb_dn_get_linearized(msg->dn));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Fetch the object's SID. */
+	ret = samdb_result_dom_sid_buf(msg, "objectSid", &ctx->sid_buf);
+	if (ret == LDB_SUCCESS) {
+		ctx->sid = &ctx->sid_buf;
+	} else if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		/* This is expected. */
+		ctx->sid = NULL;
+	} else {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+				       "acl_read: Failed to parse objectSid as dom_sid for %s",
+				       ldb_dn_get_linearized(msg->dn));
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
  * Checks a single attribute in the search parse-tree to make sure the user has
  * sufficient rights to view it.
@@ -523,7 +593,7 @@ static int check_search_ops_access(struct aclread_context *ac,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor *sd,
 				   const struct dsdb_class *objectclass,
-				   struct dom_sid *sid, struct ldb_dn *dn,
+				   const struct dom_sid *sid, struct ldb_dn *dn,
 				   bool *suppress_result)
 {
 	int ret;
@@ -586,10 +656,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_message *msg;
 	int ret;
 	unsigned int i;
-	struct security_descriptor *sd = NULL;
-	struct dom_sid *sid = NULL;
+	struct access_check_context acl_ctx;
 	TALLOC_CTX *tmp_ctx;
-	const struct dsdb_class *objectclass;
 	bool suppress_result = false;
 
 	ac = talloc_get_type_abort(req->context, struct aclread_context);
@@ -605,32 +673,11 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		msg = ares->message;
-		ret = aclread_get_sd_from_ldb_message(ac, msg, &sd);
+		ret = setup_access_check_context(ac, msg, &acl_ctx);
 		if (ret != LDB_SUCCESS) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "acl_read: cannot get descriptor of %s: %s\n",
-				      ldb_dn_get_linearized(msg->dn), ldb_strerror(ret));
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			goto fail;
-		} else if (sd == NULL) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "acl_read: cannot get descriptor of %s (attribute not found)\n",
-				      ldb_dn_get_linearized(msg->dn));
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			goto fail;
-		}
-		/*
-		 * Get the most specific structural object class for the ACL check
-		 */
-		objectclass = dsdb_get_structural_oc_from_msg(ac->schema, msg);
-		if (objectclass == NULL) {
-			ldb_asprintf_errstring(ldb, "acl_read: Failed to find a structural class for %s",
-					       ldb_dn_get_linearized(msg->dn));
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			goto fail;
+			return ret;
 		}
 
-		sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
 		if (!ldb_dn_is_null(msg->dn)) {
 			/*
 			 * this is a real object, so we have
@@ -679,11 +726,11 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 			ret = acl_check_access_on_attribute_implicit_owner(ac->module,
 									   tmp_ctx,
-									   sd,
-									   sid,
+									   acl_ctx.sd,
+									   acl_ctx.sid,
 									   access_mask,
 									   attr,
-									   objectclass,
+									   acl_ctx.objectclass,
 									   IMPLICIT_OWNER_READ_CONTROL_RIGHTS);
 
 			/*
@@ -735,7 +782,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		 * check access rights for the search attributes, as well as the
 		 * attribute values actually being returned
 		 */
-		ret = check_search_ops_access(ac, tmp_ctx, sd, objectclass, sid,
+		ret = check_search_ops_access(ac, tmp_ctx, acl_ctx.sd, acl_ctx.objectclass, acl_ctx.sid,
 					      msg->dn, &suppress_result);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
