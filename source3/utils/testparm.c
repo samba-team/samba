@@ -192,6 +192,17 @@ static bool do_idmap_check(void)
 			uint32_t maxranges =
 				(c->high - c->low  + 1) / rangesize;
 
+			if (((c->high - c->low  + 1) % rangesize) != 0) {
+				fprintf(stderr,
+					"WARNING: The idmap autorid range "
+					"[%u-%u] SHOULD to be a multiple of "
+					"the rangesize [%u]!"
+					"\n\n",
+					c->low,
+					c->high,
+					rangesize);
+			}
+
 			if (maxranges < 2) {
 				fprintf(stderr,
 					"ERROR: The idmap autorid range "
