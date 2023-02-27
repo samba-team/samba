@@ -2990,7 +2990,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "ldap debug threshold", "10");
 
-	lpcfg_do_global_parameter(lp_ctx, "client ldap sasl wrapping", "sign");
+	lpcfg_do_global_parameter(lp_ctx, "client ldap sasl wrapping", "seal");
 
 	lpcfg_do_global_parameter(lp_ctx, "mdns name", "netbios");
 
