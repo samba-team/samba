@@ -470,7 +470,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authorization" and
                     msg["Authorization"]["serviceDescription"] == "LDAP" and
-                    msg["Authorization"]["transportProtection"] == "SIGN" and
+                    msg["Authorization"]["transportProtection"] == "SEAL" and
                     msg["Authorization"]["authType"] == "krb5")
 
         self.samdb = SamDB(url="ldap://%s" % os.environ["SERVER"],
