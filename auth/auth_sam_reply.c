@@ -399,6 +399,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 	if (sam6->sidcount) {
 		sam6->base.user_flags |= NETLOGON_EXTRA_SIDS;
 	} else {
+		sam6->base.user_flags &= ~NETLOGON_EXTRA_SIDS;
 		TALLOC_FREE(sam6->sids);
 	}
 
