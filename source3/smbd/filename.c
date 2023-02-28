@@ -1412,6 +1412,16 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
+		/*
+		 * When open_stream_pathref_fsp() returns
+		 * NT_STATUS_OBJECT_NAME_NOT_FOUND, smb_fname_rel->fsp
+		 * has been set to NULL, so we must free base_fsp separately
+		 * to prevent fd-leaks when opening a stream that doesn't
+		 * exist.
+		 */
+		fd_close(base_fsp);
+		file_free(NULL, base_fsp);
+		base_fsp = NULL;
 		goto done;
 	}
 
@@ -1428,6 +1438,17 @@ done:
 	return NT_STATUS_OK;
 
 fail:
+	/*
+	 * If open_stream_pathref_fsp() returns an error, smb_fname_rel->fsp
+	 * has been set to NULL, so we must free base_fsp separately
+	 * to prevent fd-leaks when opening a stream that doesn't
+	 * exist.
+	 */
+	if (base_fsp != NULL) {
+		fd_close(base_fsp);
+		file_free(NULL, base_fsp);
+		base_fsp = NULL;
+	}
 	TALLOC_FREE(dirname);
 	TALLOC_FREE(smb_dirname);
 	TALLOC_FREE(smb_fname_rel);
