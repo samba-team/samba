@@ -304,7 +304,6 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
                                       expression="(samAccountName=group_%s)" % username)
         self.assertTrue(len(ldb_res) == 1)
         self.assertTrue("sAMAccountName" in ldb_res[0])
-        group_orig = ldb_res[0]
         group_dn = ldb_res[0]["dn"]
 
         # modify user on DC2 to have a description and be a member of the group
@@ -325,7 +324,6 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertTrue(len(ldb_res) == 1)
         self.assertTrue("sAMAccountName" in ldb_res[0])
         group2_dn = ldb_res[0]["dn"]
-        group2_orig = ldb_res[0]
 
         m = ldb.Message()
         m.dn = group2_dn
