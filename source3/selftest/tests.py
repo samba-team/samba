@@ -773,6 +773,10 @@ for env in ["fileserver"]:
                   [os.path.join(samba3srcdir, "script/tests/test_veto_files.sh"),
                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/veto', smbclient3])
 
+    plantestsuite("samba3.blackbox.stream_dir_rename", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_stream_dir_rename.sh"),
+                  '$SERVER', '$USERNAME', '$PASSWORD', '$PREFIX', smbclient3])
+
     #
     # tar command tests
     #
