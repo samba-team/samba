@@ -779,7 +779,7 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 		 * This calls cli_credentials_set_conf() to get the defaults
 		 * form smb.conf and set the winbind separator.
 		 *
-		 * Just warn that we can't read the smb.conf. The might not be
+		 * Just warn that we can't read the smb.conf. There might not be
 		 * one available or we want to ignore it.
 		 */
 		ok = cli_credentials_guess(creds, lp_ctx);
