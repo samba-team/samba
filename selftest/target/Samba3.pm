@@ -3459,6 +3459,11 @@ sub provision($$)
 	copy = tmp
 	vfs objects = streams_xattr xattr_tdb
 
+[streams_xattr_nostrict]
+	copy = tmp
+	strict rename = no
+	vfs objects = streams_xattr xattr_tdb
+
 [acl_streams_xattr]
 	copy = tmp
 	vfs objects = acl_xattr streams_xattr fake_acls xattr_tdb
