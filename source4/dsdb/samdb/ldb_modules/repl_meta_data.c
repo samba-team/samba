@@ -475,7 +475,7 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 
 	/* construct a ldb_message for adding/deleting the backlink */
 	msg->dn = target_dn;
-	dn_string = ldb_dn_get_extended_linearized(frame, bl->forward_dn, 1);
+	dn_string = ldb_dn_get_extended_linearized(frame, source_dn, 1);
 	if (!dn_string) {
 		ldb_module_oom(module);
 		talloc_free(frame);
