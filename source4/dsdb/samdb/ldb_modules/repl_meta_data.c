@@ -425,6 +425,8 @@ static int linked_attr_modify(struct ldb_module *module,
 static int replmd_process_backlink(struct ldb_module *module, struct la_backlink *bl, struct ldb_request *parent)
 {
 	struct ldb_dn *target_dn, *source_dn;
+	struct ldb_message *old_msg = NULL;
+	const char *attrs[] = { NULL };
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
@@ -437,7 +439,12 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	  - construct ldb_message
               - either an add or a delete
 	 */
-	ret = dsdb_module_dn_by_guid(module, frame, &bl->target_guid, &target_dn, parent);
+	ret = dsdb_module_obj_by_guid(module,
+				      frame,
+				      &old_msg,
+				      &bl->target_guid,
+				      attrs,
+				      parent);
 	if (ret != LDB_SUCCESS) {
 		struct GUID_txt_buf guid_str;
 		DBG_WARNING("Failed to find target DN for linked attribute with GUID %s\n",
@@ -446,6 +453,7 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 		talloc_free(frame);
 		return LDB_SUCCESS;
 	}
+	target_dn = old_msg->dn;
 
 	msg = ldb_msg_new(frame);
 	if (msg == NULL) {
