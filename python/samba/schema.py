@@ -221,7 +221,7 @@ def get_linked_attributes(schemadn, schemaldb):
                                      attribute="lDAPDisplayName",
                                      scope=SCOPE_SUBTREE)
         if target is not None:
-            attributes[str(res[i]["lDAPDisplayName"])] = str(target)
+            attributes[str(res[i]["lDAPDisplayName"])] = target.decode('utf-8')
 
     return attributes
 
