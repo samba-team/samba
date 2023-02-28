@@ -89,7 +89,7 @@ def get_bytes(bytesorstring):
     if isinstance(bytesorstring, str):
         tmp = bytesorstring.encode('utf8')
     elif not isinstance(bytesorstring, bytes):
-        raise ValueError('Expected byte or string for %s:%s' % (type(bytesorstring), bytesorstring))
+        raise ValueError('Expected bytes or string for %s:%s' % (type(bytesorstring), bytesorstring))
     return tmp
 
 # helper function to get a string from a variable that maybe 'str' or
@@ -103,5 +103,5 @@ def get_string(bytesorstring):
     if isinstance(bytesorstring, bytes):
         tmp = bytesorstring.decode('utf8')
     elif not isinstance(bytesorstring, str):
-        raise ValueError('Expected byte of string for %s:%s' % (type(bytesorstring), bytesorstring))
+        raise ValueError('Expected bytes or string for %s:%s' % (type(bytesorstring), bytesorstring))
     return tmp
