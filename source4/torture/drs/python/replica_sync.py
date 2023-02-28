@@ -110,7 +110,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     def test_ReplDisabledForced(self):
         """Tests we can force replicate when replication is disabled"""
         self._disable_inbound_repl(self.dnsname_dc1)
-        out = self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
     def test_ReplLocal(self):
         """Tests we can replicate direct to the local db"""
