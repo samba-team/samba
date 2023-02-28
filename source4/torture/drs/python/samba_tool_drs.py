@@ -360,7 +360,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertEqual(ldap_service_name, server_ldap_service_name)
 
         server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name)).decode('utf8')
-        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
+        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn).decode('utf8')
 
         res = samdb.search(base=str(server_nc_name),
                            expression="(&(objectclass=user)(cn=dns-%s))" % (self.dc2),
