@@ -291,8 +291,8 @@ static int reset_connections_tickle_connection(
 		return 1;
 	}
 
-	DBG_DEBUG("Sending tickle ACK for connection '%s'\n",
-		  ctdb_connection_to_string(state, conn, true));
+	DBG_INFO("Sending tickle ACK for connection '%s'\n",
+		 ctdb_connection_to_string(state, conn, true));
 	ret = ctdb_sys_send_tcp(&conn->server, &conn->client, 0, 0, 0);
 	if (ret != 0) {
 		DBG_ERR("Error sending tickle ACK\n");
