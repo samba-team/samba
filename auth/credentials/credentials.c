@@ -1619,7 +1619,7 @@ _PUBLIC_ bool cli_credentials_set_smb_signing(struct cli_credentials *creds,
  * @param[in]  creds  The credential structure to obtain the SMB signing state
  *                    from.
  *
- * @return The SMB singing state.
+ * @return The SMB signing state.
  */
 _PUBLIC_ enum smb_signing_setting
 cli_credentials_get_smb_signing(struct cli_credentials *creds)
@@ -1658,7 +1658,7 @@ cli_credentials_set_smb_ipc_signing(struct cli_credentials *creds,
  * @param[in]  creds  The credential structure to obtain the SMB IPC signing
  *                    state from.
  *
- * @return The SMB singing state.
+ * @return The SMB signing state.
  */
 _PUBLIC_ enum smb_signing_setting
 cli_credentials_get_smb_ipc_signing(struct cli_credentials *creds)
@@ -1858,7 +1858,7 @@ _PUBLIC_ void cli_credentials_dump(struct cli_credentials *creds)
  * @param[in]  creds  The credential structure to obtain the SMB encryption state
  *                    from.
  *
- * @return The SMB singing state.
+ * @return The SMB signing state.
  */
 _PUBLIC_ enum smb_encryption_setting
 cli_credentials_get_smb_encryption(struct cli_credentials *creds)
