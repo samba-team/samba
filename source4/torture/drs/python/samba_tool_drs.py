@@ -178,11 +178,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertTrue(first_obj > second_obj)
 
         server_rootdse = self._get_rootDSE(self.dc1)
-        server_nc_name = server_rootdse["defaultNamingContext"]
-        server_ds_name = server_rootdse["dsServiceName"]
         server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
         server_realm = server_ldap_service_name.split(":")[0]
-        creds = self.get_credentials()
 
         # We have to give it a different netbiosname every time
         # it runs, otherwise the collision causes strange issues
@@ -272,12 +269,11 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         server_ds_name = server_rootdse["dsServiceName"]
         server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
         server_realm = server_ldap_service_name.split(":")[0]
-        creds = self.get_credentials()
-        out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s"
-                                % (server_realm,
-                                   self.dc1,
-                                   self.cmdline_creds,
-                                   self.tempdir))
+        self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s"
+                          % (server_realm,
+                             self.dc1,
+                             self.cmdline_creds,
+                             self.tempdir))
         ldb_rootdse = self._get_rootDSE("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
         nc_name = ldb_rootdse["defaultNamingContext"]
         ds_name = ldb_rootdse["dsServiceName"]
@@ -291,7 +287,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
                                           ldap_only=False, lp=self.get_loadparm())
 
         def get_krbtgt_pw():
-            krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
+            samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
         self.assertRaises(KeyError, get_krbtgt_pw)
 
         server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name)).decode('utf8')
@@ -306,9 +302,9 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
             dns_obj = None
 
         # While we have this cloned, try demoting the other server on the clone, by GUID
-        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
-                                % (ntds_guid,
-                                   self.tempdir))
+        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+                          % (ntds_guid,
+                             self.tempdir))
 
         # Check some of the objects that should have been removed
         def check_machine_obj():
@@ -337,15 +333,13 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         server_ds_name = server_rootdse["dsServiceName"]
         server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
         server_realm = server_ldap_service_name.split(":")[0]
-        creds = self.get_credentials()
-        out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s --include-secrets"
-                                % (server_realm,
-                                   self.dc1,
-                                   self.cmdline_creds,
-                                   self.tempdir))
+        self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s --include-secrets"
+                          % (server_realm,
+                             self.dc1,
+                             self.cmdline_creds,
+                             self.tempdir))
         ldb_rootdse = self._get_rootDSE("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
         nc_name = ldb_rootdse["defaultNamingContext"]
-        config_nc_name = ldb_rootdse["configurationNamingContext"]
         ds_name = ldb_rootdse["dsServiceName"]
         ldap_service_name = str(server_rootdse["ldapServiceName"][0])
 
@@ -372,15 +366,15 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
 
         def demote_self():
             # While we have this cloned, try demoting the other server on the clone
-            out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
-                                    % (self.dc1,
-                                       self.tempdir))
+            self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+                              % (self.dc1,
+                                 self.tempdir))
         self.assertRaises(samba.tests.BlackboxProcessError, demote_self)
 
         # While we have this cloned, try demoting the other server on the clone
-        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldb://%s/private/sam.ldb"
-                                % (self.dc2,
-                                   self.tempdir))
+        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldb://%s/private/sam.ldb"
+                          % (self.dc2,
+                             self.tempdir))
 
         # Check some of the objects that should have been removed
         def check_machine_obj():
@@ -407,11 +401,10 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         server_rootdse = self._get_rootDSE(self.dc1)
         server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
         server_realm = server_ldap_service_name.split(":")[0]
-        creds = self.get_credentials()
 
         def attempt_clone():
-            out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s"
-                                    % (server_realm,
-                                       self.dc1,
-                                       self.cmdline_creds))
+            self.check_output("samba-tool drs clone-dc-database %s --server=%s %s"
+                              % (server_realm,
+                                 self.dc1,
+                                 self.cmdline_creds))
         self.assertRaises(samba.tests.BlackboxProcessError, attempt_clone)
