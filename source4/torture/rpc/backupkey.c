@@ -2091,7 +2091,7 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 	case WRONG_R2:
 		server_side_wrapped.r2[0] = 78;
 		server_side_wrapped.r2[1] = 78;
-		server_side_wrapped.r2[3] = 78;
+		server_side_wrapped.r2[2] = 78;
 		repush = true;
 		break;
 	case WRONG_PAYLOAD_LENGTH:
