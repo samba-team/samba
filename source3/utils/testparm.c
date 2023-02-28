@@ -195,7 +195,7 @@ static bool do_idmap_check(void)
 			if (((c->high - c->low  + 1) % rangesize) != 0) {
 				fprintf(stderr,
 					"WARNING: The idmap autorid range "
-					"[%u-%u] SHOULD to be a multiple of "
+					"[%u-%u] SHOULD be a multiple of "
 					"the rangesize [%u]!"
 					"\n\n",
 					c->low,
