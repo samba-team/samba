@@ -32,8 +32,6 @@ struct werror_str_struct {
         const char *friendly_errstr;
 };
 
-#include "werror_gen.c"
-
 static const struct werror_code_struct special_errs[] =
 {
 	{ "WERR_DNS_ERROR_NOT_ALLOWED_ON_ACTIVE_SKD", WERR_DNS_ERROR_NOT_ALLOWED_ON_ACTIVE_SKD },
@@ -108,11 +106,10 @@ const char *win_errstr(WERROR werror)
 
 	idx = 0;
 
-	while (dos_errs[idx].dos_errstr != NULL) {
-		if (W_ERROR_V(dos_errs[idx].werror) ==
-                    W_ERROR_V(werror))
-                        return dos_errs[idx].dos_errstr;
-		idx++;
+	switch W_ERROR_V(werror) {
+#include "werror_gen.c"
+	default:
+		break;
 	}
 
 	slprintf(msg, sizeof(msg), "DOS code 0x%08x", W_ERROR_V(werror));

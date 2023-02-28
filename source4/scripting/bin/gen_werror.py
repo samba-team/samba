@@ -37,19 +37,17 @@ def generateHeaderFile(out_file, errors):
     out_file.write("\n#endif /* _WERR_GEN_H */\n")
 
 def generateSourceFile(out_file, errors):
-    out_file.write("#include \"werror.h\"\n")
-
     out_file.write("/*\n")
     out_file.write(" * Names for errors generated from\n")
     out_file.write(" * [MS-ERREF] https://msdn.microsoft.com/en-us/library/cc231199.aspx\n")
     out_file.write(" */\n")
 
-    out_file.write("static const struct werror_code_struct dos_errs[] = \n")
-    out_file.write("{\n")
     for err in errors:
-        out_file.write("\t{ \"%s\", %s },\n" % (err.err_define, err.err_define))
-    out_file.write("{ 0, W_ERROR(0) }\n")
-    out_file.write("};\n")
+        if (err.err_define == 'WERR_NERR_SUCCESS'):
+            continue
+        out_file.write(f'\t case {hex(err.err_code)}:\n')
+        out_file.write(f'\t\treturn \"{err.err_define}\";\n')
+        out_file.write(f'\t\tbreak;\n')
 
 def generateFriendlySourceFile(out_file, errors):
     out_file.write("/*\n")
