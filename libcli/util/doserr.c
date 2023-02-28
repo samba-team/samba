@@ -126,13 +126,10 @@ const char *win_errstr(WERROR werror)
 
 const char *get_friendly_werror_msg(WERROR werror)
 {
-	size_t i = 0;
-
-	for (i = 0; i < ARRAY_SIZE(dos_err_strs); i++) {
-		if (W_ERROR_V(dos_err_strs[i].werror) ==
-                    W_ERROR_V(werror)) {
-			return dos_err_strs[i].friendly_errstr;
-		}
+	switch W_ERROR_V(werror) {
+#include "werror_friendly_gen.c"
+	default:
+		break;
 	}
 
 	return win_errstr(werror);

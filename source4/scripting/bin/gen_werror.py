@@ -51,20 +51,18 @@ def generateSourceFile(out_file, errors):
     out_file.write("{ 0, W_ERROR(0) }\n")
     out_file.write("};\n")
 
-    out_file.write("\n/*\n")
-    out_file.write(" * Descriptions for errors generated from\n")
+def generateFriendlySourceFile(out_file, errors):
+    out_file.write("/*\n")
+    out_file.write(" * Names for errors generated from\n")
     out_file.write(" * [MS-ERREF] https://msdn.microsoft.com/en-us/library/cc231199.aspx\n")
     out_file.write(" */\n")
 
-    out_file.write("static const struct werror_str_struct dos_err_strs[] = \n")
-    out_file.write("{\n")
     for err in errors:
-        # Account for the possibility that some errors may not have descriptions
-        if err.err_string == "":
+        if (err.err_define == 'WERR_NERR_SUCCESS'):
             continue
-        out_file.write("\t{ %s, \"%s\" },\n"%(err.err_define, err.err_string))
-    out_file.write("\t{ W_ERROR(0), 0 }\n")
-    out_file.write("};")
+        out_file.write(f'\tcase {hex(err.err_code)}:\n')
+        out_file.write(f'\t\treturn \"{err.err_string}\";\n')
+        out_file.write('\t\tbreak;\n')
 
 def generatePythonFile(out_file, errors):
     out_file.write("/*\n")
@@ -118,11 +116,12 @@ def transformErrorName( error_name ):
 # [3]: [[output doserr_gen.c]]
 # [4]: [[output py_werror.c]]
 def main():
-    if len(sys.argv) == 5:
+    if len(sys.argv) == 6:
         input_file_name = sys.argv[1]
         gen_headerfile_name = sys.argv[2]
         gen_sourcefile_name = sys.argv[3]
-        gen_pythonfile_name = sys.argv[4]
+        gen_friendlysource_name = sys.argv[4]
+        gen_pythonfile_name = sys.argv[5]
     else:
         print("usage: %s winerrorfile headerfile sourcefile pythonfile" % sys.argv[0])
         sys.exit()
@@ -138,6 +137,10 @@ def main():
     print("writing new source file: %s" % gen_sourcefile_name)
     out_file = io.open(gen_sourcefile_name, "wt", encoding='utf8')
     generateSourceFile(out_file, errors)
+    out_file.close()
+    print("writing new source file: %s" % gen_friendlysource_name)
+    out_file = io.open(gen_friendlysource_name, "wt", encoding='utf8')
+    generateFriendlySourceFile(out_file, errors)
     out_file.close()
     print("writing new python file: %s" % gen_pythonfile_name)
     out_file = io.open(gen_pythonfile_name, "wt", encoding='utf8')
