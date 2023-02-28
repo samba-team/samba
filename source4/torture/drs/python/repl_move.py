@@ -345,7 +345,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         moved_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
@@ -643,10 +642,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 1)]
 
         # check user info on DC1 after rename - should be valid user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=False,
-                                   expected_metadata=moved_metadata)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=False,
+                        expected_metadata=moved_metadata)
 
         # check user info on DC2 - should not be there, we have not done replication
         ldb_res = self.ldb_dc2.search(base=self.ou2_dn,
@@ -686,10 +685,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
 
         # check user info on DC1 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc1)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc1)
         # trigger replication from DC1 to DC2, for cleanup
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
 
@@ -721,19 +720,19 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
 
         # check user info on DC2 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc2)
+        self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc2)
 
         # trigger replication from DC2 to DC1, for cleanup
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
         # check user info on DC1 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc1)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc1)
 
     def test_ReplicateMoveObject3(self):
         """Verifies how a moved container with a user inside is replicated between two DCs.
@@ -801,7 +800,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -830,10 +828,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 1)]
 
         # check user info on DC1 after rename - should be valid user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=False,
-                                   expected_metadata=moved_metadata)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=False,
+                        expected_metadata=moved_metadata)
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -865,19 +863,19 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
 
         # check user info on DC1 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc1)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc1)
 
         # trigger replication from DC2 to DC1
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
         # check user info on DC1 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc1)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc1)
 
         # trigger replication from DC1 to DC2, for cleanup
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -910,10 +908,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
 
         # check user info on DC2 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc2)
+        self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc2)
 
     def test_ReplicateMoveObject3b(self):
         """Verifies how a moved container with a user inside is replicated between two DCs.
@@ -981,7 +979,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # trigger replication from DC2 (Which has never seen the object) to DC1
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
@@ -1010,10 +1007,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 1)]
 
         # check user info on DC1 after rename - should be valid user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=False,
-                                   expected_metadata=moved_metadata)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=False,
+                        expected_metadata=moved_metadata)
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -1045,19 +1042,19 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
 
         # check user info on DC1 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc1)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc1)
 
         # trigger replication from DC2 to DC1
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
         # check user info on DC1 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc1)
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc1)
 
         # trigger replication from DC1 to DC2, for cleanup
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -1090,10 +1087,10 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
             (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
 
         # check user info on DC2 - should be deleted user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
-                                   obj_orig=user_moved_orig,
-                                   is_deleted=True,
-                                   expected_metadata=deleted_metadata_dc2)
+        self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
+                        obj_orig=user_moved_orig,
+                        is_deleted=True,
+                        expected_metadata=deleted_metadata_dc2)
 
     def test_ReplicateMoveObject4(self):
         """Verifies how a moved container with a user inside is replicated between two DCs.
@@ -1194,7 +1191,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         moved_metadata = [
             (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
@@ -1465,7 +1461,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # Modify description on DC2.  This triggers a replication, but
         # not of 'name' and so a bug in Samba regarding the DN.
@@ -1529,7 +1524,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
-        ou_moved_dn   = ldb_res[0]["dn"]
 
         # Modify description on DC2.  This triggers a replication, but
         # not of 'name' and so a bug in Samba regarding the DN.
@@ -1594,7 +1588,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
-        ou_moved_dn   = ldb_res[0]["dn"]
 
         # Modify description on DC2.  This triggers a replication, but
         # not of 'name' and so a bug in Samba regarding the DN.
@@ -1659,7 +1652,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
-        ou_moved_dn   = ldb_res[0]["dn"]
 
         # Modify description on DC2.  This triggers a replication, but
         # not of 'name' and so a bug in Samba regarding the DN.
@@ -1725,7 +1717,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
-        ou_moved_dn   = ldb_res[0]["dn"]
 
         # Modify description on DC2.  This triggers a replication, but
         # not of 'name' and so a bug in Samba regarding the DN.
@@ -2004,12 +1995,11 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         # check user info on DC2 - should be valid user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved_orig, is_deleted=False)
+        self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved_orig, is_deleted=False)
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2246,7 +2236,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -2288,7 +2277,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -2350,12 +2338,11 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
-        user_moved_dn   = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         # check user info on DC2 - should be valid user
-        user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved_orig, is_deleted=False)
+        self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved_orig, is_deleted=False)
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2389,7 +2376,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       attrs=["*", "parentGUID"])
         self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
-        user_dn   = ldb_res[0]["dn"]
 
         msg = ldb.Message()
         msg.dn = self.ou1_dn
@@ -2450,7 +2436,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       attrs=["*", "parentGUID"])
         self.assertEqual(len(ldb_res), 1)
         user_moved = ldb_res[0]
-        user_moved_dn = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -2531,7 +2516,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       attrs=["*", "parentGUID"])
         self.assertEqual(len(ldb_res), 1)
         user_moved = ldb_res[0]
-        user_moved_dn = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -2609,7 +2593,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       attrs=["*", "parentGUID"])
         self.assertEqual(len(ldb_res), 1)
         user_moved = ldb_res[0]
-        user_moved_dn = ldb_res[0]["dn"]
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
