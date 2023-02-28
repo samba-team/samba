@@ -473,7 +473,6 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             "dn": cn3,
             "objectclass": "container",
         })
-        cn3_id = self._get_identifier(self.ldb_dc1, cn3)
 
         (hwm5, utdv5) = self._check_replication([dc3, ou1, ou2, self.ou, cn3],
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
