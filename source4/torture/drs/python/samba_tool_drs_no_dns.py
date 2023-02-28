@@ -74,7 +74,6 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
         nc_name = server_rootdse["defaultNamingContext"]
         server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
         server_realm = server_ldap_service_name.split(":")[0]
-        creds = self.get_credentials()
 
         # We have to give it a different netbiosname every time
         # it runs, otherwise the collision causes strange issues
@@ -83,11 +82,11 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
         if len(netbiosname) > 15:
             netbiosname = netbiosname[:15]
 
-        out = self.check_output("samba-tool domain join %s dc --server=%s %s --targetdir=%s --option=netbiosname=%s %s --backend-store=%s"
-                                % (server_realm, self.dc1, self.cmdline_creds,
-                                   self.tempdir, netbiosname,
-                                   "--dns-backend=NONE",
-                                   self.backend))
+        self.check_output("samba-tool domain join %s dc --server=%s %s --targetdir=%s --option=netbiosname=%s %s --backend-store=%s"
+                          % (server_realm, self.dc1, self.cmdline_creds,
+                             self.tempdir, netbiosname,
+                             "--dns-backend=NONE",
+                             self.backend))
 
         new_dc_config_file = os.path.join(self.tempdir, "etc", "smb.conf")
         new_dc_sam = os.path.join(self.tempdir, "private", "sam.ldb")
