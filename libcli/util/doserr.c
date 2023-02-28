@@ -19,7 +19,8 @@
 
 /* DOS error codes.  please read doserr.h */
 
-#include "includes.h"
+#include "replace.h"
+#include "libcli/util/werror.h"
 
 struct werror_code_struct {
         const char *dos_errstr;
