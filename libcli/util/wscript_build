@@ -22,7 +22,11 @@ bld.SAMBA_GENERATOR('ntstatus_generated',
 
 bld.SAMBA_GENERATOR('werror_generated',
                     source='../../source4/scripting/bin/gen_werror.py werror_err_table.txt ../../source4/scripting/bin/gen_error_common.py',
-                    target='werror_gen.h werror_gen.c py_werror.c',
+                    target='''
+                    werror_gen.h
+                    werror_gen.c
+                    py_werror.c
+                    ''',
                     group='build_source',
                     rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)}'
                    )
