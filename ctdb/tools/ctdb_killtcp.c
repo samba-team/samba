@@ -198,7 +198,7 @@ static void reset_connections_capture_tcp_handler(struct tevent_context *ev,
 		return;
 	}
 
-	D_INFO("Sending a TCP RST to for connection %s\n",
+	D_INFO("Sending a TCP RST for connection %s\n",
 	       ctdb_connection_to_string(state, &conn, true));
 
 	ret = ctdb_sys_send_tcp(&conn.server, &conn.client, ack_seq, seq, 1);
