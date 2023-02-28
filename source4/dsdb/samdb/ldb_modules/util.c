@@ -255,14 +255,16 @@ int dsdb_module_search(struct ldb_module *module,
 }
 
 /*
-  find a DN given a GUID. This searches across all partitions
+  find an object given a GUID. This searches across all partitions
  */
-int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
-			   const struct GUID *guid, struct ldb_dn **dn,
-			   struct ldb_request *parent)
+int dsdb_module_obj_by_guid(struct ldb_module *module,
+			    TALLOC_CTX *mem_ctx,
+			    struct ldb_message **_msg,
+			    const struct GUID *guid,
+			    const char * const *attrs,
+			    struct ldb_request *parent)
 {
 	struct ldb_result *res;
-	const char *attrs[] = { NULL };
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
 
@@ -289,7 +291,36 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
+	*_msg = talloc_steal(mem_ctx, res->msgs[0]);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
+  find a DN given a GUID. This searches across all partitions
+ */
+int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+			   const struct GUID *guid, struct ldb_dn **dn,
+			   struct ldb_request *parent)
+{
+	struct ldb_message *msg = NULL;
+	const char *attrs[] = { NULL };
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int ret;
+
+	ret = dsdb_module_obj_by_guid(module,
+				      tmp_ctx,
+				      &msg,
+				      guid,
+				      attrs,
+				      parent);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	*dn = talloc_steal(mem_ctx, msg->dn);
 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
