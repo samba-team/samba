@@ -76,11 +76,11 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
                         f"cn=administrator,cn=users,{nc_name}")
 
         try:
-            out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s"
-                                    % (server_realm,
-                                       self.dc1,
-                                       self.cmdline_creds,
-                                       self.tempdir))
+            self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s"
+                              % (server_realm,
+                                 self.dc1,
+                                 self.cmdline_creds,
+                                 self.tempdir))
         except samba.tests.BlackboxProcessError as e:
             self.fail("Error calling samba-tool: %s" % e)
 
