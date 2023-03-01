@@ -101,7 +101,7 @@ static struct tevent_req *np_sock_connect_send(
 		return tevent_req_post(req, ev);
 	}
 
-	ret = set_blocking(state->sock, false);
+	ret = set_blocking(state->sock, true);
 	if (ret == -1) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
@@ -171,6 +171,18 @@ static void np_sock_connect_connected(struct tevent_req *subreq)
 	if (ret == -1) {
 		DBG_DEBUG("async_connect_recv returned %s\n", strerror(err));
 		tevent_req_error(req, err);
+		return;
+	}
+
+	/*
+	 * As a quick workaround for bug 15310 we have done the
+	 * connect in blocking mode (see np_sock_connect_send()). The
+	 * rest of our code expects a nonblocking socket, activate
+	 * this after the connect succeeded.
+	 */
+	ret = set_blocking(state->sock, false);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
 		return;
 	}
 
