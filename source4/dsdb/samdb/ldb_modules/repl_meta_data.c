@@ -367,6 +367,8 @@ struct la_backlink {
 	struct ldb_dn *forward_dn;
 	struct GUID target_guid;
 	bool active;
+	bool bl_maybe_invisible;
+	bool bl_invisible;
 };
 
 /*
@@ -418,6 +420,52 @@ static int linked_attr_modify(struct ldb_module *module,
 	return ret;
 }
 
+static int replmd_backlink_invisible(struct ldb_module *module,
+				     struct ldb_message *msg,
+				     struct la_backlink *bl)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const struct dsdb_schema *schema = NULL;
+	TALLOC_CTX *frame = NULL;
+	struct ldb_message_element *oc_element = NULL;
+	const char **allowed_attrs = NULL;
+	bool bl_allowed;
+
+	if (!bl->active || !bl->bl_maybe_invisible || bl->bl_invisible) {
+		return LDB_SUCCESS;
+	}
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (schema == NULL) {
+		return ldb_module_operr(module);
+	}
+
+	oc_element = ldb_msg_find_element(msg, "objectClass");
+	if (oc_element == NULL) {
+		return ldb_module_operr(module);
+	}
+
+	frame = talloc_stackframe();
+
+	allowed_attrs = dsdb_full_attribute_list(frame,
+						 schema,
+						 oc_element,
+						 DSDB_SCHEMA_ALL);
+	if (allowed_attrs == NULL) {
+		TALLOC_FREE(frame);
+		return ldb_module_oom(module);
+	}
+
+	bl_allowed = str_list_check(allowed_attrs, bl->attr_name);
+	if (!bl_allowed) {
+		bl->bl_maybe_invisible = false;
+		bl->bl_invisible = true;
+	}
+
+	TALLOC_FREE(frame);
+	return LDB_SUCCESS;
+}
+
 /*
   process a backlinks we accumulated during a transaction, adding and
   deleting the backlinks from the target objects
@@ -426,12 +474,21 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 {
 	struct ldb_dn *target_dn, *source_dn;
 	struct ldb_message *old_msg = NULL;
-	const char *attrs[] = { NULL };
+	const char * const empty_attrs[] = { NULL };
+	const char * const oc_attrs[] = { "objectClass", NULL };
+	const char * const *attrs = NULL;
+	uint32_t rmd_flags = 0;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *dn_string;
+
+	if (bl->active && bl->bl_maybe_invisible) {
+		attrs = oc_attrs;
+	} else {
+		attrs = empty_attrs;
+	}
 
 	/*
 	  - find DN of target
@@ -455,6 +512,16 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	}
 	target_dn = old_msg->dn;
 
+	ret = replmd_backlink_invisible(module, old_msg, bl);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(frame);
+		return ret;
+	}
+
+	if (bl->active && bl->bl_invisible) {
+		rmd_flags |= DSDB_RMD_FLAG_HIDDEN_BL;
+	}
+
 	msg = ldb_msg_new(frame);
 	if (msg == NULL) {
 		ldb_module_oom(module);
@@ -471,6 +538,25 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 		/* Filter down to the attributes we want in the backlink */
 		const char *accept[] = { "GUID", "SID", NULL };
 		ldb_dn_extended_filter(source_dn, accept);
+	}
+
+	if (rmd_flags != 0) {
+		const char *flags_string = NULL;
+		struct ldb_val flagsv;
+
+		flags_string = talloc_asprintf(frame, "%u", rmd_flags);
+		if (flags_string == NULL) {
+			talloc_free(frame);
+			return ldb_module_oom(module);
+		}
+
+		flagsv = data_blob_string_const(flags_string);
+
+		ret = ldb_dn_set_extended_component(source_dn, "RMD_FLAGS", &flagsv);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(frame);
+			return ret;
+		}
 	}
 
 	/* construct a ldb_message for adding/deleting the backlink */
@@ -557,6 +643,8 @@ static int replmd_defer_add_backlink(struct ldb_module *module,
 	bl->forward_dn = talloc_steal(bl, forward_dn);
 	bl->target_guid = *target_guid;
 	bl->active = active;
+	bl->bl_maybe_invisible = target_attr->bl_maybe_invisible;
+	bl->bl_invisible = false;
 
 	DLIST_ADD(ac->la_backlinks, bl);
 
@@ -594,6 +682,8 @@ static int replmd_add_backlink(struct ldb_module *module,
 	bl.forward_dn = forward_dn;
 	bl.target_guid = *target_guid;
 	bl.active = active;
+	bl.bl_maybe_invisible = target_attr->bl_maybe_invisible;
+	bl.bl_invisible = false;
 
 	ret = replmd_process_backlink(module, &bl, parent);
 	return ret;
