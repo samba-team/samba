@@ -30,7 +30,7 @@
  * allocating a buffer using talloc().
  *
  * @param dest always set at least to NULL
- * @parm converted_size set to the number of bytes occupied by the string in
+ * @param converted_size set to the number of bytes occupied by the string in
  * the destination on success.
  *
  * @return true if new buffer was correctly allocated, and string was
@@ -98,7 +98,7 @@ bool push_ascii_talloc(TALLOC_CTX *mem_ctx, char **dest, const char *src, size_t
  * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer using talloc
  *
  * @param dest always set at least to NULL
- * @parm converted_size set to the number of bytes occupied by the string in
+ * @param converted_size set to the number of bytes occupied by the string in
  * the destination on success.
  *
  * @return true if new buffer was correctly allocated, and string was
@@ -120,7 +120,7 @@ bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
  * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer using talloc
  *
  * @param dest always set at least to NULL
- * @parm converted_size set to the number of bytes occupied by the string in
+ * @param converted_size set to the number of bytes occupied by the string in
  * the destination on success.
  *
  * @return true if new buffer was correctly allocated, and string was
@@ -142,7 +142,7 @@ bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
  * Copy a string from a DOS src to a unix char * destination, allocating a buffer using talloc
  *
  * @param dest always set at least to NULL
- * @parm converted_size set to the number of bytes occupied by the string in
+ * @param converted_size set to the number of bytes occupied by the string in
  * the destination on success.
  *
  * @return true if new buffer was correctly allocated, and string was

@@ -334,7 +334,7 @@ bool convert_string_handle(struct smb_iconv_handle *ic,
  *
  * @param srclen length of source buffer.
  * @param dest always set at least to NULL
- * @parm converted_size set to the number of bytes occupied by the string in
+ * @param converted_size set to the number of bytes occupied by the string in
  * the destination on success.
  * @note -1 is not accepted for srclen.
  *
