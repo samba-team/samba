@@ -55,10 +55,11 @@ check_thresholds()
 				"$_thing" \
 				"$_usage" \
 				"$_unhealthy_threshold"
-			# Only run unhealthy callout if passing the
-			# unhealthy threshold.  That is, if the
+			# Only run unhealthy callout when reaching
+			# the unhealthy threshold.  That is, if the
 			# previous usage was below the threshold.
 			if [ "$_prev" -lt "$_unhealthy_threshold" ]; then
+				# eval of "" is a no-op
 				eval "$_unhealthy_callout"
 			fi
 			echo "$_usage" >"$_cache"

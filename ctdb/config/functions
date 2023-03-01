@@ -1020,7 +1020,7 @@ failcount_incr()
 				"$_thing" \
 				"$_failcount" \
 				"$_unhealthy_threshold"
-			# Only print output when exceeding the
+			# Only print output when reaching the
 			# unhealthy threshold
 			if [ "$_failcount" -eq "$_unhealthy_threshold" ] &&
 				[ -n "$_output" ]; then
@@ -1041,7 +1041,7 @@ failcount_incr()
 		"$_failcount" \
 		"$_warn_threshold"
 	if [ "$_failcount" -eq "$_warn_threshold" ] && [ -n "$_output" ]; then
-		# Only print output when exceeding the warning threshold
+		# Only print output when reaching the warning threshold
 		echo "$_output"
 	fi
 }
