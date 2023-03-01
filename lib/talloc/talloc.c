@@ -2678,9 +2678,7 @@ static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
 	s = talloc_realloc(NULL, s, char, slen + alen + 1);
 	if (!s) return NULL;
 
-	va_copy(ap2, ap);
-	vsnprintf(s + slen, alen + 1, fmt, ap2);
-	va_end(ap2);
+	vsnprintf(s + slen, alen + 1, fmt, ap);
 
 	_tc_set_name_const(talloc_chunk_from_ptr(s), s);
 	return s;
