@@ -397,10 +397,22 @@ wrong_mode:
 static void dsdb_setup_attribute_shortcuts(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
 	struct dsdb_attribute *attribute;
+	const struct dsdb_class *top_class = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char **top_allowed_attrs = NULL;
+
+	top_class = dsdb_class_by_lDAPDisplayName(schema, "top");
+	if (top_class != NULL) {
+		top_allowed_attrs = dsdb_attribute_list(frame,
+							top_class,
+							DSDB_SCHEMA_ALL);
+	}
 
 	/* setup fast access to one_way_link and DN format */
 	for (attribute=schema->attributes; attribute; attribute=attribute->next) {
 		attribute->dn_format = dsdb_dn_oid_to_format(attribute->syntax->ldap_oid);
+
+		attribute->bl_maybe_invisible = false;
 
 		if (attribute->dn_format == DSDB_INVALID_DN) {
 			attribute->one_way_link = false;
@@ -419,6 +431,34 @@ static void dsdb_setup_attribute_shortcuts(struct ldb_context *ldb, struct dsdb_
 			attribute->one_way_link = true;
 			continue;
 		}
+
+		if (attribute->linkID & 1) {
+			const struct dsdb_attribute *fw_attr = NULL;
+			bool in_top = false;
+
+			if (top_allowed_attrs != NULL) {
+				in_top = str_list_check(top_allowed_attrs,
+						attribute->lDAPDisplayName);
+			}
+
+			if (in_top) {
+				continue;
+			}
+
+			attribute->bl_maybe_invisible = true;
+
+			fw_attr = dsdb_attribute_by_linkID(schema,
+							attribute->linkID - 1);
+			if (fw_attr != NULL) {
+				struct dsdb_attribute *_fw_attr =
+					discard_const_p(struct dsdb_attribute,
+							fw_attr);
+				_fw_attr->bl_maybe_invisible = true;
+			}
+
+			continue;
+		}
+
 		/* handle attributes with a linkID but no backlink */
 		if ((attribute->linkID & 1) == 0 &&
 		    dsdb_attribute_by_linkID(schema, attribute->linkID + 1) == NULL) {
@@ -427,6 +467,8 @@ static void dsdb_setup_attribute_shortcuts(struct ldb_context *ldb, struct dsdb_
 		}
 		attribute->one_way_link = false;
 	}
+
+	TALLOC_FREE(frame);
 }
 
 static int uint32_cmp(uint32_t c1, uint32_t c2)

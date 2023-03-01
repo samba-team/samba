@@ -118,6 +118,7 @@ struct dsdb_attribute {
 	bool systemOnly;
 
 	bool one_way_link;
+	bool bl_maybe_invisible;
 	enum dsdb_dn_format dn_format;
 
 	/* internal stuff */
