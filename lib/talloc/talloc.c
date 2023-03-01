@@ -2598,7 +2598,6 @@ static struct talloc_chunk *_vasprintf_tc(const void *t,
 	struct talloc_chunk *tc = NULL;
 	char buf[1024];
 
-	/* this call looks strange, but it makes it work on older solaris boxes */
 	va_copy(ap2, ap);
 	vlen = vsnprintf(buf, sizeof(buf), fmt, ap2);
 	va_end(ap2);
@@ -2662,6 +2661,7 @@ static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
 	char c;
 
 	va_copy(ap2, ap);
+	/* this call looks strange, but it makes it work on older solaris boxes */
 	alen = vsnprintf(&c, 1, fmt, ap2);
 	va_end(ap2);
 
