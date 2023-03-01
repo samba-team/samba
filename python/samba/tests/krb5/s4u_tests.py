@@ -797,7 +797,7 @@ class S4UKerberosTests(KDCBaseTest):
 
     def test_constrained_delegation_authentication_asserted_identity(self):
         # Test constrained delegation and check asserted identity is the
-        # authenticaten authority. Note that we should always find this
+        # authentication authority. Note that we should always find this
         # SID for all the requests. Just S4U2Self will have a different SID.
         self._run_delegation_test(
             {
