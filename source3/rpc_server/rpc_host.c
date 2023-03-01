@@ -1689,7 +1689,7 @@ static void rpc_server_setup_got_endpoints(struct tevent_req *subreq)
 		}
 
 		for (j=0; j<e->num_fds; j++) {
-			ret = listen(e->fds[j], 5);
+			ret = listen(e->fds[j], 256);
 			if (ret == -1) {
 				tevent_req_nterror(
 					req, map_nt_error_from_unix(errno));
