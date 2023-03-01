@@ -338,7 +338,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
-	conn->lp_ctx      = ldapsrv_service->task->lp_ctx;
+	conn->lp_ctx      = ldapsrv_service->lp_ctx;
 
 	c->private_data   = conn;
 
@@ -920,7 +920,7 @@ void ldapsrv_notification_retry_setup(struct ldapsrv_service *service, bool forc
 	}
 
 	service->notification.retry = tevent_wakeup_send(service,
-							 service->task->event_ctx,
+							 service->current_ev,
 							 retry);
 	if (service->notification.retry == NULL) {
 		/* retry later */
@@ -1117,7 +1117,7 @@ static void ldapsrv_accept_nonpriv(struct stream_connection *c)
 	NTSTATUS status;
 
 	status = auth_anonymous_session_info(
-		c, ldapsrv_service->task->lp_ctx, &session_info);
+		c, ldapsrv_service->lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		stream_terminate_connection(c, "failed to setup anonymous "
 					    "session info");
@@ -1145,7 +1145,7 @@ static void ldapsrv_accept_priv(struct stream_connection *c)
 		c->private_data, struct ldapsrv_service);
 	struct auth_session_info *session_info;
 
-	session_info = system_session(ldapsrv_service->task->lp_ctx);
+	session_info = system_session(ldapsrv_service->lp_ctx);
 	if (!session_info) {
 		stream_terminate_connection(c, "failed to setup system "
 					    "session info");
@@ -1206,7 +1206,7 @@ static NTSTATUS add_socket(struct task_server *task,
 
 	/* Load LDAP database, but only to read our settings */
 	ldb = samdb_connect(ldap_service,
-			    ldap_service->task->event_ctx,
+			    ldap_service->current_ev,
 			    lp_ctx,
 			    system_session(lp_ctx),
 			    NULL,
@@ -1289,7 +1289,9 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 		goto failed;
 	}
 
-	ldap_service->task = task;
+	ldap_service->lp_ctx = task->lp_ctx;
+	ldap_service->current_ev = task->event_ctx;
+	ldap_service->current_msg = task->msg_ctx;
 
 	dns_host_name = talloc_asprintf(ldap_service, "%s.%s",
 					lpcfg_netbios_name(task->lp_ctx),
@@ -1437,16 +1439,48 @@ static void ldapsrv_post_fork(struct task_server *task, struct process_details *
 	struct ldapsrv_service *ldap_service =
 		talloc_get_type_abort(task->private_data, struct ldapsrv_service);
 
+	/*
+	 * As ldapsrv_before_loop() may changed the values for the parent loop
+	 * we need to adjust the pointers to the correct value in the child
+	 */
+	ldap_service->lp_ctx = task->lp_ctx;
+	ldap_service->current_ev = task->event_ctx;
+	ldap_service->current_msg = task->msg_ctx;
+
 	ldap_service->sam_ctx = samdb_connect(ldap_service,
-					      ldap_service->task->event_ctx,
-					      ldap_service->task->lp_ctx,
-					      system_session(ldap_service->task->lp_ctx),
+					      ldap_service->current_ev,
+					      ldap_service->lp_ctx,
+					      system_session(ldap_service->lp_ctx),
 					      NULL,
 					      0);
 	if (ldap_service->sam_ctx == NULL) {
 		task_server_terminate(task, "Cannot open system session LDB",
 				      true);
 		return;
+	}
+}
+
+static void ldapsrv_before_loop(struct task_server *task)
+{
+	struct ldapsrv_service *ldap_service =
+		talloc_get_type_abort(task->private_data, struct ldapsrv_service);
+
+	if (ldap_service->sam_ctx != NULL) {
+		/*
+		 * Make sure the values are still the same
+		 * as set in ldapsrv_post_fork()
+		 */
+		SMB_ASSERT(task->lp_ctx == ldap_service->lp_ctx);
+		SMB_ASSERT(task->event_ctx == ldap_service->current_ev);
+		SMB_ASSERT(task->msg_ctx == ldap_service->current_msg);
+	} else {
+		/*
+		 * We need to adjust the pointers to the correct value
+		 * in the parent loop.
+		 */
+		ldap_service->lp_ctx = task->lp_ctx;
+		ldap_service->current_ev = task->event_ctx;
+		ldap_service->current_msg = task->msg_ctx;
 	}
 }
 
@@ -1535,6 +1569,7 @@ NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
 		.inhibit_pre_fork = false,
 		.task_init = ldapsrv_task_init,
 		.post_fork = ldapsrv_post_fork,
+		.before_loop = ldapsrv_before_loop,
 	};
 	return register_server_service(ctx, "ldap", &details);
 }

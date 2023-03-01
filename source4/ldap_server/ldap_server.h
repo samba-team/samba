@@ -115,7 +115,6 @@ struct ldapsrv_call {
 
 struct ldapsrv_service {
 	struct tstream_tls_params *tls_params;
-	struct task_server *task;
 	struct tevent_queue *call_queue;
 	struct ldapsrv_connection *connections;
 	struct {
@@ -123,6 +122,9 @@ struct ldapsrv_service {
 		struct tevent_req *retry;
 	} notification;
 
+	struct loadparm_context *lp_ctx;
+	struct tevent_context *current_ev;
+	struct imessaging_context *current_msg;
 	struct ldb_context *sam_ctx;
 };
 
