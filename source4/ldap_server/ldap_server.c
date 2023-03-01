@@ -48,6 +48,9 @@
 #include "../libcli/util/tstream.h"
 #include "libds/common/roles.h"
 #include "lib/util/time.h"
+#include "lib/util/server_id.h"
+#include "lib/util/server_id_db.h"
+#include "lib/messaging/messaging_internal.h"
 
 #undef strcasecmp
 
@@ -1254,6 +1257,106 @@ static NTSTATUS add_socket(struct task_server *task,
 	return NT_STATUS_OK;
 }
 
+static void ldap_reload_certs(struct imessaging_context *msg_ctx,
+			      void *private_data,
+			      uint32_t msg_type,
+			      struct server_id server_id,
+			      size_t num_fds,
+			      int *fds,
+			      DATA_BLOB *data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ldapsrv_service *ldap_service =
+		talloc_get_type_abort(private_data,
+		struct ldapsrv_service);
+	int default_children;
+	int num_children;
+	int i;
+	bool ok;
+	struct server_id ldap_master_id;
+	NTSTATUS status;
+	struct tstream_tls_params *new_tls_params = NULL;
+
+	SMB_ASSERT(msg_ctx == ldap_service->current_msg);
+
+	/* reload certificates */
+	status = tstream_tls_params_server(ldap_service,
+					   ldap_service->dns_host_name,
+					   lpcfg_tls_enabled(ldap_service->lp_ctx),
+					   lpcfg_tls_keyfile(frame, ldap_service->lp_ctx),
+					   lpcfg_tls_certfile(frame, ldap_service->lp_ctx),
+					   lpcfg_tls_cafile(frame, ldap_service->lp_ctx),
+					   lpcfg_tls_crlfile(frame, ldap_service->lp_ctx),
+					   lpcfg_tls_dhpfile(frame, ldap_service->lp_ctx),
+					   lpcfg_tls_priority(ldap_service->lp_ctx),
+					   &new_tls_params);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("ldapsrv failed tstream_tls_params_server - %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	TALLOC_FREE(ldap_service->tls_params);
+	ldap_service->tls_params = new_tls_params;
+
+	if (getpid() != ldap_service->parent_pid) {
+		/*
+		 * If we are not the master process we are done
+		 */
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	/*
+	 * Check we're running under the prefork model,
+	 * by checking if the prefork-master-ldap name
+	 * was registered
+	 */
+	ok = server_id_db_lookup_one(msg_ctx->names, "prefork-master-ldap", &ldap_master_id);
+	if (!ok) {
+		/*
+		 * We are done if another process model is in use.
+		 */
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	/*
+	 * Now we loop over all possible prefork workers
+	 * in order to notify them about the reload
+	 */
+	default_children = lpcfg_prefork_children(ldap_service->lp_ctx);
+	num_children = lpcfg_parm_int(ldap_service->lp_ctx,
+				      NULL, "prefork children", "ldap",
+				      default_children);
+	for (i = 0; i < num_children; i++) {
+		char child_name[64] = { 0, };
+		struct server_id ldap_worker_id;
+
+		snprintf(child_name, sizeof(child_name), "prefork-worker-ldap-%d", i);
+		ok = server_id_db_lookup_one(msg_ctx->names, child_name, &ldap_worker_id);
+		if (!ok) {
+			DBG_ERR("server_id_db_lookup_one(%s) - failed\n",
+				child_name);
+			continue;
+		}
+
+		status = imessaging_send(msg_ctx, ldap_worker_id,
+				         MSG_RELOAD_TLS_CERTIFICATES, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			struct server_id_buf id_buf;
+			DBG_ERR("ldapsrv failed imessaging_send(%s, %s) - %s\n",
+				child_name,
+				server_id_str_buf(ldap_worker_id, &id_buf),
+				nt_errstr(status));
+			continue;
+		}
+	}
+
+	TALLOC_FREE(frame);
+}
+
 /*
   open the ldap server sockets
 */
@@ -1299,6 +1402,8 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
+
+	ldap_service->parent_pid = getpid();
 
 	status = tstream_tls_params_server(ldap_service,
 					   ldap_service->dns_host_name,
@@ -1463,6 +1568,7 @@ static void ldapsrv_before_loop(struct task_server *task)
 {
 	struct ldapsrv_service *ldap_service =
 		talloc_get_type_abort(task->private_data, struct ldapsrv_service);
+	NTSTATUS status;
 
 	if (ldap_service->sam_ctx != NULL) {
 		/*
@@ -1480,6 +1586,16 @@ static void ldapsrv_before_loop(struct task_server *task)
 		ldap_service->lp_ctx = task->lp_ctx;
 		ldap_service->current_ev = task->event_ctx;
 		ldap_service->current_msg = task->msg_ctx;
+	}
+
+	status = imessaging_register(ldap_service->current_msg,
+				     ldap_service,
+				     MSG_RELOAD_TLS_CERTIFICATES,
+				     ldap_reload_certs);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "Cannot register ldap_reload_certs",
+				      true);
+		return;
 	}
 }
 

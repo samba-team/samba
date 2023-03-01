@@ -1342,6 +1342,18 @@ static bool do_winbind_validate_cache(struct tevent_context *ev_ctx,
 	return num_replies;
 }
 
+static bool do_reload_certs(struct tevent_context *ev_ctx,
+					struct messaging_context *msg_ctx,
+					const struct server_id pid,
+					const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol ldap_server reload-certs \n");
+		return false;
+	}
+
+	return send_message(msg_ctx, pid, MSG_RELOAD_TLS_CERTIFICATES, NULL, 0);
+}
 static bool do_reload_config(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
 			     const struct server_id pid,
@@ -1544,6 +1556,11 @@ static const struct {
 		.help = "Notify a printer driver has changed",
 	},
 	{
+		.name = "reload-certs",
+		.fn   = do_reload_certs,
+		.help = "Reload TLS certificates"
+	},
+	{
 		.name = "reload-config",
 		.fn   = do_reload_config,
 		.help = "Force smbd or winbindd to reload config file"},
@@ -1615,8 +1632,8 @@ static void usage(poptContext pc)
 	poptPrintHelp(pc, stderr, 0);
 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbindd\" or a "
-		"process ID\n");
+	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbindd\", "
+		"\"ldap_server\" or a process ID\n");
 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "<message-type> is one of:\n");

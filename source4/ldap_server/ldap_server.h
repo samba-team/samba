@@ -115,6 +115,7 @@ struct ldapsrv_call {
 
 struct ldapsrv_service {
 	const char *dns_host_name;
+	pid_t parent_pid;
 	struct tstream_tls_params *tls_params;
 	struct tevent_queue *call_queue;
 	struct ldapsrv_connection *connections;

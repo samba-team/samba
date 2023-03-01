@@ -41,6 +41,7 @@ interface messaging
 
 		/* Changes to smb.conf are really of general interest */
 		MSG_SMB_CONF_UPDATED		= 0x0021,
+		MSG_RELOAD_TLS_CERTIFICATES	= 0x0022,
 
 		MSG_PREFORK_CHILD_EVENT		= 0x0031,
 		MSG_PREFORK_PARENT_EVENT	= 0x0032,
