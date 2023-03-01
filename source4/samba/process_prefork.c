@@ -315,6 +315,9 @@ static void prefork_fork_master(
 		if (task != NULL && service_details->post_fork != NULL) {
 			service_details->post_fork(task, &pd);
 		}
+		if (task != NULL && service_details->before_loop != NULL) {
+			service_details->before_loop(task);
+		}
 		tevent_loop_wait(ev);
 		TALLOC_FREE(ev);
 		exit(0);
@@ -396,6 +399,21 @@ static void prefork_fork_master(
 		}
 		smb_set_close_on_exec(control_pipe[0]);
 		smb_set_close_on_exec(control_pipe[1]);
+	}
+
+	/*
+	 * Note, we call this before the first
+	 * prefork_fork_worker() in order to have
+	 * a stable order of:
+	 *  task_init(master) -> before_loop(master)
+	 *  -> post_fork(worker) -> before_loop(worker)
+	 *
+	 * Otherwise we would have different behaviors
+	 * between the first prefork_fork_worker() loop
+	 * and restarting of died workers
+	 */
+	if (task != NULL && service_details->before_loop != NULL) {
+		service_details->before_loop(task);
 	}
 
 	/*
@@ -783,6 +801,9 @@ static void prefork_fork_worker(struct task_server *task,
 					       pd->instances);
 			irpc_add_name(task->msg_ctx, name);
 			TALLOC_FREE(ctx);
+		}
+		if (service_details->before_loop != NULL) {
+			service_details->before_loop(task);
 		}
 		tevent_loop_wait(ev2);
 		imessaging_dgm_unref_ev(ev2);

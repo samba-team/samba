@@ -117,6 +117,9 @@ static void single_new_task(struct tevent_context *ev,
 		struct process_details pd = initial_process_details;
 		service_details->post_fork(task, &pd);
 	}
+	if (task != NULL && service_details->before_loop != NULL) {
+		service_details->before_loop(task);
+	}
 }
 
 /*

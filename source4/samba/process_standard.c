@@ -533,6 +533,9 @@ static void standard_new_task(struct tevent_context *ev,
 		service_details->post_fork(task, &pd);
 	}
 
+	if (task != NULL && service_details->before_loop != NULL) {
+		service_details->before_loop(task);
+	}
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no

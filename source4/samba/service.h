@@ -73,6 +73,35 @@ struct service_details {
 	 *   immediately after the task_init.
 	 */
 	void (*post_fork) (struct task_server *, struct process_details *);
+	/*
+	 * This is called before entering the tevent_loop_wait():
+	 *
+	 * Note that task_server->msg_ctx, task_server->event_ctx
+	 * and maybe other fields might have changed compared to
+	 * task_init()/post_fork(). The struct task_server pointer
+	 * may also change!
+	 *
+	 * before loop processing this is called in this order:
+	 *   - standard process model
+	 *     task_init() -> post_fork() -> before_loop()
+	 *
+	 *   - single process model
+	 *     task_init() -> post_fork() -> before_loop()
+	 *
+	 *   - prefork process model, inhibit_pre_fork = true
+	 *     task_init() -> post_fork() -> before_loop()
+	 *
+	 *   - prefork process model, inhibit_pre_fork = false
+	 *     In the service master process:
+	 *      task_init(master) -> before_loop(master)
+	 *
+	 *     After each service worker has forked:
+	 *      post_fork(worker) -> before_loop(worker)
+	 *
+	 * This gives the service a chance to register messaging
+	 * and/or event handlers on the correct contexts.
+	 */
+	void (*before_loop) (struct task_server *);
 };
 
 NTSTATUS samba_service_init(void);
