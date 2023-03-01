@@ -2737,6 +2737,10 @@ static int replmd_modify_la_add(struct ldb_module *module,
 					  &dns[i].guid,
 					  true, schema_attr,
 					  parent);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 		/* Make the new linked attribute ldb_val. */
 		ret = replmd_build_la_val(new_values, &new_values[num_values],
 					  dns[i].dsdb_dn, &ac->our_invocation_id,
