@@ -171,8 +171,10 @@ _PUBLIC_ char *data_blob_hex_string_lower(TALLOC_CTX *mem_ctx, const DATA_BLOB *
 	/* this must be lowercase or w2k8 cannot join a samba domain,
 	   as this routine is used to encode extended DNs and windows
 	   only accepts lowercase hexadecimal numbers */
-	for (i = 0; i < blob->length; i++)
-		slprintf(&hex_string[i*2], 3, "%02x", blob->data[i]);
+	for (i = 0; i < blob->length; i++) {
+		hex_string[i * 2] = nybble_to_hex_lower(blob->data[i] >> 4);
+		hex_string[i * 2 + 1] = nybble_to_hex_lower(blob->data[i]);
+	}
 
 	hex_string[(blob->length*2)] = '\0';
 	return hex_string;
@@ -188,8 +190,10 @@ _PUBLIC_ char *data_blob_hex_string_upper(TALLOC_CTX *mem_ctx, const DATA_BLOB *
 		return NULL;
 	}
 
-	for (i = 0; i < blob->length; i++)
-		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
+	for (i = 0; i < blob->length; i++) {
+		hex_string[i * 2] = nybble_to_hex_upper(blob->data[i] >> 4);
+		hex_string[i * 2 + 1] = nybble_to_hex_upper(blob->data[i]);
+	}
 
 	hex_string[(blob->length*2)] = '\0';
 	return hex_string;
