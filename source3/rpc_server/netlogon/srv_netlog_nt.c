@@ -919,7 +919,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	}
 
 	/*
-	 * Support authenticaten of trusted domains.
+	 * Support authentication of trusted domains.
 	 *
 	 * These flags are the minimum required set which works with win2k3
 	 * and win2k8.
