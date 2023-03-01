@@ -2719,6 +2719,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				ret = really_parse_trusted_dn(tmp_ctx, ldb, next,
 							      schema_attr->syntax->ldap_oid);
 				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
 					return ret;
 				}
 			}
