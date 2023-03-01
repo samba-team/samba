@@ -414,8 +414,19 @@ static void prefork_fork_master(
 		pd.instances++;
 	}
 
+	/*
+	 * Make sure the messaging context
+	 * used by the workers is no longer
+	 * active on ev2, otherwise we
+	 * would have memory leaks, because
+	 * we queue incoming messages
+	 * and never process them via ev2.
+	 */
+	imessaging_dgm_unref_ev(ev2);
+
 	/* Don't listen on the sockets we just gave to the children */
 	tevent_loop_wait(ev);
+	imessaging_dgm_unref_ev(ev);
 	TALLOC_FREE(ev);
 	/* We need to keep ev2 until we're finished for the messaging to work */
 	TALLOC_FREE(ev2);
@@ -748,6 +759,7 @@ static void prefork_fork_worker(struct task_server *task,
 		 */
 		free(w);
 
+		imessaging_dgm_unref_ev(ev);
 		TALLOC_FREE(ev);
 
 		process_set_title("%s(%d)",
@@ -773,6 +785,7 @@ static void prefork_fork_worker(struct task_server *task,
 			TALLOC_FREE(ctx);
 		}
 		tevent_loop_wait(ev2);
+		imessaging_dgm_unref_ev(ev2);
 		talloc_free(ev2);
 		exit(0);
 	}
