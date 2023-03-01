@@ -70,20 +70,6 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
-# When a user does not have access rights to view the objects' attributes,
-# Windows and Samba behave slightly differently.
-# A windows DC will always act as if the hidden attribute doesn't exist AT ALL
-# (for an unprivileged user). So, even for a user that lacks access rights,
-# the inverse/'!' queries should return ALL objects. This is similar to the
-# kludgeaclredacted behaviour on Samba.
-# However, on Samba (for implementation simplicity) we never return a matching
-# result for an unprivileged user.
-# Either approach is OK, so long as it gets applied consistently and we don't
-# disclose any sensitive details by varying what gets returned by the search.
-DC_MODE_RETURN_NONE = 0
-DC_MODE_RETURN_ALL = 1
-
-
 #
 # Tests start here
 #
@@ -192,25 +178,6 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         # reset the value after the test completes
         self.addCleanup(self.set_attr_search_flags, self.attr_dn, old_value)
-
-    # The behaviour of the DC can differ in some cases, depending on whether
-    # we're talking to a Windows DC or a Samba DC
-    def guess_dc_mode(self):
-        # if we're in selftest, we can be pretty sure it's a Samba DC
-        if os.environ.get('SAMBA_SELFTEST') == '1':
-            return DC_MODE_RETURN_NONE
-
-        searches = self.get_negative_match_all_searches()
-        res = self.ldb_user.search(self.test_dn, expression=searches[0],
-                                   scope=SCOPE_SUBTREE)
-
-        # we default to DC_MODE_RETURN_NONE (samba).Update this if it
-        # looks like we're talking to a Windows DC
-        if len(res) == self.total_objects:
-            return DC_MODE_RETURN_ALL
-
-        # otherwise assume samba DC behaviour
-        return DC_MODE_RETURN_NONE
 
     def get_user_dn(self, name):
         return "CN={0},{1}".format(name, self.ou)
@@ -359,7 +326,7 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         return expected_results
 
     # Returns the expected negative (i.e. '!') search behaviour when talking to
-    # a DC with DC_MODE_RETURN_ALL behaviour, i.e. we assert that users
+    # a DC, i.e. we assert that users
     # without rights always see ALL objects in '!' searches
     def negative_searches_return_all(self, has_rights_to=0,
                                      total_objects=None):
@@ -409,32 +376,24 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
     # and what access rights the user has.
     # Note we only handle has_rights_to="all", 1 (the test object), or 0 (i.e.
     # we don't have rights to any objects)
-    def negative_search_expected_results(self, has_rights_to, dc_mode,
-                                         total_objects=None):
+    def negative_search_expected_results(self, has_rights_to, total_objects=None):
 
         if has_rights_to == "all":
             expect_results = self.negative_searches_all_rights(total_objects)
 
-        # if it's a Samba DC, we only expect the 'match-all' searches to return
-        # the objects that we have access rights to (all others are hidden).
-        # Whereas Windows 'hides' the objects by always returning all of them
-        elif dc_mode == DC_MODE_RETURN_NONE:
-            expect_results = self.negative_searches_return_none(has_rights_to)
         else:
             expect_results = self.negative_searches_return_all(has_rights_to,
                                                                total_objects)
         return expect_results
 
-    def assert_negative_searches(self, has_rights_to=0,
-                                 dc_mode=DC_MODE_RETURN_NONE, samdb=None):
+    def assert_negative_searches(self, has_rights_to=0, samdb=None):
         """Asserts user without rights cannot see objects in '!' searches"""
 
         if samdb is None:
             samdb = self.ldb_user
 
         # build a dictionary of key=search-expr, value=expected_num assertions
-        expected_results = self.negative_search_expected_results(has_rights_to,
-                                                                 dc_mode)
+        expected_results = self.negative_search_expected_results(has_rights_to)
 
         for search, expected_num in expected_results.items():
             self.assert_search_result(expected_num, search, samdb)
@@ -490,8 +449,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         self.make_attr_confidential()
 
         self.assert_conf_attr_searches(has_rights_to=0)
-        dc_mode = DC_MODE_RETURN_ALL
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
 
         # sanity-check we haven't hidden the attribute from the admin as well
@@ -503,8 +461,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         self.make_attr_confidential()
 
         self.assert_conf_attr_searches(has_rights_to=0)
-        dc_mode = DC_MODE_RETURN_ALL
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
 
         # apply the allow ACE to the object under test
@@ -513,7 +470,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         # the user should now be able to see the attribute for the one object
         # we gave it rights to
         self.assert_conf_attr_searches(has_rights_to=1)
-        self.assert_negative_searches(has_rights_to=1, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=1)
         self.assert_attr_visible(expect_attr=True)
 
         # sanity-check the admin can still see the attribute
@@ -566,8 +523,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         self.make_attr_confidential()
 
         self.assert_conf_attr_searches(has_rights_to=0)
-        dc_mode = DC_MODE_RETURN_ALL
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
 
         # apply the ACE to the object under test
@@ -575,7 +531,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
 
         # this should make no difference to the user's ability to see the attr
         self.assert_conf_attr_searches(has_rights_to=0)
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
 
         # sanity-check the admin can still see the attribute
@@ -707,8 +663,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         return expected_results
 
     # override method specifically for deny ACL test cases
-    def assert_negative_searches(self, has_rights_to=0,
-                                 dc_mode=DC_MODE_RETURN_NONE, samdb=None):
+    def assert_negative_searches(self, has_rights_to=0, samdb=None):
         """Asserts user without rights cannot see objects in '!' searches"""
 
         if samdb is None:
@@ -719,12 +674,9 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
         # assert this if the '!'/negative search behaviour is to suppress any
         # objects we don't have access rights to)
         excl_testobj = False
-        if has_rights_to != "all" and dc_mode == DC_MODE_RETURN_NONE:
-            excl_testobj = True
 
         # build a dictionary of key=search-expr, value=expected_num assertions
-        expected_results = self.negative_search_expected_results(has_rights_to,
-                                                                 dc_mode)
+        expected_results = self.negative_search_expected_results(has_rights_to)
 
         for search, expected_num in expected_results.items():
             self.assert_search_result(expected_num, search, samdb,
@@ -741,9 +693,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
 
         # the user shouldn't be able to see the attribute anymore
         self.assert_conf_attr_searches(has_rights_to="deny-one")
-        dc_mode = DC_MODE_RETURN_ALL
-        self.assert_negative_searches(has_rights_to="deny-one",
-                                      dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to="deny-one")
         self.assert_attr_visible(expect_attr=False)
 
         # sanity-check we haven't hidden the attribute from the admin as well
@@ -887,8 +837,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
                                   attrs=['name'])
 
     # override method specifically for dirsync (total object count differs)
-    def assert_negative_searches(self, has_rights_to=0,
-                                 dc_mode=DC_MODE_RETURN_NONE, samdb=None):
+    def assert_negative_searches(self, has_rights_to=0, samdb=None):
         """Asserts user without rights cannot see objects in '!' searches"""
 
         if samdb is None:
@@ -898,7 +847,6 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # here only includes the user objects (not the parent OU)
         total_objects = len(self.all_users)
         expected_results = self.negative_search_expected_results(has_rights_to,
-                                                                 dc_mode,
                                                                  total_objects)
 
         for search, expected_num in expected_results.items():
@@ -917,8 +865,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
 
         self.assert_conf_attr_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
-        dc_mode = DC_MODE_RETURN_ALL
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
 
         # as a final sanity-check, make sure the admin can still see the attr
         self.assert_conf_attr_searches(has_rights_to="all",
@@ -1012,8 +959,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # check we can't see the objects now, even with using dirsync controls
         self.assert_conf_attr_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
-        dc_mode = DC_MODE_RETURN_ALL
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
 
         # now delete the users (except for the user whose LDB connection
         # we're currently using)
@@ -1023,7 +969,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
 
         # check we still can't see the objects
         self.assert_conf_attr_searches(has_rights_to=0)
-        self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
+        self.assert_negative_searches(has_rights_to=0)
 
     def test_timing_attack(self):
         # Create the machine account.
