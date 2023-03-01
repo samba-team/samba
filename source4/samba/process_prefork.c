@@ -413,7 +413,37 @@ static void prefork_fork_master(
 	 * and restarting of died workers
 	 */
 	if (task != NULL && service_details->before_loop != NULL) {
-		service_details->before_loop(task);
+		struct task_server *task_copy = NULL;
+
+		/*
+		 * We need to use ev as parent in order to
+		 * keep everything alive during the loop
+		 */
+		task_copy = talloc(ev, struct task_server);
+		if (task_copy == NULL) {
+			TALLOC_FREE(ev);
+			TALLOC_FREE(ev2);
+			exit(127);
+		}
+		*task_copy = *task;
+
+		/*
+		 * In order to allow the before_loop() hook
+		 * to register messages or event handlers,
+		 * we need to fix up task->event_ctx
+		 * and create a new task->msg_ctx
+		 */
+		task_copy->event_ctx = ev;
+		task_copy->msg_ctx = imessaging_init(task_copy,
+						task_copy->lp_ctx,
+						task_copy->server_id,
+						task_copy->event_ctx);
+		if (task_copy->msg_ctx == NULL) {
+			TALLOC_FREE(ev);
+			TALLOC_FREE(ev2);
+			exit(127);
+		}
+		service_details->before_loop(task_copy);
 	}
 
 	/*
