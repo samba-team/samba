@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.18.  This is *not*
+This is the fourth release candidate of Samba 4.18.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -137,6 +137,17 @@ smb.conf changes
   --------------                          -----------     -------
   acl_xattr:security_acl_name             New             security.NTACL
   server addresses                        New
+
+
+CHANGES SINCE 4.18.0rc3
+=======================
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15308: Avoid that tests fail because other tests didn't do cleanup on
+     failure.
+
+o  baixiangcpp <baixiangcpp@gmail.com>
+   * BUG 15311: fd_load() function implicitly closes the fd where it should not.
 
 
 CHANGES SINCE 4.18.0rc2
