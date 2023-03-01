@@ -16,7 +16,6 @@ bld.SAMBA_PIDL_LIST('PIDL',
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''
                     libnetapi.idl
-                    libnet_join.idl
                     rpc_host.idl
                     ''',
                     options='--includedir=%s --header --ndr-parser' % topinclude,
@@ -24,6 +23,14 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     generate_tables=False)
 
 absinclude=os.path.join(bld.srcnode.abspath(), 'bin/default/include')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''
+                       libnet_join.idl
+                    ''',
+                    options='--includedir=%s --includedir=%s --header --ndr-parser' % (topinclude, absinclude),
+                    output_dir='../gen_ndr',
+                    generate_tables=False)
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''
