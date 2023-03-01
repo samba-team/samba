@@ -1,0 +1,78 @@
+#!/bin/sh
+
+usage()
+{
+	echo "host <host> [<server>]"
+	exit 1
+}
+
+if [ $# -eq 0 ] || [ $# -gt 2 ]; then
+	usage
+fi
+
+host="$1"
+server="$2"
+
+host_timeout()
+{
+	cat <<EOF
+;; communications error to ${server}#53: timed out
+;; communications error to ${server}#53: timed out
+;; no servers could be reached
+
+EOF
+}
+
+host_server_header()
+{
+	if [ -z "$server" ]; then
+		return
+	fi
+
+	cat <<EOF
+Using domain server:
+Name: ${server}
+Address: ${server}
+Aliases: 
+
+EOF
+}
+
+host_result()
+{
+	_result="${1#*=}"
+
+	cat <<EOF
+${host} has address ${_result}
+EOF
+}
+
+host_nxdomain()
+{
+	cat <<EOF
+Host ${host} not found: 3(NXDOMAIN)
+EOF
+}
+
+for h in $FAKE_HOST_DATA; do
+	case "$h" in
+	ETIMEDOUT | "${host}${server:+@}${server}=ETIMEDOUT")
+		host_timeout
+		exit 1
+		;;
+	NXDOMAIN | "${host}${server:+@}${server}=NXDOMAIN")
+		host_server_header
+		host_nxdomain
+		exit 1
+		;;
+	"${host}="* | "${host}${server:+@}${server}="*)
+		host_server_header
+		host_result "$h"
+		exit 0
+		;;
+	esac
+done
+
+host_server_header
+host_result "${host}=127.0.0.1"
+exit 0

@@ -1,0 +1,141 @@
+#!/bin/sh
+
+# CTDB event script for monitoring network infrastructure
+
+[ -n "$CTDB_BASE" ] ||
+	CTDB_BASE=$(d="$(dirname "$0")" && cd -P "$d/../../" && pwd)
+
+. "${CTDB_BASE}/functions"
+
+load_script_options
+
+ctdb_setup_state_dir "service" "network-monitoring"
+
+_monitor_host_common()
+{
+	_host_check="$1"
+
+	_check_type="${_host_check%%:*}"
+	_rest="${_host_check#*:}"
+	_host_details="${_rest%%:*}"
+	_host_name="${_host_details%%,*}"
+	_timeout="${_host_details#*,}"
+	if [ "$_timeout" = "$_host_details" ]; then
+		_timeout=1
+	fi
+	_thresholds="${_rest#*:}"
+	if [ "$_thresholds" = "$_rest" ]; then
+		_thresholds=1
+	fi
+
+	_label="Host check ${_check_type}:${_host_details}"
+
+	case "$CTDB_PLATFORM_STYLE" in
+	freebsd)
+		_ping_wrapper()
+		{
+			ping -n -t "$1" -c 1 "$2" 2>&1
+		}
+		;;
+	*)
+		_ping_wrapper()
+		{
+			ping -n -w "$1" -c 1 "$2" 2>&1
+		}
+		;;
+	esac
+}
+
+# Requires _monitor_host_common() to have been called
+_monitor_nameserver()
+{
+	_server="$1"
+
+	# timeout --verbose option is new enough to be missing in some distros
+	_out=$(timeout "$_timeout" host "$_host_name" "$_server" 2>&1)
+	case $? in
+	0)
+		failcount_reset "${_label}@${_nameserver}"
+		return 0
+		;;
+	124)
+		_out="Command timed out: host ${_host_name} ${_server}"
+		;;
+	*)
+		# Host command (probably) failed, keep output
+		:
+		;;
+	esac
+	if ! _out2=$(_ping_wrapper "$_timeout" "$_server"); then
+		_out=$(printf '%s\n%s\n' "$_out" "$_out2")
+	fi
+	failcount_incr "${_label}@${_nameserver}" "$_thresholds" "$_out"
+}
+
+# Requires _monitor_host_common() to have been called
+_monitor_nameservers()
+{
+	__rc=0
+	# This implicitly skips comments because they do not start a
+	# line with "nameserver"
+	while read -r _option _nameserver; do
+		case "$_option" in
+		nameserver)
+			_monitor_nameserver "$_nameserver" || __rc=$?
+			;;
+		esac
+	done <"${CTDB_SYS_ETCDIR}/resolv.conf"
+
+	return $__rc
+}
+
+monitor_host()
+{
+	_host_check="$1"
+
+	_monitor_host_common "$_host_check"
+
+	case "$_check_type" in
+	dns)
+		if _out=$(timeout "$_timeout" host "$_host_name" 2>&1); then
+			failcount_reset "$_label"
+			return 0
+		fi
+		failcount_incr "$_label" "$_thresholds" "$_out"
+		;;
+	ns)
+		_monitor_nameservers
+		;;
+	ping)
+		if _out=$(_ping_wrapper "$_timeout" "$_host_name"); then
+			failcount_reset "$_label"
+			return 0
+		fi
+		failcount_incr "$_label" "$_thresholds" "$_out"
+		;;
+	*)
+		printf 'WARNING: Invalid host check "%s"\n' "$_host_check"
+		return 0
+		;;
+	esac
+}
+
+monitor_hosts()
+{
+	_rc=0
+	for _host_check in $CTDB_MONITOR_HOSTS; do
+		(monitor_host "$_host_check") || _rc=$?
+	done
+
+	return $_rc
+}
+
+case "$1" in
+startup | monitor)
+	# Also monitor during startup, since a warning here is useful
+	# if 49.winbind/50.samba startup has fails/hangs
+	monitor_hosts || exit $?
+	;;
+esac
+
+exit 0

@@ -1,0 +1,82 @@
+#!/bin/sh
+
+usage()
+{
+	echo "ping -n { -w | -t } <timeout> -c 1 <host>"
+	exit 1
+}
+
+count=0
+
+# Mix of Linux and FreeBSD options
+while getopts "c:nt:w:h?" opt; do
+	case "$opt" in
+	c) count="$OPTARG" ;;
+	n) : ;;
+	t) _="$OPTARG" ;;
+	w) _="$OPTARG" ;;
+	\? | h) usage ;;
+	esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -ne 1 ]; then
+	usage
+fi
+
+host="$1"
+
+ping_header()
+{
+	cat <<EOF
+PING ${host} (${host}) 56(84) bytes of data.
+EOF
+}
+
+ping_pongs()
+{
+	_recv="$1"
+
+	# FreeBSD seq command automatically goes backwards from
+	# non-zero to zero, but Linux seq doesn't!
+	if [ "$_recv" -eq 0 ]; then
+		return
+	fi
+
+	for _i in $(seq 1 "$_recv"); do
+		cat <<EOF
+64 bytes from ${host}: icmp_seq=${_i} ttl=64 time=0.789 ms
+EOF
+	done
+}
+
+ping_footer()
+{
+	_recv="$1"
+	_sent="$2"
+
+	_loss=$(((_sent - _recv) * 100 / _sent))
+
+	cat <<EOF
+
+--- ${host} ping statistics ---
+${_sent} packets transmitted, ${_recv} received, ${_loss}% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.789/0.789/0.789/0.000 ms
+EOF
+}
+
+# If $host is listed in $FAKE_PING_FAIL then fail
+received="$count"
+rc=0
+for h in $FAKE_PING_FAIL; do
+	if [ "$h" = "$host" ]; then
+		received=0
+		rc=1
+	fi
+done
+
+ping_header
+ping_pongs "$received"
+ping_footer "$received" "$count"
+
+exit $rc
