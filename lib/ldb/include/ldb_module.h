@@ -598,4 +598,9 @@ void ldb_handle_use_global_event_context(struct ldb_handle *handle);
  *
  */
 const char **ldb_options_get(struct ldb_context *ldb);
+
+struct ldb_dn *ldb_val_as_dn(struct ldb_context *ldb,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ldb_val *v);
+
 #endif

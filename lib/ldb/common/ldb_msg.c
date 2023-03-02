@@ -1002,10 +1002,16 @@ struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
 				       const struct ldb_message *msg,
 				       const char *attr_name)
 {
-	struct ldb_dn *res_dn;
-	const struct ldb_val *v;
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	return ldb_val_as_dn(ldb, mem_ctx, v);
+}
 
-	v = ldb_msg_find_ldb_val(msg, attr_name);
+struct ldb_dn *ldb_val_as_dn(struct ldb_context *ldb,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ldb_val *v)
+{
+	struct ldb_dn *res_dn;
+
 	if (!v || !v->data) {
 		return NULL;
 	}
