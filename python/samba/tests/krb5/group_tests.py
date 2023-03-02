@@ -1828,7 +1828,8 @@ class GroupTests(KDCBaseTest):
         ts_enc_padata = self.get_enc_timestamp_pa_data_from_key(preauth_key)
         padata = [ts_enc_padata]
 
-        target_creds, sname = self.get_target(as_to_krbtgt, as_compression)
+        target_creds, sname = self.get_target(as_to_krbtgt,
+                                              compression=as_compression)
         decryption_key = self.TicketDecryptionKey_from_creds(target_creds)
 
         target_supported_etypes = target_creds.tgs_supported_enctypes
@@ -1914,7 +1915,8 @@ class GroupTests(KDCBaseTest):
                                            set_user_flags=tgs_set_user_flags,
                                            reset_user_flags=tgs_reset_user_flags)
 
-        target_creds, sname = self.get_target(tgs_to_krbtgt, tgs_compression)
+        target_creds, sname = self.get_target(tgs_to_krbtgt,
+                                              compression=tgs_compression)
         decryption_key = self.TicketDecryptionKey_from_creds(target_creds)
 
         subkey = self.RandomKey(ticket.session_key.etype)
