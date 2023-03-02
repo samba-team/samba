@@ -3363,7 +3363,7 @@ class RawKerberosTest(TestCaseInTempDir):
         else:
             self.assertFalse(
                 expect_device_claims,
-                'expected device claims buffer, but client claims not '
+                'expected device claims buffer, but device claims not '
                 'expected in PAC')
             self.assertFalse(
                 expected_device_claims,
