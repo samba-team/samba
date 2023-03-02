@@ -266,7 +266,7 @@ bld.SAMBA_GENERATOR('nfs41acl-h',
 
 
 if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
-    xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
+    xdr_buf_hack = r'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
 
     # By default rpcgen assumes that the input file, generated header and
     # source file are located in the same directory, which is extracted from
