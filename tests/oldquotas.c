@@ -112,4 +112,4 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree,
 
 #endif /* HAVE_SYS_QUOTAS */
 
-int main() { return disk_quotas(NULL, NULL, NULL, NULL); }
+int main(void) { return disk_quotas(NULL, NULL, NULL, NULL); }

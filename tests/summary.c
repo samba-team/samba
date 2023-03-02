@@ -2,7 +2,7 @@
 
 void exit(int);
 
-int main()
+int main(void)
 {
 #if !defined(HAVE_FCNTL_LOCK)
 #error "ERROR: No locking available. Running Samba would be unsafe"
