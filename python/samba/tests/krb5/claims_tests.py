@@ -691,11 +691,11 @@ class ClaimsTests(KDCBaseTest):
 
     sample_dn = object()
     binary_dn = object()
-    security_descriptor = (b'\x01\x00\x04\x80\x14\x00\x00\x00\x00\x00\x00\x00'
+    security_descriptor = (b'\x01\x00\x04\x95\x14\x00\x00\x00\x00\x00\x00\x00'
                            b'\x00\x00\x00\x00$\x00\x00\x00\x01\x02\x00\x00\x00'
                            b'\x00\x00\x05 \x00\x00\x00 \x02\x00\x00\x04\x00'
-                           b'\x1c\x00\x01\x00\x00\x00\x00\x00\x14\x00\xff\x01'
-                           b'\x0f\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00'
+                           b'\x1c\x00\x01\x00\x00\x00\x00\x1f\x14\x00\xff\x01'
+                           b'\x0f\xf0\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00'
                            b'\x00\x00')
 
     cases = [
@@ -904,8 +904,10 @@ class ClaimsTests(KDCBaseTest):
                     'for_classes': ['computer'],
                     'value_type': claims.CLAIM_TYPE_STRING,
                     'values': [security_descriptor],
-                    'expected_values': ['O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;'
-                                        ';;S-1-0-0)'],
+                    'expected_values': OneOf([{
+                        'O:BAD:PARAI(A;OICINPIOID;CCDCLCSWRPWPDTLOCRSDRCWDWOGAGXGWGR;;;S-1-0-0)',  # Windows
+                        'O:BAD:PARAI(A;OICINPIOID;RPWPCRCCDCLCLORCWOWDSDDTSWGAGRGWGX;;;S-1-0-0)',  # Samba
+                    }]),
                     'expected': True,
                 },
             ],
