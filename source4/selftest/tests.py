@@ -1779,6 +1779,10 @@ planoldpythontestsuite(
     'samba.tests.krb5.claims_tests',
     environ=krb5_environ)
 planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.device_tests',
+    environ=krb5_environ)
+planoldpythontestsuite(
     'ad_dc:local',
     'samba.tests.krb5.lockout_tests',
     environ=krb5_environ)
