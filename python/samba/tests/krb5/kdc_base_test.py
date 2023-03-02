@@ -1865,7 +1865,7 @@ class KDCBaseTest(RawKerberosTest):
 
         salt = creds.get_salt()
 
-        etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+        etype = self.get_default_enctypes()
         cname = self.PrincipalName_create(name_type=client_name_type,
                                           names=user_name.split('/'))
         if sname is None:
