@@ -710,7 +710,15 @@ retry:
 			TALLOC_FREE(ads);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
-       }
+	} else if (ads->auth.realm == NULL) {
+		const char *c_realm = cli_credentials_get_realm(c->creds);
+
+		ads->auth.realm = talloc_strdup(ads, c_realm);
+		if (ads->auth.realm == NULL) {
+			TALLOC_FREE(ads);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
 
 	status = ads_connect(ads);
 
