@@ -370,11 +370,10 @@ class WrongLengthChecksumKey(RodcPacEncryptionKey):
 
 class KerberosCredentials(Credentials):
 
-    fast_supported_bits = (security.KERB_ENCTYPE_FAST_SUPPORTED |
-                           security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
-                           security.KERB_ENCTYPE_CLAIMS_SUPPORTED)
-
-    non_etype_bits = fast_supported_bits | (
+    non_etype_bits = (
+        security.KERB_ENCTYPE_FAST_SUPPORTED) | (
+        security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED) | (
+        security.KERB_ENCTYPE_CLAIMS_SUPPORTED) | (
         security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) | (
         security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK)
 

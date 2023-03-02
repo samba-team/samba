@@ -1304,6 +1304,8 @@ class KDCBaseTest(RawKerberosTest):
             'delegation_from_dn': None,
             'trusted_to_auth_for_delegation': False,
             'fast_support': False,
+            'claims_support': False,
+            'compound_id_support': False,
             'sid_compression_support': True,
             'member_of': None,
             'kerberos_enabled': True,
@@ -1353,6 +1355,8 @@ class KDCBaseTest(RawKerberosTest):
                             delegation_from_dn,
                             trusted_to_auth_for_delegation,
                             fast_support,
+                            claims_support,
+                            compound_id_support,
                             sid_compression_support,
                             member_of,
                             kerberos_enabled,
@@ -1391,7 +1395,13 @@ class KDCBaseTest(RawKerberosTest):
         enctypes = supported_enctypes
         if fast_support:
             enctypes = enctypes or 0
-            enctypes |= KerberosCredentials.fast_supported_bits
+            enctypes |= security.KERB_ENCTYPE_FAST_SUPPORTED
+        if claims_support:
+            enctypes = enctypes or 0
+            enctypes |= security.KERB_ENCTYPE_CLAIMS_SUPPORTED
+        if compound_id_support:
+            enctypes = enctypes or 0
+            enctypes |= security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
         if sid_compression_support is False:
             enctypes = enctypes or 0
             enctypes |= security.KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED
@@ -1534,6 +1544,8 @@ class KDCBaseTest(RawKerberosTest):
                 account_type=self.AccountType.COMPUTER,
                 opts={
                     'fast_support': True,
+                    'claims_support': True,
+                    'compound_id_support': True,
                     'supported_enctypes': (
                         security.KERB_ENCTYPE_RC4_HMAC_MD5 |
                         security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
@@ -1555,6 +1567,8 @@ class KDCBaseTest(RawKerberosTest):
                 opts={
                     'trusted_to_auth_for_delegation': True,
                     'fast_support': True,
+                    'claims_support': True,
+                    'compound_id_support': True,
                     'supported_enctypes': (
                         security.KERB_ENCTYPE_RC4_HMAC_MD5 |
                         security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK

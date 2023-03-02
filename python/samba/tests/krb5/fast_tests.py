@@ -1921,6 +1921,8 @@ class FAST_Tests(KDCBaseTest):
             opts={
                 **opts,
                 'fast_support': True,
+                'claims_support': True,
+                'compound_id_support': True,
                 'supported_enctypes': (
                     security.KERB_ENCTYPE_RC4_HMAC_MD5 |
                     security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
