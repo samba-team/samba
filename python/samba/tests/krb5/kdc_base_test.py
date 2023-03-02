@@ -1020,45 +1020,48 @@ class KDCBaseTest(RawKerberosTest):
         primary_group_types = {}
 
         # Create each group and add it to the group mapping.
-        for group_id, (group_type, _) in group_setup.items():
-            self.assertNotIn(group_id, preexisting_groups,
-                             "don't specify placeholders")
-            self.assertNotIn(group_id, groups,
-                             'group ID specified more than once')
+        if group_setup is not None:
+            for group_id, (group_type, _) in group_setup.items():
+                self.assertNotIn(group_id, preexisting_groups,
+                                 "don't specify placeholders")
+                self.assertNotIn(group_id, groups,
+                                 'group ID specified more than once')
 
-            if primary_groups is not None and (
-                    group_id in primary_groups.values()):
-                # Windows disallows setting a domain-local group as a primary
-                # group, unless we create it as Universal first and change it
-                # back to Domain-Local later.
-                primary_group_types[group_id] = group_type
-                group_type = GroupType.UNIVERSAL
+                if primary_groups is not None and (
+                        group_id in primary_groups.values()):
+                    # Windows disallows setting a domain-local group as a
+                    # primary group, unless we create it as Universal first and
+                    # change it back to Domain-Local later.
+                    primary_group_types[group_id] = group_type
+                    group_type = GroupType.UNIVERSAL
 
-            groups[group_id] = self.create_group_principal(samdb, group_type)
+                groups[group_id] = self.create_group_principal(samdb,
+                                                               group_type)
 
-        # Map a group ID to that group's DN, and generate an
-        # understandable error message if the mapping fails.
-        def group_id_to_dn(group_id):
-            try:
-                group = groups[group_id]
-            except KeyError:
-                self.fail(f"included group member '{group_id}', but it is not "
-                          f"specified in {groups.keys()}")
-            else:
-                if group.dn is not None:
-                    return str(group.dn)
+        if group_setup is not None:
+            # Map a group ID to that group's DN, and generate an
+            # understandable error message if the mapping fails.
+            def group_id_to_dn(group_id):
+                try:
+                    group = groups[group_id]
+                except KeyError:
+                    self.fail(f"included group member '{group_id}', but it is "
+                              f"not specified in {groups.keys()}")
+                else:
+                    if group.dn is not None:
+                        return str(group.dn)
 
-                return f'<SID={group.sid}>'
+                    return f'<SID={group.sid}>'
 
-        # Populate each group's members.
-        for group_id, (_, members) in group_setup.items():
-            # Get the group's DN and the mapped DNs of its members.
-            dn = groups[group_id].dn
-            principal_members = map(group_id_to_dn, members)
+            # Populate each group's members.
+            for group_id, (_, members) in group_setup.items():
+                # Get the group's DN and the mapped DNs of its members.
+                dn = groups[group_id].dn
+                principal_members = map(group_id_to_dn, members)
 
-            # Add the members to the group.
-            self.add_to_group(principal_members, dn, 'member',
-                              expect_attr=False)
+                # Add the members to the group.
+                self.add_to_group(principal_members, dn, 'member',
+                                  expect_attr=False)
 
         # Set primary groups.
         if primary_groups is not None:
