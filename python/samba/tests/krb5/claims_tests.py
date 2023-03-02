@@ -47,11 +47,9 @@ global_hexdump = False
 
 class UnorderedList(list):
     def __eq__(self, other):
-        if isinstance(other, UnorderedList):
-            return sorted(self) == sorted(other)
-        else:
-            return False
-
+        if not isinstance(other, UnorderedList):
+            raise AssertionError('unexpected comparison attempt')
+        return sorted(self) == sorted(other)
 
 @DynamicTestCase
 class ClaimsTests(KDCBaseTest):
