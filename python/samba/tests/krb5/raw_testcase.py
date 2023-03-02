@@ -3302,6 +3302,54 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertEqual(expected_groups, pac_sids,
                                  'expected != got')
 
+    def check_device_info(self, device_info, kdc_exchange_dict):
+        armor_tgt = kdc_exchange_dict['armor_tgt']
+        armor_auth_data = armor_tgt.ticket_private.get(
+            'authorization-data')
+        self.assertIsNotNone(armor_auth_data,
+                             'missing authdata for armor TGT')
+        armor_pac_data = self.get_pac(armor_auth_data)
+        armor_pac = ndr_unpack(krb5pac.PAC_DATA, armor_pac_data)
+        for armor_pac_buffer in armor_pac.buffers:
+            if armor_pac_buffer.type == krb5pac.PAC_TYPE_LOGON_INFO:
+                armor_info = armor_pac_buffer.info.info.info3
+                break
+        else:
+            self.fail('missing logon info for armor PAC')
+
+        self.assertEqual(armor_info.base.rid, device_info.rid)
+
+        self.assertEqual(armor_info.base.primary_gid,
+                         device_info.primary_gid)
+        self.assertEqual(security.DOMAIN_RID_DOMAIN_MEMBERS,
+                         device_info.primary_gid)
+
+        self.assertEqual(armor_info.base.domain_sid,
+                         device_info.domain_sid)
+
+        def get_groups(groups):
+            return [(x.rid, x.attributes) for x in groups.rids]
+
+        self.assertEqual(get_groups(armor_info.base.groups),
+                         get_groups(device_info.groups))
+
+        self.assertEqual(1, device_info.sid_count)
+        self.assertEqual(
+            security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,
+            str(device_info.sids[0].sid))
+
+        claims_valid_sid, claims_valid_rid = (
+            security.SID_CLAIMS_VALID.rsplit('-', 1))
+
+        self.assertEqual(1, device_info.domain_group_count)
+        domain_group = device_info.domain_groups[0]
+        self.assertEqual(claims_valid_sid,
+                         str(domain_group.domain_sid))
+
+        self.assertEqual(1, domain_group.groups.count)
+        self.assertEqual(int(claims_valid_rid),
+                         domain_group.groups.rids[0].rid)
+
     def check_pac_buffers(self, pac_data, kdc_exchange_dict):
         pac = ndr_unpack(krb5pac.PAC_DATA, pac_data)
 
@@ -3665,51 +3713,7 @@ class RawKerberosTest(TestCaseInTempDir):
             elif pac_buffer.type == krb5pac.PAC_TYPE_DEVICE_INFO:
                 device_info = pac_buffer.info.info
 
-                armor_auth_data = armor_tgt.ticket_private.get(
-                    'authorization-data')
-                self.assertIsNotNone(armor_auth_data,
-                                     'missing authdata for armor TGT')
-                armor_pac_data = self.get_pac(armor_auth_data)
-                armor_pac = ndr_unpack(krb5pac.PAC_DATA, armor_pac_data)
-                for armor_pac_buffer in armor_pac.buffers:
-                    if armor_pac_buffer.type == krb5pac.PAC_TYPE_LOGON_INFO:
-                        armor_info = armor_pac_buffer.info.info.info3
-                        break
-                else:
-                    self.fail('missing logon info for armor PAC')
-
-                self.assertEqual(armor_info.base.rid, device_info.rid)
-
-                self.assertEqual(armor_info.base.primary_gid,
-                                 device_info.primary_gid)
-                self.assertEqual(security.DOMAIN_RID_DOMAIN_MEMBERS,
-                                 device_info.primary_gid)
-
-                self.assertEqual(armor_info.base.domain_sid,
-                                 device_info.domain_sid)
-
-                def get_groups(groups):
-                    return [(x.rid, x.attributes) for x in groups.rids]
-
-                self.assertEqual(get_groups(armor_info.base.groups),
-                                 get_groups(device_info.groups))
-
-                self.assertEqual(1, device_info.sid_count)
-                self.assertEqual(
-                    security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,
-                    str(device_info.sids[0].sid))
-
-                claims_valid_sid, claims_valid_rid = (
-                    security.SID_CLAIMS_VALID.rsplit('-', 1))
-
-                self.assertEqual(1, device_info.domain_group_count)
-                domain_group = device_info.domain_groups[0]
-                self.assertEqual(claims_valid_sid,
-                                 str(domain_group.domain_sid))
-
-                self.assertEqual(1, domain_group.groups.count)
-                self.assertEqual(int(claims_valid_rid),
-                                 domain_group.groups.rids[0].rid)
+                self.check_device_info(device_info, kdc_exchange_dict)
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
