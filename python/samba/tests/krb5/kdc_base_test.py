@@ -292,8 +292,11 @@ class KDCBaseTest(RawKerberosTest):
 
         return self._rodc_ctx
 
-    def get_domain_functional_level(self, ldb):
+    def get_domain_functional_level(self, ldb=None):
         if self._functional_level is None:
+            if ldb is None:
+                ldb = self.get_samdb()
+
             res = ldb.search(base='',
                              scope=SCOPE_BASE,
                              attrs=['domainFunctionality'])
@@ -307,8 +310,7 @@ class KDCBaseTest(RawKerberosTest):
         return self._functional_level
 
     def get_default_enctypes(self):
-        samdb = self.get_samdb()
-        functional_level = self.get_domain_functional_level(samdb)
+        functional_level = self.get_domain_functional_level()
 
         default_enctypes = []
 
