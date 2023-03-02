@@ -31,8 +31,8 @@ from samba.dcerpc import claims, krb5pac, security
 from samba.tests import DynamicTestCase, env_get_var_value
 from samba.tests.krb5 import kcrypto
 from samba.tests.krb5.kcrypto import Enctype
-from samba.tests.krb5.kdc_base_test import KDCBaseTest
-from samba.tests.krb5.raw_testcase import Krb5EncryptionKey
+from samba.tests.krb5.kdc_base_test import GroupType, KDCBaseTest, Principal
+from samba.tests.krb5.raw_testcase import Krb5EncryptionKey, RawKerberosTest
 from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
@@ -40,6 +40,8 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_PRINCIPAL,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
+
+SidType = RawKerberosTest.SidType
 
 global_asn1_print = False
 global_hexdump = False
@@ -89,6 +91,17 @@ class OneOf(list):
 
 @DynamicTestCase
 class ClaimsTests(KDCBaseTest):
+    # Placeholder objects that represent accounts undergoing testing.
+    user = object()
+    mach = object()
+
+    # Constants for group SID attributes.
+    default_attrs = security.SE_GROUP_DEFAULT_FLAGS
+    resource_attrs = default_attrs | security.SE_GROUP_RESOURCE
+
+    asserted_identity = security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY
+    compounded_auth = security.SID_COMPOUNDED_AUTHENTICATION
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -656,6 +669,15 @@ class ClaimsTests(KDCBaseTest):
                                       dict(case), False)
             cls.generate_dynamic_test('test_claims', name + '_to_self',
                                       dict(case), True)
+
+        for case in cls.device_claims_cases:
+            name = case.pop('test')
+            if FILTER and not re.search(FILTER, name):
+                continue
+            name = re.sub(r'\W+', '_', name)
+
+            cls.generate_dynamic_test('test_device_claims', name,
+                                      dict(case))
 
     def _test_claims_with_args(self, case, to_self):
         account_class = case.pop('class')
@@ -1378,6 +1400,378 @@ class ClaimsTests(KDCBaseTest):
                 },
             ],
             'class': 'user',
+        },
+    ]
+
+    def _test_device_claims_with_args(self, case):
+        # The group arrangement for the test.
+        group_setup = case.pop('groups')
+
+        # Groups that should be the primary group for the user and machine
+        # respectively.
+        primary_group = case.pop('primary_group', None)
+        mach_primary_group = case.pop('mach:primary_group', None)
+
+        # Whether the TGS-REQ should be directed to the krbtgt.
+        tgs_to_krbtgt = case.pop('tgs:to_krbtgt', None)
+
+        # Whether the target server of the TGS-REQ should support compound
+        # identity or resource SID compression.
+        tgs_compound_id = case.pop('tgs:compound_id', None)
+        tgs_compression = case.pop('tgs:compression', None)
+
+        # Optional SIDs to replace those in the machine account PAC prior to a
+        # TGS-REQ.
+        tgs_mach_sids = case.pop('tgs:mach:sids', None)
+
+        # Optional machine SID to replace that in the PAC prior to a TGS-REQ.
+        tgs_mach_sid = case.pop('tgs:mach_sid', None)
+
+        # User flags that may be set or reset in the PAC prior to a TGS-REQ.
+        tgs_mach_set_user_flags = case.pop('tgs:mach:set_user_flags', None)
+        tgs_mach_reset_user_flags = case.pop('tgs:mach:reset_user_flags', None)
+
+        # The SIDs we expect to see in the PAC after a AS-REQ or a TGS-REQ.
+        as_expected = case.pop('as:expected', None)
+        as_mach_expected = case.pop('as:mach:expected', None)
+        tgs_expected = case.pop('tgs:expected', None)
+        tgs_device_expected = case.pop('tgs:device:expected', None)
+
+        all_claims = case.pop('claims')
+
+        # There should be no parameters remaining in the testcase.
+        self.assertFalse(case, 'unexpected parameters in testcase')
+
+        if as_expected is None:
+            self.assertIsNotNone(tgs_expected,
+                                 'no set of expected SIDs is provided')
+
+        if as_mach_expected is None:
+            self.assertIsNotNone(tgs_expected,
+                                 'no set of expected machine SIDs is provided')
+
+        if tgs_to_krbtgt is None:
+            tgs_to_krbtgt = False
+
+        if tgs_compound_id is None and not tgs_to_krbtgt:
+            # Assume the service supports compound identity by default.
+            tgs_compound_id = True
+
+        if tgs_to_krbtgt:
+            self.assertIsNone(tgs_device_expected,
+                              'device SIDs are not added for a krbtgt request')
+
+        self.assertIsNotNone(tgs_expected,
+                             'no set of expected TGS SIDs is provided')
+
+        if tgs_mach_sid is not None:
+            self.assertIsNotNone(tgs_mach_sids,
+                                 'specified TGS-REQ mach SID, but no '
+                                 'accompanying machine SIDs provided')
+
+        if tgs_mach_set_user_flags is None:
+            tgs_mach_set_user_flags = 0
+        else:
+            self.assertIsNotNone(tgs_mach_sids,
+                                 'specified TGS-REQ set user flags, but no '
+                                 'accompanying machine SIDs provided')
+
+        if tgs_mach_reset_user_flags is None:
+            tgs_mach_reset_user_flags = 0
+        else:
+            self.assertIsNotNone(tgs_mach_sids,
+                                 'specified TGS-REQ reset user flags, but no '
+                                 'accompanying machine SIDs provided')
+
+        (details, mod_msg,
+         expected_claims,
+         unexpected_claims) = self.setup_claims(all_claims)
+
+        samdb = self.get_samdb()
+
+        domain_sid = samdb.get_domain_sid()
+
+        user_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+        user_dn = user_creds.get_dn()
+        user_sid = self.get_objectSid(samdb, user_dn)
+
+        mach_name = self.get_new_username()
+        mach_creds, mach_dn_str = self.create_account(
+            samdb,
+            mach_name,
+            account_type=self.AccountType.COMPUTER,
+            additional_details=details)
+        mach_dn = ldb.Dn(samdb, mach_dn_str)
+        mach_sid = self.get_objectSid(samdb, mach_dn)
+
+        user_principal = Principal(user_dn, user_sid)
+        mach_principal = Principal(mach_dn, mach_sid)
+        preexisting_groups = {
+            self.user: user_principal,
+            self.mach: mach_principal,
+        }
+        primary_groups = {}
+        if primary_group is not None:
+            primary_groups[user_principal] = primary_group
+        if mach_primary_group is not None:
+            primary_groups[mach_principal] = mach_primary_group
+        groups = self.setup_groups(samdb,
+                                   preexisting_groups,
+                                   group_setup,
+                                   primary_groups)
+        del group_setup
+
+        tgs_user_sid = user_sid
+        tgs_user_domain_sid, tgs_user_rid = tgs_user_sid.rsplit('-', 1)
+
+        if tgs_mach_sid is None:
+            tgs_mach_sid = mach_sid
+        elif tgs_mach_sid in groups:
+            tgs_mach_sid = groups[tgs_mach_sid].sid
+
+        tgs_mach_domain_sid, tgs_mach_rid = tgs_mach_sid.rsplit('-', 1)
+
+        expected_groups = self.map_sids(as_expected, groups,
+                                        domain_sid)
+        mach_expected_groups = self.map_sids(as_mach_expected, groups,
+                                             domain_sid)
+        tgs_mach_sids_mapped = self.map_sids(tgs_mach_sids, groups,
+                                             tgs_mach_domain_sid)
+        tgs_expected_mapped = self.map_sids(tgs_expected, groups,
+                                            tgs_user_domain_sid)
+        tgs_device_expected_mapped = self.map_sids(tgs_device_expected, groups,
+                                                   tgs_mach_domain_sid)
+
+        user_tgt = self.get_tgt(user_creds, expected_groups=expected_groups)
+
+        # Get a TGT for the computer.
+        mach_tgt = self.get_tgt(mach_creds, expect_pac=True,
+                                expected_groups=mach_expected_groups,
+                                expect_client_claims=True,
+                                expected_client_claims=expected_claims,
+                                unexpected_client_claims=unexpected_claims)
+
+        if tgs_mach_sids is not None:
+            # Replace the SIDs in the PAC with the ones provided by the test.
+            mach_tgt = self.ticket_with_sids(mach_tgt,
+                                             tgs_mach_sids_mapped,
+                                             tgs_mach_domain_sid,
+                                             tgs_mach_rid,
+                                             set_user_flags=tgs_mach_set_user_flags,
+                                             reset_user_flags=tgs_mach_reset_user_flags)
+
+        if mod_msg:
+            self.assertFalse(tgs_to_krbtgt,
+                             'device claims are omitted for a krbtgt request, '
+                             'so specifying mod_values is probably a mistake!')
+
+            # Change the value of attributes used for claims.
+            mod_msg.dn = mach_dn
+            samdb.modify(mod_msg)
+
+        domain_sid = samdb.get_domain_sid()
+
+        subkey = self.RandomKey(user_tgt.session_key.etype)
+
+        armor_subkey = self.RandomKey(subkey.etype)
+        explicit_armor_key = self.generate_armor_key(armor_subkey,
+                                                     mach_tgt.session_key)
+        armor_key = kcrypto.cf2(explicit_armor_key.key,
+                                subkey.key,
+                                b'explicitarmor',
+                                b'tgsarmor')
+        armor_key = Krb5EncryptionKey(armor_key, None)
+
+        target_creds, sname = self.get_target(
+            to_krbtgt=tgs_to_krbtgt,
+            compound_id=tgs_compound_id,
+            compression=tgs_compression)
+        srealm = target_creds.get_realm()
+
+        decryption_key = self.TicketDecryptionKey_from_creds(
+            target_creds)
+
+        etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+
+        kdc_options = '0'
+        pac_options = '1'  # claims support
+
+        requester_sid = None
+        if tgs_to_krbtgt:
+            requester_sid = user_sid
+
+        if tgs_to_krbtgt:
+            expected_claims = None
+            unexpected_claims = None
+
+        # Get a service ticket for the user, using the computer's TGT as an
+        # armor TGT. The claim value should not have changed.
+
+        kdc_exchange_dict = self.tgs_exchange_dict(
+            expected_crealm=user_tgt.crealm,
+            expected_cname=user_tgt.cname,
+            expected_srealm=srealm,
+            expected_sname=sname,
+            ticket_decryption_key=decryption_key,
+            generate_fast_fn=self.generate_simple_fast,
+            generate_fast_armor_fn=self.generate_ap_req,
+            check_rep_fn=self.generic_check_kdc_rep,
+            check_kdc_private_fn=self.generic_check_kdc_private,
+            tgt=user_tgt,
+            armor_key=armor_key,
+            armor_tgt=mach_tgt,
+            armor_subkey=armor_subkey,
+            pac_options=pac_options,
+            authenticator_subkey=subkey,
+            kdc_options=kdc_options,
+            expect_pac=True,
+            expect_pac_attrs=tgs_to_krbtgt,
+            expect_pac_attrs_pac_request=tgs_to_krbtgt,
+            expected_sid=tgs_user_sid,
+            expected_requester_sid=requester_sid,
+            expected_domain_sid=tgs_user_domain_sid,
+            expected_device_domain_sid=tgs_mach_domain_sid,
+            expected_groups=tgs_expected_mapped,
+            unexpected_groups=None,
+            expect_client_claims=True,
+            expected_client_claims=None,
+            expect_device_info=not tgs_to_krbtgt,
+            expected_device_groups=tgs_device_expected_mapped,
+            expect_device_claims=not tgs_to_krbtgt,
+            expected_device_claims=expected_claims,
+            unexpected_device_claims=unexpected_claims)
+
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=None,
+                                         realm=srealm,
+                                         sname=sname,
+                                         etypes=etypes)
+        self.check_reply(rep, KRB_TGS_REP)
+
+    device_claims_cases = [
+        {
+            # Make a TGS request containing claims, but omit the Claims Valid
+            # SID.
+            'test': 'device to service no claims valid sid',
+            'groups': {
+                # Some groups to test how the device info is generated.
+                'foo': (GroupType.DOMAIN_LOCAL, {mach}),
+                'bar': (GroupType.DOMAIN_LOCAL, {mach}),
+            },
+            'claims': [
+                {
+                    # 2.5.5.10
+                    'enabled': True,
+                    'attribute': 'middleName',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['computer'],
+                    'value_type': claims.CLAIM_TYPE_STRING,
+                    'values': ['foo'],
+                    'expected': True,
+                    'mod_values': ['bar'],
+                },
+            ],
+            'as:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'as:mach:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:mach:sids': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                # Omit the Claims Valid SID, and verify that this doesn't
+                # affect the propagation of claims into the final ticket.
+
+                # Some extra SIDs to show how they are propagated into the
+                # final ticket.
+                ('S-1-5-22-1-2-3-4', SidType.EXTRA_SID, default_attrs),
+                ('S-1-5-22-1-2-3-5', SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:to_krbtgt': False,
+            'tgs:expected': {
+                (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+                (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                ('S-1-5-22-1-2-3-4', SidType.EXTRA_SID, default_attrs),
+                ('S-1-5-22-1-2-3-5', SidType.EXTRA_SID, default_attrs),
+                frozenset([
+                    ('foo', SidType.RESOURCE_SID, resource_attrs),
+                    ('bar', SidType.RESOURCE_SID, resource_attrs),
+                ]),
+            },
+        },
+        {
+            # Make a TGS request containing claims to a service that lacks
+            # support for compound identity. The claims are still propagated to
+            # the final ticket.
+            'test': 'device to service no compound id',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {mach}),
+                'bar': (GroupType.DOMAIN_LOCAL, {mach}),
+            },
+            'claims': [
+                {
+                    # 2.5.5.10
+                    'enabled': True,
+                    'attribute': 'middleName',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['computer'],
+                    'value_type': claims.CLAIM_TYPE_STRING,
+                    'values': ['foo'],
+                    'expected': True,
+                    'mod_values': ['bar'],
+                },
+            ],
+            'as:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'as:mach:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:to_krbtgt': False,
+            # Compound identity is unsupported.
+            'tgs:compound_id': False,
+            'tgs:expected': {
+                (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+                (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                frozenset([
+                    ('foo', SidType.RESOURCE_SID, resource_attrs),
+                    ('bar', SidType.RESOURCE_SID, resource_attrs),
+                ]),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
+            },
         },
     ]
 

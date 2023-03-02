@@ -544,6 +544,8 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_delegation_claims.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_delegation_claims_remove_claims.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims.ad_dc
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims_device_to_service_no_claims_valid_sid.ad_dc
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims_device_to_service_no_compound_id.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims_to_krbtgt.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_info.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_info_to_krbtgt.ad_dc
