@@ -67,7 +67,12 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 	 * Note also that we don't have the original request
 	 * here, so we can not apply controls or timeouts here.
 	 */
-	ret = dsdb_search_dn(ldb, tmp_ctx, &res, to_visit->dn, attrs, 0);
+	ret = dsdb_search_dn(ldb,
+			     tmp_ctx,
+			     &res,
+			     to_visit->dn,
+			     attrs,
+			     DSDB_MARK_REQ_UNTRUSTED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
