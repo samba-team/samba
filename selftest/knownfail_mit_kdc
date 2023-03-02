@@ -487,8 +487,6 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_dn_string_syntax_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_dn_string_syntax_wrong_value_type.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_dn_string_syntax_wrong_value_type_to_self.ad_dc
-^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_duplicate_claim.ad_dc
-^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_duplicate_claim_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_incorrect_value_type.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_incorrect_value_type_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax.ad_dc
@@ -533,6 +531,8 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_security_descriptor_syntax_wrong_value_type_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_simple_AD_sourced_claim.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_simple_AD_sourced_claim_to_self.ad_dc
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_string_syntax_duplicate_claim.ad_dc
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_string_syntax_duplicate_claim_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_unhandled_source_type.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_unhandled_source_type_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_utc_time_syntax_invalid_.ad_dc

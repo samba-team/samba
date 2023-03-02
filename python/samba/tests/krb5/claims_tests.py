@@ -241,6 +241,13 @@ class ClaimsTests(KDCBaseTest):
     def test_device_claims_to_krbtgt(self):
         self._run_device_claims_test(to_krbtgt=True)
 
+    # Create a user account with an applicable claim for the 'middleName'
+    # attribute. After obtaining a TGT, from which we optionally remove the
+    # claims, change the middleName attribute values for the account in the
+    # database to a different value. By which we may observe, when examining
+    # the reply to our following Kerberos TGS request, whether the claims
+    # contained therein are taken directly from the ticket, or obtained fresh
+    # from the database.
     def run_tgs_test(self, remove_claims, to_krbtgt):
         samdb = self.get_samdb()
         user_creds, user_dn = self.create_account(samdb,
@@ -288,7 +295,9 @@ class ClaimsTests(KDCBaseTest):
             target_creds = self.get_service_creds()
             sname = None
 
-        # Get a service ticket for the user. The value should not have changed.
+        # Get a service ticket for the user. The claim value should not have
+        # changed, indicating that the client claims are propagated straight
+        # through.
         self.get_service_ticket(
             tgt, target_creds,
             sname=sname,
@@ -297,6 +306,12 @@ class ClaimsTests(KDCBaseTest):
             expected_client_claims=(expected_claims
                                     if not remove_claims else None))
 
+    # Perform a test similar to that preceeding. This time, create both a user
+    # and a computer account, each having an applicable claim. After obtaining
+    # tickets, from which the claims are optionally removed, change the claim
+    # attribute of each account to a different value. Then perform constrained
+    # delegation with the user's service ticket, verifying that the user's
+    # claims are carried into the resulting ticket.
     def run_delegation_test(self, remove_claims):
         service_creds = self.get_service_creds()
         service_spn = service_creds.get_spn()
@@ -341,7 +356,7 @@ class ClaimsTests(KDCBaseTest):
                 'values': ['user_old'],
             },
         }
-        expected_claims_mac = {
+        expected_claims_mach = {
             claim_id: {
                 'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
                 'type': claims.CLAIM_TYPE_STRING,
@@ -367,20 +382,20 @@ class ClaimsTests(KDCBaseTest):
         mach_tgt = self.get_tgt(mach_creds,
                                 expect_pac=True,
                                 expect_client_claims=True,
-                                expected_client_claims=expected_claims_mac)
+                                expected_client_claims=expected_claims_mach)
 
         if remove_claims:
             user_ticket = self.remove_client_claims(user_ticket)
             mach_tgt = self.remove_client_claims(mach_tgt)
 
-        # Change the value of the attributes used for the claim.
+        # Change the value of the attribute used for the user claim.
         msg = ldb.Message(ldb.Dn(samdb, user_dn))
         msg['middleName'] = ldb.MessageElement('user_new',
                                                ldb.FLAG_MOD_REPLACE,
                                                'middleName')
         samdb.modify(msg)
 
-        # Change the value of the attributes used for the claim.
+        # Change the value of the attribute used for the machine claim.
         msg = ldb.Message(ldb.Dn(samdb, mach_dn))
         msg['middleName'] = ldb.MessageElement('mach_new',
                                                ldb.FLAG_MOD_REPLACE,
@@ -413,8 +428,11 @@ class ClaimsTests(KDCBaseTest):
 
         etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
 
+        # The user's claims are propagated into the new ticket, while the
+        # machine's claims are dispensed with.
         expected_claims = expected_claims_user if not remove_claims else None
 
+        # Perform constrained delegation.
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=user_realm,
             expected_cname=user_cname,
@@ -433,14 +451,16 @@ class ClaimsTests(KDCBaseTest):
             expected_transited_services=expected_transited_services,
             expect_client_claims=not remove_claims,
             expected_client_claims=expected_claims,
+            expect_device_claims=False,
             expect_pac=True)
 
-        self._generic_kdc_exchange(kdc_exchange_dict,
-                                   cname=None,
-                                   realm=service_realm,
-                                   sname=service_sname,
-                                   etypes=etypes,
-                                   additional_tickets=additional_tickets)
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=None,
+                                         realm=service_realm,
+                                         sname=service_sname,
+                                         etypes=etypes,
+                                         additional_tickets=additional_tickets)
+        self.check_reply(rep, KRB_TGS_REP)
 
     def _run_device_info_test(self, to_krbtgt):
         user_creds = self.get_cached_creds(
@@ -1126,7 +1146,7 @@ class ClaimsTests(KDCBaseTest):
             'class': 'user',
         },
         {
-            'name': 'duplicate claim',
+            'name': 'string syntax, duplicate claim',
             'claims': [
                 {
                     # 2.5.5.12
@@ -1139,18 +1159,7 @@ class ClaimsTests(KDCBaseTest):
                     'values': ['foo'],
                     'expected': True,
                 },
-                {
-                    # 2.5.5.12
-                    'enabled': True,
-                    'attribute': 'carLicense',
-                    'single_valued': True,
-                    'source_type': 'AD',
-                    'for_classes': ['user'],
-                    'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
-                    'expected': True,
-                },
-            ],
+            ] * 2,  # Create two string syntax claims.
             'class': 'user',
         },
         {
