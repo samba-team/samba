@@ -20,13 +20,18 @@ from ldb import SCOPE_BASE, SCOPE_SUBTREE, SCOPE_ONELEVEL
 # Windows appear to preserve casing of the RDN and uppercase the other keys.
 
 
-class MatchRulesTests(samba.tests.TestCase):
+class MatchRulesTestsBase(samba.tests.TestCase):
     def setUp(self):
-        super(MatchRulesTests, self).setUp()
-        self.lp = lp
-        self.ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp)
+        super().setUp()
+        self.lp = self.sambaopts.get_loadparm()
+        self.creds = self.credopts.get_credentials(self.lp)
+
+        self.ldb = SamDB(self.host, credentials=self.creds,
+                         session_info=system_session(self.lp),
+                         lp=self.lp)
         self.base_dn = self.ldb.domain_dn()
-        self.ou = "OU=matchrulestest,%s" % self.base_dn
+        self.ou_rdn = "OU=matchrulestest"
+        self.ou = self.ou_rdn + "," + self.base_dn
         self.ou_users = "OU=users,%s" % self.ou
         self.ou_groups = "OU=groups,%s" % self.ou
         self.ou_computers = "OU=computers,%s" % self.ou
@@ -212,6 +217,39 @@ class MatchRulesTests(samba.tests.TestCase):
                                      FLAG_MOD_ADD, "member")
         self.ldb.modify(m)
 
+        # Add a couple of ms-Exch-Configuration-Container to test forward-link
+        # attributes without backward link (addressBookRoots2)
+        # e1
+        # |--> e2
+        # |    |--> c1
+        self.ldb.add({
+            "dn": "cn=e1,%s" % self.ou,
+            "objectclass": "msExchConfigurationContainer"})
+        self.ldb.add({
+            "dn": "cn=e2,%s" % self.ou,
+            "objectclass": "msExchConfigurationContainer"})
+
+        m = Message()
+        m.dn = Dn(self.ldb, "cn=e2,%s" % self.ou)
+        m["e1"] = MessageElement("cn=c1,%s" % self.ou_computers,
+                                 FLAG_MOD_ADD, "addressBookRoots2")
+        self.ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(self.ldb, "cn=e1,%s" % self.ou)
+        m["e1"] = MessageElement("cn=e2,%s" % self.ou,
+                                 FLAG_MOD_ADD, "addressBookRoots2")
+        self.ldb.modify(m)
+
+
+
+class MatchRulesTests(MatchRulesTestsBase):
+    def setUp(self):
+        self.sambaopts = sambaopts
+        self.credopts = credopts
+        self.host = host
+        super().setUp()
+
         # The msDS-RevealedUsers is owned by system and cannot be modified
         # directly. Set the schemaUpgradeInProgress flag as workaround
         # and create this hierarchy:
@@ -251,33 +289,6 @@ class MatchRulesTests(samba.tests.TestCase):
         m["e1"] = MessageElement("0", FLAG_MOD_REPLACE, "schemaUpgradeInProgress")
         self.ldb.modify(m)
 
-        # Add a couple of ms-Exch-Configuration-Container to test forward-link
-        # attributes without backward link (addressBookRoots2)
-        # e1
-        # |--> e2
-        # |    |--> c1
-        self.ldb.add({
-            "dn": "cn=e1,%s" % self.ou,
-            "objectclass": "msExchConfigurationContainer"})
-        self.ldb.add({
-            "dn": "cn=e2,%s" % self.ou,
-            "objectclass": "msExchConfigurationContainer"})
-
-        m = Message()
-        m.dn = Dn(self.ldb, "cn=e2,%s" % self.ou)
-        m["e1"] = MessageElement("cn=c1,%s" % self.ou_computers,
-                                 FLAG_MOD_ADD, "addressBookRoots2")
-        self.ldb.modify(m)
-
-        m = Message()
-        m.dn = Dn(self.ldb, "cn=e1,%s" % self.ou)
-        m["e1"] = MessageElement("cn=e2,%s" % self.ou,
-                                 FLAG_MOD_ADD, "addressBookRoots2")
-        self.ldb.modify(m)
-
-    def tearDown(self):
-        super(MatchRulesTests, self).tearDown()
-        self.ldb.delete(self.ou, controls=['tree_delete:0'])
 
     def test_u1_member_of_g4(self):
         # Search without transitive match must return 0 results
@@ -953,8 +964,12 @@ class MatchRulesTests(samba.tests.TestCase):
 class MatchRuleConditionTests(samba.tests.TestCase):
     def setUp(self):
         super(MatchRuleConditionTests, self).setUp()
-        self.lp = lp
-        self.ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp)
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp)
+
+        self.ldb = SamDB(host, credentials=self.creds,
+                         session_info=system_session(self.lp),
+                         lp=self.lp)
         self.base_dn = self.ldb.domain_dn()
         self.ou = "OU=matchruleconditiontests,%s" % self.base_dn
         self.ou_users = "OU=users,%s" % self.ou
@@ -1753,32 +1768,30 @@ class MatchRuleConditionTests(samba.tests.TestCase):
                                     self.ou_groups, self.ou_computers))
         self.assertEqual(len(res1), 0)
 
+if __name__ == "__main__":
 
-parser = optparse.OptionParser("match_rules.py [options] <host>")
-sambaopts = options.SambaOptions(parser)
-parser.add_option_group(sambaopts)
-parser.add_option_group(options.VersionOptions(parser))
+    parser = optparse.OptionParser("match_rules.py [options] <host>")
+    sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
+    parser.add_option_group(options.VersionOptions(parser))
 
-# use command line creds if available
-credopts = options.CredentialsOptions(parser)
-parser.add_option_group(credopts)
-opts, args = parser.parse_args()
-subunitopts = SubunitOptions(parser)
-parser.add_option_group(subunitopts)
+    # use command line creds if available
+    credopts = options.CredentialsOptions(parser)
+    parser.add_option_group(credopts)
+    opts, args = parser.parse_args()
+    subunitopts = SubunitOptions(parser)
+    parser.add_option_group(subunitopts)
 
-if len(args) < 1:
-    parser.print_usage()
-    sys.exit(1)
+    if len(args) < 1:
+        parser.print_usage()
+        sys.exit(1)
 
-host = args[0]
+    host = args[0]
 
-lp = sambaopts.get_loadparm()
-creds = credopts.get_credentials(lp)
+    if "://" not in host:
+        if os.path.isfile(host):
+            host = "tdb://%s" % host
+        else:
+            host = "ldap://%s" % host
 
-if "://" not in host:
-    if os.path.isfile(host):
-        host = "tdb://%s" % host
-    else:
-        host = "ldap://%s" % host
-
-TestProgram(module=__name__, opts=subunitopts)
+    TestProgram(module=__name__, opts=subunitopts)
