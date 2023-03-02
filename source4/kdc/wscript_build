@@ -139,6 +139,12 @@ bld.SAMBA_LIBRARY('db-glue',
 	private_library=True,
 	)
 
+bld.SAMBA_LIBRARY('ad_claims',
+	source='ad_claims.c',
+	deps='ldb samba-util samdb dsdb-module',
+	private_library=True,
+	)
+
 bld.SAMBA_SUBSYSTEM('KPASSWD_GLUE',
         source='kpasswd_glue.c',
         deps='ldb com_err')
