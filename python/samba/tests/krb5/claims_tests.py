@@ -211,11 +211,91 @@ class ClaimsTests(KDCBaseTest):
             modify_pac_fn=modify_pac_fn,
             checksum_keys=self.get_krbtgt_checksum_key())
 
+    def test_tgs_claims(self):
+        self.run_tgs_test(remove_claims=False, to_krbtgt=False)
+
+    def test_tgs_claims_remove_claims(self):
+        self.run_tgs_test(remove_claims=True, to_krbtgt=False)
+
+    def test_tgs_claims_to_krbtgt(self):
+        self.run_tgs_test(remove_claims=False, to_krbtgt=True)
+
+    def test_tgs_claims_remove_claims_to_krbtgt(self):
+        self.run_tgs_test(remove_claims=True, to_krbtgt=True)
+
     def test_delegation_claims(self):
         self.run_delegation_test(remove_claims=False)
 
     def test_delegation_claims_remove_claims(self):
         self.run_delegation_test(remove_claims=True)
+
+    def test_device_info(self):
+        self._run_device_info_test(to_krbtgt=False)
+
+    def test_device_info_to_krbtgt(self):
+        self._run_device_info_test(to_krbtgt=True)
+
+    def test_device_claims(self):
+        self._run_device_claims_test(to_krbtgt=False)
+
+    def test_device_claims_to_krbtgt(self):
+        self._run_device_claims_test(to_krbtgt=True)
+
+    def run_tgs_test(self, remove_claims, to_krbtgt):
+        samdb = self.get_samdb()
+        user_creds, user_dn = self.create_account(samdb,
+                                                  self.get_new_username(),
+                                                  additional_details={
+                                                      'middleName': 'foo',
+                                                  })
+
+        claim_id = self.get_new_username()
+        self.create_claim(claim_id,
+                          enabled=True,
+                          attribute='middleName',
+                          single_valued=True,
+                          source_type='AD',
+                          for_classes=['user'],
+                          value_type=claims.CLAIM_TYPE_STRING)
+
+        expected_claims = {
+            claim_id: {
+                'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                'type': claims.CLAIM_TYPE_STRING,
+                'values': ['foo'],
+            },
+        }
+
+        # Get a TGT for the user.
+        tgt = self.get_tgt(user_creds, expect_pac=True,
+                           expect_client_claims=True,
+                           expected_client_claims=expected_claims)
+
+        if remove_claims:
+            tgt = self.remove_client_claims(tgt)
+
+        # Change the value of the attribute used for the claim.
+        msg = ldb.Message(ldb.Dn(samdb, user_dn))
+        msg['middleName'] = ldb.MessageElement('bar',
+                                               ldb.FLAG_MOD_REPLACE,
+                                               'middleName')
+        samdb.modify(msg)
+
+        if to_krbtgt:
+            target_creds = self.get_krbtgt_creds()
+            sname = self.get_krbtgt_sname()
+        else:
+            target_creds = self.get_service_creds()
+            sname = None
+
+        # Get a service ticket for the user. The value should not have changed.
+        self.get_service_ticket(
+            tgt, target_creds,
+            sname=sname,
+            expect_pac=True,
+            expect_client_claims=not remove_claims,
+            expected_client_claims=(expected_claims
+                                    if not remove_claims else None))
 
     def run_delegation_test(self, remove_claims):
         service_creds = self.get_service_creds()
@@ -362,80 +442,6 @@ class ClaimsTests(KDCBaseTest):
                                    etypes=etypes,
                                    additional_tickets=additional_tickets)
 
-    def test_tgs_claims(self):
-        self.run_tgs_test(remove_claims=False, to_krbtgt=False)
-
-    def test_tgs_claims_remove_claims(self):
-        self.run_tgs_test(remove_claims=True, to_krbtgt=False)
-
-    def test_tgs_claims_to_krbtgt(self):
-        self.run_tgs_test(remove_claims=False, to_krbtgt=True)
-
-    def test_tgs_claims_remove_claims_to_krbtgt(self):
-        self.run_tgs_test(remove_claims=True, to_krbtgt=True)
-
-    def run_tgs_test(self, remove_claims, to_krbtgt):
-        samdb = self.get_samdb()
-        user_creds, user_dn = self.create_account(samdb,
-                                                  self.get_new_username(),
-                                                  additional_details={
-                                                      'middleName': 'foo',
-                                                  })
-
-        claim_id = self.get_new_username()
-        self.create_claim(claim_id,
-                          enabled=True,
-                          attribute='middleName',
-                          single_valued=True,
-                          source_type='AD',
-                          for_classes=['user'],
-                          value_type=claims.CLAIM_TYPE_STRING)
-
-        expected_claims = {
-            claim_id: {
-                'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
-                'type': claims.CLAIM_TYPE_STRING,
-                'values': ['foo'],
-            },
-        }
-
-        # Get a TGT for the user.
-        tgt = self.get_tgt(user_creds, expect_pac=True,
-                           expect_client_claims=True,
-                           expected_client_claims=expected_claims)
-
-        if remove_claims:
-            tgt = self.remove_client_claims(tgt)
-
-        # Change the value of the attribute used for the claim.
-        msg = ldb.Message(ldb.Dn(samdb, user_dn))
-        msg['middleName'] = ldb.MessageElement('bar',
-                                               ldb.FLAG_MOD_REPLACE,
-                                               'middleName')
-        samdb.modify(msg)
-
-        if to_krbtgt:
-            target_creds = self.get_krbtgt_creds()
-            sname = self.get_krbtgt_sname()
-        else:
-            target_creds = self.get_service_creds()
-            sname = None
-
-        # Get a service ticket for the user. The value should not have changed.
-        self.get_service_ticket(
-            tgt, target_creds,
-            sname=sname,
-            expect_pac=True,
-            expect_client_claims=not remove_claims,
-            expected_client_claims=(expected_claims
-                                    if not remove_claims else None))
-
-    def test_device_info(self):
-        self._run_device_info_test(to_krbtgt=False)
-
-    def test_device_info_to_krbtgt(self):
-        self._run_device_info_test(to_krbtgt=True)
-
     def _run_device_info_test(self, to_krbtgt):
         user_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
@@ -502,12 +508,6 @@ class ClaimsTests(KDCBaseTest):
                                          sname=sname,
                                          etypes=etypes)
         self.check_reply(rep, KRB_TGS_REP)
-
-    def test_device_claims(self):
-        self._run_device_claims_test(to_krbtgt=False)
-
-    def test_device_claims_to_krbtgt(self):
-        self._run_device_claims_test(to_krbtgt=True)
 
     def _run_device_claims_test(self, to_krbtgt):
         user_creds = self.get_cached_creds(
