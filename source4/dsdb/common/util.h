@@ -43,6 +43,7 @@
 #define DSDB_MODIFY_PARTIAL_REPLICA	      0x04000
 #define DSDB_PASSWORD_BYPASS_LAST_SET         0x08000
 #define DSDB_REPLMD_VANISH_LINKS              0x10000
+#define DSDB_MARK_REQ_UNTRUSTED               0x20000
 
 bool is_attr_in_list(const char * const * attrs, const char *attr);
 

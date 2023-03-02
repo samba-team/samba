@@ -4606,6 +4606,10 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_MARK_REQ_UNTRUSTED) {
+		ldb_req_mark_untrusted(req);
+	}
+
 	return LDB_SUCCESS;
 }
 
