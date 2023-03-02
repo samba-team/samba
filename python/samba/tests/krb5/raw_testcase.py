@@ -3571,19 +3571,18 @@ class RawKerberosTest(TestCaseInTempDir):
                 uncompressed_size = client_claims.uncompressed_claims_set_size
                 compression_format = client_claims.compression_format
 
-                if self.strict_checking:
-                    if uncompressed_size < 384:
-                        self.assertEqual(claims.CLAIMS_COMPRESSION_FORMAT_NONE,
-                                         compression_format,
-                                         f'{claims_type} unexpectedly '
-                                         f'compressed ({uncompressed_size} '
-                                         f'bytes uncompressed)')
-                    else:
-                        self.assertEqual(
-                            claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
-                            compression_format,
-                            f'{claims_type} unexpectedly not compressed '
-                            f'({uncompressed_size} bytes uncompressed)')
+                if uncompressed_size < 384:
+                    self.assertEqual(claims.CLAIMS_COMPRESSION_FORMAT_NONE,
+                                     compression_format,
+                                     f'{claims_type} unexpectedly '
+                                     f'compressed ({uncompressed_size} '
+                                     f'bytes uncompressed)')
+                else:
+                    self.assertEqual(
+                        claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
+                        compression_format,
+                        f'{claims_type} unexpectedly not compressed '
+                        f'({uncompressed_size} bytes uncompressed)')
 
                     claims_data = huffman_decompress(claims_data,
                                                      uncompressed_size)
