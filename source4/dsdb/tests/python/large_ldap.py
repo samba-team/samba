@@ -32,7 +32,7 @@ from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 
 from samba.auth import system_session
-from samba import ldb
+from samba import ldb, sd_utils
 from samba.samdb import SamDB
 from samba.ndr import ndr_unpack
 from samba import gensec
@@ -123,6 +123,8 @@ class LargeLDAPTest(samba.tests.TestCase):
     def setUpClass(cls):
         cls.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
         cls.base_dn = cls.ldb.domain_dn()
+
+        cls.sd_utils = sd_utils.SDUtils(cls.ldb)
         cls.USER_NAME = "large_user" + format(random.randint(0, 99999), "05") + "-"
         cls.OU_NAME="large_user_ou" + format(random.randint(0, 99999), "05")
         cls.ou_dn = ldb.Dn(cls.ldb, "ou=" + cls.OU_NAME + "," + str(cls.base_dn))
@@ -249,6 +251,7 @@ class LargeLDAPTest(samba.tests.TestCase):
         self.assertGreater(count, count_jpeg)
 
     def test_timeout(self):
+
         policy_dn = ldb.Dn(self.ldb,
                            'CN=Default Query Policy,CN=Query-Policies,'
                            'CN=Directory Service,CN=Windows NT,CN=Services,'
@@ -286,9 +289,19 @@ class LargeLDAPTest(samba.tests.TestCase):
                       session_info=system_session(lp),
                       lp=lp)
 
+        for x in range(200):
+            user_name = self.USER_NAME + format(x, "03")
+            ace = "(OD;;RP;{6bc69afa-7bd9-4184-88f5-28762137eb6a};;S-1-%d)" % x
+            dn = ldb.Dn(self.ldb, "cn=" + user_name + "," + str(self.ou_dn))
+
+            # add an ACE that denies access to the above random attr
+            # for a not-existing user.  This makes each SD distinct
+            # and so will slow SD parsing.
+            self.sd_utils.dacl_add_ace(dn, ace)
+
         # Create a large search expression that will take a long time to
         # evaluate.
-        expression = '(anr=l)' * 10000
+        expression = f'(jpegPhoto=*X*)' * 1000
         expression = f'(|{expression})'
 
         # Perform the LDAP search.
