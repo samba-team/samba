@@ -543,6 +543,16 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 		     const char *const *attrs,
 		     struct ldb_message *filtered_msg);
 
+/*
+ * filter the specified list of attributes from msg,
+ * adding requested attributes, and perhaps all for *,
+ * but not the DN to filtered_msg.
+ */
+int ldb_filter_attrs_in_place(struct ldb_context *ldb,
+		     const struct ldb_message *msg,
+		     const char *const *attrs,
+		     struct ldb_message *filtered_msg);
+
 /* Have an unpacked ldb message take talloc ownership of its elements. */
 int ldb_msg_elements_take_ownership(struct ldb_message *msg);
 
