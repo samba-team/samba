@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   security descriptror utility functions
+   security descriptor utility functions
 
    Copyright (C) Andrew Tridgell 		2004
 
