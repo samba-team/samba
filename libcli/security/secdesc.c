@@ -450,8 +450,6 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	unsigned int new_ace_list_ndx = 0, i;
 	bool set_inherited_flags = (parent_ctr->type & SEC_DESC_DACL_AUTO_INHERITED);
 
-	TALLOC_CTX *frame;
-
 	*ppsd = NULL;
 	*psize = 0;
 
@@ -473,8 +471,6 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	} else {
 		new_ace_list = NULL;
 	}
-
-	frame = talloc_stackframe();
 
 	for (i = 0; i < the_acl->num_aces; i++) {
 		const struct security_ace *ace = &the_acl->aces[i];
@@ -564,8 +560,6 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 		new_ace_list_ndx++;
 	}
-
-	talloc_free(frame);
 
 	/*
 	 * remove duplicates
