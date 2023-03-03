@@ -2428,6 +2428,27 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
+		/*
+		 * We trust the index for LDB_SCOPE_ONELEVEL
+		 * unless the index key has been truncated.
+		 *
+		 * LDB_SCOPE_BASE is not passed in by our only caller.
+		 */
+		if (ac->scope != LDB_SCOPE_ONELEVEL ||
+		    !ldb_kv->cache->one_level_indexes ||
+		    scope_one_truncation != KEY_NOT_TRUNCATED)
+		{
+			/*
+			 * The redaction callback may be expensive to call if it
+			 * fetches a security descriptor. Check the DN early and
+			 * bail out if it doesn't match the base.
+			 */
+			if (!ldb_match_scope(ldb, ac->base, msg->dn, ac->scope)) {
+				talloc_free(msg);
+				continue;
+			}
+		}
+
 		if (ldb->redact.callback != NULL) {
 			ret = ldb->redact.callback(ldb->redact.module, ac->req, msg);
 			if (ret != LDB_SUCCESS) {
@@ -2436,23 +2457,8 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			}
 		}
 
-		/*
-		 * We trust the index for LDB_SCOPE_ONELEVEL
-		 * unless the index key has been truncated.
-		 *
-		 * LDB_SCOPE_BASE is not passed in by our only caller.
-		 */
-		if (ac->scope == LDB_SCOPE_ONELEVEL &&
-		    ldb_kv->cache->one_level_indexes &&
-		    scope_one_truncation == KEY_NOT_TRUNCATED) {
-			ret = ldb_match_message(ldb, msg, ac->tree,
-						ac->scope, &matched);
-		} else {
-			ret = ldb_match_msg_error(ldb, msg,
-						  ac->tree, ac->base,
-						  ac->scope, &matched);
-		}
-
+		ret = ldb_match_message(ldb, msg, ac->tree,
+					ac->scope, &matched);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(keys);
 			talloc_free(msg);
