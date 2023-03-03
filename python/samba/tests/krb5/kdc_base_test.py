@@ -1854,6 +1854,9 @@ class KDCBaseTest(RawKerberosTest):
             self.assertIsNone(compression,
                               "it's no good specifying compression support "
                               "for the krbtgt")
+            self.assertFalse(extra_enctypes,
+                             "it's no good specifying extra enctypes "
+                             "for the krbtgt")
             creds = self.get_krbtgt_creds()
             sname = self.get_krbtgt_sname()
         else:

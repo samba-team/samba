@@ -485,9 +485,13 @@ class ClaimsTests(KDCBaseTest):
                                 b'tgsarmor')
         armor_key = Krb5EncryptionKey(armor_key, None)
 
+        if to_krbtgt:
+            extra_enctypes = None
+        else:
+            extra_enctypes = security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
         target_creds, sname = self.get_target(
             to_krbtgt,
-            extra_enctypes=security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED)
+            extra_enctypes=extra_enctypes)
         srealm = target_creds.get_realm()
 
         decryption_key = self.TicketDecryptionKey_from_creds(
@@ -588,9 +592,13 @@ class ClaimsTests(KDCBaseTest):
                                 b'tgsarmor')
         armor_key = Krb5EncryptionKey(armor_key, None)
 
+        if to_krbtgt:
+            extra_enctypes = None
+        else:
+            extra_enctypes = security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
         target_creds, sname = self.get_target(
             to_krbtgt,
-            extra_enctypes=security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED)
+            extra_enctypes=extra_enctypes)
         srealm = target_creds.get_realm()
 
         decryption_key = self.TicketDecryptionKey_from_creds(
