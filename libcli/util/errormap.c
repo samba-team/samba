@@ -1,37 +1,37 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  error mapping functions
  *  Copyright (C) Andrew Tridgell 2001
  *  Copyright (C) Andrew Bartlett 2001
  *  Copyright (C) Tim Potter 2000
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "includes.h"
 
-/* This map was extracted by the ERRMAPEXTRACT smbtorture command. 
-   The setup was a Samba HEAD (2002-01-03) PDC and an Win2k member 
+/* This map was extracted by the ERRMAPEXTRACT smbtorture command.
+   The setup was a Samba HEAD (2002-01-03) PDC and an Win2k member
    workstation.  The PDC was modified (by using the 'name_to_nt_status'
    authentication module) to convert the username (in hex) into the
-   corresponding NTSTATUS error return. 
+   corresponding NTSTATUS error return.
 
    By opening two nbt sessions to the Win2k workstation, one negotiating
    DOS and one negotiating NT errors it was possible to extract the
-   error mapping.  (Because the server only supplies NT errors, the 
+   error mapping.  (Because the server only supplies NT errors, the
    NT4 workstation had to use its own error tables to convert these
-   to dos errors). 
+   to dos errors).
 
    Some errors show up as 'squashed' because the NT error connection
    got back a different error to the one it sent, so a mapping could
@@ -81,7 +81,7 @@ static const struct {
 /** Session setup succeeded.  This shouldn't happen...*/
 /** NT error on DOS connection! (NT_STATUS_OK) */
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_MORE_PROCESSING_REQUIRED to NT_STATUS_OK 
+	 from NT_STATUS_MORE_PROCESSING_REQUIRED to NT_STATUS_OK
 	 during the session setup }
 */
 #if 0
@@ -99,7 +99,7 @@ static const struct {
 	{ERRDOS,	193,	NT_STATUS_INVALID_FILE_FOR_SECTION},
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_ALREADY_COMMITTED},
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_ACCESS_DENIED to NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE 
+	 from NT_STATUS_ACCESS_DENIED to NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE
 	 during the session setup }
 */
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_ACCESS_DENIED},
@@ -169,7 +169,7 @@ static const struct {
 	{ERRHRD,	ERRgeneral,	NT_STATUS_INVALID_ACCOUNT_NAME},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_USER_EXISTS},
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_NO_SUCH_USER to NT_STATUS_LOGON_FAILURE 
+	 from NT_STATUS_NO_SUCH_USER to NT_STATUS_LOGON_FAILURE
 	 during the session setup }
 */
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_NO_SUCH_USER},
@@ -179,7 +179,7 @@ static const struct {
 	{ERRHRD,	ERRgeneral,	NT_STATUS_MEMBER_NOT_IN_GROUP},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_LAST_ADMIN},
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_WRONG_PASSWORD to NT_STATUS_LOGON_FAILURE 
+	 from NT_STATUS_WRONG_PASSWORD to NT_STATUS_LOGON_FAILURE
 	 during the session setup }
 */
 	{ERRSRV,	ERRbadpw,	NT_STATUS_WRONG_PASSWORD},
@@ -232,7 +232,7 @@ static const struct {
 	{ERRHRD,	ERRgeneral,	NT_STATUS_FILE_INVALID},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_ALLOTTED_SPACE_EXCEEDED},
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_INSUFFICIENT_RESOURCES to NT_STATUS_INSUFF_SERVER_RESOURCES 
+	 from NT_STATUS_INSUFFICIENT_RESOURCES to NT_STATUS_INSUFF_SERVER_RESOURCES
 	 during the session setup }
 */
 	{ERRDOS,	ERRnomem,	NT_STATUS_INSUFFICIENT_RESOURCES},
@@ -477,7 +477,7 @@ static const struct {
 	{ERRDOS,	19,	NT_STATUS_TOO_LATE},
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_NO_TRUST_LSA_SECRET},
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_NO_TRUST_SAM_ACCOUNT to NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE 
+	 from NT_STATUS_NO_TRUST_SAM_ACCOUNT to NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE
 	 during the session setup }
 */
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_NO_TRUST_SAM_ACCOUNT},
@@ -497,7 +497,7 @@ static const struct {
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT},
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT},
 /*	{ This NT error code was 'sqashed'
-	 from NT_STATUS_DOMAIN_TRUST_INCONSISTENT to NT_STATUS_LOGON_FAILURE 
+	 from NT_STATUS_DOMAIN_TRUST_INCONSISTENT to NT_STATUS_LOGON_FAILURE
 	 during the session setup }
 */
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_DOMAIN_TRUST_INCONSISTENT},
@@ -1183,7 +1183,7 @@ void ntstatus_to_dos(NTSTATUS ntstatus, uint8_t *eclass, uint32_t *ecode)
 		return;
 	}
 	for (i=0; NT_STATUS_V(ntstatus_to_dos_map[i].ntstatus); i++) {
-		if (NT_STATUS_V(ntstatus) == 
+		if (NT_STATUS_V(ntstatus) ==
 		    NT_STATUS_V(ntstatus_to_dos_map[i].ntstatus)) {
 			*eclass = ntstatus_to_dos_map[i].dos_class;
 			*ecode = ntstatus_to_dos_map[i].dos_code;
@@ -1204,14 +1204,14 @@ NTSTATUS werror_to_ntstatus(WERROR error)
 	if (W_ERROR_IS_OK(error)) return NT_STATUS_OK;
 
 	for (i=0; !W_ERROR_IS_OK(werror_to_ntstatus_map[i].werror); i++) {
-		if (W_ERROR_V(error) == 
+		if (W_ERROR_V(error) ==
 		    W_ERROR_V(werror_to_ntstatus_map[i].werror)) {
 			return werror_to_ntstatus_map[i].ntstatus;
 		}
 	}
 
 	for (i=0; NT_STATUS_V(ntstatus_to_werror_map[i].ntstatus); i++) {
-		if (W_ERROR_V(error) == 
+		if (W_ERROR_V(error) ==
 		    W_ERROR_V(ntstatus_to_werror_map[i].werror)) {
 			return ntstatus_to_werror_map[i].ntstatus;
 		}
@@ -1229,7 +1229,7 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 	int i;
 	if (NT_STATUS_IS_OK(error)) return WERR_OK;
 	for (i=0; NT_STATUS_V(ntstatus_to_werror_map[i].ntstatus); i++) {
-		if (NT_STATUS_V(error) == 
+		if (NT_STATUS_V(error) ==
 		    NT_STATUS_V(ntstatus_to_werror_map[i].ntstatus)) {
 			return ntstatus_to_werror_map[i].werror;
 		}

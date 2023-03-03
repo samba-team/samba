@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    NT error code constants
    Copyright (C) Andrew Tridgell              1992-2000
@@ -25,10 +25,10 @@
 
 #include "libcli/util/ntstatus_gen.h"
 
-/* the following rather strange looking definitions of NTSTATUS 
+/* the following rather strange looking definitions of NTSTATUS
    are there in order to catch common coding errors where different error types
    are mixed up. This is especially important as we slowly convert Samba
-   from using bool for internal functions 
+   from using bool for internal functions
 */
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)

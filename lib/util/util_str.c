@@ -1,22 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
-   
+
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
    Copyright (C) Martin Pool     2003
    Copyright (C) James Peach	 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -59,7 +59,7 @@ _PUBLIC_ bool conv_str_bool(const char * str, bool * val)
 }
 
 /**
- * Convert a size specification like 16K into an integral number of bytes. 
+ * Convert a size specification like 16K into an integral number of bytes.
  **/
 _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 {
@@ -132,7 +132,7 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2)
 		return true;
 	if (!s1 || !s2)
 		return false;
-  
+
 	return strcasecmp_m(s1,s2) == 0;
 }
 

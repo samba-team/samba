@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    security descriptor description language functions
 
    Copyright (C) Andrew Tridgell 		2005
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -52,7 +52,7 @@ static bool sddl_map_flag(
 /*
   map a series of letter codes into a uint32_t
 */
-static bool sddl_map_flags(const struct flag_map *map, const char *str, 
+static bool sddl_map_flags(const struct flag_map *map, const char *str,
 			   uint32_t *pflags, size_t *plen)
 {
 	const char *str0 = str;
@@ -336,7 +336,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 		return false;
 	}
 	ace->flags = v;
-	
+
 	/* access mask */
 	ok = sddl_decode_access(tok[2], &ace->access_mask);
 	if (!ok) {
@@ -345,7 +345,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* object */
 	if (tok[3][0] != 0) {
-		NTSTATUS status = GUID_from_string(tok[3], 
+		NTSTATUS status = GUID_from_string(tok[3],
 						   &ace->object.object.type.type);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
@@ -355,7 +355,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* inherit object */
 	if (tok[4][0] != 0) {
-		NTSTATUS status = GUID_from_string(tok[4], 
+		NTSTATUS status = GUID_from_string(tok[4],
 						   &ace->object.object.inherited_type.inherited_type);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
@@ -385,7 +385,7 @@ static const struct flag_map acl_flags[] = {
 /*
   decode an ACL
 */
-static struct security_acl *sddl_decode_acl(struct security_descriptor *sd, 
+static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 					    const char **sddlp, uint32_t *flags,
 					    const struct dom_sid *domain_sid)
 {
@@ -420,13 +420,13 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 			talloc_free(acl);
 			return NULL;
 		}
-		acl->aces = talloc_realloc(acl, acl->aces, struct security_ace, 
+		acl->aces = talloc_realloc(acl, acl->aces, struct security_ace,
 					   acl->num_aces+1);
 		if (acl->aces == NULL) {
 			talloc_free(acl);
 			return NULL;
 		}
-		if (!sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces], 
+		if (!sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces],
 				     astr, domain_sid)) {
 			talloc_free(acl);
 			return NULL;
@@ -461,7 +461,7 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 
 	sd->revision = SECURITY_DESCRIPTOR_REVISION_1;
 	sd->type     = SEC_DESC_SELF_RELATIVE;
-	
+
 	while (*sddl) {
 		uint32_t flags;
 		char c = sddl[0];
@@ -554,7 +554,7 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	sidstr = dom_sid_string(mem_ctx, sid);
 	if (sidstr == NULL) return NULL;
 
-	/* seen if its a well known sid */ 
+	/* seen if its a well known sid */
 	for (i=0;sid_codes[i].sid;i++) {
 		if (strcmp(sidstr, sid_codes[i].sid) == 0) {
 			talloc_free(sidstr);
@@ -572,7 +572,7 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			}
 		}
 	}
-	
+
 	talloc_free(sidstr);
 
 	/* TODO: encode well known sids as two letter codes */
@@ -732,5 +732,3 @@ failed:
 	talloc_free(sddl);
 	return NULL;
 }
-
-

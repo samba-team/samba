@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    security descriptror utility functions
 
    Copyright (C) Andrew Tridgell 		2004
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -87,7 +87,7 @@ struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
  failed:
 	talloc_free (nacl);
 	return NULL;
-	
+
 }
 
 struct security_acl *security_acl_concatenate(TALLOC_CTX *mem_ctx,
@@ -140,10 +140,10 @@ struct security_acl *security_acl_concatenate(TALLOC_CTX *mem_ctx,
 
 }
 
-/* 
+/*
    talloc and copy a security descriptor
  */
-struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx, 
+struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 						     const struct security_descriptor *osd)
 {
 	struct security_descriptor *nsd;
@@ -159,7 +159,7 @@ struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 			goto failed;
 		}
 	}
-	
+
 	if (osd->group_sid) {
 		nsd->group_sid = dom_sid_dup(nsd, osd->group_sid);
 		if (nsd->group_sid == NULL) {
@@ -552,7 +552,7 @@ bool security_ace_equal(const struct security_ace *ace1,
 /*
   compare two security acl structures
 */
-bool security_acl_equal(const struct security_acl *acl1, 
+bool security_acl_equal(const struct security_acl *acl1,
 			const struct security_acl *acl2)
 {
 	uint32_t i;
@@ -565,13 +565,13 @@ bool security_acl_equal(const struct security_acl *acl1,
 	for (i=0;i<acl1->num_aces;i++) {
 		if (!security_ace_equal(&acl1->aces[i], &acl2->aces[i])) return false;
 	}
-	return true;	
+	return true;
 }
 
 /*
   compare two security descriptors.
 */
-bool security_descriptor_equal(const struct security_descriptor *sd1, 
+bool security_descriptor_equal(const struct security_descriptor *sd1,
 			       const struct security_descriptor *sd2)
 {
 	if (sd1 == sd2) return true;
@@ -584,15 +584,15 @@ bool security_descriptor_equal(const struct security_descriptor *sd1,
 	if (!security_acl_equal(sd1->sacl, sd2->sacl))      return false;
 	if (!security_acl_equal(sd1->dacl, sd2->dacl))      return false;
 
-	return true;	
+	return true;
 }
 
 /*
   compare two security descriptors, but allow certain (missing) parts
   to be masked out of the comparison
 */
-bool security_descriptor_mask_equal(const struct security_descriptor *sd1, 
-				    const struct security_descriptor *sd2, 
+bool security_descriptor_mask_equal(const struct security_descriptor *sd1,
+				    const struct security_descriptor *sd2,
 				    uint32_t mask)
 {
 	if (sd1 == sd2) return true;
@@ -605,7 +605,7 @@ bool security_descriptor_mask_equal(const struct security_descriptor *sd1,
 	if ((mask & SEC_DESC_DACL_PRESENT) && !security_acl_equal(sd1->dacl, sd2->dacl))      return false;
 	if ((mask & SEC_DESC_SACL_PRESENT) && !security_acl_equal(sd1->sacl, sd2->sacl))      return false;
 
-	return true;	
+	return true;
 }
 
 
