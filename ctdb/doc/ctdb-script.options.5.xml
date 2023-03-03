@@ -73,6 +73,29 @@
       </para>
     </refsect2>
 
+    <refsect2>
+      <title>Monitoring Thresholds</title>
+
+      <para>
+	Event scripts can monitor resources or services.  When a
+	problem is detected, it may be better to warn about a problem
+	rather than to immediately fail monitoring and mark a node as
+	unhealthy.  CTDB provides support for event scripts to do
+	threshold-based monitoring.
+      </para>
+
+      <para>
+	A threshold setting looks like
+	<parameter>WARNING_THRESHOLD<optional>:ERROR_THRESHOLD</optional></parameter>.
+	If the number of problems is ≥ WARNING_THRESHOLD then the
+	script will log a warning and continue.  If the number
+	problems is ≥ ERROR_THRESHOLD then the script will log an
+	error and exit with failure, causing monitoring to fail.  Note
+	that ERROR_THRESHOLD is optional, and follows the optional
+	colon (:) separator.
+      </para>
+    </refsect2>
+
   </refsect1>
 
   <refsect1>

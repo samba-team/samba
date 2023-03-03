@@ -760,6 +760,114 @@ ctdb_counter_get()
 	echo $_val
 }
 
+#
+# Fail counter/threshold combination to control warnings and node unhealthy
+#
+
+_failcount_validate_threshold()
+{
+	case "$1" in
+	"") return 1 ;; # A failure that doesn't need a warning
+	*)
+		if echo "$1" | grep -qx '[0-9]*'; then
+			return 0
+		fi
+
+		echo "WARNING: ${1} is an invalid threshold in \"${2}\" check"
+		return 1
+		;;
+	esac
+}
+
+_failcount_common()
+{
+	_thing="$1"
+
+	_counter=$(echo "$_thing" | sed -e 's@/@_SLASH_@g' -e 's@ @_@g')
+}
+
+failcount_init()
+{
+	_thing="$1"
+
+	_failcount_common "$_thing"
+
+	ctdb_counter_init "$_counter"
+}
+
+failcount_reset()
+{
+	_thing="$1"
+
+	_failcount_common "$_thing"
+
+	_failcount=$(ctdb_counter_get "$_counter")
+	if [ "$_failcount" -eq 0 ]; then
+		return
+	fi
+
+	printf 'NOTICE: %s: no longer failing\n' "$_thing"
+	ctdb_counter_init "$_counter"
+}
+
+failcount_incr()
+{
+	_thing="$1"
+	_thresholds="$2"
+	_output="$3"
+
+	_failcount_common "$_thing"
+
+	ctdb_counter_incr "$_counter"
+	_failcount=$(ctdb_counter_get "$_counter")
+
+	case "$_thresholds" in
+	*:*)
+		_warn_threshold="${_thresholds%:*}"
+		_unhealthy_threshold="${_thresholds#*:}"
+		;;
+	"")
+		_warn_threshold=1
+		_unhealthy_threshold=""
+		;;
+	*)
+		_warn_threshold="$_thresholds"
+		_unhealthy_threshold=""
+		;;
+	esac
+
+	if _failcount_validate_threshold "$_unhealthy_threshold" "$_thing"; then
+		if [ "$_failcount" -ge "$_unhealthy_threshold" ]; then
+			printf 'ERROR: %s: fail count %d >= threshold %d\n' \
+			       "$_thing" \
+			       "$_failcount" \
+			       "$_unhealthy_threshold"
+			# Only print output when exceeding the
+			# unhealthy threshold
+			if [ "$_failcount" -eq "$_unhealthy_threshold" ] && \
+				   [ -n "$_output" ]; then
+				echo "$_output"
+			fi
+			exit 1
+		fi
+	fi
+
+	if _failcount_validate_threshold "$_warn_threshold" "$_thing"; then
+		if [ "$_failcount" -lt "$_warn_threshold" ]; then
+			return 0
+		fi
+	fi
+
+	printf 'WARNING: %s: fail count %d >= threshold %d\n' \
+	       "$_thing" \
+	       "$_failcount" \
+	       "$_warn_threshold"
+	if [ "$_failcount" -eq "$_warn_threshold" ] && [ -n "$_output" ]; then
+		# Only print output when exceeding the warning threshold
+		echo "$_output"
+	fi
+}
+
 ########################################################
 
 # ctdb_setup_state_dir <type> <name>
