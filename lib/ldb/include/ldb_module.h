@@ -542,6 +542,10 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 		     const struct ldb_message *msg,
 		     const char *const *attrs,
 		     struct ldb_message *filtered_msg);
+
+/* Have an unpacked ldb message take talloc ownership of its elements. */
+int ldb_msg_elements_take_ownership(struct ldb_message *msg);
+
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
  *

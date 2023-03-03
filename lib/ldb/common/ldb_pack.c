@@ -690,6 +690,7 @@ static int ldb_unpack_data_flags_v1(struct ldb_context *ldb,
 		element->values = NULL;
 		if ((flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) && element->num_values == 1) {
 			element->values = &ldb_val_single_array[nelem];
+			element->flags |= LDB_FLAG_INTERNAL_SHARED_VALUES;
 		} else if (element->num_values != 0) {
 			element->values = talloc_array(message->elements,
 						       struct ldb_val,
@@ -932,6 +933,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 		if ((flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) &&
 		    element->num_values == 1) {
 			element->values = &ldb_val_single_array[nelem];
+			element->flags |= LDB_FLAG_INTERNAL_SHARED_VALUES;
 		} else if (element->num_values != 0) {
 			element->values = talloc_array(message->elements,
 						       struct ldb_val,
@@ -1258,4 +1260,43 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 failed:
 	TALLOC_FREE(filtered_msg->elements);
 	return -1;
+}
+
+/* Have an unpacked ldb message take talloc ownership of its elements. */
+int ldb_msg_elements_take_ownership(struct ldb_message *msg)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < msg->num_elements; i++) {
+		struct ldb_message_element *el = &msg->elements[i];
+		const char *name;
+		unsigned int j;
+
+		name = talloc_strdup(msg->elements,
+				     el->name);
+		if (name == NULL) {
+			return -1;
+		}
+		el->name = name;
+
+		if (el->flags & LDB_FLAG_INTERNAL_SHARED_VALUES) {
+			struct ldb_val *values = talloc_memdup(msg->elements, el->values,
+							       sizeof(struct ldb_val) * el->num_values);
+			if (values == NULL) {
+				return -1;
+			}
+			el->values = values;
+			el->flags &= ~LDB_FLAG_INTERNAL_SHARED_VALUES;
+		}
+
+		for (j = 0; j < el->num_values; j++) {
+			struct ldb_val val = ldb_val_dup(el->values, &el->values[j]);
+			if (val.data == NULL && el->values[j].length != 0) {
+				return -1;
+			}
+			el->values[j] = val;
+		}
+	}
+
+	return LDB_SUCCESS;
 }

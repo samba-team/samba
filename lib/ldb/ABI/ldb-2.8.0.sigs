@@ -176,6 +176,7 @@ ldb_msg_element_compare_name: int (struct ldb_message_element *, struct ldb_mess
 ldb_msg_element_equal_ordered: bool (const struct ldb_message_element *, const struct ldb_message_element *)
 ldb_msg_element_is_inaccessible: bool (const struct ldb_message_element *)
 ldb_msg_element_mark_inaccessible: void (struct ldb_message_element *)
+ldb_msg_elements_take_ownership: int (struct ldb_message *)
 ldb_msg_find_attr_as_bool: int (const struct ldb_message *, const char *, int)
 ldb_msg_find_attr_as_dn: struct ldb_dn *(struct ldb_context *, TALLOC_CTX *, const struct ldb_message *, const char *)
 ldb_msg_find_attr_as_double: double (const struct ldb_message *, const char *, double)
