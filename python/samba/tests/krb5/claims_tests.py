@@ -855,6 +855,8 @@ class ClaimsTests(KDCBaseTest):
             'class': 'user',
         },
         {
+            # This test fails on Windows, which for an integer syntax claim
+            # issues corrupt data shifted four bytes to the right.
             'name': 'integer syntax',
             'claims': [
                 {
@@ -866,14 +868,28 @@ class ClaimsTests(KDCBaseTest):
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_INT64,
                     'values': [3, 42, -999, 1000, 20000],
-                    'expected_values': [3 << 32,
-                                        42 << 32,
-                                        -999 << 32,
-                                        1000 << 32 | 0xffffffff,
-                                        20000 << 32],
                     'expected': True,
                 },
             ],
+            'class': 'user',
+        },
+        {
+            # This test fails on Windows, which for an integer syntax claim
+            # issues corrupt data that cannot be NDR unpacked.
+            'name': 'integer syntax, duplicate claim',
+            'claims': [
+                {
+                    # 2.5.5.9
+                    'enabled': True,
+                    'attribute': 'localeID',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['user'],
+                    'value_type': claims.CLAIM_TYPE_INT64,
+                    'values': [3, 42, -999, 1000, 20000],
+                    'expected': True,
+                },
+            ] * 2,  # Create two integer syntax claims.
             'class': 'user',
         },
         {

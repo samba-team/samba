@@ -86,6 +86,8 @@
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_incorrect_value_type.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_incorrect_value_type_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax.ad_dc
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax_duplicate_claim.ad_dc
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax_duplicate_claim_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax_to_self.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax_wrong_value_type.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_integer_syntax_wrong_value_type_to_self.ad_dc
