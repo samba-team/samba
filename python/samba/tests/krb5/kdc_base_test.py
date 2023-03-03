@@ -1849,8 +1849,15 @@ class KDCBaseTest(RawKerberosTest):
     # Get the credentials and server principal name of either the krbtgt, or a
     # specially created account, with resource SID compression either supported
     # or unsupported.
-    def get_target(self, to_krbtgt, *, compression=None, extra_enctypes=0):
+    def get_target(self,
+                   to_krbtgt, *,
+                   compound_id=None,
+                   compression=None,
+                   extra_enctypes=0):
         if to_krbtgt:
+            self.assertIsNone(compound_id,
+                              "it's no good specifying compound id support "
+                              "for the krbtgt")
             self.assertIsNone(compression,
                               "it's no good specifying compression support "
                               "for the krbtgt")
@@ -1867,6 +1874,7 @@ class KDCBaseTest(RawKerberosTest):
                         security.KERB_ENCTYPE_RC4_HMAC_MD5 |
                         security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 |
                         extra_enctypes,
+                    'compound_id_support': compound_id,
                     'sid_compression_support': compression,
                 })
             target_name = creds.get_username()
