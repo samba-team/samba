@@ -119,6 +119,11 @@ struct ldb_context {
 		struct ldb_extended_match_entry *prev, *next;
 	} *extended_match_rules;
 
+	struct {
+		struct ldb_module *module;
+		ldb_redact_fn callback;
+	} redact;
+
 	/* custom utf8 functions */
 	struct ldb_utf8_fns utf8_fns;
 

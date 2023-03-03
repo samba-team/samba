@@ -102,6 +102,12 @@ struct ldb_module;
  */
 #define LDB_FLAG_INTERNAL_SHARED_VALUES 0x200
 
+/*
+ * this attribute has been access checked. We know the user has the right to
+ * view it. Used internally in Samba aclread module.
+ */
+#define LDB_FLAG_INTERNAL_ACCESS_CHECKED 0x400
+
 /* an extended match rule that always fails to match */
 #define SAMBA_LDAP_MATCH_ALWAYS_FALSE "1.3.6.1.4.1.7165.4.5.1"
 
@@ -519,6 +525,11 @@ int ldb_register_extended_match_rule(struct ldb_context *ldb,
 void ldb_msg_element_mark_inaccessible(struct ldb_message_element *el);
 bool ldb_msg_element_is_inaccessible(const struct ldb_message_element *el);
 void ldb_msg_remove_inaccessible(struct ldb_message *msg);
+
+typedef int (*ldb_redact_fn)(struct ldb_module *, struct ldb_request *, struct ldb_message *);
+int ldb_register_redact_callback(struct ldb_context *ldb,
+			       ldb_redact_fn redact_fn,
+			       struct ldb_module *module);
 
 /*
  * these pack/unpack functions are exposed in the library for use by

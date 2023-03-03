@@ -490,7 +490,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         self.make_attr_confidential()
 
         self.assert_conf_attr_searches(has_rights_to=0)
-        dc_mode = self.guess_dc_mode()
+        dc_mode = DC_MODE_RETURN_ALL
         self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
         self.assert_attr_visible(expect_attr=False)
 
@@ -503,7 +503,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         self.make_attr_confidential()
 
         self.assert_conf_attr_searches(has_rights_to=0)
-        dc_mode = self.guess_dc_mode()
+        dc_mode = DC_MODE_RETURN_ALL
         self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
         self.assert_attr_visible(expect_attr=False)
 
@@ -566,7 +566,7 @@ class ConfidentialAttrTest(ConfidentialAttrCommon):
         self.make_attr_confidential()
 
         self.assert_conf_attr_searches(has_rights_to=0)
-        dc_mode = self.guess_dc_mode()
+        dc_mode = DC_MODE_RETURN_ALL
         self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
         self.assert_attr_visible(expect_attr=False)
 
@@ -741,7 +741,7 @@ class ConfidentialAttrTestDenyAcl(ConfidentialAttrCommon):
 
         # the user shouldn't be able to see the attribute anymore
         self.assert_conf_attr_searches(has_rights_to="deny-one")
-        dc_mode = self.guess_dc_mode()
+        dc_mode = DC_MODE_RETURN_ALL
         self.assert_negative_searches(has_rights_to="deny-one",
                                       dc_mode=dc_mode)
         self.assert_attr_visible(expect_attr=False)
@@ -917,7 +917,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
 
         self.assert_conf_attr_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
-        dc_mode = self.guess_dc_mode()
+        dc_mode = DC_MODE_RETURN_ALL
         self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
 
         # as a final sanity-check, make sure the admin can still see the attr
@@ -1012,7 +1012,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # check we can't see the objects now, even with using dirsync controls
         self.assert_conf_attr_searches(has_rights_to=0)
         self.assert_attr_visible(expect_attr=False)
-        dc_mode = self.guess_dc_mode()
+        dc_mode = DC_MODE_RETURN_ALL
         self.assert_negative_searches(has_rights_to=0, dc_mode=dc_mode)
 
         # now delete the users (except for the user whose LDB connection
