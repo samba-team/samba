@@ -1352,6 +1352,25 @@ class ClaimsTests(KDCBaseTest):
             ],
             'class': 'user',
         },
+        {
+            'name': 'large compressed claim',
+            'claims': [
+                {
+                    # 2.5.5.12
+                    'enabled': True,
+                    'attribute': 'carLicense',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['user'],
+                    'value_type': claims.CLAIM_TYPE_STRING,
+                    # a large value that should cause the claim to be
+                    # compressed.
+                    'values': ['a' * 10000],
+                    'expected': True,
+                },
+            ],
+            'class': 'user',
+        },
     ]
 
 
