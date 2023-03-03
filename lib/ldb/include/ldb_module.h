@@ -490,6 +490,9 @@ int ldb_init_module(const char *version);
  */
 bool ldb_dn_replace_components(struct ldb_dn *dn, struct ldb_dn *new_dn);
 
+/* Get the attribute (if any) associated with the top node of a parse tree. */
+const char *ldb_parse_tree_get_attr(const struct ldb_parse_tree *tree);
+
 /*
   walk a parse tree, calling the provided callback on each node
 */
