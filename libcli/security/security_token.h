@@ -24,6 +24,8 @@
 #ifndef _LIBCLI_SECURITY_SECURITY_TOKEN_H_
 #define _LIBCLI_SECURITY_SECURITY_TOKEN_H_
 
+#include "replace.h"
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/security.h"
 
 #define PRIMARY_USER_SID_INDEX 0
