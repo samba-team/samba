@@ -37,20 +37,25 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/util/binsearch.h"
 
 #undef strcasecmp
+
+struct ldb_attr_vec {
+	const char** attrs;
+	size_t len;
+	size_t capacity;
+};
 
 struct aclread_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
-	const char * const *attrs;
 	const struct dsdb_schema *schema;
 	uint32_t sd_flags;
 	bool added_nTSecurityDescriptor;
 	bool added_instanceType;
 	bool added_objectSid;
 	bool added_objectClass;
-	bool indirsync;
 
 	bool do_list_object_initialized;
 	bool do_list_object;
@@ -60,6 +65,11 @@ struct aclread_context {
 	/* cache on the last parent we checked in this search */
 	struct ldb_dn *last_parent_dn;
 	int last_parent_check_ret;
+
+	bool am_administrator;
+
+	bool got_tree_attrs;
+	struct ldb_attr_vec tree_attrs;
 };
 
 struct aclread_private {
@@ -68,6 +78,7 @@ struct aclread_private {
 	/* cache of the last SD we read during any search */
 	struct security_descriptor *sd_cached;
 	struct ldb_val sd_cached_blob;
+	const char **password_attrs;
 };
 
 struct access_check_context {
@@ -76,6 +87,183 @@ struct access_check_context {
 	const struct dom_sid *sid;
 	const struct dsdb_class *objectclass;
 };
+
+static void acl_element_mark_access_checked(struct ldb_message_element *el)
+{
+	el->flags |= LDB_FLAG_INTERNAL_ACCESS_CHECKED;
+}
+
+static bool acl_element_is_access_checked(const struct ldb_message_element *el)
+{
+	return (el->flags & LDB_FLAG_INTERNAL_ACCESS_CHECKED) != 0;
+}
+
+static bool attr_in_vec(const struct ldb_attr_vec *vec, const char *attr)
+{
+	const char **found = NULL;
+
+	if (vec == NULL) {
+		return false;
+	}
+
+	BINARY_ARRAY_SEARCH_V(vec->attrs,
+			      vec->len,
+			      attr,
+			      ldb_attr_cmp,
+			      found);
+	return found != NULL;
+}
+
+static int acl_attr_cmp_fn(const char *a, const char **b)
+{
+	return ldb_attr_cmp(a, *b);
+}
+
+static int attr_vec_add_unique(TALLOC_CTX *mem_ctx,
+			       struct ldb_attr_vec *vec,
+			       const char *attr)
+{
+	const char **exact = NULL;
+	const char **next = NULL;
+	size_t next_idx = 0;
+
+	BINARY_ARRAY_SEARCH_GTE(vec->attrs,
+				vec->len,
+				attr,
+				acl_attr_cmp_fn,
+				exact,
+				next);
+	if (exact != NULL) {
+		return LDB_SUCCESS;
+	}
+
+	if (vec->len == SIZE_MAX) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (next != NULL) {
+		next_idx = next - vec->attrs;
+	}
+
+	if (vec->len >= vec->capacity) {
+		const char **attrs = NULL;
+
+		if (vec->capacity == 0) {
+			vec->capacity = 4;
+		} else {
+			if (vec->capacity > SIZE_MAX / 2) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			vec->capacity *= 2;
+		}
+
+		attrs = talloc_realloc(mem_ctx, vec->attrs, const char *, vec->capacity);
+		if (attrs == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		vec->attrs = attrs;
+	}
+	SMB_ASSERT(vec->len < vec->capacity);
+
+	if (next == NULL) {
+		vec->attrs[vec->len++] = attr;
+	} else {
+		size_t count = (vec->len - next_idx) * sizeof (vec->attrs[0]);
+		memmove(&vec->attrs[next_idx + 1],
+			&vec->attrs[next_idx],
+			count);
+
+		vec->attrs[next_idx] = attr;
+		++vec->len;
+	}
+
+	return LDB_SUCCESS;
+}
+
+static bool ldb_attr_always_present(const char *attr)
+{
+	static const char * const attrs_always_present[] = {
+		"objectClass",
+		"distinguishedName",
+		"name",
+		"objectGUID",
+		NULL
+	};
+
+	return ldb_attr_in_list(attrs_always_present, attr);
+}
+
+static bool ldb_attr_always_visible(const char *attr)
+{
+	static const char * const attrs_always_visible[] = {
+		"isDeleted",
+		"isRecycled",
+		NULL
+	};
+
+	return ldb_attr_in_list(attrs_always_visible, attr);
+}
+
+/* Collect a list of attributes required to match a given parse tree. */
+static int ldb_parse_tree_collect_acl_attrs(struct ldb_module *module,
+					    TALLOC_CTX *mem_ctx,
+					    struct ldb_attr_vec *attrs,
+					    const struct ldb_parse_tree *tree)
+{
+	const char *attr = NULL;
+	unsigned int i;
+	int ret;
+
+	if (tree == NULL) {
+		return 0;
+	}
+
+	switch (tree->operation) {
+	case LDB_OP_OR:
+	case LDB_OP_AND:		/* attributes stored in list of subtrees */
+		for (i = 0; i < tree->u.list.num_elements; i++) {
+			ret = ldb_parse_tree_collect_acl_attrs(module, mem_ctx,
+							       attrs, tree->u.list.elements[i]);
+			if (ret) {
+				return ret;
+			}
+		}
+		return 0;
+
+	case LDB_OP_NOT:		/* attributes stored in single subtree */
+		return ldb_parse_tree_collect_acl_attrs(module, mem_ctx, attrs, tree->u.isnot.child);
+
+	case LDB_OP_PRESENT:
+		/*
+		 * If the search filter is checking for an attribute's presence,
+		 * and the attribute is always present, we can skip access
+		 * rights checks. Every object has these attributes, and so
+		 * there's no security reason to hide their presence.
+		 * Note: the acl.py tests (e.g. test_search1()) rely on this
+		 * exception.  I.e. even if we lack Read Property (RP) rights
+		 * for a child object, it should still appear as a visible
+		 * object in 'objectClass=*' searches, so long as we have List
+		 * Contents (LC) rights for the object.
+		 */
+		if (ldb_attr_always_present(tree->u.present.attr)) {
+			/* No need to check this attribute. */
+			return 0;
+		}
+
+		FALL_THROUGH;
+	case LDB_OP_EQUALITY:
+		if (ldb_attr_always_visible(tree->u.present.attr)) {
+			/* No need to check this attribute. */
+			return 0;
+		}
+
+		FALL_THROUGH;
+	default:			/* single attribute in tree */
+		attr = ldb_parse_tree_get_attr(tree);
+		return attr_vec_add_unique(mem_ctx, attrs, attr);
+	}
+}
 
 /*
  * the object has a parent, so we have to check for visibility
@@ -308,22 +496,38 @@ static int aclread_get_sd_from_ldb_message(struct aclread_context *ac,
 	}
 
 	talloc_unlink(private_data, private_data->sd_cached_blob.data);
-	if (ac->added_nTSecurityDescriptor) {
-		private_data->sd_cached_blob = sd_element->values[0];
-		talloc_steal(private_data, sd_element->values[0].data);
-	} else {
-		private_data->sd_cached_blob = ldb_val_dup(private_data,
-							   &sd_element->values[0]);
-		if (private_data->sd_cached_blob.data == NULL) {
-			TALLOC_FREE(*sd);
-			return ldb_operr(ldb);
-		}
+	private_data->sd_cached_blob = ldb_val_dup(private_data,
+						   &sd_element->values[0]);
+	if (private_data->sd_cached_blob.data == NULL) {
+		TALLOC_FREE(*sd);
+		return ldb_operr(ldb);
 	}
 
 	talloc_unlink(private_data, private_data->sd_cached);
 	private_data->sd_cached = *sd;
 
 	return LDB_SUCCESS;
+}
+
+/* Check whether the attribute is a password attribute. */
+static bool attr_is_secret(const char *attr, const struct aclread_private *private_data)
+{
+	unsigned i;
+
+	if (private_data->password_attrs == NULL) {
+		return false;
+	}
+
+	for (i = 0; private_data->password_attrs[i] != NULL; ++i) {
+		const char *password_attr = private_data->password_attrs[i];
+		if (ldb_attr_cmp(attr, password_attr) != 0) {
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 /*
@@ -361,98 +565,64 @@ static uint32_t get_attr_access_mask(const struct dsdb_attribute *attr,
 	return access_mask;
 }
 
-/* helper struct for traversing the attributes in the search-tree */
-struct parse_tree_aclread_ctx {
-	struct aclread_context *ac;
-	TALLOC_CTX *mem_ctx;
-	const struct dom_sid *sid;
-	struct ldb_dn *dn;
-	struct security_descriptor *sd;
-	const struct dsdb_class *objectclass;
-	bool suppress_result;
-};
-
 /*
- * Checks that the user has sufficient access rights to view an attribute
+ * Checks that the user has sufficient access rights to view an attribute, else
+ * marks it as inaccessible.
  */
-static int check_attr_access_rights(TALLOC_CTX *mem_ctx, const char *attr_name,
-				    struct aclread_context *ac,
-				    struct security_descriptor *sd,
-				    const struct dsdb_class *objectclass,
-				    const struct dom_sid *sid, struct ldb_dn *dn)
+static int acl_redact_attr(TALLOC_CTX *mem_ctx,
+			   struct ldb_message_element *el,
+			   struct aclread_context *ac,
+			   const struct aclread_private *private_data,
+			   const struct ldb_message *msg,
+			   const struct dsdb_schema *schema,
+			   const struct security_descriptor *sd,
+			   const struct dom_sid *sid,
+			   const struct dsdb_class *objectclass)
 {
 	int ret;
 	const struct dsdb_attribute *attr = NULL;
 	uint32_t access_mask;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 
-	attr = dsdb_attribute_by_lDAPDisplayName(ac->schema, attr_name);
+	if (attr_is_secret(el->name, private_data)) {
+		ldb_msg_element_mark_inaccessible(el);
+		return LDB_SUCCESS;
+	}
+
+	/* Look up the attribute in the schema. */
+	attr = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 	if (!attr) {
 		ldb_debug_set(ldb,
-			      LDB_DEBUG_TRACE,
-			      "acl_read: %s cannot find attr[%s] in schema,"
-			      "ignoring\n",
-			      ldb_dn_get_linearized(dn), attr_name);
-		return LDB_SUCCESS;
+			      LDB_DEBUG_FATAL,
+			      "acl_read: %s cannot find attr[%s] in schema\n",
+			      ldb_dn_get_linearized(msg->dn), el->name);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	access_mask = get_attr_access_mask(attr, ac->sd_flags);
-
-	/* the access-mask should be non-zero. Skip attribute otherwise */
 	if (access_mask == 0) {
 		DBG_ERR("Could not determine access mask for attribute %s\n",
-			attr_name);
+			el->name);
+		ldb_msg_element_mark_inaccessible(el);
 		return LDB_SUCCESS;
 	}
+
+	/* We must check whether the user has rights to view the attribute. */
 
 	ret = acl_check_access_on_attribute(ac->module, mem_ctx, sd, sid,
 					    access_mask, attr, objectclass);
 
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-		return ret;
-	}
-
-	if (ret != LDB_SUCCESS) {
+		ldb_msg_element_mark_inaccessible(el);
+	} else if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "acl_read: %s check attr[%s] gives %s - %s\n",
-			      ldb_dn_get_linearized(dn), attr_name,
+			      ldb_dn_get_linearized(msg->dn), el->name,
 			      ldb_strerror(ret), ldb_errstring(ldb));
 		return ret;
 	}
 
 	return LDB_SUCCESS;
-}
-
-/*
- * Returns the attribute name for this particular level of a search operation
- * parse-tree.
- */
-static const char * parse_tree_get_attr(struct ldb_parse_tree *tree)
-{
-	const char *attr = NULL;
-
-	switch (tree->operation) {
-	case LDB_OP_EQUALITY:
-	case LDB_OP_GREATER:
-	case LDB_OP_LESS:
-	case LDB_OP_APPROX:
-		attr = tree->u.equality.attr;
-		break;
-	case LDB_OP_SUBSTRING:
-		attr = tree->u.substring.attr;
-		break;
-	case LDB_OP_PRESENT:
-		attr = tree->u.present.attr;
-		break;
-	case LDB_OP_EXTENDED:
-		attr = tree->u.extended.attr;
-		break;
-
-	/* we'll check LDB_OP_AND/_OR/_NOT children later on in the walk */
-	default:
-		break;
-	}
-	return attr;
 }
 
 static int setup_access_check_context(struct aclread_context *ac,
@@ -519,103 +689,6 @@ static int setup_access_check_context(struct aclread_context *ac,
 }
 
 /*
- * Checks a single attribute in the search parse-tree to make sure the user has
- * sufficient rights to view it.
- */
-static int parse_tree_check_attr_access(struct ldb_parse_tree *tree,
-					void *private_context)
-{
-	struct parse_tree_aclread_ctx *ctx = NULL;
-	const char *attr_name = NULL;
-	int ret;
-	static const char * const attrs_always_present[] = {
-		"objectClass",
-		"distinguishedName",
-		"name",
-		"objectGUID",
-		NULL
-	};
-
-	ctx = (struct parse_tree_aclread_ctx *)private_context;
-
-	/*
-	 * we can skip any further checking if we already know that this object
-	 * shouldn't be visible in this user's search
-	 */
-	if (ctx->suppress_result) {
-		return LDB_SUCCESS;
-	}
-
-	/* skip this level of the search-tree if it has no attribute to check */
-	attr_name = parse_tree_get_attr(tree);
-	if (attr_name == NULL) {
-		return LDB_SUCCESS;
-	}
-
-	/*
-	 * If the search filter is checking for an attribute's presence, and the
-	 * attribute is always present, we can skip access rights checks. Every
-	 * object has these attributes, and so there's no security reason to
-	 * hide their presence.
-	 * Note: the acl.py tests (e.g. test_search1()) rely on this exception.
-	 * I.e. even if we lack Read Property (RP) rights for a child object, it
-	 * should still appear as a visible object in 'objectClass=*' searches,
-	 * so long as we have List Contents (LC) rights for the object.
-	 */
-	if (tree->operation == LDB_OP_PRESENT &&
-	    is_attr_in_list(attrs_always_present, attr_name)) {
-		return LDB_SUCCESS;
-	}
-
-	ret = check_attr_access_rights(ctx->mem_ctx, attr_name, ctx->ac,
-				       ctx->sd, ctx->objectclass, ctx->sid,
-				       ctx->dn);
-
-	/*
-	 * if the user does not have the rights to view this attribute, then we
-	 * should not return the object as a search result, i.e. act as if the
-	 * object doesn't exist (for this particular user, at least)
-	 */
-	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-		ctx->suppress_result = true;
-		return LDB_SUCCESS;
-	}
-
-	return ret;
-}
-
-/*
- * Traverse the search-tree to check that the user has sufficient access rights
- * to view all the attributes.
- */
-static int check_search_ops_access(struct aclread_context *ac,
-				   TALLOC_CTX *mem_ctx,
-				   struct security_descriptor *sd,
-				   const struct dsdb_class *objectclass,
-				   const struct dom_sid *sid, struct ldb_dn *dn,
-				   bool *suppress_result)
-{
-	int ret;
-	struct parse_tree_aclread_ctx ctx = { 0 };
-	struct ldb_parse_tree *tree = ac->req->op.search.tree;
-
-	ctx.ac = ac;
-	ctx.mem_ctx = mem_ctx;
-	ctx.suppress_result = false;
-	ctx.sid = sid;
-	ctx.dn = dn;
-	ctx.sd = sd;
-	ctx.objectclass = objectclass;
-
-	/* walk the search tree, checking each attribute as we go */
-	ret = ldb_parse_tree_walk(tree, parse_tree_check_attr_access, &ctx);
-
-	/* return whether this search result should be hidden to this user */
-	*suppress_result = ctx.suppress_result;
-	return ret;
-}
-
-/*
  * Whether this attribute was added to perform access checks and must be
  * removed.
  */
@@ -650,17 +723,14 @@ static bool should_remove_attr(const char *attr, const struct aclread_context *a
 
 static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ldb_context *ldb;
 	struct aclread_context *ac;
+	struct aclread_private *private_data = NULL;
 	struct ldb_message *msg;
 	int ret;
 	unsigned int i;
 	struct access_check_context acl_ctx;
-	TALLOC_CTX *tmp_ctx;
-	bool suppress_result = false;
 
 	ac = talloc_get_type_abort(req->context, struct aclread_context);
-	ldb = ldb_module_get_ctx(ac->module);
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR );
 	}
@@ -668,14 +738,9 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, ares->controls,
 				       ares->response, ares->error);
 	}
-	tmp_ctx = talloc_new(ac);
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		msg = ares->message;
-		ret = setup_access_check_context(ac, msg, &acl_ctx);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
 
 		if (!ldb_dn_is_null(msg->dn)) {
 			/*
@@ -684,131 +749,87 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			 */
 			ret = aclread_check_object_visible(ac, msg, req);
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				talloc_free(tmp_ctx);
 				return LDB_SUCCESS;
 			} else if (ret != LDB_SUCCESS) {
+				struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 					      "acl_read: %s check parent %s - %s\n",
 					      ldb_dn_get_linearized(msg->dn),
 					      ldb_strerror(ret),
 					      ldb_errstring(ldb));
-				goto fail;
+				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
 		}
 
 		/* for every element in the message check RP */
-		for (i=0; i < msg->num_elements; i++) {
-			const struct dsdb_attribute *attr;
-			uint32_t access_mask;
-			attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
-								 msg->elements[i].name);
-			if (!attr) {
-				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-					      "acl_read: %s cannot find attr[%s] in of schema\n",
-					      ldb_dn_get_linearized(msg->dn),
-					      msg->elements[i].name);
-				ret = LDB_ERR_OPERATIONS_ERROR;
-				goto fail;
-			}
+		for (i = 0; i < msg->num_elements; ++i) {
+			struct ldb_message_element *el = &msg->elements[i];
+
 			/* Remove attributes added to perform access checks. */
-			if (should_remove_attr(msg->elements[i].name, ac)) {
-				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
+			if (should_remove_attr(el->name, ac)) {
+				ldb_msg_element_mark_inaccessible(el);
 				continue;
 			}
 
-			access_mask = get_attr_access_mask(attr, ac->sd_flags);
-
-			if (access_mask == 0) {
-				ldb_msg_element_mark_inaccessible(&msg->elements[i]);
+			if (acl_element_is_access_checked(el)) {
+				/* We will have already checked this attribute. */
 				continue;
 			}
-
-			ret = acl_check_access_on_attribute(ac->module,
-							    tmp_ctx,
-							    acl_ctx.sd,
-							    acl_ctx.sid,
-							    access_mask,
-							    attr,
-							    objectclass);
 
 			/*
-			 * Dirsync control needs the replpropertymetadata attribute
-			 * so return it as it will be removed by the control
-			 * in anycase.
+			 * We need to fetch the security descriptor to check
+			 * this attribute.
 			 */
-			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				bool in_search_filter;
-
-				/* check if attr is part of the search filter */
-				in_search_filter = dsdb_attr_in_parse_tree(ac->req->op.search.tree,
-								msg->elements[i].name);
-
-				if (in_search_filter) {
-
-					/*
-					 * We are doing dirysnc answers
-					 * and the object shouldn't be returned (normally)
-					 * but we will return it without replPropertyMetaData
-					 * so that the dirysync module will do what is needed
-					 * (remove the object if it is not deleted, or return
-					 * just the objectGUID if it's deleted).
-					 */
-					if (ac->indirsync) {
-						ldb_msg_remove_attr(msg, "replPropertyMetaData");
-						break;
-					} else {
-
-						/* do not return this entry */
-						talloc_free(tmp_ctx);
-						return LDB_SUCCESS;
-					}
-				} else {
-					ldb_msg_element_mark_inaccessible(&msg->elements[i]);
-				}
-			} else if (ret != LDB_SUCCESS) {
-				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-					      "acl_read: %s check attr[%s] gives %s - %s\n",
-					      ldb_dn_get_linearized(msg->dn),
-					      msg->elements[i].name,
-					      ldb_strerror(ret),
-					      ldb_errstring(ldb));
-				goto fail;
-			}
+			break;
 		}
 
-		/*
-		 * check access rights for the search attributes, as well as the
-		 * attribute values actually being returned
-		 */
-		ret = check_search_ops_access(ac, tmp_ctx, acl_ctx.sd, acl_ctx.objectclass, acl_ctx.sid,
-					      msg->dn, &suppress_result);
+		if (i == msg->num_elements) {
+			/* All elements have been checked. */
+			goto reply_entry_done;
+		}
+
+		ret = setup_access_check_context(ac, msg, &acl_ctx);
 		if (ret != LDB_SUCCESS) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "acl_read: %s check search ops %s - %s\n",
-				      ldb_dn_get_linearized(msg->dn),
-				      ldb_strerror(ret), ldb_errstring(ldb));
-			goto fail;
+			return ret;
 		}
 
-		if (suppress_result) {
+		private_data = talloc_get_type_abort(ldb_module_get_private(ac->module),
+						     struct aclread_private);
+
+		for (/* begin where we left off */; i < msg->num_elements; ++i) {
+			struct ldb_message_element *el = &msg->elements[i];
+
+			/* Remove attributes added to perform access checks. */
+			if (should_remove_attr(el->name, ac)) {
+				ldb_msg_element_mark_inaccessible(el);
+				continue;
+			}
+
+			if (acl_element_is_access_checked(el)) {
+				/* We will have already checked this attribute. */
+				continue;
+			}
 
 			/*
-			 * As per the above logic, we strip replPropertyMetaData
-			 * out of the msg so that the dirysync module will do
-			 * what is needed (return just the objectGUID if it's,
-			 * deleted, or remove the object if it is not).
+			 * We need to check whether the attribute is secret,
+			 * confidential, or access-controlled.
 			 */
-			if (ac->indirsync) {
-				ldb_msg_remove_attr(msg, "replPropertyMetaData");
-			} else {
-				talloc_free(tmp_ctx);
-				return LDB_SUCCESS;
+			ret = acl_redact_attr(ac,
+					      el,
+					      ac,
+					      private_data,
+					      msg,
+					      ac->schema,
+					      acl_ctx.sd,
+					      acl_ctx.sid,
+					      acl_ctx.objectclass);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
 		}
 
+	reply_entry_done:
 		ldb_msg_remove_inaccessible(msg);
-
-		talloc_free(tmp_ctx);
 
 		ac->num_entries++;
 		return ldb_module_send_entry(ac->req, msg, ares->controls);
@@ -830,9 +851,6 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	}
 	return LDB_SUCCESS;
-fail:
-	talloc_free(tmp_ctx);
-	return ldb_module_done(ac->req, NULL, NULL, ret);
 }
 
 
@@ -843,7 +861,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	struct aclread_context *ac;
 	struct ldb_request *down_req;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	uint32_t flags = ldb_req_get_custom_flags(req);
 	struct ldb_result *res;
 	struct aclread_private *p;
 	bool need_sd = false;
@@ -878,15 +895,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	}
 	ac->module = module;
 	ac->req = req;
-	ac->schema = dsdb_get_schema(ldb, req);
-	if (flags & DSDB_ACL_CHECKS_DIRSYNC_FLAG) {
-		ac->indirsync = true;
-	} else {
-		ac->indirsync = false;
-	}
-	if (!ac->schema) {
-		return ldb_operr(ldb);
-	}
 
 	attrs = req->op.search.attrs;
 	if (attrs == NULL) {
@@ -943,7 +951,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		ac->added_nTSecurityDescriptor = true;
 	}
 
-	ac->attrs = req->op.search.attrs;
+	ac->am_administrator = dsdb_module_am_administrator(module);
 
 	/* check accessibility of base */
 	if (!ldb_dn_is_null(req->op.search.base)) {
@@ -987,19 +995,270 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * We provide 'ac' as the control value, which is then used by the
+	 * callback to avoid double-work.
+	 */
+	ret = ldb_request_add_control(down_req, DSDB_CONTROL_ACL_READ_OID, false, ac);
+	if (ret != LDB_SUCCESS) {
+			return ldb_error(ldb, ret,
+					"acl_read: Error adding acl_read control.");
+	}
+
 	return ldb_next_request(module, down_req);
+}
+
+/*
+ * Here we mark inaccessible attributes known to be looked for in the
+ * filter. This only redacts attributes found in the search expression. If any
+ * extended attribute match rules examine different attributes without their own
+ * access control checks, a security bypass is possible.
+ */
+static int acl_redact_msg_for_filter(struct ldb_module *module, struct ldb_request *req, struct ldb_message *msg)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const struct aclread_private *private_data = NULL;
+	struct ldb_control *control = NULL;
+	struct aclread_context *ac = NULL;
+	struct access_check_context acl_ctx;
+	int ret;
+	unsigned i;
+
+	/*
+	 * The private data contains a list of attributes which are to be
+	 * considered secret.
+	 */
+	private_data = talloc_get_type(ldb_module_get_private(module), struct aclread_private);
+	if (private_data == NULL) {
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "aclread_private data is missing");
+	}
+	if (!private_data->enabled) {
+		return LDB_SUCCESS;
+	}
+
+	control = ldb_request_get_control(req, DSDB_CONTROL_ACL_READ_OID);
+	if (control == NULL) {
+		/*
+		 * We've bypassed the acl_read module for this request, and
+		 * should skip redaction in this case.
+		 */
+		return LDB_SUCCESS;
+	}
+
+	ac = talloc_get_type_abort(control->data, struct aclread_context);
+
+	if (!ac->got_tree_attrs) {
+		ret = ldb_parse_tree_collect_acl_attrs(module, ac, &ac->tree_attrs, req->op.search.tree);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ac->got_tree_attrs = true;
+	}
+
+	for (i = 0; i < msg->num_elements; ++i) {
+		struct ldb_message_element *el = &msg->elements[i];
+
+		/* Is the attribute mentioned in the search expression? */
+		if (attr_in_vec(&ac->tree_attrs, el->name)) {
+			/*
+			 * We need to fetch the security descriptor to check
+			 * this element.
+			 */
+			break;
+		}
+
+		/*
+		 * This attribute is not in the search filter, so we can leave
+		 * handling it till aclread_callback(), by which time we know
+		 * this object is a match. This saves work checking ACLs if the
+		 * search is unindexed and most objects don't match the filter.
+		 */
+	}
+
+	if (i == msg->num_elements) {
+		/* All elements have been checked. */
+		return LDB_SUCCESS;
+	}
+
+	ret = setup_access_check_context(ac, msg, &acl_ctx);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* For every element in the message and the parse tree, check RP. */
+
+	for (/* begin where we left off */; i < msg->num_elements; ++i) {
+		struct ldb_message_element *el = &msg->elements[i];
+
+		/* Is the attribute mentioned in the search expression? */
+		if (!attr_in_vec(&ac->tree_attrs, el->name)) {
+			/*
+			 * If not, leave it for later and check the next
+			 * attribute.
+			 */
+			continue;
+		}
+
+		/*
+		 * We need to check whether the attribute is secret,
+		 * confidential, or access-controlled.
+		 */
+		ret = acl_redact_attr(ac,
+				      el,
+				      ac,
+				      private_data,
+				      msg,
+				      ac->schema,
+				      acl_ctx.sd,
+				      acl_ctx.sid,
+				      acl_ctx.objectclass);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		acl_element_mark_access_checked(el);
+	}
+
+	return LDB_SUCCESS;
 }
 
 static int aclread_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	unsigned int i, n, j;
+	TALLOC_CTX *mem_ctx = NULL;
+	int ret;
+	bool userPassword_support;
+	static const char * const attrs[] = { "passwordAttribute", NULL };
+	static const char * const secret_attrs[] = {
+		DSDB_SECRET_ATTRIBUTES
+	};
+	struct ldb_result *res;
+	struct ldb_message *msg;
+	struct ldb_message_element *password_attributes;
 	struct aclread_private *p = talloc_zero(module, struct aclread_private);
 	if (p == NULL) {
 		return ldb_module_oom(module);
 	}
 	p->enabled = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"), NULL, "acl", "search", true);
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "acl_module_init: Unable to register sd_flags control with rootdse!\n");
+		return ldb_operr(ldb);
+	}
+
 	ldb_module_set_private(module, p);
-	return ldb_next_init(module);
+
+	mem_ctx = talloc_new(module);
+	if (!mem_ctx) {
+		return ldb_oom(ldb);
+	}
+
+	ret = dsdb_module_search_dn(module, mem_ctx, &res,
+				    ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
+				    attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM,
+				    NULL);
+	if (ret != LDB_SUCCESS) {
+		goto done;
+	}
+	if (res->count == 0) {
+		goto done;
+	}
+
+	if (res->count > 1) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	msg = res->msgs[0];
+
+	password_attributes = ldb_msg_find_element(msg, "passwordAttribute");
+	if (!password_attributes) {
+		goto done;
+	}
+	p->password_attrs = talloc_array(p, const char *,
+			password_attributes->num_values +
+			ARRAY_SIZE(secret_attrs) + 1);
+	if (!p->password_attrs) {
+		talloc_free(mem_ctx);
+		return ldb_oom(ldb);
+	}
+
+	n = 0;
+	for (i=0; i < password_attributes->num_values; i++) {
+		p->password_attrs[n] = (const char *)password_attributes->values[i].data;
+		talloc_steal(p->password_attrs, password_attributes->values[i].data);
+		n++;
+	}
+
+	for (i=0; i < ARRAY_SIZE(secret_attrs); i++) {
+		bool found = false;
+
+		for (j=0; j < n; j++) {
+			if (strcasecmp(p->password_attrs[j], secret_attrs[i]) == 0) {
+				found = true;
+				break;
+			}
+		}
+
+		if (found) {
+			continue;
+		}
+
+		p->password_attrs[n] = talloc_strdup(p->password_attrs,
+						     secret_attrs[i]);
+		if (p->password_attrs[n] == NULL) {
+			talloc_free(mem_ctx);
+			return ldb_oom(ldb);
+		}
+		n++;
+	}
+	p->password_attrs[n] = NULL;
+
+	ret = ldb_register_redact_callback(ldb, acl_redact_msg_for_filter, module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	ret = ldb_next_init(module);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (p->password_attrs != NULL) {
+		/*
+		 * Check this after the modules have be initialised so we can
+		 * actually read the backend DB.
+		 */
+		userPassword_support = dsdb_user_password_support(module,
+								  module,
+								  NULL);
+		if (!userPassword_support) {
+			/*
+			 * Remove the userPassword attribute, as it is not
+			 * considered secret.
+			 */
+			for (i = 0; p->password_attrs[i] != NULL; ++i) {
+				if (ldb_attr_cmp(p->password_attrs[i], "userPassword") == 0) {
+					break;
+				}
+			}
+
+			/* Shift following elements backwards by one. */
+			for (; p->password_attrs[i] != NULL; ++i) {
+				p->password_attrs[i] = p->password_attrs[i + 1];
+			}
+		}
+	}
+	return ret;
 }
 
 static const struct ldb_module_ops ldb_aclread_module_ops = {

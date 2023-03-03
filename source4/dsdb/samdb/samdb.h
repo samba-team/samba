@@ -232,6 +232,8 @@ struct dsdb_control_transaction_identifier {
  */
 #define DSDB_CONTROL_FORCE_ALLOW_VALIDATED_DNS_HOSTNAME_SPN_WRITE_OID "1.3.6.1.4.1.7165.4.3.35"
 
+#define DSDB_CONTROL_ACL_READ_OID "1.3.6.1.4.1.7165.4.3.37"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
