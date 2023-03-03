@@ -31,10 +31,18 @@ class MatchRulesTests(samba.tests.TestCase):
         self.ou_groups = "OU=groups,%s" % self.ou
         self.ou_computers = "OU=computers,%s" % self.ou
 
+        try:
+            self.ldb.delete(self.ou, ["tree_delete:1"])
+        except LdbError as e:
+            pass
+
         # Add a organizational unit to create objects
         self.ldb.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
+
+        self.addCleanup(self.ldb.delete, self.ou, controls=['tree_delete:0'])
+
 
         # Add the following OU hierarchy and set otherWellKnownObjects,
         # which has BinaryDN syntax:
