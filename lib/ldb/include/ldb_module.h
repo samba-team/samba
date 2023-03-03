@@ -545,13 +545,12 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 
 /*
  * filter the specified list of attributes from msg,
- * adding requested attributes, and perhaps all for *,
- * but not the DN to filtered_msg.
+ * adding requested attributes, and perhaps all for *.
+ * Unlike ldb_filter_attrs(), the DN will not be added
+ * if it is missing.
  */
-int ldb_filter_attrs_in_place(struct ldb_context *ldb,
-		     const struct ldb_message *msg,
-		     const char *const *attrs,
-		     struct ldb_message *filtered_msg);
+int ldb_filter_attrs_in_place(struct ldb_message *msg,
+			      const char *const *attrs);
 
 /* Have an unpacked ldb message take talloc ownership of its elements. */
 int ldb_msg_elements_take_ownership(struct ldb_message *msg);
