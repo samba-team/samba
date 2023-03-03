@@ -83,17 +83,41 @@ static int teardown(void **state)
 	return 0;
 }
 
+static void msg_add_dn(struct ldb_message *msg)
+{
+	const char *dn_attr = "distinguishedName";
+	char *dn = NULL;
+	int ret;
+
+	assert_null(ldb_msg_find_element(msg, dn_attr));
+
+	assert_non_null(msg->dn);
+	dn = ldb_dn_alloc_linearized(msg, msg->dn);
+	assert_non_null(dn);
+
+	/*
+	 * The message's elements must be talloc allocated to call
+	 * ldb_msg_add_steal_string().
+	 */
+	msg->elements = talloc_memdup(msg,
+				      msg->elements,
+				      msg->num_elements * sizeof(msg->elements[0]));
+	assert_non_null(msg->elements);
+
+	ret = ldb_msg_add_steal_string(msg, dn_attr, dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+}
 
 /*
  * Test against a record with only one attribute, matching the one in
  * the list
  */
-static void test_filter_attrs_one_attr_matched(void **state)
+static void test_filter_attrs_in_place_one_attr_matched(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"foo", NULL};
 
@@ -107,32 +131,25 @@ static void test_filter_attrs_one_attr_matched(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
 
-	/*
-	 * assert the ldb_filter_attrs_in_place does not read or modify
-	 * filtered_msg.dn in this case
-	 */
-	assert_null(filtered_msg->dn);
-	assert_int_equal(filtered_msg->num_elements, 1);
-	assert_string_equal(filtered_msg->elements[0].name, "foo");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_non_null(msg->dn);
+	assert_int_equal(msg->num_elements, 1);
+	assert_string_equal(msg->elements[0].name, "foo");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value, strlen(value));
 }
 
@@ -140,12 +157,12 @@ static void test_filter_attrs_one_attr_matched(void **state)
  * Test against a record with only one attribute, matching the one of
  * the multiple attributes in the list
  */
-static void test_filter_attrs_one_attr_matched_of_many(void **state)
+static void test_filter_attrs_in_place_one_attr_matched_of_many(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"foo", "bar", "baz", NULL};
 
@@ -159,32 +176,25 @@ static void test_filter_attrs_one_attr_matched_of_many(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
 
-	/*
-	 * assert the ldb_filter_attrs_in_place does not read or modify
-	 * filtered_msg.dn in this case
-	 */
-	assert_null(filtered_msg->dn);
-	assert_int_equal(filtered_msg->num_elements, 1);
-	assert_string_equal(filtered_msg->elements[0].name, "foo");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_non_null(msg->dn);
+	assert_int_equal(msg->num_elements, 1);
+	assert_string_equal(msg->elements[0].name, "foo");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value, strlen(value));
 }
 
@@ -192,12 +202,12 @@ static void test_filter_attrs_one_attr_matched_of_many(void **state)
  * Test against a record with only one attribute, matching both
  * attributes in the list
  */
-static void test_filter_attrs_two_attr_matched_attrs(void **state)
+static void test_filter_attrs_in_place_two_attr_matched_attrs(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	/* deliberatly the other order */
 	const char *attrs[] = {"bar", "foo", NULL};
@@ -226,40 +236,33 @@ static void test_filter_attrs_two_attr_matched_attrs(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 2);
+	assert_int_equal(msg->num_elements, 2);
 
-	/*
-	 * assert the ldb_filter_attrs_in_place does not read or modify
-	 * filtered_msg.dn in this case
-	 */
-	assert_null(filtered_msg->dn);
+	assert_non_null(msg->dn);
 
 	/* Assert that DB order is preserved */
-	assert_string_equal(filtered_msg->elements[0].name, "foo");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_string_equal(msg->elements[0].name, "foo");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value1));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value1, strlen(value1));
-	assert_string_equal(filtered_msg->elements[1].name, "bar");
-	assert_int_equal(filtered_msg->elements[1].num_values, 1);
-	assert_int_equal(filtered_msg->elements[1].values[0].length,
+	assert_string_equal(msg->elements[1].name, "bar");
+	assert_int_equal(msg->elements[1].num_values, 1);
+	assert_int_equal(msg->elements[1].values[0].length,
 			 strlen(value2));
-	assert_memory_equal(filtered_msg->elements[1].values[0].data,
+	assert_memory_equal(msg->elements[1].values[0].data,
 			    value2, strlen(value2));
 }
 
@@ -267,14 +270,13 @@ static void test_filter_attrs_two_attr_matched_attrs(void **state)
  * Test against a record with two attributes, only of which is in
  * the list
  */
-static void test_filter_attrs_two_attr_matched_one_attr(void **state)
+static void test_filter_attrs_in_place_two_attr_matched_one_attr(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
-	/* deliberatly the other order */
 	const char *attrs[] = {"bar", NULL};
 
 	char value1[] = "The value.......end";
@@ -288,7 +290,6 @@ static void test_filter_attrs_two_attr_matched_one_attr(void **state)
 		.length = strlen(value2)
 	};
 
-	/* foo and bar are the other order to in attrs */
 	struct ldb_message_element elements[] = {
 		{
 			.name = "foo",
@@ -301,34 +302,27 @@ static void test_filter_attrs_two_attr_matched_one_attr(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 1);
+	assert_int_equal(msg->num_elements, 1);
 
-	/*
-	 * assert the ldb_filter_attrs_in_place does not read or modify
-	 * filtered_msg.dn in this case
-	 */
-	assert_null(filtered_msg->dn);
+	assert_non_null(msg->dn);
 
 	/* Assert that DB order is preserved */
-	assert_string_equal(filtered_msg->elements[0].name, "bar");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_string_equal(msg->elements[0].name, "bar");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value2));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value2, strlen(value2));
 }
 
@@ -336,14 +330,13 @@ static void test_filter_attrs_two_attr_matched_one_attr(void **state)
  * Test against a record with two attributes, both matching the one
  * specified attribute in the list (a corrupt record)
  */
-static void test_filter_attrs_two_dup_attr_matched_one_attr(void **state)
+static void test_filter_attrs_in_place_two_dup_attr_matched_one_attr(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
-	/* deliberatly the other order */
 	const char *attrs[] = {"bar", NULL};
 
 	char value1[] = "The value.......end";
@@ -357,7 +350,6 @@ static void test_filter_attrs_two_dup_attr_matched_one_attr(void **state)
 		.length = strlen(value2)
 	};
 
-	/* foo and bar are the other order to in attrs */
 	struct ldb_message_element elements[] = {
 		{
 			.name = "bar",
@@ -370,34 +362,49 @@ static void test_filter_attrs_two_dup_attr_matched_one_attr(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
 
-	/* This should fail the pidgenhole test */
-	assert_int_equal(ret, -1);
-	assert_null(filtered_msg->elements);
+	ret = ldb_filter_attrs_in_place(msg, attrs);
+
+	/* Both elements match the filter */
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_int_equal(msg->num_elements, 2);
+
+	assert_non_null(msg->dn);
+
+	/* Assert that DB order is preserved */
+	assert_string_equal(msg->elements[0].name, "bar");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
+			 strlen(value1));
+	assert_memory_equal(msg->elements[0].values[0].data,
+			    value1, strlen(value1));
+
+	assert_string_equal(msg->elements[1].name, "bar");
+	assert_int_equal(msg->elements[1].num_values, 1);
+	assert_int_equal(msg->elements[1].values[0].length,
+			 strlen(value2));
+	assert_memory_equal(msg->elements[1].values[0].data,
+			    value2, strlen(value2));
 }
 
 /*
  * Test against a record with two attributes, both matching the one
  * specified attribute in the list (a corrupt record)
  */
-static void test_filter_attrs_two_dup_attr_matched_dup(void **state)
+static void test_filter_attrs_in_place_two_dup_attr_matched_dup(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"bar", "bar", NULL};
 
@@ -412,7 +419,6 @@ static void test_filter_attrs_two_dup_attr_matched_dup(void **state)
 		.length = strlen(value2)
 	};
 
-	/* foo and bar are the other order to in attrs */
 	struct ldb_message_element elements[] = {
 		{
 			.name = "bar",
@@ -425,35 +431,33 @@ static void test_filter_attrs_two_dup_attr_matched_dup(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 
 	/* This does not fail the pidgenhole test */
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_int_equal(filtered_msg->num_elements, 2);
+	assert_int_equal(msg->num_elements, 2);
 
 	/* Assert that DB order is preserved */
-	assert_string_equal(filtered_msg->elements[0].name, "bar");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_string_equal(msg->elements[0].name, "bar");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value1));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value1, strlen(value1));
-	assert_string_equal(filtered_msg->elements[1].name, "bar");
-	assert_int_equal(filtered_msg->elements[1].num_values, 1);
-	assert_int_equal(filtered_msg->elements[1].values[0].length,
+	assert_string_equal(msg->elements[1].name, "bar");
+	assert_int_equal(msg->elements[1].num_values, 1);
+	assert_int_equal(msg->elements[1].values[0].length,
 			 strlen(value2));
-	assert_memory_equal(filtered_msg->elements[1].values[0].data,
+	assert_memory_equal(msg->elements[1].values[0].data,
 			    value2, strlen(value2));
 }
 
@@ -461,12 +465,12 @@ static void test_filter_attrs_two_dup_attr_matched_dup(void **state)
  * Test against a record with two attributes, both matching one of the
  * specified attributes in the list (a corrupt record)
  */
-static void test_filter_attrs_two_dup_attr_matched_one_of_two(void **state)
+static void test_filter_attrs_in_place_two_dup_attr_matched_one_of_two(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"bar", "foo", NULL};
 
@@ -481,7 +485,6 @@ static void test_filter_attrs_two_dup_attr_matched_one_of_two(void **state)
 		.length = strlen(value2)
 	};
 
-	/* foo and bar are the other order to in attrs */
 	struct ldb_message_element elements[] = {
 		{
 			.name = "bar",
@@ -494,35 +497,33 @@ static void test_filter_attrs_two_dup_attr_matched_one_of_two(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 
 	/* This does not fail the pidgenhole test */
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_int_equal(filtered_msg->num_elements, 2);
+	assert_int_equal(msg->num_elements, 2);
 
 	/* Assert that DB order is preserved */
-	assert_string_equal(filtered_msg->elements[0].name, "bar");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_string_equal(msg->elements[0].name, "bar");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value1));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value1, strlen(value1));
-	assert_string_equal(filtered_msg->elements[1].name, "bar");
-	assert_int_equal(filtered_msg->elements[1].num_values, 1);
-	assert_int_equal(filtered_msg->elements[1].values[0].length,
+	assert_string_equal(msg->elements[1].name, "bar");
+	assert_int_equal(msg->elements[1].num_values, 1);
+	assert_int_equal(msg->elements[1].values[0].length,
 			 strlen(value2));
-	assert_memory_equal(filtered_msg->elements[1].values[0].data,
+	assert_memory_equal(msg->elements[1].values[0].data,
 			    value2, strlen(value2));
 }
 
@@ -530,12 +531,12 @@ static void test_filter_attrs_two_dup_attr_matched_one_of_two(void **state)
  * Test against a record with two attributes against * (but not the
  * other named attribute) (a corrupt record)
  */
-static void test_filter_attrs_two_dup_attr_matched_star(void **state)
+static void test_filter_attrs_in_place_two_dup_attr_matched_star(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"*", "foo", NULL};
 
@@ -550,7 +551,6 @@ static void test_filter_attrs_two_dup_attr_matched_star(void **state)
 		.length = strlen(value2)
 	};
 
-	/* foo and bar are the other order to in attrs */
 	struct ldb_message_element elements[] = {
 		{
 			.name = "bar",
@@ -563,60 +563,52 @@ static void test_filter_attrs_two_dup_attr_matched_star(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	/* Needed as * implies distinguishedName */
-	filtered_msg->dn = in.dn;
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 
 	/* This does not fail the pidgenhole test */
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_int_equal(filtered_msg->num_elements, 3);
+	assert_int_equal(msg->num_elements, 3);
 
 	/* Assert that DB order is preserved */
-	assert_string_equal(filtered_msg->elements[0].name, "bar");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_int_equal(filtered_msg->elements[0].values[0].length,
+	assert_string_equal(msg->elements[0].name, "bar");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_int_equal(msg->elements[0].values[0].length,
 			 strlen(value1));
-	assert_memory_equal(filtered_msg->elements[0].values[0].data,
+	assert_memory_equal(msg->elements[0].values[0].data,
 			    value1, strlen(value1));
-	assert_string_equal(filtered_msg->elements[1].name, "bar");
-	assert_int_equal(filtered_msg->elements[1].num_values, 1);
-	assert_int_equal(filtered_msg->elements[1].values[0].length,
+	assert_string_equal(msg->elements[1].name, "bar");
+	assert_int_equal(msg->elements[1].num_values, 1);
+	assert_int_equal(msg->elements[1].values[0].length,
 			 strlen(value2));
-	assert_memory_equal(filtered_msg->elements[1].values[0].data,
+	assert_memory_equal(msg->elements[1].values[0].data,
 			    value2, strlen(value2));
-	/*
-	 * assert the ldb_filter_attrs_in_place does not modify filtered_msg.dn
-	 * in this case
-	 */
-	assert_ptr_equal(filtered_msg->dn, in.dn);
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+
+	assert_non_null(msg->dn);
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"distinguishedName",
 							NULL),
-			    ldb_dn_get_linearized(in.dn));
+			    ldb_dn_get_linearized(msg->dn));
 }
 
 /*
  * Test against a record with only one attribute, matching the * in
  * the list
  */
-static void test_filter_attrs_one_attr_matched_star(void **state)
+static void test_filter_attrs_in_place_one_attr_matched_star(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"*", NULL};
 
@@ -630,35 +622,25 @@ static void test_filter_attrs_one_attr_matched_star(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	/* Needed as * implies distinguishedName */
-	filtered_msg->dn = in.dn;
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 2);
+	assert_int_equal(msg->num_elements, 2);
 
-	/*
-	 * assert the ldb_filter_attrs_in_place does not modify filtered_msg.dn
-	 * in this case
-	 */
-	assert_ptr_equal(filtered_msg->dn, in.dn);
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+	assert_non_null(msg->dn);
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"distinguishedName",
 							NULL),
-			    ldb_dn_get_linearized(in.dn));
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+			    ldb_dn_get_linearized(msg->dn));
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"foo",
 							NULL),
 			    value);
@@ -668,12 +650,12 @@ static void test_filter_attrs_one_attr_matched_star(void **state)
  * Test against a record with two attributes, matching the * in
  * the list
  */
-static void test_filter_attrs_two_attr_matched_star(void **state)
+static void test_filter_attrs_in_place_two_attr_matched_star(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"*", NULL};
 
@@ -699,39 +681,29 @@ static void test_filter_attrs_two_attr_matched_star(void **state)
 			.values = &value_2
 		}
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 2,
-		.elements = elements,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 2;
+	msg->elements = elements;
 
-	/* Needed as * implies distinguishedName */
-	filtered_msg->dn = in.dn;
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 3);
+	assert_int_equal(msg->num_elements, 3);
 
-	/*
-	 * assert the ldb_filter_attrs_in_place does not modify filtered_msg.dn
-	 * in this case
-	 */
-	assert_ptr_equal(filtered_msg->dn, in.dn);
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+	assert_non_null(msg->dn);
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"distinguishedName",
 							NULL),
-			    ldb_dn_get_linearized(in.dn));
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+			    ldb_dn_get_linearized(msg->dn));
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"foo",
 							NULL),
 			    value1);
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"bar",
 							NULL),
 			    value2);
@@ -739,15 +711,15 @@ static void test_filter_attrs_two_attr_matched_star(void **state)
 
 /*
  * Test against a record with only one attribute, matching the * in
- * the list, but without the DN being pre-filled.  Fails due to need
- * to contstruct the distinguishedName
+ * the list, but without the DN being pre-filled.  Succeeds, but the
+ * distinguishedName is not added.
  */
-static void test_filter_attrs_one_attr_matched_star_no_dn(void **state)
+static void test_filter_attrs_in_place_one_attr_matched_star_no_dn(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"*", NULL};
 
@@ -761,32 +733,29 @@ static void test_filter_attrs_one_attr_matched_star_no_dn(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = NULL;
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
-	assert_int_equal(ret, -1);
-	assert_null(filtered_msg->elements);
+	assert_null(msg->dn);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_int_equal(msg->num_elements, 1);
 }
 
 /*
  * Test against a record with only one attribute, matching the * in
  * the list plus requsesting distinguishedName
  */
-static void test_filter_attrs_one_attr_matched_star_dn(void **state)
+static void test_filter_attrs_in_place_one_attr_matched_star_dn(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"*", "distinguishedName", NULL};
 
@@ -800,33 +769,26 @@ static void test_filter_attrs_one_attr_matched_star_dn(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	/* Needed for distinguishedName */
-	filtered_msg->dn = in.dn;
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 2);
+	assert_int_equal(msg->num_elements, 2);
 
-	/* show that ldb_filter_attrs_in_place does not modify in.dn */
-	assert_ptr_equal(filtered_msg->dn, in.dn);
+	assert_non_null(msg->dn);
 
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"distinguishedName",
 							NULL),
-			    ldb_dn_get_linearized(in.dn));
-	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
+			    ldb_dn_get_linearized(msg->dn));
+	assert_string_equal(ldb_msg_find_attr_as_string(msg,
 							"foo",
 							NULL),
 			    value);
@@ -836,12 +798,12 @@ static void test_filter_attrs_one_attr_matched_star_dn(void **state)
  * Test against a record with only one attribute, but returning
  * distinguishedName from the list (only)
  */
-static void test_filter_attrs_one_attr_matched_dn(void **state)
+static void test_filter_attrs_in_place_one_attr_matched_dn(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {"distinguishedName", NULL};
 
@@ -855,43 +817,36 @@ static void test_filter_attrs_one_attr_matched_dn(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	/* Needed for distinguishedName */
-	filtered_msg->dn = in.dn;
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 1);
+	assert_int_equal(msg->num_elements, 1);
 
-	/* show that ldb_filter_attrs_in_place does not modify in.dn */
-	assert_ptr_equal(filtered_msg->dn, in.dn);
-	assert_string_equal(filtered_msg->elements[0].name, "distinguishedName");
-	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_string_equal(filtered_msg->elements[0].values[0].data,
-			    ldb_dn_get_linearized(in.dn));
+	assert_non_null(msg->dn);
+	assert_string_equal(msg->elements[0].name, "distinguishedName");
+	assert_int_equal(msg->elements[0].num_values, 1);
+	assert_string_equal(msg->elements[0].values[0].data,
+			    ldb_dn_get_linearized(msg->dn));
 }
 
 /*
  * Test against a record with only one attribute, not matching the
  * empty attribute list
  */
-static void test_filter_attrs_one_attr_empty_list(void **state)
+static void test_filter_attrs_in_place_one_attr_empty_list(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
 	int ret;
 
-	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
+	struct ldb_message *msg = ldb_msg_new(ctx);
 
 	const char *attrs[] = {NULL};
 
@@ -905,82 +860,78 @@ static void test_filter_attrs_one_attr_empty_list(void **state)
 		.num_values = 1,
 		.values = &value_1
 	};
-	struct ldb_message in = {
-		.dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org"),
-		.num_elements = 1,
-		.elements = &element_1,
-	};
 
-	assert_non_null(in.dn);
+	assert_non_null(msg);
+	msg->dn = ldb_dn_new(ctx, ctx->ldb, "dc=samba,dc=org");
+	msg->num_elements = 1;
+	msg->elements = &element_1;
 
-	ret = ldb_filter_attrs_in_place(ctx->ldb,
-			       &in,
-			       attrs,
-			       filtered_msg);
+	assert_non_null(msg->dn);
+	msg_add_dn(msg);
+
+	ret = ldb_filter_attrs_in_place(msg, attrs);
 	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(filtered_msg);
-	assert_int_equal(filtered_msg->num_elements, 0);
-	assert_null(filtered_msg->dn);
-	assert_null(filtered_msg->elements);
+	assert_int_equal(msg->num_elements, 0);
+	assert_non_null(msg->dn);
 }
 
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_matched,
+			test_filter_attrs_in_place_one_attr_matched,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_matched_of_many,
+			test_filter_attrs_in_place_one_attr_matched_of_many,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_attr_matched_attrs,
+			test_filter_attrs_in_place_two_attr_matched_attrs,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_attr_matched_one_attr,
+			test_filter_attrs_in_place_two_attr_matched_one_attr,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_dup_attr_matched_one_attr,
+			test_filter_attrs_in_place_two_dup_attr_matched_one_attr,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_dup_attr_matched_dup,
+			test_filter_attrs_in_place_two_dup_attr_matched_dup,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_dup_attr_matched_one_of_two,
+			test_filter_attrs_in_place_two_dup_attr_matched_one_of_two,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_dup_attr_matched_star,
+			test_filter_attrs_in_place_two_dup_attr_matched_star,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_matched_star,
+			test_filter_attrs_in_place_one_attr_matched_star,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_two_attr_matched_star,
+			test_filter_attrs_in_place_two_attr_matched_star,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_matched_star_no_dn,
+			test_filter_attrs_in_place_one_attr_matched_star_no_dn,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_matched_star_dn,
+			test_filter_attrs_in_place_one_attr_matched_star_dn,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_matched_dn,
+			test_filter_attrs_in_place_one_attr_matched_dn,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
-			test_filter_attrs_one_attr_empty_list,
+			test_filter_attrs_in_place_one_attr_empty_list,
 			setup,
 			teardown),
 	};

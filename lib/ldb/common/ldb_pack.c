@@ -1264,19 +1264,16 @@ failed:
 
 /*
  * filter the specified list of attributes from msg,
- * adding requested attributes, and perhaps all for *,
- * but not the DN to filtered_msg.
+ * adding requested attributes, and perhaps all for *.
+ * Unlike ldb_filter_attrs(), the DN will not be added
+ * if it is missing.
  */
-int ldb_filter_attrs_in_place(struct ldb_context *ldb,
-		     const struct ldb_message *msg,
-		     const char *const *attrs,
-		     struct ldb_message *filtered_msg)
+int ldb_filter_attrs_in_place(struct ldb_message *msg,
+			      const char *const *attrs)
 {
-	unsigned int i;
+	unsigned int i = 0;
 	bool keep_all = false;
-	bool add_dn = false;
-	uint32_t num_elements;
-	uint32_t elements_size;
+	unsigned int num_del = 0;
 
 	if (attrs) {
 		/* check for special attrs */
@@ -1286,123 +1283,41 @@ int ldb_filter_attrs_in_place(struct ldb_context *ldb,
 				keep_all = true;
 				break;
 			}
-			cmp = ldb_attr_cmp(attrs[i], "distinguishedName");
-			if (cmp == 0) {
-				add_dn = true;
-			}
+		}
+		if (!keep_all && i == 0) {
+			msg->num_elements = 0;
+			return LDB_SUCCESS;
 		}
 	} else {
 		keep_all = true;
 	}
 
-	if (keep_all) {
-		add_dn = true;
-		elements_size = msg->num_elements + 1;
-
-	/* Shortcuts for the simple cases */
-	} else if (add_dn && i == 1) {
-		if (ldb_msg_add_distinguished_name(filtered_msg) != 0) {
-			goto failed;
-		}
-		return 0;
-	} else if (i == 0) {
-		return 0;
-
-	/*
-	 * Otherwise we are copying at most as many elements as we
-	 * have attributes
-	 */
-	} else {
-		elements_size = i;
-	}
-
-	filtered_msg->elements = talloc_array(filtered_msg,
-					      struct ldb_message_element,
-					      elements_size);
-	if (filtered_msg->elements == NULL) goto failed;
-
-	num_elements = 0;
-
 	for (i = 0; i < msg->num_elements; i++) {
-		struct ldb_message_element *el = &msg->elements[i];
-
-		/*
-		 * el2 is assigned after the Pigeonhole principle
-		 * check below for clarity
-		 */
-		struct ldb_message_element *el2 = NULL;
+		bool found = false;
 		unsigned int j;
 
-		if (keep_all == false) {
-			bool found = false;
+		if (keep_all) {
+			found = true;
+		} else {
 			for (j = 0; attrs[j]; j++) {
-				int cmp = ldb_attr_cmp(el->name, attrs[j]);
+				int cmp = ldb_attr_cmp(msg->elements[i].name, attrs[j]);
 				if (cmp == 0) {
 					found = true;
 					break;
 				}
 			}
-			if (found == false) {
-				continue;
-			}
 		}
 
-		/*
-		 * Pigeonhole principle: we can't have more elements
-		 * than the number of attributes if they are unique in
-		 * the DB.
-		 */
-		if (num_elements >= elements_size) {
-			goto failed;
-		}
-
-		el2 = &filtered_msg->elements[num_elements];
-
-		*el2 = *el;
-		el2->name = talloc_strdup(filtered_msg->elements,
-					  el->name);
-		if (el2->name == NULL) {
-			goto failed;
-		}
-		el2->values = talloc_array(filtered_msg->elements,
-					   struct ldb_val, el->num_values);
-		if (el2->values == NULL) {
-			goto failed;
-		}
-		for (j=0;j<el->num_values;j++) {
-			el2->values[j] = ldb_val_dup(el2->values, &el->values[j]);
-			if (el2->values[j].data == NULL && el->values[j].length != 0) {
-				goto failed;
-			}
-		}
-		num_elements++;
-	}
-
-	filtered_msg->num_elements = num_elements;
-
-	if (add_dn) {
-		if (ldb_msg_add_distinguished_name(filtered_msg) != 0) {
-			goto failed;
+		if (!found) {
+			++num_del;
+		} else if (num_del != 0) {
+			msg->elements[i - num_del] = msg->elements[i];
 		}
 	}
 
-	if (filtered_msg->num_elements > 0) {
-		filtered_msg->elements
-			= talloc_realloc(filtered_msg,
-					 filtered_msg->elements,
-					 struct ldb_message_element,
-					 filtered_msg->num_elements);
-		if (filtered_msg->elements == NULL) {
-			goto failed;
-		}
-	} else {
-		TALLOC_FREE(filtered_msg->elements);
-	}
+	msg->num_elements -= num_del;
 
-	return 0;
-failed:
-	TALLOC_FREE(filtered_msg->elements);
-	return -1;
+	return LDB_SUCCESS;
 }
 
 /* Have an unpacked ldb message take talloc ownership of its elements. */
