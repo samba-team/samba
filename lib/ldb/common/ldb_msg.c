@@ -1497,6 +1497,22 @@ void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
 	}
 }
 
+/* Reallocate elements to drop any excess capacity. */
+void ldb_msg_shrink_to_fit(struct ldb_message *msg)
+{
+	if (msg->num_elements > 0) {
+		struct ldb_message_element *elements = talloc_realloc(msg,
+								      msg->elements,
+								      struct ldb_message_element,
+								      msg->num_elements);
+		if (elements != NULL) {
+			msg->elements = elements;
+		}
+	} else {
+		TALLOC_FREE(msg->elements);
+	}
+}
+
 /*
   return a LDAP formatted GeneralizedTime string
 */
