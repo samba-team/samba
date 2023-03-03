@@ -39,10 +39,10 @@
 /*
   check if the scope matches in a search result
 */
-static int ldb_match_scope(struct ldb_context *ldb,
-			   struct ldb_dn *base,
-			   struct ldb_dn *dn,
-			   enum ldb_scope scope)
+int ldb_match_scope(struct ldb_context *ldb,
+		    struct ldb_dn *base,
+		    struct ldb_dn *dn,
+		    enum ldb_scope scope)
 {
 	int ret = 0;
 
