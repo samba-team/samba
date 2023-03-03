@@ -395,6 +395,16 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 		}
 	}
 
+	/*
+	 * The redaction callback may be expensive to call if it fetches a
+	 * security descriptor. Check the DN early and bail out if it doesn't
+	 * match the base.
+	 */
+	if (!ldb_match_scope(ldb, ac->base, msg->dn, ac->scope)) {
+		talloc_free(msg);
+		return 0;
+	}
+
 	if (ldb->redact.callback != NULL) {
 		ret = ldb->redact.callback(ldb->redact.module, ac->req, msg);
 		if (ret != LDB_SUCCESS) {
@@ -404,8 +414,8 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 	}
 
 	/* see if it matches the given expression */
-	ret = ldb_match_msg_error(ldb, msg,
-				  ac->tree, ac->base, ac->scope, &matched);
+	ret = ldb_match_message(ldb, msg,
+				ac->tree, ac->scope, &matched);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		ac->error = LDB_ERR_OPERATIONS_ERROR;
