@@ -1098,7 +1098,7 @@ int ldb_unpack_data(struct ldb_context *ldb,
 /*
   add the special distinguishedName element
 */
-static int msg_add_distinguished_name(struct ldb_message *msg)
+int ldb_msg_add_distinguished_name(struct ldb_message *msg)
 {
 	const char *dn_attr = "distinguishedName";
 	char *dn = NULL;
@@ -1158,7 +1158,7 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 
 	/* Shortcuts for the simple cases */
 	} else if (add_dn && i == 1) {
-		if (msg_add_distinguished_name(filtered_msg) != 0) {
+		if (ldb_msg_add_distinguished_name(filtered_msg) != 0) {
 			goto failed;
 		}
 		return 0;
@@ -1238,7 +1238,7 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 	filtered_msg->num_elements = num_elements;
 
 	if (add_dn) {
-		if (msg_add_distinguished_name(filtered_msg) != 0) {
+		if (ldb_msg_add_distinguished_name(filtered_msg) != 0) {
 			goto failed;
 		}
 	}

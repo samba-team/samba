@@ -320,4 +320,9 @@ int ldb_match_message(struct ldb_context *ldb,
 /* Reallocate elements to drop any excess capacity. */
 void ldb_msg_shrink_to_fit(struct ldb_message *msg);
 
+/*
+  add the special distinguishedName element
+*/
+int ldb_msg_add_distinguished_name(struct ldb_message *msg);
+
 #endif
