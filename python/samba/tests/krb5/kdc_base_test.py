@@ -1082,6 +1082,7 @@ class KDCBaseTest(RawKerberosTest):
         if isinstance(val, int):
             # If it's an integer, we assume it's a RID, and prefix the domain
             # SID.
+            self.assertIsNotNone(domain_sid)
             return f'{domain_sid}-{val}'
 
         if val in mapping:
