@@ -396,6 +396,14 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 		}
 	}
 
+	if (ldb->redact.callback != NULL) {
+		ret = ldb->redact.callback(ldb->redact.module, ac->req, msg);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return ret;
+		}
+	}
+
 	/* see if it matches the given expression */
 	ret = ldb_match_msg_error(ldb, msg,
 				  ac->tree, ac->base, ac->scope, &matched);
@@ -531,6 +539,13 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 		return ret;
 	}
 
+	if (ldb->redact.callback != NULL) {
+		ret = ldb->redact.callback(ldb->redact.module, ctx->req, msg);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return ret;
+		}
+	}
 
 	/*
 	 * We use this, not ldb_match_msg_error() as we know

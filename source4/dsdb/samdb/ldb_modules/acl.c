@@ -46,11 +46,6 @@
 #undef strcasecmp
 #undef strncasecmp
 
-struct extended_access_check_attribute {
-	const char *oa_name;
-	const uint32_t requires_rights;
-};
-
 struct acl_private {
 	bool acl_search;
 	const char **password_attrs;
@@ -58,7 +53,6 @@ struct acl_private {
 	uint64_t cached_schema_metadata_usn;
 	uint64_t cached_schema_loaded_usn;
 	const char **confidential_attrs;
-	bool userPassword_support;
 };
 
 struct acl_context {
@@ -66,15 +60,12 @@ struct acl_context {
 	struct ldb_request *req;
 	bool am_system;
 	bool am_administrator;
-	bool modify_search;
 	bool constructed_attrs;
 	bool allowedAttributes;
 	bool allowedAttributesEffective;
 	bool allowedChildClasses;
 	bool allowedChildClassesEffective;
 	bool sDRightsEffective;
-	bool userPassword;
-	const char * const *attrs;
 	struct dsdb_schema *schema;
 };
 
@@ -83,24 +74,8 @@ static int acl_module_init(struct ldb_module *module)
 	struct ldb_context *ldb;
 	struct acl_private *data;
 	int ret;
-	unsigned int i, n, j;
-	TALLOC_CTX *mem_ctx;
-	static const char * const attrs[] = { "passwordAttribute", NULL };
-	static const char * const secret_attrs[] = {
-		DSDB_SECRET_ATTRIBUTES
-	};
-	struct ldb_result *res;
-	struct ldb_message *msg;
-	struct ldb_message_element *password_attributes;
 
 	ldb = ldb_module_get_ctx(module);
-
-	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "acl_module_init: Unable to register control with rootdse!\n");
-		return ldb_operr(ldb);
-	}
 
 	data = talloc_zero(module, struct acl_private);
 	if (data == NULL) {
@@ -111,91 +86,14 @@ static int acl_module_init(struct ldb_module *module)
 					NULL, "acl", "search", true);
 	ldb_module_set_private(module, data);
 
-	mem_ctx = talloc_new(module);
-	if (!mem_ctx) {
-		return ldb_oom(ldb);
-	}
-
-	ret = dsdb_module_search_dn(module, mem_ctx, &res,
-				    ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
-				    attrs,
-				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_FLAG_AS_SYSTEM,
-				    NULL);
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
 	if (ret != LDB_SUCCESS) {
-		goto done;
-	}
-	if (res->count == 0) {
-		goto done;
-	}
-
-	if (res->count > 1) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "acl_module_init: Unable to register control with rootdse!\n");
+		return ldb_operr(ldb);
 	}
 
-	msg = res->msgs[0];
-
-	password_attributes = ldb_msg_find_element(msg, "passwordAttribute");
-	if (!password_attributes) {
-		goto done;
-	}
-	data->password_attrs = talloc_array(data, const char *,
-			password_attributes->num_values +
-			ARRAY_SIZE(secret_attrs) + 1);
-	if (!data->password_attrs) {
-		talloc_free(mem_ctx);
-		return ldb_oom(ldb);
-	}
-
-	n = 0;
-	for (i=0; i < password_attributes->num_values; i++) {
-		data->password_attrs[n] = (const char *)password_attributes->values[i].data;
-		talloc_steal(data->password_attrs, password_attributes->values[i].data);
-		n++;
-	}
-
-	for (i=0; i < ARRAY_SIZE(secret_attrs); i++) {
-		bool found = false;
-
-		for (j=0; j < n; j++) {
-			if (strcasecmp(data->password_attrs[j], secret_attrs[i]) == 0) {
-				found = true;
-				break;
-			}
-		}
-
-		if (found) {
-			continue;
-		}
-
-		data->password_attrs[n] = talloc_strdup(data->password_attrs,
-							secret_attrs[i]);
-		if (data->password_attrs[n] == NULL) {
-			talloc_free(mem_ctx);
-			return ldb_oom(ldb);
-		}
-		n++;
-	}
-	data->password_attrs[n] = NULL;
-
-done:
-	talloc_free(mem_ctx);
-	ret = ldb_next_init(module);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/*
-	 * Check this after the modules have be initialised so we
-	 * can actually read the backend DB.
-	 */
-	data->userPassword_support
-		= dsdb_user_password_support(module,
-					     module,
-					     NULL);
-	return ret;
+	return ldb_next_init(module);
 }
 
 static int acl_allowedAttributes(struct ldb_module *module,
@@ -2822,27 +2720,9 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 						     ares->controls);
 		}
 
-		if (data->password_attrs != NULL) {
-			for (i = 0; data->password_attrs[i]; i++) {
-				if ((!ac->userPassword) &&
-				    (ldb_attr_cmp(data->password_attrs[i],
-						  "userPassword") == 0))
-				{
-						continue;
-				}
-
-				ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
-			}
-		}
-
 		if (ac->am_administrator) {
 			return ldb_module_send_entry(ac->req, ares->message,
 						     ares->controls);
-		}
-
-		ret = acl_search_update_confidential_attrs(ac, data);
-		if (ret != LDB_SUCCESS) {
-			return ret;
 		}
 
 		if (data->confidential_attrs != NULL) {
@@ -2869,11 +2749,12 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct acl_context *ac;
-	struct ldb_parse_tree *down_tree;
+	struct ldb_parse_tree *down_tree = req->op.search.tree;
 	struct ldb_request *down_req;
 	struct acl_private *data;
 	int ret;
 	unsigned int i;
+	bool modify_search = true;
 
 	if (ldb_dn_is_special(req->op.search.base)) {
 		return ldb_next_request(module, req);
@@ -2892,13 +2773,11 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->am_system = dsdb_module_am_system(module);
 	ac->am_administrator = dsdb_module_am_administrator(module);
 	ac->constructed_attrs = false;
-	ac->modify_search = true;
 	ac->allowedAttributes = ldb_attr_in_list(req->op.search.attrs, "allowedAttributes");
 	ac->allowedAttributesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedAttributesEffective");
 	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
 	ac->allowedChildClassesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedChildClassesEffective");
 	ac->sDRightsEffective = ldb_attr_in_list(req->op.search.attrs, "sDRightsEffective");
-	ac->userPassword = true;
 	ac->schema = dsdb_get_schema(ldb, ac);
 
 	ac->constructed_attrs |= ac->allowedAttributes;
@@ -2908,13 +2787,13 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->constructed_attrs |= ac->sDRightsEffective;
 
 	if (data == NULL) {
-		ac->modify_search = false;
+		modify_search = false;
 	}
 	if (ac->am_system) {
-		ac->modify_search = false;
+		modify_search = false;
 	}
 
-	if (!ac->constructed_attrs && !ac->modify_search) {
+	if (!ac->constructed_attrs && !modify_search) {
 		talloc_free(ac);
 		return ldb_next_request(module, req);
 	}
@@ -2924,38 +2803,24 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
 				 "acl_private data is missing");
 	}
-	ac->userPassword = data->userPassword_support;
 
-	ret = acl_search_update_confidential_attrs(ac, data);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	if (!ac->am_system && !ac->am_administrator) {
+		ret = acl_search_update_confidential_attrs(ac, data);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
-	down_tree = ldb_parse_tree_copy_shallow(ac, req->op.search.tree);
-	if (down_tree == NULL) {
-		return ldb_oom(ldb);
-	}
-
-	if (!ac->am_system && data->password_attrs) {
-		for (i = 0; data->password_attrs[i]; i++) {
-			if ((!ac->userPassword) &&
-			    (ldb_attr_cmp(data->password_attrs[i],
-					  "userPassword") == 0))
-			{
-				continue;
+		if (data->confidential_attrs != NULL) {
+			down_tree = ldb_parse_tree_copy_shallow(ac, req->op.search.tree);
+			if (down_tree == NULL) {
+				return ldb_oom(ldb);
 			}
 
-			ldb_parse_tree_attr_replace(down_tree,
-						    data->password_attrs[i],
-						    "kludgeACLredactedattribute");
-		}
-	}
-
-	if (!ac->am_system && !ac->am_administrator && data->confidential_attrs) {
-		for (i = 0; data->confidential_attrs[i]; i++) {
-			ldb_parse_tree_attr_replace(down_tree,
-						    data->confidential_attrs[i],
-						    "kludgeACLredactedattribute");
+			for (i = 0; data->confidential_attrs[i]; i++) {
+				ldb_parse_tree_attr_replace(down_tree,
+							    data->confidential_attrs[i],
+							    "kludgeACLredactedattribute");
+			}
 		}
 	}
 

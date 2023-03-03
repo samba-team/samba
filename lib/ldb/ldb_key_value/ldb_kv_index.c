@@ -2428,6 +2428,14 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
+		if (ldb->redact.callback != NULL) {
+			ret = ldb->redact.callback(ldb->redact.module, ac->req, msg);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(msg);
+				return ret;
+			}
+		}
+
 		/*
 		 * We trust the index for LDB_SCOPE_ONELEVEL
 		 * unless the index key has been truncated.
