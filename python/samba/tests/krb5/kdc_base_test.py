@@ -877,7 +877,8 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_tgs_supported_enctypes(supported_enctypes)
         creds.set_ap_supported_enctypes(supported_enctypes)
 
-    def add_to_group(self, account_dn, group_dn, group_attr, expect_attr=True):
+    def add_to_group(self, account_dn, group_dn, group_attr, expect_attr=True,
+                     new_group_type=None):
         samdb = self.get_samdb()
 
         try:
@@ -914,9 +915,14 @@ class KDCBaseTest(RawKerberosTest):
 
         msg = ldb.Message()
         msg.dn = group_dn
-        msg[group_attr] = ldb.MessageElement(list(members),
-                                             ldb.FLAG_MOD_REPLACE,
-                                             group_attr)
+        if new_group_type is not None:
+            msg['0'] = ldb.MessageElement(
+                common.normalise_int32(new_group_type),
+                ldb.FLAG_MOD_REPLACE,
+                'groupType')
+        msg['1'] = ldb.MessageElement(list(members),
+                                      ldb.FLAG_MOD_REPLACE,
+                                      group_attr)
         cleanup = samdb.msg_diff(msg, orig_msg)
         self.ldb_cleanups.append(cleanup)
         samdb.modify(msg)
