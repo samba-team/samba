@@ -220,6 +220,7 @@ ldb_parse_control_strings: struct ldb_control **(struct ldb_context *, TALLOC_CT
 ldb_parse_tree: struct ldb_parse_tree *(TALLOC_CTX *, const char *)
 ldb_parse_tree_attr_replace: void (struct ldb_parse_tree *, const char *, const char *)
 ldb_parse_tree_copy_shallow: struct ldb_parse_tree *(TALLOC_CTX *, const struct ldb_parse_tree *)
+ldb_parse_tree_get_attr: const char *(const struct ldb_parse_tree *)
 ldb_parse_tree_walk: int (struct ldb_parse_tree *, int (*)(struct ldb_parse_tree *, void *), void *)
 ldb_qsort: void (void * const, size_t, size_t, void *, ldb_qsort_cmp_fn_t)
 ldb_register_backend: int (const char *, ldb_connect_fn, bool)

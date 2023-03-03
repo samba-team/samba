@@ -997,3 +997,28 @@ struct ldb_parse_tree *ldb_parse_tree_copy_shallow(TALLOC_CTX *mem_ctx,
 
 	return nt;
 }
+
+/* Get the attribute (if any) associated with the top node of a parse tree. */
+const char *ldb_parse_tree_get_attr(const struct ldb_parse_tree *tree)
+{
+	switch (tree->operation) {
+	case LDB_OP_AND:
+	case LDB_OP_OR:
+	case LDB_OP_NOT:
+		return NULL;
+	case LDB_OP_EQUALITY:
+		return tree->u.equality.attr;
+	case LDB_OP_SUBSTRING:
+		return tree->u.substring.attr;
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_APPROX:
+		return tree->u.comparison.attr;
+	case LDB_OP_PRESENT:
+		return tree->u.present.attr;
+	case LDB_OP_EXTENDED:
+		return tree->u.extended.attr;
+	}
+
+	return NULL;
+}
