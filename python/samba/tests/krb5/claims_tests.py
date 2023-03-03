@@ -38,7 +38,6 @@ from samba.tests.krb5.rfc4120_constants import (
     ARCFOUR_HMAC_MD5,
     KRB_TGS_REP,
     NT_PRINCIPAL,
-    NT_SRV_INST,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
