@@ -197,6 +197,7 @@ ldb_msg_remove_element: void (struct ldb_message *, struct ldb_message_element *
 ldb_msg_remove_inaccessible: void (struct ldb_message *)
 ldb_msg_rename_attr: int (struct ldb_message *, const char *, const char *)
 ldb_msg_sanity_check: int (struct ldb_context *, const struct ldb_message *)
+ldb_msg_shrink_to_fit: void (struct ldb_message *)
 ldb_msg_sort_elements: void (struct ldb_message *)
 ldb_next_del_trans: int (struct ldb_module *)
 ldb_next_end_trans: int (struct ldb_module *)

@@ -317,6 +317,9 @@ int ldb_match_message(struct ldb_context *ldb,
 		      const struct ldb_parse_tree *tree,
 		      enum ldb_scope scope, bool *matched);
 
+/* Reallocate elements to drop any excess capacity. */
+void ldb_msg_shrink_to_fit(struct ldb_message *msg);
+
 /**
  * @brief Convert a character to uppercase with ASCII precedence.
  *
