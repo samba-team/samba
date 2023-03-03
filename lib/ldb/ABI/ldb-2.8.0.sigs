@@ -126,6 +126,7 @@ ldb_match_message: int (struct ldb_context *, const struct ldb_message *, const 
 ldb_match_msg: int (struct ldb_context *, const struct ldb_message *, const struct ldb_parse_tree *, struct ldb_dn *, enum ldb_scope)
 ldb_match_msg_error: int (struct ldb_context *, const struct ldb_message *, const struct ldb_parse_tree *, struct ldb_dn *, enum ldb_scope, bool *)
 ldb_match_msg_objectclass: int (const struct ldb_message *, const char *)
+ldb_match_scope: int (struct ldb_context *, struct ldb_dn *, struct ldb_dn *, enum ldb_scope)
 ldb_mod_register_control: int (struct ldb_module *, const char *)
 ldb_modify: int (struct ldb_context *, const struct ldb_message *)
 ldb_modify_default_callback: int (struct ldb_request *, struct ldb_reply *)
