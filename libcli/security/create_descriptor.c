@@ -26,7 +26,8 @@
  *
  *  Author: Nadezhda Ivanova
  */
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/debug.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 

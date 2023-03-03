@@ -20,7 +20,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "lib/util/tsort.h"

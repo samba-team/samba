@@ -20,7 +20,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 

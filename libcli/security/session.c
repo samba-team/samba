@@ -19,8 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "libcli/security/security.h"
+#include "libcli/util/werror.h"
 #include "librpc/gen_ndr/auth.h"
 
 enum security_user_level security_session_user_level(struct auth_session_info *session_info,

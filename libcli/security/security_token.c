@@ -21,7 +21,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/debug.h"
 #include "libcli/security/security_token.h"
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/privileges.h"
