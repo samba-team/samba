@@ -3172,72 +3172,140 @@ static int rpc_pipe_client_np_ref_destructor(struct rpc_pipe_client_np_ref *np_r
  *
  ****************************************************************************/
 
-static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
-				 const struct ndr_interface_table *table,
-				 struct rpc_pipe_client **presult)
-{
+struct rpc_pipe_open_np_state {
+	struct cli_state *cli;
+	const struct ndr_interface_table *table;
 	struct rpc_pipe_client *result;
-	NTSTATUS status;
-	struct rpc_pipe_client_np_ref *np_ref;
+};
 
-	/* sanity check to protect against crashes */
+static void rpc_pipe_open_np_done(struct tevent_req *subreq);
 
-	if ( !cli ) {
-		return NT_STATUS_INVALID_HANDLE;
+struct tevent_req *rpc_pipe_open_np_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const struct ndr_interface_table *table)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct rpc_pipe_open_np_state *state = NULL;
+	struct rpc_pipe_client *result = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct rpc_pipe_open_np_state);
+	if (req == NULL) {
+		return NULL;
 	}
+	state->cli = cli;
+	state->table = table;
 
-	result = talloc_zero(NULL, struct rpc_pipe_client);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	state->result = talloc_zero(state, struct rpc_pipe_client);
+	if (tevent_req_nomem(state->result, req)) {
+		return tevent_req_post(req, ev);
 	}
+	result = state->result;
 
 	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = talloc_strdup(
 		result, smbXcli_conn_remote_name(cli->conn));
-	if (result->desthost == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+	if (tevent_req_nomem(result->desthost, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
-	if (result->srv_name_slash == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+	if (tevent_req_nomem(result->srv_name_slash, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
 
-	status = rpc_transport_np_init(result, cli, table,
-				       &result->transport);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(result);
-		return status;
+	subreq = rpc_transport_np_init_send(state, ev, cli, table);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpc_pipe_open_np_done, req);
+	return req;
+}
+
+static void rpc_pipe_open_np_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpc_pipe_open_np_state *state = tevent_req_data(
+		req, struct rpc_pipe_open_np_state);
+	struct rpc_pipe_client *result = state->result;
+	struct rpc_pipe_client_np_ref *np_ref = NULL;
+	NTSTATUS status;
+
+	status = rpc_transport_np_init_recv(
+		subreq, result, &result->transport);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	result->transport->transport = NCACN_NP;
 
 	np_ref = talloc(result->transport, struct rpc_pipe_client_np_ref);
-	if (np_ref == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+	if (tevent_req_nomem(np_ref, req)) {
+		return;
 	}
-	np_ref->cli = cli;
+	np_ref->cli = state->cli;
 	np_ref->pipe = result;
 
 	DLIST_ADD(np_ref->cli->pipe_list, np_ref->pipe);
 	talloc_set_destructor(np_ref, rpc_pipe_client_np_ref_destructor);
 
-	result->binding_handle = rpccli_bh_create(result, NULL, table);
-	if (result->binding_handle == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+	result->binding_handle = rpccli_bh_create(result, NULL, state->table);
+	if (tevent_req_nomem(result->binding_handle, req)) {
+		return;
 	}
 
-	*presult = result;
+	tevent_req_done(req);
+}
+
+NTSTATUS rpc_pipe_open_np_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct rpc_pipe_client **_result)
+{
+	struct rpc_pipe_open_np_state *state = tevent_req_data(
+		req, struct rpc_pipe_open_np_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*_result = talloc_move(mem_ctx, &state->result);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
+			  const struct ndr_interface_table *table,
+			  struct rpc_pipe_client **presult)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(cli);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = rpc_pipe_open_np_send(ev, ev, cli, table);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = rpc_pipe_open_np_recv(req, NULL, presult);
+fail:
+	TALLOC_FREE(req);
+	TALLOC_FREE(ev);
+	return status;
 }
 
 /****************************************************************************
