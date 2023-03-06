@@ -88,9 +88,6 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    struct rpc_cli_transport **presult);
-NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
-			       const struct ndr_interface_table *table,
-			       struct rpc_cli_transport **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_sock.c  */
 
