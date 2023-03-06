@@ -15593,6 +15593,10 @@ static struct {
 		.fn    = run_readdir_timestamp,
 	},
 	{
+		.name  = "rpc-scale",
+		.fn    = run_rpc_scale,
+	},
+	{
 		.name = NULL,
 	},
 };

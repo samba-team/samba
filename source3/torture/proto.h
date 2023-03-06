@@ -167,5 +167,6 @@ bool run_local_idmap_cache1(int dummy);
 bool run_hidenewfiles(int dummy);
 bool run_readdir_timestamp(int dummy);
 bool run_ctdbd_conn1(int dummy);
+bool run_rpc_scale(int dummy);
 
 #endif /* __TORTURE_H__ */
