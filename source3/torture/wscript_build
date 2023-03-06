@@ -58,6 +58,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         test_idmap_cache.c
                         test_hidenewfiles.c
                         test_readdir_timestamp.c
+                        test_rpc_scale.c
                         ''' + TORTURE3_ADDITIONAL_SOURCE,
                  deps='''
                       talloc
