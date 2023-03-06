@@ -1214,7 +1214,9 @@ check_return:
 	}
 	info2->tc_connection_status = check_result;
 
-	if (!W_ERROR_IS_OK(info2->pdc_connection_status)) {
+	if (!W_ERROR_IS_OK(info2->pdc_connection_status) ||
+	    !W_ERROR_IS_OK(info2->tc_connection_status))
+	{
 		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
 			  "pdc_connection[%s] tc_connection[%s]\n",
 			  __func__, domain->name, domain->alt_name,
@@ -1282,7 +1284,9 @@ check_return:
 	}
 	info2->tc_connection_status = check_result;
 
-	if (!W_ERROR_IS_OK(info2->pdc_connection_status)) {
+	if (!W_ERROR_IS_OK(info2->pdc_connection_status) ||
+	    !W_ERROR_IS_OK(info2->tc_connection_status))
+	{
 		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
 			  "pdc_connection[%s] tc_connection[%s]\n",
 			  __func__, domain->name, domain->alt_name,
@@ -1604,7 +1608,9 @@ verify_return:
 	}
 	info2->tc_connection_status = check_result;
 
-	if (!W_ERROR_IS_OK(info2->pdc_connection_status)) {
+	if (!W_ERROR_IS_OK(info2->pdc_connection_status) ||
+	    !W_ERROR_IS_OK(info2->tc_connection_status))
+	{
 		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
 			  "pdc_connection[%s] tc_connection[%s]\n",
 			  __func__, domain->name, domain->alt_name,
