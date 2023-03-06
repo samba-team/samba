@@ -615,7 +615,7 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 	 * (it still might be disabled on all zones).
 	 */
 	if (!lpcfg_dns_zone_scavenging(s->task->lp_ctx)) {
-		DBG_INFO("DNS scavenging not enabled");
+		DBG_INFO("DNS scavenging not enabled\n");
 		return NT_STATUS_OK;
 	}
 
@@ -635,12 +635,12 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 			} else {
 				err = nt_errstr(status);
 			}
-			DBG_ERR("DNS record scavenging process failed: %s",
+			DBG_ERR("DNS record scavenging process failed: %s\n",
 				err);
 			return status;
 		}
 	}
-	DBG_INFO("Successfully tombstoned stale DNS records");
+	DBG_INFO("Successfully tombstoned stale DNS records\n");
 	return NT_STATUS_OK;
 }
 /*
@@ -675,11 +675,11 @@ static NTSTATUS kccsrv_dns_zone_tombstone_deletion(struct kccsrv_service *s,
 			} else {
 				err = nt_errstr(status);
 			}
-			DBG_ERR("DNS tombstone deletion failed: %s", err);
+			DBG_ERR("DNS tombstone deletion failed: %s\n", err);
 			return status;
 		}
 	}
-	DBG_INFO("Successfully deleted DNS tombstones");
+	DBG_INFO("Successfully deleted DNS tombstones\n");
 	return NT_STATUS_OK;
 }
 
