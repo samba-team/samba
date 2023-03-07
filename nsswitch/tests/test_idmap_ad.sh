@@ -70,16 +70,12 @@ add: loginShell
 loginShell: /bin/tcsh
 add: gecos
 gecos: Administrator Full Name
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
 dn: CN=Domain Users,CN=Users,$BASE_DN
 changetype: modify
 add: gidNumber
 gidNumber: 2000001
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
 dn: CN=Domain Admins,CN=Users,$BASE_DN
 changetype: modify
 add: gidNumber
@@ -95,18 +91,12 @@ dn: CN=Administrator,CN=Users,$TRUST_BASE_DN
 changetype: modify
 add: uidNumber
 uidNumber: 2500000
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Users,CN=Users,$TRUST_BASE_DN
 changetype: modify
 add: gidNumber
 gidNumber: 2500001
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Admins,CN=Users,$TRUST_BASE_DN
 changetype: modify
 add: gidNumber
@@ -209,16 +199,12 @@ delete: loginShell
 loginShell: /bin/tcsh
 delete: gecos
 gecos: Administrator Full Name
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
 dn: CN=Domain Users,CN=Users,$BASE_DN
 changetype: modify
 delete: gidNumber
 gidNumber: 2000001
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
 dn: CN=Domain Admins,CN=Users,$BASE_DN
 changetype: modify
 delete: gidNumber
@@ -234,18 +220,12 @@ dn: CN=Administrator,CN=Users,$TRUST_BASE_DN
 changetype: modify
 delete: uidNumber
 uidNumber: 2500000
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Users,CN=Users,$TRUST_BASE_DN
 changetype: modify
 delete: gidNumber
 gidNumber: 2500001
-EOF
 
-cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Admins,CN=Users,$TRUST_BASE_DN
 changetype: modify
 delete: gidNumber
