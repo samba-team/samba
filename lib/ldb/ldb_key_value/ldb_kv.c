@@ -1289,13 +1289,14 @@ int ldb_kv_modify_internal(struct ldb_module *module,
 				    ldb_kv,
 				    msg2,
 				    msg->elements[i].name);
-				if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE &&
-				    control_permissive) {
-					ret = LDB_SUCCESS;
-				} else {
-					ldb_asprintf_errstring(ldb,
-							       "attribute '%s': no such attribute for delete on '%s'",
-							       msg->elements[i].name, dn);
+				if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+					if (control_permissive) {
+						ret = LDB_SUCCESS;
+					} else {
+						ldb_asprintf_errstring(ldb,
+								       "attribute '%s': no such attribute for delete on '%s'",
+								       msg->elements[i].name, dn);
+					}
 				}
 				if (ret != LDB_SUCCESS) {
 					goto done;
