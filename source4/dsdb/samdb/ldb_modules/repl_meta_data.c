@@ -4712,7 +4712,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				 */
 				dsdb_flags |= DSDB_REPLMD_VANISH_LINKS;
 			}
-			ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
+			ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, NULL);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				ldb_module_oom(module);
