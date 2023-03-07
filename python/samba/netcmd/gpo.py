@@ -1917,7 +1917,7 @@ class cmd_admxload(Command):
                         'from https://www.microsoft.com/en-us/download/102157 '
                         'to continue using Windows Administrative Templates.\n')
 
-class cmd_add_sudoers(Command):
+class cmd_add_sudoers(GPOCommand):
     """Adds a Samba Sudoers Group Policy to the sysvol
 
 This command adds a sudo rule to the sysvol for applying to winbind clients.
@@ -2138,7 +2138,7 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
                     get_string(entry.data).strip():
                 self.outf.write('%s\n' % entry.data)
 
-class cmd_remove_sudoers(Command):
+class cmd_remove_sudoers(GPOCommand):
     """Removes a Samba Sudoers Group Policy from the sysvol
 
 This command removes a sudo rule from the sysvol from applying to winbind clients.
@@ -2270,7 +2270,7 @@ class cmd_sudoers(SuperCommand):
     subcommands["list"] = cmd_list_sudoers()
     subcommands["remove"] = cmd_remove_sudoers()
 
-class cmd_set_security(Command):
+class cmd_set_security(GPOCommand):
     """Set Samba Security Group Policy to the sysvol
 
 This command sets a security setting to the sysvol for applying to winbind
@@ -2530,7 +2530,7 @@ samba-tool gpo manage smb_conf list {31B2F340-016D-11D2-945F-00C04FB984F9}
                 val = lp.get(entry.valuename)
                 self.outf.write('%s = %s\n' % (entry.valuename, val))
 
-class cmd_set_smb_conf(Command):
+class cmd_set_smb_conf(GPOCommand):
     """Sets a Samba smb.conf Group Policy to the sysvol
 
 This command sets an smb.conf setting to the sysvol for applying to winbind
@@ -2701,7 +2701,7 @@ samba-tool gpo manage symlink list {31B2F340-016D-11D2-945F-00C04FB984F9}
             target = file_properties.find('target')
             self.outf.write('ln -s %s %s\n' % (source.text, target.text))
 
-class cmd_add_symlink(Command):
+class cmd_add_symlink(GPOCommand):
     """Adds a VGP Symbolic Link Group Policy to the sysvol
 
 This command adds a symlink setting to the sysvol that will be applied to winbind clients.
@@ -2791,7 +2791,7 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
                                    "not have sufficient privileges")
             raise
 
-class cmd_remove_symlink(Command):
+class cmd_remove_symlink(GPOCommand):
     """Removes a VGP Symbolic Link Group Policy from the sysvol
 
 This command removes a symlink setting from the sysvol from appling to winbind clients.
@@ -2954,7 +2954,7 @@ samba-tool gpo manage files list {31B2F340-016D-11D2-945F-00C04FB984F9}
                     (stat_from_mode(mode), user, group, target, source)
             self.outf.write('%s\n' % p)
 
-class cmd_add_files(Command):
+class cmd_add_files(GPOCommand):
     """Add VGP Files Group Policy to the sysvol
 
 This command adds files which will be copied from the sysvol and applied to winbind clients.
@@ -3063,7 +3063,7 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
                                    "not have sufficient privileges")
             raise
 
-class cmd_remove_files(Command):
+class cmd_remove_files(GPOCommand):
     """Remove VGP Files Group Policy from the sysvol
 
 This command removes files which would be copied from the sysvol and applied to winbind clients.
@@ -3226,7 +3226,7 @@ samba-tool gpo manage openssh list {31B2F340-016D-11D2-945F-00C04FB984F9}
                 self.outf.write('%s %s\n' % (kv.find('key').text,
                                              kv.find('value').text))
 
-class cmd_set_openssh(Command):
+class cmd_set_openssh(GPOCommand):
     """Sets a VGP OpenSSH Group Policy to the sysvol
 
 This command sets an openssh setting to the sysvol for applying to winbind
@@ -3429,7 +3429,7 @@ samba-tool gpo manage scripts startup list {31B2F340-016D-11D2-945F-00C04FB984F9
             self.outf.write('@reboot %s %s %s\n' % (run_as, script_path,
                                                   parameters))
 
-class cmd_add_startup(Command):
+class cmd_add_startup(GPOCommand):
     """Adds VGP Startup Script Group Policy to the sysvol
 
 This command adds a startup script policy to the sysvol.
@@ -3536,7 +3536,7 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
                                    "not have sufficient privileges")
             raise
 
-class cmd_remove_startup(Command):
+class cmd_remove_startup(GPOCommand):
     """Removes VGP Startup Script Group Policy from the sysvol
 
 This command removes a startup script policy from the sysvol.
@@ -3696,7 +3696,7 @@ samba-tool gpo manage motd list {31B2F340-016D-11D2-945F-00C04FB984F9}
         text = data.find('text')
         self.outf.write(text.text)
 
-class cmd_set_motd(Command):
+class cmd_set_motd(GPOCommand):
     """Sets a VGP MOTD Group Policy to the sysvol
 
 This command sets the Message of the Day to the sysvol for applying to winbind
@@ -3861,7 +3861,7 @@ samba-tool gpo manage issue list {31B2F340-016D-11D2-945F-00C04FB984F9}
         text = data.find('text')
         self.outf.write(text.text)
 
-class cmd_set_issue(Command):
+class cmd_set_issue(GPOCommand):
     """Sets a VGP Issue Group Policy to the sysvol
 
 This command sets the Prelogin Message to the sysvol for applying to winbind
@@ -4055,7 +4055,7 @@ samba-tool gpo manage access list {31B2F340-016D-11D2-945F-00C04FB984F9}
                 domain = adobject.find('domain')
                 self.outf.write('-:%s\\%s:ALL\n' % (domain.text, name.text))
 
-class cmd_add_access(Command):
+class cmd_add_access(GPOCommand):
     """Adds a VGP Host Access Group Policy to the sysvol
 
 This command adds a host access setting to the sysvol for applying to winbind
@@ -4186,7 +4186,7 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
                                    "not have sufficient privileges")
             raise
 
-class cmd_remove_access(Command):
+class cmd_remove_access(GPOCommand):
     """Remove a VGP Host Access Group Policy from the sysvol
 
 This command removes a host access setting from the sysvol for applying to
