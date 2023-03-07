@@ -36,6 +36,7 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 import re
 from samba.gp.gpclass import check_guid
+from samba.gp_parse.gp_ini import GPTIniParser
 
 gpo_load_json = \
 b"""
@@ -112,6 +113,26 @@ b"""
     }
 ]
 """
+
+def gpt_ini_version(gpo_guid):
+    lp = LoadParm()
+    lp.load(os.environ['SERVERCONFFILE'])
+    local_path = lp.get('path', 'sysvol')
+    GPT_INI = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                           gpo_guid, 'GPT.INI')
+    if os.path.exists(GPT_INI):
+        with open(GPT_INI, 'rb') as f:
+            data = f.read()
+        parser = GPTIniParser()
+        parser.parse(data)
+        if parser.ini_conf.has_option('General', 'Version'):
+            version = int(parser.ini_conf.get('General',
+                                              'Version').encode('utf-8'))
+        else:
+            version = 0
+    else:
+        version = 0
+    return version
 
 # These are new GUIDs, not used elsewhere, made up for the use of testing the
 # adding of extension GUIDs in `samba-tool gpo load`.
@@ -657,6 +678,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                self.gpo_guid, 'Machine/Registry.pol')
 
         policy = 'apply group policies'
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "smb_conf",
                                                  "set"), self.gpo_guid,
                                                  policy, "yes",
@@ -667,6 +689,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err,
                               'Failed to set apply group policies')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         self.assertTrue(os.path.exists(reg_pol),
                         'The Registry.pol does not exist')
@@ -675,6 +699,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
             for e in reg_data.entries])
         self.assertTrue(ret, 'The sudoers entry was not added')
 
+        before_vers = after_vers
         # Ensure an empty set command deletes the entry
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "smb_conf",
                                                  "set"), self.gpo_guid,
@@ -685,6 +710,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err,
                               'Failed to unset apply group policies')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
         ret = not any([get_string(e.valuename) == policy and e.data == 1 \
@@ -729,6 +756,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         inf_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
             self.gpo_guid, 'Machine/Microsoft/Windows NT/SecEdit/GptTmpl.inf')
 
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
                                                  "set"), self.gpo_guid,
                                                  'MaxTicketAge', '10',
@@ -744,7 +772,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
         inf_pol_contents = open(inf_pol, 'r').read()
         self.assertIn('MaxTicketAge = 10', inf_pol_contents,
                       'The test entry was not found!')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
+        before_vers = after_vers
         # Ensure an empty set command deletes the entry
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
                                                  "set"), self.gpo_guid,
@@ -759,6 +790,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
         inf_pol_contents = open(inf_pol, 'r').read()
         self.assertNotIn('MaxTicketAge = 10', inf_pol_contents,
                       'The test entry was still found!')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
     def test_security_list(self):
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
@@ -800,6 +833,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                self.gpo_guid, 'Machine/Microsoft/Windows NT',
                                'SecEdit/GptTmpl.inf')
 
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
                                                  "set"), self.gpo_guid,
                                                  'MaxTicketAge', '10',
@@ -810,7 +844,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err,
                               'Failed to set MaxTicketAge')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
                                                  "set"), self.gpo_guid,
                                                  'MaxTicketAge',
@@ -821,6 +858,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err,
                               'Failed to unset MaxTicketAge')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         inf_data = ConfigParser(interpolation=None)
         inf_data.read(gpt_inf)
@@ -846,6 +885,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         ret = stage_file(reg_pol, ndr_pack(stage))
         self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
 
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "add"),
                                                  self.gpo_guid, 'ALL', 'ALL',
@@ -856,6 +896,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Sudoers add failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         sudoer = 'fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL'
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
@@ -869,6 +911,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertIn(sudoer, out, 'The test entry was not found!')
         self.assertIn(get_string(e.data), out, 'The test entry was not found!')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "remove"),
                                                  self.gpo_guid, sudoer,
@@ -878,7 +921,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "remove"),
                                                  self.gpo_guid,
@@ -889,6 +935,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "list"),
@@ -1073,6 +1121,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         source_text = os.path.join(self.tempdir, 'test.source')
         target_text = os.path.join(self.tempdir, 'test.target')
         symlink = 'ln -s %s %s' % (source_text, target_text)
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "symlink", "add"),
                                                  self.gpo_guid,
@@ -1083,6 +1132,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Symlink add failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "symlink", "list"),
@@ -1094,6 +1145,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertIn(symlink, out, 'The test entry was not found!')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "symlink", "remove"),
                                                  self.gpo_guid,
@@ -1104,6 +1156,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Symlink remove failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "symlink", "list"),
@@ -1191,6 +1245,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         target_file = os.path.join(self.tempdir, 'test.target')
         user = pwd.getpwuid(os.getuid()).pw_name
         group = grp.getgrgid(os.getgid()).gr_name
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "files", "add"),
                                                  self.gpo_guid,
@@ -1206,6 +1261,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err, 'File add failed')
         self.assertIn(source_data, open(sysvol_source, 'r').read(),
                       'Failed to find the source file on the sysvol')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "files", "list"),
@@ -1221,6 +1278,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
         os.unlink(source_file)
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "files", "remove"),
                                                  self.gpo_guid,
@@ -1231,6 +1289,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'File remove failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "files", "list"),
@@ -1288,6 +1348,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         unstage_file(vgp_xml)
 
     def test_vgp_openssh_set(self):
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "openssh", "set"),
                                                  self.gpo_guid,
@@ -1299,6 +1360,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'OpenSSH set failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         openssh = 'KerberosAuthentication Yes'
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
@@ -1311,6 +1374,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertIn(openssh, out, 'The test entry was not found!')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "openssh", "set"),
                                                  self.gpo_guid,
@@ -1321,6 +1385,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'OpenSSH unset failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "openssh", "list"),
@@ -1335,6 +1401,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_startup_script_add(self):
         lp = LoadParm()
         fname = None
+        before_vers = gpt_ini_version(self.gpo_guid)
         with NamedTemporaryFile() as f:
             fname = os.path.basename(f.name)
             f.write(b'#!/bin/sh\necho $@ hello world')
@@ -1349,6 +1416,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                      (os.environ["USERNAME"],
                                                      os.environ["PASSWORD"]))
             self.assertCmdSuccess(result, out, err, 'Script add failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         script_path = '\\'.join(['\\', lp.get('realm').lower(), 'Policies',
                                self.gpo_guid, 'MACHINE\\VGP\\VTLA\\Unix',
@@ -1371,6 +1440,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertTrue(os.path.exists(local_script_path),
                         'The test script was not uploaded to the sysvol')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "scripts", "startup",
                                                  "remove"), self.gpo_guid,
@@ -1381,6 +1451,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Script remove failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage", "scripts",
                                                  "startup", "list"),
@@ -1436,6 +1508,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_vgp_motd_set(self):
         text = 'This is the message of the day'
         msg = '"%s\n"' % text
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "motd", "set"),
                                                  self.gpo_guid,
@@ -1446,6 +1519,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'MOTD set failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "motd", "list"),
@@ -1457,6 +1532,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertIn(text, out, 'The test entry was not found!')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "motd", "set"),
                                                  self.gpo_guid, "-H",
@@ -1466,6 +1542,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'MOTD unset failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "motd", "list"),
@@ -1558,6 +1636,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_vgp_issue_set(self):
         text = 'Welcome to Samba!'
         msg = '"%s\n"' % text
+        before_vers = gpt_ini_version(self.gpo_guid)
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "issue", "set"),
                                                  self.gpo_guid,
@@ -1568,6 +1647,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Issue set failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "issue", "list"),
@@ -1579,6 +1660,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertIn(text, out, 'The test entry was not found!')
 
+        before_vers = after_vers
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "issue", "set"),
                                                  self.gpo_guid, "-H",
@@ -1588,6 +1670,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Issue unset failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "issue", "list"),
@@ -1600,6 +1684,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertNotIn(text, out, 'The test entry was still found!')
 
     def test_load_show_remove(self):
+        before_vers = gpt_ini_version(self.gpo_guid)
         with NamedTemporaryFile() as f:
             f.write(gpo_load_json)
             f.flush()
@@ -1616,6 +1701,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
             self.assertCmdSuccess(result, out, err, 'Loading policy failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
+
+        before_vers = after_vers
         # Write the default registry extension
         with NamedTemporaryFile() as f:
             f.write(b'[]') # Intentionally empty policy
@@ -1630,6 +1719,9 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
             self.assertCmdSuccess(result, out, err, 'Loading policy failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertEqual(after_vers, before_vers,
+                         'GPT.INI changed on empty merge')
 
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H",
                                             "ldap://%s" % os.environ["SERVER"])
@@ -1651,6 +1743,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         ext_data = '"   \\"key\\": \\"value\\"",'
         self.assertIn(ext_data, out, 'Extension policy not loaded')
 
+        before_vers = after_vers
         with NamedTemporaryFile() as f:
             f.write(gpo_remove_json)
             f.flush()
@@ -1667,6 +1760,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
             self.assertCmdSuccess(result, out, err, 'Removing policy failed')
+        after_vers = gpt_ini_version(self.gpo_guid)
+        self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H",
                                             "ldap://%s" % os.environ["SERVER"])
