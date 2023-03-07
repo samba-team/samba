@@ -1973,6 +1973,9 @@ fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Sudo',
@@ -2031,6 +2034,7 @@ fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -2180,6 +2184,9 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Sudo',
@@ -2242,6 +2249,7 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
             try:
                 create_directory_hier(conn, vgp_dir)
                 conn.savefile(vgp_xml, out.read())
+                reg.increment_gpt_ini(machine_changed=True)
             except NTSTATUSError as e:
                 if e.args[0] == NT_STATUS_ACCESS_DENIED:
                     raise CommandError("The authenticated user does "
@@ -2254,6 +2262,7 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
 
             try:
                 conn.savefile(pol_file, ndr_pack(pol_data))
+                reg.increment_gpt_ini(machine_changed=True)
             except NTSTATUSError as e:
                 if e.args[0] == NT_STATUS_ACCESS_DENIED:
                     raise CommandError("The authenticated user does "
@@ -2337,6 +2346,9 @@ PasswordComplexity      Password must meet complexity requirements
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         inf_dir = '\\'.join([realm.lower(), 'Policies', gpo,
             'MACHINE\\Microsoft\\Windows NT\\SecEdit'])
@@ -2382,6 +2394,7 @@ PasswordComplexity      Password must meet complexity requirements
         try:
             create_directory_hier(conn, inf_dir)
             conn.savefile(inf_file, get_bytes(out.getvalue()))
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -2574,6 +2587,9 @@ samba-tool gpo manage smb_conf set {31B2F340-016D-11D2-945F-00C04FB984F9} 'apply
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         pol_dir = '\\'.join([realm.lower(), 'Policies', gpo, 'MACHINE'])
         pol_file = '\\'.join([pol_dir, 'Registry.pol'])
@@ -2624,6 +2640,7 @@ samba-tool gpo manage smb_conf set {31B2F340-016D-11D2-945F-00C04FB984F9} 'apply
         try:
             create_directory_hier(conn, pol_dir)
             conn.savefile(pol_file, ndr_pack(pol_data))
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -2744,6 +2761,9 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Symlink'])
@@ -2785,6 +2805,7 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -2834,6 +2855,9 @@ samba-tool gpo manage symlink remove {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Symlink'])
@@ -2871,6 +2895,7 @@ samba-tool gpo manage symlink remove {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3000,6 +3025,9 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Files'])
@@ -3057,6 +3085,7 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
             conn.savefile(sysvol_source, source_data)
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3106,6 +3135,9 @@ samba-tool gpo manage files remove {31B2F340-016D-11D2-945F-00C04FB984F9} /usr/s
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Files'])
@@ -3145,6 +3177,7 @@ samba-tool gpo manage files remove {31B2F340-016D-11D2-945F-00C04FB984F9} /usr/s
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3270,6 +3303,9 @@ samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} Kerbero
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\SshCfg\\SshD'])
@@ -3339,6 +3375,7 @@ samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} Kerbero
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3477,6 +3514,9 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Scripts\\Startup'])
@@ -3530,6 +3570,7 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
             conn.savefile(sysvol_script, script_data)
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3579,6 +3620,9 @@ samba-tool gpo manage scripts startup remove {31B2F340-016D-11D2-945F-00C04FB984
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Scripts\\Startup'])
@@ -3614,6 +3658,7 @@ samba-tool gpo manage scripts startup remove {31B2F340-016D-11D2-945F-00C04FB984
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3740,6 +3785,9 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\MOTD'])
@@ -3747,6 +3795,7 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
 
         if value is None:
             conn.unlink(vgp_xml)
+            reg.increment_gpt_ini(machine_changed=True)
             return
 
         try:
@@ -3785,6 +3834,7 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -3905,6 +3955,9 @@ samba-tool gpo manage issue set {31B2F340-016D-11D2-945F-00C04FB984F9} "Welcome 
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
                              'MACHINE\\VGP\\VTLA\\Unix\\Issue'])
@@ -3912,6 +3965,7 @@ samba-tool gpo manage issue set {31B2F340-016D-11D2-945F-00C04FB984F9} "Welcome 
 
         if value is None:
             conn.unlink(vgp_xml)
+            reg.increment_gpt_ini(machine_changed=True)
             return
 
         try:
@@ -3950,6 +4004,7 @@ samba-tool gpo manage issue set {31B2F340-016D-11D2-945F-00C04FB984F9} "Welcome 
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -4100,6 +4155,9 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         if etype == 'allow':
             vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
@@ -4180,6 +4238,7 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -4230,6 +4289,9 @@ samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow
                               lp=self.lp,
                               creds=self.creds)
 
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+
         realm = self.lp.get('realm')
         if etype == 'allow':
             vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
@@ -4277,6 +4339,7 @@ samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow
         try:
             create_directory_hier(conn, vgp_dir)
             conn.savefile(vgp_xml, out.read())
+            reg.increment_gpt_ini(machine_changed=True)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
