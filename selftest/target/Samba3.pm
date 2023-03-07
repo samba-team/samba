@@ -1390,6 +1390,7 @@ sub setup_ad_member_idmap_ad
 	idmap config $dcvars->{DOMAIN} : range = 2000000-2999999
 	idmap config $dcvars->{DOMAIN} : unix_primary_group = yes
 	idmap config $dcvars->{DOMAIN} : unix_nss_info = yes
+	idmap config $dcvars->{DOMAIN} : deny ous = \"ou=sub,DC=samba2008r2,DC=example,DC=com\"
 	idmap config $dcvars->{TRUST_DOMAIN} : backend = ad
 	idmap config $dcvars->{TRUST_DOMAIN} : range = 2000000-2999999
 	gensec_gssapi:requested_life_time = 5

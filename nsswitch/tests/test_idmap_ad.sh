@@ -80,6 +80,20 @@ dn: CN=Domain Admins,CN=Users,$BASE_DN
 changetype: modify
 add: gidNumber
 gidNumber: 2000002
+
+dn: ou=sub,$BASE_DN
+changetype: add
+objectClass: organizationalUnit
+
+dn: cn=forbidden,ou=sub,$BASE_DN
+changetype: add
+objectClass: user
+samaccountName: forbidden
+uidNumber: 2000003
+gidNumber: 2000001
+unixHomeDirectory: /home/forbidden
+loginShell: /bin/tcsh
+gecos: User in forbidden OU
 EOF
 
 #
@@ -142,6 +156,20 @@ echo "wbinfo returned: \"$out\", expecting \"$DOMAIN_SID-512\""
 test "$out" = "$DOMAIN_SID-512"
 ret=$?
 testit "Test gid lookup of Domain Admins" test $ret -eq 0 || failed=$(expr $failed + 1)
+
+#
+# Test 5: Make sure deny_ou is really denied
+# This depends on the "deny ous" setting in Samba3.pm
+#
+
+sid="$($wbinfo -n $DOMAIN/forbidden | awk '{print $1}')"
+testit "Could create forbidden" test -n "$sid" || failed=$(expr $failed + 1)
+if [ -n "$sid" ]
+then
+    uid="$($wbinfo --sid-to-uid $sid)"
+    testit "Can not resolve forbidden user" test -z "$uid" ||
+	failed=$(($failed + 1))
+fi
 
 #
 # Trusted domain test 1: Test uid of Administrator, should be 2500000
@@ -209,6 +237,12 @@ dn: CN=Domain Admins,CN=Users,$BASE_DN
 changetype: modify
 delete: gidNumber
 gidNumber: 2000002
+
+dn: cn=forbidden,ou=sub,$BASE_DN
+changetype: delete
+
+dn: ou=sub,$BASE_DN
+changetype: delete
 EOF
 
 #
