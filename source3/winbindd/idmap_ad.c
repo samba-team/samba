@@ -444,7 +444,7 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	TLDAPRC rc;
 
-	ctx = talloc(mem_ctx, struct idmap_ad_context);
+	ctx = talloc_zero(mem_ctx, struct idmap_ad_context);
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
