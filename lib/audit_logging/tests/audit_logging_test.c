@@ -63,8 +63,10 @@ static void test_json_add_int(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
+	json_int_t m;
 	double n;
 	int rc = 0;
+	intmax_t big_int = ((intmax_t)1)<<33;
 
 	object = json_new_object();
 	rc = json_add_int(&object, "positive_one", 1);
@@ -73,8 +75,10 @@ static void test_json_add_int(_UNUSED_ void **state)
 	assert_int_equal(0, rc);
 	rc = json_add_int(&object, "negative_one", -1);
 	assert_int_equal(0, rc);
+	rc = json_add_int(&object, "big_int", big_int);
+	assert_int_equal(0, rc);
 
-	assert_int_equal(3, json_object_size(object.root));
+	assert_int_equal(4, json_object_size(object.root));
 
 	value = json_object_get(object.root, "positive_one");
 	assert_true(json_is_integer(value));
@@ -90,6 +94,11 @@ static void test_json_add_int(_UNUSED_ void **state)
 	assert_true(json_is_integer(value));
 	n = json_number_value(value);
 	assert_true(n == -1.0);
+
+	value = json_object_get(object.root, "big_int");
+	assert_true(json_is_integer(value));
+	m = json_integer_value(value);
+	assert_int_equal(m, big_int);
 
 	object.valid = false;
 	rc = json_add_int(&object, "should fail 1", 0xf1);
