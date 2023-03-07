@@ -196,6 +196,14 @@ class LargeLDAPTest(samba.tests.TestCase):
         except LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_SIZE_LIMIT_EXCEEDED)
+        else:
+            # FIXME: Due to a bug in the client, the second exception to
+            # transmit the iteration error isn't raised. We must still check
+            # that the number of results is fewer than the total count.
+
+            # self.fail('expected to fail with ERR_SIZE_LIMIT_EXCEEDED')
+
+            pass
 
         # Assert we don't get all the entries but still the error
         self.assertGreater(count, count_jpeg)
@@ -256,6 +264,14 @@ class LargeLDAPTest(samba.tests.TestCase):
         except LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_SIZE_LIMIT_EXCEEDED)
+        else:
+            # FIXME: Due to a bug in the client, the second exception to
+            # transmit the iteration error isn't raised. We must still check
+            # that the number of results is fewer than the total count.
+
+            # self.fail('expected to fail with ERR_SIZE_LIMIT_EXCEEDED')
+
+            pass
 
         # Assert we don't get all the entries but still the error
         self.assertGreater(count, count_jpeg)
