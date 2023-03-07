@@ -250,7 +250,7 @@ class LargeLDAPTest(samba.tests.TestCase):
         try:
             for reply in search1:
                 self.assertIsInstance(reply, ldb.Message)
-                count_jpeg =+ 1
+                count_jpeg += 1
         except LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_SIZE_LIMIT_EXCEEDED)
