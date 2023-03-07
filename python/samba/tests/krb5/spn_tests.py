@@ -199,7 +199,7 @@ class SpnTests(KDCBaseTest):
         kvno = int(res[0].get('msDS-KeyVersionNumber', idx=0))
         creds.set_kvno(kvno)
 
-        keys = self.get_keys(samdb, rodc_dn)
+        keys = self.get_keys(rodc_dn)
         self.creds_set_keys(creds, keys)
 
         return creds

@@ -291,7 +291,7 @@ class ProtectedUsersTests(KDCBaseTest):
 
         client_creds.set_password(new_password)
 
-        self.get_keys(samdb, client_dn,
+        self.get_keys(client_dn,
                       expected_etypes={kcrypto.Enctype.AES256,
                                        kcrypto.Enctype.AES128,
                                        kcrypto.Enctype.RC4})

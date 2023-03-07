@@ -47,7 +47,6 @@ class NtHashTests(KDCBaseTest):
         admin_creds = self.get_admin_creds()
 
         bind, identifier, attributes = self.get_secrets(
-            samdb,
             dn,
             destination_dsa_guid=misc.GUID(samdb.get_ntds_GUID()),
             source_dsa_invocation_id=misc.GUID())

@@ -151,6 +151,8 @@ class KDCBaseTest(RawKerberosTest):
         cls._ldb = None
         cls._rodc_ldb = None
 
+        cls._drsuapi_connection = None
+
         cls._functional_level = None
 
         # An identifier to ensure created accounts have unique names. Windows
@@ -280,6 +282,18 @@ class KDCBaseTest(RawKerberosTest):
                                          am_rodc=True)
 
         return self._rodc_ldb
+
+    def get_drsuapi_connection(self):
+        if self._drsuapi_connection is None:
+            admin_creds = self.get_admin_creds()
+            samdb = self.get_samdb()
+            dns_hostname = samdb.host_dns_name()
+            type(self)._drsuapi_connection = drsuapi_connect(dns_hostname,
+                                                             self.get_lp(),
+                                                             admin_creds,
+                                                             ip=self.dc_host)
+
+        return self._drsuapi_connection
 
     def get_server_dn(self, samdb):
         server = samdb.get_serverName()
@@ -686,7 +700,6 @@ class KDCBaseTest(RawKerberosTest):
         rodc_ctx = self.get_mock_rodc_ctx()
 
         self.get_secrets(
-            samdb,
             dn,
             destination_dsa_guid=rodc_ctx.ntds_guid,
             source_dsa_invocation_id=misc.GUID(samdb.invocation_id))
@@ -712,16 +725,10 @@ class KDCBaseTest(RawKerberosTest):
         else:
             self.assertNotIn(str(dn), revealed_dns)
 
-    def get_secrets(self, samdb, dn,
+    def get_secrets(self, dn,
                     destination_dsa_guid,
                     source_dsa_invocation_id):
-        admin_creds = self.get_admin_creds()
-
-        dns_hostname = samdb.host_dns_name()
-        (bind, handle, _) = drsuapi_connect(dns_hostname,
-                                            self.get_lp(),
-                                            admin_creds,
-                                            ip=self.dc_host)
+        bind, handle, _ = self.get_drsuapi_connection()
 
         req = drsuapi.DsGetNCChangesRequest8()
 
@@ -773,11 +780,11 @@ class KDCBaseTest(RawKerberosTest):
 
         return bind, identifier, attributes
 
-    def get_keys(self, samdb, dn, expected_etypes=None):
+    def get_keys(self, dn, expected_etypes=None):
         admin_creds = self.get_admin_creds()
+        samdb = self.get_samdb()
 
         bind, identifier, attributes = self.get_secrets(
-            samdb,
             str(dn),
             destination_dsa_guid=misc.GUID(samdb.get_ntds_GUID()),
             source_dsa_invocation_id=misc.GUID())
@@ -1444,7 +1451,7 @@ class KDCBaseTest(RawKerberosTest):
         expected_etypes = None
         if force_nt4_hash:
             expected_etypes = {kcrypto.Enctype.RC4}
-        keys = self.get_keys(samdb, dn, expected_etypes=expected_etypes)
+        keys = self.get_keys(dn, expected_etypes=expected_etypes)
         self.creds_set_keys(creds, keys)
 
         # Handle secret replication to the RODC.
@@ -1628,7 +1635,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(rodc_kvno)
             creds.set_dn(krbtgt_dn)
 
-            keys = self.get_keys(samdb, krbtgt_dn)
+            keys = self.get_keys(krbtgt_dn)
             self.creds_set_keys(creds, keys)
 
             # The RODC krbtgt account should support the default enctypes,
@@ -1681,7 +1688,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(rodc_kvno)
             creds.set_dn(dn)
 
-            keys = self.get_keys(samdb, dn)
+            keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
             extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
@@ -1729,7 +1736,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(kvno)
             creds.set_dn(dn)
 
-            keys = self.get_keys(samdb, dn)
+            keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
             # The krbtgt account should support the default enctypes, although
@@ -1780,7 +1787,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_workstation(username[:-1])
             creds.set_dn(dn)
 
-            keys = self.get_keys(samdb, dn)
+            keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
             extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
@@ -1827,7 +1834,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(kvno)
             creds.set_dn(dn)
 
-            keys = self.get_keys(samdb, dn)
+            keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
             extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
