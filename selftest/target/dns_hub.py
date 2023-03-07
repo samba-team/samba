@@ -182,6 +182,7 @@ class server_thread(threading.Thread):
         print("dns_hub[%s]: before shutdown()" % self.name)
         self.server.shutdown()
         print("dns_hub[%s]: after shutdown()" % self.name)
+        self.server.server_close()
 
 class UDPV4Server(sserver.UDPServer):
     address_family = socket.AF_INET
