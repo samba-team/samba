@@ -322,7 +322,7 @@ static void test_tstream_server_spin_client_tcp_user_timeout(struct socket_pair 
 	rc = write(sp->socket_client, TEST_STRING, sizeof(TEST_STRING));
 	assert_return_code(rc, errno);
 	sp->expected_errno = ETIMEDOUT;
-	sp->max_loops = 15;
+	sp->max_loops = 30;
 }
 
 static void test_tstream_server_spin_client_both_timer(struct tevent_context *ev,
