@@ -266,6 +266,33 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	return result;
 }
 
+static NTSTATUS lookup_aliasmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *group_sid,
+				enum lsa_SidType type,
+				uint32_t *num_names,
+				struct dom_sid **sid_mem)
+{
+	NTSTATUS result = NT_STATUS_OK;
+
+	result = ads_methods.lookup_aliasmem(domain,
+					     mem_ctx,
+					     group_sid,
+					     type,
+					     num_names,
+					     sid_mem);
+
+	if (ldap_reconnect_need_retry(result, domain)) {
+		result = ads_methods.lookup_aliasmem(domain,
+						     mem_ctx,
+						     group_sid,
+						     type,
+						     num_names,
+						     sid_mem);
+	}
+	return result;
+}
+
 /* find the lockout policy of a domain */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -326,6 +353,7 @@ struct winbindd_methods reconnect_ads_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
+	lookup_aliasmem,
 	lockout_policy,
 	password_policy,
 	trusted_domains,

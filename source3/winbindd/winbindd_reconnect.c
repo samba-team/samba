@@ -235,6 +235,34 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 	return result;
 }
 
+/* Lookup alias membership given */
+static NTSTATUS lookup_aliasmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *sid,
+				enum lsa_SidType type,
+				uint32_t *num_sids,
+				struct dom_sid **sids)
+{
+	NTSTATUS result;
+
+	result = msrpc_methods.lookup_aliasmem(domain,
+					       mem_ctx,
+					       sid,
+					       type,
+					       num_sids,
+					       sids);
+
+	if (reconnect_need_retry(result, domain))
+		result = msrpc_methods.lookup_aliasmem(domain,
+						       mem_ctx,
+						       sid,
+						       type,
+						       num_sids,
+						       sids);
+
+	return result;
+}
+
 /* Lookup group membership given a rid.   */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
@@ -319,6 +347,7 @@ struct winbindd_methods reconnect_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
+	lookup_aliasmem,
 	lockout_policy,
 	password_policy,
 	trusted_domains,

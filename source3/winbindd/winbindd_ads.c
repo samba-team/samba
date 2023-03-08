@@ -1371,6 +1371,31 @@ done:
 	return status;
 }
 
+static NTSTATUS lookup_aliasmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *sid,
+				enum lsa_SidType type,
+				uint32_t *num_sids,
+				struct dom_sid **sids)
+{
+	char **names = NULL;
+	uint32_t *name_types = NULL;
+	struct dom_sid_buf buf;
+
+	DBG_DEBUG("ads: lookup_aliasmem %s sid=%s\n",
+		  domain->name,
+		  dom_sid_str_buf(sid, &buf));
+	/* Search for alias and group membership uses the same LDAP command. */
+	return lookup_groupmem(domain,
+			       mem_ctx,
+			       sid,
+			       type,
+			       num_sids,
+			       sids,
+			       &names,
+			       &name_types);
+}
+
 /* find the lockout policy of a domain - use rpc methods */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -1568,6 +1593,7 @@ struct winbindd_methods ads_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
+	lookup_aliasmem,
 	lockout_policy,
 	password_policy,
 	trusted_domains,

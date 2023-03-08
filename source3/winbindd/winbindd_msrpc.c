@@ -544,6 +544,60 @@ done:
 	return status;
 }
 
+/* lookup alias membership */
+static NTSTATUS msrpc_lookup_aliasmem(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      const struct dom_sid *alias_sid,
+				      enum lsa_SidType type,
+				      uint32_t *pnum_sids,
+				      struct dom_sid **sid_mem)
+{
+	struct rpc_pipe_client *samr_pipe = NULL;
+	struct policy_handle dom_pol;
+	struct dom_sid *alias_members = NULL;
+	struct dom_sid_buf buf;
+	uint32_t num_groups = 0;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	NTSTATUS status;
+
+	D_INFO("Lookup alias members in domain=%s for sid=%s.\n",
+	       domain->name,
+	       dom_sid_str_buf(alias_sid, &buf));
+
+	*pnum_sids = 0;
+
+	if (!winbindd_can_contact_domain(domain)) {
+		D_DEBUG("No incoming trust for domain %s\n", domain->name);
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
+	status = cm_connect_sam(domain, tmp_ctx, false, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpc_lookup_aliasmem(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     &domain->sid,
+				     alias_sid,
+				     type,
+				     &num_groups,
+				     &alias_members);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	*pnum_sids = num_groups;
+	if (sid_mem) {
+		*sid_mem = talloc_move(mem_ctx, &alias_members);
+	}
+
+done:
+	talloc_free(tmp_ctx);
+	return status;
+}
 
 /* Lookup group membership given a rid.   */
 static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
@@ -1069,6 +1123,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_lookup_usergroups,
 	msrpc_lookup_useraliases,
 	msrpc_lookup_groupmem,
+	msrpc_lookup_aliasmem,
 	msrpc_lockout_policy,
 	msrpc_password_policy,
 	msrpc_trusted_domains,

@@ -76,6 +76,15 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 			     char ***pnames,
 			     uint32_t **pname_types);
 
+NTSTATUS rpc_lookup_aliasmem(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *samr_pipe,
+			     struct policy_handle *samr_policy,
+			     const struct dom_sid *domain_sid,
+			     const struct dom_sid *group_sid,
+			     enum lsa_SidType type,
+			     uint32_t *pnum_sids,
+			     struct dom_sid **psids);
+
 /* Get a list of trusted domains */
 NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *lsa_pipe,

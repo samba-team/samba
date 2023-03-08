@@ -488,6 +488,73 @@ done:
 	return status;
 }
 
+/* Lookup alias membership */
+static NTSTATUS sam_lookup_aliasmem(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *group_sid,
+				    enum lsa_SidType type,
+				    uint32_t *pnum_sids,
+				    struct dom_sid **psid_mem)
+{
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol = {0};
+
+	uint32_t num_sids = 0;
+	struct dom_sid *sid_mem = NULL;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	NTSTATUS status;
+	bool retry = false;
+
+	DBG_INFO("sam_lookup_aliasmem\n");
+
+	/* Paranoia check */
+	if (type != SID_NAME_ALIAS) {
+		status = NT_STATUS_NO_SUCH_ALIAS;
+		goto done;
+	}
+
+	if (pnum_sids) {
+		*pnum_sids = 0;
+	}
+
+again:
+	status = open_cached_internal_pipe_conn(domain,
+						&samr_pipe,
+						&dom_pol,
+						NULL,
+						NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpc_lookup_aliasmem(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     &domain->sid,
+				     group_sid,
+				     type,
+				     &num_sids,
+				     &sid_mem);
+
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
+		retry = true;
+		goto again;
+	}
+
+	if (pnum_sids) {
+		*pnum_sids = num_sids;
+	}
+
+	if (psid_mem) {
+		*psid_mem = talloc_move(mem_ctx, &sid_mem);
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
+
 /*********************************************************************
  BUILTIN specific functions.
 *********************************************************************/
@@ -1331,6 +1398,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
+	.lookup_aliasmem       = sam_lookup_aliasmem,
 	.lockout_policy        = sam_lockout_policy,
 	.password_policy       = sam_password_policy,
 	.trusted_domains       = builtin_trusted_domains
@@ -1349,6 +1417,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
+	.lookup_aliasmem       = sam_lookup_aliasmem,
 	.lockout_policy        = sam_lockout_policy,
 	.password_policy       = sam_password_policy,
 	.trusted_domains       = sam_trusted_domains

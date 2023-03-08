@@ -279,6 +279,14 @@ struct winbindd_methods {
 				    struct dom_sid **sid_mem, char ***names,
 				    uint32_t **name_types);
 
+	/* find all members of the alias with the specified alias_sid */
+	NTSTATUS (*lookup_aliasmem)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *alias_sid,
+				    enum lsa_SidType type,
+				    uint32_t *num_sids,
+				    struct dom_sid **sid_mem);
+
 	/* return the lockout policy */
 	NTSTATUS (*lockout_policy)(struct winbindd_domain *domain,
  				   TALLOC_CTX *mem_ctx,
