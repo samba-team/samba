@@ -1221,7 +1221,7 @@ pkinit_configure_win(krb5_context context, krb5_init_creds_context ctx, void *pa
 
 static krb5_error_code
 pkinit_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_DATA *pa, const AS_REQ *a,
-	    const AS_REP *rep, const krb5_krbhst_info *hi, METHOD_DATA *in_md, METHOD_DATA *out_md)
+	    const AS_REP *rep, METHOD_DATA *in_md, METHOD_DATA *out_md)
 {
     krb5_error_code ret = HEIM_ERR_PA_CANT_CONTINUE;
     struct pkinit_context *pkinit_ctx = pa_ctx;
@@ -1245,7 +1245,6 @@ pkinit_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_
 				   a->req_body.realm,
 				   ctx->pk_init_ctx,
 				   rep->enc_part.etype,
-				   hi,
 				   ctx->pk_nonce,
 				   &ctx->req_buffer,
 				   pa,
@@ -1374,7 +1373,6 @@ pa_gss_step(krb5_context context,
 	    PA_DATA *pa,
 	    const AS_REQ *a,
 	    const AS_REP *rep,
-	    const krb5_krbhst_info *hi,
 	    METHOD_DATA *in_md,
 	    METHOD_DATA *out_md)
 {
@@ -1588,7 +1586,7 @@ process_pa_info(krb5_context, const krb5_principal, const AS_REQ *, struct pa_in
 
 static krb5_error_code
 enc_chal_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_DATA *pa, const AS_REQ *a,
-	      const AS_REP *rep, const krb5_krbhst_info *hi, METHOD_DATA *in_md, METHOD_DATA *out_md)
+	      const AS_REP *rep, METHOD_DATA *in_md, METHOD_DATA *out_md)
 {
     struct pa_info_data paid, *ppaid;
     krb5_keyblock challengekey;
@@ -1727,7 +1725,6 @@ static krb5_error_code
 enc_ts_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_DATA *pa,
 	    const AS_REQ *a,
 	    const AS_REP *rep,
-	    const krb5_krbhst_info *hi,
 	    METHOD_DATA *in_md, METHOD_DATA *out_md)
 {
     struct enc_ts_context *pactx = (struct enc_ts_context *)pa_ctx;
@@ -1855,8 +1852,7 @@ enc_ts_release(void *pa_ctx)
 
 static krb5_error_code
 pa_pac_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_DATA *pa, const AS_REQ *a,
-	    const AS_REP *rep, const krb5_krbhst_info *hi,
-	    METHOD_DATA *in_md, METHOD_DATA *out_md)
+	    const AS_REP *rep, METHOD_DATA *in_md, METHOD_DATA *out_md)
 {
     size_t len = 0, length;
     krb5_error_code ret;
@@ -1888,8 +1884,7 @@ pa_pac_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_
 
 static krb5_error_code
 pa_enc_pa_rep_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_DATA *pa, const AS_REQ *a,
-		   const AS_REP *rep, const krb5_krbhst_info *hi,
-		   METHOD_DATA *in_md, METHOD_DATA *out_md)
+		   const AS_REP *rep, METHOD_DATA *in_md, METHOD_DATA *out_md)
 {
     if (ctx->runflags.allow_enc_pa_rep)
 	return krb5_padata_add(context, out_md, KRB5_PADATA_REQ_ENC_PA_REP, NULL, 0);
@@ -1904,7 +1899,6 @@ pa_fx_cookie_step(krb5_context context,
 		  PA_DATA *pa,
 		  const AS_REQ *a,
 		  const AS_REP *rep,
-		  const krb5_krbhst_info *hi,
 		  METHOD_DATA *in_md,
 		  METHOD_DATA *out_md)
 {
@@ -1944,7 +1938,7 @@ pa_fx_cookie_step(krb5_context context,
 typedef struct pa_info_data *(*pa_salt_info_f)(krb5_context, const krb5_principal, const AS_REQ *, struct pa_info_data *, heim_octet_string *);
 typedef krb5_error_code (*pa_configure_f)(krb5_context, krb5_init_creds_context, void *);
 typedef krb5_error_code (*pa_restart_f)(krb5_context, krb5_init_creds_context, void *);
-typedef krb5_error_code (*pa_step_f)(krb5_context, krb5_init_creds_context, void *, PA_DATA *, const AS_REQ *, const AS_REP *, const krb5_krbhst_info *, METHOD_DATA *, METHOD_DATA *);
+typedef krb5_error_code (*pa_step_f)(krb5_context, krb5_init_creds_context, void *, PA_DATA *, const AS_REQ *, const AS_REP *, METHOD_DATA *, METHOD_DATA *);
 typedef void            (*pa_release_f)(void *);
 
 struct patype {
@@ -2145,7 +2139,7 @@ pa_announce(krb5_context context,
 	    continue;
 
 	if (patypes[n].step)
-	    patypes[n].step(context, ctx, NULL, NULL, NULL, NULL, NULL, in_md, out_md);
+	    patypes[n].step(context, ctx, NULL, NULL, NULL, NULL, in_md, out_md);
 	else
 	    ret = krb5_padata_add(context, out_md, patypes[n].type, NULL, 0);
     }
@@ -2258,7 +2252,6 @@ pa_step(krb5_context context,
 	krb5_init_creds_context ctx,
 	const AS_REQ *a,
 	const AS_REP *rep,
-	const krb5_krbhst_info *hi,
 	METHOD_DATA *in_md,
 	METHOD_DATA *out_md)
 {
@@ -2310,7 +2303,7 @@ pa_step(krb5_context context,
 
     _krb5_debug(context, 5, "Stepping pa-mech: %s", ctx->pa_mech->patype->name);
 
-    ret = ctx->pa_mech->patype->step(context, ctx, (void *)&ctx->pa_mech->pactx[0], pa, a, rep, hi, in_md, out_md);
+    ret = ctx->pa_mech->patype->step(context, ctx, (void *)&ctx->pa_mech->pactx[0], pa, a, rep, in_md, out_md);
     _krb5_debug(context, 10, "PA type %s returned %d", ctx->pa_mech->patype->name, ret);
     if (ret == 0) {
 	struct pa_auth_mech *next_pa = ctx->pa_mech->next;
@@ -2386,7 +2379,7 @@ process_pa_data_to_md(krb5_context context,
 
     log_kdc_pa_types(context, in_md);
 
-    ret = pa_step(context, ctx, a, NULL, NULL, in_md, *out_md);
+    ret = pa_step(context, ctx, a, NULL, in_md, *out_md);
     if (ret == HEIM_ERR_PA_CONTINUE_NEEDED) {
 	_krb5_debug(context, 0, "pamech need more stepping");
     } else if (ret == 0) {
@@ -2419,7 +2412,6 @@ process_pa_data_to_key(krb5_context context,
 		       krb5_creds *creds,
 		       AS_REQ *a,
 		       AS_REP *rep,
-		       const krb5_krbhst_info *hi,
 		       krb5_keyblock **key)
 {
     struct pa_info_data paid, *ppaid = NULL;
@@ -2446,7 +2438,7 @@ process_pa_data_to_key(krb5_context context,
 	}
     }
 
-    ret = pa_step(context, ctx, a, rep, hi, rep->padata, NULL);
+    ret = pa_step(context, ctx, a, rep, rep->padata, NULL);
     if (ret == HEIM_ERR_PA_CONTINUE_NEEDED) {
 	_krb5_debug(context, 0, "In final stretch and pa require more stepping ?");
 	return ret;
@@ -2966,9 +2958,9 @@ available_padata_count(METHOD_DATA *md)
 static krb5_error_code
 init_creds_step(krb5_context context,
 		krb5_init_creds_context ctx,
-		krb5_data *in,
+		const krb5_data *in,
 		krb5_data *out,
-		krb5_krbhst_info *hostinfo,
+		krb5_realm *out_realm,
 		unsigned int *flags)
 {
     struct timeval start_time, end_time;
@@ -2981,6 +2973,7 @@ init_creds_step(krb5_context context,
     gettimeofday(&start_time, NULL);
 
     krb5_data_zero(out);
+    *out_realm = NULL;
     krb5_data_zero(&checksum_data);
 
     if (ctx->as_req.req_body.cname == NULL) {
@@ -3055,7 +3048,7 @@ init_creds_step(krb5_context context,
 
 	    ret = process_pa_data_to_key(context, ctx, &ctx->cred,
 					 &ctx->as_req, &rep.kdc_rep,
-					 hostinfo, &ctx->fast_state.reply_key);
+					 &ctx->fast_state.reply_key);
 	    if (ret) {
 		free_AS_REP(&rep.kdc_rep);
 		goto out;
@@ -3413,8 +3406,18 @@ init_creds_step(krb5_context context,
     if(len != ctx->req_buffer.length)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
 
-    out->data = ctx->req_buffer.data;
-    out->length = ctx->req_buffer.length;
+    ret = krb5_data_copy(out,
+			 ctx->req_buffer.data,
+			 ctx->req_buffer.length);
+    if (ret)
+	goto out;
+
+    *out_realm = strdup(ctx->cred.client->realm);
+    if (*out_realm == NULL) {
+	krb5_data_free(out);
+	ret = ENOMEM;
+	goto out;
+    }
 
     *flags = KRB5_INIT_CREDS_STEP_FLAG_CONTINUE;
 
@@ -3436,9 +3439,9 @@ init_creds_step(krb5_context context,
  *
  * @param context a Kerberos 5 context.
  * @param ctx ctx krb5_init_creds_context context.
- * @param in input data from KDC, first round it should be reset by krb5_data_zer().
- * @param out reply to KDC.
- * @param hostinfo KDC address info, first round it can be NULL.
+ * @param in input data from KDC, first round it should be reset by krb5_data_zero().
+ * @param out reply to KDC. The caller needs to call krb5_data_free()
+ * @param out_realm the destination realm for 'out', free with krb5_xfree()
  * @param flags status of the round, if
  *        KRB5_INIT_CREDS_STEP_FLAG_CONTINUE is set, continue one more round.
  *
@@ -3451,20 +3454,22 @@ init_creds_step(krb5_context context,
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_init_creds_step(krb5_context context,
 		     krb5_init_creds_context ctx,
-		     krb5_data *in,
+		     const krb5_data *in,
 		     krb5_data *out,
-		     krb5_krbhst_info *hostinfo,
+		     krb5_realm *out_realm,
 		     unsigned int *flags)
 {
     krb5_error_code ret;
     krb5_data empty;
 
     krb5_data_zero(&empty);
+    krb5_data_zero(out);
+    *out_realm = NULL;
 
     if ((ctx->fast_state.flags & KRB5_FAST_ANON_PKINIT_ARMOR) &&
 	ctx->fast_state.armor_ccache == NULL) {
 	ret = _krb5_fast_anon_pkinit_step(context, ctx, &ctx->fast_state,
-					  in, out, hostinfo, flags);
+					  in, out, out_realm, flags);
         if (ret && (ctx->fast_state.flags & KRB5_FAST_OPTIMISTIC)) {
             _krb5_debug(context, 5, "Preauth failed with optimistic "
                         "FAST, trying w/o FAST");
@@ -3472,14 +3477,13 @@ krb5_init_creds_step(krb5_context context,
             ctx->fast_state.flags &= ~KRB5_FAST_REQUIRED;
             ctx->fast_state.flags &= ~KRB5_FAST_ANON_PKINIT_ARMOR;
         } else if (ret ||
-                   ((*flags & KRB5_INIT_CREDS_STEP_FLAG_CONTINUE) == 0) ||
-                   out->length)
+                   (*flags & KRB5_INIT_CREDS_STEP_FLAG_CONTINUE))
 	    return ret;
 
 	in = &empty;
     }
 
-    return init_creds_step(context, ctx, in, out, hostinfo, flags);
+    return init_creds_step(context, ctx, in, out, out_realm, flags);
 }
 
 /**
@@ -3672,7 +3676,6 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
 {
     krb5_sendto_ctx stctx = NULL;
-    krb5_krbhst_info *hostinfo = NULL;
     krb5_error_code ret;
     krb5_data in, out;
     unsigned int flags = 0;
@@ -3692,9 +3695,10 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
 
     while (1) {
 	struct timeval nstart, nend;
+	krb5_realm realm = NULL;
 
 	flags = 0;
-	ret = krb5_init_creds_step(context, ctx, &in, &out, hostinfo, &flags);
+	ret = krb5_init_creds_step(context, ctx, &in, &out, &realm, &flags);
 	krb5_data_free(&in);
 	if (ret)
 	    goto out;
@@ -3704,8 +3708,9 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
 
 	gettimeofday(&nstart, NULL);
 
-	ret = krb5_sendto_context (context, stctx, &out,
-				   ctx->cred.client->realm, &in);
+	ret = krb5_sendto_context (context, stctx, &out, realm, &in);
+	krb5_data_free(&out);
+	free(realm);
     	if (ret)
 	    goto out;
 

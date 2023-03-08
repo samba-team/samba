@@ -134,6 +134,23 @@ if test "$with_openssl" != "no"; then
         LDFLAGS="${saved_LDFLAGS}"
 fi
 
+if test "$openssl" = "yes"; then
+    AC_CHECK_LIB([crypto],
+                 [OSSL_EC_curve_nid2name],
+                 [AC_DEFINE_UNQUOTED([HAVE_OPENSSL_30], 1,
+                                     [whether OpenSSL is 3.0 or higher])]
+                 )
+    AC_CHECK_HEADERS([openssl/fips.h],
+                     [AC_DEFINE_UNQUOTED([HAVE_OPENSSL_FIPS_H], 1,
+                                         [whether openssl/fips.h is available])]
+                     )
+    AC_CHECK_LIB([crypto],
+                 [FIPS_mode_set],
+                 [AC_DEFINE_UNQUOTED([HAVE_OPENSSL_FIPS_MODE_SET_API], 1,
+                                     [whether FIPS_mode_set API is available])]
+                 )
+fi
+
 LIB_hcrypto='$(top_builddir)/lib/hcrypto/libhcrypto.la'
 LIB_hcrypto_a='$(top_builddir)/lib/hcrypto/.libs/libhcrypto.a'
 LIB_hcrypto_so='$(top_builddir)/lib/hcrypto/.libs/libhcrypto.so'

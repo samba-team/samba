@@ -49,6 +49,7 @@ KTUTIL_OBJS= \
 	$(OBJ)\rename.obj
 
 KTUTIL_LIBS= \
+	$(LIBHEIMBASE) \
 	$(LIBHEIMDAL)	\
 	$(LIBKADM5SRV)	\
 	$(LIBSL)	\

@@ -113,9 +113,10 @@ HMAC_Init_ex(HMAC_CTX *ctx,
             ctx->ipad = malloc(blockSize);
         if (ctx->ipad)
             ctx->ctx = EVP_MD_CTX_create();
-        if (!ctx->buf || !ctx->opad || !ctx->ipad || !ctx->ctx)
-            return 0;
     }
+    /* We do this check here to quiet scan-build */
+    if (!ctx->buf || !ctx->opad || !ctx->ipad || !ctx->ctx)
+	return 0;
 #if 0
     ctx->engine = engine;
 #endif

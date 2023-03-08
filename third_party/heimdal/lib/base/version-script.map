@@ -44,6 +44,7 @@ HEIMDAL_BASE_1.0 {
 		heim_auto_release_create;
 		heim_auto_release_drain;
 		heim_base_once_f;
+		heim_base_mutex;
 		heim_bool_create;
 		heim_bool_val;
 		heim_clear_error_message;

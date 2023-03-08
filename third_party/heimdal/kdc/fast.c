@@ -605,9 +605,11 @@ fast_unwrap_request(astgs_request_t r,
 	ticket = tgs_ticket;
     }
 
-    krb5_unparse_name(r->context, ticket->client, &armor_client_principal_name);
+    (void) krb5_unparse_name(r->context, ticket->client, &armor_client_principal_name);
     kdc_audit_addkv((kdc_request_t)r, 0, "armor_client_name", "%s",
-		    armor_client_principal_name ? armor_client_principal_name : "<unknown>");
+		    armor_client_principal_name ?
+			armor_client_principal_name :
+			"<out of memory>");
 
     if (ac->remote_subkey == NULL) {
 	krb5_auth_con_free(r->context, ac);

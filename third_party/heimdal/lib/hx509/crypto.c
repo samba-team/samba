@@ -1304,34 +1304,6 @@ hx509_parse_private_key(hx509_context context,
 
     *private_key = NULL;
 
-    if (format == HX509_KEY_FORMAT_PKCS8) {
-        PKCS8PrivateKeyInfo ki;
-        hx509_private_key key;
-
-        ret = decode_PKCS8PrivateKeyInfo(data, len, &ki, NULL);
-        if (ret) {
-	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-				   "Failed to parse PKCS#8-encoded private "
-                                   "key");
-	    return HX509_PARSING_KEY_FAILED;
-        }
-
-        /* Re-enter to parse DER-encoded key from PKCS#8 envelope */
-        ret = hx509_parse_private_key(context, &ki.privateKeyAlgorithm,
-                                      ki.privateKey.data, ki.privateKey.length,
-                                      HX509_KEY_FORMAT_DER, &key);
-        free_PKCS8PrivateKeyInfo(&ki);
-        if (ret) {
-	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-				   "Failed to parse RSA key from PKCS#8 "
-                                   "envelope");
-	    return HX509_PARSING_KEY_FAILED;
-        }
-
-        *private_key = key;
-        return ret;
-    }
-
     ops = hx509_find_private_alg(&keyai->algorithm);
     if (ops == NULL) {
 	hx509_clear_error_string(context);
@@ -1348,6 +1320,30 @@ hx509_parse_private_key(hx509_context context,
     if (ret)
 	hx509_private_key_free(private_key);
 
+    if (ret && format == HX509_KEY_FORMAT_PKCS8) {
+        PKCS8PrivateKeyInfo ki;
+        hx509_private_key key;
+
+        /* Re-enter to try parsing the DER-encoded key from PKCS#8 envelope */
+        ret = decode_PKCS8PrivateKeyInfo(data, len, &ki, NULL);
+        if (ret) {
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+				   "Failed to parse PKCS#8-encoded private "
+                                   "key");
+	    return HX509_PARSING_KEY_FAILED;
+        }
+        ret = hx509_parse_private_key(context, &ki.privateKeyAlgorithm,
+                                      ki.privateKey.data, ki.privateKey.length,
+                                      HX509_KEY_FORMAT_DER, &key);
+        free_PKCS8PrivateKeyInfo(&ki);
+        if (ret) {
+            hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+                                   "Failed to parse RSA key from PKCS#8 "
+                                   "envelope");
+            return HX509_PARSING_KEY_FAILED;
+        }
+        *private_key = key;
+    }
     return ret;
 }
 

@@ -422,14 +422,8 @@ main(int argc, char **argv)
 	ret += test_cipher(i, EVP_ossl_aes_256_cbc(), &aes_tests[i]);
     for (i = 0; i < sizeof(aes_cfb_tests)/sizeof(aes_cfb_tests[0]); i++)
 	ret += test_cipher(i, EVP_ossl_aes_128_cfb8(), &aes_cfb_tests[i]);
-    for (i = 0; i < sizeof(rc2_tests)/sizeof(rc2_tests[0]); i++)
-	ret += test_cipher(i, EVP_ossl_rc2_cbc(), &rc2_tests[i]);
-    for (i = 0; i < sizeof(rc2_40_tests)/sizeof(rc2_40_tests[0]); i++)
-	ret += test_cipher(i, EVP_ossl_rc2_40_cbc(), &rc2_40_tests[i]);
     for (i = 0; i < sizeof(des_ede3_tests)/sizeof(des_ede3_tests[0]); i++)
 	ret += test_cipher(i, EVP_ossl_des_ede3_cbc(), &des_ede3_tests[i]);
-    for (i = 0; i < sizeof(rc4_tests)/sizeof(rc4_tests[0]); i++)
-	ret += test_cipher(i, EVP_ossl_rc4(), &rc4_tests[i]);
 #endif /* PKCS11_MODULE_PATH */
 
     return ret;

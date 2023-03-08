@@ -584,7 +584,7 @@ krb5_copy_context(krb5_context context, krb5_context *out)
             ret = ENOMEM;
     }
     if (ret == 0 && context->configured_default_cc_name) {
-        free(context->configured_default_cc_name);
+        free(p->configured_default_cc_name);
         if ((p->configured_default_cc_name =
              strdup(context->configured_default_cc_name)) == NULL)
             ret = ENOMEM;

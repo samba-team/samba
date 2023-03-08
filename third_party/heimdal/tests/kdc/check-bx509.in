@@ -74,10 +74,17 @@ klistjson="${klist} --json -c $cache"
 klist="${klist} --hidden -v -c $cache"
 kgetcred="${kgetcred} -c $cache"
 kdestroy="${kdestroy} -c $cache ${afs_no_unlog}"
+test_csr_authorizer="$test_csr_authorizer -A $objdir/authz_dir -S $objdir"
 kx509="${kx509} -c $cache"
 
 KRB5_CONFIG="${objdir}/krb5-bx509.conf"
 export KRB5_CONFIG
+
+HEIM_PIDFILE_DIR="${objdir}/"
+export HEIM_PIDFILE_DIR
+
+HEIM_IPC_DIR=$objdir
+export HEIM_IPC_DIR
 
 rsa=yes
 pkinit=no
@@ -102,26 +109,26 @@ rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
 rm -f *.pem *.crt *.der
-rm -rf simple_csr_authz
+rm -rf authz_dir
 
-mkdir -p simple_csr_authz
+mkdir -p authz_dir
 
 > messages.log
 
-# We'll avoid using a KDC for now.  For testing /bx509 we only need keys for
-# Negotiate tokens, and we'll use ktutil and kimpersonate to make it possible
-# to create and accept those without a KDC.  When we test /bnegotiate, however,
-# we'll start a KDC.
+kdcpid=
+bx509pid=
+test_csr_authorizer_pid=
+trap 'kill -9 ${kdcpid} ${bx509pid} ${test_csr_authorizer_pid}; echo signal killing kdc, bx509d, and test_csr_authorizer; exit 1;' EXIT
 
 # csr_grant ext-type value grantee_principal
 csr_grant() {
-    mkdir -p "${objdir}/simple_csr_authz/${3}"
-    touch "${objdir}/simple_csr_authz/${3}/${1}-${2}"
+    mkdir -p "${objdir}/authz_dir/${3}"
+    touch "${objdir}/authz_dir/${3}/${1}=${2}"
 }
 
 csr_revoke() {
-    rm -rf "${objdir}/simple_csr_authz"
-    mkdir -p "${objdir}/simple_csr_authz"
+    rm -rf "${objdir}/authz_dir"
+    mkdir -p "${objdir}/authz_dir"
 }
 
 # get_cert ""         curl-opts
@@ -254,7 +261,7 @@ $hxtool ca  --issue-ca --type=https-negotiate-server                \
 # XXX Before starting bx509d let us use kdc test programs to check that:
 #
 #  - the negotiate token validator plugin works
-#  - the simple CSR authorizer plugin works
+#  - the authz_dir CSR authorizer plugin works
 #  - the KDC CA tester program works
 
 echo "Check gss-token and Negotiate token validator plugin"
@@ -264,6 +271,64 @@ $test_token_validator -a datan.test.h5l.se Negotiate "$token" &&
 token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
 $test_token_validator -a datan.test.h5l.se Negotiate "$token" ||
     { echo "Negotiate token validator failed to validate valid token"; exit 2; }
+
+
+echo "Starting CSR authorizer IPC service"
+$test_csr_authorizer --server --daemon ||
+    { echo "Failed to start test_csr_authorizer service"; exit 2; }
+test_csr_authorizer_pid=`getpid test_csr_authorizer`
+
+# Make a CSR for foo@$R
+$hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
+                        --key=FILE:"${objdir}/k.der" --kerberos=foo@$R \
+                        ${objdir}/req ||
+    { echo "Failed to make a CSR"; exit 2; }
+
+echo "Test CSR authorizer IPC service (deny foo@$R to san_pkinit=foo@$R)"
+csr_revoke
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R &&
+    { echo "CSR authorizer IPC service granted foo@$R"; exit 2; }
+
+echo "Test CSR authorizer IPC service (grant foo@$R to san_pkinit=foo@$R)"
+csr_grant san_pkinit foo@$R foo@${R}
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R ||
+    { echo "CSR authorizer IPC service rejected foo@$R"; exit 2; }
+
+# Make a CSR for bar@$R
+$hxtool request-create  --subject='' --key-bits=1024 \
+                        --key=FILE:"${objdir}/k.der" --kerberos=bar@$R \
+                        ${objdir}/req ||
+    { echo "Failed to make a CSR"; exit 2; }
+
+echo "Test CSR authorizer IPC service (deny foo@$R to san_pkinit=bar@$R)"
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R &&
+    { echo "CSR authorizer IPC service accepted foo@$R"; exit 2; }
+
+echo "Test CSR authorizer IPC service (grant foo@$R to san_pkinit=bar@$R)"
+csr_grant san_pkinit foo@$R bar@${R}
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R &&
+    { echo "CSR authorizer IPC service accepted foo@$R"; exit 2; }
+
+# Make a CSR for foo@$R and bar@$R
+$hxtool request-create  --subject='' --key-bits=1024 \
+                        --key=FILE:"${objdir}/k.der" \
+                        --kerberos=foo@$R --kerberos=bar@$R \
+                        ${objdir}/req ||
+    { echo "Failed to make a CSR"; exit 2; }
+
+# Check that the authorizer does mark foo@$R as approved even though it denies
+# the overall request because it rejects bar@$R
+echo "Test CSR authorizer IPC service (partial authz)"
+csr_revoke
+csr_grant san_pkinit foo@$R foo@${R}
+# Check that the authorizer grants foo@$R
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R san_pkinit=foo@$R ||
+    { echo "CSR authorizer IPC service partial approval check fail"; exit 2; }
+# Check that the authorizer rejects bar@$R
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R san_pkinit=bar@$R &&
+    { echo "CSR authorizer IPC service partial approval check fail"; exit 2; }
+$test_csr_authorizer PKCS10:${objdir}/req foo@$R san_pkinit=foo@$R san_pkinit=bar@$R &&
+    { echo "CSR authorizer IPC service partial approval check fail"; exit 2; }
 
 echo "Making a plain CSR"
 $hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
@@ -297,7 +362,7 @@ $hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
 $test_kdc_ca -a bx509 foo@${R} PKCS10:${objdir}/req              \
              PEM-FILE:${objdir}/server.pem &&
     { echo "Trivial offline CA test failed: unauthorized issuance (dNSName)"; exit 2; }
-csr_grant dnsname foo.test.h5l.se foo@${R}
+csr_grant san_dnsname foo.test.h5l.se foo@${R}
 csr_grant eku 1.3.6.1.5.5.7.3.1 foo@${R}
 $test_kdc_ca -a bx509 foo@${R} PKCS10:${objdir}/req              \
              PEM-FILE:${objdir}/server.pem ||
@@ -316,7 +381,7 @@ $hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
 $test_kdc_ca -a bx509 foo@${R} PKCS10:${objdir}/req              \
              PEM-FILE:${objdir}/email.pem &&
     { echo "Offline CA test failed: unauthorized issuance (dNSName)"; exit 2; }
-csr_grant email foo@test.h5l.se foo@${R}
+csr_grant san_email foo@test.h5l.se foo@${R}
 csr_grant eku 1.3.6.1.5.5.7.3.2 foo@${R}
 $test_kdc_ca -a bx509 foo@${R} PKCS10:${objdir}/req              \
              PEM-FILE:${objdir}/email.pem ||
@@ -329,30 +394,46 @@ $hxtool acert --expr="%{certificate.subject} == \"OU=Users,CN=KDC,$DCs\""   \
 
 if ! which curl; then
     echo "curl is not available -- not testing bx509d"
+    sh ${leaks_kill} test_csr_authorizer $test_csr_authorizer_pid || ec=1
+    trap '' EXIT
     exit 77
 fi
 
 if ! test -x ${objdir}/../../kdc/bx509d; then
     echo "Configured w/o libmicrohttpd -- not testing bx509d"
+    sh ${leaks_kill} test_csr_authorizer $test_csr_authorizer_pid || ec=1
+    trap '' EXIT
     exit 77
 fi
 
 echo "Creating database"
-${kadmin} init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-${kadmin} add -r --use-defaults foo@${R} || exit 1
-${kadmin} add -r --use-defaults bar@${R} || exit 1
-${kadmin} add -r --use-defaults baz@${R} || exit 1
-${kadmin} modify --pkinit-acl="CN=foo,DC=test,DC=h5l,DC=se" foo@${R} || exit 1
+rm -f $kt $ukt
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -r --use-defaults foo@${R}
+add -r --use-defaults bar@${R}
+add -r --use-defaults baz@${R}
+add -r --use-defaults raz@${R}
+modify --pkinit-acl="CN=foo,DC=test,DC=h5l,DC=se" foo@${R}
+add -r --use-defaults HTTP/${server}@${R}
+ext_keytab -r -k $keytab  HTTP/${server}@${R}
+add -r --use-defaults HTTP/${otherserver}@${R}
+ext_keytab -r -k $ukeytab foo@${R}
+EOF
+
+echo "Starting kdc";
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
+kdcpid=`getpid kdc`
+
+${kdestroy}
+${kinit} -kt $ukeytab foo@${R} || exit 1
+$klist || { echo "failed to kinit"; exit 2; }
 
 
 echo "Starting bx509d"
 ${bx509d} --daemon || { echo "bx509 failed to start"; exit 2; }
 bx509pid=`getpid bx509d`
 
-trap 'kill -9 ${bx509pid}; echo signal killing bx509d; exit 1;' EXIT
 ec=0
 
 rm -f trivial.pem server.pem email.pem
@@ -458,7 +539,7 @@ else
 fi
 
 echo "Fetching a server certificate with one dNSName SAN"
-csr_grant dnsname $server foo@${R}
+csr_grant san_dnsname $server foo@${R}
 if (set -vx; get_cert "&dNSName=$server" -sf -o "${objdir}/server.pem"); then
     $hxtool print --content "FILE:${objdir}/server.pem"
     if (set -vx; $hxtool acert --expr="%{certificate.subject} == \"\""             \
@@ -478,7 +559,7 @@ else
 fi
 
 echo "Fetching a server certificate with two dNSName SANs"
-csr_grant dnsname "second-$server" foo@${R}
+csr_grant san_dnsname "second-$server" foo@${R}
 if (set -vx;
     get_cert "&dNSName=${server}&dNSName=second-$server" -sf \
         -o "${objdir}/server2.pem"); then
@@ -502,7 +583,7 @@ else
 fi
 
 echo "Fetching an email certificate"
-csr_grant email foo@bar.example foo@${R}
+csr_grant san_email foo@bar.example foo@${R}
 if (set -vx; get_cert "&rfc822Name=foo@bar.example" -sf -o "${objdir}/email.pem"); then
     $hxtool print --content "FILE:${objdir}/email.pem"
     if $hxtool acert --end-entity -P "foo@${R}" "FILE:${objdir}/email.pem"; then
@@ -521,22 +602,6 @@ else
     exit 1
 fi
 
-# Need to start a KDC to test this.
-rm -f $kt $ukt
-${kdestroy}
-${kadmin} add -r --use-defaults HTTP/${server}@${R} || exit 1
-${kadmin} ext_keytab -r -k $keytab  HTTP/${server}@${R} || exit 1
-${kadmin} add -r --use-defaults HTTP/${otherserver}@${R} || exit 1
-${kadmin} ext_keytab -r -k $ukeytab foo@${R} || exit 1
-
-echo "Starting kdc";
-${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
-kdcpid=`getpid kdc`
-trap 'kill -9 ${kdcpid} ${bx509pid}; echo signal killing kdc and bx509d; exit 1;' EXIT
-
-${kinit} -kt $ukeytab foo@${R} || exit 1
-$klist || { echo "failed to kinit"; exit 2; }
-
 echo "Fetch TGT (not granted for other)"
 token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
 if (set -vx;
@@ -549,8 +614,8 @@ if (set -vx;
 fi
 
 echo "Fetch TGT"
-(set -vx; csr_grant pkinit foo@${R} foo@${R})
-(set -vx; csr_grant eku 1.3.6.1.5.2.3.4 foo@${R})
+csr_grant san_pkinit foo@${R} foo@${R}
+csr_grant eku 1.3.6.1.5.2.3.4 foo@${R}
 token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
 if ! (set -vx;
     curl -o "${cachefile2}" -Lgsf                                       \
@@ -581,7 +646,7 @@ ${klist} | grep Addresses:.IPv4:8.8.8.8 ||
     { echo "Failed to get a TGT with /get-tgt end-point with addresses"; exit 2; }
 
 echo "Fetch TGT (for other)"
-(set -vx; csr_grant pkinit bar@${R} foo@${R})
+csr_grant san_pkinit bar@${R} foo@${R}
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
 if ! (set -vx;
@@ -599,7 +664,7 @@ ${klist} | grep Addresses:.IPv4:8.8.8.8 ||
 
 echo "Fetch TGT (for other, w/ lifetime req under max)"
 ${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
-(set -vx; csr_grant pkinit bar@${R} foo@${R})
+csr_grant san_pkinit bar@${R} foo@${R}
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
 if ! (set -vx;
@@ -625,7 +690,7 @@ fi
 
 echo "Fetch TGT (for other, w/ lifetime req over max)"
 ${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
-(set -vx; csr_grant pkinit bar@${R} foo@${R})
+csr_grant san_pkinit bar@${R} foo@${R}
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
 if ! (set -vx;
@@ -640,10 +705,10 @@ ${kgetcred} -H HTTP/${server}@${R} ||
     { echo "Fetched TGT didn't work"; exit 2; }
 if which jq >/dev/null; then
     if ! ${klistjson} | jq -e '
-            (reduce (.tickets[0]|(.Issued,.Expires)|
-                    strptime("%b %e %H:%M:%S %Y")|mktime) as $t
-                (0; if .==0 then $t else $t - . end) / 86400) | floor |
-            . == 5'; then
+        (.tickets[0].Issued  | strptime("%b %e %H:%M:%S %Y")|mktime) as $iat
+      | (.tickets[0].Expires | strptime("%b %e %H:%M:%S %Y")|mktime) as $exp
+      | (($exp - $iat) / 86400) as $life_days
+      | ($life_days > 4 and $life_days <= 5)'; then
         echo "Incorrect lifetime"
         exit 2
     fi
@@ -651,7 +716,7 @@ fi
 
 echo "Fetch TGT (for other, w/ lifetime req under max)"
 ${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
-(set -vx; csr_grant pkinit bar@${R} foo@${R})
+csr_grant san_pkinit bar@${R} foo@${R}
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
 if ! (set -vx;
@@ -677,22 +742,115 @@ fi
 
 echo "Fetch TGTs (batch, authz fail)"
 ${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
-(set -vx; csr_grant pkinit bar@${R} foo@${R})
+csr_revoke
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
+rm -f "${cachefile}.json"
 if (set -vx;
     curl -o "${cachefile}.json" -Lgsf                                   \
          --resolve ${server}:${bx509port}:127.0.0.1                     \
          -H "Authorization: Negotiate $token"                           \
          "http://${server}:${bx509port}/get-tgts?cname=bar@${R}&cname=baz@${R}"); then
+    # 200 Ok is not a problem.  We have to check that the result is sane.
+    true
+else
+    if grep ccache "${cachefile}.json"; then
+        echo "Got TGTs with /get-tgts end-point that should have been denied"
+        exit 2;
+    fi
+    if ! grep error_code "${cachefile}.json" > /dev/null; then
+        cat "${cachefile}.json"
+        echo "Request failed w/o error information"
+        exit 2;
+    fi
+fi
+cat "${cachefile}.json"
+if grep ccache "${cachefile}.json"; then
     echo "Got TGTs with /get-tgts end-point that should have been denied"
+    exit 2;
+fi
+
+echo "Fetch TGTs (batch, partial authz with IPC authorizer)"
+${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
+csr_revoke
+csr_grant san_pkinit bar@${R} foo@${R}
+csr_grant san_pkinit baz@${R} foo@${R}
+${kdestroy}
+token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
+if ! (set -vx;
+    curl -vvvo "${cachefile}.json" -Lgsf                                \
+         --resolve ${server}:${bx509port}:127.0.0.1                     \
+         -H "Authorization: Negotiate $token"                           \
+         "http://${server}:${bx509port}/get-tgts?cname=bar@${R}&cname=raz@${R}&cname=baz@${R}"); then
+    echo "Failed to get TGTs batch including non-existent principal"
     exit 2
+fi
+if which jq >/dev/null; then
+    set -vx
+    jq -e . "${cachefile}.json" > /dev/null ||
+        { echo "/get-tgts produced non-JSON"; exit 2; }
+    jq -es '.[]|select(.name|startswith("raz@"))|(.error_code//empty)' "${cachefile}.json" > /dev/null ||
+        { echo "No error was reported for raz@${R}!"; exit 2; }
+    jq -es '.[]|select(.name|startswith("raz@"))|(.ccache//"")|(length==0)' "${cachefile}.json" > /dev/null ||
+        { echo "Non-empty ccache included for raz@${R}!"; exit 2; }
+
+    # Check bar@$R's tickets:
+    jq -r 'select(.name|startswith("bar@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p bar@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
+
+    # Check baz@$R's tickets:
+    jq -r 'select(.name|startswith("baz@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p baz@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
+fi
+
+echo "Fetch TGTs (batch, partial authz)"
+${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
+csr_revoke
+csr_grant san_pkinit bar@${R} foo@${R}
+${kdestroy}
+token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
+if ! (set -vx;
+    curl -vvvo "${cachefile}.json" -Lgsf                                \
+         --resolve ${server}:${bx509port}:127.0.0.1                     \
+         -H "Authorization: Negotiate $token"                           \
+         "http://${server}:${bx509port}/get-tgts?cname=not@${R}&cname=bar@${R}&cname=baz@${R}"); then
+    echo "Failed to get TGTs batch including non-existent principal"
+    exit 2
+fi
+if which jq >/dev/null; then
+    set -vx
+    jq -e . "${cachefile}.json" > /dev/null ||
+        { echo "/get-tgts produced non-JSON"; exit 2; }
+    jq -es '.[]|select(.name|startswith("not@"))|(.error_code//empty)' "${cachefile}.json" > /dev/null ||
+        { echo "No error was reported for not@${R}!"; exit 2; }
+    jq -es '.[]|select(.name|startswith("not@"))|(.ccache//"")|(length==0)' "${cachefile}.json" > /dev/null ||
+        { echo "Non-empty ccache included for not@${R}!"; exit 2; }
+    jq -es '.[]|select(.name|startswith("baz@"))|(.error_code//empty)' "${cachefile}.json" > /dev/null ||
+        { echo "No error was reported for baz@${R}!"; exit 2; }
+    jq -es '.[]|select(.name|startswith("baz@"))|(.ccache//"")|(length==0)' "${cachefile}.json" > /dev/null ||
+        { echo "Non-empty ccache included for baz@${R}!"; exit 2; }
+
+    # Check bar@$R's tickets:
+    jq -r 'select(.name|startswith("bar@")).ccache' "${cachefile}.json" |
+        $rkbase64 -d -- - > "${cachefile}"
+    ${kgetcred} -H HTTP/${server}@${R} ||
+        { echo "Fetched TGT didn't work"; exit 2; }
+    ${klistjson} | jq -e --arg p bar@$R '.principal == $p' > /dev/null ||
+        { echo "/get-tgts produced wrong TGTs"; exit 2; }
 fi
 
 echo "Fetch TGTs (batch, authz pass)"
 ${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
-(csr_grant pkinit bar@${R} foo@${R})
-(csr_grant pkinit baz@${R} foo@${R})
+csr_grant san_pkinit bar@${R} foo@${R}
+csr_grant san_pkinit baz@${R} foo@${R}
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
 if ! (set -vx;
@@ -726,9 +884,9 @@ fi
 
 echo "Fetch TGTs (batch, authz pass, one non-existent principal)"
 ${kadmin} modify --max-ticket-life=10d krbtgt/${R}@${R}
-(csr_grant pkinit bar@${R} foo@${R})
-(csr_grant pkinit baz@${R} foo@${R})
-(csr_grant pkinit not@${R} foo@${R})
+csr_grant san_pkinit bar@${R} foo@${R}
+csr_grant san_pkinit baz@${R} foo@${R}
+csr_grant san_pkinit not@${R} foo@${R}
 ${kdestroy}
 token=$(KRB5CCNAME=$cache2 $gsstoken HTTP@$server)
 if ! (set -vx;
@@ -913,9 +1071,10 @@ else
     exit 1
 fi
 
-echo "killing kdc (${kdcpid}) and bx509d (${bx509pid})"
+echo "killing kdc (${kdcpid}) and bx509d (${bx509pid}) and test_csr_authorizer (${test_csr_authorizer_pid})"
 sh ${leaks_kill} kdc $kdcpid || ec=1
 sh ${leaks_kill} bx509d $bx509pid || ec=1
+sh ${leaks_kill} test_csr_authorizer $test_csr_authorizer_pid || ec=1
 
 trap "" EXIT
 

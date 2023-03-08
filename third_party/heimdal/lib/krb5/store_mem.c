@@ -147,7 +147,7 @@ krb5_storage_from_mem(void *buf, size_t len)
     sp->trunc = mem_trunc;
     sp->fsync = NULL;
     sp->free = NULL;
-    sp->max_alloc = UINT_MAX/8;
+    sp->max_alloc = UINT32_MAX/64;
     return sp;
 }
 
@@ -207,6 +207,6 @@ krb5_storage_from_readonly_mem(const void *buf, size_t len)
     sp->trunc = mem_no_trunc;
     sp->fsync = NULL;
     sp->free = NULL;
-    sp->max_alloc = UINT_MAX/8;
+    sp->max_alloc = UINT32_MAX/64;
     return sp;
 }

@@ -51,7 +51,7 @@ static const char *kdc_plugin_deps[] = {
 static struct heim_plugin_data kdc_plugin_data = {
     "krb5",
     "kdc",
-    KRB5_PLUGIN_KDC_VERSION_10,
+    KRB5_PLUGIN_KDC_VERSION_11,
     kdc_plugin_deps,
     kdc_get_instance
 };
@@ -145,7 +145,8 @@ struct verify_uc {
     hdb_entry *client;
     hdb_entry *server;
     hdb_entry *krbtgt;
-    krb5_pac *pac;
+    krb5_pac pac;
+    krb5_boolean *is_trusted;
 };
 
 static krb5_error_code KRB5_LIB_CALL
@@ -162,7 +163,8 @@ verify(krb5_context context, const void *plug, void *plugctx, void *userctx)
 			 uc->r,
 			 uc->client_principal,
 			 uc->delegated_proxy_principal,
-			 uc->client, uc->server, uc->krbtgt, uc->pac);
+			 uc->client, uc->server, uc->krbtgt, uc->pac,
+			 uc->is_trusted);
     return ret;
 }
 
@@ -173,7 +175,8 @@ _kdc_pac_verify(astgs_request_t r,
 		hdb_entry *client,
 		hdb_entry *server,
 		hdb_entry *krbtgt,
-		krb5_pac *pac)
+		krb5_pac pac,
+		krb5_boolean *is_trusted)
 {
     struct verify_uc uc;
 
@@ -187,9 +190,64 @@ _kdc_pac_verify(astgs_request_t r,
     uc.server = server;
     uc.krbtgt = krbtgt;
     uc.pac = pac;
+    uc.is_trusted = is_trusted;
 
     return _krb5_plugin_run_f(r->context, &kdc_plugin_data,
 			     0, &uc, verify);
+}
+
+struct update_uc {
+    astgs_request_t r;
+    krb5_principal client_principal;
+    krb5_principal delegated_proxy_principal;
+    hdb_entry *client;
+    hdb_entry *server;
+    hdb_entry *krbtgt;
+    krb5_pac *pac;
+};
+
+static krb5_error_code KRB5_LIB_CALL
+update(krb5_context context, const void *plug, void *plugctx, void *userctx)
+{
+    const krb5plugin_kdc_ftable *ft = (const krb5plugin_kdc_ftable *)plug;
+    struct update_uc *uc = (struct update_uc *)userctx;
+    krb5_error_code ret;
+
+    if (ft->pac_update == NULL)
+	return KRB5_PLUGIN_NO_HANDLE;
+
+    ret = ft->pac_update((void *)plug,
+			 uc->r,
+			 uc->client_principal,
+			 uc->delegated_proxy_principal,
+			 uc->client, uc->server, uc->krbtgt, uc->pac);
+    return ret;
+}
+
+krb5_error_code
+_kdc_pac_update(astgs_request_t r,
+		const krb5_principal client_principal,
+		const krb5_principal delegated_proxy_principal,
+		hdb_entry *client,
+		hdb_entry *server,
+		hdb_entry *krbtgt,
+		krb5_pac *pac)
+{
+    struct update_uc uc;
+
+    if (!have_plugin)
+	return KRB5_PLUGIN_NO_HANDLE;
+
+    uc.r = r;
+    uc.client_principal = client_principal;
+    uc.delegated_proxy_principal = delegated_proxy_principal;
+    uc.client = client;
+    uc.server = server;
+    uc.krbtgt = krbtgt;
+    uc.pac = pac;
+
+    return _krb5_plugin_run_f(r->context, &kdc_plugin_data,
+			     0, &uc, update);
 }
 
 static krb5_error_code KRB5_LIB_CALL

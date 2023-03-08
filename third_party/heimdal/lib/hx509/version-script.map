@@ -21,6 +21,7 @@ HEIMDAL_X509_1.2 {
 		_hx509_make_pkinit_san;
 		_hx509_map_file_os;
 		_hx509_name_from_Name;
+		_hx509_ossl_oid2nid;
 		_hx509_private_key_export;
 		_hx509_private_key_exportable;
 		_hx509_private_key_get_internal;
@@ -40,7 +41,11 @@ HEIMDAL_X509_1.2 {
 		hx509_request_authorize_san;
 		hx509_request_count_unsupported;
 		hx509_request_count_unauthorized;
+		hx509_request_eku_authorized_p;
 		hx509_request_print;
+		hx509_request_reject_eku;
+		hx509_request_reject_san;
+		hx509_request_san_authorized_p;
 		hx509_request_to_pkcs10;
 		_hx509_unmap_file_os;
 		_hx509_write_file;
@@ -108,6 +113,9 @@ HEIMDAL_X509_1.2 {
 		hx509_cert_init;
 		hx509_cert_init_data;
 		hx509_cert_init_private_key;
+		hx509_cert_is_ca;
+		hx509_cert_is_root;
+		hx509_cert_is_self_signed;
 		hx509_cert_keyusage_print;
 		hx509_cert_public_encrypt;
 		hx509_cert_ref;

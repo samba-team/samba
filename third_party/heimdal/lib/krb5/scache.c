@@ -1285,6 +1285,9 @@ scc_remove_cred(krb5_context context,
 
     sqlite3_finalize(stmt);
 
+    if (ret)
+        return ret;
+
     ret = prepare_stmt(context, s->db, &stmt,
                        "DELETE FROM credentials WHERE oid=?");
     if (ret)

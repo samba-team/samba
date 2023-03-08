@@ -29,9 +29,6 @@
         # Locate kdc plugins for testing
         plugin_dir =  @objdir@/../../kdc/.libs
 
-        # Configure kdc plugins for testing
-        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
-
         enable-pkinit = true
         pkinit_identity = PEM-FILE:@objdir@/user-issuer.pem
         pkinit_anchors = PEM-FILE:@objdir@/pkinit-anchor.pem
@@ -86,7 +83,6 @@
 	db-dir = @objdir@
  
 [bx509]
-        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
         realms = {
                 TEST.H5L.SE = {
                         # Default (no cert exts requested)
@@ -127,7 +123,6 @@
 [get-tgt]
         no_addresses = true
         allow_addresses = true
-        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
         realms = {
                 TEST.H5L.SE = {
                         # Default (no cert exts requested)

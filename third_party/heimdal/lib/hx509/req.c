@@ -669,6 +669,8 @@ hx509_request_to_pkcs10(hx509_context context,
         Attribute *a = NULL; /* Quiet VC */
         heim_any extns;
 
+        extns.data = NULL;
+        extns.length = 0;
         r.certificationRequestInfo.attributes =
             calloc(1, sizeof(r.certificationRequestInfo.attributes[0]));
         if (r.certificationRequestInfo.attributes == NULL)
@@ -977,7 +979,7 @@ abitstring_check(abitstring a, size_t n, int idx)
     size_t bytes;
 
     if (idx >= n)
-        return EINVAL;
+        return HX509_NO_ITEM;
 
     bytes = (idx + 1) / CHAR_BIT + (((idx + 1) % CHAR_BIT) ? 1 : 0);
     if (a->feat_bytes < bytes)
@@ -996,7 +998,7 @@ abitstring_set(abitstring a, size_t n, int idx)
     size_t bytes;
 
     if (idx >= n)
-        return EINVAL;
+        return HX509_NO_ITEM;
 
     bytes = n / CHAR_BIT + ((n % CHAR_BIT) ? 1 : 0);
     if (a->feat_bytes < bytes) {
@@ -1026,7 +1028,7 @@ abitstring_reset(abitstring a, size_t n, int idx)
     size_t bytes;
 
     if (idx >= n)
-        return EINVAL;
+        return HX509_NO_ITEM;
 
     bytes = (idx + 1) / CHAR_BIT + (((idx + 1) % CHAR_BIT) ? 1 : 0);
     if (a->feat_bytes >= bytes &&

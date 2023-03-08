@@ -278,6 +278,7 @@ json2keytab_entry(heim_dict_t d, krb5_keytab kt, size_t idx)
                   (unsigned long)idx);
 bad:
     krb5_free_principal(context, e.principal);
+    free(buf);
 }
 
 int
@@ -296,6 +297,7 @@ kt_import(void *opt, int argc, char **argv)
         err(1, "Could not open file %s", argv[0]);
 
     json = read_file(f);
+    fclose(f);
     o = heim_json_create(json, 10, flags, &json_err);
     free(json);
     if (o == NULL) {

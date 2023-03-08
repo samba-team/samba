@@ -1789,6 +1789,8 @@ _krb5_get_name_canon_rules(krb5_context context, krb5_name_canon_rule *rules)
     krb5_config_free_strings(values);
     if (ret)
 	return ret;
+    if (*rules == NULL)
+        return krb5_enomem(context);
 
     if (krb5_config_get_bool_default(context, NULL, FALSE,
                                      "libdefaults", "safe_name_canon", NULL))
@@ -1857,7 +1859,7 @@ apply_name_canon_rule(krb5_context context, krb5_name_canon_rule rules,
                       krb5_name_canon_rule_options *rule_opts)
 {
     krb5_name_canon_rule rule = &rules[rule_idx];
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     unsigned int ndots = 0;
     krb5_principal nss = NULL;
     const char *sname = NULL;
@@ -1902,17 +1904,17 @@ apply_name_canon_rule(krb5_context context, krb5_name_canon_rule rules,
             ndots++;
     }
     if (rule->mindots > 0 && ndots < rule->mindots)
-            return 0;
+        goto out;
     if (ndots > rule->maxdots)
-            return 0;
+        goto out;
 
     if (rule->match_domain != NULL &&
         !is_domain_suffix(orig_hostname, rule->match_domain))
-        return 0;
+        goto out;
 
     if (rule->match_realm != NULL &&
         strcmp(rule->match_realm, in_princ->realm) != 0)
-          return 0;
+        goto out;
 
     new_realm = rule->realm;
     switch (rule->type) {

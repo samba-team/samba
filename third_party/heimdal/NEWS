@@ -1,3 +1,345 @@
+
+Partial news for a future Heimdal 8.0 release -- but NOTE WELL that this is NOT
+a release at this time!
+
+Bug fixes
+
+ - Errors found by the Coverity static analysis.
+ - Errors found by the LLVM scan-build static analyzer.
+ - Errors found by the valgrind memory debugger.
+ - Fix out-of-tree SQLite3 ccache permissions / umask issues.
+ - iprop bugs, race conditions, and performance
+ - Many misc. bugs
+
+Features:
+
+ - KDC: Add FAST support for TGS.
+ - KDC: Greatly improved plugin facility for Samba.
+ - KDC: Add httpkadmind service providing a subset of kadmin
+        functionality over HTTP.
+ - KDC: Add support for virtual service principal namespaces.
+ - KDC: Add support for synthetic client principals that exist if the
+        pre-authentication mechanism (e.g., PKINIT) can authenticate
+        them, thus not requiring an HDB entry.
+ - KDC: Add experimental GSS-API pre-authentication support.
+ - KDC: Revamp and enhance kx509 support (though bx509d mostly replaces kx509).
+ - KDC: Better support for aliases and referrals.
+ - KDC: Always return the salt in the PA-ETYPE-INFO[2].
+ - KDC: Add warn_ticket_addresses configuration parameter.
+ - KDC: allow anonymous AS requests with long-term keys.
+ - KDC: Do not include PAC for anonymous AS requests.
+ - KDC: Enable keepalive mode on incoming sockets.
+ - KDC: Greatly improved logging.
+ - KDC: Remove KRB5SignedPath, to be replaced with PAC.
+ - PKIX: Add bx509d -- an online certification authority (CA) with an HTTP API.
+ - kadmin: Add HTTP-based kadmin protocol.
+ - kadmin: Add add_alias, del_alias.
+ - kadmin: Add command aliases to man page.
+ - kadmin: Add disallow-client attribute.
+ - kadmin: add --hdb / -H argument.
+ - kadmin: Allow enforcing password quality on admin password change.
+ - kadmin: Improve ext_keytab usage.
+ - kadmin: Selective pruning of historic key for principal.
+ - krb5: Add client_aware_channel_bindings option.
+ - krb5: Add constrained credential delegation option "destination TGT"
+ - krb5: Add "EFILE:" target for logging.
+ - krb5: Add include/includedir directives for krb5.conf.
+ - krb5: Complete DIR ccache collection support.
+ - krb5: Add FILE ccache collection support.
+ - krb5: Improved FILE ccache performance.
+ - krb5: Add KEYRING ccache support.
+ - krb5: Add kx509 client.
+ - krb5: Improve FILE keytab performance.
+ - krb5: Implement KRB5_TRACE environment variable.
+ - krb5: Add experimental name canonicalization rules configuration.
+ - krb5: Support start_realm ccconfig entry type.
+ - kinit: Add --default-for option for ccache collection support.
+ - kinit: Add --pk-anon-fast-armor option.
+ - kinit: Don't leave dangling temporary ccaches.
+ - klist: Better --json
+ - iprop: Many performance and scaling enhancements.
+ - iprop: Support hierarchical propagation.
+ - ASN.1: Document fuzzing process.
+ - ASN.1: Complete template backend.
+ - ASN.1: Add partial Information Object System support (template backend
+          only).  This means that open type holes can be decoded recursively
+          with one codec function call.
+ - ASN.1: Add JSON encoder functionality (template backend only).
+ - ASN.1: Greatly enhanced asn1_print(1) command, which can now print a
+          JSON representation of any DER-encoded value of any type exported
+          by ASN.1 modules in Heimdal.
+ - ASN.1: Support circular types.
+ - ASN.1: Topographically sort declarations.
+ - ASN.1: Proper support for IMPLICIT tags.
+ - GSS: Import gss-token(1) command.
+ - GSS: Add advanced credential store / load functionality.
+ - GSS: Add name attributes support, with support for many basic attributes
+        and PAC buffer accessors too.
+ - GSS: Add SANON mechanism for anonymous-only key exchange using
+   elliptic curve Diffie-Hellman (ECDH) with Curve25519.
+ - GSS: Add gss_acquire_cred_from() and credential store extensions.
+ - GSS: Support fragmented tokens reassembly (for SMB).
+ - GSS: Support client keytab.
+ - GSS: Add NegoEx support.
+ - libhx509: Lots of improvements.
+ - hxtool: Add "acert" (assert cert contents) command
+ - hxtool: add cert type: https-negotiate-server
+ - hxtool: add generate-key command
+ - hxtool: Add OID symbol resolution and printing of OIDs known to hxtool.
+ - hxtool: Add print --raw-json option that shows certificates in JSON, with
+           all extensions and attributes known to Heimdal fully decoded.
+ - hxtool: Improved SAN support.
+ - hxtool: Improved CSR support.
+ - Improved plugin interfaces.
+ - hcrypto: Add X25519.
+ - hcrypto: Better RSA key generation.
+ - hcrypto: import libtommath v1.2.0.
+ - roken: Add secure_getenv() and issuid(), use them extensively.
+
+Release Notes - Heimdal - Version Heimdal 7.8
+
+ Bug fixes
+
+ - CVE-2022-42898 PAC parse integer overflows
+
+ - CVE-2022-3437 Overflows and non-constant time leaks in DES{,3} and arcfour
+    - Pass correct length to _gssapi_verify_pad()
+    - Check for overflow in _gsskrb5_get_mech()
+    - Check buffer length against overflow for DES{,3} unwrap
+    - Check the result of _gsskrb5_get_mech()
+    - Avoid undefined behaviour in _gssapi_verify_pad()
+    - Don't pass NULL pointers to memcpy() in DES unwrap
+    - Use constant-time memcmp() in unwrap_des3()
+    - Use constant-time memcmp() for arcfour unwrap
+
+ - CVE-2021-44758 NULL dereference DoS in SPNEGO acceptors
+
+ - CVE-2022-44640 Heimdal KDC: invalid free in ASN.1 codec
+
+    This is a 10.0 on the Common Vulnerability Scoring System (CVSS) v3.
+
+    Heimdal's ASN.1 compiler generates code that allows specially
+    crafted DER encodings of CHOICEs to invoke the wrong free function
+    on the decoded structure upon decode error.  This is known to impact
+    the Heimdal KDC, leading to an invalid free() of an address partly
+    or wholly under the control of the attacker, in turn leading to a
+    potential remote code execution (RCE) vulnerability.
+
+    This error affects the DER codec for all CHOICE types used in
+    Heimdal, though not all cases will be exploitable.  We have not
+    completed a thorough analysis of all the Heimdal components
+    affected, thus the Kerberos client, the X.509 library, and other
+    parts, may be affected as well.
+
+    This bug has been in Heimdal since 2005.  It was first reported by
+    Douglas Bagnall, though it had been found independently by the
+    Heimdal maintainers via fuzzing.
+
+    While no zero-day exploit is known, such an exploit will likely be
+    available soon after public disclosure.
+
+ - Errors found by the LLVM scan-build static analyzer.
+
+ - Errors found by the valgrind memory debugger.
+
+ - Work around GCC Bug 95189 (memcmp wrongly stripped like strcmp).
+
+ - Fix Unicode normalization read of 1 bytes past end of array.
+
+ - Correct ASN.1 OID typo for SHA-384
+
+ - Fix a deadlock in in the MEMORY ccache type.
+
+ - TGS: strip forwardable and proxiable flags if the server is
+   disallowed.
+
+ - CVE-2019-14870: Validate client attributes in protocol-transition
+ - CVE-2019-14870: Apply forwardable policy in protocol-transition
+ - CVE-2019-14870: Always lookup impersonate client in DB
+
+ - Incremental HDB propagation improvements
+
+    - Refactor send_diffs making it progressive
+    - Handle partial writes on non-blocking sockets
+    - Disable Nagle in iprop master and slave
+    - Use async I/O
+    - Don't send I_HAVE in response to AYT
+    - Do not recover log in kadm5_get_principal()
+    - Don't send diffs to slaves with not yet known version
+    - Don't stutter in send_diffs
+
+ - Optional backwards-compatible anon-pkinit behaviour
+
+Release Notes - Heimdal - Version Heimdal 7.7
+
+ Bug fixes
+
+ - PKCS#11 hcrypto back-end
+   . initialize the p11_module_load function list
+   . verify that not only is a mechanism present but that its mechanism
+     info states that it offers the required encryption, decryption or
+     digest services
+ - krb5:
+   . Starting with 7.6, Heimdal permitted requesting authenticated
+     anonymous tickets.  However, it did not verify that a KDC in fact
+     returned an anonymous ticket when one was requested.
+   - Cease setting the KDCOption reaquest_anonymous flag when issuing
+     S4UProxy (constrained delegation) TGS requests.
+   . when the Win2K PKINIT compatibility option is set, do
+     not require krbtgt otherName to match when validating KDC
+     certificate.
+   . set PKINIT_BTMM flag per Apple implementation
+   . use memset_s() instead of memset()
+ - kdc:
+   . When generating KRB5SignedPath in the AS, use the reply client name
+     rather than the one from the request, so validation will work
+     correctly in the TGS.
+   . allow checksum of PA-FOR-USER to be HMAC_MD5.  Even if tgt used
+     an enctype with a different checksum.  Per [MS-SFU] 2.2.1
+     PA-FOR-USER the checksum is always HMAC_MD5, and that's what
+     Windows and MIT clients send.
+
+     In heimdal both the client and kdc use instead the
+     checksum of the tgt, and therefore work with each other
+     but Windows and MIT clients fail against heimdal KDC.
+
+     Both Windows and MIT KDCs would allow any keyed checksum
+     to be used so Heimdal client interoperates with them.
+
+     Change Heimdal KDC to allow HMAC_MD5 even for non RC4
+     based tgt in order to support per-spec clients.
+   . use memset_s() instead of memset().
+   - Detect Heimdal 1.0 through 7.6 clients that issue S4UProxy
+     (constrained delegation) TGS Requests with the request
+     anonymous flag set.  These requests will be treated as
+     S4UProxy requests and not anonymous requests.
+ - HDB:
+   . Set SQLite3 backend default page size to 8KB.
+   . Add hdb_set_sync() method
+ - kadmind:
+   . disable HDB sync during database load avoiding unnecessary disk i/o.
+ - ipropd:
+   . disable HDB sync during receive_everything.  Doing an fsync
+     per-record when receiving the complete HDB is a performance
+     disaster.  Among other things, if the HDB is very large, then
+     one slave receving a full HDB can cause other slaves to timeout
+     and, if HDB write activity is high enough to cause iprop log
+     truncation, then also need full syncs, which leads to a cycle of
+     full syncs for all slaves until HDB write activity drops.
+     Allowing the iprop log to be larger helps, but improving
+     receive_everything() performance helps even more.
+ - kinit:
+   . Anonymous PKINIT tickets discard the realm information used
+     to locate the issuing AS. Store the issuing realm in the
+     credentials cache in order to locate a KDC which can renew them.
+   . Do not leak the result of krb5_cc_get_config() when determining
+     anonymous PKINIT start realm.
+  - klist:
+    . Show transited-policy-checked, ok-as-delegate and anonymous
+      flags when listing credentials.
+ - tests:
+   . Regenerate certs so that they expire before the 2038 armageddon
+     so the test suite will pass on 32-bit operating systems until the
+     underlying issues can be resolved.
+ - Solaris:
+   . Define _STDC_C11_BCI for memset_s prototype
+ - build tooling:
+   . Convert from python 2 to python 3
+ - documentation
+   . rename verify-password to verify-password-quality
+   . hprop default mode is encrypt
+   . kadmind "all" permission does not include "get-keys"
+   . verify-password-quality might not be stateless
+
+Release Notes - Heimdal - Version Heimdal 7.6
+
+ Security
+
+ - CVE-2018-16860 Heimdal KDC: Reject PA-S4U2Self with unkeyed checksum
+
+    When the Heimdal KDC checks the checksum that is placed on the
+    S4U2Self packet by the server to protect the requested principal
+    against modification, it does not confirm that the checksum
+    algorithm that protects the user name (principal) in the request
+    is keyed.  This allows a man-in-the-middle attacker who can
+    intercept the request to the KDC to modify the packet by replacing
+    the user name (principal) in the request with any desired user
+    name (principal) that exists in the KDC and replace the checksum
+    protecting that name with a CRC32 checksum (which requires no
+    prior knowledge to compute).
+
+    This would allow a S4U2Self ticket requested on behalf of user
+    name (principal) user@EXAMPLE.COM to any service to be changed
+    to a S4U2Self ticket with a user name (principal) of
+    Administrator@EXAMPLE.COM. This ticket would then contain the
+    PAC of the modified user name (principal).
+
+ - CVE-2019-12098, client-only:
+
+    RFC8062 Section 7 requires verification of the PA-PKINIT-KX key excahnge
+    when anonymous PKINIT is used.  Failure to do so can permit an active
+    attacker to become a man-in-the-middle.
+
+ Bug fixes
+
+ - Happy eyeballs: Don't wait for responses from known-unreachable KDCs.
+ - kdc: check return copy_Realm, copy_PrincipalName, copy_EncryptionKey
+ - kinit:
+   . cleanup temporary ccaches
+   . see man page for "kinit --anonymous" command line syntax change
+ - kdc: Make anonymous AS-requests more RFC8062-compliant.
+ - Updated expired test certificates
+ - Solaris:
+   . PKCS#11 hcrypto backend broken since 7.0.1
+   . Building with Sun Pro C
+
+ Features
+
+ - kuser: support authenticated anonymous AS-REQs in kinit
+ - kdc: support for anonymous TGS-REQs
+ - kgetcred support for anonymous service tickets
+ - Support builds with OpenSSL 1.1.1
+
+Release Notes - Heimdal - Version Heimdal 7.5
+
+ Security
+
+ - Fix CVE-2017-17439, which is a remote denial of service
+   vulnerability:
+
+     In Heimdal 7.1 through 7.4, remote unauthenticated attackers
+     are able to crash the KDC by sending a crafted UDP packet
+     containing empty data fields for client name or realm.
+
+ Bug fixes
+
+ - Handle long input lines when reloading database dumps.
+
+ - In pre-forked mode (default on Unix), correctly clear
+   the process ids of exited children, allowing new child processes
+   to replace the old.
+
+ - Fixed incorrect KDC response when no-cross realm TGT exists,
+   allowing client requests to fail quickly rather than time
+   out after trying to get a correct answer from each KDC.
+
+Release Notes - Heimdal - Version Heimdal 7.4
+
+ Security
+
+ - Fix CVE-2017-11103: Orpheus' Lyre KDC-REP service name validation
+
+   This is a critical vulnerability.
+
+   In _krb5_extract_ticket() the KDC-REP service name must be obtained from
+   encrypted version stored in 'enc_part' instead of the unencrypted version
+   stored in 'ticket'.  Use of the unecrypted version provides an
+   opportunity for successful server impersonation and other attacks.
+
+   Identified by Jeffrey Altman, Viktor Duchovni and Nico Williams.
+
+   See https://www.orpheus-lyre.info/ for more details.
+
 Release Notes - Heimdal - Version Heimdal 7.3
 
  Security

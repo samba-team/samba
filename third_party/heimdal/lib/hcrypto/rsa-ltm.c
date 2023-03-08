@@ -41,7 +41,7 @@
 #include "tommath.h"
 
 #define CHECK(f)                                                        \
-    do { if (ret == MP_OKAY && ((ret = f)) != MP_OKAY) { goto out; } } while (0)
+    do { where = __LINE__ + 1; if (ret == MP_OKAY && ((ret = f)) != MP_OKAY) { goto out; } } while (0)
 #define FIRST(e) do { ret = (e); } while (0)
 #define FIRST_ALLOC(e)                                                  \
     do { where = __LINE__; ret = ((e)) ? MP_OKAY : MP_MEM; } while (0)
@@ -50,9 +50,9 @@
 #define THEN_IF_MP(cond, e)                                             \
     do { where = __LINE__ + 1; if (ret == MP_OKAY && (cond)) ret = (e); } while (0)
 #define THEN_IF_VOID(cond, e)                                           \
-    do { if (ret == MP_OKAY && (cond)) e; } while (0)
+    do { where = __LINE__ + 1; if (ret == MP_OKAY && (cond)) e; } while (0)
 #define THEN_VOID(e)                                                    \
-    do { if (ret == MP_OKAY) e; } while (0)
+    do { where = __LINE__ + 1; if (ret == MP_OKAY) e; } while (0)
 #define THEN_ALLOC(e)                                                   \
     do { where = __LINE__ + 1; if (ret == MP_OKAY) ret = ((e)) ? MP_OKAY : MP_MEM; } while (0)
 
@@ -226,7 +226,7 @@ ltm_rsa_public_decrypt(int flen, const unsigned char* from,
     mp_err ret;
     size_t size;
     mp_int s, us, n, e;
-    int where = 0;
+    int where = __LINE__;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -250,7 +250,7 @@ ltm_rsa_public_decrypt(int flen, const unsigned char* from,
     mp_clear_multi(&e, &n, &s, NULL);
     mp_clear(&us);
 
-    if (ret != MP_OKAY)
+    if (ret != MP_OKAY || size == 0)
         return -where;
 
     /* head zero was skipped by mp_to_unsigned_bin */
@@ -280,7 +280,7 @@ ltm_rsa_private_encrypt(int flen, const unsigned char* from,
     size_t size;
     int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
     int do_unblind = 0;
-    int where = 0;
+    int where = __LINE__;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -367,7 +367,7 @@ ltm_rsa_private_decrypt(int flen, const unsigned char* from,
     mp_int in, out, n, e, b, bi;
     int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
     int do_unblind = 0;
-    int where = 0;
+    int where = __LINE__;
 
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
@@ -530,7 +530,7 @@ ltm_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
     mp_err ret;
     uint8_t high_nibbles = 0;
     int bitsp;
-    int where = 0;
+    int where = __LINE__;
 
     if (bits < 789)
 	return -1;

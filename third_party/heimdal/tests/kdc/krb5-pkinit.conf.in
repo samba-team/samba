@@ -25,7 +25,9 @@
 
         plugin_dir =  @objdir@/../../kdc/.libs
 
-        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
+        ipc_csr_authorizer = {
+            optional = true
+        }
 
         enable_kx509 = true
         require_initial_kca_tickets = false

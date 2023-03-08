@@ -262,6 +262,7 @@ add_kvno_diff(krb5_context contextp, kadm5_principal_ent_rec *princ,
     if (kvno_diff > 2048)
 	kvno_diff = 2048;
 
+    ext.mandatory = 0;
     if (is_svc_diff) {
 	ext.data.element = choice_HDB_extension_data_hist_kvno_diff_svc;
 	ext.data.u.hist_kvno_diff_svc = (unsigned int)kvno_diff;

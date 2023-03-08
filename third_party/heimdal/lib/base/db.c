@@ -47,6 +47,8 @@
  * memory-based rollback log is used).
  */
 
+#include "config.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1505,11 +1507,12 @@ json_db_sync(void *db, heim_error_t *error)
 
     json = heim_json_copy_serialize(jsondb->dict, 0, &e);
     if (json == NULL) {
+	ret = heim_error_get_code(e);
 	if (error)
 	    *error = e;
 	else
 	    heim_release(e);
-	return heim_error_get_code(e);
+	return ret;
     }
 
     json_text = heim_string_get_utf8(json);

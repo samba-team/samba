@@ -47,20 +47,19 @@ static void
 check_secure_getenv(char **env)
 {
     size_t i;
-    char *v;
+    char *v, *p;
 
     for (i = 0; env[i] != NULL; i++) {
-        if (strchr(env[i], '=') == NULL)
-            continue;
         if ((v = strdup(env[i])) == NULL)
             err(1, "could not allocate copy of %s", env[i]);
-        *strchr(v, '=') = '\0';
-        if (issuid() && rk_secure_getenv(v) != NULL)
-            err(1, "rk_secure_getenv() returned non-NULL when issuid()!");
-        if (!issuid() && rk_secure_getenv(v) == NULL)
-            err(1, "rk_secure_getenv() returned NULL when !issuid()");
+        if ((p = strchr(v, '='))) {
+            *p = '\0';
+            if (issuid() && rk_secure_getenv(v) != NULL)
+                err(1, "rk_secure_getenv() returned non-NULL when issuid()!");
+            if (!issuid() && rk_secure_getenv(v) == NULL)
+                err(1, "rk_secure_getenv() returned NULL when !issuid()");
+        }
         free(v);
-        return;
     }
 }
 

@@ -19,6 +19,11 @@ EXPORTS
 	_hx509_make_pkinit_san
 	_hx509_map_file_os
 	_hx509_name_from_Name
+	_hx509_private_key_export
+	_hx509_private_key_exportable
+	_hx509_private_key_get_internal
+	_hx509_private_key_oid
+	_hx509_private_key_ref
 	hx509_private_key2SPKI
 	hx509_private_key_free
 	_hx509_private_key_ref
@@ -41,6 +46,7 @@ EXPORTS
 	_hx509_private_key_get_internal
 	_hx509_private_key_oid
 	_hx509_private_key_ref
+	hx509_request_eku_authorized_p
 	hx509_request_free
 	hx509_request_get_eku
 	hx509_request_get_exts
@@ -55,8 +61,11 @@ EXPORTS
 	hx509_request_print
 	hx509_request_set_SubjectPublicKeyInfo
 	hx509_request_add_email
+	hx509_request_reject_eku
+	hx509_request_reject_san
 	hx509_request_set_name
 	hx509_request_set_ku
+	hx509_request_san_authorized_p
 	hx509_request_to_pkcs10
 	_hx509_unmap_file_os
 	_hx509_write_file
@@ -122,6 +131,9 @@ EXPORTS
 	hx509_cert_init
 	hx509_cert_init_data
 	hx509_cert_init_private_key
+	hx509_cert_is_ca
+	hx509_cert_is_root
+	hx509_cert_is_self_signed
 	hx509_cert_keyusage_print
 	hx509_cert_ref
 	hx509_cert_set_friendly_name

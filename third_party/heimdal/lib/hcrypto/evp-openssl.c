@@ -80,6 +80,24 @@
 #define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #endif
 
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+int _heim_openssl_fips_enabled(void);
+int
+_heim_openssl_fips_enabled(void)
+{
+    static int fips_enabled_res = -1;
+
+    if (fips_enabled_res != -1)
+        return fips_enabled_res;
+
+#ifdef HAVE_OPENSSL_30
+    return fips_enabled_res = !!EVP_default_properties_is_fips_enabled(NULL);
+#else
+    return fips_enabled_res = !!FIPS_mode();
+#endif
+}
+#endif
+
 /* A HEIM_BASE_ONCE argument struct for per-EVP one-time initialization */
 struct once_init_cipher_ctx {
     const hc_EVP_CIPHER **hc_memoizep;
@@ -158,7 +176,7 @@ cipher_do_cipher(hc_EVP_CIPHER_CTX *ctx, unsigned char *out,
     struct ossl_cipher_ctx *ossl_ctx = ctx->cipher_data;
 
     assert(ossl_ctx != NULL);
-    return EVP_Cipher(ossl_ctx->ossl_cipher_ctx, out, in, len);
+    return EVP_Cipher(ossl_ctx->ossl_cipher_ctx, out, in, len) == 0 ? 0 : 1;
 }
 
 static int
@@ -438,7 +456,9 @@ OSSL_CIPHER_ALGORITHM(des_ede3_cbc, hc_EVP_CIPH_CBC_MODE)
  *
  * @ingroup hcrypto_evp
  */
+#ifndef HAVE_OPENSSL_30
 OSSL_CIPHER_ALGORITHM(des_cbc, hc_EVP_CIPH_CBC_MODE)
+#endif
 
 /**
  * The AES-128 cipher type (OpenSSL provider)
@@ -494,6 +514,7 @@ OSSL_CIPHER_ALGORITHM(aes_192_cfb8, hc_EVP_CIPH_CFB8_MODE)
  */
 OSSL_CIPHER_ALGORITHM(aes_256_cfb8, hc_EVP_CIPH_CFB8_MODE)
 
+#ifndef HAVE_OPENSSL_30
 /*
  * RC2 is only needed for tests of PKCS#12 support, which currently uses
  * the RC2 PBE.  So no RC2 -> tests fail.
@@ -530,6 +551,7 @@ OSSL_CIPHER_ALGORITHM(rc2_40_cbc,
 OSSL_CIPHER_ALGORITHM(rc2_64_cbc,
                       hc_EVP_CIPH_CBC_MODE |
                       hc_EVP_CIPH_VARIABLE_LENGTH)
+#endif
 
 /**
  * The Camellia-128 cipher type - OpenSSL
@@ -558,6 +580,7 @@ OSSL_CIPHER_ALGORITHM(camellia_192_cbc, hc_EVP_CIPH_CBC_MODE)
  */
 OSSL_CIPHER_ALGORITHM(camellia_256_cbc, hc_EVP_CIPH_CBC_MODE)
 
+#ifndef HAVE_OPENSSL_30
 /**
  * The RC4 cipher type (OpenSSL provider)
  *
@@ -581,15 +604,6 @@ OSSL_CIPHER_ALGORITHM(rc4_40,
                       hc_EVP_CIPH_VARIABLE_LENGTH)
 
 /**
- * The MD2 hash algorithm (OpenSSL provider)
- *
- * @return the MD2 EVP_MD pointer.
- *
- * @ingroup hcrypto_evp
- */
-OSSL_MD_ALGORITHM(md2)
-
-/**
  * The MD4 hash algorithm (OpenSSL provider)
  *
  * @return the MD4 EVP_MD pointer.
@@ -597,6 +611,7 @@ OSSL_MD_ALGORITHM(md2)
  * @ingroup hcrypto_evp
  */
 OSSL_MD_ALGORITHM(md4)
+#endif
 
 /**
  * The MD5 hash algorithm (OpenSSL provider)

@@ -96,6 +96,7 @@ _kdc_check_pac(astgs_request_t r,
     krb5_pac pac = NULL;
     krb5_error_code ret;
     krb5_boolean signedticket;
+    krb5_boolean is_trusted = FALSE;
 
     *kdc_issued = FALSE;
     *ppac = NULL;
@@ -122,32 +123,25 @@ _kdc_check_pac(astgs_request_t r,
 	return ret;
     }
 
-    if (pac_canon_name) {
-	ret = _krb5_pac_get_canon_principal(context, pac, pac_canon_name);
-	if (ret && ret != ENOENT) {
-	    krb5_pac_free(context, pac);
-	     return ret;
-	}
-    }
-    if (pac_attributes) {
-	ret = _krb5_pac_get_attributes_info(context, pac, pac_attributes);
-	if (ret && ret != ENOENT) {
-	    krb5_pac_free(context, pac);
-	    return ret;
-	}
-	if (ret == ENOENT)
-	    *pac_attributes = KRB5_PAC_WAS_GIVEN_IMPLICITLY;
-    }
-
     /* Verify the KDC signatures. */
     ret = _kdc_pac_verify(r,
 			  client_principal, delegated_proxy_principal,
-			  client, server, krbtgt, &pac);
+			  client, server, krbtgt, pac, &is_trusted);
     if (ret == 0) {
-	if (pac == NULL) {
-	    /* the plugin may indicate no PAC should be generated */
-	    *pac_attributes = 0;
+	if (is_trusted) {
+	    krb5_pac_set_trusted(pac, true);
 	}
+
+	if (pac_canon_name) {
+	    ret = _krb5_pac_get_canon_principal(context, pac, pac_canon_name);
+	    if (ret && ret != ENOENT) {
+		krb5_pac_free(context, pac);
+		return ret;
+	    }
+	}
+	if (pac_attributes &&
+	    _krb5_pac_get_attributes_info(context, pac, pac_attributes) != 0)
+	    *pac_attributes = KRB5_PAC_WAS_GIVEN_IMPLICITLY;
     } else if (ret == KRB5_PLUGIN_NO_HANDLE) {
 	/*
 	 * We can't verify the KDC signatures if the ticket was issued by
@@ -162,6 +156,17 @@ _kdc_check_pac(astgs_request_t r,
 		return ret;
 	    }
 	}
+
+	if (pac_canon_name) {
+	    ret = _krb5_pac_get_canon_principal(context, pac, pac_canon_name);
+	    if (ret && ret != ENOENT) {
+		krb5_pac_free(context, pac);
+		return ret;
+	    }
+	}
+	if (pac_attributes &&
+	    _krb5_pac_get_attributes_info(context, pac, pac_attributes) != 0)
+	    *pac_attributes = KRB5_PAC_WAS_GIVEN_IMPLICITLY;
 
 	/* Discard the PAC if the plugin didn't handle it */
 	krb5_pac_free(context, pac);
@@ -1051,8 +1056,9 @@ next_kvno:
     } else if (ret) {
 	char *str = NULL, *p = NULL;
 
-	krb5_enctype_to_string(r->context, ap_req.ticket.enc_part.etype, &str);
-	krb5_unparse_name(r->context, princ, &p);
+	/* We should implement the MIT `trace_format()' concept */
+	(void) krb5_enctype_to_string(r->context, ap_req.ticket.enc_part.etype, &str);
+	(void) krb5_unparse_name(r->context, princ, &p);
 	kdc_log(r->context, config, 4,
 		"No server key with enctype %s found for %s",
 		str ? str : "<unknown enctype>",
@@ -1327,6 +1333,7 @@ _kdc_db_fetch_client(krb5_context context,
     krb5_error_code ret;
     hdb_entry *client = NULL;
 
+    *clientdb = NULL;
     *client_out = NULL;
 
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | flags,
@@ -1382,7 +1389,7 @@ tgs_build_reply(astgs_request_t priv,
     char *user2user_name = NULL;
     HDB *user2user_krbtgtdb;
     hdb_entry *user2user_krbtgt = NULL;
-    HDB *clientdb;
+    HDB *clientdb = NULL;
     HDB *serverdb = NULL;
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &priv->ticket->ticket;
@@ -1896,8 +1903,15 @@ server_lookup:
 			       cpn, our_realm, &clientdb, &priv->client);
     if (ret)
 	goto out;
-    flags &= ~HDB_F_SYNTHETIC_OK;
+    /* flags &= ~HDB_F_SYNTHETIC_OK; */ /* `flags' is not used again below */
     priv->clientdb = clientdb;
+
+    /* Validate armor TGT before potentially including device claims */
+    if (priv->armor_ticket) {
+	ret = _kdc_fast_check_armor_pac(priv);
+	if (ret)
+	    goto out;
+    }
 
     ret = _kdc_check_pac(priv, priv->client_princ, NULL,
 			 priv->client, priv->server,
@@ -1913,6 +1927,29 @@ server_lookup:
 		spn, cpn, from, msg);
 	krb5_free_error_message(context, msg);
 	goto out;
+    }
+
+    if (priv->pac != NULL) {
+	ret = _kdc_pac_update(priv, priv->client_princ, NULL,
+			      priv->client, priv->server, priv->krbtgt,
+			      &priv->pac);
+	if (ret == KRB5_PLUGIN_NO_HANDLE) {
+	    ret = 0;
+	}
+	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
+	    kdc_audit_addreason((kdc_request_t)priv, "PAC update failed");
+	    kdc_log(context, config, 4,
+		    "Update PAC failed for %s (%s) from %s with %s",
+		    spn, cpn, from, msg);
+	    krb5_free_error_message(context, msg);
+	    goto out;
+	}
+
+	if (priv->pac == NULL) {
+	    /* the plugin may indicate no PAC should be generated */
+	    priv->pac_attributes = 0;
+	}
     }
 
     /*
@@ -2010,13 +2047,6 @@ server_lookup:
 
     if (kdc_issued &&
 	!krb5_principal_is_krbtgt(context, priv->server->principal)) {
-
-	/* Validate armor TGT before potentially including device claims */
-	if (priv->armor_ticket) {
-	    ret = _kdc_fast_check_armor_pac(priv);
-	    if (ret)
-		goto out;
-	}
 
 	add_ticket_sig = TRUE;
     }

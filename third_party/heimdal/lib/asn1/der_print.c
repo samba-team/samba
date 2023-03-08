@@ -223,7 +223,7 @@ der_print_bit_string(const heim_bit_string *k, int flags)
 
     (void) hex_encode(k->data, k->length / 8, &s);
     if (asprintf(&s2, "%llu:%s", (unsigned long long)k->length, s) == -1 || !s2)
-        return NULL;
+        s2 = NULL;
     free(s);
     return s2;
 }

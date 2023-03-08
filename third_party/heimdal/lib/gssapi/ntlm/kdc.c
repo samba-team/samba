@@ -82,7 +82,7 @@ get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
 
     ret = krb5_cc_cache_match(context, principal, id);
     if (ret == 0)
-	return 0;
+	goto out;
 
     /* did not find in default credcache, lets try default keytab */
     ret = krb5_kt_default(context, &kt);

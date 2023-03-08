@@ -1355,7 +1355,7 @@ _krb5_kcm_is_running(krb5_context context)
     krb5_ccache id = &ccdata;
     krb5_boolean running;
 
-    ret = kcm_alloc(context, NULL, NULL, NULL, &id);
+    ret = kcm_alloc(context, &krb5_kcm_ops, NULL, NULL, &id);
     if (ret)
 	return 0;
 

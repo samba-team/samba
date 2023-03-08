@@ -398,9 +398,6 @@ get_kadm_handle(krb5_context context,
     set_conf(conf, realm, want_realm, KADM5_CONFIG_REALM);
     set_conf(conf, dbname, hdb, KADM5_CONFIG_DBNAME);
     set_conf(conf, stash_file, stash_file, KADM5_CONFIG_STASH_FILE);
-    set_conf(conf, admin_server, writable_kadmin_server, KADM5_CONFIG_ADMIN_SERVER);
-    set_conf(conf, readonly_admin_server, kadmin_server,
-             KADM5_CONFIG_READONLY_ADMIN_SERVER);
 
     /*
      * If we have a local HDB we'll use it if we can.  If the local HDB is
@@ -425,6 +422,11 @@ get_kadm_handle(krb5_context context,
      *
      * Note that kadmin_client_keytab can be an HDB: or HDBGET: keytab.
      */
+    if (writable_kadmin_server)
+        set_conf(conf, admin_server, writable_kadmin_server, KADM5_CONFIG_ADMIN_SERVER);
+    if (kadmin_server)
+        set_conf(conf, readonly_admin_server, kadmin_server,
+                 KADM5_CONFIG_READONLY_ADMIN_SERVER);
     ret = kadm5_c_init_with_skey_ctx(context,
                                      kadmin_client_name,
                                      kadmin_client_keytab,
@@ -761,13 +763,11 @@ bad_reqv(kadmin_request_desc r,
     char *formatted = NULL;
     char *msg = NULL;
 
-    if (r && r->context)
-        context = r->context;
-    if (r && r->hcontext && r->kv)
+    context = r->context;
+    if (r->hcontext && r->kv)
         heim_audit_setkv_number((heim_svc_req_desc)r, "http-status-code",
 				http_status_code);
-    if (r)
-        (void) gettimeofday(&r->tv_end, NULL);
+    (void) gettimeofday(&r->tv_end, NULL);
     if (code == ENOMEM) {
         if (context)
             krb5_log_msg(context, logfac, 1, NULL, "Out of memory");
@@ -790,7 +790,7 @@ bad_reqv(kadmin_request_desc r,
         msg = formatted;
         formatted = NULL;
     }
-    if (r && r->hcontext)
+    if (r->hcontext)
         heim_audit_addreason((heim_svc_req_desc)r, "%s", formatted);
     krb5_free_error_message(context, k5msg);
 
@@ -2034,7 +2034,7 @@ make_csrf_token(kadmin_request_desc r,
     if (ret == 0 && data.length > INT_MAX)
         ret = ERANGE;
     if (ret == 0 &&
-        (dlen = rk_base64_encode(data.data, data.length, token)) < 0)
+        rk_base64_encode(data.data, data.length, token) < 0)
         ret = errno;
     krb5_storage_free(sp);
     krb5_data_free(&data);
@@ -2139,6 +2139,7 @@ ip(void *cls,
     if (ftl == NULL || keydup == NULL || valdup == NULL) {
         free(ftl);
         free(keydup);
+        free(valdup);
         return MHD_NO;
     }
     ftl->freeme1 = keydup;
@@ -2186,11 +2187,8 @@ route(void *cls,
          * handling a POST then we'll also get called with upload_data != NULL,
          * possibly multiple times.
          */
-        if ((ret = set_req_desc(connection, method, url, &r))) {
-            return
-                bad_503(r, ret, "Could not initialize request state") == -1
-                    ? MHD_NO : MHD_YES;
-        }
+        if ((ret = set_req_desc(connection, method, url, &r)))
+            return MHD_NO;
         *ctx = r;
 
         /*
@@ -2511,6 +2509,11 @@ main(int argc, char **argv)
         usage(1);
     if (port < 0)
         errx(1, "Port number must be given");
+
+    if (writable_kadmin_server == NULL && kadmin_server == NULL &&
+        !local_hdb && !local_hdb_read_only)
+        errx(1, "One of --local or --local-read-only must be given, or a "
+             "remote kadmind must be given");
 
     if (audiences.num_strings == 0) {
         char localhost[MAXHOSTNAMELEN];

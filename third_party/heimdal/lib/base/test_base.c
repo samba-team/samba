@@ -64,6 +64,7 @@
 #include <fcntl.h>
 
 #include "baselocl.h"
+#include "heimbase-atomics.h"
 
 static void HEIM_CALLCONV
 memory_free(heim_object_t obj)
@@ -1273,6 +1274,84 @@ test_array()
     return 0;
 }
 
+/* This function tests only that heimbase-atomics.h compiles */
+static int
+test_atomics(void)
+{
+    heim_base_atomic(void *) tptr;
+    heim_base_atomic(uint32_t) tu32;
+    heim_base_atomic(uint64_t) tu64;
+
+    heim_base_atomic_init(&tptr, NULL);
+    heim_base_atomic_init(&tu32, 0);
+    heim_base_atomic_init(&tu64, 0);
+
+    if (heim_base_atomic_load(&tptr))
+        return 1;
+    if (heim_base_atomic_load(&tu32))
+        return 1;
+    if (heim_base_atomic_load(&tu64))
+        return 1;
+
+    heim_base_atomic_store(&tptr, &tptr);
+    heim_base_atomic_store(&tu32, 1);
+    heim_base_atomic_store(&tu64, 1);
+
+    if (heim_base_atomic_load(&tptr) != &tptr)
+        return 1;
+    if (heim_base_atomic_load(&tu32) != 1)
+        return 1;
+    if (heim_base_atomic_load(&tu64) != 1)
+        return 1;
+
+    if (heim_base_atomic_inc_32(&tu32) != 2 ||
+        heim_base_atomic_load(&tu32) != 2)
+        return 1;
+    if (heim_base_atomic_inc_64(&tu64) != 2 ||
+        heim_base_atomic_load(&tu64) != 2)
+        return 1;
+
+    if (heim_base_atomic_dec_32(&tu32) != 1 ||
+        heim_base_atomic_load(&tu32) != 1)
+        return 1;
+    if (heim_base_atomic_dec_64(&tu64) != 1 ||
+        heim_base_atomic_load(&tu64) != 1)
+        return 1;
+
+    heim_base_exchange_pointer(&tptr, (void *)&tu32);
+    if (heim_base_atomic_load(&tptr) != &tu32)
+        return 1;
+    heim_base_exchange_32(&tu32, 32);
+    if (heim_base_atomic_load(&tu32) != 32)
+        return 1;
+    heim_base_exchange_64(&tu64, 64);
+    if (heim_base_atomic_load(&tu64) != 64)
+        return 1;
+
+    if (heim_base_cas_pointer(&tptr, (void *)&tu32, (void *)&tu64) != &tu32)
+        return 1;
+    if (heim_base_cas_pointer(&tptr, (void *)&tu32, (void *)&tptr) != &tu64)
+        return 1;
+    if (heim_base_atomic_load(&tptr) != (void *)&tu64)
+        return 1;
+
+    if (heim_base_cas_32(&tu32, 32, 4) != 32)
+        return 1;
+    if (heim_base_cas_32(&tu32, 32, 4) != 4)
+        return 1;
+    if (heim_base_atomic_load(&tu32) != 4)
+        return 1;
+
+    if (heim_base_cas_64(&tu64, 64, 4) != 64)
+        return 1;
+    if (heim_base_cas_64(&tu64, 64, 4) != 4)
+        return 1;
+    if (heim_base_atomic_load(&tu64) != 4)
+        return 1;
+
+    return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1295,6 +1374,7 @@ main(int argc, char **argv)
     res |= test_db(NULL, NULL);
     res |= test_db("json", argc > 1 ? argv[1] : "test_db.json");
     res |= test_array();
+    res |= test_atomics();
 
     return res ? 1 : 0;
 }

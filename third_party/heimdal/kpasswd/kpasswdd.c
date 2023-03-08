@@ -463,16 +463,25 @@ verify (krb5_auth_context *auth_context,
      * either an invalid request or an error packet.  An error packet may be
      * the result of a ping-pong attacker pointing us at another kpasswdd.
      */
+    if (len < 6) {
+	krb5_warnx(context, "Message too short: %llu",
+	    (unsigned long long)len);
+	return 1;
+    }
     pkt_len = (msg[0] << 8) | (msg[1]);
     pkt_ver = (msg[2] << 8) | (msg[3]);
     ap_req_len = (msg[4] << 8) | (msg[5]);
     if (pkt_len != len) {
-	krb5_warnx (context, "Strange len: %ld != %ld",
-		    (long)pkt_len, (long)len);
+	krb5_warnx(context, "Bad packet length: %u != %llu", pkt_len,
+	    (unsigned long long)len);
 	return 1;
     }
     if (ap_req_len == 0) {
 	krb5_warnx (context, "Request is error packet (ap_req_len == 0)");
+	return 1;
+    }
+    if (ap_req_len + 6 > len) {
+	krb5_warnx(context, "Bad AP-REQ length: %u", ap_req_len);
 	return 1;
     }
     if (pkt_ver != KRB5_KPASSWD_VERS_CHANGEPW &&

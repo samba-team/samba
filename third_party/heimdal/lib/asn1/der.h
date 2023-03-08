@@ -67,9 +67,9 @@ enum {
     UT_IA5String	= 22,
     UT_UTCTime		= 23,
     UT_GeneralizedTime	= 24,
-    UT_UniversalString	= 25,
     UT_VisibleString	= 26,
     UT_GeneralString	= 27,
+    UT_UniversalString	= 28,
     UT_BMPString	= 30,
     /* unsupported types */
     UT_ObjectDescriptor = 7,

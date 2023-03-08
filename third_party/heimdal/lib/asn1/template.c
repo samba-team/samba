@@ -1176,6 +1176,13 @@ _asn1_decode(const struct asn1_template *t, unsigned flags,
 		    return ret;
 	    }
 	    if (i >= A1_HEADER_LEN(choice) + 1 || !choice[i].tt) {
+                /*
+                 * If this is an extensible CHOICE, then choice->tt will be the
+                 * offset to u.ellipsis.  If it's not, then this "extension" is
+                 * an error and must stop parsing it.  (We could be permissive
+                 * and throw away the extension, though one might as well just
+                 * mark such a CHOICE as extensible.)
+                 */
 		if (choice->tt == 0)
 		    return ASN1_BAD_ID;
 
@@ -1786,16 +1793,20 @@ _asn1_encode(const struct asn1_template *t, unsigned char *p, size_t len, const 
 	    }
 
 	    if (*element == 0) {
-		ret += der_put_octet_string(p, len,
-					    DPOC(data, choice->tt), &datalen);
+                if (choice->tt) {
+                    /* This is an extensible CHOICE */
+                    ret += der_put_octet_string(p, len,
+                                                DPOC(data, choice->tt), &datalen);
+                    len -= datalen; p -= datalen;
+                } /* else this is really an error -- XXX what to do? */
 	    } else {
 		choice += *element;
 		el = DPOC(data, choice->offset);
 		ret = _asn1_encode(choice->ptr, p, len, el, &datalen);
 		if (ret)
 		    return ret;
+                len -= datalen; p -= datalen;
 	    }
-	    len -= datalen; p -= datalen;
 
 	    break;
 	}
@@ -2175,7 +2186,8 @@ _asn1_length(const struct asn1_template *t, const void *data)
 		break;
 
 	    if (*element == 0) {
-		ret += der_length_octet_string(DPOC(data, choice->tt));
+                if (choice->tt)
+                    ret += der_length_octet_string(DPOC(data, choice->tt));
 	    } else {
 		choice += *element;
 		ret += _asn1_length(choice->ptr, DPOC(data, choice->offset));
@@ -2350,7 +2362,16 @@ _asn1_free(const struct asn1_template *t, void *data)
 		break;
 
 	    if (*element == 0) {
-		der_free_octet_string(DPO(data, choice->tt));
+                /*
+                 * If choice->tt != 0 then this is an extensible choice, and
+                 * the offset choice->tt is the offset to u.ellipsis.
+                 */
+                if (choice->tt != 0)
+                    der_free_octet_string(DPO(data, choice->tt));
+                /*
+                 * Else this was a not-fully initialized CHOICE.  We could
+                 * stand to memset clear the rest of it though...
+                 */
 	    } else {
 		choice += *element;
 		_asn1_free(choice->ptr, DPO(data, choice->offset));
@@ -2727,6 +2748,7 @@ _asn1_print(const struct asn1_template *t,
 	    if (*element > A1_HEADER_LEN(choice)) {
                 r = rk_strpoolprintf(r, "null");
             } else if (*element == 0) {
+                /* XXX If choice->tt then we should print the u.ellipsis */
                 r = rk_strpoolprintf(r, "null");
 	    } else {
 		choice += *element;
@@ -2993,7 +3015,7 @@ _asn1_copy(const struct asn1_template *t, const void *from, void *to)
 	    unsigned int i;
 
 	    tel->val = calloc(fel->len, ellen);
-	    if (tel->val == NULL)
+	    if (tel->val == NULL && fel->len > 0)
 		return ENOMEM;
 
 	    tel->len = fel->len;
@@ -3024,7 +3046,12 @@ _asn1_copy(const struct asn1_template *t, const void *from, void *to)
 	    *telement = *felement;
 
 	    if (*felement == 0) {
-		ret = der_copy_octet_string(DPOC(from, choice->tt), DPO(to, choice->tt));
+                if (choice->tt)
+                    ret = der_copy_octet_string(DPOC(from, choice->tt), DPO(to, choice->tt));
+                /*
+                 * Else we should really memset clear the rest of this choice,
+                 * but we don't really know its size.
+                 */
 	    } else {
 		choice += *felement;
 		ret = _asn1_copy(choice->ptr,

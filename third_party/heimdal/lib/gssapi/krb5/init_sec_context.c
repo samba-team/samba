@@ -742,6 +742,9 @@ repl_mutual
     output_token->length = 0;
     output_token->value = NULL;
 
+    if (input_token == GSS_C_NO_BUFFER)
+        return GSS_S_FAILURE;
+
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
@@ -799,10 +802,10 @@ repl_mutual
 
     *minor_status = 0;
     if (time_rec)
-        _gsskrb5_lifetime_left(minor_status,
-                               context,
-                               ctx->endtime,
-                               time_rec);
+        (void) _gsskrb5_lifetime_left(minor_status,
+				      context,
+				      ctx->endtime,
+				      time_rec);
     if (ret_flags)
 	*ret_flags = ctx->flags;
 

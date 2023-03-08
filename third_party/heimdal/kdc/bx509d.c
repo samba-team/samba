@@ -185,6 +185,7 @@ typedef struct bx509_request_desc {
     const char *redir;
     const char *method;
     size_t post_data_size;
+    size_t san_idx; /* For /get-tgts */
     enum k5_creds_kind cckind;
     char *pkix_store;
     char *tgts_filename;
@@ -260,6 +261,8 @@ get_krb5_context(krb5_context *contextp)
         return 0;
     if ((ret = krb5_init_context(contextp)))
         return *contextp = NULL, ret;
+    if (logfac)
+        krb5_set_log_dest(*contextp, logfac);
     (void) pthread_setspecific(k5ctx, *contextp);
     return *contextp ? 0 : ENOMEM;
 }
@@ -566,7 +569,6 @@ bad_reqv(struct bx509_request_desc *r,
          va_list ap)
 {
     krb5_error_code ret;
-    krb5_context context = NULL;
     const char *k5msg = NULL;
     const char *emsg = NULL;
     char *formatted = NULL;
@@ -586,8 +588,10 @@ bad_reqv(struct bx509_request_desc *r,
     if (code) {
         if (r->context)
             emsg = k5msg = krb5_get_error_message(r->context, code);
-        else
+        else if (code > -1)
             emsg = strerror(code);
+        else
+            emsg = "Unknown error";
     }
 
     ret = vasprintf(&formatted, fmt, ap);
@@ -600,10 +604,11 @@ bad_reqv(struct bx509_request_desc *r,
     }
     heim_audit_addreason((heim_svc_req_desc)r, "%s", msg);
     audit_trail(r, code);
-    krb5_free_error_message(context, k5msg);
+    if (r->context)
+        krb5_free_error_message(r->context, k5msg);
 
     if (ret == -1 || msg == NULL) {
-        if (context)
+        if (r->context)
             krb5_log_msg(r->context, logfac, 1, NULL, "Out of memory");
         return resp(r, MHD_HTTP_SERVICE_UNAVAILABLE, MHD_RESPMEM_PERSISTENT,
                     NULL, "Out of memory", sizeof("Out of memory") - 1, NULL);
@@ -882,7 +887,7 @@ do_CA(struct bx509_request_desc *r, const char *csr)
     bytes = rk_base64_decode(csr2, d.data);
     free(csr2);
     if (bytes < 0)
-        ret = errno;
+        ret = errno ? errno : EINVAL;
     else
         d.length = bytes;
     if (ret) {
@@ -1360,10 +1365,12 @@ do_pkinit(struct bx509_request_desc *r, enum k5_creds_kind kind)
             ret = krb5_append_addresses(r->context, &r->tgt_addresses,
                                         &addr);
     }
-    if (ret == 0 && r->tgt_addresses.len == 0)
-        ret = krb5_get_init_creds_opt_set_addressless(r->context, opt, 1);
-    else
-        krb5_get_init_creds_opt_set_address_list(opt, &r->tgt_addresses);
+    if (ret == 0) {
+        if (r->tgt_addresses.len == 0)
+            ret = krb5_get_init_creds_opt_set_addressless(r->context, opt, 1);
+        else
+            krb5_get_init_creds_opt_set_address_list(opt, &r->tgt_addresses);
+    }
     if (ret == 0)
         ret = krb5_get_init_creds_opt_set_pkinit(r->context, opt, p,
                                                  r->pkix_store,
@@ -1543,7 +1550,7 @@ k5_get_creds(struct bx509_request_desc *r, enum k5_creds_kind kind)
 static void
 acc_str(char **acc, char *adds, size_t addslen)
 {
-    char *tmp;
+    char *tmp = NULL;
     int l = addslen <= INT_MAX ? (int)addslen : INT_MAX;
 
     if (asprintf(&tmp, "%s%s%.*s",
@@ -1570,7 +1577,7 @@ fmt_gss_error(OM_uint32 code, gss_OID mech)
             acc_str(&r, (char *)buf.value, buf.length);
         gss_release_buffer(&minor, &buf);
     } while (!GSS_ERROR(major) && more);
-    return r ? r : "Out of memory while formatting GSS-API error";
+    return r;
 }
 
 static char *
@@ -1580,7 +1587,10 @@ fmt_gss_errors(const char *r, OM_uint32 major, OM_uint32 minor, gss_OID mech)
 
     ma = fmt_gss_error(major, GSS_C_NO_OID);
     mi = mech == GSS_C_NO_OID ? NULL : fmt_gss_error(minor, mech);
-    if (asprintf(&s, "%s: %s%s%s", r, ma, mi ? ": " : "", mi ? mi : "") > -1 &&
+    if (asprintf(&s, "%s: %s%s%s", r,
+                 ma ? ma : "Out of memory",
+                 mi ? ": " : "",
+                 mi ? mi : "") > -1 &&
         s) {
         free(ma);
         free(mi);
@@ -1605,8 +1615,13 @@ bad_req_gss(struct bx509_request_desc *r,
     if (major == GSS_S_BAD_NAME || major == GSS_S_BAD_NAMETYPE)
         http_status_code = MHD_HTTP_BAD_REQUEST;
 
-    ret = resp(r, http_status_code, MHD_RESPMEM_MUST_COPY, NULL,
-               msg, strlen(msg), NULL);
+    if (msg)
+        ret = resp(r, http_status_code, MHD_RESPMEM_MUST_COPY, NULL,
+                   msg, strlen(msg), NULL);
+    else
+        ret = resp(r, http_status_code, MHD_RESPMEM_MUST_COPY, NULL,
+                   "Out of memory while formatting GSS error message",
+                   sizeof("Out of memory while formatting GSS error message") - 1, NULL);
     free(msg);
     return ret;
 }
@@ -1839,9 +1854,7 @@ authorize_TGT_REQ(struct bx509_request_desc *r)
     if (for_cname == r->cname || strcmp(r->cname, r->for_cname) == 0)
         return 0;
 
-    ret = krb5_parse_name(r->context, r->cname, &p);
-    if (ret == 0)
-        ret = hx509_request_init(r->context->hx509ctx, &r->req);
+    ret = hx509_request_init(r->context->hx509ctx, &r->req);
     if (ret)
         return bad_500(r, ret, "Out of resources");
     heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
@@ -1852,9 +1865,12 @@ authorize_TGT_REQ(struct bx509_request_desc *r)
         ret = hx509_request_add_pkinit(r->context->hx509ctx, r->req,
                                        for_cname);
     if (ret == 0)
+        ret = krb5_parse_name(r->context, r->cname, &p);
+    if (ret == 0)
         ret = kdc_authorize_csr(r->context, "get-tgt", r->req, p);
     krb5_free_principal(r->context, p);
     hx509_request_free(&r->req);
+    r->req = NULL;
     if (ret)
         return bad_403(r, ret, "Not authorized to requested TGT");
     return ret;
@@ -1972,7 +1988,7 @@ get_tgts_accumulate_ccache_write_json(struct bx509_request_desc *r,
     if (o && k && v)
         ret = heim_dict_set_value(o, k, v);
     else
-        ret = errno;
+        ret = ENOMEM;
 
     if (ret == 0) {
         heim_release(v);
@@ -1991,10 +2007,13 @@ get_tgts_accumulate_ccache_write_json(struct bx509_request_desc *r,
             ret = heim_dict_set_value(o, k, v);
     }
     if (ret == 0 && code != 0) {
+        const char *s = krb5_get_error_message(r->context, code);
+
         heim_release(v);
         heim_release(k);
         k = heim_string_create("error");
-        v = heim_string_create(krb5_get_error_message(r->context, code));
+        v = heim_string_create(s ? s : "Out of memory");
+        krb5_free_error_message(r->context, s);
         if (k && v)
             ret = heim_dict_set_value(o, k, v);
     }
@@ -2120,17 +2139,79 @@ get_tgts_param_execute_cb(void *d,
                           const char *val)
 {
     struct bx509_request_desc *r = d;
-    heim_mhd_result res = MHD_YES;
+    hx509_san_type san_type;
     krb5_error_code ret;
+    size_t san_idx = r->san_idx++;
+    const char *save_for_cname = r->for_cname;
+    char *s = NULL;
+    int res;
 
-    if (strcmp(key, "cname") == 0 && val) {
-        /* Handled upstairs */
-        r->for_cname = val;
-        ret = k5_get_creds(r, K5_CREDS_EPHEMERAL);
-        res = get_tgts_accumulate_ccache(r, ret);
-    } else {
-        /* Handled upstairs */
+    /* We expect only cname=principal q-params here */
+    if (strcmp(key, "cname") != 0 || val == NULL)
+        return MHD_YES;
+
+    /*
+     * We expect the `san_idx'th SAN in the `r->req' request checked by
+     * kdc_authorize_csr() to be the same as this cname.  This happens
+     * naturally because we add these SANs to `r->req' in the same order as we
+     * visit them here (unless our HTTP library somehow went crazy).
+     *
+     * Still, we check that it's the same SAN.
+     */
+    ret = hx509_request_get_san(r->req, san_idx, &san_type, &s);
+    if (ret == HX509_NO_ITEM ||
+        san_type != HX509_SAN_TYPE_PKINIT ||
+        strcmp(s, val) != 0) {
+        /*
+         * If the cname and SAN don't match, it's some weird internal error
+         * (can't happen).
+         */
+        krb5_set_error_message(r->context, r->error_code = EACCES,
+                               "PKINIT SAN not granted: %s (internal error)",
+                               val);
+        ret = EACCES;
     }
+
+    /*
+     * We're going to pretend to be this SAN for the purpose of acquring a TGT
+     * for it.  So we "push" `r->for_cname'.
+     */
+    if (ret == 0)
+        r->for_cname = val;
+
+    /*
+     * Our authorizer supports partial authorization where the whole request is
+     * rejected but some features of it are permitted.
+     *
+     * (In most end-points we don't want partial authorization, but in
+     * /get-tgts we very much do.)
+     */
+    if (ret == 0 && !hx509_request_san_authorized_p(r->req, san_idx)) {
+        heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
+                         "REJECT_krb5PrincipalName", "%s", val);
+        krb5_set_error_message(r->context, r->error_code = EACCES,
+                               "PKINIT SAN denied: %s", val);
+        ret = EACCES;
+    }
+    if (ret == 0) {
+        heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
+                         "ACCEPT_krb5PrincipalName", "%s", val);
+        ret = k5_get_creds(r, K5_CREDS_EPHEMERAL);
+        if (ret == 0)
+            heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
+                             "ISSUE_krb5PrincipalName", "%s", val);
+    }
+
+    /*
+     * If ret == 0 this will gather the TGT we acquired, else it will acquire
+     * the error we got.
+     */
+    res = get_tgts_accumulate_ccache(r, ret);
+
+    /* Now we "pop" `r->for_cname' */
+    r->for_cname = save_for_cname;
+
+    hx509_xfree(s);
     return res;
 }
 
@@ -2161,39 +2242,63 @@ get_tgts(struct bx509_request_desc *r)
         r->error_code = 0;
         res = MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
                                         get_tgt_param_cb, r);
-        if (r->response || res == MHD_NO)
+        if (r->response || res == MHD_NO) {
+            krb5_free_principal(r->context, p);
             return res;
+        }
 
         ret = r->error_code;
     }
     if (ret == 0) {
-        /* Authorize requested client principal names (calls bad_req()) */
+        /*
+         * Check authorization of the authenticated client to the requested
+         * client principal names (calls bad_req()).
+         */
         r->error_code = 0;
         res = MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
                                         get_tgts_param_authorize_cb, r);
-        if (r->response || res == MHD_NO)
+        if (r->response || res == MHD_NO) {
+            krb5_free_principal(r->context, p);
             return res;
+        }
 
         ret = r->error_code;
         if (ret == 0) {
+            /* Use the same configuration as /get-tgt (or should we?) */
             ret = kdc_authorize_csr(r->context, "get-tgt", r->req, p);
+
+            /*
+             * We tolerate EACCES because we support partial approval.
+             *
+             * (KRB5_PLUGIN_NO_HANDLE means no plugin handled the authorization
+             * check.)
+             */
+            if (ret == EACCES || ret == KRB5_PLUGIN_NO_HANDLE)
+                ret = 0;
             if (ret) {
                 krb5_free_principal(r->context, p);
                 return bad_403(r, ret, "Permission denied");
             }
         }
-        hx509_request_free(&r->req);
     }
     if (ret == 0) {
-        /* get_tgts_param_execute_cb() calls bad_req() */
+        /*
+         * Get the actual TGTs that were authorized.
+         *
+         * get_tgts_param_execute_cb() calls bad_req()
+         */
         r->error_code = 0;
         res = MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
                                         get_tgts_param_execute_cb, r);
-        if (r->response || res == MHD_NO)
+        if (r->response || res == MHD_NO) {
+            krb5_free_principal(r->context, p);
             return res;
+        }
         ret = r->error_code;
     }
     krb5_free_principal(r->context, p);
+    hx509_request_free(&r->req);
+    r->req = NULL;
 
     /*
      * get_tgts_param_execute_cb() will write its JSON response to the file
@@ -2322,7 +2427,7 @@ make_csrf_token(struct bx509_request_desc *r,
     if (ret == 0 && data.length > INT_MAX)
         ret = ERANGE;
     if (ret == 0 &&
-        (dlen = rk_base64_encode(data.data, data.length, token)) < 0)
+        rk_base64_encode(data.data, data.length, token) < 0)
         ret = errno;
     krb5_storage_free(sp);
     krb5_data_free(&data);
@@ -2420,6 +2525,7 @@ ip(void *cls,
     if (ftl == NULL || keydup == NULL || valdup == NULL) {
         free(ftl);
         free(keydup);
+        free(valdup);
         return MHD_NO;
     }
     ftl->freeme1 = keydup;
@@ -2494,7 +2600,7 @@ route(void *cls,
          * possibly multiple times.
          */
         if ((ret = set_req_desc(connection, method, url, &r)))
-            return bad_503(r, ret, "Could not initialize request state");
+            return MHD_NO;
         *ctx = r;
 
         /* All requests other than /health require authentication */
@@ -2816,6 +2922,7 @@ main(int argc, char **argv)
         err(1, "Could not init krb5 context");
 
     bx509_openlog(context, "bx509d", &logfac);
+    krb5_set_log_dest(context, logfac);
     load_plugins(context);
 
     if (allow_GET_flag == -1)

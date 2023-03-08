@@ -415,7 +415,7 @@ main(int argc, char **argv)
 
             buflen = strlen(buf);
             if ((ws = strspn(buf, " \t")))
-                memmove(buf, buf + ws, buflen -= ws);
+                memmove(buf, buf + ws, buflen - ws);
             if (buf[0] == '\0' || buf[0] == '#')
                 continue;
 

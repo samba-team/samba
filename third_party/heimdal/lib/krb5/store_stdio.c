@@ -83,6 +83,13 @@ stdio_store(krb5_storage * sp, const void *data, size_t size)
     ssize_t count;
     size_t rem = size;
 
+    /*
+     * It's possible we just went from reading to writing if the file was open
+     * for both.  Per C99 (N869 final draft) section 7.18.5.3, point 6, when
+     * going from reading to writing [a file opened for both] one must seek.
+     */
+    (void) fseeko(F(sp), 0, SEEK_CUR);
+
     /* similar pattern to net_write() to support pipes */
     while (rem > 0) {
 	count = fwrite(cbuf, 1, rem, F(sp));
@@ -259,6 +266,6 @@ krb5_storage_stdio_from_fd(int fd_in, const char *mode)
     sp->trunc = stdio_trunc;
     sp->fsync = stdio_sync;
     sp->free = stdio_free;
-    sp->max_alloc = UINT_MAX/8;
+    sp->max_alloc = UINT32_MAX/64;
     return sp;
 }

@@ -59,6 +59,7 @@
 #  define HCRYPTO_DEF_PROVIDER pkcs11_hcrypto
 # elif HAVE_HCRYPTO_W_OPENSSL
 #  define HCRYPTO_DEF_PROVIDER ossl
+#  define HCRYPTO_DEF_PROVIDER_IS_OPENSSL
 # else
 #  define HCRYPTO_DEF_PROVIDER hcrypto
 # endif
@@ -68,6 +69,11 @@
 
 
 #define EVP_DEF_OP(_prov,_op) HC_CONCAT4(EVP_,_prov,_,_op)()
+
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+extern int _heim_openssl_fips_enabled(void);
+#endif
+
 
 /**
  * @page page_evp EVP - generic crypto interface
@@ -463,22 +469,14 @@ const EVP_MD *
 EVP_md4(void) HC_DEPRECATED_CRYPTO
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, md4);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, md4);
-}
-
-/**
- * The message digest MD2
- *
- * @return the message digest type.
- *
- * @ingroup hcrypto_evp
- */
-
-const EVP_MD *
-EVP_md2(void) HC_DEPRECATED_CRYPTO
-{
-    hcrypto_validate();
-    return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, md2);
 }
 
 /*
@@ -872,37 +870,34 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 
     *outlen = 0;
 
-    /**
-     * If there in no spare bytes in the left from last Update and the
-     * input length is on the block boundery, the EVP_CipherUpdate()
-     * function can take a shortcut (and preformance gain) and
-     * directly encrypt the data, otherwise we hav to fix it up and
-     * store extra it the EVP_CIPHER_CTX.
+    /*
+     * If there in no bytes left over from the last Update and the
+     * input length is on a block boundary, then we can take a
+     * shortcut (and preformance gain) and directly encrypt the
+     * data.
      */
-    if (ctx->buf_len == 0 && (inlen & ctx->block_mask) == 0) {
+    if (ctx->buf_len == 0 && inlen && (inlen & ctx->block_mask) == 0) {
 	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
 	if (ret == 1)
 	    *outlen = inlen;
-	else
+        else
 	    *outlen = 0;
 	return ret;
     }
-
 
     blocksize = EVP_CIPHER_CTX_block_size(ctx);
     left = blocksize - ctx->buf_len;
     assert(left > 0);
 
     if (ctx->buf_len) {
-
-	/* if total buffer is smaller then input, store locally */
+	/* If we can't fill one block in the buffer, save the input there */
 	if (inlen < left) {
 	    memcpy(ctx->buf + ctx->buf_len, in, inlen);
 	    ctx->buf_len += inlen;
 	    return 1;
 	}
 
-	/* fill in local buffer and encrypt */
+	/* Fill the buffer and encrypt */
 	memcpy(ctx->buf + ctx->buf_len, in, left);
 	ret = (*ctx->cipher->do_cipher)(ctx, out, ctx->buf, blocksize);
 	memset_s(ctx->buf, blocksize, 0, blocksize);
@@ -920,12 +915,16 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 	ctx->buf_len = (inlen & ctx->block_mask);
 	inlen &= ~ctx->block_mask;
 
-	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
-	if (ret != 1)
-	    return ret;
+        if (inlen) {
+            /* Encrypt all the whole blocks of input that we have */
+            ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
+            if (ret != 1)
+                return ret;
+        }
 
 	*outlen += inlen;
 
+        /* Save the tail of the input, if any */
 	in = ((unsigned char *)in) + inlen;
 	memcpy(ctx->buf, in, ctx->buf_len);
     }
@@ -984,7 +983,7 @@ EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx, void *out, int *outlen)
  * @param in in data to the operation.
  * @param size length of data.
  *
- * @return 1 on success.
+ * @return bytes encrypted on success, zero on failure.
  */
 
 int
@@ -1063,6 +1062,13 @@ const EVP_CIPHER *
 EVP_rc2_cbc(void)
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, rc2_cbc);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, rc2_cbc);
 }
 
@@ -1078,6 +1084,13 @@ const EVP_CIPHER *
 EVP_rc2_40_cbc(void)
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, rc2_40_cbc);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, rc2_40_cbc);
 }
 
@@ -1093,6 +1106,13 @@ const EVP_CIPHER *
 EVP_rc2_64_cbc(void)
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, rc2_64_cbc);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, rc2_64_cbc);
 }
 
@@ -1108,6 +1128,13 @@ const EVP_CIPHER *
 EVP_rc4(void)
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, rc4);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, rc4);
 }
 
@@ -1123,6 +1150,13 @@ const EVP_CIPHER *
 EVP_rc4_40(void)
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, rc4_40);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, rc4_40);
 }
 
@@ -1138,6 +1172,13 @@ const EVP_CIPHER *
 EVP_des_cbc(void)
 {
     hcrypto_validate();
+#if defined(HCRYPTO_DEF_PROVIDER_IS_OPENSSL) && defined(HAVE_OPENSSL_30)
+#if defined(HAVE_OPENSSL_FIPS_H) || defined(HAVE_OPENSSL_FIPS_MODE_SET_API)
+    if (_heim_openssl_fips_enabled())
+        return NULL;
+#endif
+    return EVP_DEF_OP(hcrypto, des_cbc);
+#endif
     return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, des_cbc);
 }
 

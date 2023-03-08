@@ -97,15 +97,19 @@ KRB5_CONFIG="${objdir}/krb5-httpkadmind.conf"
 export KRB5_CONFIG
 KRB5CCNAME=$cache
 export KRB5CCNAME
+HEIM_PIDFILE_DIR=$objdir
+export HEIM_PIDFILE_DIR
+HEIM_IPC_DIR=$objdir
+export HEIM_IPC_DIR
 
 rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
 rm -f *.pem *.crt *.der
-rm -rf simple_csr_authz
+rm -rf authz_dir
 rm -f extracted_keytab*
 
-mkdir -p simple_csr_authz
+mkdir -p authz_dir
 
 > messages.log
 
@@ -115,13 +119,13 @@ mkdir -p simple_csr_authz
 
 # grant ext-type value grantee_principal
 grant() {
-    mkdir -p "${objdir}/simple_csr_authz/${3}"
-    touch "${objdir}/simple_csr_authz/${3}/${1}-${2}"
+    mkdir -p "${objdir}/authz_dir/${3}"
+    touch "${objdir}/authz_dir/${3}/${1}=${2}"
 }
 
 revoke() {
-    rm -rf "${objdir}/simple_csr_authz"
-    mkdir -p "${objdir}/simple_csr_authz"
+    rm -rf "${objdir}/authz_dir"
+    mkdir -p "${objdir}/authz_dir"
 }
 
 if set -o|grep 'verbose.*on' > /dev/null ||
@@ -204,15 +208,18 @@ get_keytab_POST_redir() {
 kdcpid=
 httpkadmindpid=
 httpkadmind2pid=
+test_csr_authorizer_pid=
 kadmindpid=
 kadmind2pid=
 cleanup() {
     test -n "$kdcpid" &&
         { echo signal killing kdc; kill -9 "$kdcpid"; }
+    test -n "$test_csr_authorizer_pid" &&
+        { echo signal killing test_csr_authorizer; kill -9 "$test_csr_authorizer_pid"; }
     test -n "$httpkadmindpid" &&
         { echo signal killing httpkadmind; kill -9 "$httpkadmindpid"; }
     test -n "$httpkadmind2pid" &&
-        { echo signal killing httpkadmind; kill -9 "$httpkadmind2pid"; }
+        { echo signal killing second httpkadmind; kill -9 "$httpkadmind2pid"; }
     test -n "$kadmindpid" &&
         { echo signal killing kadmind; kill -9 "$kadmindpid"; }
     test -n "$kadmind2pid" &&
@@ -224,29 +231,28 @@ rm -f extracted_keytab
 
 echo "Creating database"
 rm -f $kt $ukt
-${kadmin} init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-${kadmin} add -r --use-defaults foo@${R} || exit 1
-${kadmin} add -r --use-defaults httpkadmind/admin@${R} || exit 1
-${kadmin} add -r --use-defaults WELLKNOWN/CSRFTOKEN@${R} || exit 1
-${kadmin} add -r --use-defaults HTTP/localhost@${R} || exit 1
-${kadmin} add -r --use-defaults host/xyz.${domain}@${R} || exit 1
-${kadmin} add -r --use-defaults HTTP/xyz.${domain}@${R} || exit 1
-${kadmin} add_ns --key-rotation-epoch=-1d --key-rotation-period=5m  \
-                 --max-ticket-life=1d --max-renewable-life=5d       \
-                 --attributes= HTTP/ns.${domain}@${R} || exit 1
-${kadmin} add_ns --key-rotation-epoch=-1d --key-rotation-period=5m  \
-                 --max-ticket-life=1d --max-renewable-life=5d       \
-                 --attributes=ok-as-delegate host/.ns2.${domain}@${R} || exit 1
-${kadmin} add -r --use-defaults HTTP/${server}@${R} || exit 1
-${kadmin} ext_keytab -r -k $keytab  kadmin/admin@${R} || exit 1
-${kadmin} ext_keytab -r -k $keytab  httpkadmind/admin@${R} || exit 1
-${kadmin} ext_keytab -r -k $keytab  HTTP/${server}@${R} || exit 1
-${kadmin} ext_keytab -r -k $keytab  HTTP/localhost@${R} || exit 1
-${kadmin} add -r --use-defaults HTTP/${otherserver}@${R} || exit 1
-${kadmin} ext_keytab -r -k $ukeytab foo@${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -r --use-defaults foo@${R}
+add -r --use-defaults httpkadmind/admin@${R}
+add -r --use-defaults WELLKNOWN/CSRFTOKEN@${R}
+add -r --use-defaults HTTP/localhost@${R}
+add -r --use-defaults host/xyz.${domain}@${R}
+add -r --use-defaults HTTP/xyz.${domain}@${R}
+add_ns --key-rotation-epoch=-1d --key-rotation-period=5m  \
+       --max-ticket-life=1d --max-renewable-life=5d       \
+       --attributes= HTTP/ns.${domain}@${R}
+add_ns --key-rotation-epoch=-1d --key-rotation-period=5m  \
+       --max-ticket-life=1d --max-renewable-life=5d       \
+       --attributes=ok-as-delegate host/.ns2.${domain}@${R}
+add -r --use-defaults HTTP/${server}@${R}
+ext_keytab -r -k $keytab  kadmin/admin@${R}
+ext_keytab -r -k $keytab  httpkadmind/admin@${R}
+ext_keytab -r -k $keytab  HTTP/${server}@${R}
+ext_keytab -r -k $keytab  HTTP/localhost@${R}
+add -r --use-defaults HTTP/${otherserver}@${R}
+ext_keytab -r -k $ukeytab foo@${R}
+EOF
 ${kdestroy}
 
 # For a while let's not bother with a KDC
@@ -258,6 +264,12 @@ $kimpersonate -A --ccache=$cache -k $keytab -R -t aes128-cts-hmac-sha1-96  \
     { echo "failed to setup kimpersonate credentials"; exit 2; }
 $klist -t >/dev/null ||
     { echo "failed to setup kimpersonate credentials"; exit 2; }
+
+echo "Starting test_csr_authorizer"
+${test_csr_authorizer} -A $objdir/authz_dir -S $objdir --server --daemon ||
+    { echo "test_csr_authorizer failed to start"; exit 2; }
+test_csr_authorizer_pid=`getpid test_csr_authorizer`
+ec=0
 
 echo "Starting httpkadmind"
 ${httpkadmind} -H $server -H localhost --local -t --daemon ||
@@ -291,7 +303,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Fetching keytab for concrete principal $p"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 ${kadmin} ext_keytab -k extracted_keytab $p ||
     { echo "Failed to get a keytab for $p with kadmin"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin ||
@@ -307,7 +319,7 @@ hn=foo.ns.${domain}
 p=HTTP/$hn
 echo "Fetching keytab for virtual principal $p"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 ${kadmin} ext_keytab -k extracted_keytab $p ||
     { echo "Failed to get a keytab for $p with kadmin"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin ||
@@ -329,9 +341,9 @@ p2=HTTP/$hn2
 p3=HTTP/$hn3
 echo "Fetching keytabs for more than one principal"
 rm -f extracted_keytab*
-grant dnsname $hn1 foo@${R}
-grant dnsname $hn2 foo@${R}
-grant dnsname $hn3 foo@${R}
+grant san_dnsname $hn1 foo@${R}
+grant san_dnsname $hn2 foo@${R}
+grant san_dnsname $hn3 foo@${R}
 # Note that httpkadmind will first process dNSName q-params, then the spn
 # q-params.
 ${kadmin} ext_keytab -k extracted_keytab $p1 ||
@@ -372,7 +384,7 @@ hn=xyz.${domain}
 p=host/$hn
 echo "Fetching keytab for virtual principal $p"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "service=host&dNSName=xyz.${domain}" -sf -o "${objdir}/extracted_keytab" &&
     { echo "Got a keytab for $p even though it is a host service!"; exit 1; }
 get_keytab "spn=host/xyz.${domain}" -sf -o "${objdir}/extracted_keytab" &&
@@ -383,7 +395,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Checking key rotation for concrete principal $p"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "dNSName=${hn}" -sf -o "${objdir}/extracted_keytab" ||
     { echo "Failed to get a keytab for $p with curl"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.rest1 ||
@@ -405,7 +417,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Checking key rotation w/ revocation for concrete principal $p"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "dNSName=${hn}" -sf -o "${objdir}/extracted_keytab" ||
     { echo "Failed to get a keytab for $p with curl"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.rest1 ||
@@ -425,7 +437,7 @@ hn=abc.${domain}
 p=HTTP/$hn
 echo "Checking concrete principal creation ($p)"
 rm -f extracted_keytab
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "dNSName=${hn}&create=true" -sf -o "${objdir}/extracted_keytab" &&
     { echo "GET succeeded for write operation!"; exit 1; }
 get_keytab_POST "dNSName=${hn}&create=true" -s -o "${objdir}/extracted_keytab" ||
@@ -444,7 +456,7 @@ hn=bar.ns.${domain}
 p=HTTP/$hn
 echo "Checking materialization of virtual principal ($p)"
 rm -f extracted_keytab
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "dNSName=${hn}&materialize=true" -sf -o "${objdir}/extracted_keytab" &&
     { echo "GET succeeded for write operation!"; exit 1; }
 get_keytab_POST "dNSName=${hn}&materialize=true" -s -o "${objdir}/extracted_keytab" ||
@@ -471,7 +483,7 @@ p=HTTP/$hn
 restport=$restport2
 echo "Checking principal creation at secondary yields redirect"
 rm -f extracted_keytab
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab_POST_redir "dNSName=${hn}&create=true"                           \
     -s -o "${objdir}/extracted_keytab"
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.rest ||
@@ -559,7 +571,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Fetching keytab for concrete principal $p using remote HDB"
 rm -f extracted_keytab*
-grant dnsname $hn httpkadmind/admin@${R}
+grant san_dnsname $hn httpkadmind/admin@${R}
 KRB5CCNAME=$admincache ${kadmin} ext_keytab -k extracted_keytab $p ||
     { echo "Failed to get a keytab for $p with kadmin"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin ||
@@ -575,7 +587,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Checking key rotation for concrete principal $p using remote HDB"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "dNSName=${hn}" -sf -o "${objdir}/extracted_keytab" ||
     { echo "Failed to get a keytab for $p with curl"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.rest1 ||
@@ -610,7 +622,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Fetching keytab for concrete principal $p using local read-only HDB"
 rm -f extracted_keytab*
-grant dnsname $hn httpkadmind/admin@${R}
+grant san_dnsname $hn httpkadmind/admin@${R}
 KRB5CCNAME=$admincache ${kadmin} ext_keytab -k extracted_keytab $p ||
     { echo "Failed to get a keytab for $p with kadmin"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.kadmin ||
@@ -626,7 +638,7 @@ hn=xyz.${domain}
 p=HTTP/$hn
 echo "Checking key rotation for concrete principal $p using local read-only HDB and remote HDB"
 rm -f extracted_keytab*
-grant dnsname $hn foo@${R}
+grant san_dnsname $hn foo@${R}
 get_keytab "dNSName=${hn}" -sf -o "${objdir}/extracted_keytab" ||
     { echo "Failed to get a keytab for $p with curl"; exit 1; }
 ${ktutil} -k "${objdir}/extracted_keytab" list --keys > extracted_keytab.rest1 ||
@@ -810,6 +822,7 @@ KRB5CCNAME=$admincache ${kadmin} get $p |
 grep 'Internal error' messages.log &&
     { echo "Internal errors in log"; exit 1; }
 
+sh ${leaks_kill} test_csr_authorizer $test_csr_authorizer_pid || ec=1
 sh ${leaks_kill} httpkadmind $httpkadmindpid || ec=1
 sh ${leaks_kill} kadmind $kadmindpid || ec=1
 sh ${leaks_kill} kadmind $kadmind2pid || ec=1

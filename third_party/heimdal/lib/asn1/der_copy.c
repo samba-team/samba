@@ -167,9 +167,13 @@ int ASN1CALL
 der_copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
 {
     assert(from->length == 0 || (from->length > 0 && from->data != NULL));
-    if (from->length == 0)
+    if (from->length == 0) {
+        if (from->data == NULL) {
+            *to = *from;
+            return 0;
+        }
 	to->data = calloc(1, 1);
-    else
+    } else
 	to->data = malloc(from->length);
     if (to->data == NULL) {
 	to->length = 0;

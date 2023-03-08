@@ -141,9 +141,7 @@ token_decode(const char *token, enum rk_base32_flags flags)
     int preserve_order = !!(flags & RK_BASE32_FLAG_PRESERVE_ORDER);
     int i, c;
 
-    if (strlen(token) < 8)
-	return DECODE_ERROR;
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8 && token[i] != '\0'; i++) {
 	val <<= 5;
 	if (token[i] == '=')
 	    marker++;
@@ -157,7 +155,7 @@ token_decode(const char *token, enum rk_base32_flags flags)
         else
             val |= c;
     }
-    if (marker > 6)
+    if (i < 8 || marker > 6)
 	return DECODE_ERROR;
     return (marker << 40) | val;
 }

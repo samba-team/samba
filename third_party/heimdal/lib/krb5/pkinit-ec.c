@@ -56,6 +56,7 @@
 #include <openssl/ecdh.h>
 #include <openssl/evp.h>
 #include <openssl/bn.h>
+#include <openssl/dh.h>
 #define HEIM_NO_CRYPTO_HDRS
 #endif
 
@@ -125,6 +126,9 @@ _krb5_build_authpack_subjectPK_EC(krb5_context context,
     if (ret)
         return ret;
 
+#ifdef HAVE_OPENSSL_30
+    ctx->u.eckey = EVP_EC_gen(OSSL_EC_curve_nid2name(NID_X9_62_prime256v1));
+#else
     ctx->u.eckey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
     if (ctx->u.eckey == NULL)
         return krb5_enomem(context);
@@ -132,8 +136,13 @@ _krb5_build_authpack_subjectPK_EC(krb5_context context,
     ret = EC_KEY_generate_key(ctx->u.eckey);
     if (ret != 1)
         return EINVAL;
+#endif
 
+#ifdef HAVE_OPENSSL_30
+    xlen = i2d_PublicKey(ctx->u.eckey, NULL);
+#else
     xlen = i2o_ECPublicKey(ctx->u.eckey, NULL);
+#endif
     if (xlen <= 0)
         return EINVAL;
 
@@ -143,7 +152,11 @@ _krb5_build_authpack_subjectPK_EC(krb5_context context,
 
     a->clientPublicValue->subjectPublicKey.data = p;
 
+#ifdef HAVE_OPENSSL_30
+    xlen = i2d_PublicKey(ctx->u.eckey, &p);
+#else
     xlen = i2o_ECPublicKey(ctx->u.eckey, &p);
+#endif
     if (xlen <= 0) {
         a->clientPublicValue->subjectPublicKey.data = NULL;
         free(p);
@@ -171,6 +184,61 @@ _krb5_pk_rd_pa_reply_ecdh_compute_key(krb5_context context,
                                       int *out_sz)
 {
 #ifdef HAVE_HCRYPTO_W_OPENSSL
+#ifdef HAVE_OPENSSL_30
+    krb5_error_code ret = 0;
+    EVP_PKEY_CTX *pctx = NULL;
+    EVP_PKEY *template = NULL;
+    EVP_PKEY *public = NULL;
+    size_t shared_len = 0;
+
+    if ((template = EVP_PKEY_new()) == NULL)
+        ret = krb5_enomem(context);
+    if (ret == 0 &&
+        EVP_PKEY_copy_parameters(template, ctx->u.eckey) != 1)
+        ret = krb5_enomem(context);
+    if (ret == 0 && (pctx = EVP_PKEY_CTX_new(ctx->u.eckey, NULL)) == NULL)
+        ret = krb5_enomem(context);
+    if (ret == 0 && EVP_PKEY_derive_init(pctx) != 1)
+        ret = krb5_enomem(context);
+    if (ret == 0 &&
+        EVP_PKEY_CTX_set_ecdh_kdf_type(pctx, EVP_PKEY_ECDH_KDF_NONE) != 1)
+        ret = krb5_enomem(context);
+    if (ret == 0 &&
+        (public = d2i_PublicKey(EVP_PKEY_EC, &template, &in, in_sz)) == NULL)
+        krb5_set_error_message(context,
+                               ret = HX509_PARSING_KEY_FAILED,
+                               "PKINIT: Can't parse the KDC's ECDH public key");
+    if (ret == 0 &&
+        EVP_PKEY_derive_set_peer_ex(pctx, public, 1) != 1)
+        krb5_set_error_message(context,
+                               ret = KRB5KRB_ERR_GENERIC,
+                               "Could not derive ECDH shared secret for PKINIT key exchange "
+                               "(EVP_PKEY_derive_set_peer_ex)");
+    if (ret == 0 &&
+        (EVP_PKEY_derive(pctx, NULL, &shared_len) != 1 || shared_len == 0))
+        krb5_set_error_message(context,
+                               ret = KRB5KRB_ERR_GENERIC,
+                               "Could not derive ECDH shared secret for PKINIT key exchange "
+                               "(EVP_PKEY_derive to get length)");
+    if (ret == 0 && shared_len > INT_MAX)
+        krb5_set_error_message(context,
+                               ret = KRB5KRB_ERR_GENERIC,
+                               "Could not derive ECDH shared secret for PKINIT key exchange "
+                               "(shared key too large)");
+    if (ret == 0 && (*out = malloc(shared_len)) == NULL)
+        ret = krb5_enomem(context);
+    if (ret == 0 && EVP_PKEY_derive(pctx, *out, &shared_len) != 1)
+        krb5_set_error_message(context,
+                               ret = KRB5KRB_ERR_GENERIC,
+                               "Could not derive ECDH shared secret for PKINIT key exchange "
+                               "(EVP_PKEY_derive)");
+    if (ret == 0)
+        *out_sz = shared_len;
+    EVP_PKEY_CTX_free(pctx); // move
+    EVP_PKEY_free(template);
+
+    return ret;
+#else
     krb5_error_code ret = 0;
     int dh_gen_keylen;
 
@@ -219,6 +287,7 @@ _krb5_pk_rd_pa_reply_ecdh_compute_key(krb5_context context,
     *out_sz = dh_gen_keylen;
 
     return ret;
+#endif
 #else
     krb5_set_error_message(context, ENOTSUP,
                            N_("PKINIT: ECDH not supported", ""));
@@ -230,7 +299,11 @@ void
 _krb5_pk_eckey_free(void *eckey)
 {
 #ifdef HAVE_HCRYPTO_W_OPENSSL
+#ifdef HAVE_OPENSSL_30
+    EVP_PKEY_free(eckey);
+#else
     EC_KEY_free(eckey);
+#endif
 #endif
 }
 

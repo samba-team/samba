@@ -178,6 +178,60 @@ _gss_secure_release_buffer_set(OM_uint32 *minor_status,
 }
 
 void
+_gss_mg_encode_le_uint64(uint64_t n, uint8_t *p)
+{
+    p[0] = (n >> 0 ) & 0xFF;
+    p[1] = (n >> 8 ) & 0xFF;
+    p[2] = (n >> 16) & 0xFF;
+    p[3] = (n >> 24) & 0xFF;
+    p[4] = (n >> 32) & 0xFF;
+    p[5] = (n >> 40) & 0xFF;
+    p[6] = (n >> 48) & 0xFF;
+    p[7] = (n >> 56) & 0xFF;
+}
+
+void
+_gss_mg_decode_le_uint64(const void *ptr, uint64_t *n)
+{
+    const uint8_t *p = ptr;
+    *n = ((uint64_t)p[0] << 0)
+       | ((uint64_t)p[1] << 8)
+       | ((uint64_t)p[2] << 16)
+       | ((uint64_t)p[3] << 24)
+       | ((uint64_t)p[4] << 32)
+       | ((uint64_t)p[5] << 40)
+       | ((uint64_t)p[6] << 48)
+       | ((uint64_t)p[7] << 56);
+}
+
+void
+_gss_mg_encode_be_uint64(uint64_t n, uint8_t *p)
+{
+    p[0] = (n >> 56) & 0xFF;
+    p[1] = (n >> 48) & 0xFF;
+    p[2] = (n >> 40) & 0xFF;
+    p[3] = (n >> 32) & 0xFF;
+    p[4] = (n >> 24) & 0xFF;
+    p[5] = (n >> 16) & 0xFF;
+    p[6] = (n >> 8 ) & 0xFF;
+    p[7] = (n >> 0 ) & 0xFF;
+}
+
+void
+_gss_mg_decode_be_uint64(const void *ptr, uint64_t *n)
+{
+    const uint8_t *p = ptr;
+    *n = ((uint64_t)p[0] << 56)
+       | ((uint64_t)p[1] << 48)
+       | ((uint64_t)p[2] << 40)
+       | ((uint64_t)p[3] << 32)
+       | ((uint64_t)p[4] << 24)
+       | ((uint64_t)p[5] << 16)
+       | ((uint64_t)p[6] << 8)
+       | ((uint64_t)p[7] << 0);
+}
+
+void
 _gss_mg_encode_le_uint32(uint32_t n, uint8_t *p)
 {
     p[0] = (n >> 0 ) & 0xFF;
@@ -190,7 +244,10 @@ void
 _gss_mg_decode_le_uint32(const void *ptr, uint32_t *n)
 {
     const uint8_t *p = ptr;
-    *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    *n = ((uint32_t)p[0] << 0)
+       | ((uint32_t)p[1] << 8)
+       | ((uint32_t)p[2] << 16)
+       | ((uint32_t)p[3] << 24);
 }
 
 void

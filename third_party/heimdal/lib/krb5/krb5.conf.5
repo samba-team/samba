@@ -175,6 +175,18 @@ EXAMPLE.COM = {
 	delegate-destination-tgt = true
 }
 .Ed
+.It Li pkinit_pool = Va HX509-STORE
+This is a multi-valued parameter naming one or more stores of
+intermediate certification authority (CA) certificates for the
+client's end entity certificate.
+.It Li pkinit_anchors = Va HX509-STORE ...
+This is a multi-valued parameter naming one or more stores of
+anchors for PKINIT KDC certificates.
+.It Li pkinit_revoke = Va HX509-STORE ...
+This is a multi-valued parameter naming one or more stores of
+of CRLs for the issuers of PKINIT KDC certificates.
+If no CRLs are configured, then CRLs will not be checked.
+This is because hx509 currently lacks support.
 .El
 .It Li [libdefaults]
 .Bl -tag -width "xxx" -offset indent
@@ -875,7 +887,7 @@ See the Heimdal hx509 documentation for more information.
 This is a multi-valued parameter naming one or more stores of
 intermediate certification authority (CA) certificates for the
 KDC's end entity certificate.
-.It Li pkinit_anchors = Va HX509-STORE
+.It Li pkinit_anchors = Va HX509-STORE ...
 This is a multi-valued parameter naming one or more stores of
 anchors for PKINIT client certificates.
 Note that the
@@ -885,6 +897,12 @@ type of
 is also supported here.
 .Va DIR
 type stores are OpenSSL-style CA certificate hash directories.
+.It Li pkinit_revoke = Va HX509-STORE ...
+This is a multi-valued parameter naming one or more stores of
+of CRLs for the issuers of PKINIT client certificates.
+If no CRLs are configured, then CRLs will not be checked.
+This is because the KDC will not dereference CRL distribution
+points nor request OCSP responses.
 .It Li pkinit_kdc_ocsp = Va PATH
 This names a file whose contents is the DER encoding of an
 OCSPResponse for the KDC's end entity certificate.

@@ -55,7 +55,7 @@ add_list(char ****list, size_t *listlen, char **str, size_t len)
     size_t i;
     *list = erealloc(*list, sizeof(**list) * (*listlen + 1));
 
-    (*list)[*listlen] = ecalloc(len, sizeof(**list));
+    (*list)[*listlen] = ecalloc(len, sizeof(***list));
     for (i = 0; i < len; i++)
 	(*list)[*listlen][i] = str[i];
     (*listlen)++;

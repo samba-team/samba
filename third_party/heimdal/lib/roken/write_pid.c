@@ -43,6 +43,8 @@ ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
 pid_file_write(const char *progname)
 {
     const char *pidfile_dir = NULL;
+    const char *sep = "/";
+    size_t pidfile_dir_len;
     char *ret = NULL;
     FILE *fp;
 
@@ -57,7 +59,17 @@ pid_file_write(const char *progname)
     if (pidfile_dir == NULL)
         pidfile_dir = _PATH_VARRUN;
 
-    if (asprintf(&ret, "%s%s.pid", pidfile_dir, progname) < 0 || ret == NULL)
+    pidfile_dir_len = strlen(pidfile_dir);
+    if (pidfile_dir_len > 1 &&
+        pidfile_dir[pidfile_dir_len - 1] == '/')
+        sep = "";
+#ifdef WIN32
+    if (pidfile_dir_len > 1 &&
+        pidfile_dir[pidfile_dir_len - 1] == '\\')
+        sep = "";
+#endif
+
+    if (asprintf(&ret, "%s%s%s.pid", pidfile_dir, sep, progname) < 0 || ret == NULL)
 	return NULL;
     fp = fopen(ret, "w");
     if (fp == NULL) {

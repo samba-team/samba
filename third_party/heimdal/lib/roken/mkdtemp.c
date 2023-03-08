@@ -59,9 +59,8 @@ mkdtemp(char *template)
     pid_t val = getpid();
 
     for (i = 0; i < len && i < 7 && template[len - i] == 'X'; i++) {
-	template[len] = '0' + val % 10;
+	template[len - i] = '0' + val % 10;
 	val /= 10;
-	len--;
         if (!val)
             val = getpid();
     }

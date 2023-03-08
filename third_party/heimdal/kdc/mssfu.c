@@ -501,6 +501,26 @@ validate_constrained_delegation(astgs_request_t r)
 	goto out;
     }
 
+    heim_assert(s4u_pac != NULL, "ad_kdc_issued implies the PAC is non-NULL");
+
+    ret = _kdc_pac_update(r, s4u_client_name, s4u_server_name,
+			  s4u_client, r->server, r->krbtgt,
+			  &s4u_pac);
+    if (ret == KRB5_PLUGIN_NO_HANDLE) {
+	ret = 0;
+    }
+    if (ret) {
+	const char *msg = krb5_get_error_message(r->context, ret);
+        kdc_audit_addreason((kdc_request_t)r,
+			    "Constrained delegation ticket PAC update failed");
+	kdc_log(r->context, r->config, 4,
+		"Update delegated PAC failed to %s for client"
+		"%s (%s) as %s from %s with %s",
+		r->sname, r->cname, s4usname, s4ucname, r->from, msg);
+	krb5_free_error_message(r->context, msg);
+	goto out;
+    }
+
     /*
      * If the evidence ticket PAC didn't include PAC_UPN_DNS_INFO with
      * the canonical client name, but the user is local to our KDC, we

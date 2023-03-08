@@ -76,7 +76,6 @@ INCFILES=	\
 	$(HCRYPTOINCLUDEDIR)\evp-wincng.h	\
 	$(HCRYPTOINCLUDEDIR)\evp-w32.h	\
 	$(HCRYPTOINCLUDEDIR)\hmac.h	\
-	$(HCRYPTOINCLUDEDIR)\md2.h	\
 	$(HCRYPTOINCLUDEDIR)\md4.h	\
 	$(HCRYPTOINCLUDEDIR)\md5.h	\
 	$(HCRYPTOINCLUDEDIR)\pkcs12.h	\
@@ -124,7 +123,6 @@ libhcrypto_OBJs = 			\
 	$(OBJ)\evp-w32.obj		\
 	$(OBJ)\engine.obj		\
 	$(OBJ)\hmac.obj			\
-	$(OBJ)\md2.obj			\
 	$(OBJ)\md4.obj			\
 	$(OBJ)\md5.obj			\
 	$(OBJ)\pkcs5.obj		\

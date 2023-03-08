@@ -76,12 +76,6 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_duplicate_cred (
     HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
     dup->destination_realm = NULL;
-    if (cred->destination_realm &&
-        (dup->destination_realm = strdup(cred->destination_realm)) == NULL) {
-        *minor_status = krb5_enomem(context);
-        free(dup);
-        return (GSS_S_FAILURE);
-    }
     dup->usage = cred->usage;
     dup->endtime = cred->endtime;
     dup->principal = NULL;
@@ -92,6 +86,11 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_duplicate_cred (
     major = GSS_S_FAILURE;
 
     HEIMDAL_MUTEX_init(&dup->cred_id_mutex);
+    if (cred->destination_realm &&
+        (dup->destination_realm = strdup(cred->destination_realm)) == NULL) {
+        *minor_status = krb5_enomem(context);
+        goto fail;
+    }
     *minor_status = krb5_copy_principal(context, cred->principal,
                                         &dup->principal);
     if (*minor_status)

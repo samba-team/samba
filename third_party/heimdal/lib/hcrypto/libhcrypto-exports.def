@@ -147,7 +147,6 @@ EXPORTS
 	hc_EVP_camellia_256_cbc
 	hc_EVP_enc_null
 	hc_EVP_get_cipherbyname
-	hc_EVP_md2
 	hc_EVP_md4
 	hc_EVP_md5
 	hc_EVP_md_null
@@ -162,7 +161,6 @@ EXPORTS
 	hc_EVP_sha384
 	hc_EVP_sha512
 
-;!	hc_EVP_cc_md2
 ;!	hc_EVP_cc_md4
 ;!	hc_EVP_cc_md5
 ;!	hc_EVP_cc_sha1
@@ -177,7 +175,6 @@ EXPORTS
 ;!	hc_EVP_cc_aes_192_cfb8
 ;!	hc_EVP_cc_aes_256_cfb8
 
-	hc_EVP_ossl_md2
 	hc_EVP_ossl_md4
 	hc_EVP_ossl_md5
 	hc_EVP_ossl_sha1
@@ -196,7 +193,6 @@ EXPORTS
 	hc_EVP_ossl_rc4
 	hc_EVP_ossl_rc4_40
 
-	hc_EVP_pkcs11_md2
 	hc_EVP_pkcs11_md4
 	hc_EVP_pkcs11_md5
 	hc_EVP_pkcs11_sha1
@@ -214,7 +210,6 @@ EXPORTS
 	hc_EVP_pkcs11_rc4
 	hc_EVP_pkcs11_rc4_40
 
-	hc_EVP_w32crypto_md2		;!
 	hc_EVP_w32crypto_md4		;!
 	hc_EVP_w32crypto_md5		;!
 	hc_EVP_w32crypto_sha1		;!
@@ -234,7 +229,6 @@ EXPORTS
 	hc_EVP_w32crypto_aes_192_cfb8	;!
 	hc_EVP_w32crypto_aes_256_cfb8	;!
 
-	hc_EVP_hcrypto_md2
 	hc_EVP_hcrypto_md4
 	hc_EVP_hcrypto_md5
 	hc_EVP_hcrypto_sha1
@@ -265,9 +259,6 @@ EXPORTS
 	hc_HMAC_Init_ex
 	hc_HMAC_Update
 	hc_HMAC_size
-	hc_MD2_Final
-	hc_MD2_Init
-	hc_MD2_Update
 	hc_MD4_Final
 	hc_MD4_Init
 	hc_MD4_Update

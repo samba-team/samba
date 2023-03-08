@@ -147,6 +147,16 @@ _hx509_collector_private_key_add(hx509_context context,
 				       key_data->data, key_data->length,
 				       HX509_KEY_FORMAT_DER,
 				       &key->private_key);
+        if (ret && localKeyId) {
+            int ret2;
+
+            ret2 = hx509_parse_private_key(context, alg,
+                                           localKeyId->data, localKeyId->length,
+                                           HX509_KEY_FORMAT_PKCS8,
+                                           &key->private_key);
+            if (ret2 == 0)
+                ret = 0;
+        }
 	if (ret)
 	    goto out;
     }

@@ -245,6 +245,13 @@ AM_CONDITIONAL([HAVE_CJSON], [test "$with_cjson" != "no"])
 AC_SUBST([CJSON_CFLAGS])
 AC_SUBST([CJSON_LIBS])
 
+dnl mitkrb5
+AC_ARG_WITH([mitkrb5],
+  AC_HELP_STRING([--with-mitkrb5], [Path to MIT Kerberos for interop testing @<:@default=check@:>@]),
+  [],
+  [with_mikrb5=check])
+AM_CONDITIONAL([MITKRB5], [test "$with_mitkrb5" != "no"])
+
 dnl Check for sqlite
 rk_TEST_PACKAGE(sqlite3,
 [#include <sqlite3.h>

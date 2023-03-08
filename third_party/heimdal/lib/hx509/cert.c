@@ -1207,10 +1207,69 @@ certificate_is_self_signed(hx509_context context,
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to check if self signed");
-    } else
+    } else if (diff == 0)
 	ret = _hx509_self_signed_valid(context, &cert->signatureAlgorithm);
 
     return ret;
+}
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cert_is_self_signed(hx509_context context,
+                          hx509_cert c,
+                          int *self_signed)
+{
+    return certificate_is_self_signed(context, c->data, self_signed);
+}
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cert_is_ca(hx509_context context,
+                 hx509_cert c,
+                 int *is_ca)
+{
+    BasicConstraints bc;
+    const Extension *e;
+    size_t size;
+    size_t i = 0;
+    int ret = 0;
+
+    *is_ca = 0;
+    if (_hx509_cert_get_version(c->data) < 3)
+        return certificate_is_self_signed(context, c->data, is_ca);
+
+    e = find_extension(c->data, &asn1_oid_id_x509_ce_basicConstraints, &i);
+    if (e == NULL) {
+        *is_ca = 0;
+        return 0;
+    }
+
+    ret = decode_BasicConstraints(e->extnValue.data,
+				  e->extnValue.length, &bc,
+				  &size);
+    if (ret)
+        return ret;
+
+    *is_ca = bc.cA;
+    free_BasicConstraints(&bc);
+    return 0;
+}
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cert_is_root(hx509_context context,
+                   hx509_cert c,
+                   int *is_root)
+{
+    int ret;
+
+    *is_root = 0;
+    ret = hx509_cert_is_ca(context, c, is_root);
+    if (ret)
+        return ret;
+    if (*is_root == 0)
+        /* Not a CA certificate -> not a root certificate */
+        return 0;
+
+    /* A CA certificate.  If it's self-signed, it's a root certificate. */
+    return hx509_cert_is_self_signed(context, c, is_root);
 }
 
 /*

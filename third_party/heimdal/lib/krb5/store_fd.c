@@ -195,6 +195,6 @@ krb5_storage_from_fd(int fd_in)
     sp->trunc = fd_trunc;
     sp->fsync = fd_sync;
     sp->free = fd_free;
-    sp->max_alloc = UINT_MAX/8;
+    sp->max_alloc = UINT32_MAX/64;
     return sp;
 }

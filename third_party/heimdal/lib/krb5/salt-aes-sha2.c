@@ -92,8 +92,9 @@ AES_SHA2_string_to_key(krb5_context context,
 	goto cleanup;
     }
     memcpy(saltp.data, et->name, enctypesz);
-    memcpy((unsigned char *)saltp.data + enctypesz,
-	   salt.saltvalue.data, salt.saltvalue.length);
+    if (salt.saltvalue.length)
+        memcpy((unsigned char *)saltp.data + enctypesz,
+               salt.saltvalue.data, salt.saltvalue.length);
 
     ret = _krb5_aes_sha2_md_for_enctype(context, enctype, &md);
     if (ret)

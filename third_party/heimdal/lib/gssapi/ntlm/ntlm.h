@@ -50,6 +50,7 @@
 #include <gssapi_ntlm.h>
 #include <gssapi_mech.h>
 #include <gssapi_oid.h>
+#include <mech/utils.h>
 
 #include <krb5.h>
 #include <kcm.h>

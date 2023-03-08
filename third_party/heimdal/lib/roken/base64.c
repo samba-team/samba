@@ -45,17 +45,31 @@
 #include "base64.h"
 #include "roken.h"
 
-static const char base64_chars[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#define base64_chars "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 static int
 pos(char c)
 {
+#if 'A' == '\301'
     const char *p;
     for (p = base64_chars; *p; p++)
 	if (*p == c)
 	    return p - base64_chars;
     return -1;
+#else
+    if (c >= 'A' && c <= 'Z')
+	return c - 'A';
+    if (c >= 'a' && c <= 'z')
+	return ('Z' + 1 - 'A') + c - 'a';
+    if (c >= '0' && c <= '9')
+	return ('Z' + 1 - 'A') +
+	       ('z' + 1 - 'a') + c - '0';
+    if (c == '+')
+	return 62;
+    if (c == '/')
+	return 63;
+    return -1;
+#endif
 }
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
@@ -112,9 +126,7 @@ token_decode(const char *token)
     int i;
     unsigned int val = 0;
     int marker = 0;
-    if (strlen(token) < 4)
-	return DECODE_ERROR;
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 4 && token[i] != '\0'; i++) {
 	val *= 64;
 	if (token[i] == '=')
 	    marker++;
@@ -123,7 +135,7 @@ token_decode(const char *token)
 	else
 	    val += pos(token[i]);
     }
-    if (marker > 2)
+    if (i < 4 || marker > 2)
 	return DECODE_ERROR;
     return (marker << 24) | val;
 }
@@ -135,7 +147,7 @@ rk_base64_decode(const char *str, void *data)
     unsigned char *q;
 
     q = data;
-    for (p = str; *p && (*p == '=' || strchr(base64_chars, *p)); p += 4) {
+    for (p = str; *p && (*p == '=' || pos(*p) != -1); p += 4) {
 	unsigned int val = token_decode(p);
 	unsigned int marker = (val >> 24) & 0xff;
 	if (val == DECODE_ERROR) {

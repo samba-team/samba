@@ -28,9 +28,6 @@
         # Locate kdc plugins for testing
         plugin_dir =  @objdir@/../../kdc/.libs
 
-        # Configure kdc plugins for testing
-        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
- 
 	database = {
 		dbname = @objdir@/current-db
 		realm = TEST.H5L.SE
@@ -84,7 +81,6 @@
         virtual_hostbased_princ_svcs = HTTP host
  
 [ext_keytab]
-        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
         new_hostbased_service_principal_attributes = {
             host = {
                 a-particular-hostname.test.h5l.se = ok-as-delegate,no-auth-data-reqd

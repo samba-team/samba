@@ -23,6 +23,9 @@ mp_err mp_root_u32(const mp_int *a, uint32_t b, mp_int *c)
    if (((b & 1u) == 0u) && (a->sign == MP_NEG)) {
       return MP_VAL;
    }
+   if (b == 0) {
+      return MP_VAL;
+   }
 
    if ((err = mp_init_multi(&t1, &t2, &t3, NULL)) != MP_OKAY) {
       return err;

@@ -195,11 +195,14 @@ copy_keytab(krb5_context context, krb5_keytab from, krb5_keytab to)
     ret = krb5_kt_start_seq_get(context, from, &cursor);
     if (ret)
 	return ret;
-    while((ret = krb5_kt_next_entry(context, from, &entry, &cursor)) == 0){
+    while ((ret = krb5_kt_next_entry(context, from, &entry, &cursor)) == 0){
 	krb5_kt_add_entry(context, to, &entry);
 	krb5_kt_free_entry(context, &entry);
     }
-    return krb5_kt_end_seq_get(context, from, &cursor);
+    (void) krb5_kt_end_seq_get(context, from, &cursor);
+    if (ret == KRB5_KT_END)
+	return 0;
+    return ret;
 }	    
 
 /*

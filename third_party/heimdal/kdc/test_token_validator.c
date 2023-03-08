@@ -88,7 +88,7 @@ main(int argc, char **argv)
     if (argc != 2)
         usage(1);
 
-    if ((ret = krb5_init_context(&context)))
+    if (krb5_init_context(&context))
         err(1, "Could not initialize krb5_context");
 
     load_plugins(context);

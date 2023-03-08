@@ -86,9 +86,12 @@ der_get_integer (const unsigned char *p, size_t len,
     int val = 0;
     size_t oldlen = len;
 
-    if (len > sizeof(val))
+    if (len == sizeof(val) + 1 && (p[0] == 0 || p[0] == 0xff))
+        ;
+    else if (len > sizeof(val))
 	return ASN1_OVERRUN;
 
+    /* We assume we're on a twos-complement platform */
     if (len > 0) {
 	val = (signed char)*p++;
 	while (--len)
@@ -109,6 +112,7 @@ der_get_integer64 (const unsigned char *p, size_t len,
     if (len > sizeof(val))
         return ASN1_OVERRUN;
 
+    /* We assume we're on a twos-complement platform */
     if (len > 0) {
        val = (signed char)*p++;
        while (--len)
@@ -456,13 +460,45 @@ der_get_heim_integer (const unsigned char *p, size_t len,
     if (p[0] & 0x80) {
 	unsigned char *q;
 	int carry = 1;
-	data->negative = 1;
 
+
+        /*
+         * A negative number.  It's going to be a twos complement byte array.
+         * We're going to leave the positive value in `data->data', but set the
+         * `data->negative' flag.  That means we need to negate the
+         * twos-complement integer received.
+         */
+	data->negative = 1;
 	data->length = len;
 
 	if (p[0] == 0xff) {
+            if (data->length == 1) {
+                /* One byte of all ones == -1 */
+                q = data->data = malloc(1);
+                *q = 1;
+                data->length = 1;
+                if (size)
+                    *size = 1;
+                return 0;
+            }
+
 	    p++;
 	    data->length--;
+
+            /*
+             * We could check if the next byte's high bit is set, which would
+             * be an error ("illegal padding" in OpenSSL).  However, this would
+             * mean failing to accept certificates made by certain CAs that
+             * would read 8 bytes of RNG into a buffer, slap on length 8, then
+             * slap on the tag [UNIVERSAL INTEGER], and make that the
+             * serialNumber field's encoding, which then fails to parse in
+             * around 1 in 256 certificates.
+             *
+             * So let's not.
+             *
+             * if (p[0] & 0x80)
+             *     return ASN1_PARSE_ERROR; // or a new error code
+             */
 	}
 	data->data = malloc(data->length);
 	if (data->data == NULL) {
@@ -471,9 +507,17 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 		*size = 0;
 	    return ENOMEM;
 	}
+
+        /*
+         * Note that if `data->length' were zero, this would be UB because we
+         * underflow if data->length is zero even though we wouldn't actually
+         * dereference the byte before data->data.  Thus we check above for
+         * that.
+         */
 	q = &((unsigned char*)data->data)[data->length - 1];
 	p += data->length - 1;
 	while (q >= (unsigned char*)data->data) {
+            /* *p XOR 0xff -> ~*p; we're dealing with twos complement */
 	    *q = *p ^ 0xff;
 	    if (carry)
 		carry = !++*q;

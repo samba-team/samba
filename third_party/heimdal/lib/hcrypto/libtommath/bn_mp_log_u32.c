@@ -91,13 +91,24 @@ mp_err mp_log_u32(const mp_int *a, uint32_t base, uint32_t *c)
       return MP_VAL;
    }
 
+   /* `base' is at least 2 */
+
    /* A small shortcut for bases that are powers of two. */
    if ((base & (base - 1u)) == 0u) {
       int y, bit_count;
+
       for (y=0; (y < 7) && ((base & 1u) == 0u); y++) {
+         /* We must go through this loop at least once */
          base >>= 1;
       }
       bit_count = mp_count_bits(a) - 1;
+      /*
+       * `y' is necessarily at least 1 because `base' is a power of two and
+       * larger than 1, so we must have gone through the loop at least once, so
+       * we can't be dividing by zero.
+       *
+       * scan-build thinks we can be dividing by zero...  WAT.
+       */
       *c = (uint32_t)(bit_count/y);
       return MP_OKAY;
    }

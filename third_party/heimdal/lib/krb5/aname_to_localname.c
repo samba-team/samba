@@ -31,10 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#include <string.h>
 #include "krb5_locl.h"
 #include "an2ln_plugin.h"
 #include "db_plugin.h"
+
+#include <string.h>
 
 /* Default plugin (DB using binary search of sorted text file) follows */
 static krb5_error_code KRB5_LIB_CALL an2ln_def_plug_init(krb5_context, void **);

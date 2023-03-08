@@ -1586,6 +1586,7 @@ fix_princ_name(krb5_context context,
                                   s,
                                   NULL);
     }
+    free(s);
     return ret;
 }
 

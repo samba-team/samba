@@ -37,7 +37,6 @@
 #define HEIM_EVP_HCRYPTO_H 1
 
 /* symbol renaming */
-#define EVP_hcrypto_md2 hc_EVP_hcrypto_md2
 #define EVP_hcrypto_md4 hc_EVP_hcrypto_md4
 #define EVP_hcrypto_md5 hc_EVP_hcrypto_md5
 #define EVP_hcrypto_sha1 hc_EVP_hcrypto_sha1
@@ -67,7 +66,6 @@
 
 HC_CPP_BEGIN
 
-const EVP_MD * EVP_hcrypto_md2(void);
 const EVP_MD * EVP_hcrypto_md4(void);
 const EVP_MD * EVP_hcrypto_md5(void);
 const EVP_MD * EVP_hcrypto_sha1(void);

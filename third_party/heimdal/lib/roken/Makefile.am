@@ -198,6 +198,9 @@ EXTRA_libroken_la_SOURCES =	\
 	vis.hin	
 
 libroken_la_LIBADD = @LTLIBOBJS@ $(LIB_crypt) $(LIB_pidfile)
+if SUNOS
+libroken_la_LIBADD += -lnsl -lsocket
+endif
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h $(XHEADERS)
 

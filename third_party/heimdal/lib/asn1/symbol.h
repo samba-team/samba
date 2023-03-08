@@ -200,6 +200,7 @@ struct type {
     struct range *range;
     struct constraint_spec *constraint;
     unsigned long id;
+    unsigned int implicit_choice:1;
 };
 
 typedef struct type Type;

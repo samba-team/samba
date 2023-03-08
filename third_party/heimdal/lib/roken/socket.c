@@ -274,10 +274,11 @@ socket_set_nonblocking(rk_socket_t sock, int nonblock)
 	flags |= O_NONBLOCK;
     else
 	flags &= ~O_NONBLOCK;
-    fcntl(sock, F_SETFL, flags);
+    (void) fcntl(sock, F_SETFL, flags);
 #elif defined(FIOBIO)
     int flags = !!nonblock;
-    return ioctl(sock, FIOBIO, &flags);
+
+    (void) ioctl(sock, FIOBIO, &flags);
 #endif
 }
 

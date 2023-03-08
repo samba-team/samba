@@ -1432,8 +1432,10 @@ TaggedType	: Tag tagenv Type
 			     * IMPLICIT tags of CHOICE types are EXPLICIT
 			     * instead.
 			     */
-			    if (t->type == TChoice)
+			    if (t->type == TChoice) {
+				$$->implicit_choice = 1;
 				$$->tag.tagenv = TE_EXPLICIT;
+			    }
 			    if($3->type == TTag && $2 == TE_IMPLICIT) {
 				$$->subtype = $3->subtype;
 				free($3);

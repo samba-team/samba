@@ -23,6 +23,10 @@ libheim_ipcc_la_LIBADD = \
 	$(LIB_roken) \
 	$(PTHREAD_LIBADD)
 
+if SUNOS
+libheim_ipcc_la_LIBADD += -lsocket
+endif
+
 libheim_ipcs_la_LIBADD = $(libheim_ipcc_la_LIBADD)
 
 TESTS =	$(check_PROGRAMS)

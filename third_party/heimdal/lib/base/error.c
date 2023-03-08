@@ -86,6 +86,7 @@ heim_error_create_enomem(void)
 
 void
 heim_error_create_opt(heim_error_t *error, int error_code, const char *fmt, ...)
+    HEIMDAL_PRINTF_ATTRIBUTE((__printf__, 3, 4))
 {
     if (error) {
 	va_list ap;
@@ -97,6 +98,7 @@ heim_error_create_opt(heim_error_t *error, int error_code, const char *fmt, ...)
 
 heim_error_t
 heim_error_create(int error_code, const char *fmt, ...)
+    HEIMDAL_PRINTF_ATTRIBUTE((__printf__, 2, 3))
 {
     heim_error_t e;
     va_list ap;
@@ -110,6 +112,7 @@ heim_error_create(int error_code, const char *fmt, ...)
 
 heim_error_t
 heim_error_createv(int error_code, const char *fmt, va_list ap)
+    HEIMDAL_PRINTF_ATTRIBUTE((__printf__, 2, 0))
 {
     heim_error_t e;
     char *str;

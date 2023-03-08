@@ -197,8 +197,189 @@ cmd_append(struct rk_strpool **cmd, const char *s0, ...)
     return ret;
 }
 
+/* Like strpbrk(), but from the end of the string */
+static char *
+strrpbrk(char *s, const char *accept)
+{
+    char *last = NULL;
+    char *p = s;
+
+    do {
+        p = strpbrk(p, accept);
+        if (p != NULL) {
+            last = p;
+            p++;
+        }
+    } while (p != NULL);
+    return last;
+}
+
+/*
+ * For /get-tgts we need to support partial authorization of requests.  The
+ * hx509_request APIs support that.
+ *
+ * Here we just step through the IPC server's response and mark the
+ * corresponding request elements authorized so that /get-tgts can issue or not
+ * issue TGTs according to which requested principals are authorized and which
+ * are not.
+ */
 static int
-call_svc(krb5_context context, heim_ipc ipc, const char *cmd)
+mark_piecemeal_authorized(krb5_context context,
+                          hx509_request csr,
+                          heim_octet_string *rep)
+{
+    size_t san_idx = 0;
+    size_t eku_idx = 0;
+    char *s, *p, *rep2, *tok, *next = NULL;
+    int slow_path = 0;
+    int partial = 0;
+    int ret = 0;
+
+    /* We have a data, but we want a C string */
+    if ((rep2 = strndup(rep->data, rep->length)) == NULL)
+        return krb5_enomem(context);
+
+    /* The first token should be "denied"; skip it */
+    if ((s = strchr(rep2, ' ')) == NULL) {
+        free(rep2);
+        return EACCES;
+    }
+    s++;
+
+    while ((tok = strtok_r(s, ",", &next))) {
+        hx509_san_type san_type, san_type2;
+        char *s2 = NULL;
+
+        s = NULL; /* for strtok_r() */
+
+        if (strncmp(tok, "eku=", sizeof("eku=") -1) == 0) {
+            /*
+             * Very simplistic handling of partial authz for EKUs:
+             *
+             *  - denial of an EKU -> deny the whole request
+             *  - else below mark all EKUs approved
+             */
+            if (strstr(tok, ":denied")) {
+                krb5_set_error_message(context, EACCES, "CSR denied because "
+                                       "EKU denied: %s", tok);
+                ret = EACCES;
+                break;
+            }
+            continue;
+        }
+
+        /*
+         * For SANs we check that the nth SAN in the response matches the nth
+         * SAN in the hx509_request.
+         */
+
+        if (strncmp(tok, "san_pkinit=", sizeof("san_pkinit=") - 1) == 0) {
+            tok += sizeof("san_pkinit=") - 1;
+            san_type = HX509_SAN_TYPE_PKINIT;
+        } else if (strncmp(tok, "san_dnsname=", sizeof("san_dnsname=") -1) == 0) {
+            tok += sizeof("san_dnsname=") - 1;
+            san_type = HX509_SAN_TYPE_DNSNAME;
+        } else if (strncmp(tok, "san_email=", sizeof("san_email=") -1) == 0) {
+            tok += sizeof("san_email=") - 1;
+            san_type = HX509_SAN_TYPE_EMAIL;
+        } else if (strncmp(tok, "san_xmpp=", sizeof("san_xmpp=") -1) == 0) {
+            tok += sizeof("san_xmpp=") - 1;
+            san_type = HX509_SAN_TYPE_XMPP;
+        } else if (strncmp(tok, "san_ms_upn=", sizeof("san_ms_upn=") -1) == 0) {
+            tok += sizeof("san_ms_upn=") - 1;
+            san_type = HX509_SAN_TYPE_MS_UPN;
+        } else {
+            krb5_set_error_message(context, EACCES, "CSR denied because could "
+                                   "not parse token in response: %s", tok);
+            ret = EACCES;
+            break;
+        }
+
+        /*
+         * This token has to end in ":granted" or ":denied".  Using our
+         * `strrpbrk()' means we can deal with principals names that have ':'
+         * in them.
+         */
+        if ((p = strrpbrk(tok, ":")) == NULL) {
+            san_idx++;
+            continue;
+        }
+        *(p++) = '\0';
+
+        /* Now we get the nth SAN from the authorization */
+        ret = hx509_request_get_san(csr, san_idx, &san_type2, &s2);
+        if (ret == HX509_NO_ITEM) {
+            /* See below */
+            slow_path = 1;
+            break;
+        }
+
+        /* And we check that it matches the SAN in this token */
+        if (ret == 0) {
+            if (san_type != san_type2 ||
+                strcmp(tok, s2) != 0) {
+                /*
+                 * We expect the tokens in the reply to be in the same order as
+                 * in the request.  If not, we must take a slow path where we
+                 * have to sort requests and responses then iterate them in
+                 * order.
+                 */
+                slow_path = 1;
+                hx509_xfree(s2);
+                break;
+            }
+            hx509_xfree(s2);
+
+            if (strcmp(p, "granted") == 0) {
+                ret = hx509_request_authorize_san(csr, san_idx);
+            } else {
+                partial = 1;
+                ret = hx509_request_reject_san(csr, san_idx);
+            }
+            if (ret)
+                break;
+        }
+        san_idx++;
+    }
+
+    if (slow_path) {
+        /*
+         * FIXME?  Implement the slow path?
+         *
+         * Basically, we'd get all the SANs from the request into an array of
+         * {SAN, index} and sort that array, then all the SANs from the
+         * response into an array and sort it, then step a cursor through both,
+         * using the index from the first to mark SANs in the request
+         * authorized or rejected.
+         */
+        krb5_set_error_message(context, EACCES, "CSR denied because "
+                               "authorizer service did not include all "
+                               "piecemeal grants/denials in order");
+        ret = EACCES;
+    }
+
+    /* Mark all the EKUs authorized */
+    for (eku_idx = 0; ret == 0; eku_idx++)
+        ret = hx509_request_authorize_eku(csr, eku_idx);
+    if (ret == HX509_NO_ITEM)
+        ret = 0;
+    if (ret == 0 && partial) {
+        krb5_set_error_message(context, EACCES, "CSR partially authorized");
+        ret = EACCES;
+    }
+
+    free(rep2);
+    return ret;
+}
+
+static krb5_error_code mark_authorized(hx509_request);
+
+static int
+call_svc(krb5_context context,
+         heim_ipc ipc,
+         hx509_request csr,
+         const char *cmd,
+         int piecemeal_check_ok)
 {
     heim_octet_string req, resp;
     int ret;
@@ -207,40 +388,66 @@ call_svc(krb5_context context, heim_ipc ipc, const char *cmd)
     req.length = strlen(cmd);
     resp.length = 0;
     resp.data = NULL;
-    if ((ret = heim_ipc_call(ipc, &req, &resp, NULL))) {
-        if (resp.length && resp.length < INT_MAX) {
-            krb5_set_error_message(context, ret, "CSR denied: %.*s",
-                                   (int)resp.length, (const char *)resp.data);
-            ret = EACCES;
-        } else {
-            krb5_set_error_message(context, EACCES, "CSR denied because could "
-                                   "not reach CSR authorizer IPC service");
-            ret = EACCES;
-        }
-        return ret;
-    }
-    if (resp.data == NULL || resp.length == 0) {
-        free(resp.data);
-        krb5_set_error_message(context, ret, "CSR authorizer IPC service "
-                               "failed silently");
-        return EACCES;
-    }
-    if (resp.length == sizeof("denied") - 1 &&
-        strncasecmp(resp.data, "denied", sizeof("denied") - 1) == 0) {
-        free(resp.data);
-        krb5_set_error_message(context, ret, "CSR authorizer rejected %s",
-                               cmd);
-        return EACCES;
-    }
-    if (resp.length == sizeof("granted") - 1 &&
+    ret = heim_ipc_call(ipc, &req, &resp, NULL);
+
+    /* Check for all granted case */
+    if (ret == 0 &&
+        resp.length == sizeof("granted") - 1 &&
         strncasecmp(resp.data, "granted", sizeof("granted") - 1) == 0) {
         free(resp.data);
-        return 0;
+        return mark_authorized(csr); /* Full approval */
     }
-    krb5_set_error_message(context, ret, "CSR authorizer failed %s: %.*s",
-                           cmd, resp.length < INT_MAX ? (int)resp.length : 0,
-                           resp.data);
-    return EACCES;
+
+    /* Check for "denied ..." piecemeal authorization case */
+    if ((ret == 0 || ret == EACCES || ret == KRB5_PLUGIN_NO_HANDLE) &&
+        piecemeal_check_ok &&
+        resp.length > sizeof("denied") - 1 &&
+        strncasecmp(resp.data, "denied", sizeof("denied") - 1) == 0) {
+        /* Piecemeal authorization */
+        ret = mark_piecemeal_authorized(context, csr, &resp);
+
+        /* mark_piecemeal_authorized() should return EACCES; just in case: */
+        if (ret == 0)
+            ret = EACCES;
+        free(resp.data);
+        return ret;
+    }
+
+    /* All other failure cases */
+
+    if (resp.data == NULL || resp.length == 0) {
+        krb5_set_error_message(context, ret, "CSR authorizer IPC service "
+                               "failed silently");
+        free(resp.data);
+        return EACCES;
+    }
+
+    if (resp.length == sizeof("ignore") - 1 &&
+        strncasecmp(resp.data, "ignore", sizeof("ignore") - 1) == 0) {
+        /*
+         * In this case the server is saying "I can't handle this request, try
+         * some other authorizer plugin".
+         */
+        free(resp.data);
+        return KRB5_PLUGIN_NO_HANDLE;
+    }
+
+    if (resp.length == sizeof("denied") - 1 &&
+        strncasecmp(resp.data, "denied", sizeof("denied") - 1) == 0) {
+        krb5_set_error_message(context, ret, "CSR authorizer rejected %s",
+                               cmd);
+        free(resp.data);
+        return EACCES;
+    }
+
+    if (resp.length > INT_MAX)
+        krb5_set_error_message(context, ret, "CSR authorizer rejected %s", cmd);
+    else
+        krb5_set_error_message(context, ret, "CSR authorizer rejected %s: %.*s",
+                               cmd, resp.length, resp.data);
+
+    free(resp.data);
+    return ret;
 }
 
 static void
@@ -294,13 +501,25 @@ authorize(void *ctx,
     char *princ = NULL;
     char *s = NULL;
     int do_check = 0;
+    int piecemeal_check_ok = 1;
 
-    if ((svc = krb5_config_get_string(context, NULL, app ? app : "kdc",
-                                      "ipc_csr_authorizer", "service", NULL))
-        == NULL)
+    if ((svc = krb5_config_get_string_default(context, NULL,
+                                              "ANY:org.h5l.csr_authorizer",
+                                              app ? app : "kdc",
+                                              "ipc_csr_authorizer", "service",
+                                              NULL)) == NULL)
         return KRB5_PLUGIN_NO_HANDLE;
 
     if ((ret = heim_ipc_init_context(svc, &ipc))) {
+        /*
+         * If the IPC authorizer is optional, then fallback on whatever is
+         * next.
+         */
+        if (krb5_config_get_bool_default(context, NULL, FALSE,
+                                         app ? app : "kdc",
+                                         "ipc_csr_authorizer", "optional",
+                                         NULL))
+            return KRB5_PLUGIN_NO_HANDLE;
 	krb5_set_error_message(context, ret, "Could not set up IPC client "
                                "end-point for service %s", svc);
         return ret;
@@ -318,10 +537,22 @@ authorize(void *ctx,
 
     for (i = 0; ret == 0; i++) {
         hx509_san_type san_type;
+        size_t p;
 
         ret = hx509_request_get_san(csr, i, &san_type, &s);
         if (ret)
             break;
+
+        /*
+         * We cannot do a piecemeal check if any of the SANs could make the
+         * response ambiguous.
+         */
+        p = strcspn(s, ",= ");
+        if (s[p] != '\0')
+            piecemeal_check_ok = 0;
+        if (piecemeal_check_ok && strstr(s, ":granted") != NULL)
+            piecemeal_check_ok = 0;
+
         switch (san_type) {
         case HX509_SAN_TYPE_EMAIL:
             if ((ret = cmd_append(&cmd, " san_email=", s, NULL)))
@@ -380,15 +611,13 @@ authorize(void *ctx,
     hx509_request_authorize_ku(csr, ku);
 
     if (do_check) {
-        if ((s = rk_strpoolcollect(cmd)) == NULL)
-            goto enomem;
+        s = rk_strpoolcollect(cmd);
         cmd = NULL;
-        if ((ret = call_svc(context, ipc, s)))
+        if (s == NULL)
+            goto enomem;
+        if ((ret = call_svc(context, ipc, csr, s, piecemeal_check_ok)))
             goto out;
-    } /* else -> permit */
-
-    if ((ret = mark_authorized(csr)))
-        goto out;
+    } /* else there was nothing to check -> permit */
 
     *result = TRUE;
     ret = 0;

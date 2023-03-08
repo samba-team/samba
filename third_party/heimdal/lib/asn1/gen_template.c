@@ -1238,7 +1238,7 @@ template_members(struct templatehead *temp,
             is_primitive_type(t->subtype);
 
         if (t->tag.tagenv == TE_IMPLICIT) {
-            Type *t2 = t->subtype ? t->subtype : t->symbol->type;
+            Type *t2 = t->subtype;
 
             while (t2->type == TType && (t2->subtype || t2->symbol->type))
                 t2 = t2->subtype ? t2->subtype : t2->symbol->type;

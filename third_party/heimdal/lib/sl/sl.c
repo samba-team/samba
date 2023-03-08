@@ -311,13 +311,42 @@ int
 sl_command_loop(SL_cmd *cmds, const char *prompt, void **data)
 {
     int ret = 0;
-    char *buf;
+    char *buf = NULL;
     int argc;
     char **argv;
+    int continued = 0;
 
-    buf = sl_readline(prompt);
-    if(buf == NULL)
-	return -2;
+    do {
+        char *buf2;
+        size_t len;
+
+        buf2 = sl_readline(buf == NULL ? prompt : "> ");
+        if (buf2 == NULL) {
+	    free(buf);
+            return -2;
+	}
+
+        if (buf) {
+            char *tmp = NULL;
+
+            if (asprintf(&tmp, "%s %s", buf, buf2) == -1 || tmp == NULL) {
+                fprintf(stderr, "sl_loop: out of memory\n");
+                free(buf2);
+                free(buf);
+                return -1;
+            }
+            free(buf2);
+            free(buf);
+            buf = tmp;
+        } else {
+            buf = buf2;
+        }
+
+        len = strlen(buf);
+        continued = (len > 0 && buf[len - 1] == '\\');
+        if (continued)
+            buf[len - 1] = '\0';
+    } while (continued);
 
     if(*buf)
 	add_history(buf);
@@ -331,7 +360,7 @@ sl_command_loop(SL_cmd *cmds, const char *prompt, void **data)
 	ret = sl_command(cmds, argc, argv);
 	if(ret == -1) {
 	    sl_did_you_mean(cmds, argv[0]);
-	    ret = 0;
+	    ret = 1;
 	}
     }
     free(buf);

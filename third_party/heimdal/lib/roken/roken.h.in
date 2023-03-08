@@ -96,6 +96,58 @@
 #  endif
 # endif
 
+#if !defined(__has_extension)
+#define __has_extension(x) 0
+#endif
+
+#ifndef ROKEN_REQUIRE_GNUC
+#define ROKEN_REQUIRE_GNUC(m,n,p) \
+    (((__GNUC__ * 10000) + (__GNUC_MINOR__ * 100) + __GNUC_PATCHLEVEL__) >= \
+     (((m) * 10000) + ((n) * 100) + (p)))
+#endif
+
+#ifndef ROKEN_DEPRECATED
+#if __has_extension(deprecated) || ROKEN_REQUIRE_GNUC(3,1,0)
+#define ROKEN_DEPRECATED __attribute__ ((__deprecated__))
+#elif defined(_MSC_VER) && (_MSC_VER>1200)
+#define ROKEN_DEPRECATED __declspec(deprecated)
+#else
+#define ROKEN_DEPRECATED
+#endif
+#endif
+
+#ifndef ROKEN_PRINTF_ATTRIBUTE
+#if __has_extension(format) || ROKEN_REQUIRE_GNUC(3,1,0)
+#define ROKEN_PRINTF_ATTRIBUTE(x) __attribute__ ((__format__ x))
+#else
+#define ROKEN_PRINTF_ATTRIBUTE(x)
+#endif
+#endif
+
+#ifndef ROKEN_NORETURN_ATTRIBUTE
+#if __has_extension(noreturn) || ROKEN_REQUIRE_GNUC(3,1,0)
+#define ROKEN_NORETURN_ATTRIBUTE __attribute__ ((__noreturn__))
+#else
+#define ROKEN_NORETURN_ATTRIBUTE
+#endif
+#endif
+
+#ifndef ROKEN_UNUSED_ATTRIBUTE
+#if __has_extension(unused) || ROKEN_REQUIRE_GNUC(3,1,0)
+#define ROKEN_UNUSED_ATTRIBUTE __attribute__ ((__unused__))
+#else
+#define ROKEN_UNUSED_ATTRIBUTE
+#endif
+#endif
+
+#ifndef ROKEN_WARN_UNUSED_RESULT_ATTRIBUTE
+#if __has_extension(warn_unused_result) || ROKEN_REQUIRE_GNUC(3,3,0)
+#define ROKEN_WARN_UNUSED_RESULT_ATTRIBUTE __attribute__ ((__warn_unused_result__))
+#else
+#define ROKEN_WARN_UNUSED_RESULT_ATTRIBUTE
+#endif
+#endif
+
 #ifdef HAVE_WINSOCK
 /* Declarations for Microsoft Windows */
 
@@ -515,7 +567,7 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL endusershell(void);
 #endif
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
      rk_snprintf (char *, size_t, const char *, ...)
-     __attribute__ ((__format__ (__printf__, 3, 4)));
+     ROKEN_PRINTF_ATTRIBUTE((__printf__, 3, 4));
 #endif
 
 #if !defined(HAVE_VSNPRINTF) || defined(NEED_VSNPRINTF_PROTO)
@@ -524,7 +576,7 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 #endif
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
      rk_vsnprintf (char *, size_t, const char *, va_list)
-     __attribute__ ((__format__ (__printf__, 3, 0)));
+     ROKEN_PRINTF_ATTRIBUTE((__printf__, 3, 0));
 #endif
 
 #if !defined(HAVE_ASPRINTF) || defined(NEED_ASPRINTF_PROTO)
@@ -533,7 +585,7 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 #endif
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
      rk_asprintf (char **, const char *, ...)
-     __attribute__ ((__format__ (__printf__, 2, 3)));
+     ROKEN_PRINTF_ATTRIBUTE((__printf__, 2, 3));
 #endif
 
 #if !defined(HAVE_VASPRINTF) || defined(NEED_VASPRINTF_PROTO)
@@ -542,7 +594,7 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 #endif
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
     rk_vasprintf (char **, const char *, va_list)
-     __attribute__ ((__format__ (__printf__, 2, 0)));
+    ROKEN_PRINTF_ATTRIBUTE((__printf__, 2, 0));
 #endif
 
 #if !defined(HAVE_ASNPRINTF) || defined(NEED_ASNPRINTF_PROTO)
@@ -551,7 +603,7 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 #endif
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
     rk_asnprintf (char **, size_t, const char *, ...)
-     __attribute__ ((__format__ (__printf__, 3, 4)));
+    ROKEN_PRINTF_ATTRIBUTE((__printf__, 3, 4));
 #endif
 
 #if !defined(HAVE_VASNPRINTF) || defined(NEED_VASNPRINTF_PROTO)
@@ -560,7 +612,19 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 #endif
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
     vasnprintf (char **, size_t, const char *, va_list)
-     __attribute__ ((__format__ (__printf__, 3, 0)));
+    ROKEN_PRINTF_ATTRIBUTE((__printf__, 3, 0));
+#endif
+
+#if !defined(HAVE_EVASPRINTF) || defined(NEED_EVASPRINTF_PROTO)
+#define evasprintf  rk_evasprintf
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
+rk_evasprintf(const char *format, va_list args);
+#endif
+
+#if !defined(HAVE_EASPRINTF) || defined(NEED_EASPRINTF_PROTO)
+#define easprintf   rk_easprintf
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
+rk_easprintf(const char *format, ...);
 #endif
 
 #ifndef HAVE_STRDUP
@@ -1224,9 +1288,9 @@ vis(char *, int, int, int);
 
 #if !defined(HAVE_CLOSEFROM)
 #define closefrom rk_closefrom
-ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-closefrom(int);
 #endif
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+rk_closefrom(int);
 
 #if !defined(HAVE_TIMEGM)
 #define timegm rk_timegm

@@ -63,24 +63,59 @@ Supported commands:
 .It help
 .It list-oids
 .It verify
+Verify a certificate and its certification path up to a trust
+anchor, possibly checking CRLs.
 .It print
+Prints a human-readable rendering of certificates in a store.
+See
+.Sx CERTIFICATE STORES.
 .It validate
+Validate a certificate (but not a full chain).
 .It certificate-copy, cc
+Copy ceritificates and possibly private keys from one store to
+another.
+See
+.Sx CERTIFICATE STORES.
 .It ocsp-fetch
+Fetch an OCSP response.
 .It ocsp-verify
+Fetch an OCSP response chain.
 .It ocsp-print
+Prints a human-readable rendering of an OCSP response chain.
 .It revoke-print
+Prints a human-readable rendering of a CRL or OCSP response
+chain.
 .It generate-key
+Generates a private key.
 .It request-create
+Generates a Certificate Signing Request (CSR).
 .It request-print
+Prints a human-readable rendering of a CSR.
 .It query
+Queries a certificate store.
 .It info
+Prints information about supported algorithms.
 .It random-data
+Outputs entropy using a random number generator.
 .It crypto-available
+Tests if a cryptographic algorithm is available.
 .It crypto-select
+Selects a supported cryptographic algorithm given a peer's
+capabilities.
 .It hex
+Hex-encode/decode utility.
 .It certificate-sign, cert-sign, issue-certificate, ca
+Issue a certificate.
 .It crl-sign
+Sign a CRL.
+.It cms-create-sd, cms-sign
+Created a CMS SignedData.
+.It cms-verify-sd
+Verifies a CMS SignedData.
+.It cms-unenvelope
+Extracts enveloped data from a CMS SignedData.
+.It cms-envelope
+Creates an enveloped CMS SignedData.
 .El
 Other sub-commands reported by the
 .Nm help
@@ -89,48 +124,80 @@ sub-command are not stable or fully supported at this time.
 Stores of certificates and/or keys have string names that can be
 used with
 .Nm 's
-commands.
-Sub-commands use these certificate store names to refer to files
-and tokens where keys and/or certificates are to be found or
-written.
+commands as well as in various configuration parameters and
+command-line arguments of Heimdal's Kerberos implementation (for
+PKINIT).
+.Pp
 For example,
-.Sq FILE:/path/to/some/file .
+.Ql FILE:/path/to/file ,
+.Ql PEM-FILE:/path/to/file ,
+.Ql DER-FILE:/path/to/file ,
+etc.
+See below for a full list of store types.
+.Pp
+A certificate store name starts with a store TYPE followed by a
+colon followed by a name of form specific to that store type.
+.Pp
+Private keys can be stored in the same stores as the certificates
+that certify their public keys.
+.Pp
+Private keys can also be stored in separate files, but still be
+referenced in one certificate store name by joining two with a
+comma:
+.Ql FILE:/path/to/certificate,/path/to/private/key
+.
+.Pp
+Heimdal supports a variety of certificate and private key store
+types:
+.Bl -tag -width Ds -offset indent
+.It PEM-FILE:/path
+If writing, PEM will be written (private keys may be written in
+algorithm-specific formats or in PKCS#8).
+If reading, PEM will be expected (private keys may be in
+algorithm-specific formats or in PKCS#8).
+.It DER-FILE:/path
+If writing, DER will be written.
+If reading, DER will be expected.
+Private keys will be in algorithm-specific formats.
+.It FILE:/path
+If writing, PEM will be written as if
+.Ql PEM-FILE
+had been used.
+If reading, PEM or DER will be detected and read as if
+.Ql PEM-FILE
+or
+.Ql DER-FILE
+had been used.
+.It PKCS12:/path
+If writing, PKCS#12 will be written.
+If reading, PKCS#12 will be expected.
+Note that PKCS#12 support is currently very limited.
+.It DIR:/path
+OpenSSL-style hashed directory of trust anchors.
+.It KEYCHAIN:system-anchors
+On OS X this refers to the system's trust anchors.
+.It KEYCHAIN:FILE:/path
+On OS X this refers to an OS X keychain at the given path.
+.It PKCS11:/path/to/shared/object[,slot=NUMBER]
+Loads the given PKCS#11 provider object and uses the token at the
+given slot number, or else the first token found.
+.It NULL:
+An empty store.
+.It MEMORY:name
+An in-memory only, ephemeral store, usually never used in
+.NM 's
+commands.
+The MEMORY store name exists primarily for internal
+.Sq hx509
+APIs.
+.El
 .Pp
 Use the
 .Nm certificate-copy
 command to copy certificates from one store to another.
 This is useful for, e.g., converting DER files to PEM or
-vice-versa.
-.Pp
-Heimdal supports a variety of certificate and key store types:
-.Bl -tag -width Ds -offset indent
-.It PEM-FILE:/path
-If writing, PEM will be written.
-If reading, PEM will be expected.
-.It DER-FILE:/path
-If writing, DER will be written.
-If reading, DER will be expected.
-.It FILE:/path
-If writing, PEM will be written.
-If reading, PEM or DER will be detected.
-.It PKCS12:/path
-Barely supported at this time.
-.It DIR:/path
-OpenSSL-style hashed directory of trust anchors.
-.It MEMORY:name
-An in-memory only store, usually never used in
-.NM 's
-commands.
-.It KEYCHAIN:system-anchors
-On OS X this refers to the system's trust anchors.
-.It KEYCHAIN:FILE:/path
-On OS X this refers to an OS X keychain at the given path.
-.It NULL:
-An empty store.
-.It PKCS11:/path/to/shared/object,slot=NUMBER
-Loads the given PKCS#11 provider object and uses the token at the
-given slot number.
-.El
+vice-versa, removing private keys, adding certificate chains,
+and removing root certificates from chains.
 .Sh CERTIFICATES
 You can validate a certificate with the
 .Nm validate
@@ -149,17 +216,17 @@ sub-command:
 .Pp
 Options:
 .Bl -tag -width Ds -offset indent
-.Op Fl Fl content
-.Op Fl Fl info
-.Op Fl Fl never-fail
-.Op Fl Fl pass=password
-.Op Fl Fl raw-json
+.It Fl Fl content
+.It Fl Fl info
+.It Fl Fl never-fail
+.It Fl Fl pass=password
+.It Fl Fl raw-json
 .El
 .Pp
 The
 .Fl Fl pass=password
-option is for PKCS#12 and PKCS#11 stores, and if needed and not
-given, will be prompted for.
+option is for PKCS#8 (PEM), PKCS#12 and PKCS#11 stores, and if
+needed and not given, will be prompted for.
 Note that it's not secure to pass passwords as command-line
 arguments on multi-tenant systems.
 .Pp
@@ -176,7 +243,14 @@ sub-command will generate a key.
 .Sh CERTIFICATE SIGNING REQUESTS
 The
 .Nm request-create
-sub-command will create a CSR.
+sub-command will create a CSR, and has support for requesting
+subject alternative names and extended key usage extensions.
+See its
+.Fl Fl help
+option, and see
+.Sx EXAMPLES
+below.
+.Pp
 The
 .Nm request-print
 sub-command will display a CSR.
@@ -203,5 +277,104 @@ The
 .Nm crl-sign
 sub-command will add certificates to a certificate revocation
 list.
+.Sh EXAMPLES
+Generate an RSA key:
+.Bd -literal -offset indent
+hxtool generate-key --type=rsa --key-bits=4096 PEM-FILE:key.pem
+.Ed
+.Pp
+Create a CSR (with an empty name) for some key:
+.Bd -literal -offset indent
+hxtool request-create --subject= --key=FILE:key.pem csr.der
+.Ed
+.Pp
+Generate a key and create a CSR (with an empty name) for it:
+.Bd -literal -offset indent
+hxtool request-create       \\
+	--subject=          \\
+	--generate-key=rsa  \\
+	--key-bits=4096     \\
+	--key=FILE:key.pem  \\
+	csr.der
+.Ed
+.Pp
+Generate a key and create a CSR with an empty name but also
+requesting a specific dNSName subject alternative name (SAN) for
+it:
+.Bd -literal -offset indent
+hxtool request-create               \\
+	--subject=                  \\
+	--generate-key=rsa          \\
+	--dnsname=foo.test.h5l.se   \\
+	--key=FILE:key.pem          \\
+	csr.der
+.Ed
+.Pp
+Print a CSR:
+.Bd -literal -offset indent
+hxtool request-print csr.der
+.Ed
+which outputs:
+.Bd -literal -offset indent
+request print
+PKCS#10 CertificationRequest:
+  name:
+    san: dNSName: foo.test.h5l.se
+.Ed
+.Pp
+Issue a end-entity certificate for an HTTPS server given a CSR:
+.Bd -literal -offset indent
+hxtool issue-certificate                            \\
+	--type=https-server                         \\
+	--subject=                                  \\
+	--hostname=foo.test.h5l.se                  \\
+	--ca-certificate=FILE:cacert.pem            \\
+	--ca-private-key=FILE:cakey.pem             \\
+	--req=PKCS10:csr.der                        \\
+	--certificate=PEM-FILE:ee.pem
+.Ed
+.Pp
+Add a chain to a PEM file:
+.Bd -literal -offset indent
+hxtool copy-certificiate    \\
+	--no-private-keys   \\
+	--no-root-certs     \\
+	FILE:ca.pem FILE:ee.pem
+.Ed
+.Pp
+Create a self-signed end-entity certificate for an HTTPS server:
+.Bd -literal -offset indent
+hxtool issue-certificate                        \\
+	--self-signed                           \\
+	--type=https-server                     \\
+	--subject=                              \\
+	--hostname=foo.test.h5l.se              \\
+	--ca-private-key=FILE:key.pem           \\
+	--certificate-private-key=FILE:key.pem  \\
+	--certificate=PEM-FILE:cert.pem
+.Ed
+.Pp
+Create a root certification authority certificate:
+.Bd -literal -offset indent
+hxtool issue-certificate                            \\
+	--issue-ca                                  \\
+	--self-signed                               \\
+	--subject=CN=SomeRootCA                     \\
+	--ca-private-key=FILE:rootkey.pem           \\
+	--certificate=PEM-FILE:rootcert.pem
+.Ed
+.Pp
+Create an intermediate certification authority certificate from a
+CSR:
+.Bd -literal -offset indent
+hxtool issue-certificate                            \\
+	--type=https-server                         \\
+	--subject=CN=SomeIntermediateCA             \\
+	--ca-certificate=FILE:parent-cert.pem       \\
+	--ca-private-key=FILE:parent-key.pem        \\
+	--req=PKCS10:csr.der                        \\
+	--certificate=PEM-FILE:intermediate.pem
+.Ed
+.Pp
 .Sh SEE ALSO
 .Xr openssl 1

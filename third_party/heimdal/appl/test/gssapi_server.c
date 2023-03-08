@@ -192,6 +192,9 @@ proto (int sock, const char *service)
     gss_OID mech_oid;
     char *mech, *p;
 
+    memset(&remote, 0, sizeof(remote));
+    local = remote;
+
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
 	|| addrlen != sizeof(local))

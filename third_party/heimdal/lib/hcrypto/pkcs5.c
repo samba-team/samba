@@ -85,7 +85,8 @@ PKCS5_PBKDF2_HMAC(const void * password, size_t password_len,
 
     data = &tmpcksum[checksumsize];
 
-    memcpy(data, salt, salt_len);
+    if (salt_len)
+        memcpy(data, salt, salt_len);
 
     keypart = 1;
     leftofkey = keylen;

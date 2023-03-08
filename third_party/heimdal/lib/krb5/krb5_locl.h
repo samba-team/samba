@@ -82,6 +82,7 @@ struct mbuf;
 #include <com_err.h>
 
 #include <heimbase.h>
+#include "heimbase-atomics.h"
 
 #define HEIMDAL_TEXTDOMAIN "heimdal_krb5"
 

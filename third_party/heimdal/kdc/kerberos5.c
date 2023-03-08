@@ -2079,13 +2079,11 @@ get_local_tgs(krb5_context context,
 			      KRB5_TGS_NAME,
 			      realm,
 			      NULL);
-    if (ret)
-	return ret;
+    if (ret == 0)
+	ret = _kdc_db_fetch(context, config, tgs_name,
+		     HDB_F_GET_KRBTGT, NULL, krbtgtdb, krbtgt);
 
-    ret = _kdc_db_fetch(context, config, tgs_name,
-			HDB_F_GET_KRBTGT, NULL, krbtgtdb, krbtgt);
     krb5_free_principal(context, tgs_name);
-
     return ret;
 }
 

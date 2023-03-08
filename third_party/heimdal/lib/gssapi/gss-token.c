@@ -472,8 +472,13 @@ accept_one(gss_name_t service, const char *ccname, int negotiate)
 		    NULL, NULL, &deleg_creds);
 
 		ret = write_and_free_token(&out, negotiate);
-		if (ret)
+		if (ret) {
+			OM_uint32 junk;
+
+			(void) gss_delete_sec_context(&junk, &ctx,
+						      GSS_C_NO_BUFFER);
 			return ret;
+		}
 		GBAIL("gss_accept_sec_context", maj, min);
 	} while (maj & GSS_S_CONTINUE_NEEDED);
 
@@ -491,6 +496,7 @@ accept_one(gss_name_t service, const char *ccname, int negotiate)
 		    (char *)dname.value);
 	(void) gss_release_buffer(&min, &dname);
 	(void) gss_release_name(&min, &client);
+	(void) gss_delete_sec_context(&min, &ctx, GSS_C_NO_BUFFER);
 
 	if (ccname) {
 #ifdef HAVE_GSS_STORE_CRED_INTO

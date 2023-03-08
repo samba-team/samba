@@ -655,6 +655,12 @@ test_cert(void)
     size_t i;
     int ret;
 
+    memset(&c, 0, sizeof(c));
+    ret = copy_Certificate(&c, &c2);
+    if (ret)
+        return ret;
+    free_Certificate(&c2);
+
     for (i = 0; i < sizeof(certs)/sizeof(certs[0]); i++) {
 
 	ret = decode_Certificate((unsigned char *)certs[i].cert,
@@ -1111,6 +1117,57 @@ test_decorated(void)
         warnx("free_TESTDecorated() did not work correctly (3)");
         return 1;
     }
+    return 0;
+}
+
+static int
+test_extensible_choice(void)
+{
+    PA_FX_FAST_REQUEST r, r2;
+    size_t len, size;
+    void *ptr;
+    int ret;
+
+    memset(&r, 0, sizeof(r));
+
+    ret = copy_PA_FX_FAST_REQUEST(&r, &r2);
+    if (ret)
+        return ret;
+    free_PA_FX_FAST_REQUEST(&r2);
+
+    r.element = 0;
+    r.u.asn1_ellipsis.data = "hello";
+    r.u.asn1_ellipsis.length = sizeof("hello") - 1;
+    ret = copy_PA_FX_FAST_REQUEST(&r, &r2);
+    if (ret)
+        errx(1, "Out of memory");
+    if (r2.element != 0)
+        errx(1, "Extensible CHOICE copy failure to set discriminant to 0");
+    if (r2.u.asn1_ellipsis.length != r.u.asn1_ellipsis.length)
+        errx(1, "Extensible CHOICE copy failure to copy extension");
+    if (memcmp(r.u.asn1_ellipsis.data, r2.u.asn1_ellipsis.data,
+               r.u.asn1_ellipsis.length) != 0)
+        errx(1, "Extensible CHOICE copy failure to copy extension (2)");
+    free_PA_FX_FAST_REQUEST(&r2);
+
+    ASN1_MALLOC_ENCODE(PA_FX_FAST_REQUEST, ptr, len, &r, &size, ret);
+    if (ret || len != size)
+        errx(1, "Extensible CHOICE encoding failure");
+
+    ret = decode_PA_FX_FAST_REQUEST(ptr, len, &r2, &size);
+    if (ret || len != size)
+        errx(1, "Extensible CHOICE decoding failure");
+
+    if (r2.element != 0)
+        errx(1, "Extensible CHOICE decode failure to set discriminant to 0");
+    if (r2.u.asn1_ellipsis.length != r.u.asn1_ellipsis.length)
+        errx(1, "Extensible CHOICE decode failure to copy extension");
+    if (memcmp(r.u.asn1_ellipsis.data, r2.u.asn1_ellipsis.data,
+               r.u.asn1_ellipsis.length) != 0)
+        errx(1, "Extensible CHOICE decode failure to copy extension (2)");
+
+    free_PA_FX_FAST_REQUEST(&r2);
+    free(ptr);
     return 0;
 }
 
@@ -2673,6 +2730,8 @@ main(int argc, char **argv)
     DO_ONE(test_x690sample);
 
     DO_ONE(test_default);
+
+    DO_ONE(test_extensible_choice);
 
     DO_ONE(test_decorated_choice);
     DO_ONE(test_decorated);

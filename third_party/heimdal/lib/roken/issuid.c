@@ -171,7 +171,7 @@ issuid(void)
     if (issetugid() == 0)
         return we_are_suid = 0;
     /* issetugid() == 1 might have been a false positive; fall through */
-#endif /* USE_RK_GETAUXVAL */
+#endif
 
 #ifdef AT_EXECFN
     /*
@@ -186,6 +186,9 @@ issuid(void)
      * Also, this is technically a TOCTOU race, though for set-id
      * programs this is exceedingly unlikely to be an actual TOCTOU
      * race.
+     *
+     * TODO We should really make sure that none of the path components of the
+     *      execpath are symlinks.
      */
     {
         unsigned long p = rk_getauxval(AT_EXECPATH);
@@ -267,10 +270,9 @@ issuid(void)
 	return we_are_suid = 1;
 #endif
 
-#endif /* !defined(HAVE_GETRESUID) || !defined(HAVE_GETRESGID) */
-
     errno = save_errno;
     return we_are_suid = 0;
+#endif /* !defined(HAVE_GETRESUID) || !defined(HAVE_GETRESGID) */
 #endif /* !defined(HAVE_ISSETUGID) */
 #endif /* WIN32 */
 }

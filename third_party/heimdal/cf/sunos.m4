@@ -26,4 +26,5 @@ if test "$sunos" != no; then
 	AC_DEFINE_UNQUOTED(SunOS, $sunos, 
 		[Define to what version of SunOS you are running.])
 fi
+AM_CONDITIONAL(SUNOS, test "$sunos" != no)
 ])

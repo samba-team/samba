@@ -550,6 +550,14 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
     heim_octet_string data;
     int ret = 0;
 
+    if ((sc->store_flags & HX509_CERTS_STORE_NO_ROOTS)) {
+        int self_signed = 0;
+
+        ret = hx509_cert_is_self_signed(context, c, &self_signed);
+        if (ret || self_signed)
+            return ret;
+    }
+
     if (hx509_cert_have_private_key_only(c)) {
         data.length = 0;
         data.data = NULL;

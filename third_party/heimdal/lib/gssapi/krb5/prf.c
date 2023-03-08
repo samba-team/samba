@@ -119,7 +119,7 @@ _gsskrb5_pseudo_random(OM_uint32 *minor_status,
     while(dol > 0) {
 	size_t tsize;
 
-	_gsskrb5_encode_be_om_uint32(num, input.data);
+	_gss_mg_encode_be_uint32(num, input.data);
 
 	ret = krb5_crypto_prf(context, crypto, &input, &output);
 	if (ret) {

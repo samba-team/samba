@@ -116,7 +116,6 @@
 #undef EVP_des_cbc
 #undef EVP_des_ede3_cbc
 #undef EVP_enc_null
-#undef EVP_md2
 #undef EVP_md4
 #undef EVP_md5
 #undef EVP_md_null
@@ -158,7 +157,6 @@
 #undef EVP_CIPH_ALWAYS_CALL_INIT
 #undef EVP_CIPH_RAND_KEY
 #undef EVP_CTRL_RAND_KEY
-#undef NID_md2
 #undef NID_md4
 #undef NID_md5
 #undef NID_sha1

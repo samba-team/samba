@@ -233,7 +233,6 @@ do_list1_json(struct list_options *opt,
 	    }
             heim_dict_set_value(d, HSTR("aliases"), aliases);
             heim_release(aliases);
-            free(s);
 	}
 
 	krb5_kt_free_entry(context, &entry);

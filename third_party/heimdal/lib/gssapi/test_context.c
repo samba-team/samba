@@ -734,17 +734,29 @@ wrapunwrap_iov(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
     token.data = emalloc(token.length);
 
     p = token.data;
-    memcpy(p, iov[0].buffer.value, iov[0].buffer.length);
+
+    if (iov[0].buffer.length)
+        memcpy(p, iov[0].buffer.value, iov[0].buffer.length);
     p += iov[0].buffer.length;
-    memcpy(p, iov[1].buffer.value, iov[1].buffer.length);
+
+    if (iov[1].buffer.length)
+        memcpy(p, iov[1].buffer.value, iov[1].buffer.length);
     p += iov[1].buffer.length;
-    memcpy(p, iov[2].buffer.value, iov[2].buffer.length);
+
+    if (iov[2].buffer.length)
+        memcpy(p, iov[2].buffer.value, iov[2].buffer.length);
     p += iov[2].buffer.length;
-    memcpy(p, iov[3].buffer.value, iov[3].buffer.length);
+
+    if (iov[3].buffer.length)
+        memcpy(p, iov[3].buffer.value, iov[3].buffer.length);
     p += iov[3].buffer.length;
-    memcpy(p, iov[4].buffer.value, iov[4].buffer.length);
+
+    if (iov[4].buffer.length)
+        memcpy(p, iov[4].buffer.value, iov[4].buffer.length);
     p += iov[4].buffer.length;
-    memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
+
+    if (iov[5].buffer.length)
+        memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
     p += iov[5].buffer.length;
 
     assert(p - ((unsigned char *)token.data) == token.length);
@@ -1336,7 +1348,7 @@ main(int argc, char **argv)
 
 	if (out1.length != out2.length)
 	    errx(1, "prf len mismatch");
-	if (memcmp(out1.value, out2.value, out1.length) != 0)
+	if (out1.length && memcmp(out1.value, out2.value, out1.length) != 0)
 	    errx(1, "prf data mismatch");
 
 	gss_release_buffer(&min_stat, &out1);
@@ -1346,7 +1358,7 @@ main(int argc, char **argv)
 
 	if (out1.length != out2.length)
 	    errx(1, "prf len mismatch");
-	if (memcmp(out1.value, out2.value, out1.length) != 0)
+	if (out1.length && memcmp(out1.value, out2.value, out1.length) != 0)
 	    errx(1, "prf data mismatch");
 
 	gss_release_buffer(&min_stat, &out1);

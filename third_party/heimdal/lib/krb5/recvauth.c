@@ -160,6 +160,11 @@ krb5_recvauth_match_version(krb5_context context,
 	return KRB5_SENDAUTH_BADAPPLVERS;
     }
     len = ntohl(len);
+    if (len > 1024 * 1024) {
+        krb5_set_error_message(context, ret = KRB5_SENDAUTH_REJECTED,
+                               "AP-REQ too long");
+        return ret;
+    }
     her_appl_version = malloc (len);
     if (her_appl_version == NULL) {
 	repl = 2;

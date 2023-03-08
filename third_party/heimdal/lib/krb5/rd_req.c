@@ -1037,11 +1037,10 @@ krb5_rd_req_ctx(krb5_context context,
             goto out;
     }
 
-    ret = krb5_ticket_get_authorization_data_type(context, o->ticket,
-                                                  KRB5_AUTHDATA_KDC_ISSUED,
-                                                  NULL);
-    if (ret == 0)
-        o->ticket->client->nameattrs->kdc_issued_verified = 1;
+    if (krb5_ticket_get_authorization_data_type(context, o->ticket,
+						KRB5_AUTHDATA_KDC_ISSUED,
+						NULL) == 0)
+	o->ticket->client->nameattrs->kdc_issued_verified = 1;
 
     /* If there is a PAC, verify its server signature */
     if (inctx == NULL || inctx->check_pac) {

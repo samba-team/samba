@@ -84,8 +84,8 @@ rk_time_add(time_t t, time_t delta)
 #else
 #error "Unexpected sizeof(time_t)"
 #endif
-#endif
     return t + delta;
+#endif
 }
 
 ROKEN_LIB_FUNCTION time_t ROKEN_LIB_CALL
@@ -122,8 +122,8 @@ rk_time_sub(time_t t, time_t delta)
     /* Both t and delta are non-negative. */
     if (delta > t)
         return 0;
-#endif
     return t - delta;
+#endif
 }
 
 /*

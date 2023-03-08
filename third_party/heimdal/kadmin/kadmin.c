@@ -296,10 +296,13 @@ main(int argc, char **argv)
     } else {
 	while(!exit_seen) {
 	    ret = sl_command_loop(commands, "kadmin> ", NULL);
-	    if (ret == -2)
+	    if (ret == -2) {
 		exit_seen = 1;
-	    else if (ret != 0)
+            } else if (ret != 0) {
 		exit_status = 1;
+                if (!isatty(STDIN_FILENO))
+                    exit_seen = 1;
+            }
 	}
     }
 

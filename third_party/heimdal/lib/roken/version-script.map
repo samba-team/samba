@@ -52,12 +52,14 @@ HEIMDAL_ROKEN_2.0 {
 		rk_dns_string_to_type;
 		rk_dns_type_to_string;
 		rk_dumpdata;
+		rk_easprintf;
 		rk_ecalloc;
 		rk_emalloc;
 		rk_eread;
 		rk_erealloc;
 		rk_esetenv;
 		rk_estrdup;
+		rk_evasprintf;
 		rk_ewrite;
 		rk_flock;
 		rk_fnmatch;
@@ -169,6 +171,7 @@ HEIMDAL_ROKEN_2.0 {
 		rk_tsearch;
 		rk_twalk;
 		rk_undumpdata;
+		rk_undumptext;
 		rk_unparse_flags;
 		rk_unparse_time;
 		rk_unparse_time_approx;

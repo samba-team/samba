@@ -256,14 +256,12 @@ kadm5_s_create_principal(void *server_handle,
     if ((mask & KADM5_ATTRIBUTES) &&
         (princ->attributes & (KRB5_KDB_VIRTUAL_KEYS | KRB5_KDB_VIRTUAL)) &&
         !(princ->attributes & KRB5_KDB_MATERIALIZE)) {
-        ret = KADM5_DUP; /* XXX */
-        goto out;
+	return _kadm5_error_code(KADM5_DUP); /* XXX More like EINVAL */
     }
     if ((mask & KADM5_ATTRIBUTES) &&
         (princ->attributes & KRB5_KDB_VIRTUAL_KEYS) &&
         (princ->attributes & KRB5_KDB_VIRTUAL)) {
-        ret = KADM5_DUP; /* XXX */
-        goto out;
+	return _kadm5_error_code(KADM5_DUP); /* XXX More like EINVAL */
     }
 
     if ((mask & KADM5_ATTRIBUTES) &&

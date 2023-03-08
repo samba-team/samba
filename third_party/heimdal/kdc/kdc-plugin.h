@@ -57,8 +57,9 @@ typedef krb5_error_code
 
 /*
  * Verify the PAC KDC signatures by fetching the appropriate TGS key
- * and calling krb5_pac_verify() with that key. Optionally update the
- * PAC buffers on success.
+ * and calling krb5_pac_verify() with that key. The possibly-NULL
+ * is_trusted may be set by the plugin to indicate that the PAC was
+ * issued by a trusted server, and not, for example, by an RODC.
  */
 
 typedef krb5_error_code
@@ -69,7 +70,25 @@ typedef krb5_error_code
 					   hdb_entry *,/* client */
 					   hdb_entry *,/* server */
 					   hdb_entry *,/* krbtgt */
-					   krb5_pac *);
+					   krb5_pac, /* pac */
+					   krb5_boolean *); /* is_trusted */
+
+/*
+ * Update the KDC PAC buffers. This function may be used after verifying the PAC
+ * with a call to krb5plugin_kdc_pac_verify(), and it resembles the latter
+ * function in the parameters it takes. The 'pac' parameter always points to a
+ * non-NULL PAC.
+ */
+
+typedef krb5_error_code
+(KRB5_CALLCONV *krb5plugin_kdc_pac_update)(void *,
+					   astgs_request_t,
+					   const krb5_principal, /* new ticket client */
+					   const krb5_principal, /* delegation proxy */
+					   hdb_entry *,/* client */
+					   hdb_entry *,/* server */
+					   hdb_entry *,/* krbtgt */
+					   krb5_pac *); /* pac */
 
 /*
  * Authorize the client principal's access to the Authentication Service (AS).
@@ -117,12 +136,13 @@ typedef krb5_error_code
  * Plugins should carefully check API contract notes for changes
  * between plugin API versions.
  */
-#define KRB5_PLUGIN_KDC_VERSION_10	10
+#define KRB5_PLUGIN_KDC_VERSION_11	11
 
 typedef struct krb5plugin_kdc_ftable {
     HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5plugin_kdc_pac_generate		pac_generate;
     krb5plugin_kdc_pac_verify		pac_verify;
+    krb5plugin_kdc_pac_update		pac_update;
     krb5plugin_kdc_client_access	client_access;
     krb5plugin_kdc_referral_policy	referral_policy;
     krb5plugin_kdc_finalize_reply	finalize_reply;

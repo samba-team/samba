@@ -233,6 +233,8 @@ format_field(struct get_entry_data *data,
              size_t buf_len,
              int condensed)
 {
+    krb5_error_code ret;
+
     switch(field) {
     case KADM5_PRINCIPAL:
 	if(condensed)
@@ -302,7 +304,10 @@ format_field(struct get_entry_data *data,
 	krb5_salt def_salt;
 	int i;
 	char buf2[1024];
-	krb5_get_pw_salt (context, princ->principal, &def_salt);
+
+	ret = krb5_get_pw_salt(context, princ->principal, &def_salt);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_get_pw_salt");
 
 	*buf = '\0';
 	for (i = 0; i < princ->n_key_data; ++i) {
@@ -335,7 +340,6 @@ format_field(struct get_entry_data *data,
             HDB_EncTypeList etypes;
 	    size_t i, size;
             char *str;
-	    int ret;
 
             ret = decode_HDB_EncTypeList(tl->tl_data_contents,
                                          tl->tl_data_length,
@@ -360,7 +364,6 @@ format_field(struct get_entry_data *data,
 	case KRB5_TL_PKINIT_ACL: {
 	    HDB_Ext_PKINIT_acl acl;
 	    size_t size;
-	    int ret;
 	    size_t i;
 
 	    ret = decode_HDB_Ext_PKINIT_acl(tl->tl_data_contents,
@@ -403,7 +406,6 @@ format_field(struct get_entry_data *data,
 	case KRB5_TL_ALIASES: {
 	    HDB_Ext_Aliases alias;
 	    size_t size;
-	    int ret;
 	    size_t i;
 
 	    ret = decode_HDB_Ext_Aliases(tl->tl_data_contents,

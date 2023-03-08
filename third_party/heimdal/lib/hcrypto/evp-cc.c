@@ -605,32 +605,6 @@ EVP_cc_rc2_64_cbc(void)
 #endif
 }
 
-/**
- * The CommonCrypto md2 provider
- *
- * @ingroup hcrypto_evp
- */
-
-const EVP_MD *
-EVP_cc_md2(void)
-{
-#ifdef HAVE_COMMONCRYPTO_COMMONDIGEST_H
-    static const struct hc_evp_md md2 = {
-	CC_MD2_DIGEST_LENGTH,
-	CC_MD2_BLOCK_BYTES,
-	sizeof(CC_MD2_CTX),
-	(hc_evp_md_init)CC_MD2_Init,
-	(hc_evp_md_update)CC_MD2_Update,
-	(hc_evp_md_final)CC_MD2_Final,
-	(hc_evp_md_cleanup)NULL
-    };
-    return &md2;
-#elif HCRYPTO_FALLBACK
-    return EVP_hcrypto_md2();
-#else
-    return NULL;
-#endif
-}
 
 /**
  * The CommonCrypto md4 provider

@@ -82,10 +82,13 @@ static void
 socket_free(krb5_storage * sp)
 {
     int save_errno = errno;
-    if (rk_IS_SOCKET_ERROR(rk_closesocket(SOCK(sp))))
+    if (rk_IS_SOCKET_ERROR(rk_closesocket(SOCK(sp)))) {
+#ifdef WIN32
         errno = rk_SOCK_ERRNO;
-    else
+#endif
+    } else {
         errno = save_errno;
+    }
 }
 
 /**
@@ -155,6 +158,6 @@ krb5_storage_from_socket(krb5_socket_t sock_in)
     sp->trunc = socket_trunc;
     sp->fsync = socket_sync;
     sp->free = socket_free;
-    sp->max_alloc = UINT_MAX/8;
+    sp->max_alloc = UINT32_MAX/64;
     return sp;
 }

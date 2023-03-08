@@ -15,7 +15,7 @@ libkadm5srv_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
 
 sbin_PROGRAMS = iprop-log
-check_PROGRAMS = default_keys
+check_PROGRAMS = default_keys test_marshall
 noinst_PROGRAMS = test_pw_quality
 
 noinst_LTLIBRARIES = sample_passwd_check.la sample_hook.la
@@ -36,6 +36,9 @@ libexec_PROGRAMS = ipropd-master ipropd-slave
 
 default_keys_SOURCES = default_keys.c
 default_keys_CPPFLAGS = -I$(srcdir)/../krb5
+
+test_marshall_SOURCES = marshall.c
+test_marshall_CPPFLAGS = -I$(srcdir)/../krb5 -DTEST
 
 kadm5includedir = $(includedir)/kadm5
 buildkadm5include = $(buildinclude)/kadm5

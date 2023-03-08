@@ -1,0 +1,54 @@
+# See lib/kadm5/fuzz-inputs-txt/test_marshall-ent0.txt for instructions on how
+# to fuzz krb5/kadm5 marshalling.
+#
+# A truncated kadm5_principal_ent_rec follows:
+#
+# principal name
+int32 0
+int32 1
+string T
+string f
+# expiration
+int32 2
+# pw expiration
+int32 3
+# last pw change
+int32 4
+# max life
+int32 5
+# mod name optional (boolean, principal name)
+int32 1
+int32 0
+int32 1
+string T
+string b
+# mod time
+int32 6
+# attrs
+int32 7
+# kvno
+int32 8
+# master kvno
+int32 9
+# policy (boolean, string)
+int32 1
+string default
+# aux attrs
+int32 10
+# max renew life
+int32 11
+# last success
+int32 12
+# last fail
+int32 13
+# fail count
+int32 14
+# nkeydata
+int32 2
+# keydata[0] (ver, kvno, type, data, type, data)
+int32 15
+int32 16
+int32 17
+data 1122
+int32 18
+data 2233

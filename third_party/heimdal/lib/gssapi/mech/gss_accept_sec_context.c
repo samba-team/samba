@@ -172,7 +172,7 @@ choose_mech(struct _gss_context *ctx)
         if (len == 0) {
 		/*
 		 * There is the a wierd mode of SPNEGO (in CIFS and
-		 * SASL GSS-SPENGO where the first token is zero
+		 * SASL GSS-SPENGO) where the first token is zero
 		 * length and the acceptor returns a mech_list, lets
 		 * hope that is what is happening now.
 		 *
@@ -190,13 +190,17 @@ choose_mech(struct _gss_context *ctx)
          * Decode the OID for the mechanism. Simplify life by
          * assuming that the OID length is less than 128 bytes.
          */
-        if (len < 2 || *p != 0x06)
-                goto bail;
-        if ((p[1] & 0x80) || p[1] > (len - 2))
-                goto bail;
+        if (len < 2 || *p != 0x06) {
+            _gss_mg_log(10, "initial context token appears to be for non-standard mechanism");
+            return GSS_S_COMPLETE;
+        }
+        len -= 2;
+        if ((p[1] & 0x80) || p[1] > len) {
+                _gss_mg_log(10, "mechanism oid in initial context token is too long");
+                return GSS_S_COMPLETE;
+        }
         mech.length = p[1];
         p += 2;
-        len -= 2;
         mech.elements = p;
 
         mech_oid = _gss_mg_support_mechanism(&mech);
@@ -209,19 +213,13 @@ gss_get_mechanism:
          * and we have to try all mechs (that we have a cred element
          * for, if we have a cred).
          */
-        if (mech_oid != GSS_C_NO_OID) {
-                log_oid("mech oid", mech_oid);
-                ctx->gc_mech = __gss_get_mechanism(mech_oid);
-                if (!ctx->gc_mech) {
-                        _gss_mg_log(10, "mechanism client used is unknown");
-                        return (GSS_S_BAD_MECH);
-                }
-                _gss_mg_log(10, "using mech \"%s\"", ctx->gc_mech->gm_name);
-                return GSS_S_COMPLETE;
+        log_oid("mech oid", mech_oid);
+        ctx->gc_mech = __gss_get_mechanism(mech_oid);
+        if (!ctx->gc_mech) {
+            _gss_mg_log(10, "mechanism client used is unknown");
+            return (GSS_S_BAD_MECH);
         }
-
-bail:
-        _gss_mg_log(10, "no mech oid found");
+        _gss_mg_log(10, "using mech \"%s\"", ctx->gc_mech->gm_name);
         return GSS_S_COMPLETE;
 }
 

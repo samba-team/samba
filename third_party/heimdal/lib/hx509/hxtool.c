@@ -861,10 +861,25 @@ certificate_copy(struct certificate_copy_options *opt, int argc, char **argv)
     hx509_certs certs;
     hx509_lock inlock, outlock = NULL;
     char *sn;
+    int flags = 0;
+    int store_flags = 0;
     int ret;
 
     hx509_lock_init(context, &inlock);
     lock_strings(inlock, &opt->in_pass_strings);
+
+    if (!opt->root_certs_flag)
+        /*
+         * We're probably copying an EE cert, its issuer, and all intermediates
+         * up to and excluding the root.
+         */
+        store_flags |= HX509_CERTS_STORE_NO_ROOTS;
+
+    if (!opt->private_keys_flag) {
+        /* Neither read nor store private keys */
+        store_flags |= HX509_CERTS_NO_PRIVATE_KEYS;
+        flags |= HX509_CERTS_NO_PRIVATE_KEYS;
+    }
 
     if (opt->out_pass_string) {
 	hx509_lock_init(context, &outlock);
@@ -874,25 +889,53 @@ certificate_copy(struct certificate_copy_options *opt, int argc, char **argv)
 		 opt->out_pass_string, ret);
     }
 
+    if (argc < 2)
+        errx(1, "hxtool copy-certificate requires at least two positional "
+             "arguments");
+
+    /*
+     * The _last_ positional argument is the destination store.  Because we use
+     * HX509_CERTS_CREATE we'll ignore its contents and then truncate to write
+     * it (well, if it's a file; see key store plugins).
+     *
+     * But note that the truncation doesn't happen until we call
+     * hx509_certs_store(), which means we still have a chance to _read_ this
+     * store.  That means that one can write this:
+     *
+     *      hxtool cc FILE:b FILE:a FILE:b
+     *
+     * to notionally append FILE:a to FILE:b.  Still, we'll have an option to
+     * do the append anyways:
+     *
+     *      hxtool cc --append FILE:a FILE:b
+     */
     sn = fix_store_name(context, argv[argc - 1], "FILE");
     ret = hx509_certs_init(context, sn,
-			   HX509_CERTS_CREATE, inlock, &certs);
+			   HX509_CERTS_CREATE | flags, inlock, &certs);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_certs_init %s", sn);
+
+    if (opt->append_flag) {
+        /* Append == read the certs in the dst prior to doing anything else */
+        ret = hx509_certs_append(context, certs, inlock, sn);
+        if (ret)
+            hx509_err(context, 1, ret, "hx509_certs_append %s", sn);
+    }
     free(sn);
 
+    /*
+     * Read all the certificate stores in all but the last positional argument.
+     */
     while(argc-- > 1) {
-	int retx;
-
         sn = fix_store_name(context, argv[0], "FILE");
-	retx = hx509_certs_append(context, certs, inlock, sn);
-	if (retx)
-	    hx509_err(context, 1, retx, "hx509_certs_append %s", sn);
+	ret = hx509_certs_append(context, certs, inlock, sn);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_certs_append %s", sn);
         free(sn);
 	argv++;
     }
 
-    ret = hx509_certs_store(context, certs, 0, outlock);
+    ret = hx509_certs_store(context, certs, store_flags, outlock);
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_certs_store");
 
@@ -1450,7 +1493,9 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 	    opt->key_bits_integer,
 	    &signer);
 
-    hx509_request_init(context, &req);
+    ret = hx509_request_init(context, &req);
+    if (ret)
+	hx509_err(context, 1, ret, "Could not initialize CSR context");
 
     if (opt->subject_string) {
 	hx509_name name = NULL;

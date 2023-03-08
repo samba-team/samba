@@ -501,10 +501,9 @@ fortuna_reseed(void)
 	/* add /etc/shadow */
 	fd = open("/etc/shadow", O_RDONLY, 0);
 	if (fd >= 0) {
-	    ssize_t n;
 	    rk_cloexec(fd);
 	    /* add_entropy will hash the buf */
-	    while ((n = read(fd, (char *)u.shad, sizeof(u.shad))) > 0)
+	    while (read(fd, (char *)u.shad, sizeof(u.shad)) > 0)
 		add_entropy(&main_state, u.shad, sizeof(u.shad));
 	    close(fd);
 	}

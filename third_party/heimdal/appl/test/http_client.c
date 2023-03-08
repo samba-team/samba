@@ -316,6 +316,7 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
+    memset(&req, 0, sizeof(req));
     mech_oid = select_mech(mech);
 
     if (argc != 1 && argc != 2)
@@ -345,6 +346,9 @@ main(int argc, char **argv)
 	    headers[i] = NULL;
 	}
 	num_headers = 0;
+
+	if (req.response == NULL)
+	    errx(1, "Got no response");
 
 	if (strstr(req.response, " 200 ") != NULL) {
 	    print_body = 1;

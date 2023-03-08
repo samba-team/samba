@@ -1,0 +1,133 @@
+name: Linux UBSAN Build
+
+on:
+    push:
+      branches:
+         - 'master'
+         - 'ubsan'
+      paths:
+         - '!docs/**'
+         - '!**.md'
+         - '!**.[1-9]'
+         - '**.[chly]'
+         - '**.hin'
+         - '**.in'
+         - '**.am'
+         - '**.m4'
+         - '**.ac'
+         - '**.pl'
+         - '**.py'
+         - '**.asn1'
+         - '**.opt'
+         - '**/COPYING'
+         - '**/INSTALL'
+         - '**/README*'
+         - '.github/workflows/ubsan.yml'
+         - '!appveyor.yml'
+         - '!.travis.yml'
+
+    pull_request:
+      paths:
+         - '!docs/**'
+         - '!**.md'
+         - '!**.[1-9]'
+         - '**.[chly]'
+         - '**.hin'
+         - '**.in'
+         - '**.am'
+         - '**.m4'
+         - '**.ac'
+         - '**.pl'
+         - '**.py'
+         - '**.asn1'
+         - '**.opt'
+         - '**/COPYING'
+         - '**/INSTALL'
+         - '**/README*'
+         - '.github/workflows/ubsan.yml'
+         - '!appveyor.yml'
+         - '!.travis.yml'
+
+jobs:
+    unix:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [linux-clang, linux-gcc]
+                include:
+                    - name: linux-clang
+                      os: ubuntu-18.04
+                      compiler: clang
+                      cflags: '-fsanitize=undefined'
+                      ldflags: ''
+                    - name: linux-gcc
+                      os: ubuntu-18.04
+                      compiler: gcc
+                      cflags: '-Wnonnull -fsanitize=undefined'
+                      ldflags: ''
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v1
+            - name: Install packages
+              if: startsWith(matrix.os, 'ubuntu')
+              run: |
+                sudo apt-get update -qq
+                sudo apt-get install -y bison comerr-dev flex doxygen
+                sudo apt-get install -y libcap-ng-dev libdb-dev libedit-dev libjson-perl
+                sudo apt-get install -y libldap2-dev libncurses5-dev libperl4-corelibs-perl
+                sudo apt-get install -y libsqlite3-dev libkeyutils-dev pkg-config python
+                sudo apt-get install -y ss-dev texinfo unzip netbase keyutils ldap-utils
+                sudo apt-get install -y gdb apport curl libmicrohttpd-dev jq valgrind
+                # Temporary workaround for:
+                # https://github.com/actions/virtual-environments/issues/3185
+                sudo hostname localhost
+            - name: Build
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                /bin/sh ./autogen.sh
+                mkdir build
+                cd build
+                ../configure --srcdir=`dirname "$PWD"` --enable-maintainer-mode --enable-developer --enable-dynamic --disable-static --with-ldap $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="${{ matrix.cflags }} -Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" LDFLAGS="${{ matrix.ldflags }}"
+                make -j4
+            - name: Test
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                cd build
+                ulimit -c unlimited
+                make check
+            - name: Make Install
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                cd build || true
+                make DESTDIR=/tmp/h5l install
+                cd /tmp/h5l
+                tar czf $HOME/heimdal-install-linux-${{ matrix.compiler }}.tgz .
+            - name: Core dump stacks
+              run: |
+                echo "thread apply all bt" > /tmp/x
+                find . -name core -print | while read core; do gdb -batch -x x `file "$core"|sed -e "s/^[^']*'//" -e "s/[ '].*$//"` "$core"; done
+                if [ "$(find . -name core -print | wc -l)" -gt 0 ]; then false; fi
+            - name: Test logs
+              run: |
+                find build -depth -name \*.trs | xargs grep -lw FAIL | sed -e 's/trs$/log/' | tar -czf $HOME/logs-linux-${{ matrix.compiler }}.tgz --verbatim-files-from --files-from -
+                find build -name \*.trs | xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
+            - name: Failed Test logs
+              if: ${{ failure() }}
+              run: |
+                find build -name \*.trs | xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
+            - name: All Test logs
+              if: true
+              run: |
+                find build -name \*.trs | sed -e 's/trs$/log/' | xargs cat
+            - name: Upload Logs Tarball
+              uses: actions/upload-artifact@v2
+              with:
+                name: Test Logs
+                path: '~/logs-linux-${{ matrix.compiler }}.tgz'

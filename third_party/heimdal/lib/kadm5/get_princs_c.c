@@ -131,6 +131,7 @@ kadm5_c_iter_principals(void *server_handle,
     int32_t tmp;
     krb5_data reply;
     size_t i;
+    int stop = 0;
 
     ret = _kadm5_connect(server_handle, 0 /* want_write */);
     if (ret)
@@ -188,7 +189,6 @@ kadm5_c_iter_principals(void *server_handle,
     if (tmp < 0) {
         size_t n = -tmp;
         int more = 1;
-        int stop = 0;
 
         /* The server supports online iteration, hooray! */
 
@@ -249,12 +249,6 @@ kadm5_c_iter_principals(void *server_handle,
                 }
                 free(princ);
             }
-
-            if (!more) {
-                if (ret == 0)
-                    ret = stop;
-                break;
-            }
         }
         /* Get the final result code */
         krb5_data_free(&reply);
@@ -293,10 +287,12 @@ kadm5_c_iter_principals(void *server_handle,
         }
     }
 
-  out:
+out:
     krb5_clear_error_message(context->context);
 
-  out_keep_error:
+out_keep_error:
+    if (stop)
+	ret = stop;
     krb5_storage_free(sp);
     krb5_data_free(&reply);
     return ret;

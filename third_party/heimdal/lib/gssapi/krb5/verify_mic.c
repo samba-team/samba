@@ -109,7 +109,7 @@ verify_mic_des
   memset_s(&schedule, sizeof(schedule), 0, sizeof(schedule));
 
   seq = p;
-  _gsskrb5_decode_om_uint32(seq, &seq_number);
+  _gss_mg_decode_be_uint32(seq, &seq_number);
 
   if (context_handle->more_flags & LOCAL)
       cmp = ct_memcmp(&seq[4], "\xff\xff\xff\xff", 4);
@@ -211,7 +211,7 @@ retry:
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
   seq = seq_data.data;
-  _gsskrb5_decode_om_uint32(seq, &seq_number);
+  _gss_mg_decode_be_uint32(seq, &seq_number);
 
   if (context_handle->more_flags & LOCAL)
       cmp = ct_memcmp(&seq[4], "\xff\xff\xff\xff", 4);

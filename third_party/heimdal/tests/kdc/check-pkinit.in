@@ -64,6 +64,11 @@ kx509="${kx509} -c $cache"
 
 KRB5_CONFIG="${objdir}/krb5-pkinit.conf"
 export KRB5_CONFIG
+HEIM_PIDFILE_DIR=$objdir
+export HEIM_PIDFILE_DIR
+HEIM_IPC_DIR=$objdir
+export HEIM_IPC_DIR
+
 
 rsa=yes
 pkinit=no

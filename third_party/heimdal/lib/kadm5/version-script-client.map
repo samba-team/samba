@@ -61,6 +61,9 @@ HEIMDAL_KADM5_CLIENT_1.0 {
 		kadm5_store_principal_ent;
 		kadm5_store_principal_ent_mask;
 		kadm5_store_tl_data;
+		_kadm5_client_recv;
+		_kadm5_client_send;
+		_kadm5_connect;
 	local:
 		*;
 };

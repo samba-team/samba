@@ -300,7 +300,7 @@ krb5_storage_free(krb5_storage *sp)
 }
 
 /**
- * Copy the contnent of storage
+ * Copy the content of storage to a krb5_data.
  *
  * @param sp the storage to copy to a data
  * @param data the copied data, free with krb5_data_free()
@@ -329,9 +329,18 @@ krb5_storage_to_data(krb5_storage *sp, krb5_data *data)
 	return ret;
     }
     if (size) {
+        ssize_t bytes;
+
 	sp->seek(sp, 0, SEEK_SET);
-	sp->fetch(sp, data->data, data->length);
+	bytes = sp->fetch(sp, data->data, data->length);
 	sp->seek(sp, pos, SEEK_SET);
+
+        /* sp->fetch() really shouldn't fail */
+        if (bytes < 0)
+            return sp->eof_code;
+
+        /* Maybe the underlying file (or whatever) got truncated? */
+        data->length = bytes;
     }
     return 0;
 }
@@ -528,6 +537,8 @@ krb5_ret_int(krb5_storage *sp,
         ret = sp->fetch(sp, v, 1);
         if (ret < 0)
             return errno;
+        if (ret != 1)
+            return sp->eof_code;
 
         len = unpack_int_length(v);
         if (len < 1)
@@ -536,6 +547,8 @@ krb5_ret_int(krb5_storage *sp,
             ret = sp->fetch(sp, v + 1, len - 1);
             if (ret < 0)
                 return errno;
+            if (ret != len - 1)
+                return sp->eof_code;
         }
         ret = unpack_int(v, len, &w, &len);
         if (ret)
@@ -816,10 +829,10 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ret_int8(krb5_storage *sp,
 	      int8_t *value)
 {
-    int ret;
+    ssize_t ret;
 
     ret = sp->fetch(sp, value, sizeof(*value));
-    if (ret != sizeof(*value))
+    if (ret < 0 || (size_t)ret != sizeof(*value))
 	return (ret<0)?errno:sp->eof_code;
     return 0;
 }
@@ -937,7 +950,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ret_data(krb5_storage *sp,
 	      krb5_data *data)
 {
-    int ret;
+    krb5_error_code ret;
     int32_t size;
 
     ret = krb5_ret_int32(sp, &size);
@@ -950,8 +963,10 @@ krb5_ret_data(krb5_storage *sp,
     if (ret)
 	return ret;
     if (size) {
-	ret = sp->fetch(sp, data->data, size);
-	if(ret != size) {
+        ssize_t bytes;
+
+	bytes = sp->fetch(sp, data->data, size);
+	if (bytes < 0 || bytes != size) {
             krb5_data_free(data);
 	    return (ret < 0)? errno : sp->eof_code;
 	}
@@ -1869,7 +1884,8 @@ _krb5_ret_data_at_offset(krb5_storage *sp,
 	sp->seek(sp, offset, SEEK_SET);
 
 	size = sp->fetch(sp, data->data, length);
-	heim_assert(size == length, "incomplete buffer fetched");
+        if (size < 0 || (size_t)size != length)
+            return sp->eof_code;
     }
 
 cleanup:
@@ -1945,7 +1961,7 @@ _krb5_store_data_at_offset(krb5_storage *sp,
     krb5_ssize_t nbytes;
     off_t pos;
 
-    if (offset == (off_t)-1) {
+    if (offset == (size_t)-1) {
 	if (data == NULL || data->data == NULL) {
 	    offset = 0;
 	} else {
@@ -1953,7 +1969,7 @@ _krb5_store_data_at_offset(krb5_storage *sp,
 	    offset = sp->seek(sp, 0, SEEK_END);
 	    sp->seek(sp, pos, SEEK_SET);
 
-	    if (offset == (off_t)-1)
+	    if (offset == (size_t)-1)
 		return HEIM_ERR_NOT_SEEKABLE;
 	}
     }
@@ -2025,7 +2041,6 @@ _krb5_store_utf8_as_ucs2le_at_offset(krb5_storage *sp,
 	ucs2le = NULL;
 	ucs2le_size = 0;
 	offset = 0;
-	ret = 0;
     }
 
     {

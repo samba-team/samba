@@ -109,6 +109,7 @@ parse_enctypes(struct get_options *opt,
             free(s);
             return krb5_enomem(context);
         }
+	free(s);
         s = tmp;
     }
     ret = krb5_string_to_keysalts2(context, s, nks, ks);
@@ -165,7 +166,7 @@ kt_get(struct get_options *opt, int argc, char **argv)
 	kadm5_principal_ent_rec princ;
 	int mask = 0;
 	krb5_keyblock *keys;
-	int n_keys;
+	int n_keys = 0;
 	int created = 0;
 	krb5_keytab_entry entry;
 

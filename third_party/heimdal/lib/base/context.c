@@ -159,7 +159,7 @@ heim_get_debug_dest(heim_context context)
 heim_error_code
 heim_set_log_dest(heim_context context, heim_log_facility *fac)
 {
-    context->log_dest = fac;
+    context->log_dest = heim_log_ref(fac);
     return 0;
 }
 

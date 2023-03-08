@@ -529,6 +529,7 @@ ret_principal_ent(krb5_context contextp,
 	CHECK(krb5_ret_uint32(sp, &flag));
 	ent->key_data[i].key_data_type[1] = flag;
     }
+    CHECK(i == num);
 
     return 0;
 }

@@ -38,22 +38,25 @@ der_heim_oid_cmp(const heim_oid *p, const heim_oid *q)
 {
     int c;
 
-    if (p->length == q->length)
+    if (p->length == q->length) {
+        if (p->length == 0)
+            return 0;
         return memcmp(p->components,
                       q->components,
                       p->length * sizeof(*p->components));
+    }
     if (p->length < q->length) {
-        c = memcmp(p->components,
-                   q->components,
-                   p->length * sizeof(*p->components));
-        if (c == 0)
+        if (p->length == 0 ||
+            (c = memcmp(p->components,
+                        q->components,
+                        p->length * sizeof(*p->components))) == 0)
             return -1;
         return c;
     }
-    c = memcmp(p->components,
-               q->components,
-               q->length * sizeof(*p->components));
-    if (c == 0)
+    if (q->length == 0 ||
+        (c = memcmp(p->components,
+                    q->components,
+                    q->length * sizeof(*p->components))) == 0)
         return 1;
     return c;
 }
@@ -64,14 +67,19 @@ der_heim_octet_string_cmp(const heim_octet_string *p,
 {
     int c;
 
-    if (p->length == q->length)
+    if (p->length == q->length) {
+        if (p->length == 0)
+            return 0;
         return memcmp(p->data, q->data, p->length);
+    }
     if (p->length < q->length) {
-        if ((c = memcmp(p->data, q->data, p->length)) == 0)
+        if (p->length == 0 ||
+            (c = memcmp(p->data, q->data, p->length)) == 0)
             return -1;
         return c;
     }
-    if ((c = memcmp(p->data, q->data, q->length)) == 0)
+    if (q->length == 0 ||
+        (c = memcmp(p->data, q->data, q->length)) == 0)
         return 1;
     return c;
 }
@@ -94,22 +102,92 @@ int ASN1CALL
 der_heim_bit_string_cmp(const heim_bit_string *p,
 			const heim_bit_string *q)
 {
-    int r1, r2;
-    size_t i;
-    if (p->length != q->length)
-	return (int)(p->length - q->length);
-    i = memcmp(p->data, q->data, p->length / 8);
-    if (i)
-	return (int)i;
-    if ((p->length % 8) == 0)
-	return 0;
-    i = (p->length / 8);
-    r1 = ((unsigned char *)p->data)[i];
-    r2 = ((unsigned char *)q->data)[i];
-    i = 8 - (p->length % 8);
-    r1 = r1 >> i;
-    r2 = r2 >> i;
-    return r1 - r2;
+    unsigned char pc, qc;
+    size_t bits;
+    int c = 0;
+
+    /* Compare prefix */
+    if (p->length == 0 && q->length == 0)
+        return 0;
+    if (p->length > 7 && q->length > 7) {
+        if (p->length < q->length)
+            c = memcmp(p->data, q->data, p->length / 8);
+        else
+            c = memcmp(p->data, q->data, q->length / 8);
+    }
+    if (c)
+        return c;
+
+    /* Prefixes are equal, c == 0 */
+
+    if (p->length == q->length && p->length % 8 == 0)
+        return 0;
+    if (p->length == 0 && q->length)
+        return -1; /* No trailing bits of p to compare to corresponding bits of q */
+    if (q->length == 0 && p->length)
+        return  1; /* No trailing bits of q to compare to corresponding bits of p */
+
+    /* c == 0, lengths are not equal, both are at least 1 bit */
+    pc = ((unsigned char *)p->data)[p->length / 8];
+    qc = ((unsigned char *)q->data)[q->length / 8];
+    if (p->length < q->length)
+        bits = p->length % 8;
+    else
+        bits = q->length % 8;
+
+    if (bits > 0) {
+        if ((pc & 0x80) == 0 && (qc & 0x80) != 0)
+            return -1;
+        if ((pc & 0x80) != 0 && (qc & 0x80) == 0)
+            return 1;
+    }
+    if (bits > 1) {
+        if ((pc & 0x40) == 0 && (qc & 0x40) != 0)
+            return -1;
+        if ((pc & 0x40) != 0 && (qc & 0x40) == 0)
+            return 1;
+    }
+    if (bits > 2) {
+        if ((pc & 0x20) == 0 && (qc & 0x20) != 0)
+            return -1;
+        if ((pc & 0x20) != 0 && (qc & 0x20) == 0)
+            return 1;
+    }
+    if (bits > 3) {
+        if ((pc & 0x10) == 0 && (qc & 0x10) != 0)
+            return -1;
+        if ((pc & 0x10) != 0 && (qc & 0x10) == 0)
+            return 1;
+    }
+    if (bits > 4) {
+        if ((pc & 0x08) == 0 && (qc & 0x08) != 0)
+            return -1;
+        if ((pc & 0x08) != 0 && (qc & 0x08) == 0)
+            return 1;
+    }
+    if (bits > 5) {
+        if ((pc & 0x04) == 0 && (qc & 0x04) != 0)
+            return -1;
+        if ((pc & 0x04) != 0 && (qc & 0x04) == 0)
+            return 1;
+    }
+    if (bits > 6) {
+        if ((pc & 0x02) == 0 && (qc & 0x02) != 0)
+            return -1;
+        if ((pc & 0x02) != 0 && (qc & 0x02) == 0)
+            return 1;
+    }
+    /*
+     * `bits' can't be 8.
+     *
+     * All leading `bits' bits of the tail of the shorter of `p' or `q' are
+     * equal.
+     */
+    if (p->length < q->length)
+        return -1;
+    if (q->length < p->length)
+        return  1;
+    return 0;
 }
 
 int ASN1CALL
@@ -128,14 +206,19 @@ der_heim_bmp_string_cmp(const heim_bmp_string *p, const heim_bmp_string *q)
 {
     int c;
 
-    if (p->length == q->length)
+    if (p->length == q->length) {
+        if (p->length == 0)
+            return 0;
         return memcmp(p->data, q->data, p->length * sizeof(q->data[0]));
+    }
     if (p->length < q->length) {
-        if ((c = memcmp(p->data, q->data, p->length * sizeof(q->data[0]))) == 0)
+        if (p->length == 0 ||
+            (c = memcmp(p->data, q->data, p->length * sizeof(q->data[0]))) == 0)
             return -1;
         return c;
     }
-    if ((c = memcmp(p->data, q->data, q->length * sizeof(q->data[0]))) == 0)
+    if (q->length == 0 ||
+        (c = memcmp(p->data, q->data, q->length * sizeof(q->data[0]))) == 0)
         return 1;
     return c;
 }
@@ -146,14 +229,19 @@ der_heim_universal_string_cmp(const heim_universal_string *p,
 {
     int c;
 
-    if (p->length == q->length)
+    if (p->length == q->length) {
+        if (p->length == 0)
+            return 0;
         return memcmp(p->data, q->data, p->length * sizeof(q->data[0]));
+    }
     if (p->length < q->length) {
-        if ((c = memcmp(p->data, q->data, p->length * sizeof(q->data[0]))) == 0)
+        if (p->length == 0 ||
+            (c = memcmp(p->data, q->data, p->length * sizeof(q->data[0]))) == 0)
             return -1;
         return c;
     }
-    if ((c = memcmp(p->data, q->data, q->length * sizeof(q->data[0]))) == 0)
+    if (q->length == 0 ||
+        (c = memcmp(p->data, q->data, q->length * sizeof(q->data[0]))) == 0)
         return 1;
     return c;
 }

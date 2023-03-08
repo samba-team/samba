@@ -58,13 +58,7 @@ hex_encode(const void *data, size_t size, char **str)
     size_t i;
     char *p;
 
-    /* check for overflow */
-    if (size * 2 < size) {
-        *str = NULL;
-	return -1;
-    }
-
-    p = malloc(size * 2 + 1);
+    p = calloc(size + 1, 2);
     if (p == NULL) {
         *str = NULL;
 	return -1;

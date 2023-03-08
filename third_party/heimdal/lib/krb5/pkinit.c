@@ -1014,7 +1014,6 @@ get_reply_key(krb5_context context,
 static krb5_error_code
 pk_verify_host(krb5_context context,
 	       const char *realm,
-	       const krb5_krbhst_info *hi,
 	       struct krb5_pk_init_ctx_data *ctx,
 	       struct krb5_pk_cert *host)
 {
@@ -1092,18 +1091,6 @@ pk_verify_host(krb5_context context,
     if (ret)
 	return ret;
 
-    if (hi) {
-	ret = hx509_verify_hostname(context->hx509ctx, host->cert,
-				    ctx->require_hostname_match,
-				    HX509_HN_HOSTNAME,
-				    hi->hostname,
-				    hi->ai->ai_addr, hi->ai->ai_addrlen);
-
-	if (ret)
-	    krb5_set_error_message(context, ret,
-				   N_("Address mismatch in "
-				      "the KDC certificate", ""));
-    }
     return ret;
 }
 
@@ -1115,7 +1102,6 @@ pk_rd_pa_reply_enckey(krb5_context context,
 		      const char *realm,
 		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
-		      const krb5_krbhst_info *hi,
 	       	      unsigned nonce,
 		      const krb5_data *req_buffer,
 	       	      PA_DATA *pa,
@@ -1219,7 +1205,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     if (host) {
 	/* make sure that it is the kdc's certificate */
-	ret = pk_verify_host(context, realm, hi, ctx, host);
+	ret = pk_verify_host(context, realm, ctx, host);
 	if (ret)
 	    goto out;
 
@@ -1365,7 +1351,6 @@ pk_rd_pa_reply_dh(krb5_context context,
 		  const char *realm,
 		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
-		  const krb5_krbhst_info *hi,
 		  const DHNonce *c_n,
 		  const DHNonce *k_n,
                   unsigned nonce,
@@ -1407,7 +1392,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 
     if (host) {
 	/* make sure that it is the kdc's certificate */
-	ret = pk_verify_host(context, realm, hi, ctx, host);
+	ret = pk_verify_host(context, realm, ctx, host);
 	if (ret)
 	    goto out;
 
@@ -1567,7 +1552,6 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		     const char *realm,
 		     void *c,
 		     krb5_enctype etype,
-		     const krb5_krbhst_info *hi,
 		     unsigned nonce,
 		     const krb5_data *req_buffer,
 		     PA_DATA *pa,
@@ -1658,14 +1642,14 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 
 	switch (rep.element) {
 	case choice_PA_PK_AS_REP_dhInfo:
-	    ret = pk_rd_pa_reply_dh(context, &data, &oid, realm, ctx, etype, hi,
+	    ret = pk_rd_pa_reply_dh(context, &data, &oid, realm, ctx, etype,
 				    ctx->clientDHNonce,
 				    rep.u.dhInfo.serverDHNonce,
 				    nonce, pa, key);
 	    break;
 	case choice_PA_PK_AS_REP_encKeyPack:
 	    ret = pk_rd_pa_reply_enckey(context, PKINIT_27, &data, &oid, realm,
-					ctx, etype, hi, nonce, req_buffer, pa, key);
+					ctx, etype, nonce, req_buffer, pa, key);
 	    break;
 	default:
 	    krb5_abortx(context, "pk-init as-rep case not possible to happen");
@@ -1717,7 +1701,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    }
 
 	    ret = pk_rd_pa_reply_enckey(context, PKINIT_WIN2K, &data, &oid, realm,
-					ctx, etype, hi, nonce, req_buffer, pa, key);
+					ctx, etype, nonce, req_buffer, pa, key);
 	    der_free_octet_string(&data);
 	    der_free_oid(&oid);
 
@@ -2124,17 +2108,22 @@ _krb5_parse_moduli_line(krb5_context context,
     return ret;
 }
 
+static void
+free_moduli_element(struct krb5_dh_moduli *element)
+{
+    free(element->name);
+    der_free_heim_integer(&element->p);
+    der_free_heim_integer(&element->g);
+    der_free_heim_integer(&element->q);
+    free(element);
+}
+
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 _krb5_free_moduli(struct krb5_dh_moduli **moduli)
 {
     int i;
-    for (i = 0; moduli[i] != NULL; i++) {
-	free(moduli[i]->name);
-	der_free_heim_integer(&moduli[i]->p);
-	der_free_heim_integer(&moduli[i]->g);
-	der_free_heim_integer(&moduli[i]->q);
-	free(moduli[i]);
-    }
+    for (i = 0; moduli[i] != NULL; i++)
+	free_moduli_element(moduli[i]);
     free(moduli);
 }
 
@@ -2252,29 +2241,33 @@ _krb5_parse_moduli(krb5_context context, const char *file,
 	buf[strcspn(buf, "\n")] = '\0';
 	lineno++;
 
-	m2 = realloc(m, (n + 2) * sizeof(m[0]));
-	if (m2 == NULL) {
-	    _krb5_free_moduli(m);
-	    return krb5_enomem(context);
-	}
-	m = m2;
-
-	m[n] = NULL;
-
 	ret = _krb5_parse_moduli_line(context, file, lineno, buf,  &element);
-	if (ret) {
-	    _krb5_free_moduli(m);
-	    return ret;
-	}
+	if (ret)
+	    break;
 	if (element == NULL)
 	    continue;
+
+	m2 = realloc(m, (n + 2) * sizeof(m[0]));
+	if (m2 == NULL) {
+	    free_moduli_element(element);
+	    ret = krb5_enomem(context);
+	    break;
+	}
+	m = m2;
 
 	m[n] = element;
 	m[n + 1] = NULL;
 	n++;
     }
+    if (ret) {
+	_krb5_free_moduli(m);
+	m = NULL;
+    }
+
     *moduli = m;
-    return 0;
+
+    (void) fclose(f);
+    return ret;
 }
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL

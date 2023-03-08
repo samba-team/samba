@@ -91,14 +91,14 @@ keyBag_parser(hx509_context context,
     if (ret)
 	return ret;
 
-    _hx509_collector_private_key_add(context,
-				     c,
-				     &ki.privateKeyAlgorithm,
-				     NULL,
-				     &ki.privateKey,
-				     os);
+    ret = _hx509_collector_private_key_add(context,
+                                           c,
+                                           &ki.privateKeyAlgorithm,
+                                           NULL,
+                                           &ki.privateKey,
+                                           os);
     free_PKCS8PrivateKeyInfo(&ki);
-    return 0;
+    return ret;
 }
 
 static int
@@ -524,6 +524,14 @@ store_func(hx509_context context, void *d, hx509_cert c)
     PKCS12_CertBag cb;
     size_t size;
     int ret;
+
+    if ((ctx->store_flags & HX509_CERTS_STORE_NO_ROOTS)) {
+        int is_root = 0;
+
+        ret = hx509_cert_is_root(context, c, &is_root);
+        if (ret || is_root)
+            return ret;
+    }
 
     memset(&os, 0, sizeof(os));
     memset(&cb, 0, sizeof(cb));

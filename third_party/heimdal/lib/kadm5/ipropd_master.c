@@ -48,6 +48,7 @@ static int time_before_gone;
 
 const char *master_hostname;
 const char *pidfile_basename;
+static char hostname[128];
 
 static krb5_socket_t
 make_signal_socket (krb5_context context)
@@ -275,12 +276,11 @@ static void
 add_slave (krb5_context context, krb5_keytab keytab, slave **root,
 	   krb5_socket_t fd)
 {
-    krb5_principal server;
+    krb5_principal server = NULL;
     krb5_error_code ret;
     slave *s;
     socklen_t addr_len;
     krb5_ticket *ticket = NULL;
-    char hostname[128];
 
     s = calloc(1, sizeof(*s));
     if (s == NULL) {
@@ -301,10 +301,18 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root,
 	goto error;
     }
 
-    if (master_hostname)
-	strlcpy(hostname, master_hostname, sizeof(hostname));
-    else
-	gethostname(hostname, sizeof(hostname));
+    /*
+     * We write message lengths separately from the payload, and may do
+     * back-to-back small writes when flushing pending input and then a new
+     * update.  Avoid Nagle delays.
+     */
+#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+    {
+        int nodelay = 1;
+        (void) setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY,
+                          (void *)&nodelay, sizeof(nodelay));
+    }
+#endif
 
     ret = krb5_sname_to_principal (context, hostname, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &server);
@@ -331,26 +339,11 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root,
      */
     socket_set_nonblocking(s->fd, 1);
 
-    /*
-     * We write message lengths separately from the payload, and may do
-     * back-to-back small writes when flushing pending input and then a new
-     * update.  Avoid Nagle delays.
-     */
-#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
-    {
-        int nodelay = 1;
-        (void) setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY,
-                          (void *)&nodelay, sizeof(nodelay));
-    }
-#endif
-
-    krb5_free_principal (context, server);
     if (ret) {
 	krb5_warn (context, ret, "krb5_recvauth");
 	goto error;
     }
     ret = krb5_unparse_name (context, ticket->client, &s->name);
-    krb5_free_ticket (context, ticket);
     if (ret) {
 	krb5_warn (context, ret, "krb5_unparse_name");
 	goto error;
@@ -378,6 +371,8 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root,
 	}
     }
 
+    krb5_free_principal(context, server);
+    krb5_free_ticket(context, ticket);
     krb5_warnx (context, "connection from %s", s->name);
 
     s->version = 0;
@@ -389,6 +384,9 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root,
     return;
 error:
     remove_slave(context, s, root);
+    krb5_free_principal(context, server);
+    if (ticket)
+	krb5_free_ticket(context, ticket);
 }
 
 static int
@@ -1197,10 +1195,11 @@ send_diffs(kadm5_server_context *server_context, slave *s, int log_fd,
         krb5_err(context, IPROPD_RESTART_SLOW, ENOMEM, "out of memory");
         return;
     }
-    krb5_store_uint32(sp, FOR_YOU);
+    ret = krb5_store_uint32(sp, FOR_YOU);
     krb5_storage_free(sp);
 
-    ret = mk_priv_tail(context, s, &data);
+    if (ret == 0)
+	ret = mk_priv_tail(context, s, &data);
     krb5_data_free(&data);
     if (ret == 0) {
         /* Save the fast-path continuation */
@@ -1585,6 +1584,20 @@ main(int argc, char **argv)
     if (version_flag) {
 	print_version(NULL);
 	exit(0);
+    }
+
+    memset(hostname, 0, sizeof(hostname));
+
+    if (master_hostname &&
+        strlcpy(hostname, master_hostname,
+                sizeof(hostname)) >= sizeof(hostname)) {
+        errx(1, "Hostname too long: %s", master_hostname);
+    } else if (master_hostname == NULL) {
+        if (gethostname(hostname, sizeof(hostname)) == -1)
+            err(1, "Could not get hostname");
+        if (hostname[sizeof(hostname) - 1] != '\0')
+            errx(1, "Hostname too long %.*s...",
+                 (int)sizeof(hostname), hostname);
     }
 
     if (detach_from_console && daemon_child == -1)

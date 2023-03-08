@@ -33,48 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-krb5_error_code
-_gsskrb5_encode_om_uint32(OM_uint32 n, u_char *p)
-{
-  p[0] = (n >> 0)  & 0xFF;
-  p[1] = (n >> 8)  & 0xFF;
-  p[2] = (n >> 16) & 0xFF;
-  p[3] = (n >> 24) & 0xFF;
-  return 0;
-}
-
-krb5_error_code
-_gsskrb5_encode_be_om_uint32(OM_uint32 n, u_char *p)
-{
-  p[0] = (n >> 24) & 0xFF;
-  p[1] = (n >> 16) & 0xFF;
-  p[2] = (n >> 8)  & 0xFF;
-  p[3] = (n >> 0)  & 0xFF;
-  return 0;
-}
-
-krb5_error_code
-_gsskrb5_decode_om_uint32(const void *ptr, OM_uint32 *n)
-{
-    const u_char *p = ptr;
-    *n = ((uint32_t)p[0])
-       | ((uint32_t)p[1] << 8)
-       | ((uint32_t)p[2] << 16)
-       | ((uint32_t)p[3] << 24);
-    return 0;
-}
-
-krb5_error_code
-_gsskrb5_decode_be_om_uint32(const void *ptr, OM_uint32 *n)
-{
-    const u_char *p = ptr;
-    *n = ((uint32_t)p[0] <<24)
-       | ((uint32_t)p[1] << 16)
-       | ((uint32_t)p[2] << 8)
-       | ((uint32_t)p[3]);
-    return 0;
-}
-
 static krb5_error_code
 hash_input_chan_bindings (const gss_channel_bindings_t b,
 			  u_char *p)
@@ -85,23 +43,23 @@ hash_input_chan_bindings (const gss_channel_bindings_t b,
   ctx = EVP_MD_CTX_create();
   EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
 
-  _gsskrb5_encode_om_uint32 (b->initiator_addrtype, num);
+  _gss_mg_encode_le_uint32 (b->initiator_addrtype, num);
   EVP_DigestUpdate(ctx, num, sizeof(num));
-  _gsskrb5_encode_om_uint32 (b->initiator_address.length, num);
+  _gss_mg_encode_le_uint32 (b->initiator_address.length, num);
   EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->initiator_address.length)
       EVP_DigestUpdate(ctx,
 		       b->initiator_address.value,
 		       b->initiator_address.length);
-  _gsskrb5_encode_om_uint32 (b->acceptor_addrtype, num);
+  _gss_mg_encode_le_uint32 (b->acceptor_addrtype, num);
   EVP_DigestUpdate(ctx, num, sizeof(num));
-  _gsskrb5_encode_om_uint32 (b->acceptor_address.length, num);
+  _gss_mg_encode_le_uint32 (b->acceptor_address.length, num);
   EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->acceptor_address.length)
       EVP_DigestUpdate(ctx,
 		       b->acceptor_address.value,
 		       b->acceptor_address.length);
-  _gsskrb5_encode_om_uint32 (b->application_data.length, num);
+  _gss_mg_encode_le_uint32 (b->application_data.length, num);
   EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->application_data.length)
       EVP_DigestUpdate(ctx,
@@ -144,7 +102,7 @@ _gsskrb5_create_8003_checksum (
     }
 
     p = result->checksum.data;
-    _gsskrb5_encode_om_uint32 (16, p);
+    _gss_mg_encode_le_uint32 (16, p);
     p += 4;
     if (input_chan_bindings == GSS_C_NO_CHANNEL_BINDINGS) {
 	memset (p, 0, 16);
@@ -152,7 +110,7 @@ _gsskrb5_create_8003_checksum (
 	hash_input_chan_bindings (input_chan_bindings, p);
     }
     p += 16;
-    _gsskrb5_encode_om_uint32 (flags, p);
+    _gss_mg_encode_le_uint32 (flags, p);
     p += 4;
 
     if (fwd_data->length > 0 && (flags & GSS_C_DELEG_FLAG)) {
@@ -244,7 +202,7 @@ _gsskrb5_verify_8003_checksum(
     }
 
     p = cksum->checksum.data;
-    _gsskrb5_decode_om_uint32(p, &length);
+    _gss_mg_decode_le_uint32(p, &length);
     if(length != sizeof(hash)) {
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
@@ -273,7 +231,7 @@ _gsskrb5_verify_8003_checksum(
 
     p += sizeof(hash);
 
-    _gsskrb5_decode_om_uint32(p, flags);
+    _gss_mg_decode_le_uint32(p, flags);
     p += 4;
 
     if (cksum->checksum.length > 24 && (*flags & GSS_C_DELEG_FLAG)) {

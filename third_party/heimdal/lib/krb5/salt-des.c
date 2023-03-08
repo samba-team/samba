@@ -194,7 +194,8 @@ krb5_DES_string_to_key(krb5_context context,
     if (len > 0 && s == NULL)
 	return krb5_enomem(context);
     memcpy(s, password.data, password.length);
-    memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
+    if (salt.saltvalue.length)
+        memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
     DES_string_to_key_int(s, len, &tmp);
     key->keytype = enctype;
     krb5_data_copy(&key->keyvalue, tmp, sizeof(tmp));

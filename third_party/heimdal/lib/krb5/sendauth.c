@@ -109,6 +109,7 @@ krb5_sendauth(krb5_context context,
     ssize_t sret;
     krb5_boolean my_ccache = FALSE;
 
+    memset(&this_cred, 0, sizeof(this_cred));
     len = strlen(version) + 1;
     net_len = htonl(len);
     if (krb5_net_write (context, p_fd, &net_len, 4) != 4
@@ -159,7 +160,6 @@ krb5_sendauth(krb5_context context,
 	    }
 	    client = this_client;
 	}
-	memset(&this_cred, 0, sizeof(this_cred));
 	this_cred.client = client;
 	this_cred.server = server;
 	this_cred.times.endtime = 0;
@@ -184,13 +184,6 @@ krb5_sendauth(krb5_context context,
 				in_data,
 				creds,
 				&ap_req);
-
-    if (out_creds)
-	*out_creds = creds;
-    else
-	krb5_free_creds(context, creds);
-    if(this_client)
-	krb5_free_principal(context, this_client);
 
     if (ret)
 	return ret;
@@ -251,5 +244,14 @@ krb5_sendauth(krb5_context context,
 	if (rep_result == NULL)
 	    krb5_free_ap_rep_enc_part (context, ignore);
     }
-    return 0;
+
+    if (out_creds)
+        ret = krb5_copy_creds(context, creds, out_creds);
+
+    this_cred.server = NULL;
+    if (creds == &this_cred)
+        krb5_free_cred_contents(context, creds);
+    else if (creds)
+        krb5_free_creds(context, creds);
+    return ret;
 }

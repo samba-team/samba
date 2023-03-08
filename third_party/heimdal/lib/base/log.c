@@ -35,6 +35,7 @@
 
 #include "baselocl.h"
 #include "heim_threads.h"
+#include "heimbase-atomics.h"
 #include "heimbase.h"
 #include "heimbase-svc.h"
 #include <assert.h>
@@ -52,7 +53,7 @@ struct heim_log_facility_internal {
 
 struct heim_log_facility_s {
     char *program;
-    size_t refs;
+    heim_base_atomic(uint32_t) refs;
     size_t len;
     struct heim_log_facility_internal *val;
 };
@@ -156,7 +157,7 @@ heim_log_facility *
 heim_log_ref(heim_log_facility *fac)
 {
     if (fac)
-        fac->refs++;
+        (void) heim_base_atomic_inc_32(&fac->refs);
     return fac;
 }
 
@@ -226,6 +227,8 @@ open_syslog(heim_context context,
                            close_syslog, sd);
     if (ret)
         free(sd);
+    else
+        sd = NULL;
     return ret;
 }
 
@@ -347,6 +350,7 @@ open_file(heim_context context, heim_log_facility *fac, int min, int max,
         free(fd);
     } else if (disp & FILEDISP_KEEPOPEN) {
         log_file(context, NULL, NULL, fd);
+        fd = NULL;
     }
     return ret;
 }
@@ -463,7 +467,7 @@ heim_closelog(heim_context context, heim_log_facility *fac)
 {
     int i;
 
-    if (!fac || --(fac->refs))
+    if (!fac || heim_base_atomic_dec_32(&fac->refs))
         return;
     for (i = 0; i < fac->len; i++)
         (*fac->val[i].close_func)(fac->val[i].data);

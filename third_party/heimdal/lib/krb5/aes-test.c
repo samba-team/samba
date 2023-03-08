@@ -328,7 +328,8 @@ krb_enc(krb5_context context,
     }
 
     if (decrypt.length != clear->length ||
-	memcmp(decrypt.data, clear->data, decrypt.length) != 0) {
+        (decrypt.length &&
+	 memcmp(decrypt.data, clear->data, decrypt.length) != 0)) {
 	krb5_warnx(context, "clear text not same");
 	return EINVAL;
     }
@@ -568,7 +569,8 @@ krb_enc_mit(krb5_context context,
 	return ret;
 
     if (decrypt.length != clear->length ||
-	memcmp(decrypt.data, clear->data, decrypt.length) != 0) {
+        (decrypt.length &&
+         memcmp(decrypt.data, clear->data, decrypt.length) != 0)) {
 	krb5_warnx(context, "clear text not same");
 	return EINVAL;
     }

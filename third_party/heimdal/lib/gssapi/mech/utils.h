@@ -36,6 +36,11 @@ OM_uint32 _gss_secure_release_buffer(OM_uint32 *minor_status,
 OM_uint32 _gss_secure_release_buffer_set(OM_uint32 *minor_status,
 					 gss_buffer_set_t *buffer_set);
 
+void _gss_mg_encode_le_uint64(uint64_t n, uint8_t *p);
+void _gss_mg_decode_le_uint64(const void *ptr, uint64_t *n);
+void _gss_mg_encode_be_uint64(uint64_t n, uint8_t *p);
+void _gss_mg_decode_be_uint64(const void *ptr, uint64_t *n);
+
 void _gss_mg_encode_le_uint32(uint32_t n, uint8_t *p);
 void _gss_mg_decode_le_uint32(const void *ptr, uint32_t *n);
 void _gss_mg_encode_be_uint32(uint32_t n, uint8_t *p);

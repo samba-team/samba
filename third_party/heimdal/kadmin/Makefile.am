@@ -69,6 +69,7 @@ LDADD_common = \
 	$(DB3LIB) $(DB1LIB) $(LMDBLIB) $(NDBMLIB)
 
 kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.la \
+	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
 	../lib/gssapi/libgssapi.la \
 	$(LDADD_common) \
 	$(LIB_pidfile) \

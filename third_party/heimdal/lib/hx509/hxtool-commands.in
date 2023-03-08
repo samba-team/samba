@@ -363,6 +363,21 @@ command = {
 		argument = "password"
 		help = "password, prompter, or environment"
 	}
+	option = {
+		long = "append"
+		type = "flag"
+		help = "append source to destination"
+	}
+	option = {
+		long = "root-certs"
+		type = "-flag"
+		help = "do not copy root certificates"
+	}
+	option = {
+		long = "private-keys"
+		type = "-flag"
+		help = "do not copy private keys"
+	}
 	min_args="2"
 	argument="in-certificates-1 ... out-certificate"
 	help = "Copy in certificates stores into out certificate store"

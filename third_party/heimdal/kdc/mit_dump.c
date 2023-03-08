@@ -104,7 +104,7 @@ my_fgetln(FILE *f, char **bufp, size_t *szp, size_t *lenp)
     size_t len;
     size_t sz = *szp;
     char *buf = *bufp;
-    char *p, *n;
+    char *n;
 
     if (!buf) {
         buf = malloc(sz ? sz : 8192);
@@ -115,7 +115,7 @@ my_fgetln(FILE *f, char **bufp, size_t *szp, size_t *lenp)
     }
 
     len = 0;
-    while ((p = fgets(&buf[len], sz-len, f)) != NULL) {
+    while (fgets(&buf[len], sz-len, f) != NULL) {
         len += strlen(&buf[len]);
         if (buf[len-1] == '\n')
             break;

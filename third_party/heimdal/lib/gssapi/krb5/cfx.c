@@ -276,11 +276,7 @@ _gk_verify_buffers(OM_uint32 *minor_status,
 	/*
 	 * In DCE style mode we reject having a padding or trailer buffer
 	 */
-	if (padding) {
-	    *minor_status = EINVAL;
-	    return GSS_S_FAILURE;
-	}
-	if (trailer) {
+	if (padding || trailer) {
 	    *minor_status = EINVAL;
 	    return GSS_S_FAILURE;
 	}
@@ -505,8 +501,8 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
     krb5_auth_con_getlocalseqnumber(context,
 				    ctx->auth_context,
 				    &seq_number);
-    _gsskrb5_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
-    _gsskrb5_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
+    _gss_mg_encode_be_uint32(0,          &token->SND_SEQ[0]);
+    _gss_mg_encode_be_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(context,
 				    ctx->auth_context,
 				    ++seq_number);
@@ -817,8 +813,8 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
     /*
      * Check sequence number
      */
-    _gsskrb5_decode_be_om_uint32(&token->SND_SEQ[0], &seq_number_hi);
-    _gsskrb5_decode_be_om_uint32(&token->SND_SEQ[4], &seq_number_lo);
+    _gss_mg_decode_be_uint32(&token->SND_SEQ[0], &seq_number_hi);
+    _gss_mg_decode_be_uint32(&token->SND_SEQ[4], &seq_number_lo);
     if (seq_number_hi) {
 	/* no support for 64-bit sequence numbers */
 	*minor_status = ERANGE;
@@ -1271,8 +1267,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     krb5_auth_con_getlocalseqnumber(context,
 				    ctx->auth_context,
 				    &seq_number);
-    _gsskrb5_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
-    _gsskrb5_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
+    _gss_mg_encode_be_uint32(0,          &token->SND_SEQ[0]);
+    _gss_mg_encode_be_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(context,
 				    ctx->auth_context,
 				    ++seq_number);
@@ -1458,8 +1454,8 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     /*
      * Check sequence number
      */
-    _gsskrb5_decode_be_om_uint32(&token->SND_SEQ[0], &seq_number_hi);
-    _gsskrb5_decode_be_om_uint32(&token->SND_SEQ[4], &seq_number_lo);
+    _gss_mg_decode_be_uint32(&token->SND_SEQ[0], &seq_number_hi);
+    _gss_mg_decode_be_uint32(&token->SND_SEQ[4], &seq_number_lo);
     if (seq_number_hi) {
 	/* no support for 64-bit sequence numbers */
 	*minor_status = ERANGE;
@@ -1623,7 +1619,10 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    memcpy(buf, message_buffer->value, message_buffer->length);
+    if (message_buffer->length)
+        memcpy(buf, message_buffer->value, message_buffer->length);
+    else
+        memset(buf, 0, len);
 
     token = (gss_cfx_mic_token)(buf + message_buffer->length);
     token->TOK_ID[0] = 0x04;
@@ -1639,8 +1638,8 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     krb5_auth_con_getlocalseqnumber(context,
 				    ctx->auth_context,
 				    &seq_number);
-    _gsskrb5_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
-    _gsskrb5_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
+    _gss_mg_encode_be_uint32(0,          &token->SND_SEQ[0]);
+    _gss_mg_encode_be_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(context,
 				    ctx->auth_context,
 				    ++seq_number);
@@ -1733,8 +1732,8 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     /*
      * Check sequence number
      */
-    _gsskrb5_decode_be_om_uint32(&token->SND_SEQ[0], &seq_number_hi);
-    _gsskrb5_decode_be_om_uint32(&token->SND_SEQ[4], &seq_number_lo);
+    _gss_mg_decode_be_uint32(&token->SND_SEQ[0], &seq_number_hi);
+    _gss_mg_decode_be_uint32(&token->SND_SEQ[4], &seq_number_lo);
     if (seq_number_hi) {
 	*minor_status = ERANGE;
 	return GSS_S_UNSEQ_TOKEN;
@@ -1773,7 +1772,8 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    memcpy(buf, message_buffer->value, message_buffer->length);
+    if (message_buffer->length)
+        memcpy(buf, message_buffer->value, message_buffer->length);
     memcpy(buf + message_buffer->length, token, sizeof(*token));
 
     ret = krb5_verify_checksum(context, ctx->crypto,

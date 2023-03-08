@@ -51,7 +51,6 @@
 #include <rc4.h>
 
 #include <sha.h>
-#include <md2.h>
 #include <md4.h>
 #include <md5.h>
 
@@ -401,28 +400,6 @@ EVP_hcrypto_md4(void)
     return &md4;
 }
 
-/**
- * The message digest MD2 - hcrypto
- *
- * @return the message digest type.
- *
- * @ingroup hcrypto_evp
- */
-
-const EVP_MD *
-EVP_hcrypto_md2(void)
-{
-    static const struct hc_evp_md md2 = {
-	16,
-	16,
-	sizeof(MD2_CTX),
-	(hc_evp_md_init)MD2_Init,
-	(hc_evp_md_update)MD2_Update,
-	(hc_evp_md_final)MD2_Final,
-	NULL
-    };
-    return &md2;
-}
 
 /*
  *

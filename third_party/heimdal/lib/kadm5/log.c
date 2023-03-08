@@ -843,19 +843,19 @@ kadm5_log_signal_master(kadm5_server_context *context)
 {
     kadm5_log_context *log_context = &context->log_context;
 #ifndef NO_UNIX_SOCKETS
-    sendto(log_context->socket_fd,
-	   (void *)&log_context->version,
-	   sizeof(log_context->version),
-	   0,
-	   (struct sockaddr *)&log_context->socket_name,
-	   sizeof(log_context->socket_name));
+    (void) sendto(log_context->socket_fd,
+                  (void *)&log_context->version,
+                  sizeof(log_context->version),
+                  0,
+                  (struct sockaddr *)&log_context->socket_name,
+                  sizeof(log_context->socket_name));
 #else
-    sendto(log_context->socket_fd,
-	   (void *)&log_context->version,
-	   sizeof(log_context->version),
-	   0,
-	   log_context->socket_info->ai_addr,
-	   log_context->socket_info->ai_addrlen);
+    (void) sendto(log_context->socket_fd,
+                  (void *)&log_context->version,
+                  sizeof(log_context->version),
+                  0,
+                  log_context->socket_info->ai_addr,
+                  log_context->socket_info->ai_addrlen);
 #endif
 }
 

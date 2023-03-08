@@ -32,6 +32,8 @@
  */
 
 #include "kadmin_locl.h"
+#include "heim_threads.h"
+#include "krb5-protos.h"
 
 static char *check_library  = NULL;
 static char *check_function = NULL;
@@ -39,6 +41,13 @@ static getarg_strings policy_libraries = { 0, NULL };
 static char *config_file;
 static char sHDB[] = "HDBGET:";
 static char *keytab_str = sHDB;
+#ifndef WIN32
+static char *fuzz_file;
+static char *fuzz_client_name;
+static char *fuzz_keytab_name;
+static char *fuzz_service_name;
+static char *fuzz_admin_server;
+#endif
 static int help_flag;
 static int version_flag;
 static int debug_flag;
@@ -88,6 +97,16 @@ static struct getargs args[] = {
 	"ports to listen to", "port" },
     {	"read-only",	0,	arg_flag,   &readonly_flag,
 	"read-only operations", NULL },
+#ifndef WIN32
+    {	"fuzz-file",	0,	arg_string, &fuzz_file,
+	"Kadmin RPC body for fuzzing", "FILE" },
+    {	"fuzz-client",	0,	arg_string, &fuzz_client_name,
+	"Client name for fuzzing", "PRINCIPAL" },
+    {	"fuzz-keytab",	0,	arg_string, &fuzz_keytab_name,
+	"Keytab for fuzzing", "KEYTAB" },
+    {	"fuzz-server",	0,	arg_string, &fuzz_admin_server,
+	"Name of kadmind self instance", "HOST:PORT" },
+#endif
     {	"help",		'h',	arg_flag,   &help_flag, NULL, NULL },
     {	"version",	'v',	arg_flag,   &version_flag, NULL, NULL }
 };
@@ -102,6 +121,8 @@ usage(int ret)
     arg_printusage (args, num_args, NULL, "");
     exit (ret);
 }
+
+static void *fuzz_thread(void *);
 
 int
 main(int argc, char **argv)
@@ -220,7 +241,78 @@ main(int argc, char **argv)
     if(realm)
 	krb5_set_default_realm(context, realm); /* XXX */
 
+#ifndef WIN32
+    if (fuzz_file) {
+	HEIMDAL_THREAD_ID tid;
+
+	if (fuzz_admin_server == NULL)
+	    errx(1, "If --fuzz-file is given then --fuzz-server must be too");
+	HEIMDAL_THREAD_create(&tid, fuzz_thread, NULL);
+    }
+#endif
+
     kadmind_loop(context, keytab, sfd, readonly_flag);
 
     return 0;
 }
+
+#ifndef WIN32
+static void *
+fuzz_thread(void *arg)
+{
+    kadm5_config_params conf;
+    krb5_error_code ret;
+    krb5_context context2;
+    krb5_storage *sp;
+    krb5_data reply;
+    void *server_handle = NULL;
+    int fd;
+
+    memset(&conf, 0, sizeof(conf));
+    conf.admin_server = fuzz_admin_server;
+
+    fd = open(fuzz_file, O_RDONLY);
+    if (fd < 0)
+	err(1, "Could not open fuzz file %s", fuzz_file);
+    sp = krb5_storage_from_fd(fd);
+    if (sp == NULL)
+	err(1, "Could not read fuzz file %s", fuzz_file);
+    (void) close(fd);
+
+    ret = krb5_init_context(&context2);
+    if (ret)
+	errx(1, "Fuzzing failed: krb5_init_context failed: %d", ret);
+    ret = kadm5_c_init_with_skey_ctx(context2,
+                                     fuzz_client_name,
+                                     fuzz_keytab_name,
+				     fuzz_service_name ?
+					fuzz_service_name :
+					 KADM5_ADMIN_SERVICE,
+                                     &conf,
+                                     0, /* struct_version */
+                                     0, /* api_version */
+                                     &server_handle);
+    if (ret)
+	errx(1, "Fuzzing failed: kadm5_c_init_with_skey_ctx failed: %d", ret);
+
+    ret = _kadm5_connect(server_handle, 1 /* want_write */);
+    if (ret)
+	errx(1, "Fuzzing failed: Could not connect to self (%s): "
+             "_kadm5_connect failed: %d", fuzz_admin_server, ret);
+    ret = _kadm5_client_send(server_handle, sp);
+    if (ret)
+	errx(1, "Fuzzing failed: Could not send request to self (%s): "
+             "_kadm5_client_send failed: %d", fuzz_admin_server, ret);
+    krb5_data_zero(&reply);
+    ret = _kadm5_client_recv(server_handle, &reply);
+    if (ret)
+	errx(1, "Fuzzing failed: Could not read reply from self (%s): "
+             "_kadm5_client_recv failed: %d", fuzz_admin_server, ret);
+    krb5_storage_free(sp);
+    krb5_data_free(&reply);
+    fprintf(stderr, "Fuzzed with %s", fuzz_file);
+    exit(0);
+
+    return NULL;
+}
+#endif

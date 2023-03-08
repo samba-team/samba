@@ -87,10 +87,15 @@ static void
 release_all_mechs(gssspnego_ctx ctx, krb5_context context)
 {
     struct negoex_auth_mech *mech, *next;
+    struct negoex_auth_mech *prev = NULL;
 
     HEIM_TAILQ_FOREACH_SAFE(mech, &ctx->negoex_mechs, links, next) {
-	_gss_negoex_release_auth_mech(context, mech);
+	if (prev)
+	    _gss_negoex_release_auth_mech(context, prev);
+	prev = mech;
     }
+    if (prev)
+	_gss_negoex_release_auth_mech(context, mech);
 
     HEIM_TAILQ_INIT(&ctx->negoex_mechs);
 }
@@ -349,7 +354,7 @@ storage_from_memory(OM_uint32 *minor,
 		    krb5_storage **sp)
 {
     *sp = krb5_storage_from_readonly_mem(data, length);
-    if (sp == NULL) {
+    if (*sp == NULL) {
 	*minor = ENOMEM;
 	return GSS_S_FAILURE;
     }

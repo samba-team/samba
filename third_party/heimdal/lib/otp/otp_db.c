@@ -226,7 +226,7 @@ otp_put (void *v, OtpContext *ctx)
       return -1;
   strlcpy (p, ctx->seed, rem);
   p += len;
-  rem -= len;
+  /* rem -= len; */
   dat.dptr  = buf;
   dat.dsize = p - buf;
   return dbm_store (dbm, key, dat, DBM_REPLACE);

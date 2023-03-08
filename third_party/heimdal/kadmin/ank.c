@@ -182,8 +182,13 @@ add_one_principal(const char *name,
 	    krb5_free_keyblock_contents(context, &new_keys[i]);
 	if (n_keys > 0)
 	    free(new_keys);
-	kadm5_get_principal(kadm_handle, princ_ent, &princ,
-			    KADM5_PRINCIPAL | KADM5_KVNO | KADM5_ATTRIBUTES);
+        ret = kadm5_get_principal(kadm_handle, princ_ent, &princ,
+                                  KADM5_PRINCIPAL | KADM5_KVNO |
+                                      KADM5_ATTRIBUTES);
+        if (ret) {
+            krb5_warn(context, ret, "kadm5_get_principal");
+            goto out;
+        }
         krb5_free_principal(context, princ_ent);
         princ_ent = princ.principal;
 	princ.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);

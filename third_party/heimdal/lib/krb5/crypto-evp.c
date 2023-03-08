@@ -82,9 +82,11 @@ _krb5_evp_digest_iov(krb5_crypto crypto,
     if (ret != 1)
 	goto out;
 
+    /* Minimize EVP calls by coalescing contiguous iovec elements */
     for (i = 0; i < niov; i++) {
         if (_krb5_crypto_iov_should_sign(&iov[i])) {
-	    if ((char *)current.data + current.length == iov[i].data.data) {
+	    if (current.data &&
+                (char *)current.data + current.length == iov[i].data.data) {
 		current.length += iov[i].data.length;
 	    } else {
 		if (current.data) {
@@ -145,7 +147,8 @@ _krb5_evp_hmac_iov(krb5_context context,
 
     for (i = 0; i < niov; i++) {
         if (_krb5_crypto_iov_should_sign(&iov[i])) {
-	    if ((char *)current.data + current.length == iov[i].data.data) {
+	    if (current.data &&
+                (char *)current.data + current.length == iov[i].data.data) {
 		current.length += iov[i].data.length;
 	    } else {
 		if (current.data)

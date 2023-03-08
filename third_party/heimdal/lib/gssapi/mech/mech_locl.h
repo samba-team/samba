@@ -42,6 +42,7 @@
 #include <ctype.h>
 
 #include <heimbase.h>
+#include "heimbase-atomics.h"
 
 #include <gssapi_asn1.h>
 #include <der.h>

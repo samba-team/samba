@@ -93,7 +93,6 @@ INCFILES=\
 	$(SDKINCDIR)\hcrypto\evp-hcrypto.h \
 	$(SDKINCDIR)\hcrypto\evp.h \
 	$(SDKINCDIR)\hcrypto\hmac.h \
-	$(SDKINCDIR)\hcrypto\md2.h \
 	$(SDKINCDIR)\hcrypto\md4.h \
 	$(SDKINCDIR)\hcrypto\md5.h \
 	$(SDKINCDIR)\hcrypto\rand.h \

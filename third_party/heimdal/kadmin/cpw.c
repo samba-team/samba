@@ -156,8 +156,10 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
     int i;
     struct cpw_entry_data data;
     int num;
+    int16_t n_key_data = 0;
     krb5_key_data key_data[3];
 
+    memset(key_data, 0, sizeof(key_data));
     data.kadm_handle = NULL;
     ret = kadm5_dup_context(kadm_handle, &data.kadm_handle);
     if (ret)
@@ -214,6 +216,7 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 		     opt->key_string, error);
 	    return 1;
 	}
+        n_key_data = sizeof(key_data)/sizeof(key_data[0]);
 	data.key_data = key_data;
     }
 
@@ -222,10 +225,8 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 
     kadm5_destroy(data.kadm_handle);
 
-    if (data.key_data) {
-	int16_t dummy;
-	kadm5_free_key_data (kadm_handle, &dummy, key_data);
-    }
+    if (opt->key_string)
+        kadm5_free_key_data(kadm_handle, &n_key_data, key_data);
 
     return ret != 0;
 }

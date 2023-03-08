@@ -84,7 +84,8 @@ emem_store(krb5_storage *sp, const void *data, size_t size)
 	s->base = base;
 	s->ptr = (unsigned char*)base + off;
     }
-    memmove(s->ptr, data, size);
+    if (size)
+        memmove(s->ptr, data, size);
     sp->seek(sp, size, SEEK_CUR);
     return size;
 }
@@ -125,10 +126,17 @@ emem_trunc(krb5_storage *sp, off_t offset)
      * shrunk more then half of the current size, adjust buffer.
      */
     if (offset == 0) {
-	free(s->base);
-	s->size = 0;
-	s->base = NULL;
-	s->ptr = NULL;
+        if (s->size > 1024) {
+            void *base;
+
+            base = realloc(s->base, 1024);
+            if (base) {
+                s->base = base;
+                s->size = 1024;
+            }
+        }
+        s->len = 0;
+        s->ptr = s->base;
     } else if ((size_t)offset > s->size || (s->size / 2) > (size_t)offset) {
 	void *base;
 	size_t off;
@@ -209,6 +217,6 @@ krb5_storage_emem(void)
     sp->trunc = emem_trunc;
     sp->fsync = NULL;
     sp->free = emem_free;
-    sp->max_alloc = UINT_MAX/8;
+    sp->max_alloc = UINT32_MAX/64;
     return sp;
 }

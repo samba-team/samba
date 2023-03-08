@@ -851,9 +851,9 @@ krb5_error_code
 _krb5_fast_anon_pkinit_step(krb5_context context,
 			    krb5_init_creds_context ctx,
 			    struct krb5_fast_state *state,
-			    krb5_data *in,
+			    const krb5_data *in,
 			    krb5_data *out,
-			    krb5_krbhst_info *hostinfo,
+			    krb5_realm *out_realm,
 			    unsigned int *flags)
 {
     krb5_error_code ret;
@@ -863,6 +863,9 @@ _krb5_fast_anon_pkinit_step(krb5_context context,
     krb5_ccache ccache = NULL;
     krb5_creds cred;
     krb5_data data = { 3, rk_UNCONST("yes") };
+
+    krb5_data_zero(out);
+    *out_realm = NULL;
 
     memset(&cred, 0, sizeof(cred));
 
@@ -877,7 +880,7 @@ _krb5_fast_anon_pkinit_step(krb5_context context,
 	ret = krb5_make_principal(context, &principal, realm,
 				  KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, NULL);
 	if (ret)
-	    return ret;
+	    goto out;
 
 	ret = krb5_get_init_creds_opt_set_pkinit(context,
 						 state->anon_pkinit_opt,
@@ -899,7 +902,7 @@ _krb5_fast_anon_pkinit_step(krb5_context context,
 
     anon_pk_ctx = state->anon_pkinit_ctx;
 
-    ret = krb5_init_creds_step(context, anon_pk_ctx, in, out, hostinfo, flags);
+    ret = krb5_init_creds_step(context, anon_pk_ctx, in, out, out_realm, flags);
     if (ret ||
 	(*flags & KRB5_INIT_CREDS_STEP_FLAG_CONTINUE))
 	goto out;
@@ -949,8 +952,6 @@ _krb5_fast_anon_pkinit_step(krb5_context context,
 
     krb5_get_init_creds_opt_free(context, state->anon_pkinit_opt);
     state->anon_pkinit_opt = NULL;
-
-    *flags |= KRB5_INIT_CREDS_STEP_FLAG_CONTINUE;
 
 out:
     krb5_free_principal(context, principal);

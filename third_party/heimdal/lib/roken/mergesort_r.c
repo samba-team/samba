@@ -100,6 +100,7 @@ mergesort_r(void *base, size_t nmemb, size_t size, cmp_t cmp, void *thunk)
 	int big, iflag;
 	u_char *f1, *f2, *t, *b, *tp2, *q, *l1, *l2;
 	u_char *list2, *list1, *p2, *p, *last, **p1;
+	u_char *freeme = NULL;
 
 	if (size < PSIZE / 2) {		/* Pointers must fit into 2 * size. */
 		errno = EINVAL;
@@ -117,7 +118,7 @@ mergesort_r(void *base, size_t nmemb, size_t size, cmp_t cmp, void *thunk)
 	if (!(size % ISIZE) && !(((uintptr_t)base) % ISIZE))
 		iflag = 1;
 
-	if ((list2 = malloc(nmemb * size + PSIZE)) == NULL)
+	if ((list2 = freeme = malloc(nmemb * size + PSIZE)) == NULL)
 		return (-1);
 
 	list1 = base;
@@ -219,11 +220,9 @@ COPY:	    			b = t;
 	    list2 = tp2;
 	    last = list2 + nmemb*size;
 	}
-	if (base == list2) {
+	if (base == list2)
 		memmove(list2, list1, nmemb*size);
-		list2 = list1;
-	}
-	free(list2);
+	free(freeme);
 	return (0);
 }
 

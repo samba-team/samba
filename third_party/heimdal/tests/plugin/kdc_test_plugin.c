@@ -61,7 +61,8 @@ pac_verify(void *ctx,
 	   hdb_entry * client,
 	   hdb_entry * server,
 	   hdb_entry * krbtgt,
-	   krb5_pac *pac)
+	   krb5_pac pac,
+	   krb5_boolean *is_trusted)
 {
     krb5_context context = kdc_request_get_context((kdc_request_t)r);
     krb5_error_code ret;
@@ -73,12 +74,12 @@ pac_verify(void *ctx,
 
     krb5_warnx(context, "pac_verify");
 
-    ret = krb5_pac_get_buffer(context, *pac, 1, &data);
+    ret = krb5_pac_get_buffer(context, pac, 1, &data);
     if (ret)
 	return ret;
     krb5_data_free(&data);
 
-    ret = krb5_pac_get_kdc_checksum_info(context, *pac, &cstype, &rodc_id);
+    ret = krb5_pac_get_kdc_checksum_info(context, pac, &cstype, &rodc_id);
     if (ret)
 	return ret;
 
@@ -95,7 +96,7 @@ pac_verify(void *ctx,
     if (ret)
 	return ret;
 
-    return krb5_pac_verify(context, *pac, 0, NULL, NULL, &key->key);
+    return krb5_pac_verify(context, pac, 0, NULL, NULL, &key->key);
 }
 
 static void logit(const char *what, astgs_request_t r)
@@ -161,11 +162,12 @@ audit(void *ctx, astgs_request_t r)
 }
 
 static krb5plugin_kdc_ftable kdc_plugin = {
-    KRB5_PLUGIN_KDC_VERSION_10,
+    KRB5_PLUGIN_KDC_VERSION_11,
     init,
     fini,
     pac_generate,
     pac_verify,
+    NULL, /* pac_update */
     client_access,
     NULL, /* referral_policy */
     finalize_reply,

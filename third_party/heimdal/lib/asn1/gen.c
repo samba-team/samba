@@ -1118,6 +1118,7 @@ define_open_type(int level, const char *newbasename, const char *name, const cha
     /* Iterate objects in the object set, gen enum labels */
     fprintf(headerfile, "enum { choice_%s_iosnumunknown = 0,\n",
             newbasename);
+    fprintf(jsonfile, "\"opentypeids\":[");
     for (i = 0; i < nobjs; i++) {
         HEIM_TAILQ_FOREACH(of, objects[i]->objfields, objfields) {
             if (strcmp(of->name, typeidfield->name) != 0)
@@ -1127,8 +1128,11 @@ define_open_type(int level, const char *newbasename, const char *name, const cha
                      of->name, objects[i]->symbol->name);
             fprintf(headerfile, "choice_%s_iosnum_%s,\n",
                     newbasename, of->value->s->gen_name);
+            fprintf(jsonfile, "\"%s\"", of->value->s->gen_name);
+            fprintf(jsonfile, "%s", (i + 1) < nobjs ? "," : "");
         }
     }
+    fprintf(jsonfile, "],\n");
     fprintf(headerfile, "} element;\n");
 
     if (is_array_of_open_type)
@@ -1404,16 +1408,45 @@ define_type(int level, const char *name, const char *basename, Type *pt, Type *t
 	HEIM_TAILQ_FOREACH(m, t->members, members) {
 	    if (m->ellipsis) {
 		;
-	    } else if (m->optional) {
-		char *n = NULL;
+	    } else if (m->optional || m->defval) {
+		char *n = NULL, *defval = NULL;
+                const char *namep, *defvalp;
 
-		if (asprintf(&n, "*%s", m->gen_name) < 0 || n == NULL)
-		    errx(1, "malloc");
+                if (m->defval) {
+                    switch (m->defval->type) {
+                    case stringvalue:
+                        if (asprintf(&defval, "\"%s\"", m->defval->u.stringvalue) < 0 || defval == NULL)
+                            errx(1, "malloc");
+                        defvalp = defval;
+                        break;
+                    case integervalue:
+                        if (asprintf(&defval, "%lld", (long long)m->defval->u.integervalue) < 0 || defval == NULL)
+                            errx(1, "malloc");
+                        defvalp = defval;
+                        break;
+                    case booleanvalue:
+                        defvalp = m->defval->u.booleanvalue ? "true" : "false";
+                        break;
+                    default:
+                        abort();
+                    }
+                } else
+                    defvalp = "null";
+
+                if (m->optional) {
+		    if (asprintf(&n, "*%s", m->gen_name) < 0 || n == NULL)
+		        errx(1, "malloc");
+                    namep = n;
+                } else
+                    namep = m->gen_name;
+
                 fprintf(jsonfile, "{\"name\":\"%s\",\"gen_name\":\"%s\","
-                        "\"optional\":true,\"type\":", m->name, m->gen_name);
-		define_type(level + 1, n, newbasename, t, m->type, FALSE, FALSE);
+                        "\"optional\":%s,\"defval\":%s,\"type\":",
+                        m->name, m->gen_name, m->optional ? "true" : "false", defvalp);
+                define_type(level + 1, namep, newbasename, t, m->type, FALSE, FALSE);
                 fprintf(jsonfile, "}%s", last_member_p(m));
 		free (n);
+		free (defval);
 	    } else {
                 fprintf(jsonfile, "{\"name\":\"%s\",\"gen_name\":\"%s\","
                         "\"optional\":false,\"type\":", m->name, m->gen_name);
@@ -1498,6 +1531,9 @@ define_type(int level, const char *name, const char *basename, Type *pt, Type *t
         fprintf(jsonfile, "\"ttype\":\"TeletexString\",\"ctype\":\"heim_general_string\"");
 	break;
     case TTag:
+        if (t->implicit_choice) {
+            fprintf(jsonfile, "\"desired_tagenv\":\"IMPLICIT\",");
+        }
         fprintf(jsonfile, "\"tagclass\":\"%s\",\"tagvalue\":%d,\"tagenv\":\"%s\",\n",
                 tagclassnames[t->tag.tagclass], t->tag.tagvalue,
                 t->tag.tagenv == TE_EXPLICIT ? "EXPLICIT" : "IMPLICIT");

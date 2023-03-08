@@ -39,7 +39,7 @@ mp_err s_mp_prime_random_ex(mp_int *a, int t, int size, int flags, private_mp_pr
    bsize = (size>>3) + ((size&7)?1:0);
 
    /* we need a buffer of bsize bytes */
-   tmp = (unsigned char *) MP_MALLOC((size_t)bsize);
+   tmp = (unsigned char *) MP_CALLOC(1, (size_t)bsize);
    if (tmp == NULL) {
       return MP_MEM;
    }

@@ -56,7 +56,7 @@ free_type (const char *name, const Type *t, int preserve)
 	    free_primitive ("heim_integer", name);
 	    break;
 	}
-        /* HEIM_FALLTHROUGH; */
+        HEIM_FALLTHROUGH;
     case TBoolean:
     case TEnumerated :
     case TNull:
@@ -237,4 +237,3 @@ generate_type_free (const Symbol *s)
     }
     fprintf (codefile, "}\n\n");
 }
-

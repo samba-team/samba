@@ -819,7 +819,6 @@ PKCS11_CIPHER_ALGORITHM(rc4_40,
                         0,
                         EVP_CIPH_STREAM_CIPHER | EVP_CIPH_VARIABLE_LENGTH)
 
-PKCS11_MD_ALGORITHM(md2,    CKM_MD2,    16, 16)
 #ifdef CKM_MD4 /* non-standard extension */
 PKCS11_MD_ALGORITHM(md4,    CKM_MD4,    16, 64)
 #else

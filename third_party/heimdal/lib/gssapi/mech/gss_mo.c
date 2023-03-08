@@ -453,7 +453,7 @@ gss_indicate_mechs_by_attrs(OM_uint32 * minor_status,
     struct _gss_mech_switch *ms;
     gss_OID_set mech_attrs = GSS_C_NO_OID_SET;
     gss_OID_set known_mech_attrs = GSS_C_NO_OID_SET;
-    OM_uint32 major;
+    OM_uint32 major, tmp;
 
     major = gss_create_empty_oid_set(minor_status, mechs);
     if (GSS_ERROR(major))
@@ -464,7 +464,6 @@ gss_indicate_mechs_by_attrs(OM_uint32 * minor_status,
     HEIM_TAILQ_FOREACH(ms, &_gss_mechs, gm_link) {
 	gssapi_mech_interface mi = &ms->gm_mech;
         struct gss_mech_compat_desc_struct *gmc = mi->gm_compat;
-        OM_uint32 tmp;
 
         if (gmc && gmc->gmc_inquire_attrs_for_mech) {
             major = gmc->gmc_inquire_attrs_for_mech(minor_status,
@@ -492,6 +491,9 @@ gss_indicate_mechs_by_attrs(OM_uint32 * minor_status,
         if (GSS_ERROR(major))
             break;
     }
+
+    if (major)
+	gss_release_oid_set(&tmp, mechs);
 
     return major;
 }

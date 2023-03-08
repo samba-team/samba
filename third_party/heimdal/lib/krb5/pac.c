@@ -85,6 +85,8 @@ struct krb5_pac_data {
 
     /* PAC_ATTRIBUTES_INFO */
     uint64_t pac_attributes;
+
+    krb5_boolean is_trusted;
 };
 
 #define PAC_ALIGNMENT			8
@@ -657,6 +659,30 @@ krb5_pac_get_types(krb5_context context,
 
     return 0;
 }
+
+/*
+ *
+ */
+
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_pac_is_trusted(krb5_const_pac p)
+{
+    return p->is_trusted;
+}
+
+/*
+ *
+ */
+
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_pac_set_trusted(krb5_pac p, krb5_boolean is_trusted)
+{
+    p->is_trusted = is_trusted;
+}
+
+/*
+ *
+ */
 
 /*
  *

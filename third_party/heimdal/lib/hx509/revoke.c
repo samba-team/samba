@@ -600,18 +600,15 @@ load_crl(hx509_context context, const char *path, time_t *t, CRLCertificateList 
     FILE *f;
     int ret;
 
+    *t = 0;
     memset(crl, 0, sizeof(*crl));
-
-    ret = stat(path, &sb);
-    if (ret)
-	return errno;
-    
-    *t = sb.st_mtime;
 	
     if ((f = fopen(path, "r")) == NULL)
 	return errno;
 
     rk_cloexec_file(f);
+    if (fstat(fileno(f), &sb) == 0)
+	*t = sb.st_mtime;
 
     ret = hx509_pem_read(context, f, crl_parser, crl);
     fclose(f);

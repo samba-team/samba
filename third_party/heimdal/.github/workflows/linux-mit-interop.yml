@@ -1,0 +1,117 @@
+name: Linux Build
+
+on:
+    push:
+      branches:
+         - 'interop-mit*'
+
+jobs:
+    unix:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [linux-clang]
+                include:
+                    - name: linux-clang
+                      os: ubuntu-18.04
+                      compiler: clang
+                      cflags: ''
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v1
+            - name: Checkout MIT
+              uses: actions/checkout@v3
+              with:
+                repository: krb5/krb5
+                path: mit
+            - name: Install Heimdal dependencies
+              run: |
+                sudo apt-get update -qq
+                sudo apt-get install -y bison comerr-dev flex doxygen
+                sudo apt-get install -y libcap-ng-dev libdb-dev libedit-dev libjson-perl
+                sudo apt-get install -y libldap2-dev libncurses5-dev libperl4-corelibs-perl
+                sudo apt-get install -y libsqlite3-dev libkeyutils-dev pkg-config python
+                sudo apt-get install -y ss-dev texinfo unzip netbase keyutils ldap-utils
+                sudo apt-get install -y gdb apport curl libmicrohttpd-dev jq valgrind
+            - name: Install MIT Kerberos dependencies
+              run: |
+                sudo apt-get install -y gettext libcmocka-dev libresolv-wrapper libsasl2-dev libssl-dev python3-kdcproxy python3-pip slapd tcsh
+                pip3 install pyrad
+                # Temporary workaround for:
+                # https://github.com/actions/virtual-environments/issues/3185
+                sudo hostname localhost
+            - name: Build MIT
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                cd mit/src
+                autoreconf
+                ./configure --enable-maintainer-mode --with-ldap --with-crypto-impl=openssl --prefix=$HOME/mitkrb5
+                make -j4 $MAKEVARS
+                make install
+            - name: Build
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                /bin/sh ./autogen.sh
+                mkdir build
+                cd build
+                ../configure --srcdir=`dirname "$PWD"` --enable-maintainer-mode --enable-developer --with-ldap $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="${{ matrix.cflags }} -Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" --with-mitkrb5=$HOME/mitkrb5
+                make -j4
+            - name: Test
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                cd build
+                ulimit -c unlimited
+                make check
+            - name: Make Install
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                cd build || true
+                make DESTDIR=/tmp/h5l install
+                cd /tmp/h5l
+                tar czf $HOME/heimdal-install-linux-${{ matrix.compiler }}.tgz .
+            - name: Core dump stacks
+              run: |
+                echo "thread apply all bt" > /tmp/x
+                find . -name core -print | while read core; do gdb -batch -x x `file "$core"|sed -e "s/^[^']*'//" -e "s/[ '].*$//"` "$core"; done
+                if [ "$(find . -name core -print | wc -l)" -gt 0 ]; then false; fi
+            - name: Test logs
+              run: |
+                find build -depth -name \*.trs | xargs grep -lw FAIL | sed -e 's/trs$/log/' | tar -czf $HOME/logs-linux-${{ matrix.compiler }}.tgz --verbatim-files-from --files-from -
+                find build -name \*.trs | xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
+            - name: Failed Test logs
+              if: ${{ failure() }}
+              run: |
+                find build -name \*.trs | xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
+            - name: Make Dist
+              run: |
+                cd build
+                make dist
+                make distclean
+                if [ "$(git ls-files -o|grep -v ^build/ | wc -l)" -ne 0 ]; then
+                  echo "Files not removed by make distclean:"
+                  git ls-files -o|grep -v ^build/
+                fi
+            - name: Upload Install Tarball
+              uses: actions/upload-artifact@v2
+              with:
+                name: Install Tarball
+                path: '~/heimdal-install-linux-${{ matrix.compiler }}.tgz'
+            - name: Upload Dist Tarball
+              uses: actions/upload-artifact@v2
+              with:
+                name: Dist Tarball
+                path: 'build/heimdal-*.tar.gz'
+            - name: Upload Logs Tarball
+              uses: actions/upload-artifact@v2
+              with:
+                name: Test Logs
+                path: '~/logs-linux-${{ matrix.compiler }}.tgz'

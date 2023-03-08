@@ -171,9 +171,7 @@ done
 # Use MIT client tools
 #
 
-mit=/usr/local/mitkerberos/bin
-
-if [ -f ${mit}/kinit ] ; then
+if [ -n "$MITKRB5" -a -f "${MITKRB5}/kinit" ] ; then
    echo "Running MIT FAST tests"
 
     kinitpty=${objdir}/foopassword.rkpty
@@ -183,25 +181,25 @@ password foo\n
 EOF
 
    echo "Acquire host ticket"; > messages.log
-   ${rkpty} ${kinitpty} ${mit}/kinit -c ${acache} ${server}@${R} >/dev/null|| { exit 1; }
+   ${rkpty} ${kinitpty} "${MITKRB5}/kinit" -c ${acache} ${server}@${R} >/dev/null|| { exit 1; }
    (${aklist} | grep ${server} > /dev/null ) || { exit 1; }
 
    echo "Checking for FAST avail"; > messages.log
    ${aklist} --hidden | grep fast_avail > /dev/null || { exit 1; }
 
    echo "Using plain to get a initial ticket"; > messages.log
-   ${rkpty} ${kinitpty} ${mit}/kinit -c ${cache} foo@${R} >/dev/null|| { exit 1; }
+   ${rkpty} ${kinitpty} "${MITKRB5}/kinit" -c ${cache} foo@${R} >/dev/null|| { exit 1; }
    (${klist} | grep foo > /dev/null ) || { exit 1; }
 
    echo "Using FAST to get a initial ticket"; > messages.log
-   ${rkpty} ${kinitpty} ${mit}/kinit -c ${cache} -T ${acache} foo@${R} >/dev/null || { exit 1; }
+   ${rkpty} ${kinitpty} "${MITKRB5}/kinit" -c ${cache} -T ${acache} foo@${R} >/dev/null || { exit 1; }
    (${klist} | grep foo > /dev/null ) || { exit 1; }
 
    echo "Checking for FAST avail"; > messages.log
    ${klist} --hidden | grep fast_avail > /dev/null || { exit 1; }
 
    echo "Getting service ticket"; > messages.log
-   ${mit}/kvno -c ${cache} ${server}@${R} || { exit 1; }
+   "${MITKRB5}/kvno" -c ${cache} ${server}@${R} || { exit 1; }
 
 fi
 

@@ -162,6 +162,7 @@ typedef enum {
 
 /* flags to hx509_certs_store */
 #define HX509_CERTS_STORE_NO_PRIVATE_KEYS		0x04
+#define HX509_CERTS_STORE_NO_ROOTS			0x08
 
 
 /* flags to hx509_set_error_string */

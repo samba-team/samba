@@ -34,7 +34,6 @@
 #define HEIM_EVP_WINCNG_H 1
 
 /* symbol renaming */
-#define EVP_wincng_md2() EVP_wincng_md2()
 #define EVP_wincng_md4() EVP_wincng_md4()
 #define EVP_wincng_md5() EVP_wincng_md5()
 #define EVP_wincng_sha1() EVP_wincng_sha1()
@@ -64,7 +63,6 @@
 
 HC_CPP_BEGIN
 
-const EVP_MD * hc_EVP_wincng_md2(void);
 const EVP_MD * hc_EVP_wincng_md4(void);
 const EVP_MD * hc_EVP_wincng_md5(void);
 const EVP_MD * hc_EVP_wincng_sha1(void);

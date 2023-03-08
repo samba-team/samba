@@ -78,7 +78,7 @@ main(int argc, char **argv)
     krb5_socket_t sock = rk_INVALID_SOCKET;
     HDB *db = NULL;
     int optidx = 0;
-    char *tmp_db;
+    char *tmp_db = NULL;
     krb5_log_facility *fac;
     int nprincs;
 
@@ -208,20 +208,15 @@ main(int argc, char **argv)
 	    krb5_err(context, 1, ret, "krb5_kt_close");
     }
 
-    if (!print_dump) {
-	int aret;
+    if (asprintf(&tmp_db, "%s~", database) < 0 || tmp_db == NULL)
+	krb5_errx(context, 1, "hdb_create: out of memory");
 
-	aret = asprintf(&tmp_db, "%s~", database);
-	if (aret == -1)
-	    krb5_errx(context, 1, "hdb_create: out of memory");
-
-	ret = hdb_create(context, &db, tmp_db);
-	if (ret)
-	    krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
-	ret = db->hdb_open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
-	if (ret)
-	    krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
-    }
+    ret = hdb_create(context, &db, tmp_db);
+    if (ret)
+	krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
+    ret = db->hdb_open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
+    if (ret)
+	krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
 
     nprincs = 0;
     while (1){
@@ -243,14 +238,6 @@ main(int argc, char **argv)
 		data.data = NULL;
 		data.length = 0;
 		krb5_write_priv_message(context, ac, &sock, &data);
-	    }
-	    if (!print_dump) {
-		ret = db->hdb_close(context, db);
-		if (ret)
-		    krb5_err(context, 1, ret, "db_close");
-		ret = db->hdb_rename(context, db, database);
-		if (ret)
-		    krb5_err(context, 1, ret, "db_rename");
 	    }
 	    break;
 	}
@@ -283,6 +270,13 @@ main(int argc, char **argv)
     }
     if (!print_dump)
 	krb5_log(context, fac, 0, "Received %d principals", nprincs);
+
+    ret = db->hdb_close(context, db);
+    if (ret)
+	krb5_err(context, 1, ret, "db_close");
+    ret = db->hdb_rename(context, db, database);
+    if (ret)
+	krb5_err(context, 1, ret, "db_rename");
 
     if (inetd_flag == 0)
 	rk_closesocket(sock);

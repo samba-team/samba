@@ -893,7 +893,7 @@ parse_string(struct parse_ctx *ctx)
             continue; /* This will cause p0 to be realloc'ed */
         }
         p_save = ctx->p;
-        ctop = cbot = -3;
+        cbot = -3;
         ctop = unescape_unicode(ctx);
         if (ctop == -1 && strict)
             return parse_string_error(ctx, p0, "Invalid escaped Unicode");

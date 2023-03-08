@@ -6,8 +6,9 @@ WFLAGS += $(WFLAGS_ENUM_CONV)
 
 AM_CPPFLAGS += $(INCLUDE_libintl) $(INCLUDE_openssl_crypto) -I$(srcdir)/../lib/krb5
 
-lib_LTLIBRARIES = simple_csr_authorizer.la  ipc_csr_authorizer.la \
-		  libkdc.la negotiate_token_validator.la
+lib_LTLIBRARIES = ipc_csr_authorizer.la \
+		  negotiate_token_validator.la \
+		  libkdc.la
 
 if HAVE_CJWT
 lib_LTLIBRARIES += cjwt_token_validator.la
@@ -97,8 +98,6 @@ endif
 negotiate_token_validator_la_SOURCES = negotiate_token_validator.c
 negotiate_token_validator_la_LDFLAGS = -module $(LIB_gssapi)
 # CSR Authorizer plugins (for kdc/kx509 and bx509d)
-simple_csr_authorizer_la_SOURCES = simple_csr_authorizer.c
-simple_csr_authorizer_la_LDFLAGS = -module
 ipc_csr_authorizer_la_SOURCES = ipc_csr_authorizer.c
 ipc_csr_authorizer_la_LDFLAGS = -module	\
 				$(top_builddir)/lib/krb5/libkrb5.la \
@@ -155,7 +154,6 @@ ALL_OBJECTS += $(digest_service_OBJECTS)
 ALL_OBJECTS += $(bx509d_OBJECTS)
 ALL_OBJECTS += $(httpkadmind_OBJECTS)
 ALL_OBJECTS += $(cjwt_token_validator_la_OBJECTS)
-ALL_OBJECTS += $(simple_csr_authorizer_la_OBJECTS)
 ALL_OBJECTS += $(test_token_validator_OBJECTS)
 ALL_OBJECTS += $(test_csr_authorizer_OBJECTS)
 ALL_OBJECTS += $(test_kdc_ca_OBJECTS)
@@ -237,7 +235,12 @@ digest_service_LDADD = \
 kdc_replay_LDADD = libkdc.la $(LDADD) $(LIB_pidfile)
 kdc_tester_LDADD = libkdc.la $(LDADD) $(LIB_pidfile) $(LIB_heimbase)
 test_token_validator_LDADD = libkdc.la $(LDADD) $(LIB_pidfile) $(LIB_heimbase) $(LIB_gssapi)
-test_csr_authorizer_LDADD = libkdc.la $(top_builddir)/lib/hx509/libhx509.la $(LDADD) $(LIB_pidfile) $(LIB_heimbase)
+test_csr_authorizer_LDADD = libkdc.la \
+			    $(top_builddir)/lib/hx509/libhx509.la \
+			    $(LDADD) \
+			    $(LIB_pidfile) \
+			    $(LIB_heimbase) \
+			    $(top_builddir)/lib/ipc/libheim-ipcs.la
 test_kdc_ca_LDADD = libkdc.la $(top_builddir)/lib/hx509/libhx509.la $(LDADD) $(LIB_pidfile) $(LIB_heimbase)
 
 include_HEADERS = kdc.h $(srcdir)/kdc-protos.h

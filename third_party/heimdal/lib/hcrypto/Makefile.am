@@ -21,7 +21,7 @@ WFLAGS += $(WFLAGS_UNUSED_BUT_SET_VAR)
 lib_LTLIBRARIES = libhcrypto.la
 check_LTLIBRARIES = libhctest.la
 
-libhcrypto_la_LDFLAGS = -version-info 5:0:1
+libhcrypto_la_LDFLAGS = -version-info 5:0:0
 libhcrypto_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_dlopen) \
@@ -51,7 +51,6 @@ hcryptoinclude_HEADERS =	\
 	evp-openssl.h		\
 	evp-pkcs11.h		\
 	hmac.h			\
-	md2.h			\
 	md4.h			\
 	md5.h			\
 	pkcs12.h		\
@@ -160,8 +159,6 @@ libhcrypto_la_SOURCES =	\
 	hash.h		\
 	hmac.c		\
 	hmac.h		\
-	md2.c		\
-	md2.h		\
 	md4.c		\
 	md4.h		\
 	md5.c		\

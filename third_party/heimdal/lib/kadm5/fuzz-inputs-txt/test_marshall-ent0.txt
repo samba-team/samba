@@ -1,0 +1,101 @@
+# The body of this file contains a representation of a very small and contrived
+# kadm5_principal_ent_rec meant for fuzzing.  For fuzzing purposes, the smaller
+# the input, the better.
+#
+# To compile this input into a binary input file suitable for fuzzing:
+#
+#   cd build
+#   make -j4
+#   cd lib/kadm5
+#   make test_marshall
+#   ./test_marshall --in-text --byte-order-in=packed     \
+#                   --byte-order-out=packed              \
+#                   --out-hex                            \
+#                   kadm5_principal_ent_rec              \
+#                   ../../../lib/kadm5/fuzz-inputs-txt/test_marshall-ent0.txt
+#
+# then decode the hex (e.g., with xxd -r -p) and save it in a file.
+#
+# Currently we have that saved in lib/kadm5/fuzz-inputs-packed/.
+#
+# To build and fuzz with this input:
+#
+# cd build
+# AFL_HARDEN=1 make -j4 CC=afl-clang all
+# cd lib/kadm5
+# AFL_HARDEN=1 make -j4 CC=afl-clang test_marshall
+# rm -rf f; mkdir f
+# ../../libtool --mode=execute afl-fuzz \
+#               -i ../../../lib/kadm5/fuzz-inputs-packed \
+#               -o $PWD/f                                \
+#               ./test_marshall --byte-order-in=packed   \
+#                               --byte-order-out=packed  \
+#                               --out-hex                \
+#                               kadm5_principal_ent_rec '@@'
+#
+# A kadm5_principal_ent_rec follows:
+#
+# principal name
+int32 0
+int32 1
+string T
+string f
+# expiration
+int32 2
+# pw expiration
+int32 3
+# last pw change
+int32 4
+# max life
+int32 5
+# mod name optional (boolean, principal name)
+int32 1
+int32 0
+int32 1
+string T
+string b
+# mod time
+int32 6
+# attrs
+int32 7
+# kvno
+int32 8
+# master kvno
+int32 9
+# policy (boolean, string)
+int32 1
+string default
+# aux attrs
+int32 10
+# max renew life
+int32 11
+# last success
+int32 12
+# last fail
+int32 13
+# fail count
+int32 14
+# nkeydata
+int32 2
+# keydata[0] (ver, kvno, type, data, type, data)
+int32 15
+int32 16
+int32 17
+data 1122
+int32 18
+data 2233
+# keydata[1]
+int32 19
+int32 21
+int32 22
+data 3344
+int32 23
+data 4455
+# ntldata
+int32 2
+# ntldata[0] (type, data)
+int32 24
+data 5566
+# ntldata[1]
+int32 25
+data 6677

@@ -263,10 +263,15 @@ _gsskrb5_import_cred(OM_uint32 * minor_status,
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
+    *minor_status = krb5_cc_get_principal(context, id, &handle->principal);
+    if (*minor_status) {
+        free(handle);
+        krb5_cc_close(context, id);
+        return GSS_S_FAILURE;
+    }
 
     handle->usage = GSS_C_INITIATE;
     handle->destination_realm = NULL;
-    krb5_cc_get_principal(context, id, &handle->principal);
     handle->ccache = id;
     handle->cred_flags = flags;
 

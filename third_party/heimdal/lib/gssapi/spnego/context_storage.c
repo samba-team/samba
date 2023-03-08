@@ -55,6 +55,10 @@ ret_negoex_auth_mech(krb5_storage *sp, struct negoex_auth_mech **mechp);
 static krb5_error_code
 store_negoex_auth_mech(krb5_storage *sp, struct negoex_auth_mech *mech);
 
+#ifdef sc_flags
+#undef sc_flags
+#endif
+
 static uint16_t
 spnego_flags_to_int(struct spnego_flags flags);
 static struct spnego_flags
@@ -207,7 +211,9 @@ ret_spnego_context(krb5_storage *sp, gssspnego_ctx *ctxp)
             struct negoex_auth_mech *mech;
 
             CHECK(ret, ret_negoex_auth_mech(sp, &mech));
-            HEIM_TAILQ_INSERT_TAIL(&ctx->negoex_mechs, mech, links);
+            /* `mech' will not be NULL here, but quiet scan-build */
+            if (mech)
+                HEIM_TAILQ_INSERT_TAIL(&ctx->negoex_mechs, mech, links);
         }
     }
 
@@ -374,15 +380,15 @@ ret_negoex_auth_mech(krb5_storage *sp, struct negoex_auth_mech **mechp)
     if (snc_flags & SNC_METADATA)
         CHECK(major, _gss_mg_ret_buffer(&minor, sp, &mech->metadata));
 
-    *mechp = mech;
-
 fail:
     if (ret == 0 && GSS_ERROR(major))
         ret = minor ? minor : KRB5_BAD_MSIZE;
     if (ret)
         _gss_negoex_release_auth_mech(context, mech);
-    gss_release_buffer(&minor, &buf);
+    else
+        *mechp = mech;
 
+    gss_release_buffer(&minor, &buf);
     return ret;
 }
 

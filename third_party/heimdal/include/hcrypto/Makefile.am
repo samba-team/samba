@@ -16,7 +16,6 @@ CLEANFILES =		\
 	evp-hcrypto.h	\
 	evp-cc.h	\
 	hmac.h		\
-	md2.h		\
 	md4.h		\
 	md5.h		\
 	pkcs12.h	\

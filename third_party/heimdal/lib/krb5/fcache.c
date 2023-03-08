@@ -581,7 +581,7 @@ again:
      * locations on tmpfs "run" directories.  But we don't know here
      * that this is the case.  Thus: no hard-links, no symlinks.
      */
-    if (sb2.st_nlink != 1) {
+    if (sb2.st_nlink > 1) {
 	krb5_set_error_message(context, EPERM, N_("Refuses to open hardlinks for caches FILE:%s", ""), filename);
 	close(fd);
 	return EPERM;
