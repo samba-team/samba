@@ -1,17 +1,10 @@
-Release Announcements
-=====================
+                   ==============================
+                   Release Notes for Samba 4.18.0
+                           March 08, 2023
+                   ==============================
 
-This is the fourth release candidate of Samba 4.18.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.18 will be the next version of the Samba suite.
-
-
-UPGRADING
-=========
-
+This is the first stable release of the Samba 4.18 release series.
+Please read the release notes carefully before upgrading.
 
 NEW FEATURES/CHANGES
 ====================
@@ -137,6 +130,16 @@ smb.conf changes
   --------------                          -----------     -------
   acl_xattr:security_acl_name             New             security.NTACL
   server addresses                        New
+
+
+CHANGES SINCE 4.18.0rc4
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15314: streams_xattr is creating unexpected locks on folders.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15310: New samba-dcerpc architecture does not scale gracefully.
 
 
 CHANGES SINCE 4.18.0rc3
