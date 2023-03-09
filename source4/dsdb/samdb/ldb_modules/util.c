@@ -305,7 +305,7 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			   struct ldb_request *parent)
 {
 	struct ldb_message *msg = NULL;
-	const char *attrs[] = { NULL };
+	static const char * const attrs[] = { NULL };
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
 
@@ -332,7 +332,7 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct GUID *guid,
 			   struct ldb_request *parent)
 {
-	const char *attrs[] = { NULL };
+	static const char * const attrs[] = { NULL };
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	int ret;
@@ -721,7 +721,7 @@ int dsdb_check_samba_compatible_feature(struct ldb_module *module,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_result *res;
-	static const char *samba_dsdb_attrs[] = {
+	static const char * const samba_dsdb_attrs[] = {
 		SAMBA_COMPATIBLE_FEATURES_ATTR,
 		NULL
 	};
@@ -777,7 +777,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_featur
 	struct ldb_result *res;
 	struct ldb_dn *search_dn;
 	struct GUID search_guid;
-	const char *attrs[] = {"msDS-EnabledFeature", NULL};
+	static const char * const attrs[] = {"msDS-EnabledFeature", NULL};
 	int ret;
 	unsigned int i;
 	struct ldb_message_element *el;
@@ -802,7 +802,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_featur
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	if (res->msgs[0]->num_elements > 0) {
-		const char *attrs2[] = {"msDS-OptionalFeatureGUID", NULL};
+		static const char * const attrs2[] = {"msDS-OptionalFeatureGUID", NULL};
 
 		el = ldb_msg_find_element(res->msgs[0],"msDS-EnabledFeature");
 
@@ -1380,7 +1380,7 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	int ret;
 	struct ldb_dn *new_dn;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	static const char *attrs[] = { "dSHeuristics", NULL };
+	static const char * const attrs[] = { "dSHeuristics", NULL };
 	struct ldb_result *res;
 
 	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(ldb));
