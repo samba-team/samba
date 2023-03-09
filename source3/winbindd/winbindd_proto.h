@@ -714,7 +714,8 @@ NTSTATUS winbindd_show_sequence_recv(struct tevent_req *req,
 struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 const struct dom_sid *sid,
-					 enum lsa_SidType type,
+					 uint32_t num_sids,
+					 enum lsa_SidType *type,
 					 int max_depth);
 NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       struct db_context **members);

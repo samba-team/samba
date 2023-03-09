@@ -177,8 +177,12 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 	 * the "regular" case of a group type sid.
 	 */
 
-	subreq = wb_group_members_send(state, state->ev, &state->sid,
-				       state->type, state->max_nesting);
+	subreq = wb_group_members_send(state,
+				       state->ev,
+				       &state->sid,
+				       1,
+				       &state->type,
+				       state->max_nesting);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

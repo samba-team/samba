@@ -294,24 +294,27 @@ static void wb_group_members_done(struct tevent_req *subreq);
 struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 const struct dom_sid *sid,
-					 enum lsa_SidType type,
+					 uint32_t num_sids,
+					 enum lsa_SidType *type,
 					 int max_depth)
 {
 	struct tevent_req *req, *subreq = NULL;
 	struct wb_group_members_state *state;
 	NTSTATUS status;
 	struct dom_sid_buf buf;
+	uint32_t i;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_group_members_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	D_INFO("WB command group_members start.\n"
-	       "Looking up domain SID %s with SID type %d and max_depth %d.\n",
-	       dom_sid_str_buf(sid, &buf),
-	       type,
-	       max_depth);
+	D_INFO("WB command group_members start (max_depth=%d).\n", max_depth);
+	for (i = 0; i < num_sids; i++) {
+		D_INFO("Looking up members of group SID %s with SID type %d\n",
+		       dom_sid_str_buf(&sid[i], &buf),
+		       type[i]);
+	}
 
 	state->ev = ev;
 	state->depth = max_depth;
@@ -320,13 +323,16 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->groups = talloc(state, struct wbint_Principal);
+	state->groups = talloc_array(state, struct wbint_Principal, num_sids);
 	if (tevent_req_nomem(state->groups, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->groups->name = NULL;
-	sid_copy(&state->groups->sid, sid);
-	state->groups->type = type;
+
+	for (i = 0; i < num_sids; i++) {
+		state->groups[i].name = NULL;
+		sid_copy(&state->groups[i].sid, &sid[i]);
+		state->groups[i].type = type[i];
+	}
 
 	status = wb_group_members_next_subreq(state, state, &subreq);
 	if (tevent_req_nterror(req, status)) {
