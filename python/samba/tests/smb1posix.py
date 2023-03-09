@@ -19,6 +19,7 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import (ntstatus,NTSTATUSError)
 from samba.dcerpc import security as sec
 import samba.tests.libsmb
+import stat
 
 class Smb1PosixTests(samba.tests.libsmb.LibsmbTests):
 
@@ -46,6 +47,25 @@ class Smb1PosixTests(samba.tests.libsmb.LibsmbTests):
         self.assertFalse(conn.chkpath("Lower/second"))
         conn.rmdir("lower/second")
         conn.rmdir("lower")
+
+    def test_mknod(self):
+        """Test SMB1 posix mknod"""
+        conn = libsmb.Conn(
+            self.server_ip,
+            "posix_share",
+            self.lp,
+            self.creds,
+            force_smb1=True)
+        conn.smb1_posix()
+
+        def do_test(name, filetype):
+            conn.mknod(name, filetype | 0o755)
+            st = conn.smb1_stat(name)
+            self.assertEqual(st["mode"], filetype | 0o755)
+            conn.unlink(name)
+
+        do_test("fifo", stat.S_IFIFO)
+        do_test("sock", stat.S_IFSOCK)
 
 if __name__ == '__main__':
     import unittest

@@ -7,3 +7,10 @@
 # These fail because become_root() doesn't work in make test
 ^samba3.blackbox.dropbox.*
 ^samba3.raw.samba3hide.*
+
+# samba.tests.smb1posix.samba.tests.smb1posix.Smb1PosixTests.test_mknod
+# creates a socket and posix stat() gives an error because opening the
+# socket from filename_covert_dirfsp() returns ENXIO. With O_PATH
+# available this works fine. So for now restrict testing posix
+# extensions to environments where we have O_PATH around
+^samba.tests.smb1posix
