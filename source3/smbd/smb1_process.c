@@ -2400,8 +2400,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 	req.inbuf = inbuf;
 
 	DEBUG(10, ("smbecho handler got cmd %d (%s)\n", (int)req.cmd,
-		   smb_messages[req.cmd].name
-		   ? smb_messages[req.cmd].name : "unknown"));
+		   smb_fn_name(req.cmd)));
 
 	if (req.cmd != SMBecho) {
 		return false;
