@@ -50,6 +50,7 @@ import tempfile
 from collections import OrderedDict
 from samba.common import get_string
 from samba.netcmd import CommandError
+from samba import dsdb
 
 
 class DCJoinException(Exception):
@@ -937,6 +938,10 @@ class DCJoinContext(object):
         """Replicate the SAM."""
 
         ctx.logger.info("Starting replication")
+
+        # A global transaction is started so that linked attributes
+        # are applied at the very end, once all partitions are
+        # replicated.  This helps get all cross-partition links.
         ctx.local_samdb.transaction_start()
         try:
             source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
@@ -1057,7 +1062,21 @@ class DCJoinContext(object):
             ctx.local_samdb.transaction_cancel()
             raise
         else:
+
+            # This is a special case, we have completed a full
+            # replication so if a link comes to us that points to a
+            # deleted object, and we asked for all objects already, we
+            # just have to ignore it, the chance to re-try the
+            # replication with GET_TGT has long gone.  This can happen
+            # if the object is deleted and sent to us after the link
+            # was sent, as we are processing all links in the
+            # transaction_commit().
+            if not ctx.domain_replica_flags & drsuapi.DRSUAPI_DRS_CRITICAL_ONLY:
+                ctx.local_samdb.set_opaque_integer(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
+                                                   1)
             ctx.local_samdb.transaction_commit()
+            ctx.local_samdb.set_opaque_integer(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
+                                               0)
             ctx.logger.info("Committed SAM database")
 
         # A large replication may have caused our LDB connection to the
