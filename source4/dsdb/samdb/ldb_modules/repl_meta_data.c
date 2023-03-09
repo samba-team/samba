@@ -7533,6 +7533,16 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 						  source_dn,
 						  target_dn);
 	if (is_in_same_nc) {
+		/*
+		 * We allow the join.py code to point out that all
+		 * replication is completed, so failing now would just
+		 * trigger errors, rather than trigger a GET_TGT
+		 */
+		int *finished_full_join_ptr =
+			talloc_get_type(ldb_get_opaque(ldb,
+						       DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME),
+					int);
+		bool finished_full_join = finished_full_join_ptr && *finished_full_join_ptr;
 
 		/*
 		 * if the target is already be up-to-date there's no point in
@@ -7540,7 +7550,8 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 		 * on a one-way link was deleted. We ignore the link rather
 		 * than failing the replication cycle completely
 		 */
-		if (dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
+		if (finished_full_join
+		    || dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
 			*ignore_link = true;
 			DBG_WARNING("%s is %s "
 				    "but up to date. Ignoring link from %s\n",
