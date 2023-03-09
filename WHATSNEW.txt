@@ -1,4 +1,66 @@
                    ==============================
+                   Release Notes for Samba 4.17.6
+                           March 09, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.17 release series.
+
+
+Changes since 4.17.5
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15314: streams_xattr is creating unexpected locks on folders.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 10635: Use of the Azure AD Connect cloud sync tool is now supported for
+     password hash synchronisation, allowing Samba AD Domains to synchronise
+     passwords with this popular cloud environment.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15299: Spotlight doesn't work with latest macOS Ventura.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15310: New samba-dcerpc architecture does not scale gracefully.
+
+o  John Mulligan <jmulligan@redhat.com>
+   * BUG 15307: vfs_ceph incorrectly uses fsp_get_io_fd() instead of
+     fsp_get_pathref_fd() in close and fstat.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15293: With clustering enabled samba-bgqd can core dump due to use
+     after free.
+
+o  baixiangcpp <baixiangcpp@gmail.com>
+   * BUG 15311: fd_load() function implicitly closes the fd where it should not.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.17.5
                           January 26, 2023
                    ==============================
@@ -78,8 +140,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.17.4
                          December 15, 2022
