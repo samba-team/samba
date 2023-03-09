@@ -62,26 +62,24 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn);
 
 static const struct smbd_smb2_dispatch_table {
 	uint16_t opcode;
-	const char *name;
 	bool need_session;
 	bool need_tcon;
 	bool as_root;
 	uint16_t fileid_ofs;
 	bool modify;
 } smbd_smb2_table[] = {
-#define _OP(o) .opcode = o, .name = #o
 	{
-		_OP(SMB2_OP_NEGPROT),
+		.opcode = SMB2_OP_NEGPROT,
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_SESSSETUP),
+		.opcode = SMB2_OP_SESSSETUP,
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_LOGOFF),
+		.opcode = SMB2_OP_LOGOFF,
 		.need_session = true,
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_TCON),
+		.opcode = SMB2_OP_TCON,
 		.need_session = true,
 		/*
 		 * This call needs to be run as root.
@@ -92,75 +90,75 @@ static const struct smbd_smb2_dispatch_table {
 		 */
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_TDIS),
+		.opcode = SMB2_OP_TDIS,
 		.need_session = true,
 		.need_tcon = true,
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_CREATE),
+		.opcode = SMB2_OP_CREATE,
 		.need_session = true,
 		.need_tcon = true,
 	},{
-		_OP(SMB2_OP_CLOSE),
-		.need_session = true,
-		.need_tcon = true,
-		.fileid_ofs = 0x08,
-	},{
-		_OP(SMB2_OP_FLUSH),
+		.opcode = SMB2_OP_CLOSE,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
 	},{
-		_OP(SMB2_OP_READ),
+		.opcode = SMB2_OP_FLUSH,
+		.need_session = true,
+		.need_tcon = true,
+		.fileid_ofs = 0x08,
+	},{
+		.opcode = SMB2_OP_READ,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x10,
 	},{
-		_OP(SMB2_OP_WRITE),
+		.opcode = SMB2_OP_WRITE,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x10,
 		.modify = true,
 	},{
-		_OP(SMB2_OP_LOCK),
+		.opcode = SMB2_OP_LOCK,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
 	},{
-		_OP(SMB2_OP_IOCTL),
+		.opcode = SMB2_OP_IOCTL,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
 		.modify = true,
 	},{
-		_OP(SMB2_OP_CANCEL),
+		.opcode = SMB2_OP_CANCEL,
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_KEEPALIVE),
+		.opcode = SMB2_OP_KEEPALIVE,
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_QUERY_DIRECTORY),
+		.opcode = SMB2_OP_QUERY_DIRECTORY,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
 	},{
-		_OP(SMB2_OP_NOTIFY),
+		.opcode = SMB2_OP_NOTIFY,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
 	},{
-		_OP(SMB2_OP_GETINFO),
+		.opcode = SMB2_OP_GETINFO,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x18,
 	},{
-		_OP(SMB2_OP_SETINFO),
+		.opcode = SMB2_OP_SETINFO,
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x10,
 		.modify = true,
 	},{
-		_OP(SMB2_OP_BREAK),
+		.opcode = SMB2_OP_BREAK,
 		.need_session = true,
 		.need_tcon = true,
 		/*
@@ -174,10 +172,70 @@ static const struct smbd_smb2_dispatch_table {
 
 const char *smb2_opcode_name(uint16_t opcode)
 {
-	if (opcode >= ARRAY_SIZE(smbd_smb2_table)) {
-		return "Bad SMB2 opcode";
+	const char *result = "Bad SMB2 opcode";
+
+	switch (opcode) {
+	case SMB2_OP_NEGPROT:
+		result = "SMB2_OP_NEGPROT";
+		break;
+	case SMB2_OP_SESSSETUP:
+		result = "SMB2_OP_SESSSETUP";
+		break;
+	case SMB2_OP_LOGOFF:
+		result = "SMB2_OP_LOGOFF";
+		break;
+	case SMB2_OP_TCON:
+		result = "SMB2_OP_TCON";
+		break;
+	case SMB2_OP_TDIS:
+		result = "SMB2_OP_TDIS";
+		break;
+	case SMB2_OP_CREATE:
+		result = "SMB2_OP_CREATE";
+		break;
+	case SMB2_OP_CLOSE:
+		result = "SMB2_OP_CLOSE";
+		break;
+	case SMB2_OP_FLUSH:
+		result = "SMB2_OP_FLUSH";
+		break;
+	case SMB2_OP_READ:
+		result = "SMB2_OP_READ";
+		break;
+	case SMB2_OP_WRITE:
+		result = "SMB2_OP_WRITE";
+		break;
+	case SMB2_OP_LOCK:
+		result = "SMB2_OP_LOCK";
+		break;
+	case SMB2_OP_IOCTL:
+		result = "SMB2_OP_IOCTL";
+		break;
+	case SMB2_OP_CANCEL:
+		result = "SMB2_OP_CANCEL";
+		break;
+	case SMB2_OP_KEEPALIVE:
+		result = "SMB2_OP_KEEPALIVE";
+		break;
+	case SMB2_OP_QUERY_DIRECTORY:
+		result = "SMB2_OP_QUERY_DIRECTORY";
+		break;
+	case SMB2_OP_NOTIFY:
+		result = "SMB2_OP_NOTIFY";
+		break;
+	case SMB2_OP_GETINFO:
+		result = "SMB2_OP_GETINFO";
+		break;
+	case SMB2_OP_SETINFO:
+		result = "SMB2_OP_SETINFO";
+		break;
+	case SMB2_OP_BREAK:
+		result = "SMB2_OP_BREAK";
+		break;
+	default:
+		break;
 	}
-	return smbd_smb2_table[opcode].name;
+	return result;
 }
 
 static const struct smbd_smb2_dispatch_table *smbd_smb2_call(uint16_t opcode)
@@ -3195,7 +3253,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 * checks below.
 		 */
 		static const struct smbd_smb2_dispatch_table _root_ioctl_call = {
-			_OP(SMB2_OP_IOCTL),
+			.opcode = SMB2_OP_IOCTL,
 			.as_root = true,
 		};
 		const uint8_t *body = SMBD_SMB2_IN_BODY_PTR(req);
