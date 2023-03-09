@@ -385,31 +385,33 @@ bool json_is_invalid(const struct json_object *object)
  *        -1 the operation failed
  *
  */
-int json_add_int(struct json_object *object, const char *name, const int value)
+int json_add_int(struct json_object *object, const char *name, const json_int_t value)
 {
 	int ret = 0;
 	json_t *integer = NULL;
 
 	if (json_is_invalid(object)) {
-		DBG_ERR("Unable to add int [%s] value [%d], "
+		DBG_ERR("Unable to add int [%s] value [%jd], "
 			"target object is invalid\n",
 			name,
-			value);
+			(intmax_t)value);
 		return JSON_ERROR;
 	}
 
 	integer = json_integer(value);
 	if (integer == NULL) {
-		DBG_ERR("Unable to create integer value [%s] value [%d]\n",
+		DBG_ERR("Unable to create integer value [%s] value [%jd]\n",
 			name,
-			value);
+			(intmax_t)value);
 		return JSON_ERROR;
 	}
 
 	ret = json_object_set_new(object->root, name, integer);
 	if (ret != 0) {
 		json_decref(integer);
-		DBG_ERR("Unable to add int [%s] value [%d]\n", name, value);
+		DBG_ERR("Unable to add int [%s] value [%jd]\n",
+			name,
+			(intmax_t)value);
 	}
 	return ret;
 }

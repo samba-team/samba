@@ -58,7 +58,7 @@ _WARN_UNUSED_RESULT_ bool json_is_invalid(const struct json_object *object);
 
 _WARN_UNUSED_RESULT_ int json_add_int(struct json_object *object,
 				      const char *name,
-				      const int value);
+				      const json_int_t value);
 _WARN_UNUSED_RESULT_ int json_add_bool(struct json_object *object,
 				       const char *name,
 				       const bool value);
