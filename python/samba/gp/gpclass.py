@@ -50,6 +50,7 @@ from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHE
 from samba.dcerpc import security
 import samba.security
 from samba.dcerpc import netlogon
+from datetime import datetime
 
 
 try:
@@ -1215,3 +1216,69 @@ def drop_privileges(username, func, *args):
         raise exc
 
     return out
+
+def expand_pref_variables(text, gpt_path, lp, username=None):
+    utc_dt = datetime.utcnow()
+    dt = datetime.now()
+    cache_path = lp.cache_path(os.path.join('gpo_cache'))
+    # These are all the possible preference variables that MS supports. The
+    # variables set to 'None' here are currently unsupported by Samba, and will
+    # prevent the individual policy from applying.
+    variables = { 'AppDataDir': os.path.expanduser('~/.config'),
+                  'BinaryComputerSid': None,
+                  'BinaryUserSid': None,
+                  'CommonAppdataDir': None,
+                  'CommonDesktopDir': None,
+                  'CommonFavoritesDir': None,
+                  'CommonProgramsDir': None,
+                  'CommonStartUpDir': None,
+                  'ComputerName': lp.get('netbios name'),
+                  'CurrentProccessId': None,
+                  'CurrentThreadId': None,
+                  'DateTime': utc_dt.strftime('%Y-%m-%d %H:%M:%S UTC'),
+                  'DateTimeEx': str(utc_dt),
+                  'DesktopDir': os.path.expanduser('~/Desktop'),
+                  'DomainName': lp.get('realm'),
+                  'FavoritesDir': None,
+                  'GphPath': None,
+                  'GptPath': os.path.join(cache_path,
+                                          check_safe_path(gpt_path).upper()),
+                  'GroupPolicyVersion': None,
+                  'LastDriveMapped': None,
+                  'LastError': None,
+                  'LastErrorText': None,
+                  'LdapComputerSid': None,
+                  'LdapUserSid': None,
+                  'LocalTime': dt.strftime('%H:%M:%S'),
+                  'LocalTimeEx': dt.strftime('%H:%M:%S.%f'),
+                  'LogonDomain': lp.get('realm'),
+                  'LogonServer': None,
+                  'LogonUser': username,
+                  'LogonUserSid': None,
+                  'MacAddress': None,
+                  'NetPlacesDir': None,
+                  'OsVersion': None,
+                  'ProgramFilesDir': None,
+                  'ProgramsDir': None,
+                  'RecentDocumentsDir': None,
+                  'ResultCode': None,
+                  'ResultText': None,
+                  'ReversedComputerSid': None,
+                  'ReversedUserSid': None,
+                  'SendToDir': None,
+                  'StartMenuDir': None,
+                  'StartUpDir': None,
+                  'SystemDir': None,
+                  'SystemDrive': '/',
+                  'TempDir': '/tmp',
+                  'TimeStamp': str(datetime.timestamp(dt)),
+                  'TraceFile': None,
+                  'WindowsDir': None
+    }
+    for exp_var, val in variables.items():
+        exp_var_fmt = '%%%s%%' % exp_var
+        if exp_var_fmt in text:
+            if val is None:
+                raise NameError('Expansion variable %s is undefined' % exp_var)
+            text = text.replace(exp_var_fmt, val)
+    return text
