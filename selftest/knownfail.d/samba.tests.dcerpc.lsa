@@ -1,2 +1,0 @@
-^samba.tests.dcerpc.lsa.*.LsaTests.test_lsa_LookupSids2_invalid_sid
-^samba.tests.dcerpc.lsa.*.LsaTests.test_lsa_LookupSids2_some_not_mapped
