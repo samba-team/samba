@@ -121,7 +121,7 @@ class LDAPBase(object):
 
         for x in res:
             if "nETBIOSName" in x:
-                return x["nETBIOSName"][0]
+                return x["nETBIOSName"][0].decode()
 
     def object_exists(self, object_dn):
         res = None
