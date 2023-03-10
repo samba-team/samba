@@ -1,0 +1,11 @@
+#!/usr/bin/python3
+import optparse
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser('gio <cmd> <url> [options]')
+    parser.add_option('--unmount')
+
+    (opts, args) = parser.parse_args()
+
+    assert args[0] == 'mount', 'Unrecognized command `gio %s`' % args[0]
+    assert len(args) == 2, 'Missing url parameter'
