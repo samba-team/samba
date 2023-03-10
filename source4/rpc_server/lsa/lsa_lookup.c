@@ -35,6 +35,7 @@ struct dcesrv_lsa_TranslatedItem {
 	uint32_t flags;
 	uint32_t wb_idx;
 	bool done;
+	bool invalid_sid;
 	struct {
 		const char *domain; /* only $DOMAIN\ */
 		const char *namespace; /* $NAMESPACE\ or @$NAMESPACE */
@@ -380,6 +381,10 @@ static NTSTATUS dcesrv_lsa_LookupSids_base_call(struct dcesrv_lsa_LookupSids_bas
 			status = view->lookup_sid(state, item);
 			if (NT_STATUS_IS_OK(status)) {
 				item->done = true;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_SID)) {
+				item->done = true;
+				item->invalid_sid = true;
+				status = NT_STATUS_OK;
 			} else if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 				status = NT_STATUS_OK;
 			} else if (NT_STATUS_EQUAL(status, NT_STATUS_SOME_NOT_MAPPED)) {
@@ -438,6 +443,7 @@ static NTSTATUS dcesrv_lsa_LookupSids_base_finish(
 	struct dcesrv_lsa_LookupSids_base_state *state)
 {
 	struct lsa_LookupSids3 *r = &state->r;
+	uint32_t num_invalid_sid = 0;
 	uint32_t i;
 
 	for (i=0;i<r->in.sids->num_sids;i++) {
@@ -470,9 +476,18 @@ static NTSTATUS dcesrv_lsa_LookupSids_base_finish(
 		if (item->type != SID_NAME_UNKNOWN) {
 			(*r->out.count)++;
 		}
+		if (item->invalid_sid) {
+			num_invalid_sid++;
+		}
 	}
 
 	if (*r->out.count == 0) {
+		if (num_invalid_sid != 0) {
+			for (i=0;i<r->out.names->count;i++) {
+				r->out.names->names[i].name.string = NULL;
+			}
+			return NT_STATUS_INVALID_SID;
+		}
 		return NT_STATUS_NONE_MAPPED;
 	}
 	if (*r->out.count != r->in.sids->num_sids) {
