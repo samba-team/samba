@@ -305,30 +305,6 @@ objectClass: container
         if self.add_update_container:
             self.update_add(op)
 
-    def insert_ace_into_dacl(self, dn, existing_sddl, ace):
-        """
-        Add an ACE to a DACL, checking if it already exists with a simple string search.
-
-        :param dn: DN to modify
-        :param existing_sddl: existing sddl as string
-        :param ace: string ace to insert
-        :return: True if modified else False
-        """
-        index = existing_sddl.rfind("S:")
-        if index != -1:
-            new_sddl = existing_sddl[:index] + ace + existing_sddl[index:]
-        else:
-            # Insert it at the end if no S: section
-            new_sddl = existing_sddl + ace
-
-        if ace in existing_sddl:
-            return False
-
-        self.sd_utils.modify_sd_on_dn(dn, new_sddl,
-                                      controls=["sd_flags:1:%d" % SECINFO_DACL])
-
-        return True
-
     def insert_ace_into_string(self, dn, ace, attr):
         """
         Insert an ACE into a string attribute like defaultSecurityDescriptor.
@@ -391,15 +367,6 @@ objectClass: container
         self.insert_ace_into_string(schema_dn, ace,
                                     attr="defaultSecurityDescriptor")
 
-        res = self.samdb.search(expression="(objectClass=samDomain)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor, msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
-
         if self.add_update_container:
             self.update_add(op)
 
@@ -419,17 +386,6 @@ objectClass: container
         schema_dn = ldb.Dn(self.samdb, "CN=Domain-DNS,%s" % str(self.schema_dn))
         self.insert_ace_into_string(schema_dn, ace,
                                     attr="defaultSecurityDescriptor")
-
-        res = self.samdb.search(expression="(objectClass=domainDNS)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2",
-                                          "sd_flags:1:%d" % SECINFO_DACL])
-
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor, msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
 
         if self.add_update_container:
             self.update_add(op)
@@ -461,15 +417,6 @@ objectClass: container
         self.insert_ace_into_string(schema_dn, ace,
                                     attr='defaultSecurityDescriptor')
 
-        res = self.samdb.search(expression="(objectClass=samDomain)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor, msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
-
         if self.add_update_container:
             self.update_add(op)
 
@@ -484,16 +431,6 @@ objectClass: container
         schema_dn = ldb.Dn(self.samdb, "CN=Domain-DNS,%s" % str(self.schema_dn))
         self.insert_ace_into_string(schema_dn, ace,
                                     attr='defaultSecurityDescriptor')
-
-        res = self.samdb.search(expression="(objectClass=domainDNS)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor, msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
 
         if self.add_update_container:
             self.update_add(op)
