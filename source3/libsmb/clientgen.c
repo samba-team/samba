@@ -499,10 +499,11 @@ time_t cli_state_server_time(struct cli_state *cli)
 }
 
 struct cli_echo_state {
-	bool is_smb2;
+	uint8_t dummy;
 };
 
-static void cli_echo_done(struct tevent_req *subreq);
+static void cli_echo_done1(struct tevent_req *subreq);
+static void cli_echo_done2(struct tevent_req *subreq);
 
 struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli, uint16_t num_echos,
@@ -517,45 +518,35 @@ struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		state->is_smb2 = true;
-		subreq = smb2cli_echo_send(state, ev,
-					   cli->conn,
-					   cli->timeout);
-	} else {
-		subreq = smb1cli_echo_send(state, ev,
-					   cli->conn,
-					   cli->timeout,
-					   num_echos,
-					   data);
+		subreq = smb2cli_echo_send(
+			state, ev, cli->conn, cli->timeout);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_echo_done2, req);
+		return req;
 	}
+
+	subreq = smb1cli_echo_send(
+		state, ev, cli->conn, cli->timeout, num_echos, data);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_echo_done, req);
+	tevent_req_set_callback(subreq, cli_echo_done1, req);
 
 	return req;
 }
 
-static void cli_echo_done(struct tevent_req *subreq)
+static void cli_echo_done1(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct cli_echo_state *state = tevent_req_data(
-		req, struct cli_echo_state);
-	NTSTATUS status;
+	NTSTATUS status = smb1cli_echo_recv(subreq);
+	return tevent_req_simple_finish_ntstatus(subreq, status);
+}
 
-	if (state->is_smb2) {
-		status = smb2cli_echo_recv(subreq);
-	} else {
-		status = smb1cli_echo_recv(subreq);
-	}
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	tevent_req_done(req);
+static void cli_echo_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = smb2cli_echo_recv(subreq);
+	return tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 /**
