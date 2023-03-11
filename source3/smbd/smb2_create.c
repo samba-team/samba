@@ -1489,8 +1489,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	 * here we have op == result->op
 	 */
 
-	DEBUG(10, ("smbd_smb2_create_send: "
-		   "response construction phase\n"));
+	DBG_DEBUG("response construction phase\n");
 
 	state->out_file_attributes = fdos_mode(state->result);
 
