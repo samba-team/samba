@@ -414,6 +414,7 @@ static NTSTATUS security_descriptor_acl_del(struct security_descriptor *sd,
 				acl->aces = NULL;
 			}
 			found = true;
+			--i;
 		}
 	}
 
