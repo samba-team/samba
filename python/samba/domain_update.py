@@ -327,7 +327,7 @@ objectClass: msTPM-InformationObjectsContainer
             return
         self.raise_if_not_fix(op)
 
-        ace = "(OA;;CR;3e0f7e18-2c7a-4c10-ba82-4d926db99a3e;;%s-522)" % str(self.domain_sid)
+        ace = "(OA;;CR;3e0f7e18-2c7a-4c10-ba82-4d926db99a3e;;CN)"
 
         res = self.samdb.search(base=self.domain_dn,
                                 scope=ldb.SCOPE_BASE,
