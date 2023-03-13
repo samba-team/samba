@@ -245,6 +245,13 @@ class Ldb(_Ldb):
             elif changetype == ldb.CHANGETYPE_DELETE:
                 deldn = msg
                 self.delete(deldn, controls)
+            elif changetype == ldb.CHANGETYPE_MODRDN:
+                olddn = msg["olddn"]
+                deleteoldrdn = msg["deleteoldrdn"]
+                newdn = msg["newdn"]
+                if deleteoldrdn is False:
+                    raise ValueError("Invalid ldb.CHANGETYPE_MODRDN with deleteoldrdn=False")
+                self.rename(olddn, newdn, controls)
             else:
                 raise ValueError("Invalid ldb.CHANGETYPE_%u: %s" % (changetype, msg))
 
