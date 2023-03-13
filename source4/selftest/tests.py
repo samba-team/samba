@@ -817,7 +817,8 @@ else:
                       '$PASSWORD',
                       '$REALM',
                       '$DOMAIN',
-                      "$PREFIX"
+                      "$PREFIX",
+                      configuration
                   ])
 
 plantestsuite("samba4.blackbox.pkinit_simple",
