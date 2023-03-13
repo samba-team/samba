@@ -3,9 +3,9 @@
 # Copyright (C) 2006-2007 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2006-2008 Andrew Bartlett <abartlet@samba.org>
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 8 ]; then
 	cat <<EOF
-Usage: test_kinit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE SMBCLIENT
+Usage: test_kinit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE SMBCLIENT CONFIGURATION
 EOF
 	exit 1
 fi
@@ -18,7 +18,8 @@ DOMAIN=$5
 PREFIX=$6
 ENCTYPE=$7
 smbclient=$8
-shift 8
+CONFIGURATION=${9}
+shift 9
 failed=0
 
 samba4bindir="$BINDIR"
