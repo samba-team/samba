@@ -235,10 +235,15 @@ class Ldb(_Ldb):
         :param ldif: LDIF text.
         """
         for changetype, msg in self.parse_ldif(ldif):
+            if changetype == ldb.CHANGETYPE_NONE:
+                changetype = ldb.CHANGETYPE_MODIFY
+
             if changetype == ldb.CHANGETYPE_ADD:
                 self.add(msg, controls)
-            else:
+            elif changetype == ldb.CHANGETYPE_MODIFY:
                 self.modify(msg, controls)
+            else:
+                raise ValueError("Invalid ldb.CHANGETYPE_%u: %s" % (changetype, msg))
 
 
 def substitute_var(text, values):
