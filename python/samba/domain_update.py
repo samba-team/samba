@@ -298,16 +298,6 @@ objectClass: msTPM-InformationObjectsContainer
 
         ace = "(OA;CIIO;WP;ea1b7b93-5e48-46d5-bc6c-4df4fda78a35;bf967a86-0de6-11d0-a285-00aa003049e2;PS)"
 
-        res = self.samdb.search(expression="(objectClass=samDomain)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor,
-                                     msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
-
         res = self.samdb.search(expression="(objectClass=domainDNS)",
                                 attrs=["nTSecurityDescriptor"],
                                 controls=["search_options:1:2"])
@@ -353,16 +343,6 @@ objectClass: msTPM-InformationObjectsContainer
         self.raise_if_not_fix(op)
 
         ace = "(OA;CIOI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)"
-
-        res = self.samdb.search(expression="(objectClass=samDomain)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor,
-                                     msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
 
         res = self.samdb.search(expression="(objectClass=domainDNS)",
                                 attrs=["nTSecurityDescriptor"],
