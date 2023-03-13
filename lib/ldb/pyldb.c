@@ -1726,6 +1726,15 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 	case LDB_CHANGETYPE_MODIFY:
 		obj = PyLdbMessage_FromMessage(ldif->msg);
 		break;
+	case LDB_CHANGETYPE_DELETE:
+		if (ldif->msg->num_elements != 0) {
+			PyErr_Format(PyExc_ValueError,
+				     "CHANGETYPE(DELETE) with num_elements=%u",
+				     ldif->msg->num_elements);
+			return NULL;
+		}
+		obj = pyldb_Dn_FromDn(ldif->msg->dn);
+		break;
 	default:
 		PyErr_Format(PyExc_NotImplementedError,
 			     "Unsupported LDB_CHANGETYPE(%u)",
