@@ -207,65 +207,6 @@ objectClass: container
 """ % (update_map[op], str(self.domainupdate_container)))
         print("Applied Domain Update %u: %s" % (op, update_map[op]))
 
-    def insert_ace_into_dacl(self, dn, existing_sddl, ace):
-        """
-        Add an ACE to a DACL, checking if it already exists with a simple string search.
-
-        :param dn: DN to modify
-        :param existing_sddl: existing sddl as string
-        :param ace: string ace to insert
-        :return: True if modified else False
-        """
-        index = existing_sddl.rfind("S:")
-        if index != -1:
-            new_sddl = existing_sddl[:index] + ace + existing_sddl[index:]
-        else:
-            # Insert it at the end if no S: section
-            new_sddl = existing_sddl + ace
-
-        if ace in existing_sddl:
-            return False
-
-        self.sd_utils.modify_sd_on_dn(dn, new_sddl,
-                                      controls=["sd_flags:1:%d" % SECINFO_DACL])
-
-        return True
-
-    def insert_ace_into_string(self, dn, ace, attr):
-        """
-        Insert an ACE into a string attribute like defaultSecurityDescriptor.
-        This also checks if it already exists using a simple string search.
-
-        :param dn: DN to modify
-        :param ace: string ace to insert
-        :param attr: attribute to modify
-        :return: True if modified else False
-        """
-        msg = self.samdb.search(base=dn,
-                                attrs=[attr],
-                                controls=["search_options:1:2"])
-
-        assert len(msg) == 1
-        existing_sddl = msg[0][attr][0]
-        index = existing_sddl.rfind("S:")
-        if index != -1:
-            new_sddl = existing_sddl[:index] + ace + existing_sddl[index:]
-        else:
-            # Insert it at the end if no S: section
-            new_sddl = existing_sddl + ace
-
-        if ace in existing_sddl:
-            return False
-
-        m = ldb.Message()
-        m.dn = dn
-        m[attr] = ldb.MessageElement(new_sddl, ldb.FLAG_MOD_REPLACE,
-                                     attr)
-
-        self.samdb.modify(m, controls=["relax:0"])
-
-        return True
-
     def raise_if_not_fix(self, op):
         """
         Raises an exception if not set to fix.
@@ -298,15 +239,7 @@ objectClass: msTPM-InformationObjectsContainer
 
         ace = "(OA;CIIO;WP;ea1b7b93-5e48-46d5-bc6c-4df4fda78a35;bf967a86-0de6-11d0-a285-00aa003049e2;PS)"
 
-        res = self.samdb.search(expression="(objectClass=domainDNS)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor,
-                                     msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
+        self.sd_utils.update_aces_in_dacl(self.domain_dn, add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
@@ -319,18 +252,7 @@ objectClass: msTPM-InformationObjectsContainer
 
         ace = "(OA;;CR;3e0f7e18-2c7a-4c10-ba82-4d926db99a3e;;CN)"
 
-        res = self.samdb.search(base=self.domain_dn,
-                                scope=ldb.SCOPE_BASE,
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2",
-                                          "sd_flags:1:%d" % SECINFO_DACL])
-        msg = res[0]
-
-        existing_sd = ndr_unpack(security.descriptor,
-                                 msg["nTSecurityDescriptor"][0])
-        existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-        self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
+        self.sd_utils.update_aces_in_dacl(self.domain_dn, add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
@@ -344,16 +266,7 @@ objectClass: msTPM-InformationObjectsContainer
 
         ace = "(OA;CIOI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)"
 
-        res = self.samdb.search(expression="(objectClass=domainDNS)",
-                                attrs=["nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
-
-        for msg in res:
-            existing_sd = ndr_unpack(security.descriptor,
-                                     msg["nTSecurityDescriptor"][0])
-            existing_sddl = existing_sd.as_sddl(self.domain_sid)
-
-            self.insert_ace_into_dacl(msg.dn, existing_sddl, ace)
+        self.sd_utils.update_aces_in_dacl(self.domain_dn, add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
