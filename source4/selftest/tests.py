@@ -673,7 +673,8 @@ if have_heimdal_support:
                       '$REALM',
                       '$DOMAIN',
                       "$PREFIX",
-                      smbclient3
+                      smbclient3,
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.kpasswd",
                   "ad_dc:local",

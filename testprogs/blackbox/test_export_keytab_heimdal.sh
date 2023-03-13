@@ -3,9 +3,9 @@
 # Copyright (C) 2006-2007 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2006-2008 Andrew Bartlett <abartlet@samba.org>
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 7 ]; then
 	cat <<EOF
-Usage: test_extract_keytab.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT
+Usage: test_extract_keytab.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT CONFIGURATION
 EOF
 	exit 1
 fi
@@ -16,7 +16,8 @@ REALM=$3
 DOMAIN=$4
 PREFIX=$5
 smbclient=$6
-shift 6
+CONFIGURATION=${7}
+shift 7
 failed=0
 
 samba4bindir="$BINDIR"
@@ -65,26 +66,26 @@ unc="//$SERVER/tmp"
 
 testit "create user locally" $VALGRIND $PYTHON $newuser ${TEST_USER} $USERPASS "$@" || failed=$(expr $failed + 1)
 
-testit "dump keytab from domain" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab "$@" || failed=$(expr $failed + 1)
+testit "dump keytab from domain" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain" "$PREFIX/tmpkeytab" "$SERVER\\\$" 3
-testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab "$@" || failed=$(expr $failed + 1)
+testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab" "$SERVER\\\$" 3
 
 testit "dump keytab from domain for cifs principal" $VALGRIND $PYTHON \
-$samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "$@" || failed=$(expr $failed + 1)
+$samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain for cifs principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 3
 testit "dump keytab from domain for cifs principal (2nd time)" $VALGRIND $PYTHON \
-$samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "$@" || failed=$(expr $failed + 1)
+$samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain for cifs principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 3
 
-testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=${TEST_USER} "$@" || failed=$(expr $failed + 1)
+testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=${TEST_USER} "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-2" "${TEST_USER}@$REALM" 3
 testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON \
-$samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=${TEST_USER}@$REALM "$@" || failed=$(expr $failed + 1)
+$samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=${TEST_USER}@$REALM "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-2" "${TEST_USER}@$REALM" 3
 
 testit "dump keytab from domain for user principal with SPN as UPN" $VALGRIND \
-$PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-3 --principal=http/testupnspn.$DNSDOMAIN "$@" || failed=$(expr $failed + 1)
+$PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-3 --principal=http/testupnspn.$DNSDOMAIN "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-3" "http/testupnspn.$DNSDOMAIN@$REALM" 3
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
@@ -114,7 +115,7 @@ KRB5CCNAME="$PREFIX/tmpadminccache"
 samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 
-testit "del user" $VALGRIND $PYTHON $samba_tool user delete ${TEST_USER} -k yes "$@" || failed=$(expr $failed + 1)
+testit "del user" $VALGRIND $PYTHON $samba_tool user delete ${TEST_USER} -k yes "${CONFIGURATION}" "$@" || failed=$(expr $failed + 1)
 
 rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab $PREFIX/tmpkeytab-2 $PREFIX/tmpkeytab-2 $PREFIX/tmpkeytab-server $PREFIX/tmpspnupnccache
 exit $failed
