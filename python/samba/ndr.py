@@ -52,7 +52,7 @@ def ndr_unpack(cls, data, allow_remaining=False):
 def ndr_print(object):
     ndr_print = getattr(object, "__ndr_print__", None)
     if ndr_print is None:
-        raise TypeError("%r is not a NDR object" % object)
+        raise TypeError(f"{object} is not a NDR object")
     return ndr_print()
 
 
