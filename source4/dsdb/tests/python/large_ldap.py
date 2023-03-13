@@ -66,30 +66,32 @@ creds = credopts.get_credentials(lp)
 
 class ManyLDAPTest(samba.tests.TestCase):
 
-    def setUp(self):
-        super(ManyLDAPTest, self).setUp()
-        self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
-        self.base_dn = self.ldb.domain_dn()
-        self.OU_NAME_MANY="many_ou" + format(random.randint(0, 99999), "05")
-        self.ou_dn = ldb.Dn(self.ldb, "ou=" + self.OU_NAME_MANY + "," + str(self.base_dn))
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
+        cls.base_dn = self.ldb.domain_dn()
+        cls.OU_NAME_MANY="many_ou" + format(random.randint(0, 99999), "05")
+        cls.ou_dn = ldb.Dn(self.ldb, "ou=" + self.OU_NAME_MANY + "," + str(self.base_dn))
 
-        samba.tests.delete_force(self.ldb, self.ou_dn,
+        samba.tests.delete_force(cls.ldb, cls.ou_dn,
                                  controls=['tree_delete:1'])
 
-        self.ldb.add({
-            "dn": self.ou_dn,
+        cls.ldb.add({
+            "dn": cls.ou_dn,
             "objectclass": "organizationalUnit",
-            "ou": self.OU_NAME_MANY})
+            "ou": cls.OU_NAME_MANY})
 
         for x in range(2000):
-            ou_name = self.OU_NAME_MANY + str(x)
-            self.ldb.add({
-                "dn": "ou=" + ou_name + "," + str(self.ou_dn),
+            ou_name = cls.OU_NAME_MANY + str(x)
+            cls.ldb.add({
+                "dn": "ou=" + ou_name + "," + str(cls.ou_dn),
                 "objectclass": "organizationalUnit",
                 "ou": ou_name})
 
-    def tearDown(self):
-        samba.tests.delete_force(self.ldb, self.ou_dn,
+    @classmethod
+    def tearDownClass(cls):
+        samba.tests.delete_force(cls.ldb, self.ou_dn,
                                  controls=['tree_delete:1'])
 
     def test_unindexed_iterator_search(self):
@@ -117,34 +119,35 @@ class ManyLDAPTest(samba.tests.TestCase):
 
 class LargeLDAPTest(samba.tests.TestCase):
 
-    def setUp(self):
-        super(LargeLDAPTest, self).setUp()
-        self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
-        self.base_dn = self.ldb.domain_dn()
-        self.USER_NAME = "large_user" + format(random.randint(0, 99999), "05") + "-"
-        self.OU_NAME="large_user_ou" + format(random.randint(0, 99999), "05")
-        self.ou_dn = ldb.Dn(self.ldb, "ou=" + self.OU_NAME + "," + str(self.base_dn))
+    @classmethod
+    def setUpClass(cls):
+        cls.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
+        cls.base_dn = cls.ldb.domain_dn()
+        cls.USER_NAME = "large_user" + format(random.randint(0, 99999), "05") + "-"
+        cls.OU_NAME="large_user_ou" + format(random.randint(0, 99999), "05")
+        cls.ou_dn = ldb.Dn(cls.ldb, "ou=" + cls.OU_NAME + "," + str(cls.base_dn))
 
-        samba.tests.delete_force(self.ldb, self.ou_dn,
+        samba.tests.delete_force(cls.ldb, cls.ou_dn,
                                  controls=['tree_delete:1'])
 
-        self.ldb.add({
-            "dn": self.ou_dn,
+        cls.ldb.add({
+            "dn": cls.ou_dn,
             "objectclass": "organizationalUnit",
-            "ou": self.OU_NAME})
+            "ou": cls.OU_NAME})
 
         for x in range(200):
-            user_name = self.USER_NAME + format(x, "03")
-            self.ldb.add({
-                "dn": "cn=" + user_name + "," + str(self.ou_dn),
+            user_name = cls.USER_NAME + format(x, "03")
+            cls.ldb.add({
+                "dn": "cn=" + user_name + "," + str(cls.ou_dn),
                 "objectclass": "user",
                 "sAMAccountName": user_name,
                 "jpegPhoto": b'a' * (2 * 1024 * 1024)})
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         # Remake the connection for tear-down (old Samba drops the socket)
-        self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
-        samba.tests.delete_force(self.ldb, self.ou_dn,
+        cls.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
+        samba.tests.delete_force(cls.ldb, cls.ou_dn,
                                  controls=['tree_delete:1'])
 
     def test_unindexed_iterator_search(self):
