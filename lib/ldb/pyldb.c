@@ -1711,18 +1711,38 @@ static PyObject *py_ldb_schema_attribute_add(PyLdbObject *self, PyObject *args)
 
 static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 {
+	PyObject *obj = NULL;
+	PyObject *result = NULL;
+
 	if (ldif == NULL) {
 		Py_RETURN_NONE;
-	} else {
-	/* We don't want this attached to the 'ldb' any more */
-		PyObject *obj = PyLdbMessage_FromMessage(ldif->msg);
-		PyObject *result =
-			Py_BuildValue(discard_const_p(char, "(iO)"),
-				      ldif->changetype,
-				      obj);
-		Py_CLEAR(obj);
-		return result;
 	}
+
+	switch (ldif->changetype) {
+	case LDB_CHANGETYPE_NONE:
+	case LDB_CHANGETYPE_ADD:
+		obj = PyLdbMessage_FromMessage(ldif->msg);
+		break;
+	case LDB_CHANGETYPE_MODIFY:
+		obj = PyLdbMessage_FromMessage(ldif->msg);
+		break;
+	default:
+		PyErr_Format(PyExc_NotImplementedError,
+			     "Unsupported LDB_CHANGETYPE(%u)",
+			     ldif->changetype);
+		return NULL;
+	}
+
+	if (obj == NULL) {
+		return NULL;
+	}
+
+	/* We don't want this being attached * to the 'ldb' any more */
+	result = Py_BuildValue(discard_const_p(char, "(iO)"),
+			       ldif->changetype,
+			       obj);
+	Py_CLEAR(obj);
+	return result;
 }
 
 
@@ -1787,7 +1807,9 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 			PyObject *py_ldif = ldb_ldif_to_pyobject(ldif);
 			if (py_ldif == NULL) {
 				Py_CLEAR(list);
-				PyErr_BadArgument();
+				if (PyErr_Occurred() == NULL) {
+					PyErr_BadArgument();
+				}
 				talloc_free(mem_ctx);
 				return NULL;
 			}
