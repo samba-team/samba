@@ -804,7 +804,8 @@ else:
                       '$REALM',
                       '$DOMAIN',
                       "$PREFIX",
-                      smbclient3
+                      smbclient3,
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.kpasswd",
                   "ad_dc:local",
