@@ -1709,7 +1709,7 @@ static PyObject *py_ldb_schema_attribute_add(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
+static PyObject *ldb_ldif_to_pyobject(struct ldb_context *ldb, struct ldb_ldif *ldif)
 {
 	PyObject *obj = NULL;
 	PyObject *result = NULL;
@@ -1734,6 +1734,54 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 			return NULL;
 		}
 		obj = pyldb_Dn_FromDn(ldif->msg->dn);
+		break;
+	case LDB_CHANGETYPE_MODRDN: {
+		struct ldb_dn *olddn = NULL;
+		PyObject *olddn_obj = NULL;
+		bool deleteoldrdn = false;
+		PyObject *deleteoldrdn_obj = NULL;
+		struct ldb_dn *newdn = NULL;
+		PyObject *newdn_obj = NULL;
+		int ret;
+
+		ret = ldb_ldif_parse_modrdn(ldb,
+					    ldif,
+					    ldif,
+					    &olddn,
+					    NULL,
+					    &deleteoldrdn,
+					    NULL,
+					    &newdn);
+		if (ret != LDB_SUCCESS) {
+			PyErr_Format(PyExc_ValueError,
+				     "ldb_ldif_parse_modrdn() failed");
+			return NULL;
+		}
+
+		olddn_obj = pyldb_Dn_FromDn(olddn);
+		if (olddn_obj == NULL) {
+			return NULL;
+		}
+		if (deleteoldrdn) {
+			deleteoldrdn_obj = Py_True;
+		} else {
+			deleteoldrdn_obj = Py_False;
+		}
+		newdn_obj = pyldb_Dn_FromDn(newdn);
+		if (olddn_obj == NULL) {
+			deleteoldrdn_obj = NULL;
+			Py_CLEAR(olddn_obj);
+			return NULL;
+		}
+
+		obj = Py_BuildValue(discard_const_p(char, "{s:O,s:O,s:O}"),
+				    "olddn", olddn_obj,
+				    "deleteoldrdn", deleteoldrdn_obj,
+				    "newdn", newdn_obj);
+		Py_CLEAR(olddn_obj);
+		deleteoldrdn_obj = NULL;
+		Py_CLEAR(newdn_obj);
+		}
 		break;
 	default:
 		PyErr_Format(PyExc_NotImplementedError,
@@ -1813,7 +1861,7 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 		talloc_steal(mem_ctx, ldif);
 		if (ldif) {
 			int res = 0;
-			PyObject *py_ldif = ldb_ldif_to_pyobject(ldif);
+			PyObject *py_ldif = ldb_ldif_to_pyobject(self->ldb_ctx, ldif);
 			if (py_ldif == NULL) {
 				Py_CLEAR(list);
 				if (PyErr_Occurred() == NULL) {
@@ -4458,6 +4506,7 @@ static PyObject* module_init(void)
 	ADD_LDB_INT(CHANGETYPE_ADD);
 	ADD_LDB_INT(CHANGETYPE_DELETE);
 	ADD_LDB_INT(CHANGETYPE_MODIFY);
+	ADD_LDB_INT(CHANGETYPE_MODRDN);
 
 	ADD_LDB_INT(FLAG_MOD_ADD);
 	ADD_LDB_INT(FLAG_MOD_REPLACE);
