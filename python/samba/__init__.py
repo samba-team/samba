@@ -242,6 +242,9 @@ class Ldb(_Ldb):
                 self.add(msg, controls)
             elif changetype == ldb.CHANGETYPE_MODIFY:
                 self.modify(msg, controls)
+            elif changetype == ldb.CHANGETYPE_DELETE:
+                deldn = msg
+                self.delete(deldn, controls)
             else:
                 raise ValueError("Invalid ldb.CHANGETYPE_%u: %s" % (changetype, msg))
 
