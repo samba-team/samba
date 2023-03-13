@@ -2,9 +2,9 @@
 # Blackbox tests for kinit and kerberos integration with smbclient etc
 # Copyright (c) 2015-2016 Andreas Schneider <asn@samba.org>
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 8 ]; then
 	cat <<EOF
-Usage: test_kinit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLIENT
+Usage: test_kinit_mit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLIENT CONFIGURATION
 EOF
 	exit 1
 fi
@@ -16,7 +16,8 @@ REALM=$4
 DOMAIN=$5
 PREFIX=$6
 smbclient=$7
-shift 7
+CONFIGURATION="${8}"
+shift 8
 failed=0
 
 samba_bindir="$BINDIR"
