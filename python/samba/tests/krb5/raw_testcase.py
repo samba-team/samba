@@ -4721,7 +4721,7 @@ class RawKerberosTest(TestCaseInTempDir):
             full_checksum_key = checksum_keys[krb5pac.PAC_TYPE_FULL_CHECKSUM]
 
             pac_data = ndr_pack(pac)
-            full_checksum = full_checksum_key.make_checksum(
+            full_checksum = full_checksum_key.make_rodc_checksum(
                 KU_NON_KERB_CKSUM_SALT,
                 pac_data)
 
