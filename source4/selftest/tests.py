@@ -685,7 +685,8 @@ if have_heimdal_support:
                       '$PASSWORD',
                       '$REALM',
                       '$DOMAIN',
-                      "$PREFIX"
+                      "$PREFIX",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.krb5.s4u",
                   "fl2008r2dc:local",
