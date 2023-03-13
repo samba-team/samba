@@ -1,8 +1,8 @@
 #!/bin/sh
 # Blackbox test for wbinfo and rfc2307 mappings
-if [ $# -lt 4 ]; then
+if [ $# -lt 7 ]; then
 	cat <<EOF
-Usage: test_rfc2307_mapping.sh DOMAIN USERNAME PASSWORD SERVER UID_RFC2307TEST GID_RFC2307TEST
+Usage: test_rfc2307_mapping.sh DOMAIN USERNAME PASSWORD SERVER UID_RFC2307TEST GID_RFC2307TEST CONFIGURATION
 EOF
 	exit 1
 fi
@@ -13,6 +13,7 @@ PASSWORD=$3
 SERVER=$4
 UID_RFC2307TEST=$5
 GID_RFC2307TEST=$6
+CONFIGURATION=${7}
 shift 6
 
 failed=0
@@ -61,11 +62,13 @@ knownfail()
 
 # Create new testing account
 testit "user add" $PYTHON $samba_tool user create --given-name="rfc2307" \
-	--surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd "$@"
+	--surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd \
+	"${CONFIGURATION}" "$@"
 
 #test creation of six different groups
-testit "group add" $PYTHON $samba_tool group add $CONFIG \
-	--group-scope='Domain' --group-type='Security' rfc2307_test_group "$@"
+testit "group add" $PYTHON $samba_tool group add \
+	--group-scope='Domain' --group-type='Security' rfc2307_test_group \
+	"${CONFIGURATION}" "$@"
 
 # Create new testing group
 
@@ -184,7 +187,7 @@ else
 	echo "success: wbinfo -Y check for sane mapping"
 fi
 
-testit "group delete" $PYTHON $samba_tool group delete rfc2307_test_group "$@"
-testit "user delete" $PYTHON $samba_tool user delete rfc2307_test_user "$@"
+testit "group delete" $PYTHON $samba_tool group delete rfc2307_test_group "${CONFIGURATION}" "$@"
+testit "user delete" $PYTHON $samba_tool user delete rfc2307_test_user "${CONFIGURATION}" "$@"
 
 exit $failed
