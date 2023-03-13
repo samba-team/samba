@@ -317,7 +317,8 @@ objectClass: container
         """
         msg = self.samdb.search(base=dn,
                                 attrs=[attr],
-                                controls=["search_options:1:2"])
+                                controls=[],
+                                scope=ldb.SCOPE_BASE)
 
         assert len(msg) == 1
         existing_sddl = str(msg[0][attr][0])
@@ -336,7 +337,7 @@ objectClass: container
         m[attr] = ldb.MessageElement(new_sddl, ldb.FLAG_MOD_REPLACE,
                                      attr)
 
-        self.samdb.modify(m, controls=["relax:0"])
+        self.samdb.modify(m, controls=[])
 
         return True
 
