@@ -894,7 +894,8 @@ plantestsuite("samba4.blackbox.password_settings",
                   '$PASSWORD',
                   '$REALM',
                   '$DOMAIN',
-                  "$PREFIX"
+                  "$PREFIX",
+                  configuration
               ])
 plantestsuite("samba4.blackbox.trust_user_account", "fl2008r2dc:local", [os.path.join(bbdir, "test_trust_user_account.sh"), '$PREFIX', '$REALM', '$DOMAIN', '$TRUST_REALM', '$TRUST_DOMAIN'])
 plantestsuite("samba4.blackbox.cifsdd(ad_dc_ntvfs)", "ad_dc_ntvfs", [os.path.join(samba4srcdir, "client/tests/test_cifsdd.sh"), '$SERVER', '$USERNAME', '$PASSWORD', "$DOMAIN"])
