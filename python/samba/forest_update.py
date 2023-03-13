@@ -305,42 +305,6 @@ objectClass: container
         if self.add_update_container:
             self.update_add(op)
 
-    def insert_ace_into_string(self, dn, ace, attr):
-        """
-        Insert an ACE into a string attribute like defaultSecurityDescriptor.
-        This also checks if it already exists using a simple string search.
-
-        :param dn: DN to modify
-        :param ace: string ace to insert
-        :param attr: attribute to modify
-        :return: True if modified else False
-        """
-        msg = self.samdb.search(base=dn,
-                                attrs=[attr],
-                                controls=[],
-                                scope=ldb.SCOPE_BASE)
-
-        assert len(msg) == 1
-        existing_sddl = str(msg[0][attr][0])
-        index = existing_sddl.rfind("S:")
-        if index != -1:
-            new_sddl = existing_sddl[:index] + ace + existing_sddl[index:]
-        else:
-            # Insert it at the end if no S: section
-            new_sddl = existing_sddl + ace
-
-        if ace in existing_sddl:
-            return False
-
-        m = ldb.Message()
-        m.dn = dn
-        m[attr] = ldb.MessageElement(new_sddl, ldb.FLAG_MOD_REPLACE,
-                                     attr)
-
-        self.samdb.modify(m, controls=[])
-
-        return True
-
     def raise_if_not_fix(self, op):
         """
         Raises an exception if not set to fix.
@@ -365,8 +329,9 @@ objectClass: container
 
         schema_dn = ldb.Dn(self.samdb, "CN=Sam-Domain,%s" % str(self.schema_dn))
 
-        self.insert_ace_into_string(schema_dn, ace,
-                                    attr="defaultSecurityDescriptor")
+        self.sd_utils.update_aces_in_dacl(schema_dn,
+                                          sddl_attr="defaultSecurityDescriptor",
+                                          add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
@@ -385,8 +350,10 @@ objectClass: container
         ace = "(OA;CIIO;WP;ea1b7b93-5e48-46d5-bc6c-4df4fda78a35;bf967a86-0de6-11d0-a285-00aa003049e2;PS)"
 
         schema_dn = ldb.Dn(self.samdb, "CN=Domain-DNS,%s" % str(self.schema_dn))
-        self.insert_ace_into_string(schema_dn, ace,
-                                    attr="defaultSecurityDescriptor")
+
+        self.sd_utils.update_aces_in_dacl(schema_dn,
+                                          sddl_attr="defaultSecurityDescriptor",
+                                          add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
@@ -415,8 +382,10 @@ objectClass: container
         ace = "(OA;CIOI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)"
 
         schema_dn = ldb.Dn(self.samdb, "CN=Sam-Domain,%s" % str(self.schema_dn))
-        self.insert_ace_into_string(schema_dn, ace,
-                                    attr='defaultSecurityDescriptor')
+
+        self.sd_utils.update_aces_in_dacl(schema_dn,
+                                          sddl_attr="defaultSecurityDescriptor",
+                                          add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
@@ -430,8 +399,10 @@ objectClass: container
         ace = "(OA;CIOI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)"
 
         schema_dn = ldb.Dn(self.samdb, "CN=Domain-DNS,%s" % str(self.schema_dn))
-        self.insert_ace_into_string(schema_dn, ace,
-                                    attr='defaultSecurityDescriptor')
+
+        self.sd_utils.update_aces_in_dacl(schema_dn,
+                                          sddl_attr="defaultSecurityDescriptor",
+                                          add_aces=[ace])
 
         if self.add_update_container:
             self.update_add(op)
