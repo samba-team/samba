@@ -57,7 +57,7 @@ Options.OptionsContext.PRIVATE_EXTENSION_DEFAULT = PRIVATE_EXTENSION_DEFAULT
 
 
 def minimum_library_version(conf, libname, default):
-    '''allow override of mininum system library version'''
+    '''allow override of minimum system library version'''
 
     minlist = Options.options.MINIMUM_LIBRARY_VERSION
     if not minlist:

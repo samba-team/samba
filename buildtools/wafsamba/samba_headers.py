@@ -132,7 +132,7 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None, public_headers_install
     bld.SET_BUILD_GROUP('final')
 
     if not bld.env.build_public_headers:
-        # in this case no header munging neeeded. Used for tdb, talloc etc
+        # in this case no header munging needed. Used for tdb, talloc etc
         public_headers_simple(bld, public_headers, header_path=header_path,
                               public_headers_install=public_headers_install)
         return

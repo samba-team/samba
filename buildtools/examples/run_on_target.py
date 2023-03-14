@@ -38,7 +38,7 @@ import os
 import subprocess
 from optparse import OptionParser
 
-# those are defaults, but can be overidden using command line
+# these are defaults, but can be overridden using command line
 SSH = 'ssh'
 USER = None
 HOST = 'localhost'

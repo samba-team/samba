@@ -36,7 +36,7 @@ def check(self, *k, **kw):
                  if d:
                      additional_dirs.append(d)
 
-    # we add the additional dirs twice: once for the test data, and again if the compilation test suceeds below
+    # we add the additional dirs twice: once for the test data, and again if the compilation test succeeds below
     def add_options_dir(dirs, env):
         for x in dirs:
              if not x in env.CPPPATH:

@@ -982,7 +982,7 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
     '''enable/disable cache of configure results'''
     if enable:
         # when -C is chosen, we will use a private cache and will
-        # not look into system includes. This roughtly matches what
+        # not look into system includes. This roughly matches what
         # autoconf does with -C
         cache_path = os.path.join(conf.bldnode.abspath(), '.confcache')
         mkdir_p(cache_path)

@@ -436,7 +436,7 @@ def check_syslib_collisions(bld, tgt_list):
 
 
 def check_dependencies(bld, t):
-    '''check for depenencies that should be changed'''
+    '''check for dependencies that should be changed'''
 
     if bld.get_tgen_by_name(t.sname + ".objlist"):
         return

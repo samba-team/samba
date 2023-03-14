@@ -327,7 +327,7 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
 
     env = ConfigSet.ConfigSet()
     ret = varstr
-    # substitute on user supplied dict if avaiilable
+    # substitute on user supplied dict if available
     if vars is not None:
         for v in vars.keys():
             env[v] = vars[v]

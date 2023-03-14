@@ -148,7 +148,7 @@ Build.BuildContext.AUTOCLEANUP_STALE_FILES = Utils.nada
 def check(self, *k, **kw):
     '''Override the waf defaults to inject --with-directory options'''
 
-    # match the configuration test with speficic options, for example:
+    # match the configuration test with specific options, for example:
     # --with-libiconv -> Options.options.iconv_open -> "Checking for library iconv"
     self.validate_c(kw)
 
@@ -161,7 +161,7 @@ def check(self, *k, **kw):
                  if d:
                      additional_dirs.append(d)
 
-    # we add the additional dirs twice: once for the test data, and again if the compilation test suceeds below
+    # we add the additional dirs twice: once for the test data, and again if the compilation test succeeds below
     def add_options_dir(dirs, env):
         for x in dirs:
              if not x in env.CPPPATH:

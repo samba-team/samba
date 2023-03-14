@@ -118,7 +118,7 @@ Use this with extreme care
                    action="store_true", dest='disable_rpath_private_install', default=False)
     gr.add_option('--nonshared-binary',
                    help=(
-f'''Disable use of shared libaries internal to {Context.g_module.APPNAME} for the listed binaries.
+f'''Disable use of shared libraries internal to {Context.g_module.APPNAME} for the listed binaries.
 
 The resulting binaries are 'statically linked' with regard to components provided by
 {Context.g_module.APPNAME}, but remain dynamically linked to (eg) libc.so and libgnutls.so
@@ -528,7 +528,8 @@ def configure(conf):
             strict=True,
             msg='Checking for __attribute__')
 
-    # Solaris by defauls uses draft versions of some functions unless you set _POSIX_PTHREAD_SEMANTICS
+    # Solaris by default uses draft versions of some functions unless you set
+    # _POSIX_PTHREAD_SEMANTICS
     if sys.platform.startswith('sunos'):
         conf.DEFINE('_POSIX_PTHREAD_SEMANTICS', 1)
 
