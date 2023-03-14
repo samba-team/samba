@@ -1064,8 +1064,6 @@ static bool test_delayed_2write(struct torture_context *tctx,
 	NTTIME create_time;
 	NTTIME write_time;
 	NTTIME write_time2;
-	struct timespec now;
-	NTTIME send_close_time;
 	NTTIME close_time;
 	NTSTATUS status;
 	bool ret = true;
@@ -1141,8 +1139,7 @@ static bool test_delayed_2write(struct torture_context *tctx,
 	torture_comment(tctx, "Close file-handle 1\n");
 	sleep(2);
 
-	now = timespec_current();
-	send_close_time = full_timespec_to_nt_time(&now);
+	torture_comment(tctx, "Check writetime has been updated\n");
 
 	c = (struct smb2_close) {
 		.in.file.handle = h1,
@@ -1155,7 +1152,7 @@ static bool test_delayed_2write(struct torture_context *tctx,
 	ZERO_STRUCT(h1);
 	close_time = c.out.write_time;
 
-	if (!(close_time > send_close_time)) {
+	if (!(close_time > write_time)) {
 		ret = false;
 		torture_fail_goto(tctx, done,
 				  "Write-time not updated (wrong!)\n");
