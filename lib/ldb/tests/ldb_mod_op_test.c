@@ -152,7 +152,7 @@ static void test_ldif_message(void **state)
 		"supersecret: password\n"
 		"binary:: //8=\n"
 		"\n";
-	
+
 	struct ldb_message *msg = get_test_ldb_message(test_ctx,
 						       test_ctx->ldb);
 
@@ -182,13 +182,13 @@ static void test_ldif_message_redacted(void **state)
 		"supersecret",
 		NULL
 	};
-	
+
 	struct ldb_message *msg = ldb_msg_new(test_ctx);
 
 	ldb_set_opaque(test_ctx->ldb,
 		       LDB_SECRET_ATTRIBUTE_LIST_OPAQUE,
 		       secret_attrs);
-	
+
 	assert_non_null(msg);
 
 	msg->dn = ldb_dn_new(msg, test_ctx->ldb, "dc=samba,dc=org");
@@ -924,12 +924,12 @@ static void test_ldb_modify_add_key(void **state)
 	el = ldb_msg_find_element(res->msgs[0], "cn");
 	assert_non_null(el);
 	assert_int_equal(el->num_values, 1);
-	assert_string_equal(el->values[0].data, "test_mod_cn");
+	assert_string_equal((const char *)el->values[0].data, "test_mod_cn");
 
 	el = ldb_msg_find_element(res->msgs[0], "name");
 	assert_non_null(el);
 	assert_int_equal(el->num_values, 1);
-	assert_string_equal(el->values[0].data, "test_mod_name");
+	assert_string_equal((const char *)el->values[0].data, "test_mod_name");
 }
 
 static void test_ldb_modify_extend_key(void **state)
@@ -952,8 +952,8 @@ static void test_ldb_modify_extend_key(void **state)
 	el = ldb_msg_find_element(res->msgs[0], "cn");
 	assert_non_null(el);
 	assert_int_equal(el->num_values, 2);
-	assert_string_equal(el->values[0].data, "test_mod_cn");
-	assert_string_equal(el->values[1].data, "test_mod_cn2");
+	assert_string_equal((const char *)el->values[0].data, "test_mod_cn");
+	assert_string_equal((const char *)el->values[1].data, "test_mod_cn2");
 }
 
 static void test_ldb_modify_add_key_noval(void **state)
@@ -1009,7 +1009,7 @@ static void test_ldb_modify_replace_key(void **state)
 	el = ldb_msg_find_element(res->msgs[0], "cn");
 	assert_non_null(el);
 	assert_int_equal(el->num_values, 1);
-	assert_string_equal(el->values[0].data, new_cn);
+	assert_string_equal((const char *)el->values[0].data, new_cn);
 }
 
 static void test_ldb_modify_replace_noexist_key(void **state)
@@ -1032,12 +1032,12 @@ static void test_ldb_modify_replace_noexist_key(void **state)
 	el = ldb_msg_find_element(res->msgs[0], "cn");
 	assert_non_null(el);
 	assert_int_equal(el->num_values, 1);
-	assert_string_equal(el->values[0].data, "test_mod_cn");
+	assert_string_equal((const char *)el->values[0].data, "test_mod_cn");
 
 	el = ldb_msg_find_element(res->msgs[0], mod_kvs[0].key);
 	assert_non_null(el);
 	assert_int_equal(el->num_values, 1);
-	assert_string_equal(el->values[0].data, mod_kvs[0].val);
+	assert_string_equal((const char *)el->values[0].data, mod_kvs[0].val);
 }
 
 static void test_ldb_modify_replace_zero_vals(void **state)
@@ -1232,7 +1232,7 @@ static void assert_attr_has_vals(struct ldb_message *msg,
 
 	assert_int_equal(el->num_values, nvals);
 	for (i = 0; i < nvals; i++) {
-		assert_string_equal(el->values[i].data,
+		assert_string_equal((const char *)el->values[i].data,
 				    vals[i]);
 	}
 }

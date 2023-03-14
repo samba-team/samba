@@ -660,7 +660,7 @@ static void test_filter_attrs_one_attr_matched_star(void **state)
 	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
 							"foo",
 							NULL),
-			    value);
+			    (const char *)value);
 }
 
 /*
@@ -729,11 +729,11 @@ static void test_filter_attrs_two_attr_matched_star(void **state)
 	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
 							"foo",
 							NULL),
-			    value1);
+			    (const char *)value1);
 	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
 							"bar",
 							NULL),
-			    value2);
+			    (const char *)value2);
 }
 
 /*
@@ -828,7 +828,7 @@ static void test_filter_attrs_one_attr_matched_star_dn(void **state)
 	assert_string_equal(ldb_msg_find_attr_as_string(filtered_msg,
 							"foo",
 							NULL),
-			    value);
+			    (const char *)value);
 }
 
 /*
@@ -877,7 +877,7 @@ static void test_filter_attrs_one_attr_matched_dn(void **state)
 	assert_ptr_equal(filtered_msg->dn, in.dn);
 	assert_string_equal(filtered_msg->elements[0].name, "distinguishedName");
 	assert_int_equal(filtered_msg->elements[0].num_values, 1);
-	assert_string_equal(filtered_msg->elements[0].values[0].data,
+	assert_string_equal((const char *)filtered_msg->elements[0].values[0].data,
 			    ldb_dn_get_linearized(in.dn));
 }
 
