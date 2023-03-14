@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba import gpo, tests
+from samba import tests
 from samba.gp.gpclass import GPOStorage
 from samba.param import LoadParm
 from samba.credentials import Credentials

@@ -577,6 +577,11 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	size_t i;
 
 	static const char *kwlist[] = {"samaccountname", NULL};
+
+	PyErr_WarnEx(PyExc_DeprecationWarning, "The get_gpo_list function"
+				" is deprecated as of Samba 4.19. Please use "
+				"the samba.gp module instead.", 2);
+
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s",
 					 discard_const_p(char *, kwlist),
 					 &samaccountname)) {
