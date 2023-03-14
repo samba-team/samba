@@ -76,7 +76,7 @@ def parse_results(msg_ops, statistics, fh):
         elif command in VALID_RESULTS:
             msg_ops.control_msg(l)
             result = command
-            grp = re.match("(.*?)( \[)?([ \t]*)( multipart)?\n", arg)
+            grp = re.match(r"(.*?)( \[)?([ \t]*)( multipart)?\n", arg)
             (testname, hasreason) = (grp.group(1), grp.group(2))
             if hasreason:
                 reason = ""
