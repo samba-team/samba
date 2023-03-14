@@ -568,48 +568,6 @@ plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join
 plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
 
 if have_heimdal_support:
-    plantestsuite("samba4.blackbox.kinit",
-                  "ad_dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$PREFIX',
-                      "aes256-cts-hmac-sha1-96",
-                      smbclient3,
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit",
-                  "fl2000dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$PREFIX',
-                      "arcfour-hmac-md5",
-                      smbclient3,
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit",
-                  "fl2008r2dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$PREFIX',
-                      "aes256-cts-hmac-sha1-96",
-                      smbclient3,
-                      configuration
-                  ])
     plantestsuite("samba4.blackbox.kinit_trust",
                   "fl2008r2dc:local",
                   [
@@ -709,45 +667,6 @@ if have_heimdal_support:
                       configuration
                   ])
 else:
-    plantestsuite("samba4.blackbox.kinit",
-                  "ad_dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$PREFIX',
-                      smbclient3,
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit",
-                  "fl2000dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$PREFIX',
-                      smbclient3,
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit",
-                  "fl2008r2dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$PREFIX',
-                      smbclient3,
-                      configuration
-                  ])
     plantestsuite("samba4.blackbox.kinit_trust",
                   "fl2008r2dc:local",
                   [
@@ -826,6 +745,46 @@ else:
                       "$PREFIX",
                       configuration
                   ])
+
+plantestsuite("samba4.blackbox.kinit_simple",
+              "ad_dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$PASSWORD',
+                  '$REALM',
+                  '$DOMAIN',
+                  '$PREFIX',
+                  smbclient3,
+                  configuration
+              ])
+plantestsuite("samba4.blackbox.kinit_simple",
+              "fl2000dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$PASSWORD',
+                  '$REALM',
+                  '$DOMAIN',
+                  '$PREFIX',
+                  smbclient3,
+                  configuration
+              ])
+plantestsuite("samba4.blackbox.kinit_simple",
+              "fl2008r2dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$PASSWORD',
+                  '$REALM',
+                  '$DOMAIN',
+                  '$PREFIX',
+                  smbclient3,
+                  configuration
+              ])
 
 plantestsuite("samba4.blackbox.pkinit_simple",
               "ad_dc:local",
