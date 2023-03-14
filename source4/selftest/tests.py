@@ -579,7 +579,7 @@ if have_heimdal_support:
                       '$DOMAIN',
                       '$PREFIX',
                       "aes256-cts-hmac-sha1-96",
-                      smbclient4,
+                      smbclient3,
                       configuration
                   ])
     plantestsuite("samba4.blackbox.kinit",
@@ -673,7 +673,7 @@ if have_heimdal_support:
                       '$REALM',
                       '$DOMAIN',
                       "$PREFIX",
-                      smbclient4
+                      smbclient3
                   ])
     plantestsuite("samba4.blackbox.kpasswd",
                   "ad_dc_ntvfs:local",
@@ -714,7 +714,7 @@ else:
                       '$REALM',
                       '$DOMAIN',
                       '$PREFIX',
-                      smbclient4,
+                      smbclient3,
                       configuration
                   ])
     plantestsuite("samba4.blackbox.kinit",
@@ -803,7 +803,7 @@ else:
                       '$REALM',
                       '$DOMAIN',
                       "$PREFIX",
-                      smbclient4
+                      smbclient3
                   ])
     plantestsuite("samba4.blackbox.kpasswd",
                   "ad_dc_ntvfs:local",
