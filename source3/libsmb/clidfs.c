@@ -27,6 +27,7 @@
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "auth/credentials/credentials.h"
+#include "lib/param/param.h"
 
 /********************************************************************
  Important point.
@@ -196,8 +197,16 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 				 lp_client_min_protocol(),
 				 lp_client_max_protocol());
 
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("protocol negotiation failed: %s\n",
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		d_printf("Protocol negotiation (with timeout %d ms) timed out against server %s\n",
+			 c->timeout,
+			 smbXcli_conn_remote_name(c->conn));
+		cli_shutdown(c);
+	} else if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Protocol negotiation to server %s (for a protocol between %s and %s) failed: %s\n",
+			 smbXcli_conn_remote_name(c->conn),
+			 lpcfg_get_smb_protocol(lp_client_min_protocol()),
+			 lpcfg_get_smb_protocol(lp_client_max_protocol()),
 			 nt_errstr(status));
 		cli_shutdown(c);
 		return status;
