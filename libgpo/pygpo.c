@@ -30,6 +30,7 @@
 #include "python/py3compat.h"
 #include "python/modules.h"
 #include <pytalloc.h>
+#include "../libcli/security/security.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -51,23 +52,133 @@ GPO_getter(name)
 GPO_getter(link)
 GPO_getter(user_extensions)
 GPO_getter(machine_extensions)
+#define GPO_setter(ATTR) \
+static int GPO_set_##ATTR(PyObject *self, PyObject *val, void *closure) \
+{ \
+	struct GROUP_POLICY_OBJECT *gpo_ptr \
+		= pytalloc_get_ptr(self); \
+	\
+	if (!PyUnicode_Check(val)) { \
+		PyErr_Format(PyExc_TypeError, \
+			     "Cannot convert input to string"); \
+		return -1; \
+	} \
+	if (val != Py_None) { \
+		gpo_ptr->ATTR = talloc_strdup(gpo_ptr, \
+					      _PyUnicode_AsString(val)); \
+	} else { \
+		gpo_ptr->ATTR = NULL; \
+	} \
+	return 0; \
+}
+GPO_setter(ds_path)
+GPO_setter(file_sys_path)
+GPO_setter(display_name)
+GPO_setter(name)
+GPO_setter(link)
+GPO_setter(user_extensions)
+GPO_setter(machine_extensions)
+#define GPO_int_getter(ATTR) \
+static PyObject* GPO_get_##ATTR(PyObject *self, void *closure) \
+{ \
+	struct GROUP_POLICY_OBJECT *gpo_ptr \
+		= pytalloc_get_ptr(self); \
+	\
+	return PyLong_FromLong(gpo_ptr->ATTR); \
+}
+GPO_int_getter(options)
+GPO_int_getter(version)
+GPO_int_getter(link_type)
+#define GPO_int_setter(ATTR) \
+static int GPO_set_##ATTR(PyObject *self, PyObject *val, void *closure) \
+{ \
+        struct GROUP_POLICY_OBJECT *gpo_ptr \
+                = pytalloc_get_ptr(self); \
+        \
+	if (!PyLong_Check(val)) { \
+		PyErr_Format(PyExc_TypeError, \
+			     "Cannot convert input to int"); \
+		return -1; \
+	} else { \
+		gpo_ptr->ATTR = PyLong_AsLong(val); \
+	} \
+	return 0; \
+}
+GPO_int_setter(options)
+GPO_int_setter(version)
+GPO_int_setter(link_type)
+
+static PyObject *GPO_marshall_get_sec_desc_buf(PyObject *self, PyObject *args,
+					       PyObject *kwds)
+{
+	struct GROUP_POLICY_OBJECT *gpo_ptr = pytalloc_get_ptr(self);
+	NTSTATUS status;
+	uint8_t *data = NULL;
+	size_t len = 0;
+
+	status = marshall_sec_desc(gpo_ptr, gpo_ptr->security_descriptor,
+				   &data, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(PyExc_BufferError,
+			     "marshall_sec_desc_buf failed: %s",
+			     nt_errstr(status));
+		return NULL;
+	}
+
+	return PyBytes_FromStringAndSize((char *)data, len);
+}
+
+static PyObject *GPO_unmarshall_set_sec_desc(PyObject *self, PyObject *args,
+					     PyObject *kwds)
+{
+	struct GROUP_POLICY_OBJECT *gpo_ptr = pytalloc_get_ptr(self);
+	char *bytes = NULL;
+	size_t length = 0;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTuple(args, "s#", &bytes, &length)) {
+		PyErr_Format(PyExc_TypeError,
+			     "Cannot convert input to bytes");
+		return NULL;
+	}
+
+	gpo_ptr->security_descriptor = talloc_zero(gpo_ptr,
+						   struct security_descriptor);
+	status = unmarshall_sec_desc(gpo_ptr, (uint8_t *)bytes, length,
+				     &gpo_ptr->security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(PyExc_BufferError,
+			     "unmarshall_sec_desc failed: %s",
+			     nt_errstr(status));
+		return NULL;
+	}
+
+	return Py_None;
+}
 
 static PyGetSetDef GPO_setters[] = {
-	{discard_const_p(char, "ds_path"), (getter)GPO_get_ds_path, NULL, NULL,
-		NULL},
+	{discard_const_p(char, "options"), (getter)GPO_get_options,
+		(setter)GPO_set_options, NULL, NULL},
+	{discard_const_p(char, "version"), (getter)GPO_get_version,
+		(setter)GPO_set_version, NULL, NULL},
+	{discard_const_p(char, "ds_path"), (getter)GPO_get_ds_path,
+		(setter)GPO_set_ds_path, NULL, NULL},
 	{discard_const_p(char, "file_sys_path"), (getter)GPO_get_file_sys_path,
-		NULL, NULL, NULL},
+		(setter)GPO_set_file_sys_path, NULL, NULL},
 	{discard_const_p(char, "display_name"), (getter)GPO_get_display_name,
-		NULL, NULL, NULL},
-	{discard_const_p(char, "name"), (getter)GPO_get_name, NULL, NULL,
-		NULL},
-	{discard_const_p(char, "link"), (getter)GPO_get_link, NULL, NULL,
-		NULL},
+		(setter)GPO_set_display_name, NULL, NULL},
+	{discard_const_p(char, "name"), (getter)GPO_get_name,
+		(setter)GPO_set_name, NULL, NULL},
+	{discard_const_p(char, "link"), (getter)GPO_get_link,
+		(setter)GPO_set_link, NULL, NULL},
+	{discard_const_p(char, "link_type"), (getter)GPO_get_link_type,
+		(setter)GPO_set_link_type, NULL, NULL},
 	{discard_const_p(char, "user_extensions"),
 		(getter)GPO_get_user_extensions,
-		NULL, NULL, NULL},
+		(setter)GPO_set_user_extensions, NULL, NULL},
 	{discard_const_p(char, "machine_extensions"),
-		(getter)GPO_get_machine_extensions, NULL, NULL, NULL},
+		(getter)GPO_get_machine_extensions,
+		(setter)GPO_set_machine_extensions, NULL, NULL},
 	{0}
 };
 
@@ -121,8 +232,51 @@ static PyMethodDef GPO_methods[] = {
 					      py_gpo_get_unix_path),
 		METH_VARARGS | METH_KEYWORDS,
 		NULL },
+	{"set_sec_desc", PY_DISCARD_FUNC_SIG(PyCFunction,
+					     GPO_unmarshall_set_sec_desc),
+		METH_VARARGS, NULL },
+	{"get_sec_desc_buf", PY_DISCARD_FUNC_SIG(PyCFunction,
+						 GPO_marshall_get_sec_desc_buf),
+		METH_NOARGS, NULL },
 	{0}
 };
+
+static int py_gpo_init(PyObject *self, PyObject *args, PyObject *kwds)
+{
+	struct GROUP_POLICY_OBJECT *gpo_ptr = pytalloc_get_ptr(self);
+	const char *name = NULL;
+	const char *display_name = NULL;
+	enum GPO_LINK_TYPE link_type = GP_LINK_UNKOWN;
+	const char *file_sys_path = NULL;
+
+	static const char *kwlist[] = {
+		"name", "display_name", "link_type", "file_sys_path", NULL
+	};
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ssIs",
+					 discard_const_p(char *, kwlist),
+					 &name, &display_name, &link_type,
+					 &file_sys_path)) {
+		return -1;
+	}
+
+	if (name) {
+		gpo_ptr->name = talloc_strdup(gpo_ptr, name);
+	}
+	if (display_name) {
+		gpo_ptr->display_name = talloc_strdup(gpo_ptr, display_name);
+	}
+	gpo_ptr->link_type = link_type;
+	if (file_sys_path) {
+		gpo_ptr->file_sys_path = talloc_strdup(gpo_ptr, file_sys_path);
+	}
+
+	return 0;
+}
+
+static PyObject *py_gpo_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	return pytalloc_new(struct GROUP_POLICY_OBJECT, type);
+}
 
 static PyTypeObject GPOType = {
 	PyVarObject_HEAD_INIT(NULL, 0)
@@ -131,6 +285,8 @@ static PyTypeObject GPOType = {
 	.tp_getset = GPO_setters,
 	.tp_methods = GPO_methods,
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_new = py_gpo_new,
+	.tp_init = (initproc)py_gpo_init,
 };
 
 typedef struct {
@@ -583,6 +739,16 @@ MODULE_INIT_FUNC(gpo)
 			   (PyObject *)&GPOType)) {
 		goto err;
 	}
+
+#define ADD_FLAGS(val)  PyModule_AddObject(m, #val, PyLong_FromLong(val))
+
+	ADD_FLAGS(GP_LINK_UNKOWN);
+	ADD_FLAGS(GP_LINK_MACHINE);
+	ADD_FLAGS(GP_LINK_SITE);
+	ADD_FLAGS(GP_LINK_DOMAIN);
+	ADD_FLAGS(GP_LINK_OU);
+	ADD_FLAGS(GP_LINK_LOCAL);
+
 	return m;
 
 err:

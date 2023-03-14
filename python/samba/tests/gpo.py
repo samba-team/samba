@@ -18,7 +18,7 @@ import os, grp, pwd
 import errno
 from samba import gpo, tests
 from samba.gp.gpclass import register_gp_extension, list_gp_extensions, \
-    unregister_gp_extension, GPOStorage
+    unregister_gp_extension, GPOStorage, get_gpo_list
 from samba.param import LoadParm
 from samba.gp.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
@@ -5048,9 +5048,8 @@ class GPOTests(tests.TestCase):
 
     def test_gpo_list(self):
         global poldir, dspath
-        ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(self.creds.get_username())
+        gpos = get_gpo_list(self.server, self.creds, self.lp,
+                            self.creds.get_username())
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         names = ['Local Policy', guid]
         file_sys_paths = [None, '%s\\%s' % (poldir, guid)]
@@ -5088,9 +5087,8 @@ class GPOTests(tests.TestCase):
 
     def test_check_refresh_gpo_list(self):
         cache = self.lp.cache_path('gpo_cache')
-        ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(self.creds.get_username())
+        gpos = get_gpo_list(self.server, self.creds, self.lp,
+                            self.creds.get_username())
         check_refresh_gpo_list(self.server, self.lp, self.creds, gpos)
 
         self.assertTrue(os.path.exists(cache),
@@ -5207,9 +5205,8 @@ class GPOTests(tests.TestCase):
                                  days2rel_nttime(998),
                                  'minPwdAge policy not set')
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(self.dc_account)
+        gpos = get_gpo_list(self.server, self.creds, self.lp,
+                            self.dc_account)
         del_gpos = get_deleted_gpos_list(gp_db, gpos[:-1])
         self.assertEqual(len(del_gpos), 1, 'Returned delete gpos is incorrect')
         self.assertEqual(guids[-1], del_gpos[0][0],
@@ -5243,9 +5240,8 @@ class GPOTests(tests.TestCase):
         ext = gp_krb_ext(self.lp, machine_creds,
                          machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Include MaxClockSkew to ensure we don't fail on a key we ignore
         stage = '[Kerberos Policy]\nMaxTicketAge = %d\nMaxClockSkew = 5'
@@ -5298,9 +5294,8 @@ class GPOTests(tests.TestCase):
         ext = gp_scripts_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         reg_key = b'Software\\Policies\\Samba\\Unix Settings'
         sections = { b'%s\\Daily Scripts' % reg_key : '.cron.daily',
@@ -5360,9 +5355,8 @@ class GPOTests(tests.TestCase):
         ext = gp_sudoers_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         stage = preg.file()
@@ -5415,9 +5409,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_sudoers_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml file with test data
         stage = etree.Element('vgppolicy')
@@ -5543,9 +5536,8 @@ class GPOTests(tests.TestCase):
         machine_creds.guess(self.lp)
         machine_creds.set_machine_account()
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         gp_extensions = []
         gp_extensions.append(gp_krb_ext)
@@ -5653,9 +5645,8 @@ class GPOTests(tests.TestCase):
         machine_creds.guess(self.lp)
         machine_creds.set_machine_account()
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         gp_extensions = []
         gp_extensions.append(gp_krb_ext)
@@ -5736,9 +5727,8 @@ class GPOTests(tests.TestCase):
         machine_creds.guess(self.lp)
         machine_creds.set_machine_account()
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         entries = []
         e = preg.entry()
@@ -5825,9 +5815,8 @@ class GPOTests(tests.TestCase):
         ext = gp_msgs_ext(self.lp, machine_creds,
                           machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         stage = preg.file()
@@ -5892,9 +5881,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_symlink_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         with TemporaryDirectory() as dname:
             test_source = os.path.join(dname, 'test.source')
@@ -5973,9 +5961,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_files_ext(self.lp, machine_creds,
                             machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml file with test data
         with TemporaryDirectory() as dname:
@@ -6061,9 +6048,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_openssh_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml file with test data
         stage = etree.Element('vgppolicy')
@@ -6135,9 +6121,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_startup_scripts_ext(self.lp, machine_creds,
                                       machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml file with test data
         stage = etree.Element('vgppolicy')
@@ -6310,9 +6295,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_motd_ext(self.lp, machine_creds,
                            machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml file with test data
         stage = etree.Element('vgppolicy')
@@ -6363,9 +6347,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_issue_ext(self.lp, machine_creds,
                             machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml file with test data
         stage = etree.Element('vgppolicy')
@@ -6421,9 +6404,8 @@ class GPOTests(tests.TestCase):
         ext = vgp_access_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the manifest.xml allow file
         stage = etree.Element('vgppolicy')
@@ -6556,9 +6538,8 @@ class GPOTests(tests.TestCase):
         ext = gp_gnome_settings_ext(self.lp, machine_creds,
                                     machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         parser = GPPolParser()
@@ -6782,9 +6763,8 @@ class GPOTests(tests.TestCase):
         ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
                                           machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         parser = GPPolParser()
@@ -6884,9 +6864,8 @@ class GPOTests(tests.TestCase):
         ext = gp_user_scripts_ext(self.lp, machine_creds,
                                   os.environ.get('DC_USERNAME'), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         reg_key = b'Software\\Policies\\Samba\\Unix Settings'
         sections = { b'%s\\Daily Scripts' % reg_key : b'@daily',
@@ -6948,9 +6927,8 @@ class GPOTests(tests.TestCase):
         ext = gp_firefox_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         parser = GPPolParser()
@@ -7009,9 +6987,8 @@ class GPOTests(tests.TestCase):
         ext = gp_chromium_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         parser = GPPolParser()
@@ -7121,9 +7098,8 @@ class GPOTests(tests.TestCase):
         ext = gp_firewalld_ext(self.lp, machine_creds,
                                machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         parser = GPPolParser()
@@ -7196,9 +7172,8 @@ class GPOTests(tests.TestCase):
         ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
                                           machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         admin_creds = Credentials()
         admin_creds.set_username(os.environ.get('DC_USERNAME'))
@@ -7311,9 +7286,8 @@ class GPOTests(tests.TestCase):
         ext = gp_centrify_sudoers_ext(self.lp, machine_creds,
                                       machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         stage = preg.file()
@@ -7381,9 +7355,8 @@ class GPOTests(tests.TestCase):
         ext = gp_centrify_crontab_ext(self.lp, machine_creds,
                                       machine_creds.get_username(), store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         stage = preg.file()
@@ -7438,9 +7411,8 @@ class GPOTests(tests.TestCase):
                                            os.environ.get('DC_USERNAME'),
                                            store)
 
-        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
-        if ads.connect():
-            gpos = ads.get_gpo_list(machine_creds.get_username())
+        gpos = get_gpo_list(self.server, machine_creds, self.lp,
+                            machine_creds.get_username())
 
         # Stage the Registry.pol file with test data
         stage = preg.file()
