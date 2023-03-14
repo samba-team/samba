@@ -65,7 +65,7 @@ struct spnego_neg_state {
 struct spnego_neg_ops {
 	const char *name;
 	/*
-	 * The start hook does the initial processing on the incoming paket and
+	 * The start hook does the initial processing on the incoming packet and
 	 * may starts the first possible subcontext. It indicates that
 	 * gensec_update() is required on the subcontext by returning
 	 * NT_STATUS_MORE_PROCESSING_REQUIRED and return something useful in

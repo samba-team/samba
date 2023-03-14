@@ -120,7 +120,7 @@ static bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 }
 
 /**
- * Check if the packet is one for the KRB5 mechansim
+ * Check if the packet is one for the KRB5 mechanism
  *
  * NOTE: This is a helper that can be employed by multiple mechanisms, do
  * not make assumptions about the private_data

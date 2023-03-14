@@ -63,7 +63,7 @@ struct ntlmssp_state
 	bool use_ntlmv2;
 	bool use_ccache;
 	bool resume_ccache;
-	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
+	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omitted */
 	bool allow_lm_response;/* The LM_RESPONSE code is not very secure... */
 	bool allow_lm_key;     /* The LM_KEY code is not very secure... */
 

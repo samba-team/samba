@@ -124,7 +124,7 @@ static enum event_logon_type get_logon_type(
  *
  * IF adding a new field please update the minor version number AUTH_MINOR
  *
- *  To process the resulting log lines from the commend line use jq to
+ *  To process the resulting log lines from the command line use jq to
  *  parse the json.
  *
  *  grep "^  {" log file |
@@ -345,7 +345,7 @@ failure:
  *
  * IF adding a new field please update the minor version number AUTHZ_MINOR
  *
- *  To process the resulting log lines from the commend line use jq to
+ *  To process the resulting log lines from the command line use jq to
  *  parse the json.
  *
  *  grep "^  {" log_file |\

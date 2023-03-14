@@ -793,7 +793,7 @@ NTSTATUS ntlmssp_sign_reset(struct ntlmssp_state *ntlmssp_state,
 
 		/*
 		 * Key weakening not performed on the master key for NTLM2
-		 * and does not occour for NTLM1. Therefore we only need
+		 * and does not occur for NTLM1. Therefore we only need
 		 * to do this for the LM_KEY.
 		 */
 		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {

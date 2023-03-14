@@ -870,7 +870,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 }
 
 /**
- * Start a GENSEC sub-mechanism with a specified mechansim structure, used in SPNEGO
+ * Start a GENSEC sub-mechanism with a specified mechanism structure, used in SPNEGO
  *
  */
 

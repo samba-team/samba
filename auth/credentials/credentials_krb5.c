@@ -996,7 +996,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
    ccache out of it.  This routine can be generalised in future for
    the case where we deal with GSSAPI mechs other than krb5.
 
-   On sucess, the caller must not free gssapi_cred, as it now belongs
+   On success, the caller must not free gssapi_cred, as it now belongs
    to the credentials system.
 */
 

@@ -85,7 +85,7 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 	OM_uint32 gss_maj, gss_min;
 #ifdef HAVE_GSS_GET_NAME_ATTRIBUTE
 /*
- * gss_get_name_attribute() in MIT krb5 1.10.0 can return unintialized pac_display_buffer
+ * gss_get_name_attribute() in MIT krb5 1.10.0 can return uninitialized pac_display_buffer
  * and later gss_release_buffer() will crash on attempting to release it.
  *
  * So always initialize the buffer descriptors.

@@ -210,7 +210,7 @@ _PUBLIC_ const char *cli_credentials_get_username(struct cli_credentials *cred)
  *
  * @param[in]  obtained  A pointer to store the obtained information.
  *
- * return The user name or NULL if an error occured.
+ * return The user name or NULL if an error occurred.
  */
 _PUBLIC_ const char *
 cli_credentials_get_username_and_obtained(struct cli_credentials *cred,
@@ -259,7 +259,7 @@ _PUBLIC_ bool cli_credentials_set_bind_dn(struct cli_credentials *cred,
  * Obtain the BIND DN for this credentials context.
  * @param cred credentials context
  * @retval The username set on this context.
- * @note Return value will be NULL if not specified explictly
+ * @note Return value will be NULL if not specified explicitly
  */
 _PUBLIC_ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
 {
@@ -459,7 +459,7 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
  *
  * @param[in]  obtained  A pointer to store the obtained information.
  *
- * return The user name or NULL if an error occured.
+ * return The user name or NULL if an error occurred.
  */
 _PUBLIC_ const char *
 cli_credentials_get_password_and_obtained(struct cli_credentials *cred,
@@ -1290,7 +1290,7 @@ _PUBLIC_ void cli_credentials_set_secure_channel_type(struct cli_credentials *cr
 }
 
 /**
- * Return NETLOGON secure chanel type
+ * Return NETLOGON secure channel type
  */
 
 _PUBLIC_ time_t cli_credentials_get_password_last_changed_time(struct cli_credentials *cred)
@@ -1309,7 +1309,7 @@ _PUBLIC_ void cli_credentials_set_password_last_changed_time(struct cli_credenti
 }
 
 /**
- * Return NETLOGON secure chanel type
+ * Return NETLOGON secure channel type
  */
 
 _PUBLIC_ enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred)

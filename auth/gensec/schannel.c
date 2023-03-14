@@ -1068,7 +1068,7 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 }
 
 /*
- * Reduce the attack surface by ensuring schannel is not availble when
+ * Reduce the attack surface by ensuring schannel is not available when
  * we are not a DC
  */
 static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)

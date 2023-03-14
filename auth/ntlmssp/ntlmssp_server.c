@@ -175,7 +175,7 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	}
 
 	/* The flags we send back are not just the negotiated flags,
-	 * they are also 'what is in this packet'.  Therfore, we
+	 * they are also 'what is in this packet'.  Therefore, we
 	 * operate on 'chal_flags' from here on
 	 */
 

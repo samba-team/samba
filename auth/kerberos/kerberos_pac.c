@@ -309,7 +309,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	memset(srv_sig_wipe->signature.data,
 		'\0', srv_sig_wipe->signature.length);
 
-	/* and reencode, back into the same place it came from */
+	/* and re-encode, back into the same place it came from */
 	ndr_err = ndr_push_struct_blob(
 			kdc_sig_blob, pac_data_raw, kdc_sig_wipe,
 			(ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
