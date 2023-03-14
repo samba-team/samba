@@ -569,7 +569,7 @@ plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.jo
 
 if have_heimdal_support:
     plantestsuite("samba4.blackbox.kinit",
-                  "ad_dc_ntvfs:local",
+                  "ad_dc:local",
                   [
                       os.path.join(bbdir, "test_kinit_heimdal.sh"),
                       '$SERVER',
@@ -665,7 +665,7 @@ if have_heimdal_support:
                       "arcfour-hmac-md5"
                   ])
     plantestsuite("samba4.blackbox.export.keytab",
-                  "ad_dc_ntvfs:local",
+                  "ad_dc:local",
                   [
                       os.path.join(bbdir, "test_export_keytab_heimdal.sh"),
                       '$SERVER',
@@ -676,7 +676,7 @@ if have_heimdal_support:
                       smbclient3
                   ])
     plantestsuite("samba4.blackbox.kpasswd",
-                  "ad_dc_ntvfs:local",
+                  "ad_dc:local",
                   [
                       os.path.join(bbdir, "test_kpasswd_heimdal.sh"),
                       '$SERVER',
@@ -684,7 +684,7 @@ if have_heimdal_support:
                       '$PASSWORD',
                       '$REALM',
                       '$DOMAIN',
-                      "$PREFIX/ad_dc_ntvfs"
+                      "$PREFIX"
                   ])
     plantestsuite("samba4.blackbox.krb5.s4u",
                   "fl2008r2dc:local",
@@ -705,7 +705,7 @@ if have_heimdal_support:
                   ])
 else:
     plantestsuite("samba4.blackbox.kinit",
-                  "ad_dc_ntvfs:local",
+                  "ad_dc:local",
                   [
                       os.path.join(bbdir, "test_kinit_mit.sh"),
                       '$SERVER',
@@ -795,7 +795,7 @@ else:
                       "external"
                   ])
     plantestsuite("samba4.blackbox.export.keytab",
-                  "ad_dc_ntvfs:local",
+                  "ad_dc:local",
                   [
                       os.path.join(bbdir, "test_export_keytab_mit.sh"),
                       '$SERVER',
@@ -806,7 +806,7 @@ else:
                       smbclient3
                   ])
     plantestsuite("samba4.blackbox.kpasswd",
-                  "ad_dc_ntvfs:local",
+                  "ad_dc:local",
                   [
                       os.path.join(bbdir, "test_kpasswd_mit.sh"),
                       '$SERVER',
@@ -814,7 +814,7 @@ else:
                       '$PASSWORD',
                       '$REALM',
                       '$DOMAIN',
-                      "$PREFIX/ad_dc_ntvfs"
+                      "$PREFIX"
                   ])
 
 plantestsuite("samba4.blackbox.pkinit_simple",
