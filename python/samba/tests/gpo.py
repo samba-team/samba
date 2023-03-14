@@ -73,6 +73,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from datetime import datetime, timedelta
+from samba.samba3 import param as s3param
 
 def dummy_certificate():
     name = x509.Name([
@@ -5039,7 +5040,7 @@ class GPOTests(tests.TestCase):
         super(GPOTests, self).setUp()
         self.server = os.environ["SERVER"]
         self.dc_account = self.server.upper() + '$'
-        self.lp = LoadParm()
+        self.lp = s3param.get_context()
         self.lp.load_default()
         self.creds = self.insta_creds(template=self.get_credentials())
 
