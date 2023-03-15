@@ -383,23 +383,34 @@ class KDCBaseTest(RawKerberosTest):
         return dn
 
     def get_dn_from_attribute(self, attribute):
-        return self.get_dn_from_schema(attribute, 'attributeSchema')
+        return self.get_from_attribute(attribute).dn
 
     def get_dn_from_class(self, attribute):
-        return self.get_dn_from_schema(attribute, 'classSchema')
+        return self.get_from_class(attribute).dn
 
-    def get_dn_from_schema(self, name, object_class):
+    def get_schema_id_guid_from_attribute(self, attribute):
+        guid = self.get_from_attribute(attribute).get('schemaIDGUID', idx=0)
+        return misc.GUID(guid)
+
+    def get_from_attribute(self, attribute):
+        return self.get_from_schema(attribute, 'attributeSchema')
+
+    def get_from_class(self, attribute):
+        return self.get_from_schema(attribute, 'classSchema')
+
+    def get_from_schema(self, name, object_class):
         samdb = self.get_samdb()
         schema_dn = samdb.get_schema_basedn()
 
         res = samdb.search(base=schema_dn,
                            scope=ldb.SCOPE_ONELEVEL,
+                           attrs=['schemaIDGUID'],
                            expression=(f'(&(objectClass={object_class})'
                                        f'(lDAPDisplayName={name}))'))
         self.assertEqual(1, len(res),
                          f'could not locate {name} in {object_class}')
 
-        return res[0].dn
+        return res[0]
 
     def create_claim(self,
                      claim_id,
