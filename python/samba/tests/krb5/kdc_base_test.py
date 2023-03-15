@@ -1691,8 +1691,11 @@ class KDCBaseTest(RawKerberosTest):
             keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
-            extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
-                          security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+            if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
+                extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
+                              security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+            else:
+                extra_bits = 0
             remove_bits = (security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK |
                            security.KERB_ENCTYPE_RC4_HMAC_MD5)
             self.creds_set_enctypes(creds,
@@ -1790,8 +1793,11 @@ class KDCBaseTest(RawKerberosTest):
             keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
-            extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
-                          security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+            if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
+                extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
+                              security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+            else:
+                extra_bits = 0
             remove_bits = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
             self.creds_set_enctypes(creds,
                                     extra_bits=extra_bits,
@@ -1837,8 +1843,11 @@ class KDCBaseTest(RawKerberosTest):
             keys = self.get_keys(dn)
             self.creds_set_keys(creds, keys)
 
-            extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
-                          security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+            if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
+                extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
+                              security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+            else:
+                extra_bits = 0
             remove_bits = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
             self.creds_set_enctypes(creds,
                                     extra_bits=extra_bits,
