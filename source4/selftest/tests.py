@@ -763,7 +763,8 @@ else:
                       '$TRUST_REALM',
                       '$TRUST_DOMAIN',
                       '$PREFIX',
-                      "forest"
+                      "forest",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.kinit_trust",
                   "fl2003dc:local",
@@ -780,7 +781,8 @@ else:
                       '$TRUST_REALM',
                       '$TRUST_DOMAIN',
                       '$PREFIX',
-                      "external"
+                      "external",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.kinit_trust",
                   "fl2000dc:local",
@@ -797,7 +799,8 @@ else:
                       '$TRUST_REALM',
                       '$TRUST_DOMAIN',
                       '$PREFIX',
-                      "external"
+                      "external",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.export.keytab",
                   "ad_dc:local",
