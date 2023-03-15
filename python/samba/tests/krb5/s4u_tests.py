@@ -947,6 +947,17 @@ class S4UKerberosTests(KDCBaseTest):
                 'allow_delegation': True
             })
 
+    def test_rbcd(self):
+        # Test resource-based constrained delegation.
+        self.skip_unless_fl2008()
+
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+            })
+
     def test_rbcd_no_auth_data_required(self):
         self.skip_unless_fl2008()
 
