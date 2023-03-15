@@ -1471,6 +1471,49 @@ class S4UKerberosTests(KDCBaseTest):
                 'modify_client_tkt_fn': self.rc4_pac_checksums,
             })
 
+    def test_constrained_delegation_rodc_issued(self):
+        self._run_delegation_test(
+            {
+                # Test that RODC-issued constrained delegation tickets are
+                # accepted.
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                # Both tickets must be signed by the same RODC.
+                'modify_client_tkt_fn': self.signed_by_rodc,
+                'modify_service_tgt_fn': self.issued_by_rodc,
+                'client_opts': {
+                    'allowed_replication_mock': True,
+                    'revealed_to_mock_rodc': True,
+                },
+                'service1_opts': {
+                    'allowed_replication_mock': True,
+                    'revealed_to_mock_rodc': True,
+                },
+            })
+
+    def test_rbcd_rodc_issued(self):
+        self.skip_unless_fl2008()
+
+        self._run_delegation_test(
+            {
+                # Test that RODC-issued constrained delegation tickets are
+                # accepted.
+                'expected_error_mode': 0,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+                # Both tickets must be signed by the same RODC.
+                'modify_client_tkt_fn': self.signed_by_rodc,
+                'modify_service_tgt_fn': self.issued_by_rodc,
+                'client_opts': {
+                    'allowed_replication_mock': True,
+                    'revealed_to_mock_rodc': True,
+                },
+                'service1_opts': {
+                    'allowed_replication_mock': True,
+                    'revealed_to_mock_rodc': True,
+                },
+            })
+
     def remove_pac_checksum(self, ticket, checksum):
         checksum_keys = self.get_krbtgt_checksum_key()
 
