@@ -1170,8 +1170,12 @@ class KDCBaseTest(RawKerberosTest):
                          domain_sid,
                          user_rid,
                          set_user_flags=0,
-                         reset_user_flags=0):
-        krbtgt_creds = self.get_krbtgt_creds()
+                         reset_user_flags=0,
+                         from_rodc=False):
+        if from_rodc:
+            krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
+        else:
+            krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
 
         checksum_keys = {
@@ -1186,6 +1190,7 @@ class KDCBaseTest(RawKerberosTest):
                                 reset_user_flags=reset_user_flags)
 
         return self.modified_ticket(ticket,
+                                    new_ticket_key=krbtgt_key,
                                     modify_pac_fn=modify_pac_fn,
                                     checksum_keys=checksum_keys)
 
