@@ -204,26 +204,41 @@ class ClaimsTests(KDCBaseTest):
 
         return details, mod_msg, expected_claims, unexpected_claims
 
+    def modify_pac_remove_client_claims(self, pac):
+        pac_buffers = pac.buffers
+        for pac_buffer in pac_buffers:
+            if pac_buffer.type == krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO:
+                pac.num_buffers -= 1
+                pac_buffers.remove(pac_buffer)
+
+                break
+        else:
+            self.fail('expected client claims in PAC')
+
+        pac.buffers = pac_buffers
+
+        return pac
+
     def remove_client_claims(self, ticket):
-        def modify_pac_fn(pac):
-            pac_buffers = pac.buffers
-            for pac_buffer in pac_buffers:
-                if pac_buffer.type == krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO:
-                    pac.num_buffers -= 1
-                    pac_buffers.remove(pac_buffer)
+        return self.modified_ticket(
+            ticket,
+            modify_pac_fn=self.modify_pac_remove_client_claims,
+            checksum_keys=self.get_krbtgt_checksum_key())
 
-                    break
-            else:
-                self.fail('expected client claims in PAC')
+    def remove_client_claims_tgt_from_rodc(self, ticket):
+        rodc_krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
+        rodc_krbtgt_key = self.TicketDecryptionKey_from_creds(
+            rodc_krbtgt_creds)
 
-            pac.buffers = pac_buffers
-
-            return pac
+        checksum_keys = {
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: rodc_krbtgt_key
+        }
 
         return self.modified_ticket(
             ticket,
-            modify_pac_fn=modify_pac_fn,
-            checksum_keys=self.get_krbtgt_checksum_key())
+            new_ticket_key=rodc_krbtgt_key,
+            modify_pac_fn=self.modify_pac_remove_client_claims,
+            checksum_keys=checksum_keys)
 
     def test_tgs_claims(self):
         self.run_tgs_test(remove_claims=False, to_krbtgt=False)
