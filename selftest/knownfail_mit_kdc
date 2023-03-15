@@ -2194,6 +2194,7 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_remove_transitive_domain_local_groups_to_service_uncompressed.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_removed_special_sids_to_krbtgt.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_removed_special_sids_to_service.ad_dc
+^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_rodc_issued_device_claims_attack.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_universal_groups_to_krbtgt.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_universal_groups_to_service.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_user_from_trust_domain_local_groups_to_krbtgt.ad_dc

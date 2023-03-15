@@ -1726,6 +1726,61 @@ class DeviceTests(KDCBaseTest):
                 (asserted_identity, SidType.EXTRA_SID, default_attrs),
             },
         },
+        {
+            # Test RODC-issued device claims.
+            'test': 'rodc-issued device claims attack',
+            'groups': {
+                # A couple of groups to which the machine belongs.
+                'dom-local': (GroupType.DOMAIN_LOCAL, {mach}),
+                'universal': (GroupType.UNIVERSAL, {mach}),
+            },
+            'as:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:mach:sids': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+                # Try to sneak a few extra SIDs into the machine's RODC-issued
+                # PAC.
+                (security.BUILTIN_RID_ADMINISTRATORS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_ENTERPRISE_READONLY_DCS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_KRBTGT, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_CERT_ADMINS, SidType.RESOURCE_SID, resource_attrs),
+                (security.SID_NT_SYSTEM, SidType.EXTRA_SID, default_attrs),
+                # Don't include the groups of which the machine is a member.
+            },
+            # The armor ticket was issued by an RODC.
+            'tgs:mach:from_rodc': True,
+            'tgs:to_krbtgt': False,
+            'tgs:compression': True,
+            'tgs:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (compounded_auth, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                # The machine's groups are now included.
+                ('universal', SidType.BASE_SID, default_attrs),
+                frozenset([
+                    ('dom-local', SidType.RESOURCE_SID, resource_attrs),
+                    # Note that we're not considered a "member" of 'Allowed
+                    # RODC Password Replication Group'.
+                ]),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
+                # The device groups should have been regenerated, our extra
+                # SIDs removed, and our elevation of privilege attack foiled.
+            },
+        },
     ]
 
     @classmethod
@@ -1767,6 +1822,9 @@ class DeviceTests(KDCBaseTest):
         # Optional SIDs to replace those in the PACs prior to a TGS-REQ.
         tgs_user_sids = case.pop('tgs:user:sids', None)
         tgs_mach_sids = case.pop('tgs:mach:sids', None)
+
+        # Whether the machine's TGT should be issued by an RODC.
+        tgs_mach_from_rodc = case.pop('tgs:mach:from_rodc', None)
 
         # Optional groups which the machine is added to or removed from prior
         # to a TGS-REQ , to test how the groups in the device PAC are expanded.
@@ -1837,6 +1895,9 @@ class DeviceTests(KDCBaseTest):
                                  'specified TGS-REQ reset user flags, but no '
                                  'accompanying machine SIDs provided')
 
+        if tgs_mach_from_rodc is None:
+            tgs_mach_from_rodc = False
+
         user_use_cache = not group_setup and (
             not primary_group)
         mach_use_cache = not group_setup and (
@@ -1866,8 +1927,18 @@ class DeviceTests(KDCBaseTest):
         # Create the machine account. It needs to be freshly created rather
         # than cached if there is a possibility of adding it to one or more
         # groups.
+        if tgs_mach_from_rodc:
+            # If the machine's TGT is to be issued by an RODC, ensure the
+            # machine account is allowed to replicate to an RODC.
+            mach_opts = {
+                'allowed_replication_mock': True,
+                'revealed_to_mock_rodc': True,
+            }
+        else:
+            mach_opts = None
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
+            opts=mach_opts,
             use_cache=mach_use_cache)
         mach_dn = mach_creds.get_dn()
         mach_dn_str = str(mach_dn)
@@ -1945,7 +2016,10 @@ class DeviceTests(KDCBaseTest):
                                              tgs_mach_domain_sid,
                                              tgs_mach_rid,
                                              set_user_flags=tgs_mach_set_user_flags,
-                                             reset_user_flags=tgs_mach_reset_user_flags)
+                                             reset_user_flags=tgs_mach_reset_user_flags,
+                                             from_rodc=tgs_mach_from_rodc)
+        elif tgs_mach_from_rodc:
+            mach_tgt = self.issued_by_rodc(mach_tgt)
 
         if tgs_mach_removed is not None:
             for removed in tgs_mach_removed:
