@@ -60,25 +60,25 @@ class LATests(samba.tests.TestCase):
                            session_info=system_session(lp), lp=lp)
 
         self.base_dn = self.samdb.domain_dn()
-        self.ou = "OU=la,%s" % self.base_dn
+        self.testbase = "CN=LATests,%s" % self.base_dn
         if opts.delete_in_setup:
             try:
-                self.samdb.delete(self.ou, ['tree_delete:1'])
+                self.samdb.delete(self.testbase, ['tree_delete:1'])
             except ldb.LdbError as e:
-                print("tried deleting %s, got error %s" % (self.ou, e))
-        self.samdb.add({'objectclass': 'organizationalUnit',
-                        'dn': self.ou})
+                print("tried deleting %s, got error %s" % (self.testbase, e))
+        self.samdb.add({'objectclass': 'container',
+                        'dn': self.testbase})
 
     def tearDown(self):
         super(LATests, self).tearDown()
         if not opts.no_cleanup:
-            self.samdb.delete(self.ou, ['tree_delete:1'])
+            self.samdb.delete(self.testbase, ['tree_delete:1'])
 
     def add_object(self, cn, objectclass, more_attrs=None):
         if more_attrs is None:
             more_attrs = {}
 
-        dn = "CN=%s,%s" % (cn, self.ou)
+        dn = "CN=%s,%s" % (cn, self.testbase)
         attrs = {'cn': cn,
                  'objectclass': objectclass,
                  'dn': dn}
