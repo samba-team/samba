@@ -47,16 +47,19 @@ global_asn1_print = False
 global_hexdump = False
 
 
-class UnorderedList(list):
+class UnorderedList(tuple):
     def __eq__(self, other):
         if not isinstance(other, UnorderedList):
             raise AssertionError('unexpected comparison attempt')
         return sorted(self) == sorted(other)
 
+    def __hash__(self):
+        return hash(tuple(sorted(self)))
+
 
 # Use this to assert that each element of a list belongs to a set() of
 # acceptable elements.
-class OneOf(list):
+class OneOf(tuple):
     def __eq__(self, other):
         if not isinstance(other, OneOf):
             raise AssertionError('unexpected comparison attempt')
@@ -199,8 +202,6 @@ class ClaimsTests(KDCBaseTest):
 
             self.create_claim(claim_id, **claim)
 
-        details = ((k, v) for k, v in details.items())
-
         return details, mod_msg, expected_claims, unexpected_claims
 
     def remove_client_claims(self, ticket):
@@ -270,7 +271,7 @@ class ClaimsTests(KDCBaseTest):
             claim_id: {
                 'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
                 'type': claims.CLAIM_TYPE_STRING,
-                'values': ['foo'],
+                'values': ('foo',),
             },
         }
 
@@ -354,14 +355,14 @@ class ClaimsTests(KDCBaseTest):
             claim_id: {
                 'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
                 'type': claims.CLAIM_TYPE_STRING,
-                'values': ['user_old'],
+                'values': ('user_old',),
             },
         }
         expected_claims_mach = {
             claim_id: {
                 'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
                 'type': claims.CLAIM_TYPE_STRING,
-                'values': ['mach_old'],
+                'values': ('mach_old',),
             },
         }
 
@@ -463,6 +464,10 @@ class ClaimsTests(KDCBaseTest):
                                          additional_tickets=additional_tickets)
         self.check_reply(rep, KRB_TGS_REP)
 
+    @staticmethod
+    def freeze(m):
+        return frozenset((k, v) for k, v in m.items())
+
     @classmethod
     def setUpDynamicTestCases(cls):
         FILTER = env_get_var_value('FILTER', allow_missing=True)
@@ -501,10 +506,11 @@ class ClaimsTests(KDCBaseTest):
         (details, _,
          expected_claims,
          unexpected_claims) = self.setup_claims(all_claims)
-        creds = self.get_cached_creds(account_type=account_type,
-                                      opts={
-                                          'additional_details': details,
-                                      })
+        creds = self.get_cached_creds(
+            account_type=account_type,
+            opts={
+                'additional_details': self.freeze(details),
+            })
 
         self.assertFalse(case, 'unexpected parameters in testcase')
 
@@ -554,7 +560,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                     'expected': True,
                 },
             ],
@@ -654,7 +660,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_BOOLEAN,
-                    'values': [True],
+                    'values': (True,),
                     'expected': True,
                 },
             ],
@@ -671,7 +677,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_BOOLEAN,
-                    'values': [False],
+                    'values': (False,),
                     'expected': True,
                 },
             ],
@@ -688,7 +694,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': [True],
+                    'values': (True,),
                 },
             ],
             'class': 'user',
@@ -706,7 +712,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_INT64,
-                    'values': [3, 42, -999, 1000, 20000],
+                    'values': (3, 42, -999, 1000, 20000),
                     'expected': True,
                 },
             ],
@@ -725,7 +731,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_INT64,
-                    'values': [3, 42, -999, 1000, 20000],
+                    'values': (3, 42, -999, 1000, 20000),
                     'expected': True,
                 },
             ] * 2,  # Create two integer syntax claims.
@@ -742,7 +748,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_UINT64,
-                    'values': [3, 42, -999, 1000],
+                    'values': (3, 42, -999, 1000),
                 },
             ],
             'class': 'user',
@@ -758,7 +764,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['computer'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': [security_descriptor],
+                    'values': (security_descriptor,),
                     'expected_values': OneOf([{
                         'O:BAD:PARAI(A;OICINPIOID;CCDCLCSWRPWPDTLOCRSDRCWDWOGAGXGWGR;;;S-1-0-0)',  # Windows
                         'O:BAD:PARAI(A;OICINPIOID;RPWPCRCCDCLCLORCWOWDSDDTSWGAGRGWGX;;;S-1-0-0)',  # Samba
@@ -779,7 +785,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['computer'],
                     'value_type': claims.CLAIM_TYPE_UINT64,
-                    'values': [security_descriptor],
+                    'values': (security_descriptor,),
                 },
             ],
             'class': 'computer',
@@ -795,7 +801,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo', 'bar'],
+                    'values': ('foo', 'bar'),
                 },
             ],
             'class': 'user',
@@ -811,7 +817,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -827,7 +833,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo', 'bar'],
+                    'values': ('foo', 'bar'),
                 },
             ],
             'class': 'user',
@@ -843,7 +849,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': [binary_dn, binary_dn, binary_dn],
+                    'values': (binary_dn, binary_dn, binary_dn),
                 },
             ],
             'class': 'computer',
@@ -859,7 +865,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo', 'bar'],
+                    'values': ('foo', 'bar'),
                 },
             ],
             'class': 'user',
@@ -875,7 +881,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['19700101000000.0Z'],
+                    'values': ('19700101000000.0Z',),
                 },
             ],
             'class': 'user',
@@ -921,7 +927,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo', 'bar', 'baz'],
+                    'values': ('foo', 'bar', 'baz'),
                     'expected': True,
                 },
             ],
@@ -966,7 +972,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_INT64,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -982,7 +988,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': 0,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -997,7 +1003,7 @@ class ClaimsTests(KDCBaseTest):
                     'single_valued': True,
                     'source_type': 'AD',
                     'for_classes': ['user'],
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1013,7 +1019,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                     'expected': True,
                 },
             ] * 2,  # Create two string syntax claims.
@@ -1030,7 +1036,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo', 'bar', 'baz'],
+                    'values': ('foo', 'bar', 'baz'),
                     'expected': True,
                 },
                 {
@@ -1041,7 +1047,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_BOOLEAN,
-                    'values': [True],
+                    'values': (True,),
                     'expected': True,
                 },
             ],
@@ -1058,7 +1064,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'ad',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                     'expected': True,
                 },
             ],
@@ -1075,7 +1081,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': '<unknown>',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1091,7 +1097,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1106,7 +1112,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1121,7 +1127,7 @@ class ClaimsTests(KDCBaseTest):
                     'single_valued': True,
                     'source_type': 'AD',
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1137,7 +1143,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'computer',
@@ -1153,7 +1159,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['user', 'computer'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                     'expected': True,
                 },
             ],
@@ -1170,7 +1176,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['top'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1186,7 +1192,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['organizationalPerson'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                 },
             ],
             'class': 'user',
@@ -1204,7 +1210,7 @@ class ClaimsTests(KDCBaseTest):
                     'value_type': claims.CLAIM_TYPE_STRING,
                     # a large value that should cause the claim to be
                     # compressed.
-                    'values': ['a' * 10000],
+                    'values': ('a' * 10000,),
                     'expected': True,
                 },
             ],
@@ -1477,7 +1483,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['computer'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                     'expected': True,
                     'mod_values': ['bar'],
                 },
@@ -1544,7 +1550,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': 'AD',
                     'for_classes': ['computer'],
                     'value_type': claims.CLAIM_TYPE_STRING,
-                    'values': ['foo'],
+                    'values': ('foo',),
                     'expected': True,
                     'mod_values': ['bar'],
                 },
