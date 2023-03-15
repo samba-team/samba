@@ -568,63 +568,6 @@ plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join
 plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
 
 if have_heimdal_support:
-    plantestsuite("samba4.blackbox.kinit_trust",
-                  "fl2008r2dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_trusts_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$TRUST_SERVER',
-                      '$TRUST_USERNAME',
-                      '$TRUST_PASSWORD',
-                      '$TRUST_REALM',
-                      '$TRUST_DOMAIN',
-                      '$PREFIX',
-                      "forest",
-                      "aes256-cts-hmac-sha1-96",
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit_trust",
-                  "fl2003dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_trusts_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$TRUST_SERVER',
-                      '$TRUST_USERNAME',
-                      '$TRUST_PASSWORD',
-                      '$TRUST_REALM',
-                      '$TRUST_DOMAIN',
-                      '$PREFIX',
-                      "external",
-                      "arcfour-hmac-md5",
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit_trust",
-                  "fl2000dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_trusts_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$TRUST_SERVER',
-                      '$TRUST_USERNAME',
-                      '$TRUST_PASSWORD',
-                      '$TRUST_REALM',
-                      '$TRUST_DOMAIN',
-                      '$PREFIX',
-                      "external",
-                      "arcfour-hmac-md5",
-                      configuration
-                  ])
     plantestsuite("samba4.blackbox.export.keytab",
                   "ad_dc:local",
                   [
@@ -667,60 +610,6 @@ if have_heimdal_support:
                       configuration
                   ])
 else:
-    plantestsuite("samba4.blackbox.kinit_trust",
-                  "fl2008r2dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_trusts_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$TRUST_SERVER',
-                      '$TRUST_USERNAME',
-                      '$TRUST_PASSWORD',
-                      '$TRUST_REALM',
-                      '$TRUST_DOMAIN',
-                      '$PREFIX',
-                      "forest",
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit_trust",
-                  "fl2003dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_trusts_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$TRUST_SERVER',
-                      '$TRUST_USERNAME',
-                      '$TRUST_PASSWORD',
-                      '$TRUST_REALM',
-                      '$TRUST_DOMAIN',
-                      '$PREFIX',
-                      "external",
-                      configuration
-                  ])
-    plantestsuite("samba4.blackbox.kinit_trust",
-                  "fl2000dc:local",
-                  [
-                      os.path.join(bbdir, "test_kinit_trusts_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$PASSWORD',
-                      '$REALM',
-                      '$DOMAIN',
-                      '$TRUST_SERVER',
-                      '$TRUST_USERNAME',
-                      '$TRUST_PASSWORD',
-                      '$TRUST_REALM',
-                      '$TRUST_DOMAIN',
-                      '$PREFIX',
-                      "external",
-                      configuration
-                  ])
     plantestsuite("samba4.blackbox.export.keytab",
                   "ad_dc:local",
                   [
@@ -783,6 +672,62 @@ plantestsuite("samba4.blackbox.kinit_simple",
                   '$DOMAIN',
                   '$PREFIX',
                   smbclient3,
+                  configuration
+              ])
+
+
+plantestsuite("samba4.blackbox.kinit_trust",
+              "fl2008r2dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit_trusts.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$PASSWORD',
+                  '$REALM',
+                  '$DOMAIN',
+                  '$TRUST_SERVER',
+                  '$TRUST_USERNAME',
+                  '$TRUST_PASSWORD',
+                  '$TRUST_REALM',
+                  '$TRUST_DOMAIN',
+                  '$PREFIX',
+                  "forest",
+                  configuration
+              ])
+plantestsuite("samba4.blackbox.kinit_trust",
+              "fl2003dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit_trusts.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$PASSWORD',
+                  '$REALM',
+                  '$DOMAIN',
+                  '$TRUST_SERVER',
+                  '$TRUST_USERNAME',
+                  '$TRUST_PASSWORD',
+                  '$TRUST_REALM',
+                  '$TRUST_DOMAIN',
+                  '$PREFIX',
+                  "external",
+                  configuration
+              ])
+plantestsuite("samba4.blackbox.kinit_trust",
+              "fl2000dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit_trusts.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$PASSWORD',
+                  '$REALM',
+                  '$DOMAIN',
+                  '$TRUST_SERVER',
+                  '$TRUST_USERNAME',
+                  '$TRUST_PASSWORD',
+                  '$TRUST_REALM',
+                  '$TRUST_DOMAIN',
+                  '$PREFIX',
+                  "external",
                   configuration
               ])
 
