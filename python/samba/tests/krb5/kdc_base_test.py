@@ -1136,6 +1136,19 @@ class KDCBaseTest(RawKerberosTest):
 
         return mapped_sids
 
+    def issued_by_rodc(self, ticket):
+        krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
+
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+        checksum_keys = {
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
+        }
+
+        return self.modified_ticket(
+            ticket,
+            new_ticket_key=krbtgt_key,
+            checksum_keys=checksum_keys)
+
     # Get a ticket with the SIDs in the PAC replaced with ones we specify. This
     # is useful for creating arbitrary tickets that can be used to perform a
     # TGS-REQ.

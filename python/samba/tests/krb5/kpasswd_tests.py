@@ -90,19 +90,6 @@ class KpasswdTests(KDCBaseTest):
 
         return creds
 
-    def issued_by_rodc(self, ticket):
-        krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
-
-        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
-        checksum_keys = {
-            krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
-        }
-
-        return self.modified_ticket(
-            ticket,
-            new_ticket_key=krbtgt_key,
-            checksum_keys=checksum_keys)
-
     def get_kpasswd_sname(self):
         return self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                          names=['kadmin', 'changepw'])
