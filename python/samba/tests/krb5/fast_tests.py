@@ -192,6 +192,47 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fast_rodc_issued_armor(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_rodc_issued_mach_tgt,
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                # Test that RODC-issued armor tickets are permitted.
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_padata_fn': self.generate_enc_challenge_padata,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_rodc_issued_mach_tgt,
+            }
+        ],
+        armor_opts={
+            'allowed_replication_mock': True,
+            'revealed_to_mock_rodc': True,
+        })
+
+    def test_fast_tgs_rodc_issued_armor(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                # Test that RODC-issued armor tickets are not permitted.
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'gen_armor_tgt_fn': self.get_rodc_issued_mach_tgt,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+            }
+        ],
+        armor_opts={
+            'allowed_replication_mock': True,
+            'revealed_to_mock_rodc': True,
+        })
+
     def test_simple_enc_pa_rep(self):
         self._run_test_sequence([
             {
@@ -1929,6 +1970,9 @@ class FAST_Tests(KDCBaseTest):
                 ),
             })
         return self.get_tgt(mach_creds)
+
+    def get_rodc_issued_mach_tgt(self, opts):
+        return self.issued_by_rodc(self.get_mach_tgt(opts))
 
     def get_user_tgt(self, opts):
         user_creds = self.get_cached_creds(
