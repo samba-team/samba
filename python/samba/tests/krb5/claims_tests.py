@@ -258,6 +258,30 @@ class ClaimsTests(KDCBaseTest):
     def test_delegation_claims_remove_claims(self):
         self.run_delegation_test(remove_claims=True)
 
+    def test_rodc_issued_claims_modify(self):
+        self.run_rodc_tgs_test(remove_claims=False, delete_claim=False)
+
+    def test_rodc_issued_claims_delete(self):
+        self.run_rodc_tgs_test(remove_claims=False, delete_claim=True)
+
+    def test_rodc_issued_claims_remove_claims_modify(self):
+        self.run_rodc_tgs_test(remove_claims=True, delete_claim=False)
+
+    def test_rodc_issued_claims_remove_claims_delete(self):
+        self.run_rodc_tgs_test(remove_claims=True, delete_claim=True)
+
+    def test_rodc_issued_device_claims_modify(self):
+        self.run_device_rodc_tgs_test(remove_claims=False, delete_claim=False)
+
+    def test_rodc_issued_device_claims_delete(self):
+        self.run_device_rodc_tgs_test(remove_claims=False, delete_claim=True)
+
+    def test_rodc_issued_device_claims_remove_claims_modify(self):
+        self.run_device_rodc_tgs_test(remove_claims=True, delete_claim=False)
+
+    def test_rodc_issued_device_claims_remove_claims_delete(self):
+        self.run_device_rodc_tgs_test(remove_claims=True, delete_claim=True)
+
     # Create a user account with an applicable claim for the 'middleName'
     # attribute. After obtaining a TGT, from which we optionally remove the
     # claims, change the middleName attribute values for the account in the
@@ -477,6 +501,230 @@ class ClaimsTests(KDCBaseTest):
                                          sname=service_sname,
                                          etypes=etypes,
                                          additional_tickets=additional_tickets)
+        self.check_reply(rep, KRB_TGS_REP)
+
+    def run_rodc_tgs_test(self, remove_claims, delete_claim):
+        samdb = self.get_samdb()
+        # Create a user account permitted to replicate to the RODC.
+        user_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                # Set the value of the claim attribute.
+                'additional_details': (('middleName', 'foo'),),
+                'allowed_replication_mock': True,
+                'revealed_to_mock_rodc': True,
+            },
+            use_cache=False)
+        user_dn = user_creds.get_dn()
+
+        # Create a claim that applies to the user.
+        claim_id = self.get_new_username()
+        self.create_claim(claim_id,
+                          enabled=True,
+                          attribute='middleName',
+                          single_valued=True,
+                          source_type='AD',
+                          for_classes=['user'],
+                          value_type=claims.CLAIM_TYPE_STRING)
+
+        expected_claims = {
+            claim_id: {
+                'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                'type': claims.CLAIM_TYPE_STRING,
+                'values': ('foo',),
+            },
+        }
+
+        # Get a TGT for the user.
+        tgt = self.get_tgt(user_creds, expect_pac=True,
+                           expect_client_claims=True,
+                           expected_client_claims=expected_claims)
+
+        # Modify the TGT to be issued by an RODC. Optionally remove the client
+        # claims.
+        if remove_claims:
+            tgt = self.remove_client_claims_tgt_from_rodc(tgt)
+        else:
+            tgt = self.issued_by_rodc(tgt)
+
+        # Modify or delete the value of the attribute used for the claim. Modify
+        # our test expectations accordingly.
+        msg = ldb.Message(user_dn)
+        if delete_claim:
+            msg['middleName'] = ldb.MessageElement([],
+                                                   ldb.FLAG_MOD_DELETE,
+                                                   'middleName')
+            expected_claims = None
+            unexpected_claims = {claim_id}
+        else:
+            msg['middleName'] = ldb.MessageElement('bar',
+                                                   ldb.FLAG_MOD_REPLACE,
+                                                   'middleName')
+            expected_claims = {
+                claim_id: {
+                    'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                    'type': claims.CLAIM_TYPE_STRING,
+                    'values': ('bar',),
+                },
+            }
+            unexpected_claims = None
+        samdb.modify(msg)
+
+        target_creds = self.get_service_creds()
+
+        # Get a service ticket for the user. The claim value should have
+        # changed, indicating that the client claims have been regenerated or
+        # removed, depending on whether the corresponding attribute is still
+        # present on the account.
+        self.get_service_ticket(
+            tgt, target_creds,
+            expect_pac=True,
+            # Expect the CLIENT_CLAIMS_INFO PAC buffer. It may be empty.
+            expect_client_claims=True,
+            expected_client_claims=expected_claims,
+            unexpected_client_claims=unexpected_claims)
+
+    def run_device_rodc_tgs_test(self, remove_claims, delete_claim):
+        samdb = self.get_samdb()
+
+        # Create the user account.
+        user_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+        user_name = user_creds.get_username()
+
+        # Create a machine account permitted to replicate to the RODC.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                # Set the value of the claim attribute.
+                'additional_details': (('middleName', 'foo'),),
+                'allowed_replication_mock': True,
+                'revealed_to_mock_rodc': True,
+            },
+            use_cache=False)
+        mach_dn = mach_creds.get_dn()
+
+        # Create a claim that applies to the computer.
+        claim_id = self.get_new_username()
+        self.create_claim(claim_id,
+                          enabled=True,
+                          attribute='middleName',
+                          single_valued=True,
+                          source_type='AD',
+                          for_classes=['computer'],
+                          value_type=claims.CLAIM_TYPE_STRING)
+
+        expected_claims = {
+            claim_id: {
+                'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                'type': claims.CLAIM_TYPE_STRING,
+                'values': ('foo',),
+            },
+        }
+
+        # Get a TGT for the user.
+        user_tgt = self.get_tgt(user_creds)
+
+        # Get a TGT for the computer.
+        mach_tgt = self.get_tgt(mach_creds, expect_pac=True,
+                                expect_client_claims=True,
+                                expected_client_claims=expected_claims)
+
+        # Modify the computer's TGT to be issued by an RODC. Optionally remove
+        # the client claims.
+        if remove_claims:
+            mach_tgt = self.remove_client_claims_tgt_from_rodc(mach_tgt)
+        else:
+            mach_tgt = self.issued_by_rodc(mach_tgt)
+
+        # Modify or delete the value of the attribute used for the claim. Modify
+        # our test expectations accordingly.
+        msg = ldb.Message(mach_dn)
+        if delete_claim:
+            msg['middleName'] = ldb.MessageElement([],
+                                                   ldb.FLAG_MOD_DELETE,
+                                                   'middleName')
+            expected_claims = None
+            unexpected_claims = {claim_id}
+        else:
+            msg['middleName'] = ldb.MessageElement('bar',
+                                                   ldb.FLAG_MOD_REPLACE,
+                                                   'middleName')
+            expected_claims = {
+                claim_id: {
+                    'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                    'type': claims.CLAIM_TYPE_STRING,
+                    'values': ('bar',),
+                },
+            }
+            unexpected_claims = None
+        samdb.modify(msg)
+
+        subkey = self.RandomKey(user_tgt.session_key.etype)
+
+        armor_subkey = self.RandomKey(subkey.etype)
+        explicit_armor_key = self.generate_armor_key(armor_subkey,
+                                                     mach_tgt.session_key)
+        armor_key = kcrypto.cf2(explicit_armor_key.key,
+                                subkey.key,
+                                b'explicitarmor',
+                                b'tgsarmor')
+        armor_key = Krb5EncryptionKey(armor_key, None)
+
+        target_creds = self.get_service_creds()
+        target_name = target_creds.get_username()
+        if target_name[-1] == '$':
+            target_name = target_name[:-1]
+
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['host', target_name])
+        srealm = target_creds.get_realm()
+
+        decryption_key = self.TicketDecryptionKey_from_creds(
+            target_creds)
+
+        target_supported_etypes = target_creds.tgs_supported_enctypes
+
+        etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+
+        kdc_options = '0'
+        pac_options = '1'  # claims support
+
+        # Perform a TGS-REQ for the user. The device claim value should have
+        # changed, indicating that the computer's client claims have been
+        # regenerated or removed, depending on whether the corresponding
+        # attribute is still present on the account.
+
+        kdc_exchange_dict = self.tgs_exchange_dict(
+            expected_crealm=user_tgt.crealm,
+            expected_cname=user_tgt.cname,
+            expected_srealm=srealm,
+            expected_sname=sname,
+            expected_account_name=user_name,
+            ticket_decryption_key=decryption_key,
+            generate_fast_fn=self.generate_simple_fast,
+            generate_fast_armor_fn=self.generate_ap_req,
+            check_rep_fn=self.generic_check_kdc_rep,
+            check_kdc_private_fn=self.generic_check_kdc_private,
+            tgt=user_tgt,
+            armor_key=armor_key,
+            armor_tgt=mach_tgt,
+            armor_subkey=armor_subkey,
+            pac_options=pac_options,
+            authenticator_subkey=subkey,
+            kdc_options=kdc_options,
+            expect_pac=True,
+            expected_supported_etypes=target_supported_etypes,
+            # Expect the DEVICE_CLAIMS_INFO PAC buffer. It may be empty.
+            expect_device_claims=True,
+            expected_device_claims=expected_claims,
+            unexpected_device_claims=unexpected_claims)
+
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=None,
+                                         realm=srealm,
+                                         sname=sname,
+                                         etypes=etypes)
         self.check_reply(rep, KRB_TGS_REP)
 
     @staticmethod
