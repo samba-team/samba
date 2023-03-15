@@ -364,6 +364,43 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 	return dom_sid_compare_auth(domain_sid, sid) == 0;
 }
 
+bool dom_sid_has_account_domain(const struct dom_sid *sid)
+{
+	if (sid == NULL) {
+		return false;
+	}
+
+	if (sid->sid_rev_num != 1) {
+		return false;
+	}
+	if (sid->num_auths != 5) {
+		return false;
+	}
+	if (sid->id_auth[5] != 5) {
+		return false;
+	}
+	if (sid->id_auth[4] != 0) {
+		return false;
+	}
+	if (sid->id_auth[3] != 0) {
+		return false;
+	}
+	if (sid->id_auth[2] != 0) {
+		return false;
+	}
+	if (sid->id_auth[1] != 0) {
+		return false;
+	}
+	if (sid->id_auth[0] != 0) {
+		return false;
+	}
+	if (sid->sub_auths[0] != 21) {
+		return false;
+	}
+
+	return true;
+}
+
 bool dom_sid_is_valid_account_domain(const struct dom_sid *sid)
 {
 	/*
