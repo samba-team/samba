@@ -626,7 +626,8 @@ if have_heimdal_support:
                       '$TRUST_DOMAIN',
                       '$PREFIX',
                       "forest",
-                      "aes256-cts-hmac-sha1-96"
+                      "aes256-cts-hmac-sha1-96",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.kinit_trust",
                   "fl2003dc:local",
@@ -644,7 +645,8 @@ if have_heimdal_support:
                       '$TRUST_DOMAIN',
                       '$PREFIX',
                       "external",
-                      "arcfour-hmac-md5"
+                      "arcfour-hmac-md5",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.kinit_trust",
                   "fl2000dc:local",
@@ -662,7 +664,8 @@ if have_heimdal_support:
                       '$TRUST_DOMAIN',
                       '$PREFIX',
                       "external",
-                      "arcfour-hmac-md5"
+                      "arcfour-hmac-md5",
+                      configuration
                   ])
     plantestsuite("samba4.blackbox.export.keytab",
                   "ad_dc:local",

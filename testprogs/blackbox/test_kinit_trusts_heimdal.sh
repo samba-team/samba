@@ -1,9 +1,9 @@
 #!/bin/sh
 # Copyright (C) 2015 Stefan Metzmacher <metze@samba.org>
 
-if [ $# -lt 13 ]; then
+if [ $# -lt 14 ]; then
 	cat <<EOF
-Usage: test_kinit_trusts.sh SERVER USERNAME PASSWORD REALM DOMAIN TRUST_USERNAME TRUST_PASSWORD TRUST_REALM TRUST_DOMAIN PREFIX TYPE ENCTYPE
+Usage: test_kinit_trusts.sh SERVER USERNAME PASSWORD REALM DOMAIN TRUST_USERNAME TRUST_PASSWORD TRUST_REALM TRUST_DOMAIN PREFIX TYPE ENCTYPE CONFIGURATION
 EOF
 	exit 1
 fi
@@ -23,6 +23,7 @@ shift 5
 PREFIX=$1
 TYPE=$2
 ENCTYPE=$3
+CONFIGURATION="${4}"
 shift 3
 failed=0
 
