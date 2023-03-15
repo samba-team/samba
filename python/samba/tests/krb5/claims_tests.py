@@ -766,9 +766,11 @@ class ClaimsTests(KDCBaseTest):
             self.fail(f'Unknown class "{account_class}"')
 
         all_claims = case.pop('claims')
-        (details, _,
+        (details, mod_msg,
          expected_claims,
          unexpected_claims) = self.setup_claims(all_claims)
+        self.assertFalse(mod_msg,
+                         'mid-test modifications not supported in this test')
         creds = self.get_cached_creds(
             account_type=account_type,
             opts={
