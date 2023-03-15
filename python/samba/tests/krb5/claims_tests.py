@@ -775,7 +775,13 @@ class ClaimsTests(KDCBaseTest):
                 'additional_details': self.freeze(details),
             })
 
+        # Whether to specify claims support in PA-PAC-OPTIONS.
+        pac_options_claims = case.pop('pac-options:claims-support', None)
+
         self.assertFalse(case, 'unexpected parameters in testcase')
+
+        if pac_options_claims is None:
+            pac_options_claims = True
 
         if to_self:
             service_creds = self.get_service_creds()
@@ -788,10 +794,16 @@ class ClaimsTests(KDCBaseTest):
             sname = None
             ticket_etype = None
 
+        if pac_options_claims:
+            pac_options = '1'  # claims support
+        else:
+            pac_options = '0'  # no claims support
+
         self.get_tgt(creds,
                      sname=sname,
                      target_creds=service_creds,
                      ticket_etype=ticket_etype,
+                     pac_options=pac_options,
                      expect_pac=True,
                      expect_client_claims=True,
                      expected_client_claims=expected_claims or None,
@@ -828,6 +840,26 @@ class ClaimsTests(KDCBaseTest):
                 },
             ],
             'class': 'user',
+        },
+        {
+            'name': 'no claims support in pac options',
+            'claims': [
+                {
+                    # 2.5.5.12
+                    'enabled': True,
+                    'attribute': 'carLicense',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['user'],
+                    'value_type': claims.CLAIM_TYPE_STRING,
+                    'values': ('foo',),
+                    # We still get claims in the PAC even if we don't specify
+                    # claims support in PA-PAC-OPTIONS.
+                    'expected': True,
+                },
+            ],
+            'class': 'user',
+            'pac-options:claims-support': False,
         },
         {
             # Note: The order of these DNs may differ on Windows.
@@ -1515,6 +1547,9 @@ class ClaimsTests(KDCBaseTest):
         tgs_expected = case.pop('tgs:expected', None)
         tgs_device_expected = case.pop('tgs:device:expected', None)
 
+        # Whether to specify claims support in PA-PAC-OPTIONS.
+        pac_options_claims = case.pop('pac-options:claims-support', None)
+
         all_claims = case.pop('claims')
 
         # There should be no parameters remaining in the testcase.
@@ -1560,6 +1595,9 @@ class ClaimsTests(KDCBaseTest):
             self.assertIsNotNone(tgs_mach_sids,
                                  'specified TGS-REQ reset user flags, but no '
                                  'accompanying machine SIDs provided')
+
+        if pac_options_claims is None:
+            pac_options_claims = True
 
         (details, mod_msg,
          expected_claims,
@@ -1673,7 +1711,10 @@ class ClaimsTests(KDCBaseTest):
         etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
 
         kdc_options = '0'
-        pac_options = '1'  # claims support
+        if pac_options_claims:
+            pac_options = '1'  # claims support
+        else:
+            pac_options = '0'  # no claims support
 
         requester_sid = None
         if tgs_to_krbtgt:
@@ -1833,6 +1874,62 @@ class ClaimsTests(KDCBaseTest):
             'tgs:to_krbtgt': False,
             # Compound identity is unsupported.
             'tgs:compound_id': False,
+            'tgs:expected': {
+                (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+                (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                frozenset([
+                    ('foo', SidType.RESOURCE_SID, resource_attrs),
+                    ('bar', SidType.RESOURCE_SID, resource_attrs),
+                ]),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
+            },
+        },
+        {
+            # Make a TGS request containing claims to a service, but don't
+            # specify support for claims in PA-PAC-OPTIONS. We still expect the
+            # final PAC to contain claims.
+            'test': 'device to service no claims support in pac options',
+            'groups': {
+                'foo': (GroupType.DOMAIN_LOCAL, {mach}),
+                'bar': (GroupType.DOMAIN_LOCAL, {mach}),
+            },
+            'claims': [
+                {
+                    # 2.5.5.10
+                    'enabled': True,
+                    'attribute': 'middleName',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['computer'],
+                    'value_type': claims.CLAIM_TYPE_STRING,
+                    'values': ('foo',),
+                    'expected': True,
+                    'mod_values': ['bar'],
+                },
+            ],
+            'as:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'as:mach:expected': {
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:to_krbtgt': False,
+            # Claims are unsupported.
+            'pac-options:claims-support': False,
             'tgs:expected': {
                 (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, default_attrs),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),

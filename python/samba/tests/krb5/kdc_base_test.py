@@ -2285,6 +2285,7 @@ class KDCBaseTest(RawKerberosTest):
                 unexpected_groups=None,
                 pac_request=True, expect_pac=True,
                 expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
+                pac_options=None,
                 expect_requester_sid=None,
                 rc4_support=True,
                 expect_edata=None,
@@ -2297,7 +2298,7 @@ class KDCBaseTest(RawKerberosTest):
         else:
             user_name = creds.get_username()
 
-        cache_key = (user_name, to_rodc, kdc_options, pac_request,
+        cache_key = (user_name, to_rodc, kdc_options, pac_request, pac_options,
                      client_name_type,
                      ticket_etype,
                      str(expected_flags), str(unexpected_flags),
@@ -2361,7 +2362,8 @@ class KDCBaseTest(RawKerberosTest):
                            'renewable-ok')
         kdc_options = krb5_asn1.KDCOptions(kdc_options)
 
-        pac_options = '1'  # supports claims
+        if pac_options is None:
+            pac_options = '1'  # supports claims
 
         rep, kdc_exchange_dict = self._test_as_exchange(
             cname=cname,
