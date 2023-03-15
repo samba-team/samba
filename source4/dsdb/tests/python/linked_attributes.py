@@ -729,6 +729,106 @@ class LATests(samba.tests.TestCase):
         self.assert_back_links('<GUID=%s>' % guid, [], attr='memberOf',
                                show_deleted=1)
 
+    def test_la_invisible_backlink(self):
+        u1, = self.add_objects(1, 'user', 'u_invisible_bl')
+        k1, = self.add_objects(1, 'msDS-KeyCredential', 'k1_invisible_bl',
+                                more_attrs={'msDS-KeyId': 'KeyId1', })
+        c2, = self.add_objects(1, 'container', 'c_invisible_bl')
+        k2, = self.add_objects(1, 'msDS-KeyCredential', 'k2_invisible_bl',
+                                more_attrs={'msDS-KeyId': 'KeyId2', })
+
+        # msDS-KeyPrincipalBL is allowed on objectClass 'user'
+        # so the msDS-KeyPrincipalBL attribute is visible by
+        # default (asking for '*')
+        self.add_linked_attribute(k1, u1, attr="msDS-KeyPrincipal")
+        self.assert_forward_links(k1, [u1], attr="msDS-KeyPrincipal")
+        self.assert_back_links(u1, [k1], attr="msDS-KeyPrincipalBL")
+        res = self.samdb.search(u1, scope=ldb.SCOPE_BASE, attrs=["*"])
+        self.assertIn("msDS-KeyPrincipalBL", res[0])
+        res = self.samdb.search(u1, scope=ldb.SCOPE_BASE,
+                                expression='(msDS-KeyPrincipalBL=*)',
+                                attrs=["*"])
+        self.assertIn("msDS-KeyPrincipalBL", res[0])
+        expression = '(msDS-KeyPrincipalBL=%s)' % ldb.binary_encode(str(k1))
+        res = self.samdb.search(self.testbase, scope=ldb.SCOPE_SUBTREE,
+                                expression=expression, attrs=["*"])
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), u1)
+        self.assertIn("msDS-KeyPrincipalBL", res[0])
+
+        # msDS-KeyPrincipalBL is allowed on objectClass 'msDS-KeyPrincipal'
+        # so the msDS-KeyPrincipalBL attribute is not visible by
+        # default (asking for '*'), it is only visible if
+        # explicitly requested
+        self.add_linked_attribute(k2, c2, attr="msDS-KeyPrincipal")
+        self.assert_forward_links(k2, [c2], attr="msDS-KeyPrincipal")
+        self.assert_back_links(c2, [k2], attr="msDS-KeyPrincipalBL")
+        res = self.samdb.search(c2, scope=ldb.SCOPE_BASE, attrs=["*"])
+        self.assertNotIn("msDS-KeyPrincipalBL", res[0])
+        res = self.samdb.search(c2, scope=ldb.SCOPE_BASE,
+                                expression='(msDS-KeyPrincipalBL=*)',
+                                attrs=["*"])
+        self.assertNotIn("msDS-KeyPrincipalBL", res[0])
+        res = self.samdb.search(c2, scope=ldb.SCOPE_BASE,
+                                attrs=["*", "msDS-KeyPrincipalBL"])
+        self.assertIn("msDS-KeyPrincipalBL", res[0])
+        res = self.samdb.search(c2, scope=ldb.SCOPE_BASE,
+                                expression='(msDS-KeyPrincipalBL=*)',
+                                attrs=["*", "msDS-KeyPrincipalBL"])
+        self.assertIn("msDS-KeyPrincipalBL", res[0])
+        expression = '(msDS-KeyPrincipalBL=%s)' % ldb.binary_encode(str(k2))
+        res = self.samdb.search(self.testbase, scope=ldb.SCOPE_SUBTREE,
+                                expression=expression,
+                                attrs=["*"])
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), c2)
+        self.assertNotIn("msDS-KeyPrincipalBL", res[0])
+        res = self.samdb.search(self.testbase, scope=ldb.SCOPE_SUBTREE,
+                                expression=expression,
+                                attrs=["*", "msDS-KeyPrincipalBL"])
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), c2)
+        self.assertIn("msDS-KeyPrincipalBL", res[0])
+
+        # msDS-KeyCredentialLink-BL is allowed on any objectClass at all
+        # so the msDS-KeyCredentialLink-BL attribute is not visible by
+        # default (asking for '*'), it is only visible if
+        # explicitly requested...
+
+        cl1a = "B:4:AAAA:%s" % u1
+        self.add_linked_attribute(u1, cl1a, attr="msDS-KeyCredentialLink")
+        self.assert_forward_links(u1, [cl1a], attr="msDS-KeyCredentialLink")
+        self.assert_back_links(u1, [u1], attr="msDS-KeyCredentialLink-BL")
+        res = self.samdb.search(u1, scope=ldb.SCOPE_BASE, attrs=["*"])
+        self.assertNotIn("msDS-KeyCredentialLink-BL", res[0])
+        res = self.samdb.search(u1, scope=ldb.SCOPE_BASE,
+                                attrs=["*", "msDS-KeyCredentialLink-BL"])
+        self.assertIn("msDS-KeyCredentialLink-BL", res[0])
+        self.assertEqual(1, len(res[0]["msDS-KeyCredentialLink-BL"]))
+
+        cl1b = "B:4:BBBB:%s" % u1
+        self.add_linked_attribute(u1, cl1b, attr="msDS-KeyCredentialLink")
+        self.assert_forward_links(u1, [cl1a,cl1b], attr="msDS-KeyCredentialLink")
+        self.assert_back_links(u1, [u1,u1], attr="msDS-KeyCredentialLink-BL")
+        res = self.samdb.search(u1, scope=ldb.SCOPE_BASE, attrs=["*"])
+        self.assertNotIn("msDS-KeyCredentialLink-BL", res[0])
+        res = self.samdb.search(u1, scope=ldb.SCOPE_BASE,
+                                attrs=["*", "msDS-KeyCredentialLink-BL"])
+        self.assertIn("msDS-KeyCredentialLink-BL", res[0])
+        self.assertEqual(2, len(res[0]["msDS-KeyCredentialLink-BL"]))
+
+        cl1c = "B:4:CCCC:%s" % k1
+        self.add_linked_attribute(u1, cl1c, attr="msDS-KeyCredentialLink")
+        self.assert_forward_links(u1, [cl1a,cl1b,cl1c], attr="msDS-KeyCredentialLink")
+        self.assert_back_links(u1, [u1,u1], attr="msDS-KeyCredentialLink-BL")
+        self.assert_back_links(k1, [u1], attr="msDS-KeyCredentialLink-BL")
+        res = self.samdb.search(k1, scope=ldb.SCOPE_BASE, attrs=["*"])
+        self.assertNotIn("msDS-KeyCredentialLink-BL", res[0])
+        res = self.samdb.search(k1, scope=ldb.SCOPE_BASE,
+                                attrs=["*", "msDS-KeyCredentialLink-BL"])
+        self.assertIn("msDS-KeyCredentialLink-BL", res[0])
+        self.assertEqual(1, len(res[0]["msDS-KeyCredentialLink-BL"]))
+
 if "://" not in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
