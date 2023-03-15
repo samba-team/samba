@@ -27,6 +27,7 @@ import re
 import ldb
 
 from samba.dcerpc import claims, krb5pac, security
+from samba.ndr import ndr_pack
 
 from samba.tests import DynamicTestCase, env_get_var_value
 from samba.tests.krb5 import kcrypto
@@ -132,6 +133,7 @@ class ClaimsTests(KDCBaseTest):
 
         details = {}
         mod_msg = ldb.Message()
+        security_desc = None
 
         for claim in all_claims:
             # Make a copy to avoid modifying the original.
@@ -176,6 +178,22 @@ class ClaimsTests(KDCBaseTest):
                                      'conflicting values set for attribute')
                 details[attribute] = transformed_values
 
+                readable = claim.pop('readable', True)
+                if not readable:
+                    if security_desc is None:
+                        security_desc = security.descriptor()
+
+                    # Deny all read property access to the attribute.
+                    ace = security.ace()
+                    ace.type = security.SEC_ACE_TYPE_ACCESS_DENIED_OBJECT
+                    ace.access_mask = security.SEC_ADS_READ_PROP
+                    ace.trustee = security.dom_sid(security.SID_WORLD)
+                    ace.object.flags |= security.SEC_ACE_OBJECT_TYPE_PRESENT
+                    ace.object.type = self.get_schema_id_guid_from_attribute(
+                        attribute)
+
+                    security_desc.dacl_add(ace)
+
                 if expected_values is None:
                     expected_values = values
 
@@ -201,6 +219,10 @@ class ClaimsTests(KDCBaseTest):
                 unexpected_claims.add(claim_id)
 
             self.create_claim(claim_id, **claim)
+
+        if security_desc is not None:
+            self.assertNotIn('nTSecurityDescriptor', details)
+            details['nTSecurityDescriptor'] = ndr_pack(security_desc)
 
         return details, mod_msg, expected_claims, unexpected_claims
 
@@ -862,6 +884,26 @@ class ClaimsTests(KDCBaseTest):
             ],
             'class': 'user',
             'pac-options:claims-support': False,
+        },
+        {
+            'name': 'deny RP',
+            'claims': [
+                {
+                    # 2.5.5.12
+                    'enabled': True,
+                    'attribute': 'carLicense',
+                    'single_valued': True,
+                    'source_type': 'AD',
+                    'for_classes': ['user'],
+                    'value_type': claims.CLAIM_TYPE_STRING,
+                    'values': ('foo',),
+                    # Deny read access to the attribute. It still shows up in
+                    # the claim.
+                    'readable': False,
+                    'expected': True,
+                },
+            ],
+            'class': 'user',
         },
         {
             # Note: The order of these DNs may differ on Windows.
