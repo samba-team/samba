@@ -13,4 +13,9 @@ struct dsdb_dn {
 
 /* RMD_FLAGS component in a DN */
 #define DSDB_RMD_FLAG_DELETED     1
-#define DSDB_RMD_FLAG_INVISIBLE   2
+/*
+ * This is used on a backlink attribute
+ * if the backlink is not allowed on
+ * the objectClass
+ */
+#define DSDB_RMD_FLAG_HIDDEN_BL   2
