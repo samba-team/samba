@@ -28,6 +28,14 @@ if needed, this is documented in the manpage.
 
 Please check the smbget manpage or --help output.
 
+gpupdate changes
+----------------
+
+The libgpo.get_gpo_list function has been deprecated in favor of
+an implementation written in python. The new function can be imported via
+`import samba.gp`. The python implementation connects to Active Directory
+using the SamDB module, instead of ADS (which is what libgpo uses).
+
 REMOVED FEATURES
 ================
 
