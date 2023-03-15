@@ -568,18 +568,6 @@ plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join
 plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
 
 if have_heimdal_support:
-    plantestsuite("samba4.blackbox.export.keytab",
-                  "ad_dc:local",
-                  [
-                      os.path.join(bbdir, "test_export_keytab_heimdal.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$REALM',
-                      '$DOMAIN',
-                      "$PREFIX",
-                      smbclient3,
-                      configuration
-                  ])
     plantestsuite("samba4.blackbox.kpasswd",
                   "ad_dc:local",
                   [
@@ -610,18 +598,6 @@ if have_heimdal_support:
                       configuration
                   ])
 else:
-    plantestsuite("samba4.blackbox.export.keytab",
-                  "ad_dc:local",
-                  [
-                      os.path.join(bbdir, "test_export_keytab_mit.sh"),
-                      '$SERVER',
-                      '$USERNAME',
-                      '$REALM',
-                      '$DOMAIN',
-                      "$PREFIX",
-                      smbclient3,
-                      configuration
-                  ])
     plantestsuite("samba4.blackbox.kpasswd",
                   "ad_dc:local",
                   [
@@ -728,6 +704,19 @@ plantestsuite("samba4.blackbox.kinit_trust",
                   '$TRUST_DOMAIN',
                   '$PREFIX',
                   "external",
+                  configuration
+              ])
+
+plantestsuite("samba4.blackbox.kinit.export.keytab",
+              "ad_dc:local",
+              [
+                  os.path.join(bbdir, "test_kinit_export_keytab.sh"),
+                  '$SERVER',
+                  '$USERNAME',
+                  '$REALM',
+                  '$DOMAIN',
+                  "$PREFIX",
+                  smbclient3,
                   configuration
               ])
 
