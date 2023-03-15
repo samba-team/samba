@@ -877,64 +877,82 @@ int64_t ldb_msg_find_attr_as_int64(const struct ldb_message *msg,
 				   const char *attr_name,
 				   int64_t default_value)
 {
+	int64_t val = 0;
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	int ret = ldb_val_as_int64(v, &val);
+	return ret ? default_value : val;
+}
+
+int ldb_val_as_int64(const struct ldb_val *v, int64_t *val)
+{
 	char buf[sizeof("-9223372036854775808")];
 	char *end = NULL;
-	int64_t ret;
+	int64_t result;
 
 	if (!v || !v->data) {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ZERO_STRUCT(buf);
 	if (v->length >= sizeof(buf)) {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	memcpy(buf, v->data, v->length);
 	errno = 0;
-	ret = (int64_t) strtoll(buf, &end, 10);
+	result = (int64_t) strtoll(buf, &end, 10);
 	if (errno != 0) {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (end && end[0] != '\0') {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return ret;
+
+	*val = result;
+	return LDB_SUCCESS;
 }
 
 uint64_t ldb_msg_find_attr_as_uint64(const struct ldb_message *msg,
 				     const char *attr_name,
 				     uint64_t default_value)
 {
+	uint64_t val = 0;
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	int ret = ldb_val_as_uint64(v, &val);
+	return ret ? default_value : val;
+}
+
+int ldb_val_as_uint64(const struct ldb_val *v, uint64_t *val)
+{
 	char buf[sizeof("-9223372036854775808")];
 	char *end = NULL;
-	uint64_t ret;
+	uint64_t result;
 
 	if (!v || !v->data) {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ZERO_STRUCT(buf);
 	if (v->length >= sizeof(buf)) {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	memcpy(buf, v->data, v->length);
 	errno = 0;
-	ret = (uint64_t) strtoll(buf, &end, 10);
+	result = (uint64_t) strtoll(buf, &end, 10);
 	if (errno != 0) {
 		errno = 0;
-		ret = (uint64_t) strtoull(buf, &end, 10);
+		result = (uint64_t) strtoull(buf, &end, 10);
 		if (errno != 0) {
-			return default_value;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 	if (end && end[0] != '\0') {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return ret;
+
+	*val = result;
+	return LDB_SUCCESS;
 }
 
 double ldb_msg_find_attr_as_double(const struct ldb_message *msg,
@@ -970,17 +988,26 @@ int ldb_msg_find_attr_as_bool(const struct ldb_message *msg,
 			      const char *attr_name,
 			      int default_value)
 {
+	bool val = false;
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	int ret = ldb_val_as_bool(v, &val);
+	return ret ? default_value : val;
+}
+
+int ldb_val_as_bool(const struct ldb_val *v, bool *val)
+{
 	if (!v || !v->data) {
-		return default_value;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (v->length == 5 && strncasecmp((const char *)v->data, "FALSE", 5) == 0) {
-		return 0;
+		*val = false;
+		return LDB_SUCCESS;
 	}
 	if (v->length == 4 && strncasecmp((const char *)v->data, "TRUE", 4) == 0) {
-		return 1;
+		*val = true;
+		return LDB_SUCCESS;
 	}
-	return default_value;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg,

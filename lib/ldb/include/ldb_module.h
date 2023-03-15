@@ -602,5 +602,8 @@ const char **ldb_options_get(struct ldb_context *ldb);
 struct ldb_dn *ldb_val_as_dn(struct ldb_context *ldb,
 			     TALLOC_CTX *mem_ctx,
 			     const struct ldb_val *v);
+int ldb_val_as_int64(const struct ldb_val *v, int64_t *val);
+int ldb_val_as_uint64(const struct ldb_val *v, uint64_t *val);
+int ldb_val_as_bool(const struct ldb_val *v, bool *val);
 
 #endif
