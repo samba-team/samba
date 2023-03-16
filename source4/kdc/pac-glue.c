@@ -1989,6 +1989,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	code = pac_blobs_add_blob(&pac_blobs,
+				  mem_ctx,
+				  PAC_TYPE_CLIENT_CLAIMS_INFO,
+				  client_claims_blob);
+	if (code != 0) {
+		goto done;
+	}
+
 	if (!is_trusted || !is_tgs) {
 		code = pac_blobs_remove_blob(&pac_blobs,
 					     mem_ctx,
