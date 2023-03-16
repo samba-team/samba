@@ -290,6 +290,7 @@ enum ndr_err_code {
 } while (0)
 
 enum ndr_compression_alg {
+	NDR_COMPRESSION_NONE    = 0,
 	NDR_COMPRESSION_MSZIP_CAB = 1,
 	NDR_COMPRESSION_MSZIP	= 2,
 	NDR_COMPRESSION_XPRESS	= 3,
