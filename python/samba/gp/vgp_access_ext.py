@@ -82,6 +82,7 @@ class vgp_access_ext(gp_xml_ext, gp_file_applier):
                 deny_conf = self.parse(path)
                 entries = []
                 policy_files = []
+                winbind_sep = self.lp.get('winbind separator')
                 if allow_conf:
                     policy = allow_conf.find('policysetting')
                     data = policy.find('data')
@@ -90,7 +91,9 @@ class vgp_access_ext(gp_xml_ext, gp_file_applier):
                         adobject = listelement.find('adobject')
                         name = adobject.find('name').text
                         domain = adobject.find('domain').text
-                        entries.append('+:%s\\%s:ALL' % (domain, name))
+                        entries.append('+:%s%s%s:ALL' % (domain,
+                                                         winbind_sep,
+                                                         name))
                     if len(allow_listelements) > 0:
                         log.info('Adding an implicit deny ALL because an allow'
                                  ' entry is present')
@@ -102,7 +105,9 @@ class vgp_access_ext(gp_xml_ext, gp_file_applier):
                         adobject = listelement.find('adobject')
                         name = adobject.find('name').text
                         domain = adobject.find('domain').text
-                        entries.append('-:%s\\%s:ALL' % (domain, name))
+                        entries.append('-:%s%s%s:ALL' % (domain,
+                                                         winbind_sep,
+                                                         name))
                         if len(allow_listelements) > 0:
                             log.warn("Deny entry '%s' is meaningless with "
                                      "allow present" % entries[-1])
@@ -143,6 +148,7 @@ class vgp_access_ext(gp_xml_ext, gp_file_applier):
             path = os.path.join(gpo.file_sys_path, deny)
             deny_conf = self.parse(path)
             entries = []
+            winbind_sep = self.lp.get('winbind separator')
             if allow_conf:
                 policy = allow_conf.find('policysetting')
                 data = policy.find('data')
@@ -153,7 +159,9 @@ class vgp_access_ext(gp_xml_ext, gp_file_applier):
                     domain = adobject.find('domain').text
                     if str(self) not in output.keys():
                         output[str(self)] = []
-                    output[str(self)].append('+:%s\\%s:ALL' % (name, domain))
+                    output[str(self)].append('+:%s%s%s:ALL' % (name,
+                                                               winbind_sep,
+                                                               domain))
                 if len(allow_listelements) > 0:
                     output[str(self)].append('-:ALL:ALL')
             if deny_conf:
@@ -165,5 +173,7 @@ class vgp_access_ext(gp_xml_ext, gp_file_applier):
                     domain = adobject.find('domain').text
                     if str(self) not in output.keys():
                         output[str(self)] = []
-                    output[str(self)].append('-:%s\\%s:ALL' % (name, domain))
+                    output[str(self)].append('-:%s%s%s:ALL' % (name,
+                                                               winbind_sep,
+                                                               domain))
         return output
