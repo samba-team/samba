@@ -524,6 +524,8 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 			sd->group_sid = sddl_decode_sid(sd, &sddl, &state);
 			if (sd->group_sid == NULL) goto failed;
 			break;
+		default:
+			goto failed;
 		}
 	}
 
