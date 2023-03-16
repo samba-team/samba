@@ -819,10 +819,8 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 {
 	krb5_data logon_data;
 	krb5_error_code ret;
-#ifdef SAMBA4_USES_HEIMDAL
 	char null_byte = '\0';
 	krb5_data null_data = smb_krb5_make_data(&null_byte, 0);
-#endif
 
 	/* The user account may be set not to want the PAC */
 	if (logon_blob == NULL) {
@@ -846,10 +844,19 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	}
 
 	if (client_claims_blob != NULL) {
-		krb5_data client_claims_data = smb_krb5_data_from_blob(*client_claims_blob);
+		krb5_data client_claims_data;
+		krb5_data *data = NULL;
+
+		if (client_claims_blob->length != 0) {
+			client_claims_data = smb_krb5_data_from_blob(*client_claims_blob);
+			data = &client_claims_data;
+		} else {
+			data = &null_data;
+		}
+
 		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_CLIENT_CLAIMS_INFO,
-					  &client_claims_data);
+					  data);
 		if (ret != 0) {
 			return ret;
 		}
