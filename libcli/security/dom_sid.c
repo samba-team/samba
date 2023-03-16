@@ -149,7 +149,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	}
 
 	conv = smb_strtoul(p, &q, 10, &error, SMB_STR_STANDARD);
-	if (error != 0 || (*q != '-') || conv > UINT8_MAX) {
+	if (error != 0 || (*q != '-') || conv > UINT8_MAX || q - p > 4) {
 		goto format_error;
 	}
 	sidout->sid_rev_num = (uint8_t) conv;
