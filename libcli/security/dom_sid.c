@@ -132,7 +132,6 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 {
 	const char *p;
 	char *q;
-	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 	uint64_t conv;
 	int error = 0;
 
@@ -166,7 +165,6 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		goto format_error;
 	}
 
-	/* When identauth >= UINT32_MAX, it's in hex with a leading 0x */
 	/* NOTE - the conv value is in big-endian format. */
 	sidout->id_auth[0] = (conv & 0xff0000000000ULL) >> 40;
 	sidout->id_auth[1] = (conv & 0x00ff00000000ULL) >> 32;
