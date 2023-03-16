@@ -168,7 +168,15 @@ interface krb5pac
 		PAC_TYPE_ATTRIBUTES_INFO = 17,
 		PAC_TYPE_REQUESTER_SID = 18,
 		PAC_TYPE_FULL_CHECKSUM = 19
+		/*
+		 * Note! when adding new types, adjust the value of PAC_TYPE_END
+		 * to equal one more than the highest supported type.
+		 */
 	} PAC_TYPE;
+
+	const uint32 PAC_TYPE_BEGIN = 1;
+	const uint32 PAC_TYPE_END = 20;
+	const uint32 PAC_TYPE_COUNT = PAC_TYPE_END - PAC_TYPE_BEGIN;
 
 	typedef struct {
 		[flag(NDR_REMAINING)] DATA_BLOB remaining;

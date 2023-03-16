@@ -46,6 +46,254 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
 
+struct type_data {
+	uint32_t type;
+	const DATA_BLOB *data;
+};
+
+struct pac_blobs {
+	size_t type_index[PAC_TYPE_COUNT];
+	struct type_data *type_blobs;
+	size_t num_types;
+};
+
+static void pac_blobs_init(struct pac_blobs *pac_blobs)
+{
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(pac_blobs->type_index); ++i) {
+		pac_blobs->type_index[i] = SIZE_MAX;
+	}
+
+	pac_blobs->type_blobs = NULL;
+	pac_blobs->num_types = 0;
+}
+
+static void pac_blobs_destroy(struct pac_blobs *pac_blobs)
+{
+	TALLOC_FREE(pac_blobs->type_blobs);
+}
+
+static inline size_t *pac_blobs_get_index(struct pac_blobs *pac_blobs, size_t type)
+{
+	/* Ensure the type is valid. */
+	SMB_ASSERT(type >= PAC_TYPE_BEGIN);
+	SMB_ASSERT(type < PAC_TYPE_END);
+
+	return &pac_blobs->type_index[type - PAC_TYPE_BEGIN];
+}
+
+static inline struct type_data *pac_blobs_get(struct pac_blobs *pac_blobs, size_t type)
+{
+	size_t index = *pac_blobs_get_index(pac_blobs, type);
+	SMB_ASSERT(index < pac_blobs->num_types);
+
+	return &pac_blobs->type_blobs[index];
+}
+
+static krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
+					       TALLOC_CTX *mem_ctx,
+					       krb5_context context,
+					       const krb5_const_pac pac)
+{
+	krb5_error_code code;
+	uint32_t *types = NULL;
+	size_t i;
+
+	code = krb5_pac_get_types(context, pac, &pac_blobs->num_types, &types);
+	if (code != 0) {
+		DBG_ERR("krb5_pac_get_types failed\n");
+		return code;
+	}
+
+	pac_blobs->type_blobs = talloc_array(mem_ctx, struct type_data, pac_blobs->num_types);
+	if (pac_blobs->type_blobs == NULL) {
+		DBG_ERR("Out of memory\n");
+		SAFE_FREE(types);
+		return ENOMEM;
+	}
+
+	for (i = 0; i < pac_blobs->num_types; ++i) {
+		uint32_t type = types[i];
+		size_t *type_index = NULL;
+
+		pac_blobs->type_blobs[i] = (struct type_data) {
+			.type = type,
+			.data = NULL,
+		};
+
+		switch (type) {
+			/* PAC buffer types that we support. */
+		case PAC_TYPE_LOGON_INFO:
+		case PAC_TYPE_CREDENTIAL_INFO:
+		case PAC_TYPE_SRV_CHECKSUM:
+		case PAC_TYPE_KDC_CHECKSUM:
+		case PAC_TYPE_LOGON_NAME:
+		case PAC_TYPE_CONSTRAINED_DELEGATION:
+		case PAC_TYPE_UPN_DNS_INFO:
+		case PAC_TYPE_TICKET_CHECKSUM:
+		case PAC_TYPE_ATTRIBUTES_INFO:
+		case PAC_TYPE_REQUESTER_SID:
+		case PAC_TYPE_FULL_CHECKSUM:
+			type_index = pac_blobs_get_index(pac_blobs, type);
+			if (*type_index != SIZE_MAX) {
+				DBG_WARNING("PAC buffer type[%"PRIu32"] twice\n", type);
+				pac_blobs_destroy(pac_blobs);
+				SAFE_FREE(types);
+				return EINVAL;
+			}
+			*type_index = i;
+
+			break;
+		default:
+			break;
+		}
+	}
+
+	SAFE_FREE(types);
+	return 0;
+}
+
+#define pac_blobs_ensure_exists(pac_blobs, type) \
+	_pac_blobs_ensure_exists(pac_blobs, \
+				 type, \
+				 #type, \
+				 __location__, \
+				 __func__)
+
+static inline krb5_error_code _pac_blobs_ensure_exists(struct pac_blobs *pac_blobs,
+						       const uint32_t type,
+						       const char *name,
+						       const char *location,
+						       const char *function)
+{
+	if (*pac_blobs_get_index(pac_blobs, type) == SIZE_MAX) {
+		DEBUGLF(DBGLVL_ERR, ("%s: %s missing\n", function, name), location, function);
+		return EINVAL;
+	}
+
+	return 0;
+}
+
+#define pac_blobs_replace_existing(pac_blobs, type, blob) \
+	_pac_blobs_replace_existing(pac_blobs, \
+				    type, \
+				    #type, \
+				    blob, \
+				    __location__, \
+				    __func__)
+
+static krb5_error_code _pac_blobs_replace_existing(struct pac_blobs *pac_blobs,
+						   const uint32_t type,
+						   const char *name,
+						   const DATA_BLOB *blob,
+						   const char *location,
+						   const char *function)
+{
+	krb5_error_code code;
+
+	code = _pac_blobs_ensure_exists(pac_blobs,
+					type,
+					name,
+					location,
+					function);
+	if (code != 0) {
+		return code;
+	}
+
+	pac_blobs_get(pac_blobs, type)->data = blob;
+
+	return 0;
+}
+
+static krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
+					  TALLOC_CTX *mem_ctx,
+					  const uint32_t type,
+					  const DATA_BLOB *blob)
+{
+	size_t *index = NULL;
+
+	if (blob == NULL) {
+		return 0;
+	}
+
+	index = pac_blobs_get_index(pac_blobs, type);
+	if (*index == SIZE_MAX) {
+		pac_blobs->type_blobs = talloc_realloc(mem_ctx,
+						       pac_blobs->type_blobs,
+						       struct type_data,
+						       pac_blobs->num_types + 1);
+		if (pac_blobs->type_blobs == NULL) {
+			DBG_ERR("Out of memory\n");
+			return ENOMEM;
+		}
+
+		*index = pac_blobs->num_types++;
+	}
+
+	*pac_blobs_get(pac_blobs, type) = (struct type_data) {
+		.type = type,
+		.data = blob,
+	};
+
+	return 0;
+}
+
+static krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
+					     TALLOC_CTX *mem_ctx,
+					     const uint32_t type)
+{
+	size_t found_index;
+	size_t i;
+
+	/* Get the index of this PAC buffer type. */
+	found_index = *pac_blobs_get_index(pac_blobs, type);
+	if (found_index == SIZE_MAX) {
+		/* We don't have a PAC buffer of this type, so we're done. */
+		return 0;
+	}
+
+	/* Since the PAC buffer is present, there will be at least one type in the array. */
+	SMB_ASSERT(pac_blobs->num_types > 0);
+
+	/* The index should be valid. */
+	SMB_ASSERT(found_index < pac_blobs->num_types);
+
+	/*
+	 * Even though a consistent ordering of PAC buffers is not to be relied
+	 * upon, we must still maintain the ordering we are given.
+	 */
+	for (i = found_index; i < pac_blobs->num_types - 1; ++i) {
+		size_t moved_type;
+
+		/* Shift each following element backwards by one. */
+		pac_blobs->type_blobs[i] = pac_blobs->type_blobs[i + 1];
+
+		/* Mark the new position of the moved element in the index. */
+		moved_type = pac_blobs->type_blobs[i].type;
+		if (moved_type >= PAC_TYPE_BEGIN && moved_type < PAC_TYPE_END) {
+			*pac_blobs_get_index(pac_blobs, moved_type) = i;
+		}
+	}
+
+	/* Mark the removed element as no longer present. */
+	*pac_blobs_get_index(pac_blobs, type) = SIZE_MAX;
+
+	/* We do not free the removed data blob, as it may be statically allocated (e.g., a null blob). */
+
+	/* Remove the last element from the array. */
+	pac_blobs->type_blobs = talloc_realloc(mem_ctx,
+					       pac_blobs->type_blobs,
+					       struct type_data,
+					       --pac_blobs->num_types);
+	if (pac_blobs->type_blobs == NULL) {
+		DBG_ERR("Out of memory\n");
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *info,
@@ -1501,26 +1749,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	bool is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	int is_tgs = false;
 	enum auth_group_inclusion group_inclusion;
-	size_t num_types = 0;
-	uint32_t *types = NULL;
-	/*
-	 * FIXME: Do we really still need forced_next_type? With MIT Kerberos
-	 * the PAC buffers do not get ordered and it works just fine. We are
-	 * not aware of any issues in this regard. This might be just ancient
-	 * code.
-	 */
-	uint32_t forced_next_type = 0;
 	size_t i = 0;
-	ssize_t logon_info_idx = -1;
-	ssize_t delegation_idx = -1;
-	ssize_t logon_name_idx = -1;
-	ssize_t upn_dns_info_idx = -1;
-	ssize_t srv_checksum_idx = -1;
-	ssize_t kdc_checksum_idx = -1;
-	ssize_t tkt_checksum_idx = -1;
-	ssize_t attrs_info_idx = -1;
-	ssize_t requester_sid_idx = -1;
-	ssize_t full_checksum_idx = -1;
+
+	struct pac_blobs pac_blobs;
+	pac_blobs_init(&pac_blobs);
 
 	is_tgs = smb_krb5_principal_is_tgs(context, server_principal);
 	if (is_tgs == -1) {
@@ -1693,164 +1925,94 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Check the types of the given PAC */
-	code = krb5_pac_get_types(context, old_pac, &num_types, &types);
+	code = pac_blobs_from_krb5_pac(&pac_blobs,
+				       mem_ctx,
+				       context,
+				       old_pac);
 	if (code != 0) {
-		DBG_ERR("krb5_pac_get_types failed\n");
 		goto done;
 	}
 
-	for (i = 0; i < num_types; i++) {
-		switch (types[i]) {
-		case PAC_TYPE_LOGON_INFO:
-			if (logon_info_idx != -1) {
-				DBG_WARNING("logon info type[%u] twice [%zd] "
-					    "and [%zu]: \n",
-					    types[i],
-					    logon_info_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			logon_info_idx = i;
-			break;
-		case PAC_TYPE_CONSTRAINED_DELEGATION:
-			if (delegation_idx != -1) {
-				DBG_WARNING("constrained delegation type[%u] "
-					    "twice [%zd] and [%zu]: \n",
-					    types[i],
-					    delegation_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			delegation_idx = i;
-			break;
-		case PAC_TYPE_LOGON_NAME:
-			if (logon_name_idx != -1) {
-				DBG_WARNING("logon name type[%u] twice [%zd] "
-					    "and [%zu]: \n",
-					    types[i],
-					    logon_name_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			logon_name_idx = i;
-			break;
-		case PAC_TYPE_UPN_DNS_INFO:
-			if (upn_dns_info_idx != -1) {
-				DBG_WARNING("upn dns info type[%u] twice [%zd] "
-					    "and [%zu]: \n",
-					    types[i],
-					    upn_dns_info_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			upn_dns_info_idx = i;
-			break;
-		case PAC_TYPE_SRV_CHECKSUM:
-			if (srv_checksum_idx != -1) {
-				DBG_WARNING("srv checksum type[%u] twice [%zd] "
-					    "and [%zu]: \n",
-					    types[i],
-					    srv_checksum_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			srv_checksum_idx = i;
-			break;
-		case PAC_TYPE_KDC_CHECKSUM:
-			if (kdc_checksum_idx != -1) {
-				DBG_WARNING("kdc checksum type[%u] twice [%zd] "
-					    "and [%zu]: \n",
-					    types[i],
-					    kdc_checksum_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			kdc_checksum_idx = i;
-			break;
-		case PAC_TYPE_TICKET_CHECKSUM:
-			if (tkt_checksum_idx != -1) {
-				DBG_WARNING("ticket checksum type[%u] twice "
-					    "[%zd] and [%zu]: \n",
-					    types[i],
-					    tkt_checksum_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			tkt_checksum_idx = i;
-			break;
-		case PAC_TYPE_ATTRIBUTES_INFO:
-			if (attrs_info_idx != -1) {
-				DBG_WARNING("attributes info type[%u] twice "
-					    "[%zd] and [%zu]: \n",
-					    types[i],
-					    attrs_info_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			attrs_info_idx = i;
-			break;
-		case PAC_TYPE_REQUESTER_SID:
-			if (requester_sid_idx != -1) {
-				DBG_WARNING("requester sid type[%u] twice"
-					    "[%zd] and [%zu]: \n",
-					    types[i],
-					    requester_sid_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			requester_sid_idx = i;
-			break;
-		case PAC_TYPE_FULL_CHECKSUM:
-			if (full_checksum_idx != -1) {
-				DBG_WARNING("full checksum type[%u] twice "
-					    "[%zd] and [%zu]: \n",
-					    types[i],
-					    full_checksum_idx,
-					    i);
-				code = EINVAL;
-				goto done;
-			}
-			full_checksum_idx = i;
-			break;
-		default:
-			continue;
+	code = pac_blobs_replace_existing(&pac_blobs,
+					  PAC_TYPE_LOGON_INFO,
+					  pac_blob);
+	if (code != 0) {
+		goto done;
+	}
+
+#ifdef SAMBA4_USES_HEIMDAL
+	/* Not needed with MIT Kerberos */
+	code = pac_blobs_replace_existing(&pac_blobs,
+					  PAC_TYPE_LOGON_NAME,
+					  &data_blob_null);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = pac_blobs_replace_existing(&pac_blobs,
+					  PAC_TYPE_SRV_CHECKSUM,
+					  &data_blob_null);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = pac_blobs_replace_existing(&pac_blobs,
+					  PAC_TYPE_KDC_CHECKSUM,
+					  &data_blob_null);
+	if (code != 0) {
+		goto done;
+	}
+#endif
+
+	if (!(flags & SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION)) {
+		code = pac_blobs_ensure_exists(&pac_blobs,
+					       PAC_TYPE_REQUESTER_SID);
+		if (code != 0) {
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
 		}
 	}
 
-	if (logon_info_idx == -1) {
-		DBG_WARNING("PAC_TYPE_LOGON_INFO missing\n");
-		code = EINVAL;
+	code = pac_blobs_add_blob(&pac_blobs,
+				  mem_ctx,
+				  PAC_TYPE_CONSTRAINED_DELEGATION,
+				  deleg_blob);
+	if (code != 0) {
 		goto done;
 	}
-	if (logon_name_idx == -1) {
-		DBG_WARNING("PAC_TYPE_LOGON_NAME missing\n");
-		code = EINVAL;
+
+	code = pac_blobs_add_blob(&pac_blobs,
+				  mem_ctx,
+				  PAC_TYPE_UPN_DNS_INFO,
+				  upn_blob);
+	if (code != 0) {
 		goto done;
 	}
-	if (srv_checksum_idx == -1) {
-		DBG_WARNING("PAC_TYPE_SRV_CHECKSUM missing\n");
-		code = EINVAL;
-		goto done;
+
+	if (!is_trusted || !is_tgs) {
+		code = pac_blobs_remove_blob(&pac_blobs,
+					     mem_ctx,
+					     PAC_TYPE_ATTRIBUTES_INFO);
+		if (code != 0) {
+			goto done;
+		}
 	}
-	if (kdc_checksum_idx == -1) {
-		DBG_WARNING("PAC_TYPE_KDC_CHECKSUM missing\n");
-		code = EINVAL;
-		goto done;
-	}
-	if (!(flags & SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION) &&
-	    requester_sid_idx == -1) {
-		DBG_WARNING("PAC_TYPE_REQUESTER_SID missing\n");
-		code = KRB5KDC_ERR_TGT_REVOKED;
-		goto done;
+
+	if (!is_tgs) {
+		code = pac_blobs_remove_blob(&pac_blobs,
+					     mem_ctx,
+					     PAC_TYPE_REQUESTER_SID);
+		if (code != 0) {
+			goto done;
+		}
+	} else {
+		code = pac_blobs_add_blob(&pac_blobs,
+					  mem_ctx,
+					  PAC_TYPE_REQUESTER_SID,
+					  requester_sid_blob);
+		if (code != 0) {
+			goto done;
+		}
 	}
 
 	/*
@@ -1888,163 +2050,37 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-#define MAX_PAC_BUFFERS 128 /* Avoid infinite loops */
-
-	for (i = 0; i < MAX_PAC_BUFFERS;) {
-		const uint8_t zero_byte = 0;
+	for (i = 0; i < pac_blobs.num_types; ++i) {
 		krb5_data type_data;
-		DATA_BLOB type_blob = data_blob_null;
-		uint32_t type;
+		const DATA_BLOB *type_blob = pac_blobs.type_blobs[i].data;
+		uint32_t type = pac_blobs.type_blobs[i].type;
 
 		static char null_byte = '\0';
 		const krb5_data null_data = smb_krb5_make_data(&null_byte, 0);
 
-		if (forced_next_type != 0) {
-			/*
-			 * We need to inject possible missing types
-			 */
-			type = forced_next_type;
-			forced_next_type = 0;
-		} else if (i < num_types) {
-			type = types[i];
-			i++;
-		} else {
-			break;
-		}
-
-		switch (type) {
-		case PAC_TYPE_LOGON_INFO:
-			type_blob = *pac_blob;
-
-			if (delegation_idx == -1 && deleg_blob != NULL) {
-				/* inject CONSTRAINED_DELEGATION behind */
-				forced_next_type =
-					PAC_TYPE_CONSTRAINED_DELEGATION;
-			}
-			break;
-		case PAC_TYPE_CONSTRAINED_DELEGATION:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
-				continue;
-			}
-
-			if (deleg_blob != NULL) {
-				type_blob = *deleg_blob;
-			}
-			break;
-		case PAC_TYPE_CREDENTIAL_INFO:
-			/*
-			 * Note that we copy the credential blob,
-			 * as it's only usable with the PKINIT based
-			 * AS-REP reply key, it's only available on the
-			 * host which did the AS-REQ/AS-REP exchange.
-			 *
-			 * This matches Windows 2008R2...
-			 */
-			break;
+#ifndef SAMBA4_USES_HEIMDAL
+		/* Not needed with MIT Kerberos */
+		switch(type) {
 		case PAC_TYPE_LOGON_NAME:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
-				continue;
-			}
-
-			type_blob = data_blob_const(&zero_byte, 1);
-
-			if (upn_dns_info_idx == -1 && upn_blob != NULL) {
-				/* inject UPN_DNS_INFO behind */
-				forced_next_type = PAC_TYPE_UPN_DNS_INFO;
-			}
-			break;
-		case PAC_TYPE_UPN_DNS_INFO:
-			/*
-			 * Replace in the RODC case, otherwise
-			 * upn_blob is NULL and we just copy.
-			 */
-			if (upn_blob != NULL) {
-				type_blob = *upn_blob;
-			}
-			break;
 		case PAC_TYPE_SRV_CHECKSUM:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
-				continue;
-			}
-
-			type_blob = data_blob_const(&zero_byte, 1);
-
-			if (requester_sid_idx == -1 && requester_sid_blob != NULL) {
-				/* inject REQUESTER_SID behind */
-				forced_next_type = PAC_TYPE_REQUESTER_SID;
-			}
-			break;
 		case PAC_TYPE_KDC_CHECKSUM:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
-				continue;
-			}
-
-			type_blob = data_blob_const(&zero_byte, 1);
-
-			break;
-		case PAC_TYPE_TICKET_CHECKSUM:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
-				continue;
-			}
-
-			type_blob = data_blob_const(&zero_byte, 1);
-
-			break;
-		case PAC_TYPE_ATTRIBUTES_INFO:
-			if (is_trusted && is_tgs) {
-				/* just copy... */
-				break;
-			}
-
-			continue;
-		case PAC_TYPE_REQUESTER_SID:
-			if (!is_tgs) {
-				continue;
-			}
-
-			/*
-			 * Replace in the RODC case, otherwise
-			 * requester_sid_blob is NULL and we just copy.
-			 */
-			if (requester_sid_blob != NULL) {
-				type_blob = *requester_sid_blob;
-			}
-			break;
 		case PAC_TYPE_FULL_CHECKSUM:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			if (flags & SAMBA_KDC_FLAG_SKIP_PAC_BUFFER) {
-				continue;
-			}
-
-			type_blob = data_blob_const(&zero_byte, 1);
-
-			break;
+			continue;
 		default:
-			/* just copy... */
 			break;
 		}
+#endif
 
-		if (type_blob.length != 0) {
-			type_data = smb_krb5_data_from_blob(type_blob);
-			code = krb5_pac_add_buffer(context, new_pac,
-						   type, &type_data);
+		if (type_blob != NULL) {
+			type_data = smb_krb5_data_from_blob(*type_blob);
+			/*
+			 * Passing a NULL pointer into krb5_pac_add_buffer() is
+			 * not allowed, so pass null_data instead if needed.
+			 */
+			code = krb5_pac_add_buffer(context,
+						   new_pac,
+						   type,
+						   (type_data.data != NULL) ? &type_data : &null_data);
 		} else {
 			code = krb5_pac_get_buffer(context,
 						   old_pac,
@@ -2071,9 +2107,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	code = 0;
 done:
+	pac_blobs_destroy(&pac_blobs);
 	TALLOC_FREE(pac_blob);
 	TALLOC_FREE(upn_blob);
 	TALLOC_FREE(deleg_blob);
-	SAFE_FREE(types);
 	return code;
 }
