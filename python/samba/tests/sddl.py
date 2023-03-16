@@ -165,6 +165,7 @@ class SddlDecodeEncode(TestCase):
         "(A;;RPLCLORC;;;AU)",
 
         "D:S:",
+        "D:PS:",
 
         "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)"
         "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
