@@ -345,6 +345,20 @@ NTSTATUS security_descriptor_sacl_add(struct security_descriptor *sd,
 }
 
 /*
+  insert an ACE at a given index to the SACL of a security_descriptor
+
+  idx can be negative, which means it's related to the new size from the
+  end, so -1 means the ace is appended at the end.
+*/
+
+NTSTATUS security_descriptor_sacl_insert(struct security_descriptor *sd,
+					 const struct security_ace *ace,
+					 ssize_t idx)
+{
+	return security_descriptor_acl_add(sd, true, ace, idx);
+}
+
+/*
   add an ACE to the DACL of a security_descriptor
 */
 
@@ -352,6 +366,20 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 				      const struct security_ace *ace)
 {
 	return security_descriptor_acl_add(sd, false, ace, -1);
+}
+
+/*
+  insert an ACE at a given index to the DACL of a security_descriptor
+
+  idx can be negative, which means it's related to the new size from the
+  end, so -1 means the ace is appended at the end.
+*/
+
+NTSTATUS security_descriptor_dacl_insert(struct security_descriptor *sd,
+					 const struct security_ace *ace,
+					 ssize_t idx)
+{
+	return security_descriptor_acl_add(sd, false, ace, idx);
 }
 
 /*
