@@ -550,10 +550,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				   upn_dns_info_blob,
 				   pac_attrs_blob,
 				   requester_sid_blob,
-				   NULL,
-				   NULL,
-				   NULL,
-				   NULL,
+				   NULL, /* deleg_blob */
+				   NULL, /* client_claims_blob */
+				   NULL, /* device_info_blob */
+				   NULL, /* device_claims_blob */
 				   *pac);
 
 	talloc_free(tmp_ctx);
@@ -751,7 +751,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    server->princ,
 				    server_skdc_entry,
 				    krbtgt_skdc_entry,
-				    NULL,
+				    NULL, /* delegated_proxy_principal */
 				    old_pac,
 				    new_pac);
 	if (code != 0) {
