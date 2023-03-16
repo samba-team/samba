@@ -191,16 +191,47 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 
 	/* see if its in the numeric format */
 	if (strncmp(sddl, "S-", 2) == 0) {
-		struct dom_sid *sid;
-		char *sid_str;
-		size_t len = strspn(sddl+2, "-0123456789");
-		sid_str = talloc_strndup(mem_ctx, sddl, len+2);
-		if (!sid_str) {
+		struct dom_sid *sid = NULL;
+		char *sid_str = NULL;
+                const char *end = NULL;
+                bool ok;
+		size_t len = strspn(sddl + 2, "-0123456789ABCDEFabcdefxX") + 2;
+		if (len < 5) { /* S-1-x */
 			return NULL;
 		}
-		(*sddlp) += len+2;
-		sid = dom_sid_parse_talloc(mem_ctx, sid_str);
-		talloc_free(sid_str);
+		if (sddl[len - 1] == 'D' && sddl[len] == ':') {
+			/*
+			 * we have run into the "D:" dacl marker, mistaking it
+			 * for a hex digit. There is no other way for this
+			 * pair to occur at the end of a SID in SDDL.
+			 */
+			len--;
+		}
+
+		sid_str = talloc_strndup(mem_ctx, sddl, len);
+		if (sid_str == NULL) {
+			return NULL;
+		}
+                sid = talloc(mem_ctx, struct dom_sid);
+                if (sid == NULL) {
+			TALLOC_FREE(sid_str);
+                        return NULL;
+                };
+                ok = dom_sid_parse_endp(sid_str, sid, &end);
+                if (!ok) {
+			DBG_WARNING("could not parse SID '%s'\n", sid_str);
+			TALLOC_FREE(sid_str);
+                        TALLOC_FREE(sid);
+                        return NULL;
+                }
+		if (end - sid_str != len) {
+			DBG_WARNING("trailing junk after SID '%s'\n", sid_str);
+			TALLOC_FREE(sid_str);
+                        TALLOC_FREE(sid);
+                        return NULL;
+		}
+		TALLOC_FREE(sid_str);
+		(*sddlp) += len;
 		return sid;
 	}
 
