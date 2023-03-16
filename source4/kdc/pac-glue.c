@@ -1939,12 +1939,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		if (type_blob.length != 0) {
-			code = smb_krb5_copy_data_contents(&type_data,
-							   type_blob.data,
-							   type_blob.length);
-			if (code != 0) {
-				goto done;
-			}
+			type_data = smb_krb5_data_from_blob(type_blob);
+			code = krb5_pac_add_buffer(context, new_pac,
+						   type, &type_data);
 		} else {
 			code = krb5_pac_get_buffer(context,
 						   old_pac,
@@ -1953,17 +1950,17 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			if (code != 0) {
 				goto done;
 			}
+			/*
+			 * Passing a NULL pointer into krb5_pac_add_buffer() is
+			 * not allowed, so pass null_data instead if needed.
+			 */
+			code = krb5_pac_add_buffer(context,
+						   new_pac,
+						   type,
+						   (type_data.data != NULL) ? &type_data : &null_data);
+			smb_krb5_free_data_contents(context, &type_data);
 		}
 
-		/*
-		 * Passing a NULL pointer into krb5_pac_add_buffer() is
-		 * not allowed, so pass null_data instead if needed.
-		 */
-		code = krb5_pac_add_buffer(context,
-					   new_pac,
-					   type,
-					   (type_data.data != NULL) ? &type_data : &null_data);
-		smb_krb5_free_data_contents(context, &type_data);
 		if (code != 0) {
 			goto done;
 		}
