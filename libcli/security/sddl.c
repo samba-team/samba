@@ -60,7 +60,8 @@ static bool sddl_map_flag(
   map a series of letter codes into a uint32_t
 */
 static bool sddl_map_flags(const struct flag_map *map, const char *str,
-			   uint32_t *pflags, size_t *plen)
+			   uint32_t *pflags, size_t *plen,
+                           bool unknown_flag_is_part_of_next_thing)
 {
 	const char *str0 = str;
 	if (plen != NULL) {
@@ -74,6 +75,9 @@ static bool sddl_map_flags(const struct flag_map *map, const char *str,
 
 		found = sddl_map_flag(map, str, &len, &flags);
 		if (!found) {
+                        if (unknown_flag_is_part_of_next_thing) {
+                                return true;
+                        }
 			DEBUG(1, ("Unknown flag - %s in %s\n", str, str0));
 			return false;
 		}
@@ -86,6 +90,7 @@ static bool sddl_map_flags(const struct flag_map *map, const char *str,
 	}
 	return true;
 }
+
 
 /*
   a mapping between the 2 letter SID codes and sid strings
@@ -378,13 +383,13 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	}
 
 	/* parse ace type */
-	if (!sddl_map_flags(ace_types, tok[0], &v, NULL)) {
+	if (!sddl_map_flags(ace_types, tok[0], &v, NULL, false)) {
 		return false;
 	}
 	ace->type = v;
 
 	/* ace flags */
-	if (!sddl_map_flags(ace_flags, tok[1], &v, NULL)) {
+	if (!sddl_map_flags(ace_flags, tok[1], &v, NULL, false)) {
 		return false;
 	}
 	ace->flags = v;
@@ -457,7 +462,7 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 	}
 
 	/* work out the ACL flags */
-	if (!sddl_map_flags(acl_flags, sddl, flags, &len)) {
+	if (!sddl_map_flags(acl_flags, sddl, flags, &len, true)) {
 		talloc_free(acl);
 		return NULL;
 	}
