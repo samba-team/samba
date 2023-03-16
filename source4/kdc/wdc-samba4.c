@@ -34,38 +34,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
 
-static int samba_wdc_pac_options(astgs_request_t r, PAC_OPTIONS_FLAGS *flags)
-{
-	const KDC_REQ *req = kdc_request_get_req(r);
-	const PA_DATA *padata_pac_options = NULL;
-
-	ZERO_STRUCTP(flags);
-
-	if (req->padata != NULL) {
-		int idx = 0;
-
-		padata_pac_options = krb5_find_padata(req->padata->val,
-						      req->padata->len,
-						      KRB5_PADATA_PAC_OPTIONS,
-						      &idx);
-	}
-
-	if (padata_pac_options != NULL) {
-		PA_PAC_OPTIONS pa_pac_options = {};
-		int ret;
-
-		ret = decode_PA_PAC_OPTIONS(padata_pac_options->padata_value.data,
-					    padata_pac_options->padata_value.length,
-					    &pa_pac_options, NULL);
-		if (ret) {
-			return ret;
-		}
-		*flags = pa_pac_options.flags;
-	}
-
-	return 0;
-}
-
 static bool samba_wdc_is_s4u2self_req(astgs_request_t r)
 {
 	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
@@ -154,7 +122,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		(is_s4u2self) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
-	PAC_OPTIONS_FLAGS pac_options = {};
 
 	/* Only include resource groups in a service ticket. */
 	if (is_krbtgt) {
@@ -163,11 +130,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
 	} else {
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
-	}
-
-	ret = samba_wdc_pac_options(r, &pac_options);
-	if (ret != 0) {
-		return ret;
 	}
 
 	mem_ctx = talloc_named(client->context, 0, "samba_get_pac context");
@@ -188,8 +150,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    pac_attributes,
 					    is_krbtgt ? &requester_sid_blob : NULL,
-					    pac_options.claims ?
-					    &claims_blob : NULL);
+					    &claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
@@ -248,12 +209,6 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	bool is_in_db = false;
 	bool is_trusted = false;
 	uint32_t flags = 0;
-	PAC_OPTIONS_FLAGS pac_options = {};
-
-	ret = samba_wdc_pac_options(r, &pac_options);
-	if (ret != 0) {
-		return ret;
-	}
 
 	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac2 context");
 	if (mem_ctx == NULL) {
