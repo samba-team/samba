@@ -140,6 +140,7 @@ ext_guids = ['{123d2b56-7b14-4516-bbc4-763d29d57654}',
              '{d000e91b-e70f-481b-9549-58de7929bcee}']
 
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
+provision_path = os.path.join(source_path, "source4/selftest/provisions/")
 
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
     """Use this function to determine if the GPO backup differs from another.
@@ -266,6 +267,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_backup_restore_compare_binary(self):
         """Restore from a static backup and compare the binary contents"""
 
+        if not os.path.exists(provision_path):
+            self.skipTest('Test requires provision data not available in '
+                          + 'release tarball')
+
         static_path = os.path.join(self.backup_path, 'policy',
                                    self.backup_gpo_guid)
 
@@ -320,6 +325,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_backup_restore_no_entities_compare_binary(self):
         """Restore from a static backup (and use no entity file, resulting in
         copy-restore fallback), and compare the binary contents"""
+
+        if not os.path.exists(provision_path):
+            self.skipTest('Test requires provision data not available in '
+                          + 'release tarball')
 
         static_path = os.path.join(self.backup_path, 'policy',
                                    self.backup_gpo_guid)
@@ -412,6 +421,11 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
     def test_backup_restore_backup_compare_XML(self):
         """Restore from a static backup and backup to compare XML"""
+
+        if not os.path.exists(provision_path):
+            self.skipTest('Test requires provision data not available in '
+                          + 'release tarball')
+
         static_path = os.path.join(self.backup_path, 'policy',
                                    self.backup_gpo_guid)
 
@@ -502,6 +516,11 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_backup_restore_generalize(self):
         """Restore from a static backup with different entities, generalize it
         again, and compare the XML"""
+
+        if not os.path.exists(provision_path):
+            self.skipTest('Test requires provision data not available in '
+                          + 'release tarball')
+
         static_path = os.path.join(self.backup_path, 'policy',
                                    self.backup_gpo_guid)
 
