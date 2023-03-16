@@ -651,6 +651,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    server_skdc_entry,
 				    krbtgt_skdc_entry,
 				    delegated_proxy_principal,
+				    NULL, /* device */
+				    NULL, /* device_pac */
 				    *pac,
 				    new_pac);
 	if (code != 0) {
@@ -752,6 +754,8 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    server_skdc_entry,
 				    krbtgt_skdc_entry,
 				    NULL, /* delegated_proxy_principal */
+				    NULL, /* device */
+				    NULL, /* device_pac */
 				    old_pac,
 				    new_pac);
 	if (code != 0) {

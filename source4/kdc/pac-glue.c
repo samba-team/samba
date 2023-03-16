@@ -1727,6 +1727,12 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
  *                                  updating the constrained delegation PAC
  *                                  buffer.
 
+ * @param device    The computer's samba kdc entry; used for compound
+ *                  authentication.
+
+ * @param device_pac        The PAC from the computer's TGT; used
+ *                          for compound authentication.
+
  * @param old_pac                   The old PAC
 
  * @param new_pac                   The new already allocated PAC
@@ -1743,6 +1749,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     const struct samba_kdc_entry *server,
 				     const struct samba_kdc_entry *krbtgt,
 				     const krb5_principal delegated_proxy_principal,
+				     const struct samba_kdc_entry *device,
+				     const krb5_const_pac *device_pac,
 				     const krb5_pac old_pac,
 				     const krb5_pac new_pac)
 {
@@ -1809,6 +1817,31 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = EINVAL;
 			goto done;
 		}
+	}
+
+	if (device != NULL) {
+		SMB_ASSERT(*device_pac != NULL);
+
+		/*
+		 * Check the objectSID of the device and pac data are the same.
+		 * Does a parse and SID check, but no crypto.
+		 */
+		code = samba_kdc_validate_pac_blob(context,
+						   device,
+						   *device_pac);
+		if (code != 0) {
+			goto done;
+		}
+
+		/*
+		 * TODO: When we support compound authentication, we will use
+		 * the device PAC to generate PAC buffers for Device Info
+		 * (containing the computer account's groups) and Device Claims
+		 * (containing claims for the computer account), and insert them
+		 * into the emitted PAC.
+		 *
+		 * See [MS-KILE 1.3.4], [MS-KILE 3.3.5.7.4].
+		 */
 	}
 
 	if (!is_trusted) {

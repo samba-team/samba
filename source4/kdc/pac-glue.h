@@ -126,5 +126,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     const struct samba_kdc_entry *server,
 				     const struct samba_kdc_entry *krbtgt,
 				     krb5_principal delegated_proxy_principal,
+				     const struct samba_kdc_entry *device,
+				     const krb5_const_pac *device_pac,
 				     krb5_pac old_pac,
 				     krb5_pac new_pac);

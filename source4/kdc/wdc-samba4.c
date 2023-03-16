@@ -238,6 +238,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	struct samba_kdc_entry *server_skdc_entry =
 		talloc_get_type_abort(server->context, struct samba_kdc_entry);
+	struct samba_kdc_entry *device_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->context, struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = NULL;
@@ -265,22 +266,8 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	}
 
 	if (device != NULL) {
-		struct samba_kdc_entry *device_skdc_entry = NULL;
-
 		device_skdc_entry = talloc_get_type_abort(device->context,
 							  struct samba_kdc_entry);
-
-		/*
-		 * Check the objectSID of the device and pac data are the same.
-		 * Does a parse and SID check, but no crypto.
-		 */
-		ret = samba_kdc_validate_pac_blob(context,
-						  device_skdc_entry,
-						  *device_pac);
-		if (ret != 0) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
 	}
 
 	/*
@@ -371,6 +358,8 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 				   server_skdc_entry,
 				   krbtgt_skdc_entry,
 				   delegated_proxy_principal,
+				   device_skdc_entry,
+				   device_pac,
 				   *pac,
 				   new_pac);
 	if (ret != 0) {
