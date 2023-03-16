@@ -686,7 +686,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	return ret;
 }
 
-bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry)
+bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry)
 {
 
 	uint32_t userAccountControl;
@@ -701,7 +701,7 @@ bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry)
 }
 
 int samba_client_requested_pac(krb5_context context,
-			       const krb5_pac *pac,
+			       const krb5_const_pac pac,
 			       TALLOC_CTX *mem_ctx,
 			       bool *requested_pac)
 {
@@ -713,7 +713,7 @@ int samba_client_requested_pac(krb5_context context,
 
 	*requested_pac = true;
 
-	ret = krb5_pac_get_buffer(context, *pac, PAC_TYPE_ATTRIBUTES_INFO,
+	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_ATTRIBUTES_INFO,
 				  &k5pac_attrs_in);
 	if (ret != 0) {
 		return ret == ENOENT ? 0 : ret;
@@ -1104,7 +1104,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				krb5_context context,
-				const krb5_pac pac,
+				const krb5_const_pac pac,
 				const krb5_principal server_principal,
 				const krb5_principal proxy_principal,
 				DATA_BLOB *new_blob)
@@ -1485,11 +1485,11 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
 				     const krb5_principal server_principal,
-				     struct samba_kdc_entry *server,
-				     struct samba_kdc_entry *krbtgt,
+				     const struct samba_kdc_entry *server,
+				     const struct samba_kdc_entry *krbtgt,
 				     const krb5_principal delegated_proxy_principal,
 				     const krb5_pac old_pac,
-				     krb5_pac new_pac)
+				     const krb5_pac new_pac)
 {
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
@@ -1877,7 +1877,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		bool requested_pac = false;
 
 		code = samba_client_requested_pac(context,
-						  &old_pac,
+						  old_pac,
 						  mem_ctx,
 						  &requested_pac);
 		if (code != 0 || !requested_pac) {

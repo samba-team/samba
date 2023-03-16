@@ -55,10 +55,10 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *device_claims_blob,
 				    krb5_pac pac);
 
-bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);
+bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry);
 
 int samba_client_requested_pac(krb5_context context,
-			       const krb5_pac *pac,
+			       krb5_const_pac pac,
 			       TALLOC_CTX *mem_ctx,
 			       bool *requested_pac);
 
@@ -91,9 +91,9 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				krb5_context context,
-				const krb5_pac pac,
-				const krb5_principal server_principal,
-				const krb5_principal proxy_principal,
+				krb5_const_pac pac,
+				krb5_principal server_principal,
+				krb5_principal proxy_principal,
 				DATA_BLOB *pac_blob);
 
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status);
@@ -106,7 +106,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 krb5_error_code samba_kdc_validate_pac_blob(
 		krb5_context context,
 		const struct samba_kdc_entry *client_skdc_entry,
-		const krb5_const_pac pac);
+		krb5_const_pac pac);
 
 /*
  * In the RODC case, to confirm that the returned user is permitted to
@@ -122,9 +122,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct ldb_context *samdb,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
-				     const krb5_principal server_principal,
-				     struct samba_kdc_entry *server,
-				     struct samba_kdc_entry *krbtgt,
-				     const krb5_principal delegated_proxy_principal,
-				     const krb5_pac old_pac,
+				     krb5_principal server_principal,
+				     const struct samba_kdc_entry *server,
+				     const struct samba_kdc_entry *krbtgt,
+				     krb5_principal delegated_proxy_principal,
+				     krb5_pac old_pac,
 				     krb5_pac new_pac);
