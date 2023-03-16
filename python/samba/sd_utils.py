@@ -165,17 +165,46 @@ class SDUtils(object):
 
         return del_ignored, add_ignored, inherited_ignored
 
-    def dacl_add_ace(self, object_dn, ace):
-        """Add an ACE (or more) to an objects security descriptor
+    def dacl_prepend_aces(self, object_dn, aces, controls=None):
+        """Prepend an ACE (or more) to an objects security descriptor
         """
-        ace_sd = security.descriptor.from_sddl("D:" + ace, self.domain_sid)
+        ace_sd = security.descriptor.from_sddl("D:" + aces, self.domain_sid)
         add_aces = []
         add_idx = 0
         for ace in ace_sd.dacl.aces:
             add_aces.append({"idx": add_idx, "ace": ace})
             add_idx += 1
-        _,_,_ = self.update_aces_in_dacl(object_dn, add_aces=add_aces,
-                                         controls=["show_deleted:1"])
+        _,ai,ii = self.update_aces_in_dacl(object_dn, add_aces=add_aces,
+                                           controls=controls)
+        return ai, ii
+
+    def dacl_add_ace(self, object_dn, ace):
+        """Add an ACE (or more) to an objects security descriptor
+        """
+        _,_ = self.dacl_prepend_aces(object_dn, ace,
+                                     controls=["show_deleted:1"])
+
+    def dacl_append_aces(self, object_dn, aces, controls=None):
+        """Append an ACE (or more) to an objects security descriptor
+        """
+        ace_sd = security.descriptor.from_sddl("D:" + aces, self.domain_sid)
+        add_aces = []
+        for ace in ace_sd.dacl.aces:
+            add_aces.append(ace)
+        _,ai,ii = self.update_aces_in_dacl(object_dn, add_aces=add_aces,
+                                           controls=controls)
+        return ai, ii
+
+    def dacl_delete_aces(self, object_dn, aces, controls=None):
+        """Delete an ACE (or more) to an objects security descriptor
+        """
+        del_sd = security.descriptor.from_sddl("D:" + aces, self.domain_sid)
+        del_aces = []
+        for ace in del_sd.dacl.aces:
+            del_aces.append(ace)
+        di,_,ii = self.update_aces_in_dacl(object_dn, del_aces=del_aces,
+                                           controls=controls)
+        return di, ii
 
     def get_sd_as_sddl(self, object_dn, controls=None):
         """Return object nTSecutiryDescriptor in SDDL format
