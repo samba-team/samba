@@ -745,7 +745,7 @@ int samba_client_requested_pac(krb5_context context,
 /* Was the krbtgt in this DB (ie, should we check the incoming signature) and was it an RODC */
 int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 			  bool *is_in_db,
-			  bool *is_untrusted)
+			  bool *is_trusted)
 {
 	NTSTATUS status;
 	int rodc_krbtgt_number, trust_direction;
@@ -765,7 +765,7 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 		   validation when we do inter-foreest trusts
 		 */
 		talloc_free(mem_ctx);
-		*is_untrusted = false;
+		*is_trusted = true;
 		*is_in_db = false;
 		return 0;
 	}
@@ -783,32 +783,32 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 
 	if (p->kdc_db_ctx->my_krbtgt_number == 0) {
 		if (rid == DOMAIN_RID_KRBTGT) {
-			*is_untrusted = false;
+			*is_trusted = true;
 			*is_in_db = true;
 			talloc_free(mem_ctx);
 			return 0;
 		} else if (rodc_krbtgt_number != -1) {
 			*is_in_db = true;
-			*is_untrusted = true;
+			*is_trusted = false;
 			talloc_free(mem_ctx);
 			return 0;
 		}
 	} else if ((rid != DOMAIN_RID_KRBTGT) && (rodc_krbtgt_number == p->kdc_db_ctx->my_krbtgt_number)) {
 		talloc_free(mem_ctx);
-		*is_untrusted = false;
+		*is_trusted = true;
 		*is_in_db = true;
 		return 0;
 	} else if (rid == DOMAIN_RID_KRBTGT) {
 		/* krbtgt viewed from an RODC */
 		talloc_free(mem_ctx);
-		*is_untrusted = false;
+		*is_trusted = true;
 		*is_in_db = false;
 		return 0;
 	}
 
 	/* Another RODC */
 	talloc_free(mem_ctx);
-	*is_untrusted = true;
+	*is_trusted = false;
 	*is_in_db = false;
 	return 0;
 }
@@ -1498,7 +1498,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *deleg_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
 	DATA_BLOB *client_claims_blob = NULL;
-	bool is_untrusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
+	bool is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	int is_tgs = false;
 	enum auth_group_inclusion group_inclusion;
 	size_t num_types = 0;
@@ -1572,7 +1572,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (is_untrusted) {
+	if (!is_trusted) {
 		struct auth_user_info_dc *user_info_dc = NULL;
 		WERROR werr;
 
@@ -1869,7 +1869,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!is_untrusted && !is_tgs) {
+	if (is_trusted && !is_tgs) {
 		/*
 		 * The client may have requested no PAC when obtaining the
 		 * TGT.
@@ -2003,7 +2003,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 			break;
 		case PAC_TYPE_ATTRIBUTES_INFO:
-			if (!is_untrusted && is_tgs) {
+			if (is_trusted && is_tgs) {
 				/* just copy... */
 				break;
 			}

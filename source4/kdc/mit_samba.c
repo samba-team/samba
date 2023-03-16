@@ -579,7 +579,7 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	krb5_principal delegated_proxy_principal = NULL;
 	krb5_pac new_pac = NULL;
 	bool is_in_db = false;
-	bool is_untrusted = false;
+	bool is_trusted = false;
 	uint32_t flags = SAMBA_KDC_FLAG_SKIP_PAC_BUFFER;
 
 	/* Create a memory context early so code can use talloc_stackframe() */
@@ -613,13 +613,13 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 
 	code = samba_krbtgt_is_in_db(krbtgt_skdc_entry,
 				     &is_in_db,
-				     &is_untrusted);
+				     &is_trusted);
 	if (code != 0) {
 		goto done;
 	}
 
-	if (is_untrusted) {
-		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
+	if (is_trusted) {
+		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	}
 
 	if (is_in_db) {
@@ -687,7 +687,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 	struct samba_kdc_entry *server_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry = NULL;
 	bool is_in_db = false;
-	bool is_untrusted = false;
+	bool is_trusted = false;
 	uint32_t flags = SAMBA_KDC_FLAG_SKIP_PAC_BUFFER;
 
 	/* Create a memory context early so code can use talloc_stackframe() */
@@ -725,13 +725,13 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 	 */
 	code = samba_krbtgt_is_in_db(krbtgt_skdc_entry,
 				     &is_in_db,
-				     &is_untrusted);
+				     &is_trusted);
 	if (code != 0) {
 		goto done;
 	}
 
-	if (is_untrusted) {
-		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
+	if (is_trusted) {
+		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	}
 
 	if (is_in_db) {

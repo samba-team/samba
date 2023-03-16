@@ -33,7 +33,7 @@ enum {
 	SAMBA_KDC_FLAG_PROTOCOL_TRANSITION    = 0x00000001,
 	SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION = 0x00000002,
 	SAMBA_KDC_FLAG_KRBTGT_IN_DB           = 0x00000004,
-	SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED    = 0x00000008,
+	SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED      = 0x00000008,
 	SAMBA_KDC_FLAG_SKIP_PAC_BUFFER        = 0x00000010,
 };
 
@@ -64,7 +64,7 @@ int samba_client_requested_pac(krb5_context context,
 
 int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_in_db,
-			  bool *is_untrusted);
+			  bool *is_trusted);
 
 NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 					 const struct ldb_message *msg,

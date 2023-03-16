@@ -245,7 +245,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	krb5_error_code ret;
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	bool is_in_db = false;
-	bool is_untrusted = false;
+	bool is_trusted = false;
 	uint32_t flags = 0;
 	PAC_OPTIONS_FLAGS pac_options = {};
 
@@ -292,7 +292,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	 * sure that the record in 'client' matches the SID in the
 	 * original PAC.
 	 */
-	ret = samba_krbtgt_is_in_db(krbtgt_skdc_entry, &is_in_db, &is_untrusted);
+	ret = samba_krbtgt_is_in_db(krbtgt_skdc_entry, &is_in_db, &is_trusted);
 	if (ret != 0) {
 		goto out;
 	}
@@ -348,8 +348,8 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 		flags |= SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION;
 	}
 
-	if (is_untrusted) {
-		flags |= SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
+	if (is_trusted) {
+		flags |= SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	}
 
 	if (is_in_db) {
