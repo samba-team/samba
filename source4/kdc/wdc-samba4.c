@@ -254,7 +254,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 		return ret;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "samba_kdc_reget_pac2 context");
+	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac2 context");
 	if (mem_ctx == NULL) {
 		return ENOMEM;
 	}
