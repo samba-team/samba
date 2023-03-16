@@ -6415,6 +6415,9 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
+        winbind_sep = self.lp.get('winbind separator')
+        self.addCleanup(self.lp.set, 'winbind separator', winbind_sep)
+        self.lp.set('winbind separator', '+')
         ext = vgp_access_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
@@ -6517,10 +6520,10 @@ class GPOTests(tests.TestCase):
             # Check the access config for the correct access.conf entries
             print('Config file %s found' % gp_cfg)
             data = open(gp_cfg, 'r').read()
-            self.assertIn('+:%s\\goodguy:ALL' % realm, data)
-            self.assertIn('+:%s\\goodguys:ALL' % realm, data)
-            self.assertIn('-:%s\\badguy:ALL' % realm, data)
-            self.assertIn('-:%s\\badguys:ALL' % realm, data)
+            self.assertIn('+:%s+goodguy:ALL' % realm, data)
+            self.assertIn('+:%s+goodguys:ALL' % realm, data)
+            self.assertIn('-:%s+badguy:ALL' % realm, data)
+            self.assertIn('-:%s+badguys:ALL' % realm, data)
 
             # Check that a call to gpupdate --rsop also succeeds
             ret = rsop(self.lp)
