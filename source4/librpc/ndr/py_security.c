@@ -152,12 +152,13 @@ static PyObject *py_descriptor_sacl_add(PyObject *self, PyObject *args)
 	NTSTATUS status;
 	struct security_ace *ace;
 	PyObject *py_ace;
+	Py_ssize_t idx = -1;
 
-	if (!PyArg_ParseTuple(args, "O", &py_ace))
+	if (!PyArg_ParseTuple(args, "O|n", &py_ace, &idx))
 		return NULL;
 
 	ace = pytalloc_get_ptr(py_ace);
-	status = security_descriptor_sacl_add(desc, ace);
+	status = security_descriptor_sacl_insert(desc, ace, idx);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	Py_RETURN_NONE;
 }
@@ -168,13 +169,14 @@ static PyObject *py_descriptor_dacl_add(PyObject *self, PyObject *args)
 	NTSTATUS status;
 	struct security_ace *ace;
 	PyObject *py_ace;
+	Py_ssize_t idx = -1;
 
-	if (!PyArg_ParseTuple(args, "O", &py_ace))
+	if (!PyArg_ParseTuple(args, "O|n", &py_ace, &idx))
 		return NULL;
 
 	ace = pytalloc_get_ptr(py_ace);
 
-	status = security_descriptor_dacl_add(desc, ace);
+	status = security_descriptor_dacl_insert(desc, ace, idx);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	Py_RETURN_NONE;
 }
