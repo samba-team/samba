@@ -886,6 +886,21 @@ typedef unsigned long long ptrdiff_t ;
 if((i)<((n)-1)){memmove(&((a)[(i)]),&((a)[(i)+1]),(sizeof(*(a))*((n)-(i)-1)));}
 
 /**
+ * Insert an array element by moving the rest one up
+ *
+ */
+#define ARRAY_INSERT_ELEMENT(__array,__old_last_idx,__new_elem,__new_idx) do { \
+	if ((__new_idx) < (__old_last_idx)) { \
+		const void *__src = &((__array)[(__new_idx)]); \
+		void *__dst = &((__array)[(__new_idx)+1]); \
+		size_t __num = (__old_last_idx)-(__new_idx); \
+		size_t __len = sizeof(*(__array)) * __num; \
+		memmove(__dst, __src, __len); \
+	} \
+	(__array)[(__new_idx)] = (__new_elem); \
+} while(0)
+
+/**
  * Pointer difference macro
  */
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
