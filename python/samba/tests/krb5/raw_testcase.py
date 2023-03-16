@@ -3669,21 +3669,14 @@ class RawKerberosTest(TestCaseInTempDir):
                                      f'got empty CLAIMS_SET_METADATA_NDR '
                                      f'inner structure {empty_msg}')
 
-                claims_data = bytes(client_claims.claims_set)
-                self.assertIsNotNone(claims_data,
+                self.assertIsNotNone(client_claims.claims_set,
                                      f'got empty CLAIMS_SET_METADATA '
                                      f'structure {empty_msg}')
-                self.assertGreater(len(claims_data), 0,
-                                   f'got empty encoded claims data '
-                                   f'{empty_msg}')
-                self.assertEqual(len(claims_data),
-                                 client_claims.claims_set_size,
-                                 f'encoded {claims_type} data size mismatch')
 
                 uncompressed_size = client_claims.uncompressed_claims_set_size
                 compression_format = client_claims.compression_format
 
-                if uncompressed_size < 384:
+                if uncompressed_size < claims.CLAIM_MINIMUM_BYTES_TO_COMPRESS:
                     self.assertEqual(claims.CLAIMS_COMPRESSION_FORMAT_NONE,
                                      compression_format,
                                      f'{claims_type} unexpectedly '
@@ -3696,12 +3689,7 @@ class RawKerberosTest(TestCaseInTempDir):
                         f'{claims_type} unexpectedly not compressed '
                         f'({uncompressed_size} bytes uncompressed)')
 
-                    claims_data = huffman_decompress(claims_data,
-                                                     uncompressed_size)
-
-                claims_set = ndr_unpack(claims.CLAIMS_SET_NDR,
-                                        claims_data)
-                claims_set = claims_set.claims.claims
+                claims_set = client_claims.claims_set.claims.claims
                 self.assertIsNotNone(claims_set,
                                      f'got empty CLAIMS_SET_NDR inner '
                                      f'structure {empty_msg}')

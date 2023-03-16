@@ -385,8 +385,8 @@ bld.SAMBA_SUBSYSTEM('NDR_KRB5CCACHE',
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_CLAIMS',
-    source='gen_ndr/ndr_claims.c',
-    deps='ndr')
+    source='gen_ndr/ndr_claims.c ndr/ndr_claims.c',
+    deps='ndr NDR_COMPRESSION LZXPRESS')
 
 bld.SAMBA_LIBRARY('ndr-standard',
     source='',
