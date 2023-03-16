@@ -1793,6 +1793,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		DATA_BLOB type_blob = data_blob_null;
 		uint32_t type;
 
+		static char null_byte = '\0';
+		const krb5_data null_data = smb_krb5_make_data(&null_byte, 0);
+
 		if (forced_next_type != 0) {
 			/*
 			 * We need to inject possible missing types
@@ -1952,10 +1955,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			}
 		}
 
+		/*
+		 * Passing a NULL pointer into krb5_pac_add_buffer() is
+		 * not allowed, so pass null_data instead if needed.
+		 */
 		code = krb5_pac_add_buffer(context,
 					   new_pac,
 					   type,
-					   &type_data);
+					   (type_data.data != NULL) ? &type_data : &null_data);
 		smb_krb5_free_data_contents(context, &type_data);
 		if (code != 0) {
 			goto done;
