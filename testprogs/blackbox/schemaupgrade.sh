@@ -27,7 +27,7 @@ PROVISION_OPTS="--use-ntvfs --host-ip6=::1 --host-ip=127.0.0.1"
 
 provision_2012r2()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2012r2.samba.corp --targetdir=$PREFIX_ABS/2012R2_schema --base-schema=2012_R2
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2012r2.samba.corp --targetdir=$PREFIX_ABS/2012R2_schema --base-schema=2012_R2 --adprep-level=SKIP
 }
 
 provision_2008r2()

@@ -1649,7 +1649,7 @@ if __name__ == '__main__':
         provisiondir = tempfile.mkdtemp(dir=paths.private_dir,
                         prefix="referenceprovision")
         result = newprovision(names, session, smbconf, provisiondir,
-                provision_logger, base_schema="2008_R2")
+                provision_logger, base_schema="2008_R2", adprep_level=None)
         result.report_logger(provision_logger)
 
         # TODO

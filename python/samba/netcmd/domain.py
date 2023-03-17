@@ -320,6 +320,10 @@ class cmd_domain_provision(Command):
                choices=["2008_R2", "2008_R2_old", "2012", "2012_R2", "2016", "2019"],
                help="The base schema files to use. Default is (Windows) 2019.",
                default="2019"),
+        Option("--adprep-level", type="choice", metavar="FUNCTION_LEVEL",
+               choices=["SKIP", "2008_R2", "2012", "2012_R2", "2016"],
+               help="The highest functional level to prepare for. Default is based on --base-schema",
+               default=None),
         Option("--next-rid", type="int", metavar="NEXTRID", default=1000,
                help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
         Option("--partitions-only",
@@ -369,6 +373,7 @@ class cmd_domain_provision(Command):
             blank=None,
             server_role=None,
             function_level=None,
+            adprep_level=None,
             next_rid=None,
             partitions_only=None,
             targetdir=None,
@@ -471,6 +476,32 @@ class cmd_domain_provision(Command):
         elif function_level == "2008_R2":
             dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
 
+        if adprep_level is None:
+            # Select the adprep_level default based
+            # on what the base schema premits
+            if base_schema in ["2008_R2", "2008_R2_old"]:
+                # without explicit --adprep-level=2008_R2
+                # we will skip the adprep step on
+                # provision
+                adprep_level = "SKIP"
+            elif base_schema in ["2012"]:
+                adprep_level = "2012"
+            elif base_schema in ["2012_R2"]:
+                adprep_level = "2012_R2"
+            else:
+                adprep_level = "2016"
+
+        if adprep_level == "SKIP":
+            provision_adprep_level = None
+        elif adprep_level == "2008R2":
+            provision_adprep_level = DS_DOMAIN_FUNCTION_2008_R2
+        elif adprep_level == "2012":
+            provision_adprep_level = DS_DOMAIN_FUNCTION_2012
+        elif adprep_level == "2012_R2":
+            provision_adprep_level = DS_DOMAIN_FUNCTION_2012_R2
+        elif adprep_level == "2016":
+            provision_adprep_level = DS_DOMAIN_FUNCTION_2016
+
         if dns_backend == "SAMBA_INTERNAL" and dns_forwarder is None:
             dns_forwarder = suggested_forwarder
 
@@ -537,6 +568,7 @@ class cmd_domain_provision(Command):
                                useeadb=eadb, next_rid=next_rid, lp=lp, use_ntvfs=use_ntvfs,
                                use_rfc2307=use_rfc2307, skip_sysvolacl=False,
                                base_schema=base_schema,
+                               adprep_level=provision_adprep_level,
                                plaintext_secrets=plaintext_secrets,
                                backend_store=backend_store,
                                backend_store_size=backend_store_size)

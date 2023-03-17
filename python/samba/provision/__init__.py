@@ -48,7 +48,6 @@ import samba
 from samba import auth
 from samba.samba3 import smbd, passdb
 from samba.samba3 import param as s3param
-from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba import (
     Ldb,
     MAX_NETBIOS_NAME_LEN,
@@ -66,8 +65,13 @@ from samba.dcerpc.misc import (
     SEC_CHAN_WKSTA,
 )
 from samba.dsdb import (
+    DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2003,
+    DS_DOMAIN_FUNCTION_2008,
     DS_DOMAIN_FUNCTION_2008_R2,
+    DS_DOMAIN_FUNCTION_2012,
+    DS_DOMAIN_FUNCTION_2012_R2,
+    DS_DOMAIN_FUNCTION_2016,
     ENC_ALL_TYPES,
 )
 from samba.idmap import IDmapDB
@@ -2146,7 +2150,7 @@ def provision(logger, session_info, smbconf=None,
               sitename=None, serverrole=None, dom_for_fun_level=None,
               useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
               use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
-              base_schema="2019",
+              base_schema="2019", adprep_level=DS_DOMAIN_FUNCTION_2016,
               plaintext_secrets=False, backend_store=None,
               backend_store_size=None, batch_mode=False):
     """Provision samba4
@@ -2158,6 +2162,30 @@ def provision(logger, session_info, smbconf=None,
         serverrole = sanitize_server_role(serverrole)
     except ValueError:
         raise ProvisioningError('server role (%s) should be one of "active directory domain controller", "member server", "standalone server"' % serverrole)
+
+    if dom_for_fun_level is None:
+        dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
+
+    if base_schema in ["2008_R2", "2008_R2_old"]:
+        max_adprep_level = DS_DOMAIN_FUNCTION_2008_R2
+    elif base_schema in ["2012"]:
+        max_adprep_level = DS_DOMAIN_FUNCTION_2012
+    elif base_schema in ["2012_R2"]:
+        max_adprep_level = DS_DOMAIN_FUNCTION_2012_R2
+    else:
+        max_adprep_level = DS_DOMAIN_FUNCTION_2016
+
+    if max_adprep_level < dom_for_fun_level:
+        raise ProvisioningError('dom_for_fun_level[%u] incompatible with base_schema[%s]' %
+                                (dom_for_fun_level, base_schema))
+
+    if adprep_level is not None and max_adprep_level < adprep_level:
+        raise ProvisioningError('base_schema[%s] incompatible with adprep_level[%u]' %
+                                (base_schema, adprep_level))
+
+    if adprep_level is not None and adprep_level < dom_for_fun_level:
+        raise ProvisioningError('dom_for_fun_level[%u] incompatible with adprep_level[%u]' %
+                                (dom_for_fun_level, adprep_level))
 
     if ldapadminpass is None:
         # Make a new, random password between Samba and it's LDAP server
@@ -2336,6 +2364,45 @@ def provision(logger, session_info, smbconf=None,
                            skip_sysvolacl=skip_sysvolacl,
                            backend_store=backend_store,
                            backend_store_size=backend_store_size)
+
+            if adprep_level is not None:
+                updates_allowed_overridden = False
+                if lp.get("dsdb:schema update allowed") is None:
+                    lp.set("dsdb:schema update allowed", "yes")
+                    print("Temporarily overriding 'dsdb:schema update allowed' setting")
+                    updates_allowed_overridden = True
+
+                samdb.transaction_start()
+                try:
+                    from samba.forest_update import ForestUpdate
+                    forest = ForestUpdate(samdb, fix=True)
+
+                    forest.check_updates_iterator([11, 54, 79, 80, 81, 82, 83])
+                    forest.check_updates_functional_level(adprep_level,
+                                                          DS_DOMAIN_FUNCTION_2008_R2,
+                                                          update_revision=True)
+
+                    samdb.transaction_commit()
+                except Exception as e:
+                    samdb.transaction_cancel()
+                    raise e
+
+                samdb.transaction_start()
+                try:
+                    from samba.domain_update import DomainUpdate
+
+                    domain = DomainUpdate(samdb, fix=True)
+                    domain.check_updates_functional_level(adprep_level,
+                                                          DS_DOMAIN_FUNCTION_2008,
+                                                          update_revision=True)
+
+                    samdb.transaction_commit()
+                except Exception as e:
+                    samdb.transaction_cancel()
+                    raise e
+
+                if updates_allowed_overridden:
+                    lp.set("dsdb:schema update allowed", "no")
 
         if not is_heimdal_built():
             create_kdc_conf(paths.kdcconf, realm, domain, os.path.dirname(lp.get("log file")))

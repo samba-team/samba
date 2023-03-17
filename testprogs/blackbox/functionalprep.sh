@@ -64,9 +64,9 @@ undump_old()
 
 PROVISION_OPTS="--use-ntvfs --host-ip6=::1 --host-ip=127.0.0.1"
 
-provision_2019()
+provision_schema_2019_prep_skip()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=REALM --realm=REALM.COM --targetdir=$PREFIX_ABS/2019_schema --base-schema=2019 --host-name=FLPREP
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=REALM --realm=REALM.COM --targetdir=$PREFIX_ABS/2019_schema --base-schema=2019 --adprep-level=SKIP --host-name=FLPREP
 }
 
 provision_2012r2()
@@ -140,7 +140,7 @@ testit "functional_prep_old" functional_prep_old || failed=$(expr $failed + 1)
 cleanup_output_directories
 
 # Provision a DC based on 2019 schema
-testit "provision_2019_schema" provision_2019 || failed=$(expr $failed + 1)
+testit "provision_schema_2019_prep_skip" provision_schema_2019_prep_skip || failed=$(expr $failed + 1)
 
 # Perform functional prep up to 2016 level
 testit "functional_prep_2016" functional_prep_2016 || failed=$(expr $failed + 1)
