@@ -921,11 +921,38 @@ class DCJoinContext(object):
 
         provision_fill(ctx.local_samdb, secrets_ldb,
                        ctx.logger, ctx.names, ctx.paths,
-                       dom_for_fun_level=DS_DOMAIN_FUNCTION_2003,
+                       dom_for_fun_level=ctx.behavior_version,
                        targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                        machinepass=ctx.acct_pass, serverrole="active directory domain controller",
                        lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
                        dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2012:
+            adprep_level = ctx.behavior_version
+
+            updates_allowed_overridden = False
+            if lp.get("dsdb:schema update allowed") is None:
+                lp.set("dsdb:schema update allowed", "yes")
+                print("Temporarily overriding 'dsdb:schema update allowed' setting")
+                updates_allowed_overridden = True
+
+            samdb.transaction_start()
+            try:
+                from samba.domain_update import DomainUpdate
+
+                domain = DomainUpdate(ctx.local_samdb, fix=True)
+                domain.check_updates_functional_level(adprep_level,
+                                                      samba.dsdb.DS_DOMAIN_FUNCTION_2008,
+                                                      update_revision=True)
+
+                samdb.transaction_commit()
+            except Exception as e:
+                samdb.transaction_cancel()
+                raise DCJoinException("DomainUpdate() failed: %s" % e)
+
+            if updates_allowed_overridden:
+                lp.set("dsdb:schema update allowed", "no")
+
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
     def create_replicator(ctx, repl_creds, binding_options):
