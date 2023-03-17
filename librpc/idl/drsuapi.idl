@@ -790,28 +790,28 @@ interface drsuapi
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
-		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length)]
+		 compression(NDR_COMPRESSION_WIN2K3_LZ77_DIRECT2,compressed_length,decompressed_length)]
 		 drsuapi_DsGetNCChangesCtr1TS *ts;
-	} drsuapi_DsGetNCChangesXPRESSCtr1;
+	} drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr1;
 
 	typedef [nopush] struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
-		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length)]
+		 compression(NDR_COMPRESSION_WIN2K3_LZ77_DIRECT2,compressed_length,decompressed_length)]
 		 drsuapi_DsGetNCChangesCtr6TS *ts;
-	} drsuapi_DsGetNCChangesXPRESSCtr6;
+	} drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr6;
 
 	typedef [enum16bit] enum {
 		DRSUAPI_COMPRESSION_TYPE_MSZIP	= 2,
-		DRSUAPI_COMPRESSION_TYPE_XPRESS	= 3
+		DRSUAPI_COMPRESSION_TYPE_WIN2K3_LZ77_DIRECT2	= 3 /* CompressOrDecompressWin2k3 DRS_COMP_ALG_WIN2K3 */
 	} drsuapi_DsGetNCChangesCompressionType;
 
 	typedef [nodiscriminant,flag(NDR_PAHEX)] union {
 		[case(1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))]	drsuapi_DsGetNCChangesMSZIPCtr1 mszip1;
 		[case(6|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))]	drsuapi_DsGetNCChangesMSZIPCtr6 mszip6;
-		[case(1|(DRSUAPI_COMPRESSION_TYPE_XPRESS<<16))]	drsuapi_DsGetNCChangesXPRESSCtr1 xpress1;
-		[case(6|(DRSUAPI_COMPRESSION_TYPE_XPRESS<<16))]	drsuapi_DsGetNCChangesXPRESSCtr6 xpress6;
+		[case(1|(DRSUAPI_COMPRESSION_TYPE_WIN2K3_LZ77_DIRECT2<<16))]	drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr1 xpress1;
+		[case(6|(DRSUAPI_COMPRESSION_TYPE_WIN2K3_LZ77_DIRECT2<<16))]	drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr6 xpress6;
 	} drsuapi_DsGetNCChangesCompressedCtr;
 
 	typedef struct {

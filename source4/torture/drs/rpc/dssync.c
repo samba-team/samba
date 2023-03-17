@@ -859,7 +859,7 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 				ctr6 = &r.out.ctr->ctr7.ctr.mszip6.ts->ctr6;
 			} else if (ret == true && *r.out.level_out == 7
 				   && r.out.ctr->ctr7.level == 6
-				   && r.out.ctr->ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS
+				   && r.out.ctr->ctr7.type == DRSUAPI_COMPRESSION_TYPE_WIN2K3_LZ77_DIRECT2
 				   && r.out.ctr->ctr7.ctr.xpress6.ts) {
 				out_level = 6;
 				ctr6 = &r.out.ctr->ctr7.ctr.xpress6.ts->ctr6;

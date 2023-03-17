@@ -525,7 +525,7 @@ dump OK
         self.assertEqual(actual, expected)
 
     def test_ndrdump_fuzzed_ndr_compression(self):
-        expected = 'pull returned Buffer Size Error'
+        expected = 'ndr_pull_compression_start: ndr_pull_error\(Compression Error\): Bad compression algorithm 4 \(PULL\)'
         command = (
             "ndrdump --debug-stdout drsuapi 3 out --base64-input "
             "--input BwAAAAcAAAAGAAAAAwAgICAgICAJAAAAICAgIAkAAAAgIAAA//////8=")
@@ -535,7 +535,7 @@ dump OK
             self.fail(e)
         # check_output will return bytes
         # convert expected to bytes for python 3
-        self.assertRegex(actual.decode('utf8'), expected + '$')
+        self.assertRegex(actual.decode('utf8'), expected)
 
     def test_ndrdump_short_dnsProperty(self):
         expected = b'''pull returned Success

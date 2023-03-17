@@ -642,7 +642,7 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 			ctr6 = &ctr.ctr7.ctr.mszip6.ts->ctr6;
 		} else if (level_out == 7
 			   && ctr.ctr7.level == 6
-			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS
+			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_WIN2K3_LZ77_DIRECT2
 			   && ctr.ctr7.ctr.xpress6.ts) {
 			out_level = 6;
 			ctr6 = &ctr.ctr7.ctr.xpress6.ts->ctr6;
