@@ -253,6 +253,17 @@ ipv4_host_addr_to_net()
 	echo "${_net}/${_maskbits}"
 }
 
+# Cause the timeout stub to fail.
+timeout_trigger()
+{
+	export FAKE_TIMEOUT="$*"
+}
+
+timeout_clear()
+{
+	unset FAKE_TIMEOUT
+}
+
 ######################################################################
 
 # CTDB fakery

@@ -9,7 +9,7 @@ setup
 ok_null
 simple_test
 
-export FAKE_TIMEOUT="yes"
+timeout_trigger "yes"
 ok <<EOF
 WARNING: smb.conf cache update timed out - using old cache file
 EOF

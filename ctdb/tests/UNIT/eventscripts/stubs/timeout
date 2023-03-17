@@ -1,8 +1,10 @@
 #!/bin/sh
 
-if [ -n "$FAKE_TIMEOUT" ]; then
+# Throw away the timeout argument
+shift
+
+if [ "$FAKE_TIMEOUT" = "yes" ] || [ "$FAKE_TIMEOUT" = "$*" ]; then
 	exit 124
 else
-	shift 1
 	exec "$@"
 fi

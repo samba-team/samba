@@ -6,7 +6,7 @@ define_test "testparm times out"
 
 setup
 
-export FAKE_TIMEOUT="yes"
+timeout_trigger "yes"
 required_result 1 <<EOF
 ERROR: smb.conf cache create failed - testparm command timed out
 EOF
