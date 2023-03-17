@@ -538,7 +538,6 @@ static struct registry_operations reg_backend_rpc = {
 
 _PUBLIC_ WERROR reg_open_remote(TALLOC_CTX *mem_ctx,
 				struct registry_context **ctx,
-				struct auth_session_info *session_info,
 				struct cli_credentials *credentials,
 				struct loadparm_context *lp_ctx,
 				const char *location, struct tevent_context *ev)

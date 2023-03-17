@@ -31,7 +31,7 @@ struct registry_context *reg_common_open_remote(const char *remote,
 	struct registry_context *h = NULL;
 	WERROR error;
 
-	error = reg_open_remote(NULL, &h, NULL, creds, lp_ctx, remote, ev_ctx);
+	error = reg_open_remote(NULL, &h, creds, lp_ctx, remote, ev_ctx);
 
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open remote registry at %s:%s \n",

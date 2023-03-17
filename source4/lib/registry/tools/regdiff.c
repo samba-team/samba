@@ -48,8 +48,7 @@ static struct registry_context *open_backend(TALLOC_CTX *mem_ctx,
 				creds);
 		break;
 	case REG_REMOTE:
-		error = reg_open_remote(mem_ctx, &ctx, NULL,
-				creds, lp_ctx,
+		error = reg_open_remote(mem_ctx, &ctx, creds, lp_ctx,
 					remote_host, ev_ctx);
 		break;
 	case REG_NULL:
