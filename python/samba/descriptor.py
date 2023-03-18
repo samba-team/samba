@@ -201,6 +201,13 @@ def get_domain_descriptor(domain_sid, name_map=None):
         "(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
         "(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)" \
         "(OA;CIIO;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
+        "(OA;CIIO;WP;ea1b7b93-5e48-46d5-bc6c-4df4fda78a35;bf967a86-0de6-11d0-a285-00aa003049e2;PS)" \
+        "(OA;;CR;3e0f7e18-2c7a-4c10-ba82-4d926db99a3e;;CN)" \
+        "(OA;OICI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)" \
+        "(OA;CI;RPWP;5b47d60f-6090-40b2-9f37-2a4de88f3063;;KA)" \
+        "(OA;CI;RPWP;5b47d60f-6090-40b2-9f37-2a4de88f3063;;EK)" \
+        "(OA;CIIO;SW;9b026da6-0d3c-465c-8bee-5199d7165cba;bf967a86-0de6-11d0-a285-00aa003049e2;PS)" \
+        "(OA;CIIO;SW;9b026da6-0d3c-465c-8bee-5199d7165cba;bf967a86-0de6-11d0-a285-00aa003049e2;CO)" \
         "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
         "(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
         "(A;;RPRC;;;RU)" \
