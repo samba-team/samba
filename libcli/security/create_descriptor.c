@@ -78,7 +78,7 @@ uint32_t map_generic_rights_ds(uint32_t access_mask)
 
 /* Not sure what this has to be,
 * and it does not seem to have any influence */
-static bool object_in_list(struct GUID *object_list, struct GUID *object)
+static bool object_in_list(const struct GUID *object_list, const struct GUID *object)
 {
 	size_t i;
 
@@ -107,7 +107,7 @@ static bool object_in_list(struct GUID *object_list, struct GUID *object)
 /* returns true if the ACE gontains generic information
  * that needs to be processed additionally */
  
-static bool desc_ace_has_generic(struct security_ace *ace)
+static bool desc_ace_has_generic(const struct security_ace *ace)
 {
 	if (ace->access_mask & SEC_GENERIC_ALL || ace->access_mask & SEC_GENERIC_READ ||
 	    ace->access_mask & SEC_GENERIC_WRITE || ace->access_mask & SEC_GENERIC_EXECUTE) {
@@ -155,12 +155,114 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i < acl->num_aces; i++) {
-		struct security_ace *ace = &acl->aces[i];
-		if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ||
-		    (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
-			struct GUID inherited_object = GUID_zero();
+		const struct security_ace *ace = &acl->aces[i];
+		const struct GUID *inherited_object = NULL;
+		const struct GUID *inherited_property = NULL;
+		struct security_ace *tmp_ace = NULL;
+		bool applies = false;
+		bool inherited_only = false;
+		bool expand_ace = false;
+		bool expand_only = false;
 
-			tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces,
+		if (is_container && (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+			applies = true;
+		} else if (!is_container && (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
+			applies = true;
+		}
+
+		if (!applies) {
+			/*
+			 * If the ace doesn't apply to the
+			 * current node, we should only keep
+			 * it as SEC_ACE_FLAG_OBJECT_INHERIT
+			 * on a container. We'll add
+			 * SEC_ACE_FLAG_INHERITED_ACE
+			 * and SEC_ACE_FLAG_INHERIT_ONLY below.
+			 *
+			 * Otherwise we should completely ignore it.
+			 */
+			if (!(ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
+				continue;
+			}
+		}
+
+		switch (ace->type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED:
+		case SEC_ACE_TYPE_ACCESS_DENIED:
+		case SEC_ACE_TYPE_SYSTEM_AUDIT:
+		case SEC_ACE_TYPE_SYSTEM_ALARM:
+		case SEC_ACE_TYPE_ALLOWED_COMPOUND:
+			break;
+
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+			if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
+				inherited_property = &ace->object.object.type.type;
+			}
+			if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
+				inherited_object = &ace->object.object.inherited_type.inherited_type;
+			}
+
+			if (inherited_object != NULL && !object_in_list(object_list, inherited_object)) {
+				/*
+				 * An explicit object class schemaId is given,
+				 * but doesn't belong to the current object.
+				 */
+				applies = false;
+			}
+
+			break;
+		}
+
+		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+			if (!applies) {
+				/*
+				 * If the ACE doesn't apply to
+				 * the current object, we should
+				 * ignore it as it should not be
+				 * inherited any further
+				 */
+				continue;
+			}
+			/*
+			 * We should only keep the expanded version
+			 * of the ACE on the current object.
+			 */
+			expand_ace = true;
+			expand_only = true;
+		} else if (applies) {
+			/*
+			 * We check if should also add
+			 * the expanded version of the ACE
+			 * in addition, in case we should
+			 * expand generic access bits or
+			 * special sids.
+			 *
+			 * In that case we need to
+			 * keep the original ACE with
+			 * SEC_ACE_FLAG_INHERIT_ONLY.
+			 */
+			expand_ace = desc_ace_has_generic(ace);
+			if (expand_ace) {
+				inherited_only = true;
+			}
+		} else {
+			/*
+			 * If the ACE doesn't apply
+			 * to the current object,
+			 * we need to keep it with
+			 * SEC_ACE_FLAG_INHERIT_ONLY
+			 * in order to apply them to
+			 * grandchildren
+			 */
+			inherited_only = true;
+		}
+
+		if (expand_ace) {
+			tmp_acl->aces = talloc_realloc(tmp_acl,
+						       tmp_acl->aces,
 						       struct security_ace,
 						       tmp_acl->num_aces+1);
 			if (tmp_acl->aces == NULL) {
@@ -168,60 +270,95 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 				return NULL;
 			}
 
-			tmp_acl->aces[tmp_acl->num_aces] = *ace;
-			tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERITED_ACE;
-			/* remove IO flag from the child's ace */
-			if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY &&
-			    !desc_ace_has_generic(ace)) {
-				tmp_acl->aces[tmp_acl->num_aces].flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
-			}
-
-			if (is_container && (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT))
-			    tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
-
-			switch (ace->type) {
-			case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			case SEC_ACE_TYPE_ACCESS_DENIED:
-			case SEC_ACE_TYPE_SYSTEM_AUDIT:
-			case SEC_ACE_TYPE_SYSTEM_ALARM:
-			case SEC_ACE_TYPE_ALLOWED_COMPOUND:
-				break;
-
-			case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-			case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-			case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
-			case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
-				if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
-					inherited_object = ace->object.object.inherited_type.inherited_type;
-				}
-
-				if (!object_in_list(object_list, &inherited_object)) {
-					tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
-				}
-
-				break;
-			}
-
+			tmp_ace = &tmp_acl->aces[tmp_acl->num_aces];
 			tmp_acl->num_aces++;
-			if (is_container) {
-				if (!(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) &&
-				    (desc_ace_has_generic(ace))) {
-					    tmp_acl->aces = talloc_realloc(tmp_acl,
-									   tmp_acl->aces,
-									   struct security_ace,
-									   tmp_acl->num_aces+1);
-					    if (tmp_acl->aces == NULL) {
-						    talloc_free(tmp_ctx);
-						    return NULL;
-					    }
-					    tmp_acl->aces[tmp_acl->num_aces] = *ace;
-					    desc_expand_generic(&tmp_acl->aces[tmp_acl->num_aces],
-								owner,
-								group);
-					    tmp_acl->aces[tmp_acl->num_aces].flags = SEC_ACE_FLAG_INHERITED_ACE;
-					    tmp_acl->num_aces++;
+
+			*tmp_ace = *ace;
+
+			/*
+			 * Expand generic access bits as well as special
+			 * sids.
+			 */
+			desc_expand_generic(tmp_ace, owner, group);
+
+			/*
+			 * Expanded ACEs are marked as inherited,
+			 * but never inherited any further to
+			 * grandchildren.
+			 */
+			tmp_ace->flags |= SEC_ACE_FLAG_INHERITED_ACE;
+			tmp_ace->flags &= ~SEC_ACE_FLAG_CONTAINER_INHERIT;
+			tmp_ace->flags &= ~SEC_ACE_FLAG_OBJECT_INHERIT;
+			tmp_ace->flags &= ~SEC_ACE_FLAG_NO_PROPAGATE_INHERIT;
+
+			/*
+			 * Expanded ACEs never have an explicit
+			 * object class schemaId, so clear it
+			 * if present.
+			 */
+			if (inherited_object != NULL) {
+				tmp_ace->object.object.flags &= ~SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT;
+			}
+
+			/*
+			 * If the ACE had an explicit object class
+			 * schemaId, but no attribute/propertySet
+			 * we need to downgrate the _OBJECT variants
+			 * to the normal ones.
+			 */
+			if (inherited_property == NULL) {
+				switch (tmp_ace->type) {
+				case SEC_ACE_TYPE_ACCESS_ALLOWED:
+				case SEC_ACE_TYPE_ACCESS_DENIED:
+				case SEC_ACE_TYPE_SYSTEM_AUDIT:
+				case SEC_ACE_TYPE_SYSTEM_ALARM:
+				case SEC_ACE_TYPE_ALLOWED_COMPOUND:
+					break;
+				case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+					break;
+				case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_ACCESS_DENIED;
+					break;
+				case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_SYSTEM_ALARM;
+					break;
+				case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_SYSTEM_AUDIT;
+					break;
 				}
 			}
+
+			if (expand_only) {
+				continue;
+			}
+		}
+
+		tmp_acl->aces = talloc_realloc(tmp_acl,
+					       tmp_acl->aces,
+					       struct security_ace,
+					       tmp_acl->num_aces+1);
+		if (tmp_acl->aces == NULL) {
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+
+		tmp_ace = &tmp_acl->aces[tmp_acl->num_aces];
+		tmp_acl->num_aces++;
+
+		*tmp_ace = *ace;
+		tmp_ace->flags |= SEC_ACE_FLAG_INHERITED_ACE;
+
+		if (inherited_only) {
+			tmp_ace->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+		} else {
+			tmp_ace->flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
+		}
+
+		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+			tmp_ace->flags &= ~SEC_ACE_FLAG_CONTAINER_INHERIT;
+			tmp_ace->flags &= ~SEC_ACE_FLAG_OBJECT_INHERIT;
+			tmp_ace->flags &= ~SEC_ACE_FLAG_NO_PROPAGATE_INHERIT;
 		}
 	}
 	if (tmp_acl->num_aces == 0) {
