@@ -63,9 +63,10 @@ force_modules()
 dbcheck_fix_one_way_links
 dbcheck_fix_stale_links
 dbcheck_fix_crosspartition_backlinks
-testit "dbcheck" dbcheck
-testit "reindex" reindex
-testit "fixed_attrs" fixed_attrs
-testit "force_modules" force_modules
+testit "dbcheck" dbcheck || failed=$(expr $failed + 1)
+testit "reindex" reindex || failed=$(expr $failed + 1)
+testit "fixed_attrs" fixed_attrs || failed=$(expr $failed + 1)
+testit "force_modules" force_modules || failed=$(expr $failed + 1)
+testit "reset_well_known_acls" dbcheck_reset_well_known_acls || failed=$(expr $failed + 1)
 
 exit $failed
