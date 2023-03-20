@@ -26,6 +26,7 @@ from samba import is_ad_dc_built
 from samba.netcmd import SuperCommand
 
 from .backup import cmd_domain_backup
+from .claim import cmd_domain_claim
 from .classicupgrade import cmd_domain_classicupgrade
 from .common import (common_join_options, common_ntvfs_options,
                      common_provision_join_options, string_to_level)
@@ -54,6 +55,7 @@ class cmd_domain(SuperCommand):
     subcommands["info"] = cmd_domain_info()
     subcommands["join"] = cmd_domain_join()
     subcommands["leave"] = cmd_domain_leave()
+    subcommands["claim"] = cmd_domain_claim()
     if is_ad_dc_built():
         subcommands["demote"] = cmd_domain_demote()
         subcommands["provision"] = cmd_domain_provision()

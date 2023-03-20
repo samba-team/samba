@@ -22,6 +22,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from uuid import UUID
+
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2003,
@@ -109,3 +111,15 @@ def level_to_string(level):
         DS_DOMAIN_FUNCTION_2016: "2016",
     }
     return strings.get(level, "higher than 2016")
+
+
+def parse_text(value):
+    """Parse message element to string value."""
+    if value is not None:
+        return str(value)
+
+
+def parse_guid(value):
+    """Parse message element containing utf-16 le encoded uuid to string."""
+    if value is not None:
+        return str(UUID(bytes_le=value[0]))
