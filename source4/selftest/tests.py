@@ -1004,7 +1004,7 @@ for env in ['fileserver_smb1', 'nt4_member', 'clusteredmember', 'ktest', 'nt4_dc
     planoldpythontestsuite(env, "samba.tests.imports")
 
 have_fast_support = 1
-claims_support = 0
+claims_support = 1
 compound_id_support = 0
 if ('SAMBA4_USES_HEIMDAL' in config_hash or
     'HAVE_MIT_KRB5_1_20' in config_hash):

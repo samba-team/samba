@@ -473,6 +473,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	DATA_BLOB *pcred_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
+	DATA_BLOB *client_claims_blob = NULL;
 	NTSTATUS nt_status;
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;
@@ -484,6 +485,8 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		(flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
+	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
+	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 
 	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
@@ -515,6 +518,8 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
 					       skdc_entry,
 					       asserted_identity,
+					       claims_valid,
+					       compounded_auth,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
@@ -570,6 +575,14 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		}
 	}
 
+	nt_status = samba_kdc_get_claims_blob(tmp_ctx,
+					      skdc_entry,
+					      &client_claims_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
 	if (replaced_reply_key != NULL && cred_ndr != NULL) {
 		code = samba_kdc_encrypt_pac_credentials(context,
 							 replaced_reply_key,
@@ -590,7 +603,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				   pac_attrs_blob,
 				   requester_sid_blob,
 				   NULL, /* deleg_blob */
-				   NULL, /* client_claims_blob */
+				   client_claims_blob,
 				   NULL, /* device_info_blob */
 				   NULL, /* device_claims_blob */
 				   *pac);

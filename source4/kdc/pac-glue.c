@@ -40,6 +40,7 @@
 #include "source4/dsdb/samdb/samdb.h"
 #include "source4/kdc/samba_kdc.h"
 #include "source4/kdc/pac-glue.h"
+#include "source4/kdc/ad_claims.h"
 
 #include <ldb.h>
 
@@ -131,6 +132,7 @@ static krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
 		case PAC_TYPE_LOGON_NAME:
 		case PAC_TYPE_CONSTRAINED_DELEGATION:
 		case PAC_TYPE_UPN_DNS_INFO:
+		case PAC_TYPE_CLIENT_CLAIMS_INFO:
 		case PAC_TYPE_TICKET_CHECKSUM:
 		case PAC_TYPE_ATTRIBUTES_INFO:
 		case PAC_TYPE_REQUESTER_SID:
@@ -483,6 +485,30 @@ NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("PAC ATTRIBUTES_INFO (presig) push failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static
+NTSTATUS samba_get_claims_blob(TALLOC_CTX *mem_ctx,
+			       struct ldb_context *samdb,
+			       struct ldb_dn *principal_dn,
+			       DATA_BLOB *client_claims_data)
+{
+	union PAC_INFO client_claims;
+	int ret;
+
+	ZERO_STRUCT(client_claims);
+
+	*client_claims_data = data_blob_null;
+
+	ret = get_claims_for_principal(samdb,
+				       mem_ctx,
+				       principal_dn,
+				       client_claims_data);
+	if (ret != LDB_SUCCESS) {
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	return NT_STATUS_OK;
@@ -1116,6 +1142,60 @@ static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
 		num_sids);
 }
 
+static NTSTATUS samba_add_claims_valid(TALLOC_CTX *mem_ctx,
+				       enum samba_claims_valid claims_valid,
+				       struct auth_user_info_dc *user_info_dc)
+{
+	switch (claims_valid) {
+	case SAMBA_CLAIMS_VALID_EXCLUDE:
+		return NT_STATUS_OK;
+	case SAMBA_CLAIMS_VALID_INCLUDE:
+	{
+		struct dom_sid claims_valid_sid;
+
+		if (!dom_sid_parse(SID_CLAIMS_VALID, &claims_valid_sid)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		return add_sid_to_array_attrs_unique(
+			mem_ctx,
+			&claims_valid_sid,
+			SE_GROUP_DEFAULT_FLAGS,
+			&user_info_dc->sids,
+			&user_info_dc->num_sids);
+	}
+	}
+
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
+static NTSTATUS samba_add_compounded_auth(TALLOC_CTX *mem_ctx,
+					  enum samba_compounded_auth compounded_auth,
+					  struct auth_user_info_dc *user_info_dc)
+{
+	switch (compounded_auth) {
+	case SAMBA_COMPOUNDED_AUTH_EXCLUDE:
+		return NT_STATUS_OK;
+	case SAMBA_COMPOUNDED_AUTH_INCLUDE:
+	{
+		struct dom_sid compounded_auth_sid;
+
+		if (!dom_sid_parse(SID_COMPOUNDED_AUTHENTICATION, &compounded_auth_sid)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		return add_sid_to_array_attrs_unique(
+			mem_ctx,
+			&compounded_auth_sid,
+			SE_GROUP_DEFAULT_FLAGS,
+			&user_info_dc->sids,
+			&user_info_dc->num_sids);
+	}
+	}
+
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
 /*
  * Look up the user's info in the database and create a auth_user_info_dc
  * structure. If the resulting structure is not talloc_free()d, it will be
@@ -1304,20 +1384,25 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB **_claims_blob)
 {
 	DATA_BLOB *claims_blob = NULL;
+	NTSTATUS nt_status;
 
 	SMB_ASSERT(_claims_blob != NULL);
 
 	*_claims_blob = NULL;
 
-	/*
-	 * Until we support claims we just
-	 * return an empty blob,
-	 * that matches what Windows is doing
-	 * without defined claims
-	 */
 	claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (claims_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = samba_get_claims_blob(mem_ctx,
+					  p->kdc_db_ctx->samdb,
+					  p->msg->dn,
+					  claims_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Building claims failed: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
 	}
 
 	*_claims_blob = claims_blob;
@@ -1328,6 +1413,8 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct samba_kdc_entry *skdc_entry,
 				    enum samba_asserted_identity asserted_identity,
+				    enum samba_claims_valid claims_valid,
+				    enum samba_compounded_auth compounded_auth,
 				    struct auth_user_info_dc *user_info_dc_out)
 {
 	NTSTATUS nt_status;
@@ -1370,6 +1457,22 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	nt_status = samba_add_claims_valid(mem_ctx,
+					   claims_valid,
+					   user_info_dc_out);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add Claims Valid!\n");
+		return nt_status;
+	}
+
+	nt_status = samba_add_compounded_auth(mem_ctx,
+					      compounded_auth,
+					      user_info_dc_out);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add Compounded Authentication!\n");
+		return nt_status;
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -1377,6 +1480,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
 				   const enum auth_group_inclusion group_inclusion,
+				   const enum samba_compounded_auth compounded_auth,
 				   const krb5_const_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig)
@@ -1418,6 +1522,14 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(user_info_dc);
+		return nt_status;
+	}
+
+	nt_status = samba_add_compounded_auth(mem_ctx,
+					      compounded_auth,
+					      user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add Compounded Authentication!\n");
 		return nt_status;
 	}
 
@@ -2094,6 +2206,11 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		 */
 		enum samba_asserted_identity asserted_identity =
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
+		const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_EXCLUDE;
+		const enum samba_compounded_auth compounded_auth =
+			(device != NULL && !is_tgs) ?
+			SAMBA_COMPOUNDED_AUTH_INCLUDE :
+			SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 
 		if (client == NULL) {
 			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
@@ -2103,6 +2220,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 						       client,
 						       asserted_identity,
+						       claims_valid,
+						       compounded_auth,
 						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
@@ -2153,6 +2272,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	} else {
+		const enum samba_compounded_auth compounded_auth =
+			(device != NULL && !is_tgs) ?
+			SAMBA_COMPOUNDED_AUTH_INCLUDE :
+			SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
 		if (pac_blob == NULL) {
 			code = ENOMEM;
@@ -2163,6 +2286,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						      context,
 						      samdb,
 						      group_inclusion,
+						      compounded_auth,
 						      old_pac,
 						      pac_blob,
 						      NULL,

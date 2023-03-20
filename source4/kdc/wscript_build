@@ -123,7 +123,7 @@ bld.SAMBA_SUBSYSTEM('sdb_kdb',
 
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
-	deps='ldb auth4_sam common_auth samba-credentials samba-hostconfig com_err'
+	deps='ldb auth4_sam common_auth samba-credentials samba-hostconfig com_err ad_claims'
 	)
 
 bld.SAMBA_LIBRARY('pac',

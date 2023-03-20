@@ -29,6 +29,16 @@ enum samba_asserted_identity {
 	SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
 };
 
+enum samba_claims_valid {
+	SAMBA_CLAIMS_VALID_EXCLUDE = 0,
+	SAMBA_CLAIMS_VALID_INCLUDE,
+};
+
+enum samba_compounded_auth {
+	SAMBA_COMPOUNDED_AUTH_EXCLUDE = 0,
+	SAMBA_COMPOUNDED_AUTH_INCLUDE,
+};
+
 enum {
 	SAMBA_KDC_FLAG_PROTOCOL_TRANSITION    = 0x00000001,
 	SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION = 0x00000002,
@@ -75,6 +85,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
 				   enum auth_group_inclusion group_inclusion,
+				   enum samba_compounded_auth compounded_auth,
 				   const krb5_const_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);
@@ -82,6 +93,8 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct samba_kdc_entry *skdc_entry,
 				    enum samba_asserted_identity asserted_identity,
+				    enum samba_claims_valid claims_valid,
+				    enum samba_compounded_auth compounded_auth,
 				    struct auth_user_info_dc *_user_info_dc);
 
 NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
