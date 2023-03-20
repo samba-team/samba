@@ -1366,7 +1366,7 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 						&user_info_dc_out->sids,
 						&user_info_dc_out->num_sids);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add assertied identity!\n");
+		DBG_ERR("Failed to add asserted identity!\n");
 		return nt_status;
 	}
 
