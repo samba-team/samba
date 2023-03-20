@@ -974,7 +974,7 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo;
 	const char *error_string = NULL;
-	struct auth_user_info_dc *user_info_dc;
+	const struct auth_user_info_dc *user_info_dc = NULL;
 	struct samba_kdc_entry *p =
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	krb5_error_code code = 0;
@@ -988,7 +988,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	status = samba_kdc_get_user_info_from_db(p,
+	status = samba_kdc_get_user_info_from_db(tmp_ctx,
+						 p,
 						 p->msg,
 						 &user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {

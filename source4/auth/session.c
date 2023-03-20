@@ -52,7 +52,7 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 					     struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
 					     struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
-					     struct auth_user_info_dc *user_info_dc,
+					     const struct auth_user_info_dc *user_info_dc,
 					     uint32_t session_info_flags,
 					     struct auth_session_info **_session_info)
 {

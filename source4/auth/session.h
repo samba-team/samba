@@ -39,7 +39,7 @@ NTSTATUS auth_anonymous_user_info_dc(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 				    struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
 				    struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
-				    struct auth_user_info_dc *interim_info,
+				    const struct auth_user_info_dc *interim_info,
 				    uint32_t session_info_flags,
 				    struct auth_session_info **session_info);
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 

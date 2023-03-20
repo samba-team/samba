@@ -1078,7 +1078,8 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
  */
 static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
 					    enum samba_asserted_identity ai,
-					    struct auth_user_info_dc *user_info_dc)
+					    struct auth_SidAttr **sids,
+					    uint32_t *num_sids)
 {
 	struct dom_sid ai_sid;
 	const char *sid_str = NULL;
@@ -1097,11 +1098,11 @@ static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
 	dom_sid_parse(sid_str, &ai_sid);
 
 	return add_sid_to_array_attrs_unique(
-		user_info_dc,
+		mem_ctx,
 		&ai_sid,
 		SE_GROUP_DEFAULT_FLAGS,
-		&user_info_dc->sids,
-		&user_info_dc->num_sids);
+		sids,
+		num_sids);
 }
 
 /*
@@ -1109,9 +1110,10 @@ static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
  * structure. If the resulting structure is not talloc_free()d, it will be
  * reused on future calls to this function.
  */
-NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
+NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
+                                         struct samba_kdc_entry *skdc_entry,
                                          const struct ldb_message *msg,
-                                         struct auth_user_info_dc **user_info_dc)
+                                         const struct auth_user_info_dc **user_info_dc)
 {
 	if (skdc_entry->user_info_dc == NULL) {
 		NTSTATUS nt_status;
@@ -1148,7 +1150,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_requester_sid_blob,
 				 DATA_BLOB **_client_claims_blob)
 {
-	struct auth_user_info_dc *user_info_dc = NULL;
+	TALLOC_CTX *frame = NULL;
+	const struct auth_user_info_dc *user_info_dc_const = NULL;
+	struct auth_user_info_dc user_info_dc = {};
 	DATA_BLOB *logon_blob = NULL;
 	DATA_BLOB *cred_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
@@ -1216,25 +1220,51 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_status = samba_kdc_get_user_info_from_db(p,
+	nt_status = samba_kdc_get_user_info_from_db(mem_ctx,
+						    p,
 						    p->msg,
-						    &user_info_dc);
+						    &user_info_dc_const);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Getting user info for PAC failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
 	}
 
-	nt_status = samba_add_asserted_identity(mem_ctx,
+	frame = talloc_stackframe();
+
+	/* Make a shallow copy of the user_info_dc structure. */
+	user_info_dc = *user_info_dc_const;
+	if (user_info_dc.sids != NULL) {
+		/*
+		 * Because we want to modify the SIDs in the user_info_dc
+		 * structure, adding various well-known SIDs such as Asserted
+		 * Identity or Claims Valid, make a copy of the SID array to
+		 * guard against modification of the original.
+		 */
+		user_info_dc.sids = talloc_memdup(frame,
+						  user_info_dc.sids,
+						  talloc_get_size(user_info_dc.sids));
+		if (user_info_dc.sids == NULL) {
+			DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
+				nt_errstr(nt_status));
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	/* Here we modify the SIDs to add the Asserted Identity SID. */
+	nt_status = samba_add_asserted_identity(frame,
 						asserted_identity,
-						user_info_dc);
+						&user_info_dc.sids,
+						&user_info_dc.num_sids);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add assertied identity!\n");
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
 	nt_status = samba_get_logon_info_pac_blob(logon_blob,
-						  user_info_dc,
+						  &user_info_dc,
 						  NULL,
 						  group_inclusion,
 						  logon_blob,
@@ -1242,6 +1272,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC LOGON INFO failed: %s\n",
 			  nt_errstr(nt_status)));
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
@@ -1252,16 +1283,18 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Building PAC CRED INFO failed: %s\n",
 				  nt_errstr(nt_status)));
+			TALLOC_FREE(frame);
 			return nt_status;
 		}
 	}
 
 	nt_status = samba_get_upn_info_pac_blob(upn_blob,
-						user_info_dc,
+						&user_info_dc,
 						upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC UPN INFO failed: %s\n",
 			  nt_errstr(nt_status)));
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
@@ -1273,6 +1306,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Building PAC ATTRIBUTES failed: %s\n",
 				  nt_errstr(nt_status)));
+			TALLOC_FREE(frame);
 			return nt_status;
 		}
 	}
@@ -1291,6 +1325,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	if (_client_claims_blob != NULL) {
 		*_client_claims_blob = client_claims_blob;
 	}
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -1845,7 +1880,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!is_trusted) {
-		struct auth_user_info_dc *user_info_dc = NULL;
+		const struct auth_user_info_dc *user_info_dc = NULL;
 		WERROR werr;
 
 		struct dom_sid *object_sids = NULL;
@@ -1887,7 +1922,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_user_info_from_db(client,
+		nt_status = samba_kdc_get_user_info_from_db(mem_ctx,
+							    client,
 							    client->msg,
 							    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1916,7 +1952,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 							  krbtgt,
 							  client);
 		TALLOC_FREE(object_sids);
-		TALLOC_FREE(user_info_dc);
 		if (!W_ERROR_IS_OK(werr)) {
 			code = KRB5KDC_ERR_TGT_REVOKED;
 			if (W_ERROR_EQUAL(werr,

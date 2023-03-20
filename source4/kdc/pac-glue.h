@@ -66,9 +66,10 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_in_db,
 			  bool *is_trusted);
 
-NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
+NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
+					 struct samba_kdc_entry *skdc_entry,
 					 const struct ldb_message *msg,
-					 struct auth_user_info_dc **user_info_dc);
+					 const struct auth_user_info_dc **user_info_dc);
 
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *skdc_entry,
