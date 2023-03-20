@@ -183,6 +183,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, "OU=test_domain_ou2,OU=test_domain_ou1," + self.base_dn)
         delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
         # SCHEMA
+        mod = "(A;CI;WDCC;;;AU)(A;;CC;;;AU)"
+        self.sd_utils.dacl_delete_aces(self.schema_dn, mod)
         # CONFIGURATION
         delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers,"
                      + self.configuration_dn)
