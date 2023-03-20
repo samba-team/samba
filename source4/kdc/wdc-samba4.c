@@ -234,32 +234,30 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	return ret;
 }
 
-static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
-					    const krb5_principal delegated_proxy_principal,
-					    const hdb_entry *client,
-					    const hdb_entry *server,
-					    hdb_entry *krbtgt,
-					    krb5_pac *pac,
-					    krb5_cksumtype ctype,
-					    const hdb_entry *device,
-					    krb5_const_pac *device_pac)
+static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
+					     const krb5_principal delegated_proxy_principal,
+					     const hdb_entry *client,
+					     const hdb_entry *server,
+					     const hdb_entry *krbtgt,
+					     const krb5_pac pac,
+					     krb5_cksumtype ctype,
+					     const hdb_entry *device,
+					     krb5_const_pac *device_pac,
+					     krb5_boolean *is_trusted_out)
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	struct samba_kdc_entry *client_skdc_entry = NULL;
-	struct samba_kdc_entry *server_skdc_entry =
-		talloc_get_type_abort(server->context, struct samba_kdc_entry);
 	struct samba_kdc_entry *device_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->context, struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = NULL;
-	krb5_pac new_pac = NULL;
 	krb5_error_code ret;
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	bool is_in_db = false;
 	bool is_trusted = false;
 	uint32_t flags = 0;
 
-	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac2 context");
+	mem_ctx = talloc_named(NULL, 0, "samba_wdc_verify_pac2 context");
 	if (mem_ctx == NULL) {
 		return ENOMEM;
 	}
@@ -326,7 +324,7 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 
 		/* Check the KDC, whole-PAC and ticket signatures. */
 		ret = krb5_pac_verify(context,
-				      *pac,
+				      pac,
 				      0,
 				      NULL,
 				      NULL,
@@ -347,10 +345,77 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 		flags |= SAMBA_KDC_FLAG_KRBTGT_IN_DB;
 	}
 
+	ret = samba_kdc_verify_pac(mem_ctx,
+				   context,
+				   flags,
+				   client_skdc_entry,
+				   server->principal,
+				   krbtgt_skdc_entry,
+				   device_skdc_entry,
+				   device_pac,
+				   pac);
+	if (ret != 0) {
+		goto out;
+	}
+
+	if (is_trusted_out != NULL) {
+		*is_trusted_out = is_trusted;
+	}
+
+out:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/* Resign (and reform, including possibly new groups) a PAC */
+
+static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
+					   const krb5_principal _client_principal,
+					   const krb5_principal delegated_proxy_principal,
+					   hdb_entry *client,
+					   hdb_entry *server,
+					   hdb_entry *krbtgt,
+					   krb5_pac *pac)
+{
+	krb5_context context = kdc_request_get_context((kdc_request_t)r);
+	const hdb_entry *device = kdc_request_get_explicit_armor_client(r);
+	const krb5_const_pac device_pac = kdc_request_get_explicit_armor_pac(r);
+	struct samba_kdc_entry *client_skdc_entry = NULL;
+	struct samba_kdc_entry *device_skdc_entry = NULL;
+	const struct samba_kdc_entry *server_skdc_entry =
+		talloc_get_type_abort(server->context, struct samba_kdc_entry);
+	const struct samba_kdc_entry *krbtgt_skdc_entry =
+		talloc_get_type_abort(krbtgt->context, struct samba_kdc_entry);
+	TALLOC_CTX *mem_ctx = NULL;
+	krb5_pac new_pac = NULL;
+	krb5_error_code ret;
+	bool is_trusted = false;
+	uint32_t flags = 0;
+
+	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac context");
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	if (client != NULL) {
+		client_skdc_entry = talloc_get_type_abort(client->context,
+							  struct samba_kdc_entry);
+	}
+
+	if (device != NULL) {
+		device_skdc_entry = talloc_get_type_abort(device->context,
+							  struct samba_kdc_entry);
+	}
+
 	ret = krb5_pac_init(context, &new_pac);
 	if (ret != 0) {
 		new_pac = NULL;
 		goto out;
+	}
+
+	is_trusted = krb5_pac_is_trusted(*pac);
+	if (is_trusted) {
+		flags |= SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	}
 
 	ret = samba_kdc_update_pac(mem_ctx,
@@ -360,7 +425,6 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 				   client_skdc_entry,
 				   server->principal,
 				   server_skdc_entry,
-				   krbtgt_skdc_entry,
 				   delegated_proxy_principal,
 				   device_skdc_entry,
 				   device_pac,
@@ -385,15 +449,16 @@ out:
 	return ret;
 }
 
-/* Resign (and reform, including possibly new groups) a PAC */
+/* Verify a PAC's SID and signatures */
 
-static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
-					   const krb5_principal client_principal,
-					   const krb5_principal delegated_proxy_principal,
-					   hdb_entry *client,
-					   hdb_entry *server,
-					   hdb_entry *krbtgt,
-					   krb5_pac *pac)
+static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
+					    const krb5_principal client_principal,
+					    const krb5_principal delegated_proxy_principal,
+					    hdb_entry *client,
+					    hdb_entry *server,
+					    hdb_entry *krbtgt,
+					    krb5_pac pac,
+					    krb5_boolean *is_trusted)
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
@@ -427,7 +492,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		 * the PAC, and this will need to be updated.
 		 */
 		ret = krb5_pac_get_kdc_checksum_info(context,
-						     *pac,
+						     pac,
 						     &ctype,
 						     &rodc_id);
 		if (ret != 0) {
@@ -527,15 +592,16 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		}
 	}
 
-	ret = samba_wdc_reget_pac2(r,
-				   delegated_proxy_principal,
-				   client,
-				   server,
-				   krbtgt,
-				   pac,
-				   ctype,
-				   explicit_armor_client,
-				   &explicit_armor_pac);
+	ret = samba_wdc_verify_pac2(r,
+				    delegated_proxy_principal,
+				    client,
+				    server,
+				    krbtgt,
+				    pac,
+				    ctype,
+				    explicit_armor_client,
+				    &explicit_armor_pac,
+				    is_trusted);
 
 	if (krbtgt == &signing_krbtgt_hdb) {
 		hdb_free_entry(context, config->db[0], &signing_krbtgt_hdb);
@@ -715,10 +781,11 @@ static krb5_error_code samba_wdc_referral_policy(void *priv,
 }
 
 struct krb5plugin_kdc_ftable kdc_plugin_table = {
-	.minor_version = KRB5_PLUGIN_KDC_VERSION_10,
+	.minor_version = KRB5_PLUGIN_KDC_VERSION_11,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
-	.pac_verify = samba_wdc_reget_pac,
+	.pac_verify = samba_wdc_verify_pac,
+	.pac_update = samba_wdc_reget_pac,
 	.client_access = samba_wdc_check_client_access,
 	.finalize_reply = samba_wdc_finalize_reply,
 	.pac_generate = samba_wdc_get_pac,

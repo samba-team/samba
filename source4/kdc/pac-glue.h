@@ -75,7 +75,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
 				   enum auth_group_inclusion group_inclusion,
-				   const krb5_pac pac, DATA_BLOB *pac_blob,
+				   const krb5_const_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);
 
@@ -112,6 +112,16 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_sids,
 					  const struct samba_kdc_entry *rodc,
 					  const struct samba_kdc_entry *object);
 
+krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
+				     krb5_context context,
+				     uint32_t flags,
+				     struct samba_kdc_entry *client,
+				     krb5_principal server_principal,
+				     const struct samba_kdc_entry *krbtgt,
+				     const struct samba_kdc_entry *device,
+				     const krb5_const_pac *device_pac,
+				     krb5_const_pac pac);
+
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     struct ldb_context *samdb,
@@ -119,11 +129,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct samba_kdc_entry *client,
 				     krb5_principal server_principal,
 				     const struct samba_kdc_entry *server,
-				     const struct samba_kdc_entry *krbtgt,
 				     krb5_principal delegated_proxy_principal,
-				     const struct samba_kdc_entry *device,
-				     const krb5_const_pac *device_pac,
-				     krb5_pac old_pac,
+				     struct samba_kdc_entry *device,
+				     krb5_const_pac device_pac,
+				     krb5_const_pac old_pac,
 				     krb5_pac new_pac);
 
 NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,

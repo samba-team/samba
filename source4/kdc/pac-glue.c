@@ -1377,7 +1377,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
 				   const enum auth_group_inclusion group_inclusion,
-				   const krb5_pac pac, DATA_BLOB *pac_blob,
+				   const krb5_const_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig)
 {
@@ -1785,6 +1785,202 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
 }
 
 /**
+ * @brief Verify a PAC
+ *
+ * @param mem_ctx   A talloc memory context
+ *
+ * @param context   A krb5 context
+ *
+ * @param flags     Bitwise OR'ed flags
+ *
+ * @param client    The client samba kdc entry.
+
+ * @param server_principal  The server principal
+
+ * @param krbtgt    The krbtgt samba kdc entry.
+ *
+ * @param device    The computer's samba kdc entry; used for compound
+ *                  authentication.
+
+ * @param device_pac        The PAC from the computer's TGT; used
+ *                          for compound authentication.
+
+ * @param pac                       The PAC
+
+ * @return A Kerberos error code.
+ */
+krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
+				     krb5_context context,
+				     uint32_t flags,
+				     struct samba_kdc_entry *client,
+				     const krb5_principal server_principal,
+				     const struct samba_kdc_entry *krbtgt,
+				     const struct samba_kdc_entry *device,
+				     const krb5_const_pac *device_pac,
+				     const krb5_const_pac pac)
+{
+	krb5_error_code code = EINVAL;
+	NTSTATUS nt_status;
+	bool is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
+
+	struct pac_blobs pac_blobs;
+	pac_blobs_init(&pac_blobs);
+
+	if (client != NULL) {
+		/*
+		 * Check the objectSID of the client and pac data are the same.
+		 * Does a parse and SID check, but no crypto.
+		 */
+		code = samba_kdc_validate_pac_blob(context,
+						   client,
+						   pac);
+		if (code != 0) {
+			goto done;
+		}
+	}
+
+	if (device != NULL) {
+		SMB_ASSERT(*device_pac != NULL);
+
+		/*
+		 * Check the objectSID of the device and pac data are the same.
+		 * Does a parse and SID check, but no crypto.
+		 */
+		code = samba_kdc_validate_pac_blob(context,
+						   device,
+						   *device_pac);
+		if (code != 0) {
+			goto done;
+		}
+
+		/*
+		 * TODO: When we support compound authentication, we will use
+		 * the device PAC to generate PAC buffers for Device Info
+		 * (containing the computer account's groups) and Device Claims
+		 * (containing claims for the computer account), and insert them
+		 * into the emitted PAC.
+		 *
+		 * See [MS-KILE 1.3.4], [MS-KILE 3.3.5.7.4].
+		 */
+	}
+
+	if (!is_trusted) {
+		const struct auth_user_info_dc *user_info_dc = NULL;
+		WERROR werr;
+
+		struct dom_sid *object_sids = NULL;
+		uint32_t j;
+
+		if (client == NULL) {
+			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+			goto done;
+		}
+
+		nt_status = samba_kdc_get_user_info_from_db(mem_ctx, client, client->msg, &user_info_dc);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Getting user info for PAC failed: %s\n",
+				nt_errstr(nt_status));
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+
+		/*
+		 * Check if the SID list in the user_info_dc intersects
+		 * correctly with the RODC allow/deny lists.
+		 */
+		object_sids = talloc_array(mem_ctx, struct dom_sid, user_info_dc->num_sids);
+		if (object_sids == NULL) {
+			code = ENOMEM;
+			goto done;
+		}
+
+		for (j = 0; j < user_info_dc->num_sids; ++j) {
+			object_sids[j] = user_info_dc->sids[j].sid;
+		}
+
+		werr = samba_rodc_confirm_user_is_allowed(user_info_dc->num_sids,
+							  object_sids,
+							  krbtgt,
+							  client);
+		TALLOC_FREE(object_sids);
+		if (!W_ERROR_IS_OK(werr)) {
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			if (W_ERROR_EQUAL(werr,
+					  WERR_DOMAIN_CONTROLLER_NOT_FOUND)) {
+				code = KRB5KDC_ERR_POLICY;
+			}
+			goto done;
+		}
+
+		/*
+		 * The RODC PAC data isn't trusted for authorization as it may
+		 * be stale. The only thing meaningful we can do with an RODC
+		 * account on a full DC is exchange the RODC TGT for a 'real'
+		 * TGT.
+		 *
+		 * So we match Windows (at least server 2022) and
+		 * don't allow S4U2Self.
+		 *
+		 * https://lists.samba.org/archive/cifs-protocol/2022-April/003673.html
+		 */
+		if (flags & SAMBA_KDC_FLAG_PROTOCOL_TRANSITION) {
+			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+			goto done;
+		}
+	}
+
+	/* Check the types of the given PAC */
+
+	code = pac_blobs_from_krb5_pac(&pac_blobs,
+				       mem_ctx,
+				       context,
+				       pac);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = pac_blobs_ensure_exists(&pac_blobs,
+				       PAC_TYPE_LOGON_INFO);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = pac_blobs_ensure_exists(&pac_blobs,
+				       PAC_TYPE_LOGON_NAME);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = pac_blobs_ensure_exists(&pac_blobs,
+				       PAC_TYPE_SRV_CHECKSUM);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = pac_blobs_ensure_exists(&pac_blobs,
+				       PAC_TYPE_KDC_CHECKSUM);
+	if (code != 0) {
+		goto done;
+	}
+
+	if (!(flags & SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION)) {
+		code = pac_blobs_ensure_exists(&pac_blobs,
+					       PAC_TYPE_REQUESTER_SID);
+		if (code != 0) {
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+	}
+
+	code = 0;
+
+done:
+	pac_blobs_destroy(&pac_blobs);
+
+	return code;
+}
+
+/**
  * @brief Update a PAC
  *
  * @param mem_ctx   A talloc memory context
@@ -1801,8 +1997,6 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
 
  * @param server    The server samba kdc entry.
 
- * @param krbtgt    The krbtgt samba kdc entry.
- *
  * @param delegated_proxy_principal The delegated proxy principal used for
  *                                  updating the constrained delegation PAC
  *                                  buffer.
@@ -1827,12 +2021,11 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct samba_kdc_entry *client,
 				     const krb5_principal server_principal,
 				     const struct samba_kdc_entry *server,
-				     const struct samba_kdc_entry *krbtgt,
 				     const krb5_principal delegated_proxy_principal,
-				     const struct samba_kdc_entry *device,
-				     const krb5_const_pac *device_pac,
-				     const krb5_pac old_pac,
-				     const krb5_pac new_pac)
+				     struct samba_kdc_entry *device,
+				     const krb5_const_pac device_pac,
+				     const krb5_const_pac old_pac,
+				     krb5_pac new_pac)
 {
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
@@ -1864,19 +2057,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
 	}
 
-	if (client != NULL) {
-		/*
-		 * Check the objectSID of the client and pac data are the same.
-		 * Does a parse and SID check, but no crypto.
-		 */
-		code = samba_kdc_validate_pac_blob(context,
-						   client,
-						   old_pac);
-		if (code != 0) {
-			goto done;
-		}
-	}
-
 	if (delegated_proxy_principal != NULL) {
 		deleg_blob = talloc_zero(mem_ctx, DATA_BLOB);
 		if (deleg_blob == NULL) {
@@ -1899,37 +2079,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (device != NULL) {
-		SMB_ASSERT(*device_pac != NULL);
-
-		/*
-		 * Check the objectSID of the device and pac data are the same.
-		 * Does a parse and SID check, but no crypto.
-		 */
-		code = samba_kdc_validate_pac_blob(context,
-						   device,
-						   *device_pac);
-		if (code != 0) {
-			goto done;
-		}
-
-		/*
-		 * TODO: When we support compound authentication, we will use
-		 * the device PAC to generate PAC buffers for Device Info
-		 * (containing the computer account's groups) and Device Claims
-		 * (containing claims for the computer account), and insert them
-		 * into the emitted PAC.
-		 *
-		 * See [MS-KILE 1.3.4], [MS-KILE 3.3.5.7.4].
-		 */
-	}
-
 	if (!is_trusted) {
 		struct auth_user_info_dc user_info_dc = {};
-		WERROR werr;
-
-		struct dom_sid *object_sids = NULL;
-		uint32_t j;
 
 		/*
 		 * In this case the RWDC discards the PAC an RODC generated.
@@ -2001,50 +2152,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = EINVAL;
 			goto done;
 		}
-
-		/*
-		 * Check if the SID list in the user_info_dc intersects
-		 * correctly with the RODC allow/deny lists.
-		 */
-		object_sids = talloc_array(mem_ctx, struct dom_sid, user_info_dc.num_sids);
-		if (object_sids == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
-
-		for (j = 0; j < user_info_dc.num_sids; ++j) {
-			object_sids[j] = user_info_dc.sids[j].sid;
-		}
-
-		werr = samba_rodc_confirm_user_is_allowed(user_info_dc.num_sids,
-							  object_sids,
-							  krbtgt,
-							  client);
-		TALLOC_FREE(object_sids);
-		if (!W_ERROR_IS_OK(werr)) {
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			if (W_ERROR_EQUAL(werr,
-					  WERR_DOMAIN_CONTROLLER_NOT_FOUND)) {
-				code = KRB5KDC_ERR_POLICY;
-			}
-			goto done;
-		}
-
-		/*
-		 * The RODC PAC data isn't trusted for authorization as it may
-		 * be stale. The only thing meaningful we can do with an RODC
-		 * account on a full DC is exchange the RODC TGT for a 'real'
-		 * TGT.
-		 *
-		 * So we match Windows (at least server 2022) and
-		 * don't allow S4U2Self.
-		 *
-		 * https://lists.samba.org/archive/cifs-protocol/2022-April/003673.html
-		 */
-		if (flags & SAMBA_KDC_FLAG_PROTOCOL_TRANSITION) {
-			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-			goto done;
-		}
 	} else {
 		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
 		if (pac_blob == NULL) {
@@ -2107,15 +2214,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 #endif
-
-	if (!(flags & SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION)) {
-		code = pac_blobs_ensure_exists(&pac_blobs,
-					       PAC_TYPE_REQUESTER_SID);
-		if (code != 0) {
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			goto done;
-		}
-	}
 
 	code = pac_blobs_add_blob(&pac_blobs,
 				  mem_ctx,

@@ -675,6 +675,19 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 		delegated_proxy_principal = discard_const(client_principal);
 	}
 
+	code = samba_kdc_verify_pac(tmp_ctx,
+				    context,
+				    flags,
+				    client_skdc_entry,
+				    server->princ,
+				    krbtgt_skdc_entry,
+				    NULL, /* device */
+				    NULL, /* device_pac */
+				    *pac);
+	if (code != 0) {
+		goto done;
+	}
+
 	/* Build an updated PAC */
 	code = krb5_pac_init(context, &new_pac);
 	if (code != 0) {
@@ -688,7 +701,6 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    client_skdc_entry,
 				    server->princ,
 				    server_skdc_entry,
-				    krbtgt_skdc_entry,
 				    delegated_proxy_principal,
 				    NULL, /* device */
 				    NULL, /* device_pac */
@@ -784,6 +796,19 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 		flags |= SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION;
 	}
 
+	code = samba_kdc_verify_pac(tmp_ctx,
+				    context,
+				    flags,
+				    client_skdc_entry,
+				    server->princ,
+				    krbtgt_skdc_entry,
+				    NULL, /* device */
+				    NULL, /* device_pac */
+				    old_pac);
+	if (code != 0) {
+		goto done;
+	}
+
 	code = samba_kdc_update_pac(tmp_ctx,
 				    context,
 				    krbtgt_skdc_entry->kdc_db_ctx->samdb,
@@ -791,7 +816,6 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    client_skdc_entry,
 				    server->princ,
 				    server_skdc_entry,
-				    krbtgt_skdc_entry,
 				    NULL, /* delegated_proxy_principal */
 				    NULL, /* device */
 				    NULL, /* device_pac */
