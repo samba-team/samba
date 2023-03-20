@@ -868,6 +868,9 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.check_user_belongs(self.get_users_domain_dn(user_name), [])
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
+        # Change Schema partition descriptor
+        mod = "(A;;CC;;;AU)"
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
