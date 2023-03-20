@@ -207,7 +207,7 @@ class SDUtils(object):
         return di, ii
 
     def get_sd_as_sddl(self, object_dn, controls=None):
-        """Return object nTSecutiryDescriptor in SDDL format
+        """Return object nTSecurityDescriptor in SDDL format
         """
         if controls is None:
             controls = []
