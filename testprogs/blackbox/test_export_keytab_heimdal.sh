@@ -70,20 +70,20 @@ test_keytab "read keytab from domain" "$PREFIX/tmpkeytab" "$SERVER\\\$" 3
 testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab" "$SERVER\\\$" 3
 
-testit "dump keytab from domain for cifs principal" $VALGRIND $PYTHON
+testit "dump keytab from domain for cifs principal" $VALGRIND $PYTHON \
 $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain for cifs principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 3
-testit "dump keytab from domain for cifs principal (2nd time)" $VALGRIND $PYTHON
+testit "dump keytab from domain for cifs principal (2nd time)" $VALGRIND $PYTHON \
 $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain for cifs principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 3
 
 testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=${TEST_USER} "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-2" "${TEST_USER}@$REALM" 3
-testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON
+testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON \
 $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=${TEST_USER}@$REALM "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-2" "${TEST_USER}@$REALM" 3
 
-testit "dump keytab from domain for user principal with SPN as UPN" $VALGRIND
+testit "dump keytab from domain for user principal with SPN as UPN" $VALGRIND \
 $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-3 --principal=http/testupnspn.$DNSDOMAIN "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-3" "http/testupnspn.$DNSDOMAIN@$REALM" 3
 
