@@ -5079,6 +5079,7 @@ class AclUndeleteTests(AclTests):
         except LdbError as e38:
             (num, _) = e38.args
             self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        self.sd_utils.dacl_delete_aces(self.base_dn, mod)
 
 
 class AclSPNTests(AclTests):
