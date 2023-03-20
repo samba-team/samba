@@ -299,8 +299,7 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *info,
 				       const struct PAC_DOMAIN_GROUP_MEMBERSHIP *override_resource_groups,
 				       const enum auth_group_inclusion group_inclusion,
-				       DATA_BLOB *pac_data,
-				       DATA_BLOB *requester_sid_blob)
+				       DATA_BLOB *pac_data)
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
@@ -312,9 +311,6 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(pac_info);
 
 	*pac_data = data_blob_null;
-	if (requester_sid_blob != NULL) {
-		*requester_sid_blob = data_blob_null;
-	}
 
 	if (override_resource_groups == NULL) {
 		resource_groups = &_resource_groups;
@@ -373,6 +369,21 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("PAC_LOGON_INFO (presig) push failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static
+NTSTATUS samba_get_requester_sid_pac_blob(TALLOC_CTX *mem_ctx,
+					  const struct auth_user_info_dc *info,
+					  DATA_BLOB *requester_sid_blob)
+{
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+
+	if (requester_sid_blob != NULL) {
+		*requester_sid_blob = data_blob_null;
 	}
 
 	if (requester_sid_blob != NULL && info->num_sids > 0) {
@@ -1138,194 +1149,227 @@ NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
-				 struct samba_kdc_entry *p,
-				 enum samba_asserted_identity asserted_identity,
-				 const enum auth_group_inclusion group_inclusion,
-				 DATA_BLOB **_logon_info_blob,
-				 DATA_BLOB **_cred_ndr_blob,
-				 DATA_BLOB **_upn_info_blob,
-				 DATA_BLOB **_pac_attrs_blob,
-				 uint64_t pac_attributes,
-				 DATA_BLOB **_requester_sid_blob,
-				 DATA_BLOB **_client_claims_blob)
+NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
+				       const struct auth_user_info_dc *user_info_dc,
+				       const enum auth_group_inclusion group_inclusion,
+				       DATA_BLOB **_logon_info_blob)
 {
-	TALLOC_CTX *frame = NULL;
-	const struct auth_user_info_dc *user_info_dc_const = NULL;
-	struct auth_user_info_dc user_info_dc = {};
 	DATA_BLOB *logon_blob = NULL;
-	DATA_BLOB *cred_blob = NULL;
-	DATA_BLOB *upn_blob = NULL;
-	DATA_BLOB *pac_attrs_blob = NULL;
-	DATA_BLOB *requester_sid_blob = NULL;
-	DATA_BLOB *client_claims_blob = NULL;
 	NTSTATUS nt_status;
 
 	*_logon_info_blob = NULL;
-	if (_cred_ndr_blob != NULL) {
-		*_cred_ndr_blob = NULL;
-	}
-	*_upn_info_blob = NULL;
-	if (_pac_attrs_blob != NULL) {
-		*_pac_attrs_blob = NULL;
-	}
-	if (_requester_sid_blob != NULL) {
-		*_requester_sid_blob = NULL;
-	}
-	if (_client_claims_blob != NULL) {
-		*_client_claims_blob = NULL;
-	}
 
 	logon_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (logon_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (_cred_ndr_blob != NULL) {
-		cred_blob = talloc_zero(mem_ctx, DATA_BLOB);
-		if (cred_blob == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	nt_status = samba_get_logon_info_pac_blob(logon_blob,
+						  user_info_dc,
+						  NULL,
+						  group_inclusion,
+						  logon_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Building PAC LOGON INFO failed: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
 	}
+
+	*_logon_info_blob = logon_blob;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_cred_ndr_blob(TALLOC_CTX *mem_ctx,
+				     const struct samba_kdc_entry *p,
+				     DATA_BLOB **_cred_ndr_blob)
+{
+	DATA_BLOB *cred_blob = NULL;
+	NTSTATUS nt_status;
+
+	SMB_ASSERT(_cred_ndr_blob != NULL);
+
+	*_cred_ndr_blob = NULL;
+
+	cred_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (cred_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = samba_get_cred_info_ndr_blob(cred_blob,
+						 p->msg,
+						 cred_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Building PAC CRED INFO failed: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
+	}
+
+	*_cred_ndr_blob = cred_blob;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_upn_info_blob(TALLOC_CTX *mem_ctx,
+				     const struct auth_user_info_dc *user_info_dc,
+				     DATA_BLOB **_upn_info_blob)
+{
+	DATA_BLOB *upn_blob = NULL;
+	NTSTATUS nt_status;
+
+	*_upn_info_blob = NULL;
 
 	upn_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (upn_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (_pac_attrs_blob != NULL) {
-		pac_attrs_blob = talloc_zero(mem_ctx, DATA_BLOB);
-		if (pac_attrs_blob == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	if (_requester_sid_blob != NULL) {
-		requester_sid_blob = talloc_zero(mem_ctx, DATA_BLOB);
-		if (requester_sid_blob == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	if (_client_claims_blob != NULL) {
-		/*
-		 * Until we support claims we just
-		 * return an empty blob,
-		 * that matches what Windows is doing
-		 * without defined claims
-		 */
-		client_claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
-		if (client_claims_blob == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	nt_status = samba_kdc_get_user_info_from_db(mem_ctx,
-						    p,
-						    p->msg,
-						    &user_info_dc_const);
+	nt_status = samba_get_upn_info_pac_blob(upn_blob,
+						user_info_dc,
+						upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Getting user info for PAC failed: %s\n",
+		DEBUG(0, ("Building PAC UPN INFO failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
 	}
 
-	frame = talloc_stackframe();
+	*_upn_info_blob = upn_blob;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
+				      uint64_t pac_attributes,
+				      DATA_BLOB **_pac_attrs_blob)
+{
+	DATA_BLOB *pac_attrs_blob = NULL;
+	NTSTATUS nt_status;
+
+	SMB_ASSERT(_pac_attrs_blob != NULL);
+
+	*_pac_attrs_blob = NULL;
+
+	pac_attrs_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (pac_attrs_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = samba_get_pac_attrs_blob(pac_attrs_blob,
+					     pac_attributes,
+					     pac_attrs_blob);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Building PAC ATTRIBUTES failed: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
+	}
+
+	*_pac_attrs_blob = pac_attrs_blob;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
+					  const struct auth_user_info_dc *user_info_dc,
+					  DATA_BLOB **_requester_sid_blob)
+{
+	DATA_BLOB *requester_sid_blob = NULL;
+	NTSTATUS nt_status;
+
+	SMB_ASSERT(_requester_sid_blob != NULL);
+
+	*_requester_sid_blob = NULL;
+
+	requester_sid_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (requester_sid_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = samba_get_requester_sid_pac_blob(mem_ctx,
+						     user_info_dc,
+						     requester_sid_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Building PAC LOGON INFO failed: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
+	}
+
+	*_requester_sid_blob = requester_sid_blob;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
+				   const struct samba_kdc_entry *p,
+				   DATA_BLOB **_claims_blob)
+{
+	DATA_BLOB *claims_blob = NULL;
+
+	SMB_ASSERT(_claims_blob != NULL);
+
+	*_claims_blob = NULL;
+
+	/*
+	 * Until we support claims we just
+	 * return an empty blob,
+	 * that matches what Windows is doing
+	 * without defined claims
+	 */
+	claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (claims_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*_claims_blob = claims_blob;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
+				    struct samba_kdc_entry *skdc_entry,
+				    enum samba_asserted_identity asserted_identity,
+				    struct auth_user_info_dc *user_info_dc_out)
+{
+	NTSTATUS nt_status;
+	const struct auth_user_info_dc *user_info_dc = NULL;
+
+	nt_status = samba_kdc_get_user_info_from_db(mem_ctx, skdc_entry, skdc_entry->msg, &user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Getting user info for PAC failed: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
+	}
+
 
 	/* Make a shallow copy of the user_info_dc structure. */
-	user_info_dc = *user_info_dc_const;
-	if (user_info_dc.sids != NULL) {
+	*user_info_dc_out = *user_info_dc;
+	if (user_info_dc->sids != NULL) {
 		/*
 		 * Because we want to modify the SIDs in the user_info_dc
 		 * structure, adding various well-known SIDs such as Asserted
 		 * Identity or Claims Valid, make a copy of the SID array to
 		 * guard against modification of the original.
 		 */
-		user_info_dc.sids = talloc_memdup(frame,
-						  user_info_dc.sids,
-						  talloc_get_size(user_info_dc.sids));
-		if (user_info_dc.sids == NULL) {
+		user_info_dc_out->sids = talloc_memdup(mem_ctx,
+						       user_info_dc_out->sids,
+						       talloc_get_size(user_info_dc_out->sids));
+		if (user_info_dc_out->sids == NULL) {
 			DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
 				nt_errstr(nt_status));
-			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	/* Here we modify the SIDs to add the Asserted Identity SID. */
-	nt_status = samba_add_asserted_identity(frame,
+	nt_status = samba_add_asserted_identity(mem_ctx,
 						asserted_identity,
-						&user_info_dc.sids,
-						&user_info_dc.num_sids);
+						&user_info_dc_out->sids,
+						&user_info_dc_out->num_sids);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add assertied identity!\n");
-		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
-	nt_status = samba_get_logon_info_pac_blob(logon_blob,
-						  &user_info_dc,
-						  NULL,
-						  group_inclusion,
-						  logon_blob,
-						  requester_sid_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Building PAC LOGON INFO failed: %s\n",
-			  nt_errstr(nt_status)));
-		TALLOC_FREE(frame);
-		return nt_status;
-	}
-
-	if (cred_blob != NULL) {
-		nt_status = samba_get_cred_info_ndr_blob(cred_blob,
-							 p->msg,
-							 cred_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Building PAC CRED INFO failed: %s\n",
-				  nt_errstr(nt_status)));
-			TALLOC_FREE(frame);
-			return nt_status;
-		}
-	}
-
-	nt_status = samba_get_upn_info_pac_blob(upn_blob,
-						&user_info_dc,
-						upn_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Building PAC UPN INFO failed: %s\n",
-			  nt_errstr(nt_status)));
-		TALLOC_FREE(frame);
-		return nt_status;
-	}
-
-	if (pac_attrs_blob != NULL) {
-		nt_status = samba_get_pac_attrs_blob(pac_attrs_blob,
-						     pac_attributes,
-						     pac_attrs_blob);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Building PAC ATTRIBUTES failed: %s\n",
-				  nt_errstr(nt_status)));
-			TALLOC_FREE(frame);
-			return nt_status;
-		}
-	}
-
-	*_logon_info_blob = logon_blob;
-	if (_cred_ndr_blob != NULL) {
-		*_cred_ndr_blob = cred_blob;
-	}
-	*_upn_info_blob = upn_blob;
-	if (_pac_attrs_blob != NULL) {
-		*_pac_attrs_blob = pac_attrs_blob;
-	}
-	if (_requester_sid_blob != NULL) {
-		*_requester_sid_blob = requester_sid_blob;
-	}
-	if (_client_claims_blob != NULL) {
-		*_client_claims_blob = client_claims_blob;
-	}
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -1381,7 +1425,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						  user_info_dc,
 						  _resource_groups,
 						  group_inclusion,
-						  pac_blob, NULL);
+						  pac_blob);
 
 	/*
 	 * The infomation from this is now in the PAC, this memory is
@@ -1881,7 +1925,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!is_trusted) {
-		const struct auth_user_info_dc *user_info_dc = NULL;
+		struct auth_user_info_dc user_info_dc = {};
 		WERROR werr;
 
 		struct dom_sid *object_sids = NULL;
@@ -1905,32 +1949,56 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_pac_blobs(mem_ctx,
-						    client,
-						    asserted_identity,
-						    group_inclusion,
-						    &pac_blob,
-						    NULL,
-						    &upn_blob,
-						    NULL,
-						    PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-						    &requester_sid_blob,
-						    &client_claims_blob);
+		nt_status = samba_kdc_get_user_info_dc(mem_ctx,
+						       client,
+						       asserted_identity,
+						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_kdc_get_pac_blobs failed: %s\n",
+			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
 				nt_errstr(nt_status));
 			code = KRB5KDC_ERR_TGT_REVOKED;
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_user_info_from_db(mem_ctx,
-							    client,
-							    client->msg,
-							    &user_info_dc);
+		nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
+						       &user_info_dc,
+						       group_inclusion,
+						       &pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_kdc_get_user_info_from_db failed: %s\n",
+			DBG_ERR("samba_kdc_get_logon_info_blob failed: %s\n",
 				nt_errstr(nt_status));
 			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+
+		nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
+							&user_info_dc,
+							&upn_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("samba_kdc_get_upn_info_blob failed: %s\n",
+				nt_errstr(nt_status));
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+
+		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
+							     &user_info_dc,
+							     &requester_sid_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("samba_kdc_get_requester_sid_blob failed: %s\n",
+				nt_errstr(nt_status));
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+
+		/* Don't trust RODC-issued claims. Regenerate them. */
+		nt_status = samba_kdc_get_claims_blob(mem_ctx,
+						      client,
+						      &client_claims_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
+				nt_errstr(nt_status));
+			code = EINVAL;
 			goto done;
 		}
 
@@ -1938,17 +2006,17 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		 * Check if the SID list in the user_info_dc intersects
 		 * correctly with the RODC allow/deny lists.
 		 */
-		object_sids = talloc_array(mem_ctx, struct dom_sid, user_info_dc->num_sids);
+		object_sids = talloc_array(mem_ctx, struct dom_sid, user_info_dc.num_sids);
 		if (object_sids == NULL) {
 			code = ENOMEM;
 			goto done;
 		}
 
-		for (j = 0; j < user_info_dc->num_sids; ++j) {
-			object_sids[j] = user_info_dc->sids[j].sid;
+		for (j = 0; j < user_info_dc.num_sids; ++j) {
+			object_sids[j] = user_info_dc.sids[j].sid;
 		}
 
-		werr = samba_rodc_confirm_user_is_allowed(user_info_dc->num_sids,
+		werr = samba_rodc_confirm_user_is_allowed(user_info_dc.num_sids,
 							  object_sids,
 							  krbtgt,
 							  client);

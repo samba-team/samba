@@ -123,6 +123,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 
+	struct auth_user_info_dc user_info_dc = {};
+
 	/* Only include resource groups in a service ticket. */
 	if (is_krbtgt) {
 		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
@@ -141,16 +143,63 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
-					    asserted_identity,
-					    group_inclusion,
-					    &logon_blob,
-					    cred_ndr_ptr,
-					    &upn_blob,
-					    is_krbtgt ? &pac_attrs_blob : NULL,
-					    pac_attributes,
-					    is_krbtgt ? &requester_sid_blob : NULL,
-					    &client_claims_blob);
+	nt_status = samba_kdc_get_user_info_dc(mem_ctx,
+					       skdc_entry,
+					       asserted_identity,
+					       &user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+
+	nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
+						  &user_info_dc,
+						  group_inclusion,
+						  &logon_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+
+	if (cred_ndr_ptr != NULL) {
+		nt_status = samba_kdc_get_cred_ndr_blob(mem_ctx,
+							skdc_entry,
+							cred_ndr_ptr);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return EINVAL;
+		}
+	}
+
+	nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
+						&user_info_dc,
+						&upn_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+
+	if (is_krbtgt) {
+		nt_status = samba_kdc_get_pac_attrs_blob(mem_ctx,
+							 pac_attributes,
+							 &pac_attrs_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return EINVAL;
+		}
+
+		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
+							     &user_info_dc,
+							     &requester_sid_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return EINVAL;
+		}
+	}
+
+	nt_status = samba_kdc_get_claims_blob(mem_ctx,
+					      skdc_entry,
+					      &client_claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;

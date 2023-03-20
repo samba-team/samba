@@ -464,6 +464,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		      krb5_pac *pac)
 {
 	TALLOC_CTX *tmp_ctx;
+	struct auth_user_info_dc user_info_dc = {};
 	DATA_BLOB *logon_info_blob = NULL;
 	DATA_BLOB *upn_dns_info_blob = NULL;
 	DATA_BLOB *cred_ndr = NULL;
@@ -511,17 +512,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	nt_status = samba_kdc_get_pac_blobs(tmp_ctx,
-					    skdc_entry,
-					    asserted_identity,
-					    group_inclusion,
-					    &logon_info_blob,
-					    cred_ndr_ptr,
-					    &upn_dns_info_blob,
-					    is_krbtgt ? &pac_attrs_blob : NULL,
-					    PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-					    is_krbtgt ? &requester_sid_blob : NULL,
-					    NULL);
+	nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
+					       skdc_entry,
+					       asserted_identity,
+					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		if (NT_STATUS_EQUAL(nt_status,
@@ -529,6 +523,51 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 			return ENOENT;
 		}
 		return EINVAL;
+	}
+
+	nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
+						  &user_info_dc,
+						  group_inclusion,
+						  &logon_info_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	if (cred_ndr_ptr != NULL) {
+		nt_status = samba_kdc_get_cred_ndr_blob(tmp_ctx,
+							skdc_entry,
+							cred_ndr_ptr);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(tmp_ctx);
+			return EINVAL;
+		}
+	}
+
+	nt_status = samba_kdc_get_upn_info_blob(tmp_ctx,
+						&user_info_dc,
+						&upn_dns_info_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	if (is_krbtgt) {
+		nt_status = samba_kdc_get_pac_attrs_blob(tmp_ctx,
+							 PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
+							 &pac_attrs_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(tmp_ctx);
+			return EINVAL;
+		}
+
+		nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
+							     &user_info_dc,
+							     &requester_sid_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(tmp_ctx);
+			return EINVAL;
+		}
 	}
 
 	if (replaced_reply_key != NULL && cred_ndr != NULL) {

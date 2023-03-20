@@ -71,17 +71,6 @@ NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 					 const struct ldb_message *msg,
 					 const struct auth_user_info_dc **user_info_dc);
 
-NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
-				 struct samba_kdc_entry *skdc_entry,
-				 enum samba_asserted_identity asserted_identity,
-				 enum auth_group_inclusion group_inclusion,
-				 DATA_BLOB **_logon_info_blob,
-				 DATA_BLOB **_cred_ndr_blob,
-				 DATA_BLOB **_upn_info_blob,
-				 DATA_BLOB **_pac_attrs_blob,
-				 uint64_t pac_attributes,
-				 DATA_BLOB **_requester_sid_blob,
-				 DATA_BLOB **_client_claims_blob);
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
@@ -89,6 +78,11 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   const krb5_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);
+
+NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
+				    struct samba_kdc_entry *skdc_entry,
+				    enum samba_asserted_identity asserted_identity,
+				    struct auth_user_info_dc *_user_info_dc);
 
 NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				krb5_context context,
@@ -131,3 +125,23 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     const krb5_const_pac *device_pac,
 				     krb5_pac old_pac,
 				     krb5_pac new_pac);
+
+NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
+				       const struct auth_user_info_dc *user_info_dc,
+				       enum auth_group_inclusion group_inclusion,
+				       DATA_BLOB **_logon_info_blob);
+NTSTATUS samba_kdc_get_cred_ndr_blob(TALLOC_CTX *mem_ctx,
+				     const struct samba_kdc_entry *p,
+				     DATA_BLOB **_cred_ndr_blob);
+NTSTATUS samba_kdc_get_upn_info_blob(TALLOC_CTX *mem_ctx,
+				     const struct auth_user_info_dc *user_info_dc,
+				     DATA_BLOB **_upn_info_blob);
+NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
+				      uint64_t pac_attributes,
+				      DATA_BLOB **_pac_attrs_blob);
+NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
+					  const struct auth_user_info_dc *user_info_dc,
+					  DATA_BLOB **_requester_sid_blob);
+NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
+				   const struct samba_kdc_entry *p,
+				   DATA_BLOB **_claims_blob);
