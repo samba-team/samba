@@ -1725,6 +1725,7 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
 					  rodc_machine_account->msgs[0],
 					  "objectSid");
 	if (rodc_machine_account_sid == NULL) {
+		TALLOC_FREE(frame);
 		return WERR_DS_DRA_BAD_DN;
 	}
 
