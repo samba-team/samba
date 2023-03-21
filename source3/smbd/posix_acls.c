@@ -3127,6 +3127,15 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
 
 					DEBUG(10,("merge_default_aces: Merging zero access ACE %u onto ACE %u.\n",
 						(unsigned int)i, (unsigned int)j ));
+
+					/*
+					 * If we remove the i'th element, we
+					 * should decrement i so that we don't
+					 * skip over the succeeding element.
+					*/
+					i--;
+					num_aces--;
+					break;
 				} else {
 					/*
 					 * These are identical except for the flags.
@@ -3139,9 +3148,16 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
 
 					DEBUG(10,("merge_default_aces: Merging ACE %u onto ACE %u.\n",
 						(unsigned int)j, (unsigned int)i ));
+
+					/*
+					 * If we remove the j'th element, we
+					 * should decrement j and continue
+					 * around the loop, so as not to skip
+					 * subsequent elements.
+					 */
+					j--;
+					num_aces--;
 				}
-				num_aces--;
-				break;
 			}
 		}
 	}
