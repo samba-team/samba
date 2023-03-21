@@ -5128,6 +5128,17 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	conn->smb2.server.system_time	= BVAL(body, 40);
 	conn->smb2.server.start_time	= BVAL(body, 48);
 
+	if (conn->smb2.server.max_trans_size == 0 ||
+	    conn->smb2.server.max_read_size == 0 ||
+	    conn->smb2.server.max_write_size == 0) {
+		/*
+		 * We can't connect to servers we can't
+		 * do any operations on.
+		 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	security_offset = SVAL(body, 56);
 	security_length = SVAL(body, 58);
 
