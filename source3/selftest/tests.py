@@ -1415,6 +1415,18 @@ plantestsuite("samba3.blackbox.chdir-cache", "simpleserver:local",
                '$PREFIX',
                'simpleserver'])
 
+plantestsuite("samba3.blackbox.zero_readsize",
+              "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_zero_readsize.sh"),
+               configuration,
+               os.path.join(bindir(), "smbclient"),
+               os.path.join(bindir(), "smbcontrol"),
+               '$SERVER_IP',
+               "tmp",
+               "$PREFIX",
+               "-mSMB2"])
+
 plantestsuite("samba3.blackbox.netfileenum", "simpleserver:local",
               [os.path.join(samba3srcdir,
                             "script/tests/test_netfileenum.sh"),
