@@ -176,7 +176,7 @@ class SddlDecodeEncode(TestCase):
          "(A;;RPLCLORC;;;AU)"),
     ]
 
-    def test(self):
+    def test_sddl(self):
         sid = security.dom_sid("S-1-2-3-4")
         for s in self.strings:
             sd = security.descriptor.from_sddl(s, sid)
