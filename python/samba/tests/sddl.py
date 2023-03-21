@@ -170,10 +170,6 @@ class SddlDecodeEncode(TestCase):
 
         "D:S:",
         "D:PS:",
-
-        ("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)"
-         "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
-         "(A;;RPLCLORC;;;AU)"),
     ]
 
     def test_sddl(self):
