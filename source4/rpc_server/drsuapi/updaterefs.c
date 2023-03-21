@@ -144,6 +144,11 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			if (i+1 < reps.count) {
 				memmove(&reps.r[i], &reps.r[i+1], sizeof(reps.r[i])*(reps.count-(i+1)));
 			}
+			/*
+			 * If we remove an element, decrement i so that we don't
+			 * skip over the element following.
+			 */
+			i--;
 			reps.count--;
 			found = true;
 		}
