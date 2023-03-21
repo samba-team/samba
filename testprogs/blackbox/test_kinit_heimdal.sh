@@ -22,25 +22,19 @@ CONFIGURATION=${9}
 shift 9
 failed=0
 
-samba4bindir="$BINDIR"
-samba4srcdir="$SRCDIR/source4"
-samba4kinit_binary=kinit
-if test -x $BINDIR/samba4kinit; then
-	samba4kinit_binary=$BINDIR/samba4kinit
-fi
+. "$(dirname "${0}")/subunit.sh"
+. "$(dirname "${0}")/common_test_fns.inc"
 
-samba_tool="$samba4bindir/samba-tool"
-texpect="$samba4bindir/texpect"
-samba4kpasswd=kpasswd
-if test -x $BINDIR/samba4kpasswd; then
-	samba4kpasswd=$BINDIR/samba4kpasswd
-fi
+samba_bindir="$BINDIR"
+samba_srcdir="$SRCDIR/source4"
+samba_kinit=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
+samba_kpasswd=$(system_or_builddir_binary kpasswd "${BINDIR}" samba4kpasswd)
+
+samba_tool="$samba_bindir/samba-tool"
+texpect="$samba_bindir/texpect"
 
 enableaccount="$samba_tool user enable"
-machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
-
-. $(dirname $0)/subunit.sh
-. $(dirname $0)/common_test_fns.inc
+machineaccountccache="$samba_srcdir/scripting/bin/machineaccountccache"
 
 ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
 ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
@@ -55,7 +49,7 @@ export ADMIN_LDBMODIFY_CONFIG
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
-samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
+samba_kinit_ccache="$samba_kinit -c $KRB5CCNAME"
 ADMIN_KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
@@ -72,7 +66,7 @@ testit "reset password policies beside of minimum password age of 0 days" \
 
 echo $PASSWORD >$PREFIX/tmppassfile
 testit "kinit with password (initial)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmppassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmppassfile \
 	--request-pac $USERNAME@$REALM || \
 	failed=$((failed + 1))
 test_smbclient "Test login with user kerberos ccache" \
@@ -80,7 +74,7 @@ test_smbclient "Test login with user kerberos ccache" \
 	failed=$((failed + 1))
 
 testit "kinit with password (enterprise style)" \
-	$samba4kinit $enctype --enterprise --password-file=$PREFIX/tmppassfile \
+	$samba_kinit_ccache $enctype --enterprise --password-file=$PREFIX/tmppassfile \
 	--request-pac $USERNAME@$REALM || \
 	failed=$((failed + 1))
 test_smbclient "Test login with user kerberos ccache" \
@@ -88,7 +82,7 @@ test_smbclient "Test login with user kerberos ccache" \
 	failed=$((failed + 1))
 
 testit "kinit with password (windows style)" \
-	$samba4kinit $enctype --renewable --windows \
+	$samba_kinit_ccache $enctype --renewable --windows \
 	--password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM || \
 	failed=$((failed + 1))
 test_smbclient "Test login with user kerberos ccache" \
@@ -96,7 +90,7 @@ test_smbclient "Test login with user kerberos ccache" \
 	failed=$((failed + 1))
 
 testit "kinit renew ticket" \
-	$samba4kinit $enctype --request-pac -R
+	$samba_kinit_ccache $enctype --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' "$unc" \
 	--use-krb5-ccache=$KRB5CCNAME || \
@@ -143,12 +137,12 @@ testit "enable user with kerberos cache" \
 
 KRB5CCNAME_PATH="$PREFIX/tmpuserccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
-samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
+samba_kinit_ccache="$samba_kinit -c $KRB5CCNAME"
 export KRB5CCNAME
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password (after enable of user and password change)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
@@ -166,7 +160,7 @@ testit "change user password with 'samba-tool user password' (rpc)" \
 echo $NEWUSERPASS >$PREFIX/tmpuserpassfile
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password (after rpc password change)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
@@ -176,7 +170,7 @@ test_smbclient "Test login with user kerberos ccache" \
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (NT-Principal style) using UPN" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac nettest@$REALM || failed=$((failed + 1))
 test_smbclient "Test login with user kerberos ccache from enterprise UPN" \
 	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || \
@@ -184,7 +178,7 @@ test_smbclient "Test login with user kerberos ccache from enterprise UPN" \
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (enterprise style) using UPN" \
-	$samba4kinit $enctype --enterprise \
+	$samba_kinit_ccache $enctype --enterprise \
 	--password-file=$PREFIX/tmpuserpassfile --request-pac \
 	nettest@$REALM || \
 	failed=$((failed + 1))
@@ -194,7 +188,7 @@ test_smbclient "Test login with user kerberos ccache from enterprise UPN" \
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (windows style) using UPN" \
-	$samba4kinit $enctype --renewable --windows \
+	$samba_kinit_ccache $enctype --renewable --windows \
 	--password-file=$PREFIX/tmpuserpassfile --request-pac \
 	nettest@$REALM || \
 	failed=$((failed + 1))
@@ -217,7 +211,7 @@ testit "modify userPrincipalName to be a different domain" \
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (enterprise style) using UPN" \
-	$samba4kinit $enctype --enterprise \
+	$samba_kinit_ccache $enctype --enterprise \
 	--password-file=$PREFIX/tmpuserpassfile --request-pac \
 	nettest@$REALM.org || \
 	failed=$((failed + 1))
@@ -240,13 +234,13 @@ expect Success
 EOF
 
 testit "change user password with kpasswd" \
-	$texpect $PREFIX/tmpkpasswdscript $samba4kpasswd \
+	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd \
 	${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password (after kpasswd change)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
@@ -266,14 +260,14 @@ expect Success
 EOF
 
 testit "set user password with kpasswd" \
-	$texpect $PREFIX/tmpkpasswdscript $samba4kpasswd \
+	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd \
 	--cache=$ADMIN_KRB5CCNAME \
 	${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password (after kpasswd set)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
@@ -291,12 +285,12 @@ expect Success
 EOF
 
 testit "set user password with kpasswd and servicePrincipalName" \
-	$texpect $PREFIX/tmpkpasswdscript $samba4kpasswd \
+	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd \
 	--cache=$PREFIX/tmpccache host/${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
 testit "kinit with user password (after set with kpasswd and spn)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
@@ -335,7 +329,7 @@ EOF
 
 testit "kinit with user password for expired password" \
 	$texpect $PREFIX/tmppasswordchange \
-	$samba4kinit $enctype --request-pac ${TEST_USER}@$REALM || \
+	$samba_kinit_ccache $enctype --request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
 test_smbclient "Test login with user kerberos ccache" \
@@ -344,7 +338,7 @@ test_smbclient "Test login with user kerberos ccache" \
 
 echo $NEWUSERPASS >$PREFIX/tmpuserpassfile
 testit "kinit with user password (after password change forced by expiration)" \
-	$samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile \
+	$samba_kinit_ccache $enctype --password-file=$PREFIX/tmpuserpassfile \
 	--request-pac ${TEST_USER}@$REALM || \
 	failed=$((failed + 1))
 
@@ -354,7 +348,7 @@ test_smbclient "Test login with user kerberos ccache" \
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
-samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
+samba_kinit_ccache="$samba_kinit -c $KRB5CCNAME"
 export KRB5CCNAME
 
 rm -rf $KRB5CCNAME_PATH
