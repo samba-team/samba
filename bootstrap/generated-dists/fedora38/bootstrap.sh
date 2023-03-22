@@ -22,6 +22,7 @@ dnf install -y \
     bison \
     ccache \
     chrpath \
+    codespell \
     crypto-policies-scripts \
     cups-devel \
     curl \

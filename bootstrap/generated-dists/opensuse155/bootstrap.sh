@@ -22,6 +22,7 @@ zypper --non-interactive install \
     bison \
     ccache \
     chrpath \
+    codespell \
     crypto-policies-scripts \
     cups-devel \
     curl \
