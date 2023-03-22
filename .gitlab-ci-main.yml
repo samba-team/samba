@@ -257,7 +257,7 @@ samba-def-build:
   needs:
     - job: samba-def-build
       artifacts: true
-    - job: samba-shellcheck
+    - job: samba-codecheck
 
 samba-mit-build:
   extends: .shared_template_build_only
@@ -272,7 +272,7 @@ samba-mit-build:
   needs:
     - job: samba-mit-build
       artifacts: true
-    - job: samba-shellcheck
+    - job: samba-codecheck
 
 samba-h5l-build:
   extends: .shared_template_build_only
@@ -388,7 +388,7 @@ samba-fips:
   variables:
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora38}
 
-samba-shellcheck:
+samba-codecheck:
   extends: .shared_template
   needs:
   variables:

@@ -1042,9 +1042,10 @@ tasks = {
         ],
     },
 
-    "samba-shellcheck": {
+    "samba-codecheck": {
         "sequence": [
             ("run", "script/check-shell-scripts.sh ."),
+            ("run", "script/codespell.sh ."),
         ],
     },
 
