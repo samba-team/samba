@@ -1,4 +1,4 @@
-/* 
+/*
    ctdb recovery code
 
    Copyright (C) Andrew Tridgell  2007
@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -42,7 +42,7 @@
 
 #include "ctdb_cluster_mutex.h"
 
-int 
+int
 ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	struct ctdb_vnn_map_wire *map;
@@ -89,7 +89,7 @@ ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 	return 0;
 }
 
-int 
+int
 ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	uint32_t i, len;
@@ -634,7 +634,7 @@ int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb)
 /*
   set the recovery mode
  */
-int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 struct ctdb_req_control_old *c,
 				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg)
@@ -729,7 +729,7 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 {
 	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header *hdr, *hdr2;
-	
+
 	/* these are really internal tdb functions - but we need them here for
 	   non-blocking lock of the freelist */
 	int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
@@ -777,7 +777,7 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 		free(data2.dptr);
 		return 0;
 	}
-	
+
 	hdr2 = (struct ctdb_ltdb_header *)data2.dptr;
 
 	if (hdr2->rsn > hdr->rsn) {
@@ -867,7 +867,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 /*
   recovery has finished
  */
-int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb, 
+int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 				struct ctdb_req_control_old *c,
 				bool *async_reply)
 {
@@ -884,8 +884,8 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	state->c    = c;
 
 	ret = ctdb_event_script_callback(ctdb, state,
-					 ctdb_end_recovery_callback, 
-					 state, 
+					 ctdb_end_recovery_callback,
+					 state,
 					 CTDB_EVENT_RECOVERED, "%s", "");
 
 	if (ret != 0) {
@@ -1063,7 +1063,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 
 	/* create a blob to send back the records we couldnt delete */	
 	records = (struct ctdb_marshall_buffer *)
-			talloc_zero_size(outdata, 
+			talloc_zero_size(outdata,
 				    offsetof(struct ctdb_marshall_buffer, data));
 	if (records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
@@ -1108,10 +1108,10 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 			}
 			records->count++;
 			memcpy(old_size+(uint8_t *)records, rec, rec->length);
-		} 
+		}
 
 		rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
-	}	    
+	}
 
 
 	*outdata = ctdb_marshall_finish(records);
@@ -1133,7 +1133,7 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
 	outdata->dsize = sizeof(uint32_t);
 	outdata->dptr = (uint8_t *)capabilities;
 
-	return 0;	
+	return 0;
 }
 
 /* The recovery daemon will ping us at regular intervals.
