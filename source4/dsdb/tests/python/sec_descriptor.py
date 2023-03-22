@@ -1626,7 +1626,7 @@ class DaclDescriptorTests(DescriptorTests):
         ou_dn5 = "OU=test_inherit_ou5," + ou_dn1
         ou_dn6 = "OU=test_inherit_ou6," + ou_dn2
         # Create inheritable-free OU
-        mod = "D:P(A;CI;WPRPLCCCDCWDRC;;;DA)"
+        mod = "D:P(A;CI;WPRPLCCCDCWDRCSD;;;DA)"
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
         mod = "D:(A;CI;GA;;;DU)"
@@ -1671,7 +1671,7 @@ class DaclDescriptorTests(DescriptorTests):
         ou_dn1 = "OU=test_inherit_ou1," + ou_dn
         ou_dn5 = "OU=test_inherit_ou5," + ou_dn1
         # Create inheritable-free OU
-        mod = "D:P(A;CI;WPRPLCCCDCWDRC;;;DA)"
+        mod = "D:P(A;CI;WPRPLCCCDCWDRCSD;;;DA)"
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
         mod = "D:(A;CIIO;WP;;;DU)"
@@ -1687,7 +1687,7 @@ class DaclDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_inherit_ou," + self.base_dn
         group_dn = "CN=test_inherit_group," + ou_dn
-        mod = "D:P(A;;WPRPLCCCDCWDRC;;;DA)"
+        mod = "D:P(A;;WPRPLCCCDCWDRCSD;;;DA)"
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
         # Add some custom  ACE
@@ -1704,7 +1704,7 @@ class DaclDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_inherit_ou," + self.base_dn
         group_dn = "CN=test_inherit_group," + ou_dn
-        mod = "D:P(A;;WPRPLCCCDCWDRC;;;DA)"
+        mod = "D:P(A;;WPRPLCCCDCWDRCSD;;;DA)"
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
         # Add some custom  ACE
