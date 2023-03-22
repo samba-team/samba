@@ -233,7 +233,7 @@ struct ctdb_tickle_list_old {
 
 /*
   struct holding a ctdb_sock_addr and an interface name,
-  used to add/remove public addresses and grat arp
+  used to add/remove public addresses and gratuitous arp
  */
 struct ctdb_addr_info_old {
 	ctdb_sock_addr addr;
