@@ -1,4 +1,4 @@
-/* 
+/*
    ctdb main protocol code
 
    Copyright (C) Andrew Tridgell  2006
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -211,7 +211,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 				" length %u from node %u to %u while node"
 				" is banned\n",
 				 hdr->operation, hdr->reqid,
-				 hdr->length, 
+				 hdr->length,
 				 hdr->srcnode, hdr->destnode));
 			goto done;
 		}
@@ -225,10 +225,10 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 				" request %u"
 				" length %u from node %u to %u had an"
 				" invalid generation id:%u while our"
-				" generation id is:%u\n", 
+				" generation id is:%u\n",
 				 hdr->operation, hdr->reqid,
-				 hdr->length, 
-				 hdr->srcnode, hdr->destnode, 
+				 hdr->length,
+				 hdr->srcnode, hdr->destnode,
 				 hdr->generation, ctdb->vnn_map->generation));
 			goto done;
 		}
@@ -286,7 +286,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		break;
 
 	default:
-		DEBUG(DEBUG_CRIT,("%s: Packet with unknown operation %u\n", 
+		DEBUG(DEBUG_CRIT,("%s: Packet with unknown operation %u\n",
 			 __location__, hdr->operation));
 		break;
 	}
@@ -308,8 +308,8 @@ void ctdb_node_dead(struct ctdb_node *node)
 	node->ctdb->methods->restart(node);
 
 	if (node->flags & NODE_FLAGS_DISCONNECTED) {
-		DEBUG(DEBUG_INFO,("%s: node %s is already marked disconnected: %u connected\n", 
-			 node->ctdb->name, node->name, 
+		DEBUG(DEBUG_INFO,("%s: node %s is already marked disconnected: %u connected\n",
+			 node->ctdb->name, node->name,
 			 node->ctdb->num_connected));
 		return;
 	}
@@ -329,8 +329,8 @@ void ctdb_node_dead(struct ctdb_node *node)
 void ctdb_node_connected(struct ctdb_node *node)
 {
 	if (!(node->flags & NODE_FLAGS_DISCONNECTED)) {
-		DEBUG(DEBUG_INFO,("%s: node %s is already marked connected: %u connected\n", 
-			 node->ctdb->name, node->name, 
+		DEBUG(DEBUG_INFO,("%s: node %s is already marked connected: %u connected\n",
+			 node->ctdb->name, node->name,
 			 node->ctdb->num_connected));
 		return;
 	}
@@ -338,7 +338,7 @@ void ctdb_node_connected(struct ctdb_node *node)
 	node->dead_count = 0;
 	node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	DEBUG(DEBUG_ERR,
-	      ("%s: connected to %s - %u connected\n", 
+	      ("%s: connected to %s - %u connected\n",
 	       node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 
@@ -358,7 +358,7 @@ static void queue_next_trigger(struct tevent_context *ev,
 	struct queue_next *q = talloc_get_type(private_data, struct queue_next);
 	ctdb_input_pkt(q->ctdb, q->hdr);
 	talloc_free(q);
-}	
+}
 
 /*
   defer a packet, so it is processed on the next event loop
@@ -391,7 +391,7 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 /*
   broadcast a packet to all nodes
 */
-static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb, 
+static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb,
 				      struct ctdb_req_header *hdr)
 {
 	unsigned int i;
@@ -424,7 +424,7 @@ static void ctdb_broadcast_packet_active(struct ctdb_context *ctdb,
 /*
   broadcast a packet to all connected nodes
 */
-static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb, 
+static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb,
 					    struct ctdb_req_header *hdr)
 {
 	unsigned int i;
@@ -601,7 +601,7 @@ void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header 
 		DO_OP(98);
 		DO_OP(99);
 		DO_OP(100);
-	default: 
+	default:
 		ctdb_queue_packet(ctdb, hdr);
 		break;
 	}
