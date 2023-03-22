@@ -29,7 +29,7 @@
 #    Useful to manually correct nasty schemas like:
 #    https://sourceforge.net/tracker/?func=detail&atid=108390&aid=1429276&group_id=8390
 # - 13 September 2007
-#    Based on Samba Team GPL Compliance Officer request, license has been updated from 
+#    Based on Samba Team GPL Compliance Officer request, license has been updated from
 #    GPL to GPLv3+
 #
 # - Fedora DS bug you need to correct by hand :
@@ -52,8 +52,8 @@ foreach (@ARGV) {
   $filename = $_ if ( ! /^-b$/ && ! /^-c$/ && ! /^-d$/);
 }
 
-die "Usage : ol-schema-migrate-v2.pl [ -c ] [ -b ] [ -d ] schema\n" . 
-    "  -c\tcount attribute and object class\n" . 
+die "Usage : ol-schema-migrate-v2.pl [ -c ] [ -b ] [ -d ] schema\n" .
+    "  -c\tcount attribute and object class\n" .
     "  -b\tconvert and beautify your schema\n" .
     "  -d\tdisplay unrecognized elements, find empty and duplicated OID\n" .
     "  -h\tthis help\n" if ($filename eq "" || ($optionHelp || (!$optionCount && !$optionPrint && !$optionBadEntries)));
@@ -62,7 +62,7 @@ if($optionCount) {
   print "Schema verification counters:\n";
   my $ldapdata = &getSourceFile($filename);
   print "".(defined($ldapdata->{attributes}) ? @{$ldapdata->{attributes}} : 0) . " attributes\n";
-  print "".(defined($ldapdata->{objectclass}) ?  @{$ldapdata->{objectclass}} : 0) . " object classes\n\n" 
+  print "".(defined($ldapdata->{objectclass}) ?  @{$ldapdata->{objectclass}} : 0) . " object classes\n\n"
 }
 
 if($optionPrint) {
@@ -78,12 +78,12 @@ if($optionBadEntries) {
   my $errorsDup  = 0;
   my $emptyOid = 0;
   my %dup;
-  
+
   foreach (@{$ldapdata->{attributes}}) {
     my $attr = $_;
-    
+
     push @{$dup{$attr->{OID}}{attr}}, {NAME => $attr->{NAME}, LINENUMBER => $attr->{LINENUMBER}};
-    
+
     $attr->{DATA} =~ s/\n/ /g;
     $attr->{DATA} =~ s/\r//g;
     $attr->{DATA} =~ s/attribute[t|T]ypes?:?\s*\(//;
@@ -104,8 +104,8 @@ if($optionBadEntries) {
     $attr->{DATA} =~ s/^\s+(\S)/\n$1/  ;
     $attr->{DATA} =~ s/(\S)\s+$/$1\n/;
     do {
-      $errorsAttr ++;      
-      do {  $emptyOid ++; 
+      $errorsAttr ++;
+      do {  $emptyOid ++;
             print "Warning : no OID for attributes element at line $attr->{LINENUMBER} \n";
       } if( !defined($attr->{OID}));
       print "### Unknow element embedded in ATTRIBUTE at line $attr->{LINENUMBER} :\n$attr->{DATA}\n"
@@ -151,13 +151,13 @@ if($optionBadEntries) {
       print "#" x 80 ."\n";
       print "Duplicate OID founds : $_\n";
       foreach (@{$dup{$_}{attr}}) {
-        
+
         print "Attribute : $_->{NAME} (line : $_->{LINENUMBER})\n";
       }
       foreach (@{$dup{$_}{objc}}) {
         print "Object class : $_->{NAME} (line : $_->{LINENUMBER})\n";
       }
-      
+
     }
   }
 
@@ -199,10 +199,10 @@ sub printit {
 
   foreach (@{$ldapdata->{objectclass}}) {
     my $objc = $_;
-    # next 3 lines : Fedora DS space sensitive bug workaround 
-    $objc->{SUP}         =~ s/^\(\s*(.*?)\s*\)$/\( $1 \)/  if (defined $objc->{SUP});  
-    $objc->{MUST}        =~ s/^\(\s*(.*?)\s*\)$/\( $1 \)/  if (defined $objc->{MUST}); 
-    $objc->{MAY}         =~ s/^\(\s*(.*?)\s*\)$/\( $1 \)/  if (defined $objc->{MAY}); 
+    # next 3 lines : Fedora DS space sensitive bug workaround
+    $objc->{SUP}         =~ s/^\(\s*(.*?)\s*\)$/\( $1 \)/  if (defined $objc->{SUP});
+    $objc->{MUST}        =~ s/^\(\s*(.*?)\s*\)$/\( $1 \)/  if (defined $objc->{MUST});
+    $objc->{MAY}         =~ s/^\(\s*(.*?)\s*\)$/\( $1 \)/  if (defined $objc->{MAY});
 
     print "objectClasses: (\n";
     print "  $objc->{OID}\n";
@@ -210,7 +210,7 @@ sub printit {
     print "  DESC '$objc->{DESC}'\n"  if(defined $objc->{DESC});
     print "  OBSOLETE\n"              if(defined $objc->{OBSOLETE});
     print "  SUP $objc->{SUP}\n"      if(defined $objc->{SUP});
-    print "  $objc->{TYPE}\n"         if(defined $objc->{TYPE});  
+    print "  $objc->{TYPE}\n"         if(defined $objc->{TYPE});
     print "  MUST $objc->{MUST}\n"    if(defined $objc->{MUST});
     print "  MAY $objc->{MAY}\n"      if(defined $objc->{MAY});
     print "  )\n";
@@ -222,7 +222,7 @@ sub printSeparator {
   print "#\n";
   print "#" x 80 . "\n";
   print "#\n";
-}  
+}
 
 sub getSourceFile {
   my @data = &getFile(shift);
@@ -239,7 +239,7 @@ sub getSourceFile {
   my $idx = 0;
   my $beginParenthesis = 0;
   my $endParenthesis = 0;
-  my $lineNumber = 0;  
+  my $lineNumber = 0;
   for(@data) {
     $lineNumber++;
     next if (/^\s*\#/); # skip comments
@@ -286,10 +286,10 @@ sub getSourceFile {
     if($oc) {
       s/ +/ /;
       s/\t/ /;
-      
+
       $oc_string .= $_;
-      $endParenthesis = 0;          # best methode to accept an elements : 
-      $beginParenthesis = 0;        # left parenthesis sum == right parenthesis sum, so we are sure to 
+      $endParenthesis = 0;          # best methode to accept an elements :
+      $beginParenthesis = 0;        # left parenthesis sum == right parenthesis sum, so we are sure to
       for(my $i=0;$ i < length($oc_string); $i++) {      # have an element.
         $beginParenthesis++ if(substr ($oc_string, $i, 1) eq "(");
         $endParenthesis++ if(substr ($oc_string, $i, 1) eq ")");
@@ -322,7 +322,7 @@ sub getSourceFile {
   }
 
   # Parsing attribute elements
-  
+
   for(@allattrs) {
     s/\n/ /g;
     s/\r//g;
@@ -345,11 +345,11 @@ sub getSourceFile {
     $result->{attributes}->[$idx]->{NOUSERMOD}   = "NO-USER-MODIFICATION"    if (m/NO-USER-MODIFICATION/);
     $idx ++;
   }
-  
+
   $idx = 0;
-  
+
   # Parsing object class elements
-  
+
   for(@allobjc) {
     s/\n/ /g;
     s/\r//g;
@@ -368,7 +368,7 @@ sub getSourceFile {
 
     $idx++;
   }
-  
+
   return $result;
 }
 
