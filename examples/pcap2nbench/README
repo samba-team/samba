@@ -5,7 +5,7 @@ About
 
 This program converts a libpcap network trace file (produced by ethereal or
 another pcap-aware network analyzer) into a output suitable for nbench.  The
-only option it takes it -i which supresses any reads/writes/closes that use a
+only option it takes is -i which suppresses any reads/writes/closes that use a
 FID that does not have a corresponding ntcreateandx
 
 Limitations

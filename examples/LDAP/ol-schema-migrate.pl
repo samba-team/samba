@@ -108,7 +108,7 @@ if($optionBadEntries) {
       do {  $emptyOid ++;
             print "Warning : no OID for attributes element at line $attr->{LINENUMBER} \n";
       } if( !defined($attr->{OID}));
-      print "### Unknow element embedded in ATTRIBUTE at line $attr->{LINENUMBER} :\n$attr->{DATA}\n"
+      print "### Unknown element embedded in ATTRIBUTE at line $attr->{LINENUMBER} :\n$attr->{DATA}\n"
     } if($attr->{DATA} =~ /\w/);
   }
 
@@ -137,7 +137,7 @@ if($optionBadEntries) {
       do { $emptyOid++ ;
            print "Warning : no OID for object class element at line $objc->{LINENUMBER} \n";
       } if( $objc->{OID} eq "");
-      print "### Unknow element embedded in OBJECT CLASS at line $objc->{LINENUMBER} :\n$objc->{DATA}\n"
+      print "### Unknown element embedded in OBJECT CLASS at line $objc->{LINENUMBER} :\n$objc->{DATA}\n"
     } if($objc->{DATA} =~ /\w/);
   }
 
@@ -288,7 +288,7 @@ sub getSourceFile {
       s/\t/ /;
 
       $oc_string .= $_;
-      $endParenthesis = 0;          # best methode to accept an elements :
+      $endParenthesis = 0;          # best method to accept an elements :
       $beginParenthesis = 0;        # left parenthesis sum == right parenthesis sum, so we are sure to
       for(my $i=0;$ i < length($oc_string); $i++) {      # have an element.
         $beginParenthesis++ if(substr ($oc_string, $i, 1) eq "(");

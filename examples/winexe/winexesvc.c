@@ -201,7 +201,7 @@ static int cmd_set(connection_context *c)
 	} else if ((strstr(cmdline, var_runas) == cmdline) && (cmdline[l = strlen(var_runas)] == ' ')) {
 		c->runas = strdup(cmdline + l + 1);
 	} else {
-		hprintf(c->pipe, "error Unknown commad (%s)\n", c->cmd);
+		hprintf(c->pipe, "error Unknown command (%s)\n", c->cmd);
 		goto finish;
 	}
 	res = 1;

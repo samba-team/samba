@@ -7,7 +7,7 @@
 # syntax:
 #    findsmb [-d|-D] [-r] [subnet broadcast address]
 #
-# with no agrument it will list machines on the current subnet
+# with no argument it will list machines on the current subnet
 #
 # There will be a "+" in front of the workgroup name for machines that are
 # local master browsers for that workgroup. There will be an "*" in front

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# 0 == stdin  == docuement
+# 0 == stdin  == document
 # 1 == stdout == printer
 # 2 == stderr == logging
 #

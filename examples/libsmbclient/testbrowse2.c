@@ -153,7 +153,7 @@ int main(int argc, char *argv[]){
 	char	smb_path[32768] = "smb://";
 
 	if ((ctx = create_smbctx()) == NULL){
-		perror("Cant create samba context.");
+		perror("Can't create samba context.");
 		return 1;
 	}
 

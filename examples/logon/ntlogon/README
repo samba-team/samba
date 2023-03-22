@@ -14,10 +14,10 @@ CHANGES SINCE v0.6
 PLEASE NOT THAT I AM CONSIDERING THIS A BETA UNTIL I GET SOME FEEDBACK
 FROM USERS ON WHETHER THE MACRO FEATURE WORKS FOR THEM.
 
-added the ability to define substitution macros: see the useage section
+added the ability to define substitution macros: see the usage section
 
 removed the large docstring from the file and moved the information to
-the USEAGE section of this file
+the USAGE section of this file
 
 cleaned up the code and made more flexible
 
@@ -88,12 +88,12 @@ date now, but that's the history of the strange file locations):
         root postexec = rm /usr/local/samba/netlogon/%U.bat
 
 ======
-USEAGE
+USAGE
 ======
 PLEASE SEE NTLOGON.CONF FOR A DETAILED CONFIGURATION EXAMPLE
 
 This programme will build a Windows NT logon script for users connecting
-to a Samba server. Samba macros that are curently understood:
+to a Samba server. Samba macros that are currently understood:
 
    %U user name
    %G group name

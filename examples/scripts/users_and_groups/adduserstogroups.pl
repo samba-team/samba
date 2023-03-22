@@ -88,7 +88,7 @@ if (exists($options{S})) {
 	$server = $options{S};
 }
 else {
-	print "ERROR: madatory argument '-S' missing\n";
+	print "ERROR: mandatory argument '-S' missing\n";
 	usage();
 	exit 1;
 }

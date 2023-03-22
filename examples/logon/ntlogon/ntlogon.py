@@ -180,7 +180,7 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
                             varsub  = string.strip(vardef.group(2))		# and trailing spaces
 
                             if varname == '':
-                                print "Error: No substition name specified line: %d" % idx
+                                print "Error: No substitution name specified line: %d" % idx
                                 sys.exit(1)
 
                             if varsub == '':

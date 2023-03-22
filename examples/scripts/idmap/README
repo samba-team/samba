@@ -24,7 +24,7 @@ The idmap script option
 -----------------------
 
 To resolve this problem the idmap tdb2 module has the ability to call
-out to an external script whenever it meeds an unknown SID or UID/GID
+out to an external script whenever it needs an unknown SID or UID/GID
 for the first time. It is then the job of that script to provide a
 mapping consistent with whatever external system is in place (such as
 NIS), and return the mapped result to winbind.
