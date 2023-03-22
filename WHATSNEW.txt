@@ -1,4 +1,73 @@
                    ==============================
+                   Release Notes for Samba 4.18.1
+                           March 29, 2023
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2023-0225: An incomplete access check on dnsHostName allows authenticated
+                 but otherwise unprivileged users to delete this attribute from
+                 any object in the directory.
+                 https://www.samba.org/samba/security/CVE-2023-0225.html
+
+o CVE-2023-0922: The Samba AD DC administration tool, when operating against a
+                 remote LDAP server, will by default send new or reset
+                 passwords over a signed-only connection.
+                 https://www.samba.org/samba/security/CVE-2023-0922.html
+
+o CVE-2023-0614: The fix in 4.6.16, 4.7.9, 4.8.4 and 4.9.7 for CVE-2018-10919
+                 Confidential attribute disclosure via LDAP filters was
+                 insufficient and an attacker may be able to obtain
+                 confidential BitLocker recovery keys from a Samba AD DC.
+                 Installations with such secrets in their Samba AD should
+                 assume they have been obtained and need replacing.
+                 https://www.samba.org/samba/security/CVE-2023-0614.html
+
+
+Changes since 4.18.0
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15276: CVE-2023-0225.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15270: CVE-2023-0614.
+   * BUG 15331: ldb wildcard matching makes excessive allocations.
+   * BUG 15332: large_ldap test is inefficient.
+
+o  Rob van der Linde <rob@catalyst.net.nz>
+   * BUG 15315: CVE-2023-0922.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15270: CVE-2023-0614.
+   * BUG 15276: CVE-2023-0225.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.18.0
                            March 08, 2023
                    ==============================
@@ -65,7 +134,7 @@ Most commands have very little colour in any case. For those that
 already used it, the defaults have changed slightly.
 
  * samba-tool drs showrepl: default is now 'auto', not 'no'
- 
+
  * samba-tool visualize: the interactions between --color-scheme,
    --color, and --output have changed slightly. When --color-scheme is
    set it overrides --color for the purpose of the output diagram, but
