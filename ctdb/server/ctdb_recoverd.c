@@ -650,7 +650,7 @@ static int leader_broadcast_send(struct ctdb_recoverd *rec, uint32_t pnn)
 static int leader_broadcast_loop(struct ctdb_recoverd *rec);
 static void cluster_lock_release(struct ctdb_recoverd *rec);
 
-/* This runs continously but only sends the broadcast when leader */
+/* This runs continuously but only sends the broadcast when leader */
 static void leader_broadcast_loop_handler(struct tevent_context *ev,
 					  struct tevent_timer *te,
 					  struct timeval current_time,
@@ -1245,7 +1245,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 
 	ret = ctdb_takeover(rec, rec->force_rebalance_nodes);
 
-	/* Reenable takeover runs and IP checks on other nodes */
+	/* Re-enable takeover runs and IP checks on other nodes */
 	dtr.timeout = 0;
 	for (i = 0; i < talloc_array_length(nodes); i++) {
 		if (ctdb_client_send_message(rec->ctdb, nodes[i],

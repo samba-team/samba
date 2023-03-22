@@ -967,7 +967,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	/* RELEASE_IP controls are sent to all nodes that should not
 	 * be hosting a particular IP.  This serves 2 purposes.  The
 	 * first is to help resolve any inconsistencies.  If a node
-	 * does unexpectly host an IP then it will be released.  The
+	 * does unexpectedly host an IP then it will be released.  The
 	 * 2nd is to use a "redundant release" to tell non-takeover
 	 * nodes where an IP is moving to.  This is how "ctdb ip" can
 	 * report the (likely) location of an IP by only asking the
@@ -1492,7 +1492,7 @@ static void ctdb_remove_connection(struct ctdb_vnn *vnn, struct ctdb_connection 
 		return;
 	}
 
-	/* if the array is empty we cant remove it
+	/* if the array is empty we can't remove it
 	   and we don't need to do anything
 	 */
 	if (vnn->tcp_array == NULL) {
@@ -1904,7 +1904,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_vnn *vnn;
 
-	/* We must at least have tickles.num or else we cant verify the size
+	/* We must at least have tickles.num or else we can't verify the size
 	   of the received data blob
 	 */
 	if (indata.dsize < offsetof(struct ctdb_tickle_list_old, connections)) {

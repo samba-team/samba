@@ -90,7 +90,7 @@ int find_takeover_node(struct ipalloc_state *ipalloc_state,
 	for (i=0; i<numnodes; i++) {
 		/* verify that this node can serve this ip */
 		if (!can_node_takeover_ip(ipalloc_state, i, ip)) {
-			/* no it couldnt   so skip to the next node */
+			/* no it couldn't   so skip to the next node */
 			continue;
 		}
 

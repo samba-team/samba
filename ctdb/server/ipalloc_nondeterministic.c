@@ -67,7 +67,7 @@ try_again:
 			/* only check nodes that can actually serve this ip */
 			if (!can_node_takeover_ip(ipalloc_state, i,
 						  t)) {
-				/* no it couldnt   so skip to the next node */
+				/* no it couldn't   so skip to the next node */
 				continue;
 			}
 
@@ -141,7 +141,7 @@ bool ipalloc_nondeterministic(struct ipalloc_state *ipalloc_state)
 		return true;
 	}
 
-	/* Now, try to make sure the ip adresses are evenly distributed
+	/* Now, try to make sure the ip addresses are evenly distributed
 	   across the nodes.
 	*/
 	basic_failback(ipalloc_state, num_ips);

@@ -880,7 +880,7 @@ static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
  * not be deleted when leaving a node.
  *
  * In this step, the lmaster does the final deletion of those empty
- * records that it is also dmaster for. It has ususally received
+ * records that it is also dmaster for. It has usually received
  * at least some of these records previously from the former dmasters
  * with the vacuum fetch message.
  *
@@ -1054,7 +1054,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (vdata->count.delete_list.left != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Vaccum db[%s] error: "
+		DEBUG(DEBUG_ERR, (__location__ " Vacuum db[%s] error: "
 		      "there are %u records left for deletion after "
 		      "processing delete list\n",
 		      ctdb_db->db_name,
@@ -1263,7 +1263,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 }
 
 /*
- * repack and vaccum a db
+ * repack and vacuum a db
  * called from the child context
  */
 static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,

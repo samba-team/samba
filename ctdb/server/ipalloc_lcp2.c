@@ -90,7 +90,7 @@ static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
 		 * between an address and itself.  This allows us to
 		 * calculate the effect of removing an address from a
 		 * node by simply calculating the distance between
-		 * that address and all of the exitsing addresses.
+		 * that address and all of the existing addresses.
 		 * Moreover, we assume that we're only ever dealing
 		 * with addresses from all_ips so we can identify an
 		 * address via a pointer rather than doing a more
@@ -232,7 +232,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				if (!can_node_takeover_ip(ipalloc_state,
 							  dstnode,
 							  t)) {
-					/* no it couldnt   so skip to the next node */
+					/* no it couldn't   so skip to the next node */
 					continue;
 				}
 
@@ -354,7 +354,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 			/* only check nodes that can actually takeover this ip */
 			if (!can_node_takeover_ip(ipalloc_state, dstnode,
 						  t)) {
-				/* no it couldnt   so skip to the next node */
+				/* no it couldn't   so skip to the next node */
 				continue;
 			}
 
@@ -515,7 +515,7 @@ bool ipalloc_lcp2(struct ipalloc_state *ipalloc_state)
 		goto finished;
 	}
 
-	/* Now, try to make sure the ip adresses are evenly distributed
+	/* Now, try to make sure the ip addresses are evenly distributed
 	   across the nodes.
 	*/
 	lcp2_failback(ipalloc_state, lcp2_imbalances, rebalance_candidates);

@@ -461,7 +461,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	CTDB_INCREMENT_STAT(ctdb, node_packets_sent);
 
 	if (!ctdb_validate_pnn(ctdb, hdr->destnode)) {
-	  	DEBUG(DEBUG_CRIT,(__location__ " cant send to node %u that does not exist\n", 
+		DEBUG(DEBUG_CRIT,(__location__ " can't send to node %u that does not exist\n",
 			 hdr->destnode));
 		return;
 	}

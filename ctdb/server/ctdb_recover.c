@@ -368,7 +368,7 @@ static void db_push_msg_handler(uint64_t srvid, TDB_DATA indata,
 
 		hdr = (struct ctdb_ltdb_header *)data.dptr;
 		/* Strip off any read only record flags.
-		 * All readonly records are revoked implicitely by a recovery.
+		 * All readonly records are revoked implicitly by a recovery.
 		 */
 		hdr->flags &= ~CTDB_REC_RO_FLAGS;
 
@@ -1061,7 +1061,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 		 reply->count, reply->db_id));
 
 
-	/* create a blob to send back the records we couldnt delete */	
+	/* create a blob to send back the records we couldn't delete */
 	records = (struct ctdb_marshall_buffer *)
 			talloc_zero_size(outdata,
 				    offsetof(struct ctdb_marshall_buffer, data));
@@ -1087,7 +1087,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 			return -1;
 		}
 
-		/* If we cant delete the record we must add it to the reply
+		/* If we can't delete the record we must add it to the reply
 		   so the lmaster knows it may not purge this record
 		*/
 		if (delete_tdb_record(ctdb, ctdb_db, rec) != 0) {
@@ -1137,7 +1137,7 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
 }
 
 /* The recovery daemon will ping us at regular intervals.
-   If we havent been pinged for a while we assume the recovery
+   If we haven't been pinged for a while we assume the recovery
    daemon is inoperable and we restart.
 */
 static void ctdb_recd_ping_timeout(struct tevent_context *ev,

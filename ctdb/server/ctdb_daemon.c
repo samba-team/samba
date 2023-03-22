@@ -1,4 +1,4 @@
-/* 
+/*
    ctdb daemon code
 
    Copyright (C) Andrew Tridgell  2006
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -294,7 +294,7 @@ static void daemon_message_handler(uint64_t srvid, TDB_DATA data,
 }
 
 /*
-  this is called when the ctdb daemon received a ctdb request to 
+  this is called when the ctdb daemon received a ctdb request to
   set the srvid from the client
  */
 int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid)
@@ -308,10 +308,10 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	res = srvid_register(ctdb->srv, client, srvid, daemon_message_handler,
 			     client);
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to register handler %llu in daemon\n", 
+		DEBUG(DEBUG_ERR,(__location__ " Failed to register handler %llu in daemon\n",
 			 (unsigned long long)srvid));
 	} else {
-		DEBUG(DEBUG_INFO,(__location__ " Registered message handler for srvid=%llu\n", 
+		DEBUG(DEBUG_INFO,(__location__ " Registered message handler for srvid=%llu\n",
 			 (unsigned long long)srvid));
 	}
 
@@ -319,7 +319,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 }
 
 /*
-  this is called when the ctdb daemon received a ctdb request to 
+  this is called when the ctdb daemon received a ctdb request to
   remove a srvid from the client
  */
 int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid)
@@ -399,7 +399,7 @@ static int ctdb_client_destructor(struct ctdb_client *client)
   this is called when the ctdb daemon received a ctdb request message
   from a local client over the unix domain socket
  */
-static void daemon_request_message_from_client(struct ctdb_client *client, 
+static void daemon_request_message_from_client(struct ctdb_client *client,
 					       struct ctdb_req_message_old *c)
 {
 	TDB_DATA data;
@@ -438,12 +438,12 @@ struct daemon_call_state {
 	uint32_t client_callid;
 };
 
-/* 
-   complete a call from a client 
+/*
+   complete a call from a client
 */
 static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 {
-	struct daemon_call_state *dstate = talloc_get_type(state->async.private_data, 
+	struct daemon_call_state *dstate = talloc_get_type(state->async.private_data,
 							   struct daemon_call_state);
 	struct ctdb_reply_call_old *r;
 	int res;
@@ -464,7 +464,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	}
 
 	length = offsetof(struct ctdb_reply_call_old, data) + dstate->call->reply_data.dsize;
-	/* If the client asked for readonly FETCH, we remapped this to 
+	/* If the client asked for readonly FETCH, we remapped this to
 	   FETCH_WITH_HEADER when calling the daemon. So we must
 	   strip the extra header off the reply data before passing
 	   it back to the client.
@@ -474,7 +474,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 		length -= sizeof(struct ctdb_ltdb_header);
 	}
 
-	r = ctdbd_allocate_pkt(client->ctdb, dstate, CTDB_REPLY_CALL, 
+	r = ctdbd_allocate_pkt(client->ctdb, dstate, CTDB_REPLY_CALL,
 			       length, struct ctdb_reply_call_old);
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
@@ -521,7 +521,7 @@ struct ctdb_daemon_packet_wrap {
 static void daemon_incoming_packet_wrap(void *p, struct ctdb_req_header *hdr)
 {
 	struct ctdb_client *client;
-	struct ctdb_daemon_packet_wrap *w = talloc_get_type(p, 
+	struct ctdb_daemon_packet_wrap *w = talloc_get_type(p,
 							    struct ctdb_daemon_packet_wrap);
 	if (w == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Bad packet type '%s'\n", talloc_get_name(p)));
@@ -538,7 +538,7 @@ static void daemon_incoming_packet_wrap(void *p, struct ctdb_req_header *hdr)
 	talloc_free(w);
 
 	/* process it */
-	daemon_incoming_packet(client, hdr);	
+	daemon_incoming_packet(client, hdr);
 }
 
 struct ctdb_deferred_fetch_call {
@@ -640,7 +640,7 @@ static void dfq_timeout(struct tevent_context *ev, struct tevent_timer *te,
 
 /* This function is used in the local daemon to register a KEY in a database
    for being "fetched"
-   While the remote fetch is in-flight, any futher attempts to re-fetch the
+   While the remote fetch is in-flight, any further attempts to re-fetch the
    same record will be deferred until the fetch completes.
 */
 static int setup_deferred_fetch_locks(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
@@ -666,7 +666,7 @@ static int setup_deferred_fetch_locks(struct ctdb_db_context *ctdb_db, struct ct
 
 	talloc_set_destructor(dfq, deferred_fetch_queue_destructor);
 
-	/* if the fetch havent completed in 30 seconds, just tear it all down
+	/* If the fetch hasn't completed in 30 seconds, just tear it all down
 	   and let it try again as the events are reissued */
 	tevent_add_timer(ctdb_db->ctdb->ev, dfq, timeval_current_ofs(30, 0),
 			 dfq_timeout, dfq);
@@ -727,7 +727,7 @@ static int requeue_duplicate_fetch(struct ctdb_db_context *ctdb_db, struct ctdb_
   this is called when the ctdb daemon received a ctdb request call
   from a local client over the unix domain socket
  */
-static void daemon_request_call_from_client(struct ctdb_client *client, 
+static void daemon_request_call_from_client(struct ctdb_client *client,
 					    struct ctdb_req_call_old *c)
 {
 	struct ctdb_call_state *state;
@@ -765,12 +765,12 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	key.dsize = c->keylen;
 
 	w = talloc(ctdb, struct ctdb_daemon_packet_wrap);
-	CTDB_NO_MEMORY_VOID(ctdb, w);	
+	CTDB_NO_MEMORY_VOID(ctdb, w);
 
 	w->ctdb = ctdb;
 	w->client_id = client->client_id;
 
-	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, 
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header,
 					   (struct ctdb_req_header *)c, &data,
 					   daemon_incoming_packet_wrap, w, true);
 	if (ret == -2) {
@@ -856,7 +856,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
-	}		
+	}
 
 	dstate = talloc(client, struct daemon_call_state);
 	if (dstate == NULL) {
@@ -895,7 +895,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	call->flags = c->flags;
 
 	if (c->flags & CTDB_WANT_READONLY) {
-		/* client wants readonly record, so translate this into a 
+		/* client wants readonly record, so translate this into a
 		   fetch with header. remember what the client asked for
 		   so we can remap the reply back to the proper format for
 		   the client in the reply
@@ -938,7 +938,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 }
 
 
-static void daemon_request_control_from_client(struct ctdb_client *client, 
+static void daemon_request_control_from_client(struct ctdb_client *client,
 					       struct ctdb_req_control_old *c);
 static void daemon_request_tunnel_from_client(struct ctdb_client *client,
 					      struct ctdb_req_tunnel_old *c);
@@ -1013,7 +1013,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 	CTDB_INCREMENT_STAT(client->ctdb, client_packets_recv);
 
 	if (cnt < sizeof(*hdr)) {
-		ctdb_set_error(client->ctdb, "Bad packet length %u in daemon\n", 
+		ctdb_set_error(client->ctdb, "Bad packet length %u in daemon\n",
 			       (unsigned)cnt);
 		return;
 	}
@@ -1149,14 +1149,14 @@ static void ctdb_accept_client(struct tevent_context *ev,
 		close(fd);
 		talloc_free(client);
 		return;
-	}		
+	}
 	client_pid->ctdb   = ctdb;
 	client_pid->pid    = peer_pid;
 	client_pid->client = client;
 
 	DLIST_ADD(ctdb->client_pids, client_pid);
 
-	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
+	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT,
 					 ctdb_daemon_read_cb, client,
 					 "client-%u", client->pid);
 
@@ -1708,8 +1708,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
   allocate a packet for use in daemon<->daemon communication
  */
 struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
-						 TALLOC_CTX *mem_ctx, 
-						 enum ctdb_operation operation, 
+						 TALLOC_CTX *mem_ctx,
+						 enum ctdb_operation operation,
 						 size_t length, size_t slength,
 						 const char *type)
 {
@@ -1740,7 +1740,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 	hdr->generation   = ctdb->vnn_map->generation;
 	hdr->srcnode      = ctdb->pnn;
 
-	return hdr;	
+	return hdr;
 }
 
 struct daemon_control_state {
@@ -1755,11 +1755,11 @@ struct daemon_control_state {
   callback when a control reply comes in
  */
 static void daemon_control_callback(struct ctdb_context *ctdb,
-				    int32_t status, TDB_DATA data, 
+				    int32_t status, TDB_DATA data,
 				    const char *errormsg,
 				    void *private_data)
 {
-	struct daemon_control_state *state = talloc_get_type(private_data, 
+	struct daemon_control_state *state = talloc_get_type(private_data,
 							     struct daemon_control_state);
 	struct ctdb_client *client = state->client;
 	struct ctdb_reply_control_old *r;
@@ -1771,7 +1771,7 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	if (errormsg) {
 		len += strlen(errormsg);
 	}
-	r = ctdbd_allocate_pkt(ctdb, state, CTDB_REPLY_CONTROL, len, 
+	r = ctdbd_allocate_pkt(ctdb, state, CTDB_REPLY_CONTROL, len,
 			       struct ctdb_reply_control_old);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
 
@@ -1799,7 +1799,7 @@ void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *no
 	struct daemon_control_state *state;
 	while ((state = node->pending_controls)) {
 		DLIST_REMOVE(node->pending_controls, state);
-		daemon_control_callback(ctdb, (uint32_t)-1, tdb_null, 
+		daemon_control_callback(ctdb, (uint32_t)-1, tdb_null,
 					"node is disconnected", state);
 	}
 }
@@ -1819,7 +1819,7 @@ static int daemon_control_destructor(struct daemon_control_state *state)
   this is called when the ctdb daemon received a ctdb request control
   from a local client over the unix domain socket
  */
-static void daemon_request_control_from_client(struct ctdb_client *client, 
+static void daemon_request_control_from_client(struct ctdb_client *client,
 					       struct ctdb_req_control_old *c)
 {
 	TDB_DATA data;
@@ -1849,7 +1849,7 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	if (c->flags & CTDB_CTRL_FLAG_NOREPLY) {
 		talloc_steal(tmp_ctx, state);
 	}
-	
+
 	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
 	res = ctdb_daemon_send_control(client->ctdb, c->hdr.destnode,
@@ -1916,7 +1916,7 @@ int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 	call->fn = fn;
 	call->id = id;
 
-	DLIST_ADD(ctdb_db->calls, call);	
+	DLIST_ADD(ctdb_db->calls, call);
 	return 0;
 }
 
@@ -2066,7 +2066,7 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 	nl->data.dptr  = talloc_memdup(nl, notify->notify_data,
 				       nl->data.dsize);
 	CTDB_NO_MEMORY(ctdb, nl->data.dptr);
-	
+
 	DLIST_ADD(client->notify, nl);
 	talloc_set_destructor(nl, ctdb_client_notify_destructor);
 

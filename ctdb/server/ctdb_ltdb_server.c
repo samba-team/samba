@@ -51,7 +51,7 @@
  * This is the server-variant of the ctdb_ltdb_store function.
  * It contains logic to determine whether a record should be
  * stored or deleted. It also sends SCHEDULE_FOR_DELETION
- * controls to the local ctdb daemon if apporpriate.
+ * controls to the local ctdb daemon if appropriate.
  */
 static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key,
@@ -341,7 +341,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 }
 
 /*
-  a varient of ctdb_ltdb_lock_requeue that also fetches the record
+  a variant of ctdb_ltdb_lock_requeue that also fetches the record
  */
 int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
 				 TDB_DATA key, struct ctdb_ltdb_header *header, 

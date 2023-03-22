@@ -189,7 +189,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (ctdb->methods == NULL) {
-		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply cant update dmaster since transport is down");
+		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply can't update dmaster since transport is down");
 		return;
 	}
 
