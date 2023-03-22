@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -24,9 +24,9 @@
    before we can proceed
 */
 /* scsi bugs:
-   INQUIRY takes a 2 byte allocation_length parameter but it appears that 
+   INQUIRY takes a 2 byte allocation_length parameter but it appears that
    it only looks at the low byte. If you specify 0x00ff all is well
-   but if you specify 0x0100   it gets confused and returnes garbage data
+   but if you specify 0x0100   it gets confused and returns garbage data
    for (e.g) SupportedVPDPages. Same goes for UnitSerialNumber and probably all
    other inq pages as well.
 
@@ -300,12 +300,12 @@ int scsi_inquiry(int fd)
 			!!(data[7]&0x10),
 			!!(data[7]&0x02),
 			!!(data[7]&0x01));
-			
+
 
 		/* T10 vendor Identification */
 		printf("Vendor:");
 		for(i=0;i<8;i++)printf("%c",data[8+i]);printf("\n");
- 
+
 		/* Product Identification */
 		printf("Product:");
 		for(i=0;i<16;i++)printf("%c",data[16+i]);printf("\n");
@@ -316,7 +316,7 @@ int scsi_inquiry(int fd)
 
 		break;
 	}
-	
+
 	return 0;
 }
 
@@ -1068,7 +1068,7 @@ void usage(void)
 	printf("Commands:\n");
 	for (i=0;i<sizeof(cmds)/sizeof(cmds[0]);i++){
 		printf("	%s	%s\n", cmds[i].cmd, cmds[i].comment);
-	}	
+	}
 }
 
 
@@ -1095,7 +1095,7 @@ int main(int argc, const char *argv[])
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		default:
-			fprintf(stderr, "Invalid option %s: %s\n", 
+			fprintf(stderr, "Invalid option %s: %s\n",
 				poptBadOption(pc, 0), poptStrerror(opt));
 			_exit(1);
 		}
@@ -1124,7 +1124,7 @@ int main(int argc, const char *argv[])
 		if(!strcmp(cmds[i].cmd, command)) {
 			func = cmds[i].func;
 			break;
-		}		
+		}
 	}
 	if (!func) {
 		printf("Unrecognized command : %s\n", command);
