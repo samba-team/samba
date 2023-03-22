@@ -128,7 +128,7 @@ bool ctdb_client_init_recv(struct tevent_req *req, int *perr,
  * @param[in] ev Tevent context
  * @param[in] sockpath Path to ctdb daemon unix domain socket
  * @param[out] result The new ctdb client context
- * @return 0 on succcess, errno on failure
+ * @return 0 on success, errno on failure
  */
 int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		     const char *sockpath,
@@ -1177,7 +1177,7 @@ bool ctdb_g_lock_unlock_recv(struct tevent_req *req, int *perr);
  *
  * Starting a transaction will return a transaction handle.  This is used
  * for updating records under a transaction.  This handle is automatically
- * freed once the transacion is committed or cancelled.
+ * freed once the transaction is committed or cancelled.
  *
  * Clients should NOT free the transaction handle.
  *
