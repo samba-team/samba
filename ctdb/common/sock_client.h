@@ -105,7 +105,7 @@ void sock_client_set_disconnect_callback(struct sock_client_context *sockc,
  * @param[in] ev Tevent context
  * @param[in] sockc The socket client context
  * @param[in] timeout How long to wait for
- * @param[in] request Requeset packet to be sent
+ * @param[in] request Request packet to be sent
  * @return new tevent request, or NULL on failure
  */
 struct tevent_req *sock_client_msg_send(TALLOC_CTX *mem_ctx,

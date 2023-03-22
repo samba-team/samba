@@ -192,7 +192,7 @@ bool tmon_parse_custom(struct tmon_pkt *pkt, uint16_t *val);
  *
  * @param[in] req Tevent request created by tmon_send
  * @param[in] pkt Packet to write
- * @return true on sucess, false on failure
+ * @return true on success, false on failure
  */
 bool tmon_write(struct tevent_req *req, struct tmon_pkt *pkt);
 

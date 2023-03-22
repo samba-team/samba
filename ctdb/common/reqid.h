@@ -27,7 +27,7 @@
  *
  * @brief Request id database
  *
- * CTDB tracks messsages using request id. CTDB stores client state for each
+ * CTDB tracks messages using request id. CTDB stores client state for each
  * request id to process the replies correctly.
  */
 

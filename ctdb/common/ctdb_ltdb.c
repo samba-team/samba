@@ -35,7 +35,7 @@
 
 
 /*
- * Calculate tdb flags based on databse type
+ * Calculate tdb flags based on database type
  */
 int ctdb_db_tdb_flags(uint8_t db_flags, bool with_valgrind, bool with_mutex)
 {

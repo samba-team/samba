@@ -63,7 +63,7 @@ struct cmdline_command {
 };
 
 /**
- * @brief convinience macro to define the end of commands list
+ * @brief convenience macro to define the end of commands list
  *
  * Here is an example of defining commands list.
  *
@@ -135,7 +135,7 @@ int cmdline_parse(struct cmdline_context *cmdline,
 		  bool parse_options);
 
 /**
- * @brief Excecute the function for the command matched by @cmdline_parse
+ * @brief Execute the function for the command matched by @cmdline_parse
  *
  * @param[in] cmdline Cmdline context
  * @param[in] private_data Private data for implementation function

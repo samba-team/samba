@@ -312,7 +312,7 @@ int conf_load(struct conf_context *conf,
  * @brief Reload the values for configuration options
  *
  * This function will re-load the values of the configuration options.  This
- * function can be called only after succesful call to conf_load().
+ * function can be called only after successful call to conf_load().
  *
  * @see conf_load
  *

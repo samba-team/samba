@@ -468,7 +468,7 @@ static int conf_option_new_value(struct conf_option *opt,
 		/*
 		 * This happens only during load/reload. Set the value to
 		 * default value, so if the config option is dropped from
-		 * config file, then it get's reset to default.
+		 * config file, then it gets reset to default.
 		 */
 		opt->new_value = &opt->default_value;
 	} else {

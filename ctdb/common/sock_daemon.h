@@ -141,7 +141,7 @@ struct sock_daemon_funcs {
  * @param[in] buf Data received from the client
  * @param[in] buflen Length of the data
  * @param[i] private_data Private data associatedwith the socket
- * @return new tevent reques, or NULL on failure
+ * @return new tevent request, or NULL on failure
  *
  *
  * read_recv() ends the async computation to process data on the socket
