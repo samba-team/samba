@@ -413,7 +413,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	}
 
 	/* in order to ensure that we don't get two nodes with the
-	   same adddress, we must make the bind() and listen() calls
+	   same address, we must make the bind() and listen() calls
 	   atomic. The SO_REUSEADDR setsockopt only prevents double
 	   binds if the first socket is in LISTEN state  */
 	lock_fd = open(lock_path, O_RDWR|O_CREAT, 0666);
