@@ -297,7 +297,7 @@ static void test(unsigned long parent_timeout,
 		       parent_blocking_sleep_time);
 	assert(ret == parent_result);
 
-	/* Close to mimick exit, so child status can be checked below */
+	/* Close to mimic exit, so child status can be checked below */
 	close(fd[0]);
 
 	/* Abort if child failed */

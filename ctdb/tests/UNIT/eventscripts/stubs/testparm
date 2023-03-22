@@ -78,7 +78,7 @@ else
 	comment		= fake share $bi
 	guest ok  	= no
 	read only	= no
-	browseable	= yes
+	browsable	= yes
 EOF
 	done
 fi

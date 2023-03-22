@@ -62,7 +62,7 @@ echo "Remove recovery lock"
 rm "$reclock"
 echo
 
-# This will mean an election has taken place and a recovery has occured
+# This will mean an election has taken place and a recovery has occurred
 wait_until_generation_has_changed "$test_node"
 
 # shellcheck disable=SC2154

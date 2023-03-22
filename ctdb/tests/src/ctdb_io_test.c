@@ -231,7 +231,7 @@ static void test3(void)
 	assert(ret != -1 && (size_t)ret == (req_len >> 1) - 1);
 
 	/*
-	 * the packet is still incomplete and connot be processed
+	 * the packet is still incomplete and cannot be processed
 	 * but the packet data had to be moved in the buffer in order
 	 * to fetch the new 199 bytes -> offset must be 0 now.
 	 */

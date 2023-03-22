@@ -39,7 +39,7 @@ static void usage(const char *prog)
 		"       %s chmod enable <scriptdir> <scriptname>\n",
 		prog);
 	fprintf(stderr,
-		"       %s chmod diable <scriptdir> <scriptname>\n",
+		"       %s chmod disable <scriptdir> <scriptname>\n",
 		prog);
 }
 

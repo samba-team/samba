@@ -1,4 +1,4 @@
-/* 
+/*
    simple rb test tool
 
    Copyright (C) Ronnie Sahlberg 2007
@@ -38,7 +38,7 @@ static void start_timer(void)
 static double end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
-	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) -
 		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
 }
 
@@ -76,7 +76,7 @@ static int random_traverse(void *p, void *d)
 	return 0;
 }
 
-static uint32_t calc_checksum = 0;	
+static uint32_t calc_checksum = 0;
 static int traverse_checksum(void *p, void *d)
 {
 	int i,j,k;
@@ -262,8 +262,8 @@ int main(int argc, const char *argv[])
 	i=0;
 	start_timer();
 	checksum = 0;
-	/* add and delete nodes from a 3 level tree fro 60 seconds.
-	   each time a node is added or deleted, traverse the tree and
+	/* Add and delete nodes from a 3 level tree for 60 seconds.
+	   Each time a node is added or deleted, traverse the tree and
 	   compute a checksum over the data stored in the tree and compare this
 	   with a checksum we keep which contains what the checksum should be
 	 */
@@ -286,7 +286,7 @@ int main(int argc, const char *argv[])
 			}
 		} else {
 			if ((str=trbt_lookuparray32(tree, 3, key)) != NULL) {
-				/* this node does exist in  the tree, delete 
+				/* this node does exist in  the tree, delete
 				   it and update the checksum accordingly
 				 */
 				talloc_free(str);

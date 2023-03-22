@@ -44,7 +44,7 @@ echo "store key(test1) data(newvalue1)"
 echo '"test1" "newvalue1"' | try_command_on_node -i 0 $CTDB ptrans "$TESTDB"
 
 # Continue node
-echo "contine node 1"
+echo "continue node 1"
 try_command_on_node 1 $CTDB continue
 
 wait_until_node_has_status 1 notstopped

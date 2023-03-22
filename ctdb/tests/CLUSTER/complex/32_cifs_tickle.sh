@@ -54,7 +54,7 @@ echo "Checking if CIFS connection is tracked by CTDB on test node..."
 wait_until 10 check_tickles $test_node $test_ip $test_port $src_socket
 
 # This is almost immediate.  However, it is sent between nodes
-# asynchonously, so it is worth checking...
+# asynchronously, so it is worth checking...
 echo "Wait until CIFS connection is tracked by CTDB on all nodes..."
 try_command_on_node $test_node "$CTDB listnodes | wc -l"
 numnodes="$out"

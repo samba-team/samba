@@ -159,7 +159,7 @@ static struct node_map *nodemap_init(TALLOC_CTX *mem_ctx)
  *  <PNN> <FLAGS> [RECMASTER] [CURRENT] [CAPABILITIES]
  * EOF or a blank line terminates input.
  *
- * By default, capablities for each node are
+ * By default, capabilities for each node are
  * CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER.  These 2
  * capabilities can be faked off by adding, for example,
  * -CTDB_CAP_RECMASTER.

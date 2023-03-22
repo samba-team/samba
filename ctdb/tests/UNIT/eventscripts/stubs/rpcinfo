@@ -41,7 +41,7 @@ parse_options()
 parse_options "$@"
 
 for i in ${FAKE_RPCINFO_SERVICES}; do
-	# This is stupidly cummulative, but needs to happen after the
+	# This is stupidly cumulative, but needs to happen after the
 	# initial split of the list above.
 	IFS="${IFS}:"
 	# Want glob expansion

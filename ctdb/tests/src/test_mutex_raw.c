@@ -52,7 +52,7 @@
  *    This creates 20 processes, 10 at normal priority and 10 at realtime
  *    priority, all taking the lock, being killed and recovering the lock.
  *
- * If while runnig (c) the processes block, it might mean that a futex wakeup
+ * If while running (c) the processes block, it might mean that a futex wakeup
  * was lost, or that the handoff of EOWNERDEAD did not happen correctly. In
  * either case you can debug the resulting mutex like this:
  *

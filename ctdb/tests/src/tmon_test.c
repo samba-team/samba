@@ -353,7 +353,7 @@ static void test(const char *write_data,
 	}
 	fflush(stdout);
 
-	/* Close to mimick exit, so child status can be checked below */
+	/* Close to mimic exit, so child status can be checked below */
 	close(fd[1]);
 
 	waitpid(pid, &wstatus, 0);

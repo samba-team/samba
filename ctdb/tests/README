@@ -130,7 +130,7 @@ Test and debugging variable options
 
        CTDB_TEST_SAMBA_VERSION=VERSION
 
-	    VERSION is a 32-bit number containg the Samba major
+	    VERSION is a 32-bit number containing the Samba major
 	    version in the most significant 16 bits and the minor
 	    version in the least significant 16 bits.  This can be
 	    used to test CTDB's checking of incompatible versions

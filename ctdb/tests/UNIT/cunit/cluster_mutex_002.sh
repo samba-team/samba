@@ -123,7 +123,7 @@ EOF
 unit_test cluster_mutex_test lock-io-timeout "$helper 5 7" "$lockfile" 1 2
 
 
-test_case "Recheck on, ping on, child waits, child blocks causing ping timout"
+test_case "Recheck on, ping on, child waits, child blocks causing ping timeout"
 ok <<EOF
 LOCK
 ctdb_mutex_fcntl_helper: ping timeout from lock test child

@@ -63,7 +63,7 @@ struct db_test_tool_context {
 };
 
 /*
- * If this is ever consolodated into a larger test tool then these
+ * If this is ever consolidated into a larger test tool then these
  * forward declarations can be moved to an include file
  */
 int db_test_tool_init(TALLOC_CTX *mem_ctx,

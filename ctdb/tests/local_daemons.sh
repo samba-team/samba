@@ -304,7 +304,7 @@ local_daemons_ssh ()
 
 	_nodes="${directory}/nodes"
 
-	# IP adress of node. onnode can pass hostnames but not in these tests
+	# IP address of node. onnode can pass hostnames but not in these tests
 	_ip="$1" ; shift
 	# "$*" is command
 
