@@ -372,7 +372,7 @@ done:
 
 /*
  *  Remote nodes are initialised as UNHEALTHY in the daemon and their
- *  true status is udpated after they are connected.  However, there
+ *  true status is updated after they are connected.  However, there
  *  is a small window when a healthy node may be shown as unhealthy
  *  between connecting and the status update.  Hide this for nodes
  *  that are not DISCONNECTED nodes by reporting them as UNKNOWN until
@@ -3239,7 +3239,7 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		       options.sep,
 		       "Source IP", options.sep,
 		       "Port", options.sep,
-		       "Destiation IP", options.sep,
+		       "Destination IP", options.sep,
 		       "Port", options.sep);
 		for (i=0; i<tickles->num; i++) {
 			printf("%s%s%s%u%s%s%s%u%s\n", options.sep,
@@ -6047,7 +6047,7 @@ static const struct ctdb_cmd {
 	{ "getcapabilities", control_getcapabilities, false, true,
 		"show node capabilities", NULL },
 	{ "pnn", control_pnn, false, false,
-		"show the pnn of the currnet node", NULL },
+		"show the pnn of the current node", NULL },
 	{ "lvs", control_lvs, false, false,
 		"show lvs configuration", "leader|list|status" },
 	{ "setdebug", control_setdebug, false, true,
