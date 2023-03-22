@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	}
 
 	if (tdb->mutexes == NULL) {
-		printf("Mutexes are not mmaped\n");
+		printf("Mutexes are not mmapped\n");
 		exit(1);
 	}
 

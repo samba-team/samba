@@ -18,9 +18,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-/* very incomplete and needs to be enhanced with noice command line options
+/* Very incomplete and needs to be enhanced with nice command line options
    to drive it.
-   we need access to an array that supports the PERSISTENT RESERVATION cdb's
+   We need access to an array that supports the PERSISTENT RESERVATION cdb's
    before we can proceed
 */
 /* scsi bugs:
@@ -206,7 +206,7 @@ void print_sense_data(unsigned char *sense, int sense_len)
 		ascq=sense[13];
 		printf("additional sense code qualifier:0x%02x\n", ascq);
 
-		printf("field replacable unit code:0x%02x\n", sense[14]);
+		printf("field replaceable unit code:0x%02x\n", sense[14]);
 
 		if((asc==0x20)&&(ascq==0x00))
 			printf("INVALID COMMAND OPERATION CODE\n");
