@@ -19,12 +19,17 @@ from email.mime.multipart import MIMEMultipart
 from sysconfig import get_path
 import platform
 
+import logging
+
 try:
     from waflib.Build import CACHE_SUFFIX
 except ImportError:
     sys.path.insert(0, "./third_party/waf")
     from waflib.Build import CACHE_SUFFIX
 
+logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger('autobuild')
+logger.setLevel(logging.INFO)
 
 os.environ["PYTHONUNBUFFERED"] = "1"
 
