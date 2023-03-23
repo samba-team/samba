@@ -109,6 +109,9 @@ if options.retry:
     if options.rebase is None:
         raise Exception('You can only use --retry if you also rebase')
 
+if options.verbose:
+    logger.setLevel(logging.DEBUG)
+
 if options.full_testbase is not None:
     testbase = options.full_testbase
 else:
