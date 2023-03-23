@@ -23,6 +23,7 @@
 #include "lib/util/debug.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "lib/util/smb_strtox.h"
 #include "system/locale.h"
 
 struct sddl_transition_state {
@@ -326,13 +327,24 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 {
 	const char *str0 = str;
 	uint32_t mask = 0;
-	int cmp;
-
-	cmp = strncmp(str, "0x", 2);
-	if (cmp == 0) {
-		*pmask = strtol(str, NULL, 16);
+	unsigned long long numeric_mask;
+	int err;
+	/*
+	 * The access mask can be a number or a series of flags.
+	 *
+	 * Canonically the number is expressed in hexadecimal (with 0x), but
+	 * per MS-DTYP and Windows behaviour, octal and decimal numbers are
+	 * also accepted.
+	 *
+	 * Windows will truncate overflowing numbers at 0xffffffff,
+	 * while we will wrap around, using only the lower 32 bits.
+	 */
+	numeric_mask = smb_strtoull(str, NULL, 0, &err, SMB_STR_STANDARD);
+	if (err == 0) {
+		*pmask = numeric_mask;
 		return true;
 	}
+	/* It's not a number, so we'll look for flags */
 
 	while ((str[0] != '\0') && isupper(str[0])) {
 		uint32_t flags = 0;
