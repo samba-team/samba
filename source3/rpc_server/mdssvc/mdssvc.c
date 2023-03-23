@@ -306,9 +306,20 @@ static bool create_result_handle(struct sl_query *slq)
 static bool add_results(sl_array_t *array, struct sl_query *slq)
 {
 	sl_filemeta_t *fm;
-	uint64_t status = 0;
+	uint64_t status;
 	int result;
 	bool ok;
+
+	/*
+	 * Taken from a network trace against a macOS SMB Spotlight server. If
+	 * the first fetch-query-results has no results yet because the search
+	 * is still running, macOS returns 0x23, otherwise 0x0.
+	 */
+	if (slq->state >= SLQ_STATE_RESULTS ) {
+		status = 0;
+	} else {
+		status = 0x23;
+	}
 
 	/* FileMeta */
 	fm = dalloc_zero(array, sl_filemeta_t);
