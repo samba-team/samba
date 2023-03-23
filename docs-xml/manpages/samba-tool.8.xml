@@ -600,6 +600,273 @@
 </refsect3>
 
 <refsect3>
+	<title>domain claim claim-type list</title>
+	<para>List claim types on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				View claim types as JSON instead of a list.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain claim claim-type view</title>
+	<para>View a single claim type on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Display name of claim type to view (required).
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain claim claim-type create</title>
+	<para>Create claim types on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--attribute</term>
+			<listitem><para>
+				Attribute of claim type to create (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--class</term>
+			<listitem>
+				<para>
+					Object classes to set claim type to.
+				</para>
+				<para>
+					Example: --class=user --class=computer
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Optional display name or use attribute name.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--description</term>
+			<listitem><para>
+				Optional description or use from attribute.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--enable</term>
+			<listitem>
+				<para>
+					Enable claim type.
+				</para>
+				<para>
+					Cannot be used together with --disable.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--disable</term>
+			<listitem>
+				<para>
+					Disable claim type.
+				</para>
+				<para>
+					Cannot be used together with --enable.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--protect</term>
+			<listitem>
+				<para>
+					Protect claim type from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --unprotect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--unprotect</term>
+			<listitem>
+				<para>
+					Unprotect claim type from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --protect.
+				</para>
+			</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain claim claim-type modify</title>
+	<para>Modify claim types on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Display name of claim type to modify (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--class</term>
+			<listitem>
+				<para>
+					Object classes to set claim type to.
+				</para>
+				<para>
+					Example: --class=user --class=computer
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--description</term>
+			<listitem><para>
+				Set the claim type description.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--enable</term>
+			<listitem>
+				<para>
+					Enable claim type.
+				</para>
+				<para>
+					Cannot be used together with --disable.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--disable</term>
+			<listitem>
+				<para>
+					Disable claim type.
+				</para>
+				<para>
+					Cannot be used together with --enable.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--protect</term>
+			<listitem>
+				<para>
+					Protect claim type from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --unprotect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--unprotect</term>
+			<listitem>
+				<para>
+					Unprotect claim type from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --protect.
+				</para>
+			</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain claim claim-type delete</title>
+	<para>Delete claim types on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Display name of claim type to delete (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--force</term>
+			<listitem><para>
+				Force claim type delete even if it is protected.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain claim value-type list</title>
+	<para>List claim value types on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				View claim value types as JSON instead of a list.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain claim value-type view</title>
+	<para>View a single claim value type on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Display name of claim value type to view (required).
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
 	<title>domain classicupgrade [options] <replaceable>classic_smb_conf</replaceable></title>
 	<para>Upgrade from Samba classic (NT4-like) database to Samba AD DC
 	database.</para>
