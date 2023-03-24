@@ -404,6 +404,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	uint32_t v;
 	struct dom_sid *sid;
 	bool ok;
+	size_t len;
 
 	ZERO_STRUCTP(ace);
 
@@ -418,9 +419,16 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	}
 
 	/* parse ace type */
-	if (!sddl_map_flags(ace_types, tok[0], &v, NULL, false)) {
+	ok = sddl_map_flag(ace_types, tok[0], &len, &v);
+	if (!ok) {
+		DBG_WARNING("Unknown ACE type - %s\n", tok[0]);
 		return false;
 	}
+	if (tok[0][len] != '\0') {
+		DBG_WARNING("Garbage after ACE type - %s\n", tok[0]);
+		return false;
+	}
+
 	ace->type = v;
 
 	/* ace flags */
