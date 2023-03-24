@@ -2391,10 +2391,11 @@ def provision(logger, session_info, smbconf=None,
                 try:
                     from samba.domain_update import DomainUpdate
 
-                    domain = DomainUpdate(samdb, fix=True)
-                    domain.check_updates_functional_level(adprep_level,
-                                                          DS_DOMAIN_FUNCTION_2008,
-                                                          update_revision=True)
+                    DomainUpdate(samdb, fix=True).check_updates_functional_level(
+                        adprep_level,
+                        DS_DOMAIN_FUNCTION_2008,
+                        update_revision=True,
+                    )
 
                     samdb.transaction_commit()
                 except Exception as e:
