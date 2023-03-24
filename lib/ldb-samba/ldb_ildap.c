@@ -370,6 +370,67 @@ static void ildb_callback(struct ldap_request *req)
 
 		break;
 
+	case LDAP_TAG_ExtendedRequest: {
+
+		struct ldap_ExtendedResponse *ext_response = NULL;
+		struct ldb_reply *ares = NULL;
+
+		if (req->replies[0]->type != LDAP_TAG_ExtendedResponse) {
+			ret = LDB_ERR_PROTOCOL_ERROR;
+			return;
+		}
+		ext_response = &req->replies[0]->r.ExtendedResponse;
+
+		status = ldap_check_response(ac->ireq->conn,
+					     &req->replies[0]->r.GeneralResult);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = ildb_map_error(ac->module, status);
+			request_done = true;
+			break;
+		}
+
+		ares = talloc_zero(req, struct ldb_reply);
+		if (ares == NULL) {
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			request_done = true;
+			break;
+		}
+
+		ares->type = LDB_REPLY_DONE;
+
+		ares->response = talloc_zero(ares, struct ldb_extended);
+		if (ares->response == NULL) {
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			request_done = true;
+			break;
+		}
+
+		ares->response->oid =
+			talloc_strdup(ares->response, ext_response->oid);
+		if (ares->response->oid == NULL) {
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			request_done = true;
+			break;
+		}
+
+		if (ext_response->value != NULL) {
+			ares->response->data =
+				talloc_memdup(ares->response,
+					      ext_response->value->data,
+					      ext_response->value->length);
+			if (ares->response->data == NULL) {
+				ret = LDB_ERR_OPERATIONS_ERROR;
+				request_done = true;
+				break;
+			}
+		}
+
+		ares->controls = talloc_move(ares, &req->replies[0]->controls);
+
+		ac->req->callback(ac->req, ares);
+		return;
+	}
+
 	default:
 		ret = LDB_ERR_PROTOCOL_ERROR;
 		break;
@@ -665,6 +726,52 @@ static int ildb_rename(struct ildb_context *ac)
 	return ildb_request_send(ac, msg);
 }
 
+/*
+ * Issue an extended operation
+ */
+static int ildb_extended(struct ildb_context *ac)
+{
+	struct ldb_request *req = ac->req;
+	struct ldb_extended *extended_req = NULL;
+	struct ldap_message *msg = NULL;
+	DATA_BLOB *value = NULL;
+
+	if (req->operation != LDB_EXTENDED) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	extended_req = &req->op.extended;
+
+	msg = new_ldap_message(req);
+	if (msg == NULL) {
+		goto nomem;
+	}
+
+	if (extended_req->data != NULL) {
+		value = talloc(req, DATA_BLOB);
+		if (value == NULL) {
+			goto nomem;
+		}
+		*value = data_blob_talloc(value,
+					  extended_req->data,
+					  talloc_get_size(extended_req->data));
+		if (value->data == NULL) {
+			goto nomem;
+		}
+	}
+
+	*msg = (struct ldap_message){
+		.type = LDAP_TAG_ExtendedRequest,
+		.r.ExtendedRequest.oid = extended_req->oid,
+		.r.ExtendedRequest.value = value,
+		.controls = req->controls,
+	};
+
+	return ildb_request_send(ac, msg);
+nomem:
+	TALLOC_FREE(msg);
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
 static int ildb_start_trans(struct ldb_module *module)
 {
 	/* TODO implement a local locking mechanism here */
@@ -770,6 +877,9 @@ static int ildb_handle_request(struct ldb_module *module, struct ldb_request *re
 	case LDB_RENAME:
 		ret = ildb_rename(ac);
 		break;
+	case LDB_EXTENDED:
+		ret = ildb_extended(ac);
+		break;
 	default:
 		/* no other op supported */
 		ret = LDB_ERR_PROTOCOL_ERROR;
@@ -786,6 +896,7 @@ static const struct ldb_module_ops ildb_ops = {
 	.modify            = ildb_handle_request,
 	.del               = ildb_handle_request,
 	.rename            = ildb_handle_request,
+	.extended          = ildb_handle_request,
 /*	.request           = ildb_handle_request, */
 	.start_transaction = ildb_start_trans,
 	.end_transaction   = ildb_end_trans,
