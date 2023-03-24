@@ -736,7 +736,7 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 	sddl_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask,
 					 ace->access_mask, true);
 	if (sddl_mask == NULL) {
-		sddl_mask = talloc_asprintf(tmp_ctx, "0x%08x",
+		sddl_mask = talloc_asprintf(tmp_ctx, "0x%x",
 					     ace->access_mask);
 		if (sddl_mask == NULL) {
 			goto failed;
