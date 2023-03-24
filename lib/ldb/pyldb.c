@@ -2399,6 +2399,36 @@ static PyObject *py_ldb_sequence_number(PyLdbObject *self, PyObject *args)
 	return PyLong_FromLongLong(value);
 }
 
+static PyObject *py_ldb_whoami(PyLdbObject *self, PyObject *args)
+{
+	struct ldb_context *ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
+	struct ldb_result *res = NULL;
+	struct ldb_extended *ext_res = NULL;
+	size_t len = 0;
+	int ret;
+
+	ret = ldb_extended(ldb, LDB_EXTENDED_WHOAMI_OID, NULL, &res);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb);
+
+	ext_res = res->extended;
+	if (ext_res == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Got no exop reply");
+		return NULL;
+	}
+
+	if (strcmp(ext_res->oid, LDB_EXTENDED_WHOAMI_OID) != 0) {
+		PyErr_SetString(PyExc_TypeError, "Got wrong reply OID");
+		return NULL;
+	}
+
+	len = talloc_get_size(ext_res->data);
+	if (len == 0) {
+		Py_RETURN_NONE;
+	}
+
+	return PyUnicode_FromStringAndSize(ext_res->data, len);
+}
+
 
 static const struct ldb_dn_extended_syntax test_dn_syntax = {
 	.name             = "TEST",
@@ -2530,6 +2560,12 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "sequence_number", (PyCFunction)py_ldb_sequence_number, METH_VARARGS,
 		"S.sequence_number(type) -> value\n"
 		"Return the value of the sequence according to the requested type" },
+	{ "whoami",
+	  (PyCFunction)py_ldb_whoami,
+	  METH_NOARGS,
+	  "S.whoami(type) -> value\n"
+	  "Return the RFC4532 whoami string",
+	},
 	{ "_register_test_extensions", (PyCFunction)py_ldb_register_test_extensions, METH_NOARGS,
 		"S._register_test_extensions() -> None\n"
 		"Register internal extensions used in testing" },
