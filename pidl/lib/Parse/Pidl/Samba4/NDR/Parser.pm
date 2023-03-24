@@ -481,12 +481,12 @@ sub ParseArrayPullHeader($$$$$$)
 	return $array_length;
 }
 
-sub compression_alg($$)
+sub compression_alg($$$)
 {
-	my ($e, $l) = @_;
+	my ($e, $l, $env) = @_;
 	my ($alg, $clen, $dlen) = split(/,/, $l->{COMPRESSION});
 
-	return $alg;
+	return ParseExpr($alg, $env, $e->{ORIGINAL});
 }
 
 sub compression_clen($$$)
@@ -509,7 +509,7 @@ sub ParseCompressionPushStart($$$$$)
 {
 	my ($self,$e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
-	my $alg = compression_alg($e, $l);
+	my $alg = compression_alg($e, $l, $env);
 	my $dlen = compression_dlen($e, $l, $env);
 
 	$self->pidl("{");
@@ -524,7 +524,7 @@ sub ParseCompressionPushEnd($$$$$)
 {
 	my ($self,$e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
-	my $alg = compression_alg($e, $l);
+	my $alg = compression_alg($e, $l, $env);
 	my $dlen = compression_dlen($e, $l, $env);
 
 	$self->pidl("NDR_CHECK(ndr_push_compression_end($ndr, $comndr, $alg, $dlen));");
@@ -536,7 +536,7 @@ sub ParseCompressionPullStart($$$$$)
 {
 	my ($self,$e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
-	my $alg = compression_alg($e, $l);
+	my $alg = compression_alg($e, $l, $env);
 	my $dlen = compression_dlen($e, $l, $env);
 	my $clen = compression_clen($e, $l, $env);
 
@@ -552,7 +552,7 @@ sub ParseCompressionPullEnd($$$$$)
 {
 	my ($self,$e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
-	my $alg = compression_alg($e, $l);
+	my $alg = compression_alg($e, $l, $env);
 	my $dlen = compression_dlen($e, $l, $env);
 
 	$self->pidl("NDR_CHECK(ndr_pull_compression_end($ndr, $comndr, $alg, $dlen));");
