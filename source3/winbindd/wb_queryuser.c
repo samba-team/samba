@@ -113,6 +113,7 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 	struct netr_SamInfo3 *info3;
 	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct unixid xid;
+	uint32_t user_rid = 0;
 	NTSTATUS status;
 	struct dom_sid_buf buf, buf1;
 
@@ -142,8 +143,10 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 	 * can override this.
 	 */
 	sid_copy(&info->group_sid, &info->user_sid);
-	sid_split_rid(&info->group_sid, NULL);
-	sid_append_rid(&info->group_sid, DOMAIN_RID_USERS);
+	sid_split_rid(&info->group_sid, &user_rid);
+	sid_append_rid(&info->group_sid,
+		       user_rid == DOMAIN_RID_GUEST ? DOMAIN_RID_GUESTS
+						    : DOMAIN_RID_USERS);
 
 	D_DEBUG("Preconfigured 'Domain Users' RID %u was used to create group SID %s from user SID %s.\n",
 		DOMAIN_RID_USERS,
