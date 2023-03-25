@@ -1768,7 +1768,7 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_context *ldb, struct ldb_ldif *
 			deleteoldrdn_obj = Py_False;
 		}
 		newdn_obj = pyldb_Dn_FromDn(newdn);
-		if (olddn_obj == NULL) {
+		if (newdn_obj == NULL) {
 			deleteoldrdn_obj = NULL;
 			Py_CLEAR(olddn_obj);
 			return NULL;
