@@ -145,7 +145,9 @@ NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 		DBG_NOTICE("dbwrap_traverse failed: %s\n", nt_errstr(status));
 		return status;
 	}
-	m.buf[c.len-1] = '\0';
+	if (c.len > 0) {
+		m.buf[c.len - 1] = '\0';
+	}
 
 	*num_members = c.num;
 	*result = m.buf;
