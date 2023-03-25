@@ -720,11 +720,6 @@ struct foo bar = { .y = 'X', .x = 1 };
         conf.DEFINE('FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION', 1)
         conf.env.FUZZ_TARGET_LDFLAGS = Options.options.FUZZ_TARGET_LDFLAGS
 
-    # Create a symlink of the compile db for clangd
-    symlink(os.path.join(conf.bldnode.abspath(), 'default/compile_commands.json'),
-            os.path.join(conf.srcnode.abspath(), 'compile_commands.json'),
-            force=True)
-
     conf.SAMBA_BUILD_ENV()
 
 
