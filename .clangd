@@ -1,0 +1,3 @@
+# https://clangd.llvm.org/config.html
+CompileFlags:
+    CompilationDatabase: bin/default
