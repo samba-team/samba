@@ -381,7 +381,7 @@ bld.SAMBA_LIBRARY('ndr-krb5pac',
 
 bld.SAMBA_SUBSYSTEM('NDR_KRB5CCACHE',
     source='gen_ndr/ndr_krb5ccache.c',
-    deps='ndr NDR_COMPRESSION NDR_SECURITY ndr-standard asn1util'
+    deps='ndr NDR_SECURITY ndr-standard asn1util'
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_CLAIMS',
