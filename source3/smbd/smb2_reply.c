@@ -289,6 +289,62 @@ NTSTATUS check_path_syntax_smb2(char *path, bool dfs_path)
 }
 
 /****************************************************************************
+ SMB2-only code to strip an MSDFS prefix from an incoming pathname.
+****************************************************************************/
+
+NTSTATUS smb2_strip_dfs_path(const char *in_path, const char **out_path)
+{
+	const char *path = in_path;
+
+	/* Match the Windows 2022 behavior for an empty DFS pathname. */
+	if (*path == '\0') {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	/* Stip any leading '\\' characters - MacOSX client behavior. */
+	while (*path == '\\') {
+		path++;
+	}
+	/* We should now be pointing at the server name. Go past it. */
+	for (;;) {
+		if (*path == '\0') {
+			/* End of complete path. Exit OK. */
+			goto out;
+		}
+		if (*path == '\\') {
+			/* End of server name. Go past and break. */
+			path++;
+			break;
+		}
+		path++; /* Continue looking for end of server name or string. */
+	}
+
+	/* We should now be pointing at the share name. Go past it. */
+	for (;;) {
+		if (*path == '\0') {
+			/* End of complete path. Exit OK. */
+			goto out;
+		}
+		if (*path == '\\') {
+			/* End of share name. Go past and break. */
+			path++;
+			break;
+		}
+		if (*path == ':') {
+			/* Only invalid character in sharename. */
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+		path++; /* Continue looking for end of share name or string. */
+	}
+
+	/* path now points at the start of the real filename (if any). */
+
+  out:
+	/* We have stripped the DFS path prefix (if any). */
+	*out_path = path;
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Pull a string and check the path allowing a wildcard - provide for error return.
  Passes in posix flag.
 ****************************************************************************/
