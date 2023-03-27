@@ -141,6 +141,10 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 	 * Default the group sid to "Domain Users" in the user's
 	 * domain. The samlogon cache or the query_user call later on
 	 * can override this.
+	 * TODO: There is still missing functionality to set the correct group
+	 * sid using samlogon cache (needs to use S4USelf).
+	 * Once this is done, remove the workaround in test_membership_user() in
+	 * source4/torture/local/nss_tests.c
 	 */
 	sid_copy(&info->group_sid, &info->user_sid);
 	sid_split_rid(&info->group_sid, &user_rid);
