@@ -57,8 +57,13 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 			 FLAGS2_LONG_PATH_COMPONENTS |
 			 FLAGS2_IS_LONG_NAME;
 
-	if (IVAL(inhdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_DFS) {
-		smbreq->flags2 |= FLAGS2_DFS_PATHNAMES;
+	/* Only set FLAGS2_DFS_PATHNAMES if it's really a DFS share */
+	if (smbreq->conn != NULL &&
+	    lp_host_msdfs() &&
+	    lp_msdfs_root(SNUM(smbreq->conn))) {
+		if (IVAL(inhdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_DFS) {
+			smbreq->flags2 |= FLAGS2_DFS_PATHNAMES;
+		}
 	}
 	smbreq->mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	smbreq->chain_fsp = req->compat_chain_fsp;
