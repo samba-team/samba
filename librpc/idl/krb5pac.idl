@@ -194,6 +194,14 @@ interface krb5pac
 		[case(PAC_TYPE_TICKET_CHECKSUM)]	PAC_SIGNATURE_DATA ticket_checksum;
 		[case(PAC_TYPE_ATTRIBUTES_INFO)]	PAC_ATTRIBUTES_INFO attributes_info;
 		[case(PAC_TYPE_REQUESTER_SID)]	PAC_REQUESTER_SID requester_sid;
+		/*
+		 * [subcontext(0)] and DATA_BLOB_REM is used as in
+		 * PAC_TYPE_CLIENT_CLAIMS_INFO
+		 * PAC_TYPE_DEVICE_CLAIMS_INFO as Windows will
+		 * sometimes send an empty buffer (presumably to avoid
+		 * the overhead of the header around the claims) if
+		 * there are no claims to send
+		 */
 		[case(PAC_TYPE_CLIENT_CLAIMS_INFO)][subcontext(0)] DATA_BLOB_REM client_claims_info;
 		[case(PAC_TYPE_DEVICE_INFO)][subcontext(0xFFFFFC01)] PAC_DEVICE_INFO_CTR device_info;
 		[case(PAC_TYPE_DEVICE_CLAIMS_INFO)][subcontext(0)] DATA_BLOB_REM device_claims_info;
