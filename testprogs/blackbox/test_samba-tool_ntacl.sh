@@ -27,9 +27,6 @@ new_acl_without_padding=$(echo -n "$new_acl" | perl -p -e 's/0x00/0x/g')
 
 . $(dirname $0)/subunit.sh
 
-UID_WRAPPER_ROOT=1
-export UID_WRAPPER_ROOT
-
 test_get_acl()
 {
 	testfile="$1"
