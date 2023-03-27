@@ -1029,6 +1029,15 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		 * We've been given a raw DFS pathname.
 		 */
 		char *pathname = NULL;
+
+		/*
+		 * This *MUST* be an SMB1 connection.
+		 * We now strip all DFS paths from SMB2
+		 * before calling filename convert functions.
+		 *
+		 */
+		SMB_ASSERT(!conn->sconn->using_smb2);
+
 		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n",
 			  name_in);
 		status = dfs_filename_convert(mem_ctx,
