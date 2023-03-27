@@ -29,9 +29,6 @@ unc="//$SERVER/tmp"
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
 
-UID_WRAPPER_ROOT=1
-export UID_WRAPPER_ROOT
-
 test_smbpasswd()
 {
 	user=$1
