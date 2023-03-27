@@ -1047,6 +1047,7 @@ krb5_environ = {
     'KADMIN_IS_TGS': kadmin_is_tgs,
 }
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
+planoldpythontestsuite("none", "samba.tests.krb5.claims_in_pac")
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
                        environ=krb5_environ)
 for env, fast_support in [("ad_dc_default:local", True),
