@@ -4518,7 +4518,6 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-	NTTIME dst_twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -4562,14 +4561,11 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 
 	DBG_DEBUG("got name |%s|\n", newname);
 
-	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(newname, &dst_twrp);
-	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 newname,
 					 ucf_flags,
-					 dst_twrp,
+					 0, /* No TWRP. */
 					 &dst_dirfsp,
 					 &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
