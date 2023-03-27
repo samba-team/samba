@@ -58,41 +58,6 @@ class UnorderedList(tuple):
         return hash(tuple(sorted(self)))
 
 
-# Use this to assert that each element of a list belongs to a set() of
-# acceptable elements.
-class OneOf(tuple):
-    def __eq__(self, other):
-        if not isinstance(other, OneOf):
-            raise AssertionError('unexpected comparison attempt')
-
-        # Lists are of different lengths, so we're trivially done.
-        if len(self) != len(other):
-            return False
-
-        # Now we know that the lists are of equal length, we can compare their
-        # elements. These can be normal elements, or set()s to allow any one of
-        # the members of the set to match.
-
-        def elem_eq(this, that):
-            if isinstance(this, set):
-                if isinstance(that, set):
-                    raise AssertionError('both sides unexpectedly sets')
-                # Is 'that' contained in the set() of acceptable values,
-                # 'this'?
-                return that in this
-
-            if isinstance(that, set):
-                # Is 'this' contained in the set() of acceptable values,
-                # 'that'?
-                return this in that
-
-            # Neither element is a set(). Compare elements directly.
-            return this == that
-
-        # Are all the elements equal?
-        return all(map(elem_eq, self, other))
-
-
 @DynamicTestCase
 class ClaimsTests(KDCBaseTest):
     # Placeholder objects that represent accounts undergoing testing.
@@ -1104,10 +1069,9 @@ class ClaimsTests(KDCBaseTest):
                     'for_classes': ['computer'],
                     'value_type': claims.CLAIM_TYPE_STRING,
                     'values': (security_descriptor,),
-                    'expected_values': OneOf([{
-                        'O:BAD:PARAI(A;OICINPIOID;CCDCLCSWRPWPDTLOCRSDRCWDWOGAGXGWGR;;;S-1-0-0)',  # Windows
-                        'O:BAD:PARAI(A;OICINPIOID;RPWPCRCCDCLCLORCWOWDSDDTSWGAGRGWGX;;;S-1-0-0)',  # Samba
-                    }]),
+                    'expected_values': (
+                        'O:BAD:PARAI(A;OICINPIOID;CCDCLCSWRPWPDTLOCRSDRCWDWOGAGXGWGR;;;S-1-0-0)',
+                    ),
                     'expected': True,
                 },
             ],
