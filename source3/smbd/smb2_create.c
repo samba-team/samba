@@ -511,7 +511,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	/* This also converts '\' to '/' */
-	status = check_path_syntax_smb2(filename, is_dfs);
+	status = check_path_syntax_smb2(filename);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(filename);
 		return status;
@@ -1041,7 +1041,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* convert '\\' into '/' */
-	status = check_path_syntax_smb2(state->fname, is_dfs);
+	status = check_path_syntax_smb2(state->fname);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}

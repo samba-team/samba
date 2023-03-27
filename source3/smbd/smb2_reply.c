@@ -243,6 +243,7 @@ NTSTATUS check_path_syntax_posix(char *path)
 	return check_path_syntax_internal(path, true);
 }
 
+#if 0
 /****************************************************************************
  Check the path for an SMB2 DFS path.
  SMB2 DFS paths look like hostname\share (followed by a possible \extrapath.
@@ -278,14 +279,16 @@ static NTSTATUS check_path_syntax_smb2_msdfs(char *path)
 	*remaining_path++ = '/';
 	return check_path_syntax(remaining_path);
 }
+#endif
 
-NTSTATUS check_path_syntax_smb2(char *path, bool dfs_path)
+NTSTATUS check_path_syntax_smb2(char *path)
 {
-	if (dfs_path) {
-		return check_path_syntax_smb2_msdfs(path);
-	} else {
-		return check_path_syntax(path);
-	}
+	/*
+	 * Now a simple wrapper around check_path_syntax().
+	 * Leave it alone for now to keep things separate
+	 * when we add SMB3+POSIX parsing.
+	 */
+	return check_path_syntax(path);
 }
 
 /****************************************************************************
