@@ -243,44 +243,6 @@ NTSTATUS check_path_syntax_posix(char *path)
 	return check_path_syntax_internal(path, true);
 }
 
-#if 0
-/****************************************************************************
- Check the path for an SMB2 DFS path.
- SMB2 DFS paths look like hostname\share (followed by a possible \extrapath.
- Path returned from here must look like:
-	hostname/share (followed by a possible /extrapath).
-****************************************************************************/
-
-static NTSTATUS check_path_syntax_smb2_msdfs(char *path)
-{
-	char *share = NULL;
-	char *remaining_path = NULL;
-	/* No SMB2 names can start with '\\' */
-	if (path[0] == '\\') {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-	/*
-	 * smbclient libraries sometimes set the DFS flag and send
-	 * local pathnames. Cope with this by just calling
-	 * check_path_syntax() on the whole path if it doesn't
-	 * look like a DFS path, similar to what parse_dfs_path() does.
-	 */
-	/* servername should be at path[0] */
-	share = strchr(path, '\\');
-	if (share == NULL) {
-		return check_path_syntax(path);
-	}
-	*share++ = '/';
-	remaining_path = strchr(share, '\\');
-	if (remaining_path == NULL) {
-		/* Only hostname\share. We're done. */
-		return NT_STATUS_OK;
-	}
-	*remaining_path++ = '/';
-	return check_path_syntax(remaining_path);
-}
-#endif
-
 NTSTATUS check_path_syntax_smb2(char *path)
 {
 	/*
