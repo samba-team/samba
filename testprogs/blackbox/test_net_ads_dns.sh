@@ -35,9 +35,6 @@ groupaddmem="$samba_tool group addmembers"
 ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
 ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 
-UID_WRAPPER_ROOT=1
-export UID_WRAPPER_ROOT
-
 IPADDRESS=10.1.4.111
 IP6ADDRESS=fd00:1a1a::1:5ee:bad:c0de
 IPADDRMAC=10.1.4.124
