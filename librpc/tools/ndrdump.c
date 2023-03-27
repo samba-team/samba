@@ -549,6 +549,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		TALLOC_FREE(mem_ctx);
 		exit(1);
 
+	} else if (hex_input && size >= 1 && data[0] != '[') {
+		blob = strhex_to_data_blob(mem_ctx, (const char *)data);
 	} else if (hex_input) {
 		blob = hexdump_to_data_blob(mem_ctx, (const char *)data, size);
 	} else if (base64_input) {
