@@ -61,7 +61,8 @@ struct GUID cli_state_client_guid;
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
-				   int signing_state, int flags)
+				   enum smb_signing_setting signing_state,
+				   int flags)
 {
 	struct cli_state *cli = NULL;
 	bool use_spnego = lp_client_use_spnego();
