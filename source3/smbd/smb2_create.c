@@ -475,6 +475,36 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (is_dfs) {
+		const char *non_dfs_requested_filename = NULL;
+		/*
+		 * With a DFS flag set, remove any DFS prefix
+		 * before further processing.
+		 */
+		status = smb2_strip_dfs_path(requested_filename,
+					     &non_dfs_requested_filename);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		/*
+		 * TODO: Note for dealing with reparse point errors.
+		 * We will need to remember and store the number of characters
+		 * we have removed here, which is
+		 * (requested_filename - non_dfs_requested_filename)
+		 * in order to correctly report how many characters we
+		 * have removed before hitting the reparse point.
+		 * This will be a patch needed once we properly
+		 * deal with reparse points later.
+		 */
+		requested_filename = non_dfs_requested_filename;
+		/*
+		 * Now we're no longer dealing with a DFS path, so
+		 * remove the flag.
+		 */
+		smb1req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
+		is_dfs = false;
+	}
+
 	filename = talloc_strdup(talloc_tos(), requested_filename);
 	if (filename == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -798,13 +828,32 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	is_dfs = (smb1req->flags2 & FLAGS2_DFS_PATHNAMES);
 	if (is_dfs) {
+		const char *non_dfs_in_name = NULL;
 		/*
-		 * With a DFS flag set, remove any leading '\\'
-		 * characters from in_name before further processing.
+		 * With a DFS flag set, remove any DFS prefix
+		 * before further processing.
 		 */
-		while (in_name[0] == '\\') {
-			in_name++;
+		status = smb2_strip_dfs_path(in_name, &non_dfs_in_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, state->ev);
 		}
+		/*
+		 * TODO: Note for dealing with reparse point errors.
+		 * We will need to remember and store the number of characters
+		 * we have removed here, which is (non_dfs_in_name - in_name)
+		 * in order to correctly report how many characters we
+		 * have removed before hitting the reparse point.
+		 * This will be a patch needed once we properly
+		 * deal with reparse points later.
+		 */
+		in_name = non_dfs_in_name;
+		/*
+		 * Now we're no longer dealing with a DFS path, so
+		 * remove the flag.
+		 */
+		smb1req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
+		is_dfs = false;
 	}
 
 	state->fname = talloc_strdup(state, in_name);

@@ -4412,7 +4412,6 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	const char *dst_original_lcomp = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTSTATUS status = NT_STATUS_OK;
-	bool is_dfs = (req->flags2 & FLAGS2_DFS_PATHNAMES);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -4441,7 +4440,12 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	if (newname == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	status = check_path_syntax_smb2(newname, is_dfs);
+
+	/* SMB2 rename paths are never DFS. */
+	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
+	ucf_flags &= ~UCF_DFS_PATHNAME;
+
+	status = check_path_syntax_smb2(newname, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4519,7 +4523,6 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	size_t ret;
-	bool is_dfs = (req->flags2 & FLAGS2_DFS_PATHNAMES);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -4549,7 +4552,11 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = check_path_syntax_smb2(newname, is_dfs);
+	/* SMB2 hardlink paths are never DFS. */
+	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
+	ucf_flags &= ~UCF_DFS_PATHNAME;
+
+	status = check_path_syntax_smb2(newname, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
