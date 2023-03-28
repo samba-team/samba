@@ -245,12 +245,7 @@ NTSTATUS check_path_syntax_posix(char *path)
 
 NTSTATUS check_path_syntax_smb2(char *path)
 {
-	/*
-	 * Now a simple wrapper around check_path_syntax().
-	 * Leave it alone for now to keep things separate
-	 * when we add SMB3+POSIX parsing.
-	 */
-	return check_path_syntax(path);
+	return check_path_syntax_internal(path, false);
 }
 
 /****************************************************************************
