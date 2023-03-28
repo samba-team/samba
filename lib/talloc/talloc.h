@@ -666,6 +666,19 @@ _PUBLIC_ void *talloc_parent(const void *ptr);
 _PUBLIC_ const char *talloc_parent_name(const void *ptr);
 
 /**
+ * @brief Get the size of a talloc chunk.
+ *
+ * This function lets you know the amount of memory allocated so far by
+ * this context. It does NOT account for subcontext memory.
+ * This can be used to calculate the size of an array.
+ *
+ * @param[in]  ctx      The talloc chunk.
+ *
+ * @return              The size of the talloc chunk.
+ */
+_PUBLIC_ size_t talloc_get_size(const void *ctx);
+
+/**
  * @brief Get the total size of a talloc chunk including its children.
  *
  * The function returns the total size in bytes used by this pointer and all
@@ -1069,19 +1082,6 @@ _PUBLIC_ int talloc_unlink(const void *context, void *ptr);
  * @return              A talloc context, NULL on error.
  */
 _PUBLIC_ void *talloc_autofree_context(void) _DEPRECATED_;
-
-/**
- * @brief Get the size of a talloc chunk.
- *
- * This function lets you know the amount of memory allocated so far by
- * this context. It does NOT account for subcontext memory.
- * This can be used to calculate the size of an array.
- *
- * @param[in]  ctx      The talloc chunk.
- *
- * @return              The size of the talloc chunk.
- */
-_PUBLIC_ size_t talloc_get_size(const void *ctx);
 
 /**
  * @brief Show the parentage of a context.
