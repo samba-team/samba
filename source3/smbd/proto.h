@@ -931,6 +931,7 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 NTSTATUS check_path_syntax(char *path);
 NTSTATUS check_path_syntax_posix(char *path);
 NTSTATUS check_path_syntax_smb2(char *path);
+NTSTATUS check_path_syntax_smb2_posix(char *path);
 NTSTATUS smb1_strip_dfs_path(TALLOC_CTX *mem_ctx,
 			     uint32_t *ucf_flags,
 			     char **in_path);

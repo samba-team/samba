@@ -248,6 +248,11 @@ NTSTATUS check_path_syntax_smb2(char *path)
 	return check_path_syntax_internal(path, false);
 }
 
+NTSTATUS check_path_syntax_smb2_posix(char *path)
+{
+	return check_path_syntax_internal(path, true);
+}
+
 /****************************************************************************
  SMB2-only code to strip an MSDFS prefix from an incoming pathname.
 ****************************************************************************/
