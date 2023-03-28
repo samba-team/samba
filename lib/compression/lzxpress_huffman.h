@@ -83,5 +83,13 @@ uint8_t *lzxpress_huffman_decompress_talloc(TALLOC_CTX *mem_ctx,
 					    size_t input_size,
 					    size_t output_size);
 
+/*
+ * lzxpress_huffman_max_compressed_size()
+ *
+ * Return the most bytes the compression can take, to allow
+ * pre-allocation.
+ */
+size_t lzxpress_huffman_max_compressed_size(size_t input_size);
+
 
 #endif /* HAVE_LZXPRESS_HUFFMAN_H */

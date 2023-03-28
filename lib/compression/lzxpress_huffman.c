@@ -1210,6 +1210,21 @@ static ssize_t lzx_huffman_compress_block(struct lzxhuff_compressor_context *cmp
 	return bytes_written;
 }
 
+/*
+ * lzxpress_huffman_max_compressed_size()
+ *
+ * Return the most bytes the compression can take, to allow
+ * pre-allocation.
+ */
+size_t lzxpress_huffman_max_compressed_size(size_t input_size)
+{
+	/*
+	 * In the worst case, the output size should be about the same as the
+	 * input size, plus the 256 byte header per 64k block. We aim for
+	 * ample, but within the order of magnitude.
+	 */
+	return input_size + (input_size / 8) + 270;
+}
 
 /*
  * lzxpress_huffman_compress_talloc()
@@ -1236,12 +1251,8 @@ ssize_t lzxpress_huffman_compress_talloc(TALLOC_CTX *mem_ctx,
 					 uint8_t **output)
 {
 	struct lzxhuff_compressor_mem *cmp = NULL;
-	/*
-	 * In the worst case, the output size should be about the same as the
-	 * input size, plus the 256 byte header per 64k block. We aim for
-	 * ample, but within the order of magnitude.
-	 */
-	size_t alloc_size = input_size + (input_size / 8) + 270;
+	size_t alloc_size = lzxpress_huffman_max_compressed_size(input_size);
+
 	ssize_t output_size;
 
 	*output = talloc_array(mem_ctx, uint8_t, alloc_size);
