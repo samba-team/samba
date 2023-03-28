@@ -71,6 +71,19 @@ NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags);
 NTSTATUS dbwrap_record_storev(struct db_record *rec,
 			      const TDB_DATA *dbufs, int num_dbufs, int flags);
 NTSTATUS dbwrap_record_delete(struct db_record *rec);
+
+/**
+ * @brief Adds TDB records from one db_context to another
+ *
+ * @param to	Destination db_context
+ * @param from	Source db_context
+ * @param flags	(TDB_INSERT or TDB_REPLACE)
+ *
+ * @return NT_STATUS_OK on success or NT_STATUS_INTERNAL_DB_CORRUPTION
+ */
+NTSTATUS
+dbwrap_merge_dbs(struct db_context *to, struct db_context *from, int flags);
+
 struct db_record *dbwrap_fetch_locked(struct db_context *db,
 				      TALLOC_CTX *mem_ctx,
 				      TDB_DATA key);

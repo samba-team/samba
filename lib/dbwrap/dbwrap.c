@@ -120,6 +120,35 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 	return NT_STATUS_OK;
 }
 
+struct dbwrap_merge_dbs_state {
+	struct db_context *to;
+	int flags;
+};
+
+/* Copy a single record to the db_context passed in private_data */
+static int dbwrap_merge_dbs_copy_record(struct db_record *rec,
+					    void *private_data)
+{
+	struct dbwrap_merge_dbs_state *state = private_data;
+
+	TDB_DATA data = dbwrap_record_get_value(rec);
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	NTSTATUS status = dbwrap_store(state->to, key, data, state->flags);
+
+	return NT_STATUS_IS_OK(status) ? 0 : 1;
+}
+
+NTSTATUS
+dbwrap_merge_dbs(struct db_context *to, struct db_context *from, int flags)
+{
+	struct dbwrap_merge_dbs_state state = {.to = to, .flags = flags};
+
+	return dbwrap_traverse(from,
+			       dbwrap_merge_dbs_copy_record,
+			       &state,
+			       NULL);
+}
+
 const char *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
 
 static void debug_lock_order(int level)
