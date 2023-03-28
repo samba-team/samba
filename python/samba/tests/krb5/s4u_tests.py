@@ -325,7 +325,6 @@ class S4UKerberosTests(KDCBaseTest):
             tgt=service_tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options=str(kdc_options),
-            expect_client_claims=False,
             expect_edata=expect_edata)
 
         self._generic_kdc_exchange(kdc_exchange_dict,
@@ -664,7 +663,6 @@ class S4UKerberosTests(KDCBaseTest):
                 tgt=service1_tgt,
                 authenticator_subkey=s4u2self_authenticator_subkey,
                 kdc_options=str(s4u2self_kdc_options),
-                expect_client_claims=False,
                 expect_edata=False)
 
             self._generic_kdc_exchange(s4u2self_kdc_exchange_dict,
