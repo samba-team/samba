@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Database interface wrapper around tdb
    Copyright (C) Volker Lendecke 2005-2007
