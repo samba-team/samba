@@ -22,6 +22,7 @@
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "source4/kdc/ad_claims.h"
+#include "source4/kdc/authn_policy_util.h"
 #include "ldb_module.h"
 #include "libcli/security/security.h"
 #include "libcli/util/werror.h"
@@ -548,6 +549,96 @@ static int claim_applies_to_class(TALLOC_CTX *mem_ctx,
 	return LDB_SUCCESS;
 }
 
+struct assigned_silo {
+	const char *name;
+	bool is_initialised;
+	bool is_assigned;
+};
+
+static struct assigned_silo new_assigned_silo(void)
+{
+	return (struct assigned_silo) {
+		.name = NULL,
+		.is_initialised = false,
+		.is_assigned = false,
+	};
+}
+
+static bool silo_is_maybe_assigned(struct assigned_silo silo)
+{
+	return !silo.is_initialised || silo.is_assigned;
+}
+
+static int get_assigned_silo(struct ldb_context *ldb,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ldb_message *principal,
+			     struct assigned_silo *assigned_silo)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	int ret;
+
+	const struct ldb_message *silo_msg = NULL;
+	static const char * const silo_attrs[] = {
+		"msDS-AuthNPolicySiloEnforced",
+		"msDS-AuthNPolicySiloMembers",
+		"name",
+		NULL
+	};
+
+	bool is_silo_enforced = false;
+	const char *silo_name = NULL;
+
+	if (assigned_silo->is_initialised) {
+		return LDB_SUCCESS;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	if (!authn_policy_silos_and_policies_in_effect(ldb)) {
+		/* No assigned silo. */
+		assigned_silo->is_assigned = false;
+		assigned_silo->is_initialised = true;
+
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	/* Check whether the user is assigned to an enforced silo. */
+	ret = authn_policy_get_assigned_silo(ldb,
+					     tmp_ctx,
+					     principal,
+					     silo_attrs,
+					     &silo_msg,
+					     &is_silo_enforced);
+	if (ret) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (silo_msg == NULL || !is_silo_enforced) {
+		/* No assigned silo. */
+		assigned_silo->is_assigned = false;
+		assigned_silo->is_initialised = true;
+
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	/* The user does belong to a silo, so return the name of the silo. */
+	silo_name = ldb_msg_find_attr_as_string(silo_msg,
+						"name",
+						NULL);
+	assigned_silo->name = talloc_steal(mem_ctx, silo_name);
+	assigned_silo->is_assigned = true;
+	assigned_silo->is_initialised = true;
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
 static inline struct ldb_val talloc_steal_ldb_val(TALLOC_CTX *mem_ctx, struct ldb_val val)
 {
 	val.data = talloc_steal(mem_ctx, val.data);
@@ -723,6 +814,8 @@ static int get_all_claims(struct ldb_context *ldb,
 
 	struct CLAIMS_ARRAY *ad_sourced_constructed = NULL;
 
+	struct assigned_silo assigned_silo = new_assigned_silo();
+
 	*claims_blob = data_blob_null;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -801,6 +894,7 @@ static int get_all_claims(struct ldb_context *ldb,
 
 		const char *claim_source_type = NULL;
 		const struct ldb_val *claim_attribute_source = NULL;
+		const char *claim_source = NULL;
 
 		/*
 		 * Does this claim apply to the most specific objectClass of the
@@ -841,6 +935,10 @@ static int get_all_claims(struct ldb_context *ldb,
 		/* Get the attribute used by the claim. */
 		claim_attribute_source = ldb_msg_find_ldb_val(res->msgs[i],
 							      "msDS-ClaimAttributeSource");
+
+		claim_source = ldb_msg_find_attr_as_string(res->msgs[i],
+							   "msDS-ClaimSource",
+							   NULL);
 
 		if (strcasecmp(claim_source_type, "AD") == 0) {
 			struct ldb_dn *claim_attribute_source_dn = NULL;
@@ -916,6 +1014,91 @@ static int get_all_claims(struct ldb_context *ldb,
 				.attribute = attribute,
 				.claim_type = claim_value_type,
 			};
+		} else if (silo_is_maybe_assigned(assigned_silo)
+			   && strcasecmp(claim_source_type, "Constructed") == 0)
+		{
+			const struct ldb_val *name = NULL;
+			struct CLAIM_STRING *claim = NULL;
+			struct CLAIM_ENTRY *claim_entry = NULL;
+			const char *claim_value = NULL;
+
+			if (claim_attribute_source != NULL) {
+				continue;
+			}
+
+			if (claim_source != NULL) {
+				continue;
+			}
+
+			name = ldb_msg_find_ldb_val(res->msgs[i], "name");
+			if (name == NULL || name->data == NULL) {
+				continue;
+			}
+			/* Does the claim ID match exactly in case? */
+			if (strcmp((const char *)name->data, "ad://ext/AuthenticationSilo") != 0) {
+				continue;
+			}
+
+			ret = get_assigned_silo(ldb, tmp_ctx, principal, &assigned_silo);
+			if (ret) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			if (!assigned_silo.is_assigned) {
+				continue;
+			}
+
+			if (ad_sourced_constructed == NULL) {
+				claims_set.claims_arrays = talloc_realloc(tmp_ctx,
+									  claims_set.claims_arrays,
+									  struct CLAIMS_ARRAY,
+									  claims_set.claims_array_count + 1);
+				if (claims_set.claims_arrays == NULL) {
+					talloc_free(tmp_ctx);
+					return ldb_oom(ldb);
+				}
+
+				ad_sourced_constructed = &claims_set.claims_arrays[claims_set.claims_array_count++];
+				*ad_sourced_constructed = (struct CLAIMS_ARRAY) {
+					.claims_source_type = CLAIMS_SOURCE_TYPE_AD,
+				};
+			}
+
+			/* Add the claim to the array. */
+			ad_sourced_constructed->claim_entries = talloc_realloc(
+				tmp_ctx,
+				ad_sourced_constructed->claim_entries,
+				struct CLAIM_ENTRY,
+				ad_sourced_constructed->claims_count + 1);
+			if (ad_sourced_constructed->claim_entries == NULL) {
+				talloc_free(tmp_ctx);
+				return ldb_oom(ldb);
+			}
+
+			claim_entry = &ad_sourced_constructed->claim_entries[ad_sourced_constructed->claims_count++];
+
+			/* Fill in the claim details and return the claim. */
+			claim_entry->id = "ad://ext/AuthenticationSilo";
+			claim_entry->type = CLAIM_TYPE_STRING;
+
+			claim = &claim_entry->values.claim_string;
+
+			claim->value_count = 1;
+			claim->values = talloc_array(ad_sourced_constructed->claim_entries,
+						     const char *,
+						     claim->value_count);
+			if (claim->values == NULL) {
+				talloc_free(tmp_ctx);
+				return ldb_oom(ldb);
+			}
+
+			claim_value = talloc_strdup(claim->values, assigned_silo.name);
+			if (claim_value == NULL) {
+				talloc_free(tmp_ctx);
+				return ldb_oom(ldb);
+			}
+
+			claim->values[0] = claim_value;
 		}
 	}
 

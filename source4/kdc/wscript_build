@@ -141,7 +141,7 @@ bld.SAMBA_LIBRARY('db-glue',
 
 bld.SAMBA_LIBRARY('ad_claims',
 	source='ad_claims.c',
-	deps='ldb samba-util samdb dsdb-module',
+	deps='ldb samba-util samdb dsdb-module authn_policy_util',
 	private_library=True,
 	)
 
