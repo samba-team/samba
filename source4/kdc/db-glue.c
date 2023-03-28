@@ -1450,6 +1450,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 
 		supported_enctypes |= ENC_CLAIMS_SUPPORTED;
+		supported_enctypes |= ENC_COMPOUND_IDENTITY_SUPPORTED;
 
 		/*
 		 * Resource SID compression is enabled implicitly, unless

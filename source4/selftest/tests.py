@@ -1005,7 +1005,7 @@ for env in ['fileserver_smb1', 'nt4_member', 'clusteredmember', 'ktest', 'nt4_dc
 
 have_fast_support = 1
 claims_support = 1
-compound_id_support = 0
+compound_id_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 if ('SAMBA4_USES_HEIMDAL' in config_hash or
     'HAVE_MIT_KRB5_1_20' in config_hash):
     tkt_sig_support = 1

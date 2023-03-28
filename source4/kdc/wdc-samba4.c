@@ -393,7 +393,6 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_pac new_pac = NULL;
 	krb5_error_code ret;
-	bool is_trusted = false;
 	uint32_t flags = 0;
 
 	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac context");
@@ -417,9 +416,11 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		goto out;
 	}
 
-	is_trusted = krb5_pac_is_trusted(*pac);
-	if (is_trusted) {
+	if (krb5_pac_is_trusted(*pac)) {
 		flags |= SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
+	}
+	if (device_pac != NULL && krb5_pac_is_trusted(device_pac)) {
+		flags |= SAMBA_KDC_FLAG_DEVICE_KRBTGT_IS_TRUSTED;
 	}
 
 	ret = samba_kdc_update_pac(mem_ctx,

@@ -45,6 +45,7 @@ enum {
 	SAMBA_KDC_FLAG_KRBTGT_IN_DB           = 0x00000004,
 	SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED      = 0x00000008,
 	SAMBA_KDC_FLAG_SKIP_PAC_BUFFER        = 0x00000010,
+	SAMBA_KDC_FLAG_DEVICE_KRBTGT_IS_TRUSTED = 0x00000020,
 };
 
 krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
