@@ -43,12 +43,10 @@ enum ndr_err_code ndr_pull_compression_end(struct ndr_pull *subndr,
 				  ssize_t decompressed_len);
 enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
 				    struct ndr_push **_uncomndr,
-				    enum ndr_compression_alg compression_alg,
-				    ssize_t decompressed_len);
+				    enum ndr_compression_alg compression_alg);
 enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 				  struct ndr_push *uncomndr,
-				  enum ndr_compression_alg compression_alg,
-				  ssize_t decompressed_len);
+				  enum ndr_compression_alg compression_alg);
 
 enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
 						  enum ndr_compression_alg compression_alg,

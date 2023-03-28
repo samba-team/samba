@@ -190,10 +190,10 @@ static enum ndr_err_code ndr_push_folder_cfdata(struct ndr_push *ndr,
 			/* compress via subcontext */
 			NDR_CHECK(ndr_push_subcontext_start(ndr, &push_sub, 0, -1));
 			push_sub->cstate = ndr->cstate;
-			NDR_CHECK(ndr_push_compression_start(push_sub, &push_compress, ndr_ctype, -1));
+			NDR_CHECK(ndr_push_compression_start(push_sub, &push_compress, ndr_ctype));
 			ndr_set_flags(&push_compress->flags, LIBNDR_FLAG_REMAINING);
 			NDR_CHECK(ndr_push_DATA_BLOB(push_compress, NDR_SCALARS, r->ab));
-			NDR_CHECK(ndr_push_compression_end(push_sub, push_compress, ndr_ctype, -1));
+			NDR_CHECK(ndr_push_compression_end(push_sub, push_compress, ndr_ctype));
 			NDR_CHECK(ndr_push_subcontext_end(ndr, push_sub, 0, -1));
 			compressed_length = push_sub->offset;
 
