@@ -525,7 +525,7 @@ dump OK
         self.assertEqual(actual, expected)
 
     def test_ndrdump_fuzzed_ndr_compression(self):
-        expected = 'ndr_pull_compression_start: ndr_pull_error\(Compression Error\): Bad compression algorithm 4 \(PULL\)'
+        expected = r'ndr_pull_compression_start: ndr_pull_error\(Compression Error\): Bad compression algorithm 204 \(PULL\)'
         command = (
             "ndrdump --debug-stdout drsuapi 3 out --base64-input "
             "--input BwAAAAcAAAAGAAAAAwAgICAgICAJAAAAICAgIAkAAAAgIAAA//////8=")

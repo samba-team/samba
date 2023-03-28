@@ -289,13 +289,26 @@ enum ndr_err_code {
 	} \
 } while (0)
 
+/*
+ * Values here are chosen to be distinct from but recognisable as the
+ * values in ntifs.h and claims.idl
+ */
 enum ndr_compression_alg {
-	NDR_COMPRESSION_NONE    = 0,
-	NDR_COMPRESSION_MSZIP_CAB = 1,
-	NDR_COMPRESSION_MSZIP	= 2,
-	NDR_COMPRESSION_XPRESS	= 3,
-	NDR_COMPRESSION_WIN2K3_LZ77_DIRECT2	= 4, /* Unimplemented */
-	NDR_COMPRESSION_INVALID = 255,
+	NDR_COMPRESSION_NONE            = 0,   /* 0x00 in ntifs.h */
+	NDR_COMPRESSION_XPRESS_LZNT1	= 102, /* MS-XCA 0x02 in ntifs.h
+						* (Unimplemented)
+						*/
+	NDR_COMPRESSION_XPRESS_RAW	= 103, /* MS-XCA 0x03 in ntifs.h
+						* (implemented in
+						* lib/compression but
+						* not connected to libndr)
+						*/
+	NDR_COMPRESSION_XPRESS_HUFF_RAW = 104, /* MS-XCA 0x04 in ntifs.h */
+	NDR_COMPRESSION_MSZIP_CAB       = 201,
+	NDR_COMPRESSION_MSZIP	        = 202,
+	NDR_COMPRESSION_XPRESS	        = 203,
+	NDR_COMPRESSION_WIN2K3_LZ77_DIRECT2	= 204, /* Unimplemented */
+	NDR_COMPRESSION_INVALID         = 255,
 };
 
 /*

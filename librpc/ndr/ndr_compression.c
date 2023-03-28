@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "../lib/compression/lzxpress.h"
+#include "../lib/compression/lzxpress_huffman.h"
 #include "librpc/ndr/libndr.h"
 #include "../librpc/ndr/ndr_compression.h"
 #include <zlib.h>
@@ -34,6 +35,9 @@ struct ndr_compression_state {
 			uint8_t *dict;
 			size_t dict_size;
 		} mszip;
+		struct {
+			struct lzxhuff_compressor_mem *mem;
+		} lzxpress_huffman;
 	} alg;
 };
 
@@ -702,6 +706,109 @@ static enum ndr_err_code ndr_push_compression_none(struct ndr_push *ndrpush,
 	return NDR_ERR_SUCCESS;
 }
 
+static enum ndr_err_code ndr_pull_compression_xpress_huff_raw_chunk(struct ndr_pull *ndrpull,
+								    struct ndr_push *ndrpush,
+								    ssize_t decompressed_len,
+								    ssize_t compressed_len)
+{
+	DATA_BLOB comp_chunk;
+	uint32_t comp_chunk_offset;
+	uint32_t comp_chunk_size;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_offset;
+	uint32_t plain_chunk_size;
+	ssize_t ret;
+
+	plain_chunk_size = decompressed_len;
+	comp_chunk_size = compressed_len;
+
+	DEBUG(9,("XPRESS_HUFF plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
+
+	comp_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
+	comp_chunk.length = comp_chunk_size;
+	comp_chunk.data = ndrpull->data + comp_chunk_offset;
+
+	plain_chunk_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_zero(ndrpush, plain_chunk_size));
+	plain_chunk.length = plain_chunk_size;
+	plain_chunk.data = ndrpush->data + plain_chunk_offset;
+
+	/* Decompressing the buffer using LZ Xpress w/ Huffman algorithm */
+	ret = lzxpress_huffman_decompress(comp_chunk.data,
+					  comp_chunk.length,
+					  plain_chunk.data,
+					  plain_chunk.length);
+	if (ret < 0) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS HUFF lzxpress_huffman_decompress() returned %d\n",
+				      (int)ret);
+	}
+
+	if (plain_chunk.length != ret) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS HUFF lzxpress_huffman_decompress() output is not as expected (%zd != %zu) (PULL)",
+				      ret, plain_chunk.length);
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_push_compression_xpress_huff_raw_chunk(struct ndr_push *ndrpush,
+								    struct ndr_pull *ndrpull,
+								    struct ndr_compression_state *state)
+{
+	DATA_BLOB comp_chunk;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_size;
+	uint32_t plain_chunk_offset;
+	ssize_t ret;
+
+	struct lzxhuff_compressor_mem *mem = state->alg.lzxpress_huffman.mem;
+
+	if (ndrpull->data_size <= ndrpull->offset) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "strange NDR pull size and offset (integer overflow?)");
+
+	}
+
+	plain_chunk_size = ndrpull->data_size - ndrpull->offset;
+	plain_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, plain_chunk_size));
+
+	plain_chunk.data = ndrpull->data + plain_chunk_offset;
+	plain_chunk.length = plain_chunk_size;
+
+	comp_chunk.length = lzxpress_huffman_max_compressed_size(plain_chunk_size);
+	NDR_CHECK(ndr_push_expand(ndrpush, comp_chunk.length));
+
+	comp_chunk.data = ndrpush->data + ndrpush->offset;
+
+
+	/* Compressing the buffer using LZ Xpress w/ Huffman algorithm */
+	ret = lzxpress_huffman_compress(mem,
+					plain_chunk.data,
+					plain_chunk.length,
+					comp_chunk.data,
+					comp_chunk.length);
+	if (ret < 0) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS HUFF lzxpress_huffman_compress() returned %d\n",
+				      (int)ret);
+	}
+
+	if (ret > comp_chunk.length) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "XPRESS HUFF lzxpress_huffman_compress() output is not as expected (%zd > %zu) (PULL)",
+				      ret, comp_chunk.length);
+	}
+
+	ndrpush->offset += ret;
+	return NDR_ERR_SUCCESS;
+}
+
+
 /*
   handle compressed subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
@@ -744,6 +851,12 @@ enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 		while (!last) {
 			NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
 		}
+		break;
+
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
+		NDR_CHECK(ndr_pull_compression_xpress_huff_raw_chunk(subndr, ndrpush,
+								     decompressed_len,
+								     compressed_len));
 		break;
 
 	default:
@@ -795,6 +908,7 @@ enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
 	case NDR_COMPRESSION_MSZIP_CAB:
 	case NDR_COMPRESSION_MSZIP:
 	case NDR_COMPRESSION_XPRESS:
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
 		break;
 	default:
 		return ndr_push_error(subndr, NDR_ERR_COMPRESSION,
@@ -848,6 +962,10 @@ enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 		while (!last) {
 			NDR_CHECK(ndr_push_compression_xpress_chunk(subndr, ndrpull, &last));
 		}
+		break;
+
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
+		NDR_CHECK(ndr_push_compression_xpress_huff_raw_chunk(subndr, ndrpull, subndr->cstate));
 		break;
 
 	default:
@@ -904,6 +1022,7 @@ enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
 	case NDR_COMPRESSION_NONE:
 	case NDR_COMPRESSION_MSZIP:
 	case NDR_COMPRESSION_XPRESS:
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
 		break;
 	case NDR_COMPRESSION_MSZIP_CAB:
 		NDR_CHECK(generic_mszip_init(ndr, s));
@@ -936,6 +1055,7 @@ void ndr_pull_compression_state_free(struct ndr_compression_state *state)
 	case NDR_COMPRESSION_NONE:
 	case NDR_COMPRESSION_MSZIP:
 	case NDR_COMPRESSION_XPRESS:
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
 		break;
 	case NDR_COMPRESSION_MSZIP_CAB:
 		generic_mszip_free(state);
@@ -960,6 +1080,15 @@ enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
 	switch (compression_alg) {
 	case NDR_COMPRESSION_NONE:
 	case NDR_COMPRESSION_XPRESS:
+		break;
+
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
+		s->alg.lzxpress_huffman.mem = talloc(s, struct lzxhuff_compressor_mem);
+		if (s->alg.lzxpress_huffman.mem == NULL) {
+			return NDR_ERR_ALLOC;
+		}
+		break;
+
 	case NDR_COMPRESSION_MSZIP:
 		break;
 	case NDR_COMPRESSION_MSZIP_CAB:
@@ -998,6 +1127,7 @@ void ndr_push_compression_state_free(struct ndr_compression_state *state)
 	case NDR_COMPRESSION_NONE:
 	case NDR_COMPRESSION_MSZIP:
 	case NDR_COMPRESSION_XPRESS:
+	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
 		break;
 	case NDR_COMPRESSION_MSZIP_CAB:
 		generic_mszip_free(state);
