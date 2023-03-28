@@ -236,8 +236,7 @@ static enum ndr_err_code ndr_push_folder_cfdata(struct ndr_push *ndr,
 		SIVAL(ndr->data, csum_offset, csum);
 	}
 
-	ndr_push_compression_state_free(ndr->cstate);
-	ndr->cstate = NULL;
+	TALLOC_FREE(ndr->cstate);
 
 	return NDR_ERR_SUCCESS;
 }

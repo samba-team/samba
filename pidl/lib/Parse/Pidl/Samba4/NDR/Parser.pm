@@ -527,7 +527,7 @@ sub ParseCompressionPushEnd($$$$$)
 	my $alg = compression_alg($e, $l, $env);
 
 	$self->pidl("NDR_CHECK(ndr_push_compression_end($ndr, $comndr, $alg));");
-	$self->pidl("NDR_CHECK(ndr_push_compression_state_free($ndr->cstate));");
+	$self->pidl("TALLOC_FREE($ndr->cstate);");
 	$self->deindent;
 	$self->pidl("}");
 }

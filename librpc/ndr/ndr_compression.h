@@ -55,7 +55,6 @@ void ndr_pull_compression_state_free(struct ndr_compression_state *state);
 enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
 						  enum ndr_compression_alg compression_alg,
 						  struct ndr_compression_state **state);
-void ndr_push_compression_state_free(struct ndr_compression_state *state);
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
