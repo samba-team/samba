@@ -290,7 +290,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("smbd_smb2_query_directory_send: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
-	state->smbreq = smbd_smb2_fake_smb_request(smb2req);
+	state->smbreq = smbd_smb2_fake_smb_request(smb2req, fsp);
 	if (tevent_req_nomem(state->smbreq, req)) {
 		return tevent_req_post(req, ev);
 	}

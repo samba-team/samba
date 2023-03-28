@@ -26,7 +26,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
 
-struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
+struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req,
+					       struct files_struct *fsp)
 {
 	struct smb_request *smbreq;
 	const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
@@ -67,6 +68,10 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	}
 	smbreq->mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	smbreq->chain_fsp = req->compat_chain_fsp;
+	if (fsp != NULL) {
+		smbreq->posix_pathnames =
+			(fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
+	}
 	smbreq->smb2req = req;
 	req->smb1req = smbreq;
 

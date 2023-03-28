@@ -237,7 +237,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_set_cleanup_fn(req, smbd_smb2_lock_cleanup);
 
-	state->smb1req = smbd_smb2_fake_smb_request(smb2req);
+	state->smb1req = smbd_smb2_fake_smb_request(smb2req, fsp);
 	if (tevent_req_nomem(state->smb1req, req)) {
 		return tevent_req_post(req, ev);
 	}

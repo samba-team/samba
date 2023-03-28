@@ -784,7 +784,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		.in_create_disposition = in_create_disposition,
 	};
 
-	smb1req = smbd_smb2_fake_smb_request(smb2req);
+	smb1req = smbd_smb2_fake_smb_request(smb2req, NULL);
 	if (tevent_req_nomem(smb1req, req)) {
 		return tevent_req_post(req, state->ev);
 	}
