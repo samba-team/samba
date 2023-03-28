@@ -1294,11 +1294,11 @@ ssize_t lzxpress_huffman_compress_talloc(TALLOC_CTX *mem_ctx,
  * lzxpress_huffman_compress_talloc().
  *
  * To use this, you need to have allocated (but not initialised) a `struct
- * lzxhuff_compressor_context`, and an output buffer. If the buffer is not big
+ * lzxhuff_compressor_mem`, and an output buffer. If the buffer is not big
  * enough (per `output_size`), you'll get a negative return value, otherwise
  * the number of bytes actually consumed, which will always be at least 260.
  *
- * The `struct lzxhuff_compressor_context` is reusable -- it is basically a
+ * The `struct lzxhuff_compressor_mem` is reusable -- it is basically a
  * collection of uninitialised memory buffers. The total size is less than
  * 150k, so stack allocation is plausible.
  *
