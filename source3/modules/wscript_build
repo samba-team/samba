@@ -259,49 +259,48 @@ bld.SAMBA3_MODULE('vfs_zfsacl',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_zfsacl'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_zfsacl'))
 
-bld.SAMBA_GENERATOR('nfs41acl-h',
-                    source='nfs41acl.x',
-                    target='nfs41acl.h',
-                    rule='rpcgen -h ${SRC} > ${TGT}')
-
-
-if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
-    xdr_buf_hack = r'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
-
-    # By default rpcgen assumes that the input file, generated header and
-    # source file are located in the same directory, which is extracted from
-    # the provided path to the input file.
-    # However if the build directory is not under the source tree, ${SRC} will
-    # be a long relative path through a common parent directory, resulting
-    # in an invalid path used in #include for the header.
-    # In order to fix that, the input file is first copied to the output build
-    # directory and then rpcgen is called with the proper path.
-    bld.SAMBA_GENERATOR('nfs41acl-xdr-c',
+if bld.SAMBA3_IS_ENABLED_MODULE('vfs_nfs4acl_xattr'):
+    bld.SAMBA_GENERATOR('nfs41acl-h',
                         source='nfs41acl.x',
-                        target='nfs41acl_xdr.c',
-                        rule='cp -f ${SRC} ${TGT[0].parent} && rpcgen -c ' \
-                             '${TGT[0].path_from(tsk.get_cwd())[:-len(tsk.outputs[0].name)] + tsk.inputs[0].name} | ' + \
-                             xdr_buf_hack + ' > ${TGT}')
+                        target='nfs41acl.h',
+                        rule='rpcgen -h ${SRC} > ${TGT}')
 
-    bld.SAMBA_SUBSYSTEM('VFS_NFS4_XDR',
-                        source='nfs41acl_xdr.c',
-                        deps='NFS4_ACLS NDR_NFS4ACL tirpc')
-else:
-    bld.SET_TARGET_TYPE('VFS_NFS4_XDR', 'EMPTY')
+    if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
+        xdr_buf_hack = r'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
 
-bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
-                  subsystem='vfs',
-                  source = '''
-                           vfs_nfs4acl_xattr.c
-                           nfs4acl_xattr_ndr.c
-                           nfs4acl_xattr_xdr.c
-                           nfs4acl_xattr_nfs.c
-                           nfs4acl_xattr_util.c
-                           ''',
-                  deps='NFS4_ACLS sunacl NDR_NFS4ACL VFS_NFS4_XDR',
-                  init_function='',
-                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_nfs4acl_xattr'),
-                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_nfs4acl_xattr'))
+        # By default rpcgen assumes that the input file, generated header and
+        # source file are located in the same directory, which is extracted from
+        # the provided path to the input file.
+        # However if the build directory is not under the source tree, ${SRC} will
+        # be a long relative path through a common parent directory, resulting
+        # in an invalid path used in #include for the header.
+        # In order to fix that, the input file is first copied to the output build
+        # directory and then rpcgen is called with the proper path.
+        bld.SAMBA_GENERATOR('nfs41acl-xdr-c',
+                            source='nfs41acl.x',
+                            target='nfs41acl_xdr.c',
+                            rule='cp -f ${SRC} ${TGT[0].parent} && rpcgen -c ' \
+                                 '${TGT[0].path_from(tsk.get_cwd())[:-len(tsk.outputs[0].name)] + tsk.inputs[0].name} | ' + \
+                                 xdr_buf_hack + ' > ${TGT}')
+
+        bld.SAMBA_SUBSYSTEM('VFS_NFS4_XDR',
+                            source='nfs41acl_xdr.c',
+                            deps='NFS4_ACLS NDR_NFS4ACL tirpc')
+    else:
+        bld.SET_TARGET_TYPE('VFS_NFS4_XDR', 'EMPTY')
+
+    bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
+                      subsystem='vfs',
+                      source = '''
+                               vfs_nfs4acl_xattr.c
+                               nfs4acl_xattr_ndr.c
+                               nfs4acl_xattr_xdr.c
+                               nfs4acl_xattr_nfs.c
+                               nfs4acl_xattr_util.c
+                               ''',
+                      deps='NFS4_ACLS sunacl NDR_NFS4ACL VFS_NFS4_XDR',
+                      init_function='',
+                      internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_nfs4acl_xattr'))
 
 bld.SAMBA3_MODULE('vfs_hpuxacl',
                  subsystem='vfs',
