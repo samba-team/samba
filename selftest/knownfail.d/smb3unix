@@ -1,2 +1,0 @@
-^samba.tests.smb3unix.samba.tests.smb3unix.Smb3UnixTests.test_posix_reserved_char\(fileserver\)
-^samba.tests.smb3unix.samba.tests.smb3unix.Smb3UnixTests.test_posix_case_sensitive\(fileserver\)

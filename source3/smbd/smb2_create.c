@@ -452,6 +452,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	NTTIME twrp = fsp->fsp_name->twrp;
 	NTSTATUS status;
 	bool is_dfs = (smb1req->flags2 & FLAGS2_DFS_PATHNAMES);
+	bool is_posix = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	if (lease_ptr == NULL) {
 		if (fsp->oplock_type != LEASE_OPLOCK) {
@@ -511,7 +512,11 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	/* This also converts '\' to '/' */
-	status = check_path_syntax_smb2(filename);
+	if (is_posix) {
+		status = check_path_syntax_smb2_posix(filename);
+	} else {
+		status = check_path_syntax_smb2(filename);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(filename);
 		return status;
@@ -741,6 +746,12 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 
 		state->posx = smb2_create_blob_find(
 			in_context_blobs, SMB2_CREATE_TAG_POSIX);
+		/*
+		 * Setting the bool below will cause
+		 * ucf_flags_from_smb_request() to
+		 * return UCF_POSIX_PATHNAMES in ucf_flags.
+		 */
+		state->smb1req->posix_pathnames = true;
 	}
 
 	return NT_STATUS_OK;
@@ -771,6 +782,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb_filename *smb_fname = NULL;
 	uint32_t ucf_flags;
 	bool is_dfs = false;
+	bool is_posix = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
@@ -1040,8 +1052,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->lease_ptr = NULL;
 	}
 
-	/* convert '\\' into '/' */
-	status = check_path_syntax_smb2(state->fname);
+	is_posix = (state->posx != NULL);
+
+	if (is_posix) {
+		status = check_path_syntax_smb2_posix(state->fname);
+	} else {
+		/* convert '\\' into '/' */
+		status = check_path_syntax_smb2(state->fname);
+	}
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}
@@ -1089,10 +1107,17 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	 * server MUST fail the request with
 	 * STATUS_INVALID_PARAMETER.
 	 */
-	if (in_name[0] == '\\' || in_name[0] == '/') {
-		tevent_req_nterror(req,
-				   NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, state->ev);
+	if (in_name[0] == '/') {
+		/* Names starting with '/' are never allowed. */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+	if (!is_posix && (in_name[0] == '\\')) {
+		/*
+		 * Windows names starting with '\' are not allowed.
+		 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	status = SMB_VFS_CREATE_FILE(smb1req->conn,
@@ -1182,13 +1207,8 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 			return;
 		}
 
-		/*
-		 * NB. When SMB2+ unix extensions are added,
-		 * we need to relax this check in invalid
-		 * names - we used to not do this if
-		 * lp_posix_pathnames() was false.
-		 */
-		if (ea_list_has_invalid_name(state->ea_list)) {
+		if ((state->posx == NULL) &&
+		    ea_list_has_invalid_name(state->ea_list)) {
 			tevent_req_nterror(req, STATUS_INVALID_EA_NAME);
 			return;
 		}
