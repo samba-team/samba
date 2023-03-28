@@ -294,6 +294,7 @@ enum ndr_compression_alg {
 	NDR_COMPRESSION_MSZIP	= 2,
 	NDR_COMPRESSION_XPRESS	= 3,
 	NDR_COMPRESSION_WIN2K3_LZ77_DIRECT2	= 4, /* Unimplemented */
+	NDR_COMPRESSION_INVALID = 255,
 };
 
 /*
