@@ -469,7 +469,7 @@ bld.SAMBA3_LIBRARY('secrets3',
                           passdb/secrets_lsa.c
                           ''',
                    deps='''
-                        NDR_SECRETS
+                        ndr-samba4
                         smbconf
                         samba3util
                         dbwrap
