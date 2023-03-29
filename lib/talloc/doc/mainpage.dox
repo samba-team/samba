@@ -69,11 +69,11 @@
  * @section talloc_performance Performance
  *
  * All the additional features of talloc() over malloc() do come at a price. We
- * have a simple performance test in Samba4 that measures talloc() versus
- * malloc() performance, and it seems that talloc() is about 4% slower than
- * malloc() on my x86 Debian Linux box. For Samba, the great reduction in code
- * complexity that we get by using talloc makes this worthwhile, especially as
- * the total overhead of talloc/malloc in Samba is already quite small.
+ * have a performance test in Samba that measures talloc() versus malloc()
+ * performance, and it seems that talloc() is about 50% slower than malloc()
+ * (AMD Ryzen 9 3900X). For Samba, the great reduction in code complexity that
+ * we get by using talloc makes this worthwhile, especially as the total
+ * overhead of talloc/malloc in Samba is already quite small.
  *
  * @section talloc_named Named blocks
  *
