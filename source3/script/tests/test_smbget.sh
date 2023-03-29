@@ -82,6 +82,50 @@ test_singlefile_U()
 	return 0
 }
 
+test_singlefile_U_UPN()
+{
+	clear_download_area
+
+	${SMBGET} -v -U"${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
+		"smb://${SERVER_IP}/smbget/testfile"
+	ret=${?}
+	if [ ${ret} -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+
+	cmp --silent "${WORKDIR}/testfile" ./testfile
+	ret=${?}
+	if [ ${ret} -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	return 0
+}
+
+test_singlefile_U_domain()
+{
+	clear_download_area
+
+	${SMBGET} -v -U"${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
+		"smb://${SERVER_IP}/smbget/testfile"
+	ret=${?}
+	if [ ${ret} -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+
+	cmp --silent "${WORKDIR}/testfile" ./testfile
+	ret=${?}
+	if [ ${ret} -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	return 0
+}
+
 test_singlefile_smburl()
 {
 	clear_download_area
@@ -309,6 +353,12 @@ testit "download single file as guest" test_singlefile_guest ||
 
 testit "download single file with -U" test_singlefile_U ||
 	failed=$(expr $failed + 1)
+
+testit "download single file with -U and domain" test_singlefile_U_domain ||
+	failed=$((failed + 1))
+
+testit "download single file with -U and UPN" test_singlefile_U_UPN ||
+	failed=$((failed + 1))
 
 testit "download single file with smb URL" test_singlefile_smburl ||
 	failed=$(expr $failed + 1)
