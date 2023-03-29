@@ -684,7 +684,6 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.shadow_copy2.SMB3", env, [os.path.join(samba3srcdir, "script/tests/test_shadow_copy.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/shadow', smbclient3, '-m', 'SMB3'])
     plantestsuite("samba3.blackbox.shadow_copy_torture", env, [os.path.join(samba3srcdir, "script/tests/test_shadow_copy_torture.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/shadow', smbtorture4, smbclient3])
     plantestsuite("samba3.blackbox.smbclient.forceuser_validusers", env, [os.path.join(samba3srcdir, "script/tests/test_forceuser_validusers.sh"), '$SERVER', '$DOMAIN', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3])
-    plantestsuite("samba3.blackbox.smbget", env, [os.path.join(samba3srcdir, "script/tests/test_smbget.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', 'smbget_user', '$PASSWORD', '$LOCAL_PATH/smbget', smbget])
     plantestsuite("samba3.blackbox.netshareenum", env, [os.path.join(samba3srcdir, "script/tests/test_shareenum.sh"), '$SERVER', '$USERNAME', '$PASSWORD', rpcclient])
     plantestsuite("samba3.blackbox.acl_xattr.NT1", env + "_smb1_done", [os.path.join(samba3srcdir, "script/tests/test_acl_xattr.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$PREFIX', smbclient3, smbcacls, '-mNT1'])
     plantestsuite("samba3.blackbox.acl_xattr.SMB3", env, [os.path.join(samba3srcdir, "script/tests/test_acl_xattr.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$PREFIX', smbclient3, smbcacls, '-mSMB3'])
@@ -829,6 +828,20 @@ for env in ["fileserver:local"]:
 
     plantestsuite("samba3.blackbox.smbstatus", env, [os.path.join(samba3srcdir, "script/tests/test_smbstatus.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, smbstatus, configuration, "SMB3"])
     plantestsuite("samba3.blackbox.net_registry_import", env, [os.path.join(samba3srcdir, "script/tests/test_net_registry_import.sh"), '$SERVER', '$LOCAL_PATH', '$USERNAME', '$PASSWORD'])
+
+env = 'ad_member'
+plantestsuite("samba3.blackbox.smbget",
+              env,
+              [
+                  os.path.join(samba3srcdir, "script/tests/test_smbget.sh"),
+                  '$SERVER',
+                  '$SERVER_IP',
+                  '$DOMAIN',
+                  'smbget_user',
+                  '$PASSWORD',
+                  '$LOCAL_PATH/smbget',
+                  smbget
+              ])
 
 plantestsuite("samba3.blackbox.server_addresses",
               "simpleserver",
