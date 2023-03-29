@@ -15636,6 +15636,10 @@ static struct {
 		.fn    = run_rpc_scale,
 	},
 	{
+		.name  = "LOCAL-TDB-VALIDATE",
+		.fn    = run_tdb_validate,
+	},
+	{
 		.name = NULL,
 	},
 };

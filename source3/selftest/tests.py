@@ -503,6 +503,7 @@ local_tests = [
     "LOCAL-G-LOCK8",
     "LOCAL-NAMEMAP-CACHE1",
     "LOCAL-IDMAP-CACHE1",
+    "LOCAL-TDB-VALIDATE",
     "LOCAL-hex_encode_buf",
     "LOCAL-remove_duplicate_addrs2"]
 

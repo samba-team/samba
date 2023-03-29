@@ -59,6 +59,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         test_hidenewfiles.c
                         test_readdir_timestamp.c
                         test_rpc_scale.c
+                        test_tdb_validate.c
                         ''' + TORTURE3_ADDITIONAL_SOURCE,
                  deps='''
                       talloc
@@ -75,6 +76,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                       libcli_lsa3
                       samba-cluster-support
                       util_sd
+                      TDB_VALIDATE
                       ''',
                  cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
                  for_selftest=True)
