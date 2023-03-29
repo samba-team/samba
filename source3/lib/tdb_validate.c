@@ -31,6 +31,7 @@ static int tdb_validate_child(struct tdb_context *tdb,
 			      tdb_validate_data_func validate_fn)
 {
 	int ret = 1;
+	int check_rc;
 	int num_entries = 0;
 	struct tdb_validation_status v_status;
 
@@ -50,8 +51,8 @@ static int tdb_validate_child(struct tdb_context *tdb,
 	 * we can simplify this by passing a check function,
 	 * but I don't want to change all the callers...
 	 */
-	ret = tdb_check(tdb, NULL, NULL);
-	if (ret != 0) {
+	check_rc = tdb_check(tdb, NULL, NULL);
+	if (check_rc != 0) {
 		v_status.tdb_error = True;
 		v_status.success = False;
 		goto out;
