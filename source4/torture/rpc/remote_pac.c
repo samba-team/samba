@@ -987,15 +987,18 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	torture_assert_str_equal(tctx, netlogon_user_info_dc->info->full_name == NULL ? "" : netlogon_user_info_dc->info->full_name, s4u2self_session_info->info->full_name, "Full name differs for S4U2Self");
 
 	builtin_domain = dom_sid_parse_talloc(tmp_ctx, SID_BUILTIN);
+	torture_assert_not_null(tctx, builtin_domain, "failed to parse SID");
 
 	/* KRB5 might have an additional sid, the asserted identity */
 	ai_auth_authority = dom_sid_parse_talloc(
 			tmp_ctx,
 			SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY);
+	torture_assert_not_null(tctx, ai_auth_authority, "failed to parse SID");
 
 	ai_service = dom_sid_parse_talloc(
 			tmp_ctx,
 			SID_SERVICE_ASSERTED_IDENTITY);
+	torture_assert_not_null(tctx, ai_service, "failed to parse SID");
 
 	ai_auth_authority_count = 0;
 	ai_service_count = 0;
