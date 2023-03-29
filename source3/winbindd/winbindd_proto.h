@@ -718,6 +718,17 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 int max_depth);
 NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       struct db_context **members);
+
+struct tevent_req *wb_alias_members_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 const struct dom_sid *sid,
+					 enum lsa_SidType type,
+					 int max_nesting);
+NTSTATUS wb_alias_members_recv(struct tevent_req *req,
+			       TALLOC_CTX *mem_ctx,
+			       uint32_t *num_sids,
+			       struct dom_sid **sids);
+
 NTSTATUS add_member_to_db(struct db_context *db, struct dom_sid *sid,
 			  const char *name);
 

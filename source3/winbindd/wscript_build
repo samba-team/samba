@@ -211,6 +211,7 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     wb_seqnum.c
                     wb_seqnums.c
                     wb_group_members.c
+                    wb_alias_members.c
                     wb_getgrsid.c
                     wb_query_user_list.c
                     wb_query_group_list.c
