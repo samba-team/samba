@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Wrapper around winbindd_rpc.c to centralize retry logic.
 
    Copyright (C) Volker Lendecke 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -262,7 +262,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 }
 
 /* find the lockout policy of a domain */
-static NTSTATUS lockout_policy(struct winbindd_domain *domain, 
+static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       struct samr_DomInfo12 *policy)
 {
@@ -277,17 +277,17 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 }
 
 /* find the password policy of a domain */
-static NTSTATUS password_policy(struct winbindd_domain *domain, 
+static NTSTATUS password_policy(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				struct samr_DomInfo1 *policy)
 {
  	NTSTATUS result;
- 
+
 	result = msrpc_methods.password_policy(domain, mem_ctx, policy);
 
 	if (reconnect_need_retry(result, domain))
 		result = msrpc_methods.password_policy(domain, mem_ctx, policy);
-	
+
 	return result;
 }
 
