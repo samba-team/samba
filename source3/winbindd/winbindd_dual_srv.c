@@ -486,6 +486,29 @@ NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS _wbint_LookupAliasMembers(struct pipes_struct *p,
+				   struct wbint_LookupAliasMembers *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+	status = wb_cache_lookup_aliasmem(domain,
+					  p->mem_ctx,
+					  r->in.sid,
+					  r->in.type,
+					  &r->out.sids->num_sids,
+					  &r->out.sids->sids);
+	reset_cm_connection_on_error(domain, NULL, status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 			       struct wbint_QueryGroupList *r)
 {

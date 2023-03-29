@@ -130,6 +130,12 @@ interface winbind
 	[out] wbint_Principals *members
 	);
 
+    NTSTATUS wbint_LookupAliasMembers(
+	[in] dom_sid *sid,
+	[in] lsa_SidType type,
+	[out] wbint_SidArray *sids
+	);
+
     typedef [public] struct {
 	uint32 num_userinfos;
 	[size_is(num_userinfos)] wbint_userinfo userinfos[];

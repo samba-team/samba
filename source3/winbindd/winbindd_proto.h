@@ -106,6 +106,12 @@ NTSTATUS wb_cache_lookup_groupmem(struct winbindd_domain *domain,
 				  struct dom_sid **sid_mem,
 				  char ***names,
 				  uint32_t **name_types);
+NTSTATUS wb_cache_lookup_aliasmem(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *group_sid,
+				  enum lsa_SidType type,
+				  uint32_t *num_names,
+				  struct dom_sid **sid_mem);
 NTSTATUS wb_cache_sequence_number(struct winbindd_domain *domain,
 				  uint32_t *seq);
 NTSTATUS wb_cache_lockout_policy(struct winbindd_domain *domain,

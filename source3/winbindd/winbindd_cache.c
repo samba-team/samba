@@ -2560,6 +2560,130 @@ NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
 	return status;
 }
 
+static NTSTATUS wcache_lookup_aliasmem(struct winbindd_domain *domain,
+				       TALLOC_CTX *mem_ctx,
+				       const struct dom_sid *group_sid,
+				       uint32_t *num_names,
+				       struct dom_sid **sid_mem)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	struct dom_sid_buf sid_string;
+
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	centry = wcache_fetch(cache,
+			      domain,
+			      "AM/%s",
+			      dom_sid_str_buf(group_sid, &sid_string));
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	*sid_mem = NULL;
+
+	*num_names = centry_uint32(centry);
+	if (*num_names == 0) {
+		centry_free(centry);
+		return NT_STATUS_OK;
+	}
+
+	*sid_mem = talloc_array(mem_ctx, struct dom_sid, *num_names);
+	if (*sid_mem == NULL) {
+		TALLOC_FREE(*sid_mem);
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < (*num_names); i++) {
+		centry_sid(centry, &(*sid_mem)[i]);
+	}
+
+	status = centry->status;
+
+	D_DEBUG("[Cached] - cached info for domain %s "
+		"status: %s\n",
+		domain->name,
+		nt_errstr(status));
+
+	centry_free(centry);
+	return status;
+}
+
+NTSTATUS wb_cache_lookup_aliasmem(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *group_sid,
+				  enum lsa_SidType type,
+				  uint32_t *num_sids,
+				  struct dom_sid **sid_mem)
+{
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	struct dom_sid_buf sid_string;
+	bool old_status;
+
+	old_status = domain->online;
+	status = wcache_lookup_aliasmem(domain,
+					mem_ctx,
+					group_sid,
+					num_sids,
+					sid_mem);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
+	(*num_sids) = 0;
+	(*sid_mem) = NULL;
+
+	D_DEBUG("[Cached] - doing backend query for info for domain %s\n",
+		domain->name);
+
+	status = domain->backend->lookup_aliasmem(domain,
+						  mem_ctx,
+						  group_sid,
+						  type,
+						  num_sids,
+						  sid_mem);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal && old_status) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal && !domain->online && old_status) {
+			NTSTATUS cache_status;
+			cache_status = wcache_lookup_aliasmem(domain,
+							      mem_ctx,
+							      group_sid,
+							      num_sids,
+							      sid_mem);
+			return cache_status;
+		}
+	}
+	/* and save it */
+	refresh_sequence_number(domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	centry = centry_start(domain, status);
+	if (!centry)
+		goto skip_save;
+	centry_put_uint32(centry, *num_sids);
+	for (i = 0; i < (*num_sids); i++) {
+		centry_put_sid(centry, &(*sid_mem)[i]);
+	}
+	centry_end(centry, "AM/%s", dom_sid_str_buf(group_sid, &sid_string));
+	centry_free(centry);
+
+skip_save:
+	return status;
+}
+
 static NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
 				       const struct dom_sid *group_sid,
