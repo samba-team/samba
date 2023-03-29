@@ -87,9 +87,10 @@ class StaticTokenTest(samba.tests.TestCase):
         for s in token.sids:
             self.user_sids.append(str(s))
 
-        # Add asserted identity for Kerberos
+        # Add asserted identity and Claims Valid for Kerberos
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             self.user_sids.append(str(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY))
+            self.user_sids.append(str(security.SID_CLAIMS_VALID))
 
 
     def test_rootDSE_tokenGroups(self):
@@ -145,6 +146,7 @@ class StaticTokenTest(samba.tests.TestCase):
         extra_sids.append(security.SID_BUILTIN_PREW2K)
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             extra_sids.append(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+            extra_sids.append(security.SID_CLAIMS_VALID)
         if creds.get_kerberos_state() == DONT_USE_KERBEROS:
             extra_sids.append(security.SID_NT_NTLM_AUTHENTICATION)
 
@@ -341,9 +343,10 @@ class DynamicTokenTest(samba.tests.TestCase):
         for s in token.sids:
             self.user_sids.append(str(s))
 
-        # Add asserted identity for Kerberos
+        # Add asserted identity and Claims Valid for Kerberos
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             self.user_sids.append(str(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY))
+            self.user_sids.append(str(security.SID_CLAIMS_VALID))
 
     def tearDown(self):
         super(DynamicTokenTest, self).tearDown()
@@ -417,6 +420,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         extra_sids.append(security.SID_BUILTIN_PREW2K)
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             extra_sids.append(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+            extra_sids.append(security.SID_CLAIMS_VALID)
         if creds.get_kerberos_state() == DONT_USE_KERBEROS:
             extra_sids.append(security.SID_NT_NTLM_AUTHENTICATION)
 

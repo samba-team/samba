@@ -1,0 +1,4 @@
+^samba4.tokengroups.krb5.python.__main__.DynamicTokenTest.test_pac_groups.ad_dc_default:local
+^samba4.tokengroups.krb5.python.__main__.DynamicTokenTest.test_rootDSE_tokenGroups.ad_dc_default:local
+^samba4.tokengroups.krb5.python.__main__.StaticTokenTest.test_pac_groups.ad_dc_default:local
+^samba4.tokengroups.krb5.python.__main__.StaticTokenTest.test_rootDSE_tokenGroups.ad_dc_default:local
