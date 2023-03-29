@@ -1,0 +1,66 @@
+pull returned Success
+    CLAIMS_SET_METADATA_NDR: struct CLAIMS_SET_METADATA_NDR
+        claims: struct CLAIMS_SET_METADATA_CTR
+            metadata                 : *
+                metadata: struct CLAIMS_SET_METADATA
+                    claims_set_size          : 0x00000158 (344)
+                    claims_set               : *
+                        claims_set: struct CLAIMS_SET_NDR
+                            claims: struct CLAIMS_SET_CTR
+                                claims                   : *
+                                    claims: struct CLAIMS_SET
+                                        claims_array_count       : 0x00000001 (1)
+                                        claims_arrays            : *
+                                            claims_arrays: ARRAY(1)
+                                                claims_arrays: struct CLAIMS_ARRAY
+                                                    claims_source_type       : CLAIMS_SOURCE_TYPE_AD (1)
+                                                    claims_count             : 0x00000003 (3)
+                                                    claim_entries            : *
+                                                        claim_entries: ARRAY(3)
+                                                            claim_entries: struct CLAIM_ENTRY
+                                                                id                       : *
+                                                                    id                       : '720fd3c3_9'
+                                                                type                     : CLAIM_TYPE_BOOLEAN (6)
+                                                                values                   : union CLAIM_ENTRY_VALUES(case 6)
+                                                                claim_boolean: struct CLAIM_UINT64
+                                                                    value_count              : 0x00000001 (1)
+                                                                    values                   : *
+                                                                        values: ARRAY(1)
+                                                                            values                   : 0x0000000000000001 (1)
+                                                            claim_entries: struct CLAIM_ENTRY
+                                                                id                       : *
+                                                                    id                       : '720fd3c3_7'
+                                                                type                     : CLAIM_TYPE_STRING (3)
+                                                                values                   : union CLAIM_ENTRY_VALUES(case 3)
+                                                                claim_string: struct CLAIM_STRING
+                                                                    value_count              : 0x00000003 (3)
+                                                                    values                   : *
+                                                                        values: ARRAY(3)
+                                                                            values                   : *
+                                                                                values                   : 'foo'
+                                                                            values                   : *
+                                                                                values                   : 'bar'
+                                                                            values                   : *
+                                                                                values                   : 'baz'
+                                                            claim_entries: struct CLAIM_ENTRY
+                                                                id                       : *
+                                                                    id                       : '720fd3c3_8'
+                                                                type                     : CLAIM_TYPE_UINT64 (2)
+                                                                values                   : union CLAIM_ENTRY_VALUES(case 2)
+                                                                claim_uint64: struct CLAIM_UINT64
+                                                                    value_count              : 0x00000004 (4)
+                                                                    values                   : *
+                                                                        values: ARRAY(4)
+                                                                            values                   : 0x00000000000a0009 (655369)
+                                                                            values                   : 0x0000000000010007 (65543)
+                                                                            values                   : 0x0000000000010006 (65542)
+                                                                            values                   : 0x0000000000010000 (65536)
+                                        reserved_type            : 0x0000 (0)
+                                        reserved_field_size      : 0x00000000 (0)
+                                        reserved_field           : NULL
+                    compression_format       : CLAIMS_COMPRESSION_FORMAT_NONE (0)
+                    uncompressed_claims_set_size: 0x00000158 (344)
+                    reserved_type            : 0x0000 (0)
+                    reserved_field_size      : 0x00000000 (0)
+                    reserved_field           : NULL
+dump OK
