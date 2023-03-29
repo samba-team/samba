@@ -21,6 +21,7 @@
 #include "lib/cmdline/cmdline.h"
 #include "libsmbclient.h"
 #include "cmdline_contexts.h"
+#include "lib/param/param.h"
 
 static int columns = 0;
 
@@ -841,7 +842,7 @@ int main(int argc, char **argv)
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &opt.workgroup,
 			.val        = 'w',
-			.descrip    = "Workgroup to use (optional)"
+			.descrip    = "Workgroup/domain to use (optional)"
 		},
 		{
 			.longName   = "user",
@@ -992,6 +993,11 @@ int main(int argc, char **argv)
 	}
 	free(rcfile);
 
+	ok = lp_load_client(lp_default_path());
+	if (!ok) {
+		goto done;
+	}
+
 #ifdef SIGWINCH
 	signal(SIGWINCH, change_columns);
 #endif
@@ -1014,7 +1020,8 @@ int main(int argc, char **argv)
 		case 'e':
 			smb_encrypt = true;
 			break;
-		case 'U':
+		case 'U': {
+			const char *separator = lp_winbind_separator();
 			opt.username_specified = true;
 			opt.username = talloc_strdup(frame, opt.username);
 			p = strchr(opt.username,'%');
@@ -1023,7 +1030,24 @@ int main(int argc, char **argv)
 				opt.password = p + 1;
 				opt.password_specified = true;
 			}
+
+			/* UPN support */
+			p = strchr(opt.username, '@');
+			if (p != NULL && opt.workgroup == NULL) {
+				*p = '\0';
+				opt.workgroup = p + 1;
+			}
+
+			/* Domain support */
+			p = strchr(opt.username, separator[0]);
+			if (p != NULL && opt.workgroup == NULL) {
+				*p = '\0';
+				opt.workgroup = opt.username;
+				opt.username = p + 1;
+			}
+
 			break;
+		}
 		case 'n':
 			opt.nonprompt = true;
 			break;
