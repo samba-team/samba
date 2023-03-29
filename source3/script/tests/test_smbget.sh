@@ -317,6 +317,36 @@ test_msdfs_link()
 	return 0
 }
 
+test_msdfs_link_domain()
+{
+	clear_download_area
+
+	${SMBGET} -v "-U${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
+		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
+	ret=$?
+	if [ ${ret} -ne 0 ]; then
+		echo "ERROR: smbget failed with ${ret}"
+		return 1
+	fi
+
+	return 0
+}
+
+test_msdfs_link_upn()
+{
+	clear_download_area
+
+	${SMBGET} -v "-U${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
+		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
+	ret=$?
+	if [ ${ret} -ne 0 ]; then
+		echo "ERROR: smbget failed with ${ret}"
+		return 1
+	fi
+
+	return 0
+}
+
 # Tests --limit-rate. Getting the testfile (128K in size) with --limit-rate 100
 # (that is 100KB/s) should take at least 1 sec to complete.
 test_limit_rate()
@@ -385,6 +415,12 @@ testit "update" test_update ||
 	failed=$(expr $failed + 1)
 
 testit "msdfs" test_msdfs_link ||
+	failed=$((failed + 1))
+
+testit "msdfs.domain" test_msdfs_link_domain ||
+	failed=$((failed + 1))
+
+testit "msdfs.upn" test_msdfs_link_upn ||
 	failed=$((failed + 1))
 
 testit "limit rate" test_limit_rate ||
