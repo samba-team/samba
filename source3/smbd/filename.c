@@ -1024,39 +1024,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	bool ok;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
-	if (ucf_flags & UCF_DFS_PATHNAME) {
-		/*
-		 * We've been given a raw DFS pathname.
-		 */
-		char *pathname = NULL;
-
-		/*
-		 * This *MUST* be an SMB1 connection.
-		 * We now strip all DFS paths from SMB2
-		 * before calling filename convert functions.
-		 *
-		 */
-		SMB_ASSERT(!conn->sconn->using_smb2);
-
-		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n",
-			  name_in);
-		status = dfs_filename_convert(mem_ctx,
-					      conn,
-					      ucf_flags,
-					      name_in,
-					      &pathname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dfs_filename_convert "
-				"failed for name %s with %s\n",
-				name_in,
-				nt_errstr(status));
-			return status;
-		}
-		ucf_flags &= ~UCF_DFS_PATHNAME;
-		name_in = pathname;
-		DBG_DEBUG("After dfs_filename_convert name_in: %s\n",
-			  name_in);
-	}
+	SMB_ASSERT(!(ucf_flags & UCF_DFS_PATHNAME));
 
 	if (is_fake_file_path(name_in)) {
 		smb_fname = synthetic_smb_fname_split(mem_ctx, name_in, posix);
