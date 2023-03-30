@@ -102,19 +102,10 @@ from samba.trust_utils import CreateTrustedDomainRelax
 from .backup import cmd_domain_backup
 from .classicupgrade import cmd_domain_classicupgrade
 from .common import (common_join_options, common_ntvfs_options,
-                     common_provision_join_options)
+                     common_provision_join_options, string_to_level)
 from .dcpromo import cmd_domain_dcpromo
 from .demote import cmd_domain_demote
-
-string_version_to_constant = {
-    "2000": DS_DOMAIN_FUNCTION_2000,
-    "2003": DS_DOMAIN_FUNCTION_2003,
-    "2008": DS_DOMAIN_FUNCTION_2008,
-    "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
-    "2012": DS_DOMAIN_FUNCTION_2012,
-    "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
-    "2016": DS_DOMAIN_FUNCTION_2016,
-}
+from .functional_prep import cmd_domain_functional_prep
 
 
 def level_to_string(level):
@@ -133,14 +124,6 @@ def level_to_string(level):
         DS_DOMAIN_FUNCTION_2016: "2016",
     }
     return strings.get(level, "higher than 2016")
-
-
-def string_to_level(string):
-    """Interpret a string indicating a functional level."""
-    try:
-        return string_version_to_constant[string]
-    except KeyError as e:
-        raise CommandError(f"'{string}' is not a valid domain level")
 
 
 try:
@@ -3861,113 +3844,6 @@ class cmd_domain_schema_upgrade(Command):
 
         if error_encountered:
             raise CommandError('Failed to upgrade schema')
-
-
-class cmd_domain_functional_prep(Command):
-    """Domain functional level preparation"""
-
-    synopsis = "%prog [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
-        Option("-q", "--quiet", help="Be quiet", action="store_true"),
-        Option("-v", "--verbose", help="Be verbose", action="store_true"),
-        Option("--function-level", type="choice", metavar="FUNCTION_LEVEL",
-               choices=["2008_R2", "2012", "2012_R2", "2016"],
-               help="The functional level to prepare for. Default is (Windows) 2016.",
-               default="2016"),
-        Option("--forest-prep", action="store_true",
-               help="Run the forest prep (by default, both the domain and forest prep are run)."),
-        Option("--domain-prep", action="store_true",
-               help="Run the domain prep (by default, both the domain and forest prep are run).")
-    ]
-
-    def run(self, **kwargs):
-        updates_allowed_overridden = False
-        sambaopts = kwargs.get("sambaopts")
-        credopts = kwargs.get("credopts")
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        H = kwargs.get("H")
-        target_level = string_to_level(kwargs.get("function_level"))
-        forest_prep = kwargs.get("forest_prep")
-        domain_prep = kwargs.get("domain_prep")
-
-        samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
-
-        # we're not going to get far if the config doesn't allow schema updates
-        if lp.get("dsdb:schema update allowed") is None:
-            lp.set("dsdb:schema update allowed", "yes")
-            print("Temporarily overriding 'dsdb:schema update allowed' setting")
-            updates_allowed_overridden = True
-
-        if forest_prep is None and domain_prep is None:
-            forest_prep = True
-            domain_prep = True
-
-        own_dn = ldb.Dn(samdb, samdb.get_dsServiceName())
-        if forest_prep:
-            master = get_fsmo_roleowner(samdb, str(samdb.get_schema_basedn()),
-                                        'schema')
-            if own_dn != master:
-                raise CommandError("This server is not the schema master.")
-
-        if domain_prep:
-            domain_dn = samdb.domain_dn()
-            infrastructure_dn = "CN=Infrastructure," + domain_dn
-            master = get_fsmo_roleowner(samdb, infrastructure_dn,
-                                        'infrastructure')
-            if own_dn != master:
-                raise CommandError("This server is not the infrastructure master.")
-
-        exception_encountered = None
-
-        if forest_prep and exception_encountered is None:
-            samdb.transaction_start()
-            try:
-                from samba.forest_update import ForestUpdate
-                forest = ForestUpdate(samdb, fix=True)
-
-                forest.check_updates_iterator([11, 54, 79, 80, 81, 82, 83])
-                forest.check_updates_functional_level(target_level,
-                                                      DS_DOMAIN_FUNCTION_2008_R2,
-                                                      update_revision=True)
-
-                samdb.transaction_commit()
-            except Exception as e:
-                print("Exception: %s" % e)
-                samdb.transaction_cancel()
-                exception_encountered = e
-
-        if domain_prep and exception_encountered is None:
-            samdb.transaction_start()
-            try:
-                from samba.domain_update import DomainUpdate
-
-                domain = DomainUpdate(samdb, fix=True)
-                domain.check_updates_functional_level(target_level,
-                                                      DS_DOMAIN_FUNCTION_2008,
-                                                      update_revision=True)
-
-                samdb.transaction_commit()
-            except Exception as e:
-                print("Exception: %s" % e)
-                samdb.transaction_cancel()
-                exception_encountered = e
-
-        if updates_allowed_overridden:
-            lp.set("dsdb:schema update allowed", "no")
-
-        if exception_encountered is not None:
-            raise CommandError('Failed to perform functional prep: %r' %
-                               exception_encountered)
 
 
 class cmd_domain(SuperCommand):

@@ -22,7 +22,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.netcmd import Option
+from samba.dsdb import (
+    DS_DOMAIN_FUNCTION_2000,
+    DS_DOMAIN_FUNCTION_2003,
+    DS_DOMAIN_FUNCTION_2008,
+    DS_DOMAIN_FUNCTION_2008_R2,
+    DS_DOMAIN_FUNCTION_2012,
+    DS_DOMAIN_FUNCTION_2012_R2,
+    DS_DOMAIN_FUNCTION_2016
+)
+from samba.netcmd import CommandError, Option
 from samba.samdb import get_default_backend_store
 
 common_ntvfs_options = [
@@ -62,3 +71,22 @@ common_join_options = [
            default="SAMBA_INTERNAL"),
     Option("-v", "--verbose", help="Be verbose", action="store_true")
 ]
+
+
+string_version_to_constant = {
+    "2000": DS_DOMAIN_FUNCTION_2000,
+    "2003": DS_DOMAIN_FUNCTION_2003,
+    "2008": DS_DOMAIN_FUNCTION_2008,
+    "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
+    "2012": DS_DOMAIN_FUNCTION_2012,
+    "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
+    "2016": DS_DOMAIN_FUNCTION_2016,
+}
+
+
+def string_to_level(string):
+    """Interpret a string indicating a functional level."""
+    try:
+        return string_version_to_constant[string]
+    except KeyError as e:
+        raise CommandError(f"'{string}' is not a valid domain level")
