@@ -392,13 +392,14 @@ if __name__ == "__main__":
             # uint32_t utdv_blob_ofs
             store_hdr_len = 7 * 4
             dn_ofs = store_hdr_len
-            hwm_ofs = dn_ofs + len(dn)
+            dn_bytes = dn.encode('utf8')
+            hwm_ofs = dn_ofs + len(dn_bytes)
             utdv_ofs = hwm_ofs + len(store_hwm_blob)
             store_blob = struct.pack("<LLLLLLL", 1,
-                                     len(dn), dn_ofs,
+                                     len(dn_bytes), dn_ofs,
                                      len(store_hwm_blob), hwm_ofs,
                                      len(store_utdv_blob), utdv_ofs) + \
-                dn + store_hwm_blob + store_utdv_blob
+                dn_bytes + store_hwm_blob + store_utdv_blob
 
             tmp_file = "%s.tmp" % cookie_file
             f = open(tmp_file, 'wb')
