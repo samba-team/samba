@@ -6251,6 +6251,11 @@ void reply_mv(struct smb_request *req)
 	if (dst_ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(newname, &dst_twrp);
 	}
+	status = smb1_strip_dfs_path(ctx, &dst_ucf_flags, &newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 newname,
