@@ -1056,7 +1056,7 @@ for env, fast_support in [("ad_dc_default:local", True),
     planoldpythontestsuite(env, "samba.tests.krb5.s4u_tests",
                            environ={
                                **krb5_environ,
-                               'FAST_SUPPORT': int(fast_support),
+                               'FAST_SUPPORT': int(have_fast_support and fast_support),
                            })
 planoldpythontestsuite("rodc:local", "samba.tests.krb5.rodc_tests",
                        environ=krb5_environ)
@@ -1731,7 +1731,7 @@ for env, fast_support in [("ad_dc", True),
     planpythontestsuite(env, "samba.tests.krb5.compatability_tests",
                         environ={
                             **krb5_environ,
-                            'FAST_SUPPORT': int(fast_support),
+                            'FAST_SUPPORT': int(have_fast_support and fast_support),
                         })
 planpythontestsuite("ad_dc", "samba.tests.krb5.kdc_tests",
                     environ=krb5_environ)
