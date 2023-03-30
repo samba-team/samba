@@ -947,6 +947,12 @@ static void call_trans2findfirst(connection_struct *conn,
 		become_root();
 		as_root = true;
 	}
+	ntstatus = smb1_strip_dfs_path(talloc_tos(), &ucf_flags, &directory);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		reply_nterror(req, ntstatus);
+		goto out;
+	}
+
 	ntstatus = filename_convert_smb1_search_path(talloc_tos(),
 						     conn,
 						     directory,
