@@ -105,7 +105,9 @@ from samba import dsdb
 
 from .backup import cmd_domain_backup
 from .classicupgrade import cmd_domain_classicupgrade
-from .common import common_ntvfs_options
+from .common import (common_join_options, common_ntvfs_options,
+                     common_provision_join_options)
+from .dcpromo import cmd_domain_dcpromo
 
 string_version_to_constant = {
     "2000": DS_DOMAIN_FUNCTION_2000,
@@ -116,39 +118,6 @@ string_version_to_constant = {
     "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
     "2016": DS_DOMAIN_FUNCTION_2016,
 }
-
-common_provision_join_options = [
-    Option("--machinepass", type="string", metavar="PASSWORD",
-           help="choose machine password (otherwise random)"),
-    Option("--plaintext-secrets", action="store_true",
-           help="Store secret/sensitive values as plain text on disk" +
-           "(default is to encrypt secret/sensitive values)"),
-    Option("--backend-store", type="choice", metavar="BACKENDSTORE",
-           choices=["tdb", "mdb"],
-           help="Specify the database backend to be used "
-           "(default is %s)" % get_default_backend_store()),
-    Option("--backend-store-size", type="bytes", metavar="SIZE",
-           help="Specify the size of the backend database, currently only " +
-                "supported by lmdb backends (default is 8 Gb)."),
-    Option("--targetdir", metavar="DIR",
-           help="Set target directory (where to store provision)", type=str),
-    Option("-q", "--quiet", help="Be quiet", action="store_true"),
-]
-
-common_join_options = [
-    Option("--server", help="DC to join", type=str),
-    Option("--site", help="site to join", type=str),
-    Option("--domain-critical-only",
-           help="only replicate critical domain objects",
-           action="store_true"),
-    Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
-           choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-           help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
-           "BIND9_DLZ uses samba4 AD to store zone information, "
-           "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-           default="SAMBA_INTERNAL"),
-    Option("-v", "--verbose", help="Be verbose", action="store_true")
-]
 
 
 def level_to_string(level):
@@ -594,65 +563,6 @@ class cmd_domain_provision(Command):
                 " quality standards"
         else:
             return None
-
-
-class cmd_domain_dcpromo(Command):
-    """Promote an existing domain member or NT4 PDC to an AD DC."""
-
-    synopsis = "%prog <dnsdomain> [DC|RODC] [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
-    takes_options = []
-    takes_options.extend(common_join_options)
-
-    takes_options.extend(common_provision_join_options)
-
-    if samba.is_ntvfs_fileserver_built():
-        takes_options.extend(common_ntvfs_options)
-
-    takes_args = ["domain", "role?"]
-
-    def run(self, domain, role=None, sambaopts=None, credopts=None,
-            versionopts=None, server=None, site=None, targetdir=None,
-            domain_critical_only=False, machinepass=None,
-            use_ntvfs=False, dns_backend=None,
-            quiet=False, verbose=False, plaintext_secrets=False,
-            backend_store=None, backend_store_size=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        net = Net(creds, lp, server=credopts.ipaddress)
-
-        logger = self.get_logger(verbose=verbose, quiet=quiet)
-
-        netbios_name = lp.get("netbios name")
-
-        if role is not None:
-            role = role.upper()
-
-        if role == "DC":
-            join_DC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
-                    site=site, netbios_name=netbios_name, targetdir=targetdir,
-                    domain_critical_only=domain_critical_only,
-                    machinepass=machinepass, use_ntvfs=use_ntvfs,
-                    dns_backend=dns_backend,
-                    promote_existing=True, plaintext_secrets=plaintext_secrets,
-                    backend_store=backend_store,
-                    backend_store_size=backend_store_size)
-        elif role == "RODC":
-            join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
-                      site=site, netbios_name=netbios_name, targetdir=targetdir,
-                      domain_critical_only=domain_critical_only,
-                      machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend,
-                      promote_existing=True, plaintext_secrets=plaintext_secrets,
-                      backend_store=backend_store,
-                      backend_store_size=backend_store_size)
-        else:
-            raise CommandError("Invalid role '%s' (possible values: DC, RODC)" % role)
 
 
 class cmd_domain_join(Command):
