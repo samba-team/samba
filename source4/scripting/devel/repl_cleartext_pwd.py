@@ -46,10 +46,10 @@ from optparse import OptionParser
 
 from samba.dcerpc import drsuapi, drsblobs, misc
 from samba.ndr import ndr_pack, ndr_unpack, ndr_print
+from samba import arcfour_encrypt
 
 import binascii
 import hashlib
-import Crypto.Cipher.ARC4
 import struct
 import os
 
@@ -300,8 +300,8 @@ if __name__ == "__main__":
             m5.update(confounder)
             enc_key = m5.digest()
 
-            rc4 = Crypto.Cipher.ARC4.new(enc_key)
-            plain_buffer = rc4.decrypt(enc_buffer)
+            # RC4 encryption is the same as decryption
+            plain_buffer = arcfour_encrypt(enc_key, enc_buffer)
 
             (crc32_v) = struct.unpack("<L", plain_buffer[0:4])
             attr_val = plain_buffer[4:]
