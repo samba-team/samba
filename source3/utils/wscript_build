@@ -63,7 +63,7 @@ bld.SAMBA3_BINARY('smbget',
                  source='smbget.c',
                  deps='''
                  talloc
-                 cmdline
+                 CMDLINE_S3
                  smbclient''')
 
 bld.SAMBA3_BINARY('nmblookup',

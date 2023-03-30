@@ -142,13 +142,16 @@ test_singlefile_smburl()
 	return 0
 }
 
-test_singlefile_rcfile()
+test_singlefile_authfile()
 {
 	clear_download_area
-	echo "user $USERNAME%$PASSWORD" >$TMPDIR/rcfile
-	$SMBGET --verbose --nonprompt --rcfile $TMPDIR/rcfile smb://$SERVER_IP/smbget/testfile
+	cat >"${TMPDIR}/authfile" << EOF
+username = $USERNAME
+password = $PASSWORD
+EOF
+	$SMBGET --verbose --authentication-file="${TMPDIR}/authfile" smb://$SERVER_IP/smbget/testfile
 	rc=$?
-	rm -f $TMPDIR/rcfile
+	rm -f $TMPDIR/authfile
 	if [ $rc -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -306,7 +309,7 @@ test_msdfs_link()
 {
 	clear_download_area
 
-	${SMBGET} --verbose "-U${USERNAME}%${PASSWORD}" \
+	${SMBGET} --verbose "-U${SERVER}/${USERNAME}%${PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
@@ -393,7 +396,7 @@ testit "download single file with --update and UPN" test_singlefile_U_UPN ||
 testit "download single file with smb URL" test_singlefile_smburl ||
 	failed=$(expr $failed + 1)
 
-testit "download single file with rcfile" test_singlefile_rcfile ||
+testit "download single file with authfile" test_singlefile_authfile ||
 	failed=$(expr $failed + 1)
 
 testit "recursive download" test_recursive_U ||
