@@ -54,7 +54,6 @@ from samba.netcmd import (
     Option
 )
 from samba.netcmd.fsmo import get_fsmo_roleowner
-from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
 from samba.netcmd.common import (NEVER_TIMESTAMP,
                                  timestamp_to_mins,
                                  timestamp_to_days)
@@ -106,6 +105,7 @@ from .common import (common_join_options, common_ntvfs_options,
 from .dcpromo import cmd_domain_dcpromo
 from .demote import cmd_domain_demote
 from .functional_prep import cmd_domain_functional_prep
+from .info import cmd_domain_info
 
 
 def level_to_string(level):
@@ -152,37 +152,6 @@ else:
             lp = sambaopts.get_loadparm()
             net = Net(None, lp)
             net.export_keytab(keytab=keytab, principal=principal)
-
-
-class cmd_domain_info(Command):
-    """Print basic info about a domain and the DC passed as parameter."""
-
-    synopsis = "%prog <ip_address> [options]"
-
-    takes_options = [
-    ]
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-    }
-
-    takes_args = ["address"]
-
-    def run(self, address, credopts=None, sambaopts=None, versionopts=None):
-        lp = sambaopts.get_loadparm()
-        try:
-            res = netcmd_get_domain_infos_via_cldap(lp, None, address)
-        except RuntimeError:
-            raise CommandError("Invalid IP address '" + address + "'!")
-        self.outf.write("Forest           : %s\n" % res.forest)
-        self.outf.write("Domain           : %s\n" % res.dns_domain)
-        self.outf.write("Netbios domain   : %s\n" % res.domain_name)
-        self.outf.write("DC name          : %s\n" % res.pdc_dns_name)
-        self.outf.write("DC netbios name  : %s\n" % res.pdc_name)
-        self.outf.write("Server site      : %s\n" % res.server_site)
-        self.outf.write("Client site      : %s\n" % res.client_site)
 
 
 class cmd_domain_provision(Command):
