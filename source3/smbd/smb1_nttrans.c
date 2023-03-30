@@ -1530,6 +1530,11 @@ void reply_ntrename(struct smb_request *req)
 			extract_snapshot_token(newname,
 					       &dst_twrp);
 		}
+		status = smb1_strip_dfs_path(ctx, &ucf_flags_dst, &newname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			goto out;
+		}
 		status = filename_convert_dirfsp(ctx,
 						 conn,
 						 newname,
