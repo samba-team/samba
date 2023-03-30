@@ -27,9 +27,7 @@ import ldb
 import os
 import sys
 import ctypes
-import random
 import tempfile
-import logging
 import subprocess
 import time
 import shutil
@@ -43,7 +41,6 @@ import samba.ntacls
 from samba.join import join_RODC, join_DC
 from samba.auth import system_session
 from samba.samdb import SamDB, get_default_backend_store
-from samba.ndr import ndr_pack, ndr_print
 from samba.dcerpc import drsuapi
 from samba.dcerpc import drsblobs
 from samba.dcerpc import lsa
@@ -67,7 +64,7 @@ from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
 from samba.drs_utils import drsuapi_connect
-from samba import remove_dc, arcfour_encrypt, string_to_byte_array
+from samba import remove_dc, string_to_byte_array
 from samba.auth_util import system_session_unix
 from samba.net_s3 import Net as s3_Net
 from samba.param import default_path
