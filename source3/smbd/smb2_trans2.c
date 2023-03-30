@@ -4657,6 +4657,9 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(newname, &dst_twrp);
 	}
+	/* hardlink paths are never DFS. */
+	ucf_flags &= ~UCF_DFS_PATHNAME;
+
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 newname,
@@ -4830,6 +4833,10 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		if (ucf_flags & UCF_GMT_PATHNAME) {
 			extract_snapshot_token(base_name, &dst_twrp);
 		}
+
+		/* The newname is *not* a DFS path. */
+		ucf_flags &= ~UCF_DFS_PATHNAME;
+
 		status = filename_convert_dirfsp(ctx,
 					 conn,
 					 base_name,
