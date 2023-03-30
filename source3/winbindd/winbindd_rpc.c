@@ -491,48 +491,6 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 
 		break;
 	}
-	case SID_NAME_WKN_GRP:
-	case SID_NAME_ALIAS:
-	{
-		struct lsa_SidArray sid_array;
-		struct lsa_SidPtr sid_ptr;
-		struct samr_Ids rids_query;
-
-		sid_ptr.sid = dom_sid_dup(mem_ctx, group_sid);
-		if (sid_ptr.sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		sid_array.num_sids = 1;
-		sid_array.sids = &sid_ptr;
-
-		status = dcerpc_samr_GetAliasMembership(b,
-							mem_ctx,
-							samr_policy,
-							&sid_array,
-							&rids_query,
-							&result);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (!NT_STATUS_IS_OK(result)) {
-			return result;
-		}
-
-		if (rids_query.count == 0) {
-			pnum_names = 0;
-			pnames = NULL;
-			pname_types = NULL;
-			psid_mem = NULL;
-
-			return NT_STATUS_OK;
-		}
-
-		num_names = rids_query.count;
-		rid_mem = rids_query.ids;
-
-		break;
-	}
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
