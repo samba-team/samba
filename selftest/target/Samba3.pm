@@ -1816,9 +1816,6 @@ sub setup_fileserver
 	my $force_user_valid_users_dir = "$share_dir/force_user_valid_users";
 	push(@dirs, $force_user_valid_users_dir);
 
-	my $smbget_sharedir="$share_dir/smbget";
-	push(@dirs,$smbget_sharedir);
-
 	my $tarmode_sharedir="$share_dir/tarmode";
 	push(@dirs,$tarmode_sharedir);
 
@@ -1917,10 +1914,6 @@ sub setup_fileserver
 	force group = everyone
 	write list = force_user
 
-[smbget]
-	path = $smbget_sharedir
-	comment = smb username is [%U]
-	guest ok = yes
 [ign_sysacls]
 	path = $share_dir
 	comment = ignore system acls
@@ -2648,6 +2641,9 @@ sub provision($$)
 
 	my $fruit_resource_stream_shrdir="$shrdir/fruit_resource_stream";
 	push(@dirs,$fruit_resource_stream_shrdir);
+
+	my $smbget_sharedir="$shrdir/smbget";
+	push(@dirs, $smbget_sharedir);
 
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/wbsock";
@@ -3541,6 +3537,11 @@ sub provision($$)
 [only_ipv6]
 	copy = tmpguest
 	server addresses = $server_ipv6
+
+[smbget]
+	path = $smbget_sharedir
+	comment = smb username is [%U]
+	guest ok = yes
 
 include = $aliceconfdir/%U.conf
 	";
