@@ -46,7 +46,7 @@ remove_test_data()
 
 clear_download_area()
 {
-	rm -rf dir1 dir2 testfile dir001 dir004
+	rm -rf dir1 dir2 testfile dir001 dir004 readable_file
 }
 
 test_singlefile_guest()
@@ -260,6 +260,8 @@ test_update()
 # Test accessing an msdfs path.
 test_msdfs_link()
 {
+	clear_download_area
+
 	${SMBGET} -v "-U${USERNAME}%${PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
