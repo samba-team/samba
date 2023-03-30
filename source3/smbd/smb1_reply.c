@@ -2548,6 +2548,11 @@ void reply_unlink(struct smb_request *req)
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(name, &twrp);
 	}
+	status = smb1_strip_dfs_path(ctx, &ucf_flags, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 name,
