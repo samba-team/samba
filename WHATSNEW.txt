@@ -16,6 +16,17 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Migrated smbget to use common command line parser
+-------------------------------------------------
+
+The smbget utility implemented its own command line parsing logic. After
+discovering an issue we decided to migrate it to use the common command line
+parser. This has some advantages as you get all the feature it provides like
+Kerberos authentication. The downside is that breaks the options interface.
+The support for smbgetrc has been removed. You can use an authentication file
+if needed, this is documented in the manpage.
+
+Please check the smbget manpage or --help output.
 
 REMOVED FEATURES
 ================
