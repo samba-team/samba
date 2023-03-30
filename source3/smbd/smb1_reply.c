@@ -71,6 +71,78 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 }
 
 /****************************************************************************
+ SMB1 version of smb2_strip_dfs_path()
+ Differs from SMB2 in that all Windows path separator '\' characters
+ have already been converted to '/' by check_path_syntax_internal().
+****************************************************************************/
+
+NTSTATUS smb1_strip_dfs_path(TALLOC_CTX *mem_ctx,
+			     uint32_t *_ucf_flags,
+			     char **in_path)
+{
+	uint32_t ucf_flags = *_ucf_flags;
+	char *path = *in_path;
+	char *return_path = NULL;
+
+	if (!(ucf_flags & UCF_DFS_PATHNAME)) {
+		return NT_STATUS_OK;
+	}
+
+	/* Stip any leading '/' characters - MacOSX client behavior. */
+	while (*path == '/') {
+		path++;
+	}
+
+	/* We should now be pointing at the server name. Go past it. */
+	for (;;) {
+		if (*path == '\0') {
+			/* End of complete path. Exit OK. */
+			goto done;
+		}
+		if (*path == '/') {
+			/* End of server name. Go past and break. */
+			path++;
+			break;
+		}
+		path++; /* Continue looking for end of server name or string. */
+	}
+
+	/* We should now be pointing at the share name. Go past it. */
+	for (;;) {
+		if (*path == '\0') {
+			/* End of complete path. Exit OK. */
+			goto done;
+                }
+		if (*path == '/') {
+			/* End of share name. Go past and break. */
+			path++;
+			break;
+		}
+		if (*path == ':') {
+			/* Only invalid character in sharename. */
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+		path++; /* Continue looking for end of share name or string. */
+	}
+
+  done:
+	/* path now points at the start of the real filename (if any). */
+	/* Duplicate it first. */
+	return_path = talloc_strdup(mem_ctx, path);
+	if (return_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Now we can free the original (path points to part of this). */
+	TALLOC_FREE(*in_path);
+
+	*in_path = return_path;
+	ucf_flags &= ~UCF_DFS_PATHNAME;
+	*_ucf_flags = ucf_flags;
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Check if we have a correct fsp pointing to a file.
 ****************************************************************************/
 
