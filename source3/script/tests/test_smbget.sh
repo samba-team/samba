@@ -52,8 +52,8 @@ clear_download_area()
 test_singlefile_guest()
 {
 	clear_download_area
-	echo "$SMBGET -v -a smb://$SERVER_IP/smbget/testfile"
-	$SMBGET -v -a smb://$SERVER_IP/smbget/testfile
+	echo "$SMBGET --verbose --guest smb://$SERVER_IP/smbget/testfile"
+	$SMBGET --verbose --guest smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -69,7 +69,7 @@ test_singlefile_guest()
 test_singlefile_U()
 {
 	clear_download_area
-	$SMBGET -v -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -86,7 +86,7 @@ test_singlefile_U_UPN()
 {
 	clear_download_area
 
-	${SMBGET} -v -U"${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
+	${SMBGET} --verbose -U"${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
 		"smb://${SERVER_IP}/smbget/testfile"
 	ret=${?}
 	if [ ${ret} -ne 0 ]; then
@@ -108,7 +108,7 @@ test_singlefile_U_domain()
 {
 	clear_download_area
 
-	${SMBGET} -v -U"${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
+	${SMBGET} --verbose -U"${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
 		"smb://${SERVER_IP}/smbget/testfile"
 	ret=${?}
 	if [ ${ret} -ne 0 ]; then
@@ -129,7 +129,7 @@ test_singlefile_U_domain()
 test_singlefile_smburl()
 {
 	clear_download_area
-	$SMBGET -w $DOMAIN smb://$USERNAME:$PASSWORD@$SERVER_IP/smbget/testfile
+	$SMBGET --workgroup $DOMAIN smb://$USERNAME:$PASSWORD@$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -146,7 +146,7 @@ test_singlefile_rcfile()
 {
 	clear_download_area
 	echo "user $USERNAME%$PASSWORD" >$TMPDIR/rcfile
-	$SMBGET -vn -f $TMPDIR/rcfile smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --nonprompt --rcfile $TMPDIR/rcfile smb://$SERVER_IP/smbget/testfile
 	rc=$?
 	rm -f $TMPDIR/rcfile
 	if [ $rc -ne 0 ]; then
@@ -164,7 +164,7 @@ test_singlefile_rcfile()
 test_recursive_U()
 {
 	clear_download_area
-	$SMBGET -v -R -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	$SMBGET --verbose --recursive -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -185,7 +185,7 @@ test_recursive_existing_dir()
 {
 	clear_download_area
 	mkdir dir1
-	$SMBGET -v -R -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	$SMBGET --verbose --recursive -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -208,7 +208,7 @@ test_recursive_with_empty()
 	# create some additional empty directories
 	mkdir -p $WORKDIR/dir001/dir002/dir003
 	mkdir -p $WORKDIR/dir004/dir005/dir006
-	$SMBGET -v -R -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	$SMBGET --verbose --recursive -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
 	rc=$?
 	rm -rf $WORKDIR/dir001
 	rm -rf $WORKDIR/dir004
@@ -238,7 +238,7 @@ test_resume()
 	clear_download_area
 	cp $WORKDIR/testfile .
 	truncate -s 1024 testfile
-	$SMBGET -v -r -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --resume -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -257,7 +257,7 @@ test_resume_modified()
 {
 	clear_download_area
 	dd if=/dev/urandom bs=1024 count=2 of=testfile
-	$SMBGET -v -r -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --resume -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 1 ]; then
 		echo 'ERROR: RC does not match, expected: 1'
 		return 1
@@ -269,14 +269,14 @@ test_resume_modified()
 test_update()
 {
 	clear_download_area
-	$SMBGET -v -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
 	fi
 
 	# secondary download should pass
-	$SMBGET -v -u -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --update -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -286,7 +286,7 @@ test_update()
 	# touch source to trigger new download
 	sleep 2
 	touch -m $WORKDIR/testfile
-	$SMBGET -v -u -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --update -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -306,7 +306,7 @@ test_msdfs_link()
 {
 	clear_download_area
 
-	${SMBGET} -v "-U${USERNAME}%${PASSWORD}" \
+	${SMBGET} --verbose "-U${USERNAME}%${PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
@@ -321,7 +321,7 @@ test_msdfs_link_domain()
 {
 	clear_download_area
 
-	${SMBGET} -v "-U${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
+	${SMBGET} --verbose "-U${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
@@ -336,7 +336,7 @@ test_msdfs_link_upn()
 {
 	clear_download_area
 
-	${SMBGET} -v "-U${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
+	${SMBGET} --verbose "-U${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
@@ -352,9 +352,9 @@ test_msdfs_link_upn()
 test_limit_rate()
 {
 	clear_download_area
-	echo "$SMBGET -v -a --limit-rate 100 smb://$SERVER_IP/smbget/testfile"
+	echo "$SMBGET --verbose --guest --limit-rate 100 smb://$SERVER_IP/smbget/testfile"
 	time_begin=$(date +%s)
-	$SMBGET -v -a --limit-rate 100 smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --guest --limit-rate 100 smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -384,10 +384,10 @@ testit "download single file as guest" test_singlefile_guest ||
 testit "download single file with -U" test_singlefile_U ||
 	failed=$(expr $failed + 1)
 
-testit "download single file with -U and domain" test_singlefile_U_domain ||
+testit "download single file with --update and domain" test_singlefile_U_domain ||
 	failed=$((failed + 1))
 
-testit "download single file with -U and UPN" test_singlefile_U_UPN ||
+testit "download single file with --update and UPN" test_singlefile_U_UPN ||
 	failed=$((failed + 1))
 
 testit "download single file with smb URL" test_singlefile_smburl ||
