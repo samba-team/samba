@@ -3805,6 +3805,10 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(oldname, &old_twrp);
 	}
+	status = smb1_strip_dfs_path(ctx, &ucf_flags, &oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 oldname,
