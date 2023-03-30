@@ -628,6 +628,12 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
 	}
+	status = smb1_strip_dfs_path(ctx, &ucf_flags, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
 	status = filename_convert_dirfsp(
 		ctx, conn, fname, ucf_flags, twrp, &dirfsp, &smb_fname);
 
