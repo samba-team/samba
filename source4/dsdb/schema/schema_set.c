@@ -514,6 +514,10 @@ static int dsdb_compare_attribute_by_linkID(struct dsdb_attribute **a1, struct d
 {
 	return uint32_cmp((*a1)->linkID, (*a2)->linkID);
 }
+static int dsdb_compare_attribute_by_cn(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
+{
+	return strcasecmp((*a1)->cn, (*a2)->cn);
+}
 
 /**
  * Clean up Classes and Attributes accessor arrays
@@ -531,6 +535,7 @@ static void dsdb_sorted_accessors_free(struct dsdb_schema *schema)
 	TALLOC_FREE(schema->attributes_by_msDS_IntId);
 	TALLOC_FREE(schema->attributes_by_attributeID_oid);
 	TALLOC_FREE(schema->attributes_by_linkID);
+	TALLOC_FREE(schema->attributes_by_cn);
 }
 
 /*
@@ -611,11 +616,13 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	                                                       struct dsdb_attribute *, num_int_id);
 	schema->attributes_by_attributeID_oid   = talloc_array(schema, struct dsdb_attribute *, i);
 	schema->attributes_by_linkID              = talloc_array(schema, struct dsdb_attribute *, i);
+	schema->attributes_by_cn                  = talloc_array(schema, struct dsdb_attribute *, i);
 	if (schema->attributes_by_lDAPDisplayName == NULL ||
 	    schema->attributes_by_attributeID_id == NULL ||
 	    schema->attributes_by_msDS_IntId == NULL ||
 	    schema->attributes_by_attributeID_oid == NULL ||
-	    schema->attributes_by_linkID == NULL) {
+	    schema->attributes_by_linkID == NULL ||
+	    schema->attributes_by_cn == NULL) {
 		goto failed;
 	}
 
@@ -625,6 +632,7 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 		schema->attributes_by_attributeID_id[i]    = a;
 		schema->attributes_by_attributeID_oid[i]   = a;
 		schema->attributes_by_linkID[i]          = a;
+		schema->attributes_by_cn[i]              = a;
 		/* append attr-by-msDS-IntId values */
 		if (a->msDS_IntId != 0) {
 			schema->attributes_by_msDS_IntId[num_int_id] = a;
@@ -639,6 +647,7 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	TYPESAFE_QSORT(schema->attributes_by_msDS_IntId, schema->num_int_id_attr, dsdb_compare_attribute_by_msDS_IntId);
 	TYPESAFE_QSORT(schema->attributes_by_attributeID_oid, schema->num_attributes, dsdb_compare_attribute_by_attributeID_oid);
 	TYPESAFE_QSORT(schema->attributes_by_linkID, schema->num_attributes, dsdb_compare_attribute_by_linkID);
+	TYPESAFE_QSORT(schema->attributes_by_cn, schema->num_attributes, dsdb_compare_attribute_by_cn);
 
 	dsdb_setup_attribute_shortcuts(ldb, schema);
 

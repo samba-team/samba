@@ -126,6 +126,16 @@ const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *
 	return c;
 }
 
+const struct dsdb_attribute *dsdb_attribute_by_cn_ldb_val(const struct dsdb_schema *schema,
+							  const struct ldb_val *cn)
+{
+	struct dsdb_attribute *c;
+
+	BINARY_ARRAY_SEARCH_P(schema->attributes_by_cn,
+			      schema->num_attributes, cn, cn, strcasecmp_with_ldb_val, c);
+	return c;
+}
+
 const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *schema,
 						    uint32_t id)
 {

@@ -243,6 +243,7 @@ struct dsdb_schema {
 	struct dsdb_attribute **attributes_by_attributeID_id;
 	struct dsdb_attribute **attributes_by_attributeID_oid;
 	struct dsdb_attribute **attributes_by_linkID;
+	struct dsdb_attribute **attributes_by_cn;
 	uint32_t num_int_id_attr;
 	struct dsdb_attribute **attributes_by_msDS_IntId;
 
