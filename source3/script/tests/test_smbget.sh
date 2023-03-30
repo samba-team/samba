@@ -3,9 +3,9 @@
 # Blackbox test for smbget.
 #
 
-if [ $# -lt 7 ]; then
+if [ $# -lt 8 ]; then
 	cat <<EOF
-Usage: test_smbget SERVER SERVER_IP DOMAIN USERNAME PASSWORD WORKDIR SMBGET
+Usage: test_smbget SERVER SERVER_IP DOMAIN REALM USERNAME PASSWORD WORKDIR SMBGET
 EOF
 	exit 1
 fi
@@ -13,10 +13,12 @@ fi
 SERVER=${1}
 SERVER_IP=${2}
 DOMAIN=${3}
-USERNAME=${4}
-PASSWORD=${5}
-WORKDIR=${6}
-SMBGET="$VALGRIND ${7}"
+REALM=${4}
+USERNAME=${5}
+PASSWORD=${6}
+WORKDIR=${7}
+SMBGET="$VALGRIND ${8}"
+shift 8
 
 TMPDIR="$SELFTEST_TMPDIR"
 
