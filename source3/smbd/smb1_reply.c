@@ -1210,6 +1210,12 @@ void reply_search(struct smb_request *req)
 		struct smb_filename *smb_dname = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 
+		nt_status = smb1_strip_dfs_path(ctx, &ucf_flags, &path);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_nterror(req, nt_status);
+			goto out;
+		}
+
 		nt_status = filename_convert_smb1_search_path(ctx,
 					conn,
 					path,
