@@ -4483,6 +4483,11 @@ static void call_trans2setpathinfo(
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
 	}
+	status = smb1_strip_dfs_path(req, &ucf_flags, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		return;
+	}
 	status = filename_convert_dirfsp(req,
 					 conn,
 					 fname,
