@@ -829,7 +829,7 @@ int main(int argc, char **argv)
 	bool smb_encrypt = false;
 	int resume = 0, recursive = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
-	bool ret = true;
+	bool ok = false;
 	char *p;
 	const char **argv_const = discard_const_p(const char *, argv);
 	struct poptOption long_options[] = {
@@ -978,13 +978,14 @@ int main(int argc, char **argv)
 
 		POPT_TABLEEND
 	};
-	poptContext pc;
+	poptContext pc = NULL;
 
 	smb_init_locale();
 
 	/* only read rcfile if it exists */
 	if (asprintf(&rcfile, "%s/.smbgetrc", getenv("HOME")) == -1) {
-		return 1;
+		ok = false;
+		goto done;
 	}
 	if (access(rcfile, F_OK) == 0) {
 		readrcfile(rcfile, long_options);
@@ -1051,7 +1052,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				poptBadOption(pc, 0), poptStrerror(c));
 			poptPrintUsage(pc, stderr, 0);
-			exit(1);
+			ok = false;
+			goto done;
 		}
 	}
 
@@ -1059,27 +1061,27 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s: %s\n",
 			poptBadOption(pc, POPT_BADOPTION_NOALIAS),
 			poptStrerror(c));
-		ret = 1;
+		ok = true;
 		goto done;
 	}
 
 	if ((opt.send_stdout || resume || opt.outputfile) && opt.update) {
 		fprintf(stderr, "The -o, -R or -O and -U options can not be "
 			"used together.\n");
-		ret = 1;
+		ok = true;
 		goto done;
 	}
 	if ((opt.send_stdout || opt.outputfile) && recursive) {
 		fprintf(stderr, "The -o or -O and -R options can not be "
 			"used together.\n");
-		ret = 1;
+		ok = true;
 		goto done;
 	}
 
 	if (opt.outputfile && opt.send_stdout) {
 		fprintf(stderr, "The -o and -O options can not be "
 			"used together.\n");
-		ret = 1;
+		ok = true;
 		goto done;
 	}
 
@@ -1087,7 +1089,7 @@ int main(int argc, char **argv)
 
 	if (smbc_init(get_auth_data, opt.debuglevel) < 0) {
 		fprintf(stderr, "Unable to initialize libsmbclient\n");
-		ret= 1;
+		ok = true;
 		goto done;
 	}
 
@@ -1104,18 +1106,18 @@ int main(int argc, char **argv)
 
 	while ((file = poptGetArg(pc))) {
 		if (!recursive) {
-			ret = smb_download_file(file, "", recursive, resume,
+			ok = smb_download_file(file, "", recursive, resume,
 						true, opt.outputfile);
 		} else {
-			ret = smb_download_dir(file, "", resume);
+			ok = smb_download_dir(file, "", resume);
 		}
 	}
 
 done:
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
-	if (ret) {
+	if (ok) {
 		clean_exit();
 	}
-	return ret?0:1;
+	return ok ? 0 : 1;
 }
