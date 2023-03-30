@@ -313,7 +313,7 @@ plantestsuite("samba3.smbtorture_s3.smb2.SMB2-DFS-SHARE-NON-DFS-PATH",
 # incoming DFS pathnames and how they map to local paths.
 #
 plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-PATHS",
-                "fileserver",
+                "fileserver_smb1",
                 [os.path.join(samba3srcdir,
                               "script/tests/test_smbtorture_s3.sh"),
                 'SMB1-DFS-PATHS',
@@ -329,7 +329,7 @@ plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-PATHS",
 # incoming DFS pathnames and how they map to local paths.
 #
 plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-SEARCH-PATHS",
-                "fileserver",
+                "fileserver_smb1",
                 [os.path.join(samba3srcdir,
                               "script/tests/test_smbtorture_s3.sh"),
                 'SMB1-DFS-SEARCH-PATHS',
@@ -345,7 +345,7 @@ plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-SEARCH-PATHS",
 # incoming DFS pathnames and how they map to local paths.
 #
 plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-OPERATIONS",
-                "fileserver",
+                "fileserver_smb1",
                 [os.path.join(samba3srcdir,
                               "script/tests/test_smbtorture_s3.sh"),
                 'SMB1-DFS-OPERATIONS',

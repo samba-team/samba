@@ -1,3 +1,2 @@
-^samba3.smbtorture_s3.smb1.SMB1-DFS-PATHS.smbtorture\(fileserver\)
-^samba3.smbtorture_s3.smb1.SMB1-DFS-SEARCH-PATHS.smbtorture\(fileserver\)
-^samba3.smbtorture_s3.smb1.SMB1-DFS-OPERATIONS.smbtorture\(fileserver\)
+^samba3.smbtorture_s3.smb1.SMB1-DFS-PATHS.smbtorture\(fileserver_smb1\)
+^samba3.smbtorture_s3.smb1.SMB1-DFS-OPERATIONS.smbtorture\(fileserver_smb1\)
