@@ -24,6 +24,9 @@ TMPDIR="$SELFTEST_TMPDIR"
 
 incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
+. "${incdir}/common_test_fns.inc"
+
+samba_kinit=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
 
 create_test_data()
 {
@@ -404,6 +407,35 @@ test_encrypt()
 	return 0
 }
 
+test_kerberos()
+{
+	clear_download_area
+
+	KRB5CCNAME_PATH="$PREFIX/smget_krb5ccache"
+	rm -f "${KRB5CCNAME_PATH}"
+
+	KRB5CCNAME="FILE:${KRB5CCNAME_PATH}"
+	export KRB5CCNAME
+	kerberos_kinit "${samba_kinit}" \
+		"${DC_USERNAME}@${REALM}" "${DC_PASSWORD}"
+
+	$SMBGET --verbose --use-krb5-ccache="${KRB5CCNAME}" \
+		smb://$SERVER/smbget/testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+
+	cmp --silent $WORKDIR/testfile ./testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	rm -f "${KRB5CCNAME_PATH}"
+
+	return 0
+}
 
 create_test_data
 
@@ -459,6 +491,9 @@ testit "limit rate" test_limit_rate ||
 	failed=$((failed + 1))
 
 testit "encrypt" test_encrypt ||
+	failed=$((failed + 1))
+
+testit "kerberos" test_kerberos ||
 	failed=$((failed + 1))
 
 clear_download_area
