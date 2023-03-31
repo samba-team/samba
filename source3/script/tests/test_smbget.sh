@@ -375,6 +375,35 @@ test_limit_rate()
 	return 0
 }
 
+test_encrypt()
+{
+	clear_download_area
+	$SMBGET --verbose --encrypt -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+	cmp --silent $WORKDIR/testfile ./testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	clear_download_area
+	$SMBGET --verbose --client-protection=encrypt -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+	cmp --silent $WORKDIR/testfile ./testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	return 0
+}
+
 
 create_test_data
 
@@ -427,6 +456,9 @@ testit "msdfs.upn" test_msdfs_link_upn ||
 	failed=$((failed + 1))
 
 testit "limit rate" test_limit_rate ||
+	failed=$((failed + 1))
+
+testit "encrypt" test_encrypt ||
 	failed=$((failed + 1))
 
 clear_download_area
