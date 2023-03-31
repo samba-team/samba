@@ -918,7 +918,7 @@ int json_add_guid(struct json_object *object,
  * @param new_obj the new value object to be inserted.
  *
  * @return 0 the operation was successful
- *        -1 the operation failed (e.j. if one of the paramters is invalid)
+ *        -1 the operation failed (e.j. if one of the parameters is invalid)
  */
 int json_update_object(struct json_object *object,
 		       const char *key,
