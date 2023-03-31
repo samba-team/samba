@@ -58,7 +58,7 @@ typedef bool (*samba_cmdline_load_config)(void);
  *                      This should be a long living context till the client
  *                      exits.
  *
- * @return true on success, false if an error occured.
+ * @return true on success, false if an error occurred.
  */
 bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx);
 
@@ -70,7 +70,7 @@ bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx);
  *
  * @param[in]  fn  The callback to load the smb.conf file.
  *
- * @return true on success, false if an error occured.
+ * @return true on success, false if an error occurred.
  */
 bool samba_cmdline_set_load_config_fn(samba_cmdline_load_config fn);
 
@@ -83,7 +83,7 @@ bool samba_cmdline_set_load_config_fn(samba_cmdline_load_config fn);
  *
  * @param[in]  mem_ctx  The talloc memory context.
  *
- * @return true on success, false if an error occured.
+ * @return true on success, false if an error occurred.
  */
 bool samba_cmdline_set_talloc_ctx(TALLOC_CTX *mem_ctx);
 
@@ -103,7 +103,7 @@ TALLOC_CTX *samba_cmdline_get_talloc_ctx(void);
  *
  * @param[in]  lp_ctx  The loadparm context to use.
  *
- * @return true on success, false if an error occured.
+ * @return true on success, false if an error occurred.
  */
 bool samba_cmdline_set_lp_ctx(struct loadparm_context *lp_ctx);
 
@@ -114,7 +114,7 @@ bool samba_cmdline_set_lp_ctx(struct loadparm_context *lp_ctx);
  *
  * @param[in]  creds   The client credentials to use.
  *
- * @return true on success, false if an error occured.
+ * @return true on success, false if an error occurred.
  */
 bool samba_cmdline_set_creds(struct cli_credentials *creds);
 

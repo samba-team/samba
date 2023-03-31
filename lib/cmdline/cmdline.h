@@ -80,10 +80,10 @@ struct samba_cmdline_daemon_cfg {
  *                      This should be a long living context till the client
  *                      exits.
  *
- * @param[in]  require_smbconf  Wether the smb.conf file is required to be
+ * @param[in]  require_smbconf  Whether the smb.conf file is required to be
  *                              present or not?
  *
- * @return true on success, false if an error occured.
+ * @return true on success, false if an error occurred.
  */
 bool samba_cmdline_init(TALLOC_CTX *mem_ctx,
 			enum samba_cmdline_config_type config_type,
