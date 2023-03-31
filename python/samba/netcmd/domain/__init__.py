@@ -36,7 +36,6 @@ from samba import NTSTATUSError
 from samba import werror
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
-from samba import enable_net_export_keytab
 import samba.ntacls
 from samba.auth import system_session
 from samba.samdb import SamDB, get_default_backend_store
@@ -106,6 +105,7 @@ from .demote import cmd_domain_demote
 from .functional_prep import cmd_domain_functional_prep
 from .info import cmd_domain_info
 from .join import cmd_domain_join
+from .keytab import cmd_domain_export_keytab
 
 
 def level_to_string(level):
@@ -124,34 +124,6 @@ def level_to_string(level):
         DS_DOMAIN_FUNCTION_2016: "2016",
     }
     return strings.get(level, "higher than 2016")
-
-
-try:
-    enable_net_export_keytab()
-except ImportError:
-    cmd_domain_export_keytab = None
-else:
-    class cmd_domain_export_keytab(Command):
-        """Dump Kerberos keys of the domain into a keytab."""
-
-        synopsis = "%prog <keytab> [options]"
-
-        takes_optiongroups = {
-            "sambaopts": options.SambaOptions,
-            "credopts": options.CredentialsOptions,
-            "versionopts": options.VersionOptions,
-        }
-
-        takes_options = [
-            Option("--principal", help="extract only this principal", type=str),
-        ]
-
-        takes_args = ["keytab"]
-
-        def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
-            lp = sambaopts.get_loadparm()
-            net = Net(None, lp)
-            net.export_keytab(keytab=keytab, principal=principal)
 
 
 class cmd_domain_provision(Command):
