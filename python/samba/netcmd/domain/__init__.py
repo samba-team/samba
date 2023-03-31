@@ -71,15 +71,7 @@ from .leave import cmd_domain_leave
 from .level import cmd_domain_level
 from .passwordsettings import cmd_domain_passwordsettings
 from .provision import cmd_domain_provision
-
-
-class cmd_domain_samba3upgrade(cmd_domain_classicupgrade):
-    __doc__ = cmd_domain_classicupgrade.__doc__
-
-    # This command is present for backwards compatibility only,
-    # and should not be shown.
-
-    hidden = True
+from .samba3upgrade import cmd_domain_samba3upgrade
 
 
 class LocalDCCredentialsOptions(options.CredentialsOptions):
