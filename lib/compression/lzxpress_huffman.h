@@ -45,7 +45,7 @@ struct huffman_node {
 
 /*
  * This struct just coalesces all the memory you need for LZ77 + Huffman
- * compresssion together in one bundle.
+ * compression together in one bundle.
  *
  * There are a few different things you want, you usually want them all, so
  * this makes it easy to allocate them all at once.

@@ -447,7 +447,7 @@ static int generate_huffman_codes(struct huffman_node *leaf_nodes,
 		n_leaves = 2;
 	}
 
-	/* note, in sort we're using internal_nodes as auxillary space */
+	/* note, in sort we're using internal_nodes as auxiliary space */
 	stable_sort(leaf_nodes,
 		    internal_nodes,
 		    n_leaves,
@@ -465,7 +465,7 @@ static int generate_huffman_codes(struct huffman_node *leaf_nodes,
 	 * In practice it will almost always resolve in the first round; if
 	 * not then, in the second or third. Remember we'll looking at 64k or
 	 * less, so the rarest we can have is 1 in 64k; each round of
-	 * quantization effecively doubles its frequency to 1 in 32k, 1 in
+	 * quantization effectively doubles its frequency to 1 in 32k, 1 in
 	 * 16k, etc, until we're treating the rare symbol as actually quite
 	 * common.
 	 */
@@ -591,7 +591,7 @@ static int generate_huffman_codes(struct huffman_node *leaf_nodes,
 			 *
 			 * We need to sort the nodes of equal depth, so that
 			 * they are sorted by depth first, and symbol value
-			 * second. The internal_nodes can again be auxillary
+			 * second. The internal_nodes can again be auxiliary
 			 * memory.
 			 */
 			stable_sort(

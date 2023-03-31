@@ -293,7 +293,7 @@ struct lzx_pair bidirectional_pairs[] = {
 		 /*
 		  * In this case there are no matches encoded as there are no
 		  * repeated symbols. Including the EOF, there are 27 symbols
-		  * all occuring exactly as frequently as each other (once).
+		  * all occurring exactly as frequently as each other (once).
 		  * From that we would expect the codes to be mostly 5 bits
 		  * long, because 27 < 2^5 (32), but greater than 2^4. And
 		  * that's what we see.
@@ -819,7 +819,7 @@ static void test_lzxpress_huffman_long_random_graph_round_trip(void **state)
 	 * simple loop, but we introduce damage into the system, randomly
 	 * flipping about 1 bit in 64.
 	 *
-	 * The result is semi-structured and compressable.
+	 * The result is semi-structured and compressible.
 	 */
 	uint8_t *d = original.data;
 	uint8_t *table = talloc_array(mem_ctx, uint8_t, 65536);

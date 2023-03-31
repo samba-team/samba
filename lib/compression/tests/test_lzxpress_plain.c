@@ -481,7 +481,7 @@ static void test_lzxpress_plain_round_trip_files(void **state)
 		      ((double)compressed_total) / reference_total);
 	/*
 	 * Assert that the compression is better than Windows. Unlike the
-	 * Huffman varient, where things are very even, here we do much better
+	 * Huffman variant, where things are very even, here we do much better
 	 * than Windows without especially trying.
 	 */
 	assert_true(compressed_total <= reference_total);
@@ -592,7 +592,7 @@ static void test_lzxpress_plain_long_random_graph_round_trip(void **state)
 	 * simple loop, but we introduce damage into the system, randomly
 	 * flipping about 1 bit in 64.
 	 *
-	 * The result is semi-structured and compressable.
+	 * The result is semi-structured and compressible.
 	 */
 	uint8_t *d = original.data;
 	uint8_t *table = talloc_array(mem_ctx, uint8_t, 65536);
