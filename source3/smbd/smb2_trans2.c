@@ -4445,11 +4445,8 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
 	ucf_flags &= ~UCF_DFS_PATHNAME;
 
-	if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-		status = check_path_syntax_smb2_posix(newname);
-	} else {
-		status = check_path_syntax_smb2(newname);
-	}
+	status = check_path_syntax(newname,
+			fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4560,11 +4557,8 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
 	ucf_flags &= ~UCF_DFS_PATHNAME;
 
-	if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-		status = check_path_syntax_smb2_posix(newname);
-	} else {
-		status = check_path_syntax_smb2(newname);
-	}
+	status = check_path_syntax(newname,
+			fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

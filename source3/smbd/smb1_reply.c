@@ -73,7 +73,7 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 /****************************************************************************
  SMB1 version of smb2_strip_dfs_path()
  Differs from SMB2 in that all Windows path separator '\' characters
- have already been converted to '/' by check_path_syntax_internal().
+ have already been converted to '/' by check_path_syntax().
 ****************************************************************************/
 
 NTSTATUS smb1_strip_dfs_path(TALLOC_CTX *mem_ctx,

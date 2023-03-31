@@ -63,8 +63,7 @@
 /* Custom version for processing POSIX paths. */
 #define IS_PATH_SEP(c,posix_only) ((c) == '/' || (!(posix_only) && (c) == '\\'))
 
-static NTSTATUS check_path_syntax_internal(char *path,
-					   bool posix_path)
+NTSTATUS check_path_syntax(char *path, bool posix_path)
 {
 	char *d = path;
 	const char *s = path;
@@ -209,7 +208,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 					*d++ = *s++;
 					break;
 				default:
-					DEBUG(0,("check_path_syntax_internal: character length assumptions invalid !\n"));
+					DBG_ERR("character length assumptions invalid !\n");
 					*d = '\0';
 					return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -220,37 +219,6 @@ static NTSTATUS check_path_syntax_internal(char *path,
 	*d = '\0';
 
 	return ret;
-}
-
-/****************************************************************************
- Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
- No wildcards allowed.
-****************************************************************************/
-
-NTSTATUS check_path_syntax(char *path)
-{
-	return check_path_syntax_internal(path, false);
-}
-
-/****************************************************************************
- Check the path for a POSIX client.
- We're assuming here that '/' is not the second byte in any multibyte char
- set (a safe assumption).
-****************************************************************************/
-
-NTSTATUS check_path_syntax_posix(char *path)
-{
-	return check_path_syntax_internal(path, true);
-}
-
-NTSTATUS check_path_syntax_smb2(char *path)
-{
-	return check_path_syntax_internal(path, false);
-}
-
-NTSTATUS check_path_syntax_smb2_posix(char *path)
-{
-	return check_path_syntax_internal(path, true);
 }
 
 /****************************************************************************
@@ -434,11 +402,7 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 
   local_path:
 
-	if (posix_pathnames) {
-		*err = check_path_syntax_posix(dst);
-	} else {
-		*err = check_path_syntax(dst);
-	}
+	*err = check_path_syntax(dst, posix_pathnames);
 
 	return ret;
 }

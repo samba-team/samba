@@ -512,11 +512,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	/* This also converts '\' to '/' */
-	if (is_posix) {
-		status = check_path_syntax_smb2_posix(filename);
-	} else {
-		status = check_path_syntax_smb2(filename);
-	}
+	status = check_path_syntax(filename, is_posix);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(filename);
 		return status;
@@ -1054,12 +1050,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	is_posix = (state->posx != NULL);
 
-	if (is_posix) {
-		status = check_path_syntax_smb2_posix(state->fname);
-	} else {
-		/* convert '\\' into '/' */
-		status = check_path_syntax_smb2(state->fname);
-	}
+	/* convert '\\' into '/' */
+	status = check_path_syntax(state->fname, is_posix);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}

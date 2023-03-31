@@ -55,7 +55,7 @@
      \pathname.
 
  If returned, remainingpath is untouched. Caller must call
- check_path_syntaxXXX() on it.
+ check_path_syntax() on it.
 
  Called by all non-fileserver processing (DFS RPC, FSCTL_DFS_GET_REFERRALS)
  etc. Errors out on any inconsistency in the path.
@@ -947,7 +947,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	/* Path referrals are always non-POSIX. */
-	status = check_path_syntax(reqpath);
+	status = check_path_syntax(reqpath, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -1194,7 +1194,7 @@ bool create_junction(TALLOC_CTX *ctx,
 	}
 
 	/* Junction create paths are always non-POSIX. */
-	status = check_path_syntax(reqpath);
+	status = check_path_syntax(reqpath, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
