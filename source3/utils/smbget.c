@@ -863,6 +863,7 @@ int main(int argc, char **argv)
 	enum smb_encryption_setting encryption_state = SMB_ENCRYPTION_DEFAULT;
 	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
 	smbc_smb_encrypt_level encrypt_level = SMBC_ENCRYPTLEVEL_DEFAULT;
+	bool is_nt_hash = false;
 	SMBCCTX *smb_ctx = NULL;
 
 	smb_init_locale();
@@ -982,6 +983,10 @@ int main(int argc, char **argv)
 		smbc_setOptionUseKerberos(smb_ctx, false);
 		break;
 	}
+
+	/* Check if the password supplied is an NT hash */
+	is_nt_hash = cli_credentials_is_password_nt_hash(creds);
+	smbc_setOptionUseNTHash(smb_ctx, is_nt_hash);
 
 	columns = get_num_cols();
 
