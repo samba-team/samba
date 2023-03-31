@@ -860,6 +860,9 @@ int main(int argc, char **argv)
 	};
 	poptContext pc = NULL;
 	struct cli_credentials *creds = NULL;
+	enum smb_encryption_setting encryption_state = SMB_ENCRYPTION_DEFAULT;
+	smbc_smb_encrypt_level encrypt_level = SMBC_ENCRYPTLEVEL_DEFAULT;
+	SMBCCTX *smb_ctx = NULL;
 
 	smb_init_locale();
 
@@ -937,13 +940,32 @@ int main(int argc, char **argv)
 		ok = true;
 		goto done;
 	}
-
-	if (smb_encrypt) {
-		SMBCCTX *smb_ctx = smbc_set_context(NULL);
-		smbc_option_set(smb_ctx,
-				discard_const_p(char, "smb_encrypt_level"),
-				"require");
+	smb_ctx = smbc_set_context(NULL);
+	if (smb_ctx == NULL) {
+		ok = true;
+		goto done;
 	}
+
+	encryption_state = cli_credentials_get_smb_encryption(creds);
+	switch (encryption_state) {
+	case SMB_ENCRYPTION_REQUIRED:
+		encrypt_level = SMBC_ENCRYPTLEVEL_REQUIRE;
+		break;
+	case SMB_ENCRYPTION_DESIRED:
+	case SMB_ENCRYPTION_IF_REQUIRED:
+		encrypt_level = SMBC_ENCRYPTLEVEL_REQUEST;
+		break;
+	case SMB_ENCRYPTION_OFF:
+		encrypt_level = SMBC_ENCRYPTLEVEL_NONE;
+		break;
+	case SMB_ENCRYPTION_DEFAULT:
+		encrypt_level = SMBC_ENCRYPTLEVEL_DEFAULT;
+		break;
+	}
+	if (smb_encrypt) {
+		encrypt_level = SMBC_ENCRYPTLEVEL_REQUIRE;
+	}
+	smbc_setOptionSmbEncryptionLevel(smb_ctx, encrypt_level);
 
 	columns = get_num_cols();
 
