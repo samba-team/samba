@@ -55,11 +55,8 @@ from samba.netcmd.fsmo import get_fsmo_roleowner
 from samba.netcmd.common import (NEVER_TIMESTAMP,
                                  timestamp_to_mins,
                                  timestamp_to_days)
-from samba.samba3 import param as s3param
 from samba import string_to_byte_array
 from samba.auth_util import system_session_unix
-from samba.net_s3 import Net as s3_Net
-from samba.param import default_path
 from samba import is_ad_dc_built
 
 from samba.dsdb import (
@@ -106,6 +103,7 @@ from .functional_prep import cmd_domain_functional_prep
 from .info import cmd_domain_info
 from .join import cmd_domain_join
 from .keytab import cmd_domain_export_keytab
+from .leave import cmd_domain_leave
 
 
 def level_to_string(level):
@@ -484,36 +482,6 @@ class cmd_domain_provision(Command):
                 " quality standards"
         else:
             return None
-
-
-class cmd_domain_leave(Command):
-    """Cause a domain member to leave the joined domain."""
-
-    synopsis = "%prog [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
-    takes_options = [
-        Option("--keep-account", action="store_true",
-               help="Disable the machine account instead of deleting it.")
-    ]
-
-    takes_args = []
-
-    def run(self, sambaopts=None, credopts=None, versionopts=None,
-            keep_account=False):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-
-        s3_lp = s3param.get_context()
-        smb_conf = lp.configfile if lp.configfile else default_path()
-        s3_lp.load(smb_conf)
-        s3_net = s3_Net(creds, s3_lp)
-        s3_net.leave(keep_account)
 
 
 class cmd_domain_level(Command):
