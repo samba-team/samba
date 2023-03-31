@@ -123,7 +123,7 @@ NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
  * @param[out] req_state    Pointer to a enum dbwrap_req_state variable
  *
  * @note req_state is updated in the send function. To determine the final
- * result of the request the caller should therefor not rely on req_state. The
+ * result of the request the caller should therefore not rely on req_state. The
  * primary use case is to give the caller an indication whether the request is
  * already sent to ctdb (DBWRAP_REQ_DISPATCHED) or if it's still stuck in the
  * sendqueue (DBWRAP_REQ_QUEUED).

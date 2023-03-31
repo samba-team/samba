@@ -358,7 +358,7 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 
 	/*
 	 * In this low-level routine, play tricks to reduce the number of
-	 * tallocs to one. Not recommened for general use, but here it pays
+	 * tallocs to one. Not recommended for general use, but here it pays
 	 * off.
 	 */
 
