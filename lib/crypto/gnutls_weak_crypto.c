@@ -31,8 +31,7 @@ bool samba_gnutls_weak_crypto_allowed(void)
 	int rc;
 
 	/*
-	 * If RC4 is not allowed to be initialzed then weak crypto is not
-	 * allowed.
+	 * If we can't initialize RC4 then weak crypto is not allowed.
 	 */
 	rc = gnutls_cipher_init(&cipher_hnd,
 				GNUTLS_CIPHER_ARCFOUR_128,
