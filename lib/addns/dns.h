@@ -197,7 +197,7 @@ struct dns_request {
 	struct dns_question **questions;
 	struct dns_rrec **answers;
 	struct dns_rrec **auths;
-	struct dns_rrec **additionals;
+	struct dns_rrec **additional;
 };
 
 /*
@@ -216,7 +216,7 @@ struct dns_update_request {
 	struct dns_zone **zones;
 	struct dns_rrec **preqs;
 	struct dns_rrec **updates;
-	struct dns_rrec **additionals;
+	struct dns_rrec **additional;
 };
 
 struct dns_connection {

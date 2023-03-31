@@ -138,7 +138,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 						   &req->answers);
 			} else {
 				err = dns_add_rrec(req, rec, &req->num_additionals,
-						   &req->additionals);
+						   &req->additional);
 			}
 			
 			if (!ERR_DNS_IS_OK(err)) goto error;
@@ -334,7 +334,7 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 	gss_release_buffer(&minor, &mic);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
-	err = dns_add_rrec(req, rec, &req->num_additionals, &req->additionals);
+	err = dns_add_rrec(req, rec, &req->num_additionals, &req->additional);
 
  error:
 	TALLOC_FREE(buf);
