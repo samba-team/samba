@@ -224,6 +224,7 @@ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cred,
 					    const DATA_BLOB *password_utf16);
 void cli_credentials_set_password_will_be_nt_hash(struct cli_credentials *cred,
 						  bool val);
+bool cli_credentials_is_password_nt_hash(struct cli_credentials *cred);
 bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash,
 				 enum credentials_obtained obtained);

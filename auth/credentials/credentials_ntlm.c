@@ -458,6 +458,11 @@ _PUBLIC_ void cli_credentials_set_password_will_be_nt_hash(struct cli_credential
 	cred->password_will_be_nt_hash = val;
 }
 
+_PUBLIC_ bool cli_credentials_is_password_nt_hash(struct cli_credentials *cred)
+{
+	return cred->password_will_be_nt_hash;
+}
+
 _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash,
 				 enum credentials_obtained obtained)
