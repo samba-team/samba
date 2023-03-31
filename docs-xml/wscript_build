@@ -40,7 +40,6 @@ manpages='''
          manpages/smbcquotas.1
          manpages/smbd.8
          manpages/smbget.1
-         manpages/smbgetrc.5
          manpages/smbpasswd.5
          manpages/smbpasswd.8
          manpages/smbspool_krb5_wrapper.8
