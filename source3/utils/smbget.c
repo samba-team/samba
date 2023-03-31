@@ -861,6 +861,7 @@ int main(int argc, char **argv)
 	poptContext pc = NULL;
 	struct cli_credentials *creds = NULL;
 	enum smb_encryption_setting encryption_state = SMB_ENCRYPTION_DEFAULT;
+	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
 	smbc_smb_encrypt_level encrypt_level = SMBC_ENCRYPTLEVEL_DEFAULT;
 	SMBCCTX *smb_ctx = NULL;
 
@@ -966,6 +967,21 @@ int main(int argc, char **argv)
 		encrypt_level = SMBC_ENCRYPTLEVEL_REQUIRE;
 	}
 	smbc_setOptionSmbEncryptionLevel(smb_ctx, encrypt_level);
+
+	use_kerberos = cli_credentials_get_kerberos_state(creds);
+	switch (use_kerberos) {
+	case CRED_USE_KERBEROS_REQUIRED:
+		smbc_setOptionUseKerberos(smb_ctx, true);
+		smbc_setOptionFallbackAfterKerberos(smb_ctx, false);
+		break;
+	case CRED_USE_KERBEROS_DESIRED:
+		smbc_setOptionUseKerberos(smb_ctx, true);
+		smbc_setOptionFallbackAfterKerberos(smb_ctx, true);
+		break;
+	case CRED_USE_KERBEROS_DISABLED:
+		smbc_setOptionUseKerberos(smb_ctx, false);
+		break;
+	}
 
 	columns = get_num_cols();
 
