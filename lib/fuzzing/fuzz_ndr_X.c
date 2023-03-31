@@ -49,7 +49,7 @@ enum {
 
 /*
  * We want an even number here to ensure 4-byte alignment later
- * not just for efficieny but because the fuzzers are known to guess
+ * not just for efficiency but because the fuzzers are known to guess
  * that numbers will be 4-byte aligned
  */
 #define HEADER_SIZE 4

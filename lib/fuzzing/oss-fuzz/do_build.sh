@@ -109,7 +109,7 @@ mkdir -p $OUT/lib
 # but not for our hack.
 #
 # If we use RUNPATH, we can get an error like this:
-# Step #6: Error occured while running fuzz_nmblib_parse_packet:
+# Step #6: Error occurred while running fuzz_nmblib_parse_packet:
 # Step #6: /workspace/out/coverage/fuzz_nmblib_parse_packet: error while loading shared libraries: libavahi-common.so.3: cannot open shared object file: No such file or directory
 #
 # This is because the full contents of $OUT are copied to yet another
@@ -274,11 +274,11 @@ done
 # will cause the dynamic linker to search in the runpath, and not in $OUT/lib,
 # and there's no way it will be found in the fuzzing env.
 #
-# So how is the indirect depedency found in $OUT/lib? Well, suppose the fuzzer binary
+# So how is the indirect dependency found in $OUT/lib? Well, suppose the fuzzer binary
 # links library A which links library B. During linking, both A and B as listed in the
 # executable file's runtime dependencies (This was pioneered in Fedora 13 in 2010, but
 # is common behavior now). So we have the fuzzer binary with RPATH set to $OUT/lib, and
-# a dependency on library B, and it will therefor find library B in $OUT/lib. On the
+# a dependency on library B, and it will therefore find library B in $OUT/lib. On the
 # hand, if we keep the RUNPATH in library A, and load A first, it will try loading
 # library B as a dependency of A from the wrong place.
 chrpath -d $OUT/lib/*

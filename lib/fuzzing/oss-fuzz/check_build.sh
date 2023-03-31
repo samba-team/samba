@@ -3,7 +3,7 @@
 # A very simple check script to confirm we still provide binaries
 # that look like the targets oss-fuzz wants.
 #
-# A much stronger check is availble in oss-fuzz via
+# A much stronger check is available in oss-fuzz via
 # infra/helper.py check_build samba
 #
 
