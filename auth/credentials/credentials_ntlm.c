@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    User credentials handling
@@ -6,17 +6,17 @@
    Copyright (C) Andrew Tridgell      2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2005
    Copyright (C) Stefan Metzmacher 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -35,13 +35,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-_PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx,
 					   int *flags,
 					   DATA_BLOB challenge,
 					   const NTTIME *server_timestamp,
 					   DATA_BLOB target_info,
-					   DATA_BLOB *_lm_response, DATA_BLOB *_nt_response, 
-					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key) 
+					   DATA_BLOB *_lm_response, DATA_BLOB *_nt_response,
+					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char *user = NULL;
@@ -152,13 +152,13 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
-		
+
 		if (!SMBNTLMv2encrypt_hash(frame,
-					   user, 
-					   domain, 
-					   nt_hash->hash, &challenge, 
+					   user,
+					   domain,
+					   nt_hash->hash, &challenge,
 					   server_timestamp, &target_info,
-					   &lm_response, &nt_response, 
+					   &lm_response, &nt_response,
 					   NULL, &session_key)) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -263,7 +263,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
 		dump_data_pw("NT session key:\n", session_key.data, session_key.length);
 
-		/* lanman auth is insecure, it may be disabled.  
+		/* lanman auth is insecure, it may be disabled.
 		   We may also not have a password */
 
 		if (password != NULL) {
@@ -459,7 +459,7 @@ _PUBLIC_ void cli_credentials_set_password_will_be_nt_hash(struct cli_credential
 }
 
 _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
-				 const struct samr_Password *nt_hash, 
+				 const struct samr_Password *nt_hash,
 				 enum credentials_obtained obtained)
 {
 	cred->password_will_be_nt_hash = false;
