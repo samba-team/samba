@@ -181,7 +181,7 @@ PKGS = [
     # rpm has no pkg for docbook-xml
     ('docbook-xml', 'docbook-dtds'),
     ('docbook-xsl', 'docbook-style-xsl'),
-    ('', 'keyutils-libs-devel'),
+    ('libkeyutils-dev', 'keyutils-libs-devel'),
     ('', 'which'),
     ('xz-utils', 'xz')
 ]

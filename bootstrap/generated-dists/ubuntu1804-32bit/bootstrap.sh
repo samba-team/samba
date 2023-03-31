@@ -58,6 +58,7 @@ apt-get -y install \
     libjansson-dev \
     libjs-jquery \
     libjson-perl \
+    libkeyutils-dev \
     libkrb5-dev \
     libldap2-dev \
     liblmdb-dev \

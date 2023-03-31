@@ -710,7 +710,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    get_port.c init_creds.c init_creds_pw.c
                                    kcm.c keyblock.c keytab.c keytab_any.c
                                    keytab_file.c keytab_memory.c
-                                   keytab_keyfile.c krbhst.c log.c
+                                   keytab_keyfile.c krbhst.c krcache.c log.c
                                    mcache.c misc.c mk_error.c mk_priv.c
                                    mk_rep.c mk_req.c mk_req_ext.c
                                    mit_glue.c net_read.c net_write.c n-fold.c padata.c pkinit.c pkinit-ec.c
@@ -726,10 +726,14 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    mk_cred.c kx509_err.c
                                    k524_err.c krb_err.c k5e1_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
 
+    krb5_keyutils_dep = ''
+    if bld.CONFIG_SET('HAVE_KEYCTL_GET_PERSISTENT'):
+        krb5_keyutils_dep = ' keyutils'
+
     HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
         version_script='lib/krb5/version-script.map',
                         includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-                deps='roken wind asn1 hx509 HEIMDAL_KX509_ASN1 hcrypto com_err HEIMDAL_CONFIG heimbase execinfo samba_intl HEIMDAL_IPC_CLIENT KRB5_CRYPTO',
+                deps='roken wind asn1 hx509 HEIMDAL_KX509_ASN1 hcrypto com_err HEIMDAL_CONFIG heimbase execinfo samba_intl HEIMDAL_IPC_CLIENT KRB5_CRYPTO' + krb5_keyutils_dep,
                 cflags=['-DLOCALSTATEDIR="/2"'] + bld.dynconfig_cflags(),
                         )
     KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c', 'lib/krb5/crypto.c']

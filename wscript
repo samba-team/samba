@@ -116,6 +116,14 @@ def options(opt):
                   help=("Disable RELRO builds"),
                   action="store_false", dest='enable_relro')
 
+    opt.add_option('--with-kernel-keyring',
+                  help=('Enable kernely keyring support for credential storage ' +
+                        '(default if keyutils libraries are available)'),
+                  action='store_true', dest='enable_keyring')
+    opt.add_option('--without-kernel-keyring',
+                  help=('Disable kernely keyring support for credential storage'),
+                  action='store_false', dest='enable_keyring')
+
     gr = opt.option_group('developer options')
 
     opt.load('python') # options for disabling pyc or pyo compilation
@@ -199,6 +207,13 @@ def configure(conf):
                    args='--cflags --libs',
                    mandatory=True)
     conf.CHECK_FUNCS_IN('inflateInit2', 'z')
+
+    if Options.options.enable_keyring != False:
+        conf.env['WITH_KERNEL_KEYRING'] = 'auto'
+        if Options.options.enable_keyring == True:
+            conf.env['WITH_KERNEL_KEYRING'] = True
+    else:
+        conf.env['WITH_KERNEL_KEYRING'] = False
 
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party')
