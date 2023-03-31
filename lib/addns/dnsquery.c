@@ -561,7 +561,7 @@ NTSTATUS ads_dns_lookup_a(TALLOC_CTX *ctx,
 		goto fail;
 	}
 	/*
-	 * Sychronous doesn't need to care about the rcode or
+	 * Synchronous doesn't need to care about the rcode or
 	 * a copy of the name_in.
 	 */
 	status = ads_dns_lookup_a_recv(req,
@@ -766,7 +766,7 @@ NTSTATUS ads_dns_lookup_aaaa(TALLOC_CTX *ctx,
 		goto fail;
 	}
 	/*
-	 * Sychronous doesn't need to care about the rcode or
+	 * Synchronous doesn't need to care about the rcode or
 	 * a copy of the name_in.
 	 */
 	status = ads_dns_lookup_aaaa_recv(req,

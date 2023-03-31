@@ -159,7 +159,7 @@ static void dns_rr_srv_fill_done(
 	 * (hundreds) and a DNS that doesn't return the DC IPs in the
 	 * SRV reply, you have bigger problems than this loop linearly
 	 * walking a pointer array. This is theoretically O(n^2), but
-	 * probably the DNS roundtrip time outweights this by a
+	 * probably the DNS roundtrip time outweighs this by a
 	 * lot. And we have a global timeout on this whole
 	 * dns_rr_srv_fill routine.
 	 */
