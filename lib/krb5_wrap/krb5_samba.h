@@ -303,7 +303,7 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 #elif defined (HAVE_FREE_CHECKSUM)
 void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum);
 #else
-#error krb5_free_checksum_contents/free_Checksum is not vailable
+#error krb5_free_checksum_contents/free_Checksum is not available
 #endif
 
 krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,

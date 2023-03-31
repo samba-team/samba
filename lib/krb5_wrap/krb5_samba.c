@@ -143,7 +143,7 @@ const krb5_data *krb5_princ_component(krb5_context context,
  * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
  *                      address from.
  *
- * @param[out] pkaddr   A Kerberos address to store tha address in.
+ * @param[out] pkaddr   A Kerberos address to store the address in.
  *
  * @return True on success, false if an error occurred.
  */
@@ -176,7 +176,7 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
  * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
  *                      address from.
  *
- * @param[in]  pkaddr A Kerberos address to store tha address in.
+ * @param[in]  pkaddr A Kerberos address to store the address in.
  *
  * @return True on success, false if an error occurred.
  */
@@ -1074,15 +1074,15 @@ char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  service_string The service ticket string
  *                            (e.g. krbtgt/SAMBA.SITE@SAMBA.SITE) or NULL. If
- *                            the sevice ticket is specified, it is parsed (
- *                            with the realm part ignored) and used as the
+ *                            the service ticket is specified, it is parsed
+ *                            (with the realm part ignored) and used as the
  *                            server principal of the credential. Otherwise
  *                            the ticket-granting service is used.
  *
  * @param[in]  expire_time    A pointer to store the credentials end time or
  *                            NULL.
  *
- * @return 0 on Succes, a Kerberos error code otherwise.
+ * @return 0 on Success, a Kerberos error code otherwise.
  */
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,
 				      const char *client_string,
@@ -1405,7 +1405,7 @@ krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
  *
  * @param[in]  write_access Open with readwrite access.
  *
- * @param[in]  keytab A pointer o the opended key table.
+ * @param[in]  keytab A pointer to the opened key table.
  *
  * The keytab pointer should be freed using krb5_kt_close().
  *
@@ -1543,7 +1543,7 @@ out:
  *
  * @param[in]  write_access Open with readwrite access.
  *
- * @param[in]  keytab A pointer o the opended key table.
+ * @param[in]  keytab A pointer to the opened key table.
  *
  * The keytab pointer should be freed using krb5_kt_close().
  *
@@ -1644,7 +1644,7 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  flush         Whether to flush the complete keytab.
  *
- * @retval 0 on Sucess
+ * @retval 0 on Success
  *
  * @return An appropriate KRB5 error code.
  */
@@ -2091,7 +2091,7 @@ krb5_error_code smb_krb5_get_credentials(krb5_context context,
 /**
  * @brief Initialize a krb5_keyblock with the given data.
  *
- * Initialized a new keyblock, allocates the contents fo the key and
+ * Initializes a new keyblock, allocates the contents for the key and
  * copies the data into the keyblock.
  *
  * @param[in]  context  The library context
@@ -2147,7 +2147,7 @@ krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
  *
  * @param[in]  krb_options Initial credential options.
  *
- * @param[in]  expire_time    A pointer to store the experation time of the
+ * @param[in]  expire_time    A pointer to store the expiration time of the
  *                            credentials (or NULL).
  *
  * @param[in]  kdc_time       A pointer to store the time when the ticket becomes
@@ -2260,7 +2260,7 @@ done:
  *
  * @param[in]  krb_options Initial credential options.
  *
- * @param[in]  expire_time    A pointer to store the experation time of the
+ * @param[in]  expire_time    A pointer to store the expiration time of the
  *                            credentials (or NULL).
  *
  * @param[in]  kdc_time       A pointer to store the time when the ticket becomes
@@ -2340,7 +2340,7 @@ done:
  *
  * @param[in]  krb_options Initial credential options.
  *
- * @param[in]  expire_time    A pointer to store the experation time of the
+ * @param[in]  expire_time    A pointer to store the expiration time of the
  *                            credentials (or NULL).
  *
  * @param[in]  kdc_time       A pointer to store the time when the ticket becomes
@@ -3051,7 +3051,7 @@ void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum)
  * This function computes a checksum over a PAC using the keyblock for a keyed
  * checksum.
  *
- * @param[in]  mem_ctx A talloc context to alocate the signature on.
+ * @param[in]  mem_ctx A talloc context to allocate the signature on.
  *
  * @param[in]  pac_data The PAC as input.
  *
@@ -3180,7 +3180,7 @@ char *smb_krb5_principal_get_realm(TALLOC_CTX *mem_ctx,
  *
  * @param[in] realm     The realm as a string to set.
  *
- * @retur 0 on success, a Kerberos error code otherwise.
+ * @return 0 on success, a Kerberos error code otherwise.
  */
 krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 					     krb5_principal principal,
@@ -3230,7 +3230,7 @@ krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
  *                           this realm.
  *
  * @return The realm to use for the service hostname, NULL if a fatal error
- *         occured.
+ *         occurred.
  */
 char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 				       const char *hostname,
@@ -3498,7 +3498,7 @@ static bool ads_cleanup_expired_creds(krb5_context context,
 	/* heimdal won't remove creds from a file ccache, and
 	   perhaps we shouldn't anyway, since internally we
 	   use memory ccaches, and a FILE one probably means that
-	   we're using creds obtained outside of our exectuable
+	   we're using creds obtained outside of our executable
 	*/
 	if (strequal(cc_type, "FILE")) {
 		DEBUG(5, ("ads_cleanup_expired_creds: We do not remove creds from a %s ccache\n", cc_type));
@@ -3548,7 +3548,7 @@ static krb5_error_code ads_create_gss_checksum(krb5_data *in_data, /* [inout] */
 	char *gss_cksum = NULL;
 
 	if (orig_length) {
-		/* Extra length field for delgated ticket. */
+		/* Extra length field for delegated ticket. */
 		base_cksum_size += 4;
 	}
 
