@@ -310,6 +310,7 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 	char timestr[64];
 	PyObject *ret;
 	struct tm *tm;
+	size_t len;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s",
 		discard_const_p(char *, kwnames), &r.generic.in.server_name))
@@ -335,12 +336,16 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 
 	ZERO_STRUCT(timestr);
 	tm = localtime(&r.generic.out.time);
-	strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
-	
-	ret = PyUnicode_FromString(timestr);
+
+	len = strftime(timestr, sizeof(timestr), "%c %Z", tm);
+	if (len == 0) {
+		PyErr_NoMemory();
+		ret = NULL;
+	} else {
+		ret = PyUnicode_FromStringAndSize(timestr, (Py_ssize_t)len);
+	}
 
 	talloc_free(mem_ctx);
-
 	return ret;
 }
 
