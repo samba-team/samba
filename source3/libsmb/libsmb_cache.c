@@ -57,8 +57,8 @@ SMBC_add_cached_server(SMBCCTX * context,
 
 	srvcache = SMB_CALLOC_ARRAY(struct smbc_server_cache, 1);
 	if (srvcache == NULL) {
-		errno = ENOMEM;
 		DEBUG(3, ("Not enough space for server cache allocation\n"));
+		errno = ENOMEM;
 		return 1;
 	}
 
