@@ -117,23 +117,24 @@ int
 smbc_init(smbc_get_auth_data_fn fn,
           int debug)
 {
-	if (!smbc_compat_initialized) {
-		statcont = smbc_new_context();
-		if (!statcont)
-			return -1;
-
-                smbc_setDebug(statcont, debug);
-                smbc_setFunctionAuthData(statcont, fn);
-
-		if (!smbc_init_context(statcont)) {
-			smbc_free_context(statcont, False);
-			return -1;
-		}
-
-		smbc_compat_initialized = 1;
-
+	if (smbc_compat_initialized) {
 		return 0;
 	}
+
+	statcont = smbc_new_context();
+	if (!statcont)
+		return -1;
+
+	smbc_setDebug(statcont, debug);
+	smbc_setFunctionAuthData(statcont, fn);
+
+	if (!smbc_init_context(statcont)) {
+		smbc_free_context(statcont, False);
+		return -1;
+	}
+
+	smbc_compat_initialized = 1;
+
 	return 0;
 }
 
