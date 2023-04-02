@@ -27,6 +27,7 @@ from functools import partial
 import tempfile
 import binascii
 import collections
+import numbers
 import secrets
 from enum import Enum
 
@@ -562,6 +563,108 @@ class KDCBaseTest(RawKerberosTest):
                           force=False)
 
         return claim_id
+
+    def create_authn_policy(self,
+                            policy_id,
+                            enforced=None,
+                            strong_ntlm_policy=None,
+                            user_allowed_from=None,
+                            user_allowed_ntlm=None,
+                            user_allowed_to=None,
+                            user_tgt_lifetime=None,
+                            computer_allowed_to=None,
+                            computer_tgt_lifetime=None,
+                            service_allowed_from=None,
+                            service_allowed_ntlm=None,
+                            service_allowed_to=None,
+                            service_tgt_lifetime=None):
+        samdb = self.get_samdb()
+
+        policy_dn = self.get_authn_policies_dn()
+        self.assertTrue(policy_dn.add_child(f'CN={policy_id}'))
+
+        details = {
+            'dn': policy_dn,
+            'objectClass': 'msDS-AuthNPolicy',
+        }
+
+        _domain_sid = None
+
+        def sd_from_sddl(sddl):
+            nonlocal _domain_sid
+            if _domain_sid is None:
+                _domain_sid = security.dom_sid(samdb.get_domain_sid())
+
+            return ndr_pack(security.descriptor.from_sddl(sddl, _domain_sid))
+
+        if enforced is True:
+            enforced = 'TRUE'
+        elif enforced is False:
+            enforced = 'FALSE'
+
+        if user_allowed_ntlm is True:
+            user_allowed_ntlm = 'TRUE'
+        elif user_allowed_ntlm is False:
+            user_allowed_ntlm = 'FALSE'
+
+        if service_allowed_ntlm is True:
+            service_allowed_ntlm = 'TRUE'
+        elif service_allowed_ntlm is False:
+            service_allowed_ntlm = 'FALSE'
+
+        if enforced is not None:
+            details['msDS-AuthNPolicyEnforced'] = enforced
+        if strong_ntlm_policy is not None:
+            details['msDS-StrongNTLMPolicy'] = strong_ntlm_policy
+
+        if user_allowed_from is not None:
+            details['msDS-UserAllowedToAuthenticateFrom'] = sd_from_sddl(
+                user_allowed_from)
+        if user_allowed_ntlm is not None:
+            details['msDS-UserAllowedNTLMNetworkAuthentication'] = (
+                user_allowed_ntlm)
+        if user_allowed_to is not None:
+            details['msDS-UserAllowedToAuthenticateTo'] = sd_from_sddl(
+                user_allowed_to)
+        if user_tgt_lifetime is not None:
+            if isinstance(user_tgt_lifetime, numbers.Number):
+                user_tgt_lifetime = str(int(user_tgt_lifetime * 10_000_000))
+            details['msDS-UserTGTLifetime'] = user_tgt_lifetime
+
+        if computer_allowed_to is not None:
+            details['msDS-ComputerAllowedToAuthenticateTo'] = sd_from_sddl(
+                computer_allowed_to)
+        if computer_tgt_lifetime is not None:
+            if isinstance(computer_tgt_lifetime, numbers.Number):
+                computer_tgt_lifetime = str(
+                    int(computer_tgt_lifetime * 10_000_000))
+            details['msDS-ComputerTGTLifetime'] = computer_tgt_lifetime
+
+        if service_allowed_from is not None:
+            details['msDS-ServiceAllowedToAuthenticateFrom'] = sd_from_sddl(
+                service_allowed_from)
+        if service_allowed_ntlm is not None:
+            details['msDS-ServiceAllowedNTLMNetworkAuthentication'] = (
+                service_allowed_ntlm)
+        if service_allowed_to is not None:
+            details['msDS-ServiceAllowedToAuthenticateTo'] = sd_from_sddl(
+                service_allowed_to)
+        if service_tgt_lifetime is not None:
+            if isinstance(service_tgt_lifetime, numbers.Number):
+                service_tgt_lifetime = str(
+                    int(service_tgt_lifetime * 10_000_000))
+            details['msDS-ServiceTGTLifetime'] = service_tgt_lifetime
+
+        # Save the policy DN so it can be deleted in tearDownClass().
+        self.accounts.append(str(policy_dn))
+
+        # Remove the policy if it exists; this will happen if a previous test
+        # run failed.
+        delete_force(samdb, policy_dn)
+
+        samdb.add(details)
+
+        return policy_dn
 
     def create_claim(self,
                      claim_id,
