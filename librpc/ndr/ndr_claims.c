@@ -37,12 +37,18 @@ size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 				  enum CLAIMS_COMPRESSION_FORMAT wire_alg,
 				  int flags)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 	DATA_BLOB tmp_blob;
 	uint8_t * tmp_compressed;
 	ssize_t compressed_size;
 	enum ndr_err_code ndr_err;
 	enum CLAIMS_COMPRESSION_FORMAT actual_wire_alg;
+
+	if (claims_set == NULL) {
+		return 0;
+	}
+
+	frame = talloc_stackframe();
 
 	ndr_err = ndr_push_struct_blob(&tmp_blob,
 				       frame,
