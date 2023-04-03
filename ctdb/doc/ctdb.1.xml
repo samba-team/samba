@@ -252,8 +252,8 @@
       <refsect3>
 	<title>Generation</title>
 	<para>
-	  The generation id is a number that indicates the current generation 
-	  of a cluster instance. Each time a cluster goes through a 
+	  The generation id is a number that indicates the current generation
+	  of a cluster instance. Each time a cluster goes through a
 	  reconfiguration or a recovery its generation id will be changed.
 	</para>
 	<para>
@@ -299,11 +299,11 @@
 	  RECOVERY - The cluster databases have all been frozen, pausing all services while the cluster awaits a recovery process to complete. A recovery process should finish within seconds. If a cluster is stuck in the RECOVERY state this would indicate a cluster malfunction which needs to be investigated.
 	</para>
 	<para>
-	  Once the leader detects an inconsistency, for example a node 
-	  becomes disconnected/connected, the recovery daemon will trigger a 
+	  Once the leader detects an inconsistency, for example a node
+	  becomes disconnected/connected, the recovery daemon will trigger a
 	  cluster recovery process, where all databases are remerged across the
 	  cluster. When this process starts, the leader will first
-	  "freeze" all databases to prevent applications such as samba from 
+	  "freeze" all databases to prevent applications such as samba from
 	  accessing the databases and it will also mark the recovery mode as
 	  RECOVERY.
 	</para>
@@ -321,7 +321,7 @@
 	  This is the cluster node that is currently designated as the
 	  leader. This node is responsible of monitoring the
 	  consistency of the cluster and to perform the actual
-	  recovery process when reqired.
+	  recovery process when required.
 	</para>
 	<para>
 	  Only one node at a time can be the designated leader. Which
@@ -1127,7 +1127,7 @@ DB Statistics: locking.tdb
       <para>
 	This command is used to administratively STOP a node in the cluster.
 	A STOPPED node is connected to the cluster but will not host any
-	public ip addresse, nor does it participate in the VNNMAP.
+	public ip addresses, nor does it participate in the VNNMAP.
 	The difference between a DISABLED node and a STOPPED node is that
 	a STOPPED node does not host any parts of the database which means
 	that a recovery is required to stop/continue nodes.
@@ -1183,7 +1183,7 @@ DB Statistics: locking.tdb
 	specific node.
       </para>
       <para>
-	In order to manually override the "automatic" distribution of public 
+	In order to manually override the "automatic" distribution of public
 	ip addresses that ctdb normally provides, this command only works
 	when you have changed the tunables for the daemon to:
       </para>

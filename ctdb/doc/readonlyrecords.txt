@@ -121,7 +121,7 @@ very many readonly requests.
 
 
 The ctdb_db structure is expanded so that it contains one extra TDB database for each
-normal, non-persistent datbase.
+normal, non-persistent database.
 This new database is used for tracking delegations for the records.
 A record in the normal database that has "HAVE_DELEGATION" set will always have a
 corresponding record at the same key. This record contains the set of all nodes that
@@ -334,7 +334,7 @@ Non-readonly enabled daemons fetching records from Readonly enabled daemons:
 Non-readonly enabled daemons do not know, and never set the WANT_READONLY flag so these daemons will always request a full migration for a full fetch-lock for all records. Thus a request from a non-readonly enabled daemon will always cause any existing delegations to be immediately revoked. Access will work but performance may be harmed since there will be a lot of revoking of delegations.
 
 Readonly enabled daemons fetching records with WANT_READONLY from non-readonly enabled daemons:
-Non-readonly enabled daemons ingore the WANT_READONLY flag and never return delegations. They always return a full record migration.
+Non-readonly enabled daemons ignore the WANT_READONLY flag and never return delegations. They always return a full record migration.
 Full record migration is allowed by the protocol, even if the originator only requests the 'hint' WANT_READONLY,
 so this access also interoperates between daemons with different capabilities.
 
