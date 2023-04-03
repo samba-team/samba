@@ -42,6 +42,7 @@ from samba.credentials import (
     MUST_USE_KERBEROS,
 )
 from samba.dcerpc import (
+    claims,
     drsblobs,
     drsuapi,
     krb5ccache,
@@ -537,15 +538,39 @@ class KDCBaseTest(RawKerberosTest):
 
         return auth_silo_dn
 
+    def create_auth_silo_claim_id(self):
+        claim_id = 'ad://ext/AuthenticationSilo'
+
+        for_classes = [
+            'msDS-GroupManagedServiceAccount',
+            'user',
+            'msDS-ManagedServiceAccount',
+            'computer',
+        ]
+
+        self.create_claim(claim_id,
+                          enabled=True,
+                          single_valued=True,
+                          value_space_restricted=False,
+                          source_type='Constructed',
+                          for_classes=for_classes,
+                          value_type=claims.CLAIM_TYPE_STRING,
+                          # It's OK if the claim type already exists.
+                          force=False)
+
+        return claim_id
+
     def create_claim(self,
                      claim_id,
                      enabled=None,
                      attribute=None,
                      single_valued=None,
+                     value_space_restricted=None,
                      source=None,
                      source_type=None,
                      for_classes=None,
-                     value_type=None):
+                     value_type=None,
+                     force=True):
         samdb = self.get_samdb()
 
         claim_dn = self.get_claim_types_dn()
@@ -569,6 +594,11 @@ class KDCBaseTest(RawKerberosTest):
         elif single_valued is False:
             single_valued = 'FALSE'
 
+        if value_space_restricted is True:
+            value_space_restricted = 'TRUE'
+        elif value_space_restricted is False:
+            value_space_restricted = 'FALSE'
+
         if for_classes is not None:
             for_classes = [str(self.get_dn_from_class(name))
                            for name in for_classes]
@@ -582,6 +612,9 @@ class KDCBaseTest(RawKerberosTest):
             details['msDS-ClaimAttributeSource'] = attribute
         if single_valued is not None:
             details['msDS-ClaimIsSingleValued'] = single_valued
+        if value_space_restricted is not None:
+            details['msDS-ClaimIsValueSpaceRestricted'] = (
+                value_space_restricted)
         if source is not None:
             details['msDS-ClaimSource'] = source
         if source_type is not None:
@@ -591,14 +624,20 @@ class KDCBaseTest(RawKerberosTest):
         if value_type is not None:
             details['msDS-ClaimValueType'] = value_type
 
-        # Save the claim DN so it can be deleted in tearDown()
-        self.test_accounts.append(str(claim_dn))
+        if force:
+            # Remove the claim if it exists; this will happen if a previous
+            # test run failed
+            delete_force(samdb, claim_dn)
 
-        # Remove the claim if it exists; this will happen if a previous test
-        # run failed
-        delete_force(samdb, claim_dn)
-
-        samdb.add(details)
+        try:
+            samdb.add(details)
+        except ldb.LdbError as err:
+            num, estr = err.args
+            self.assertFalse(force, 'should not fail with force=True')
+            self.assertEqual(num, ldb.ERR_ENTRY_ALREADY_EXISTS)
+        else:
+            # Save the claim DN so it can be deleted in tearDown()
+            self.test_accounts.append(str(claim_dn))
 
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
