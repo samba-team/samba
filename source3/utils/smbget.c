@@ -22,6 +22,7 @@
 #include "libsmbclient.h"
 #include "cmdline_contexts.h"
 #include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 
 static int columns = 0;
 
@@ -864,6 +865,8 @@ int main(int argc, char **argv)
 	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
 	smbc_smb_encrypt_level encrypt_level = SMBC_ENCRYPTLEVEL_DEFAULT;
 	bool is_nt_hash = false;
+	uint32_t gensec_features;
+	bool use_wbccache = false;
 	SMBCCTX *smb_ctx = NULL;
 
 	smb_init_locale();
@@ -987,6 +990,11 @@ int main(int argc, char **argv)
 	/* Check if the password supplied is an NT hash */
 	is_nt_hash = cli_credentials_is_password_nt_hash(creds);
 	smbc_setOptionUseNTHash(smb_ctx, is_nt_hash);
+
+	/* Check if we should use the winbind ccache */
+	gensec_features = cli_credentials_get_gensec_features(creds);
+	use_wbccache = (gensec_features & GENSEC_FEATURE_NTLM_CCACHE);
+	smbc_setOptionUseCCache(smb_ctx, use_wbccache);
 
 	columns = get_num_cols();
 
