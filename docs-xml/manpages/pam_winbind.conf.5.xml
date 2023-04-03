@@ -126,7 +126,7 @@
 		to specify a directory. UID is replaced with the numeric
 		user id. The UID directory is being created. The path up to
 		the directory should already exist. Check the details of the
-		Kerberos implmentation.</para>
+		Kerberos implementation.</para>
 
 		<para>When using the KEYRING type, the supported mechanism is
 		<quote>KEYRING:persistent:UID</quote>, which uses the Linux

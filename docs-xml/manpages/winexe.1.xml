@@ -123,7 +123,7 @@
 
 				<listitem>
 				<para>
-					1 - allow. If allow, also use the --system switch (Windows requirement). Vista does not support this optoin.
+					1 - allow. If allow, also use the --system switch (Windows requirement). Vista does not support this option.
 				</para>
 				</listitem>
 			</itemizedlist>

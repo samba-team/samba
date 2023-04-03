@@ -146,7 +146,7 @@
 		<varlistentry>
 		<term>--change-secret-at <replaceable>domain-controller</replaceable></term>
 		<listitem><para>Change the trust account password at a specific
-		domain controller. Fails if the specificied domain controller
+		domain controller. Fails if the specified domain controller
 		cannot be contacted.
 		</para></listitem>
 		</varlistentry>

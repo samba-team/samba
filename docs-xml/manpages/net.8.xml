@@ -1349,7 +1349,7 @@ against an NT4 Domain Controller.
 
 <refsect3>
 <title>ADS GPO LINKGET [<replaceable>CONTAINER</replaceable>]</title>
-<para>Lists gPLink of a containter.</para>
+<para>Lists gPLink of a container.</para>
 </refsect3>
 
 <refsect3>

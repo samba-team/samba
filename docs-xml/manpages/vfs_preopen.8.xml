@@ -82,7 +82,7 @@
 		Movie7599Frame0v1234.txt, Movie7599Frame1v1234.txt, Movie7599Frame2v1234.txt
 		up to Movie7599Frame9v1234.txt you can use <command>preopen:names = /.*Frame\([0-9]\).*\.txt/</command>
 		in order to match just a single digits, this might not be a real world example,
-		but it shows the flexiblity that is possible here.
+		but it shows the flexibility that is possible here.
 		</para>
 
 		</listitem>

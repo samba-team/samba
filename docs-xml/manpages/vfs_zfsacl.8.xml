@@ -59,7 +59,7 @@
 	with NFSv4 compatible ACLs.
 	</para>
 
-	<para>ZFS has mutiple dataset configuration parameters that determine ACL behavior.
+	<para>ZFS has multiple dataset configuration parameters that determine ACL behavior.
 	Although the nuances of these parameters are outside the scope of this manpage, the
 	"aclmode" and "aclinherit" are of particular importance for samba shares.
 	For datasets that are intended solely as Samba shares, "aclmode = restricted"
@@ -122,7 +122,7 @@
 		<term>zfsacl:map_dacl_protected = [yes|no]</term>
 		<listitem>
 		<para>If enabled and the ZFS ACL on the underlying filesystem does not contain
-		any inherited access control entires, then set the SEC_DESC_DACL_PROTECTED flag
+		any inherited access control entries, then set the SEC_DESC_DACL_PROTECTED flag
 		on the Security Descriptor returned to SMB clients.
 		This ensures correct Windows client behavior when disabling inheritance on
 		directories.</para>
