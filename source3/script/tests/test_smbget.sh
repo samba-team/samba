@@ -437,6 +437,27 @@ test_kerberos()
 	return 0
 }
 
+test_kerberos_trust()
+{
+	clear_download_area
+
+	$SMBGET --verbose --use-kerberos=required \
+		-U"${TRUST_F_BOTH_USERNAME}@${TRUST_F_BOTH_REALM}%${TRUST_F_BOTH_PASSWORD}" \
+		smb://$SERVER/smbget/testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+
+	cmp --silent $WORKDIR/testfile ./testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+
+	return 0
+}
+
 create_test_data
 
 pushd $TMPDIR
@@ -494,6 +515,9 @@ testit "encrypt" test_encrypt ||
 	failed=$((failed + 1))
 
 testit "kerberos" test_kerberos ||
+	failed=$((failed + 1))
+
+testit "kerberos_trust" test_kerberos_trust ||
 	failed=$((failed + 1))
 
 clear_download_area
