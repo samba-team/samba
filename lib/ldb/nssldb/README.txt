@@ -9,7 +9,7 @@ Other modules can be used as well (like rdn_name for example)
 
 The uidNumber 0 and the gidNumber 0 are considered invalid.
 
-The user records should contain the followin attributes:
+The user records should contain the following attributes:
 uid (required)			the user name
 userPassword (optional)		the user password (if not present "LDB" is
 				returned in the password field)
