@@ -5,8 +5,8 @@ A pure python3 module with CLI to bootstrap Samba envs for multiple distribution
 ## Features
 
 - manage Samba dependencies list for multiple distributions
-- render dependencies package list to boostrap shell scripts(apt, yum and dnf)
-- render Vagrantfile to provision vitual machines with bootstrap scripts
+- render dependencies package list to bootstrap shell scripts(apt, yum and dnf)
+- render Vagrantfile to provision virtual machines with bootstrap scripts
 - render Dockerfile to build docker images with bootstrap scripts
 - build/tag/push docker images
 
