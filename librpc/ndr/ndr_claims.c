@@ -55,7 +55,7 @@ size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 				       claims_set,
 				       (ndr_push_flags_fn_t)ndr_push_CLAIMS_SET_NDR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_ERR("Failed to push claims while determining compressed size");
+		DBG_ERR("Failed to push claims while determining compressed size\n");
 		TALLOC_FREE(frame);
 		return 0;
 	}
@@ -77,14 +77,14 @@ size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 		TALLOC_FREE(frame);
 
 		if (compressed_size < 0) {
-			DBG_ERR("Failed to compress claims (for determining compressed size)");
+			DBG_ERR("Failed to compress claims (for determining compressed size)\n");
 			return 0;
 		}
 		return compressed_size;
 
 	default:
 		TALLOC_FREE(frame);
-		DBG_ERR("Invalid chosen compression algorithm while determining compressed claim size");
+		DBG_ERR("Invalid chosen compression algorithm while determining compressed claim size\n");
 		return 0;
 	}
 }
