@@ -337,7 +337,7 @@ static int fill_claim_string(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		val = talloc_strndup(mem_ctx,
+		val = talloc_strndup(claim->values,
 				     (const char *)v->data,
 				     v->length);
 		if (val == NULL) {
