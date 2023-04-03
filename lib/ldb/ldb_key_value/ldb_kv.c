@@ -637,7 +637,7 @@ static int ldb_kv_add_internal(struct ldb_module *module,
 		 * case, which will only fail for a duplicate DN
 		 * in the index add.
 		 *
-		 * Note that the caller may not cancel the transation
+		 * Note that the caller may not cancel the transaction
 		 * and this means the above add might really show up!
 		 */
 		ldb_kv_delete_noindex(module, msg);

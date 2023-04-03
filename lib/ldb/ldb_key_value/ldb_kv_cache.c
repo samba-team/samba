@@ -528,7 +528,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 
 	/*
 	 * ltdb_attributes_unload() calls internally talloc_free() on
-	 * any non-fixed elemnts in ldb->schema.attributes.
+	 * any non-fixed elements in ldb->schema.attributes.
 	 *
 	 * NOTE WELL: This is per-ldb, not per module, so overwrites
 	 * the handlers across all databases when used under Samba's

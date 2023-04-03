@@ -94,7 +94,7 @@ struct ldb_kv_private {
 	/*
 	 * To ensure that the indexes in idxptr are consistent we cache any
 	 * index updates during an operation, i.e. ldb_kv_add, ldb_kv_delete ...
-	 * Once the changes to the data record have been commited to disk
+	 * Once the changes to the data record have been committed to disk
 	 * the contents of this cache are copied to idxptr
 	 */
 	struct ldb_kv_idxptr *nested_idx_ptr;
@@ -202,7 +202,7 @@ struct ldb_kv_repack_context {
 
 /*
  * This will be used to indicate when a new, yet to be developed
- * sub-database version of the indicies are in use, to ensure we do
+ * sub-database version of the indices are in use, to ensure we do
  * not load future databases unintentionally.
  */
 

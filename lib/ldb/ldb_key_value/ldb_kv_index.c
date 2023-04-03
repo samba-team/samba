@@ -62,7 +62,7 @@ DN=CN=DNSUPDATEPROXY,CN=USERS,DC=ADDOM,DC=SAMBA,DC=EXAMPLE,DC=COM
 (This allows a scope BASE search to directly find the record via
 a simple casefold of the DN).
 
-The original mixed-case DN is stored in the entry iself.
+The original mixed-case DN is stored in the entry itself.
 
 
 The new 'GUID index' format is:
@@ -72,7 +72,7 @@ dn: @INDEX:NAME:DNSUPDATEPROXY
 @IDXVERSION: 3
 @IDX: <binary GUID>[<binary GUID>[...]]
 
-The binary guid is 16 bytes, as bytes and not expanded as hexidecimal
+The binary guid is 16 bytes, as bytes and not expanded as hexadecimal
 or pretty-printed.  The GUID is chosen from the message to be stored
 by the @IDXGUID attribute on @INDEXLIST.
 
@@ -84,7 +84,7 @@ The corrosponding entry is stored in a TDB record with key:
 GUID=<binary GUID>
 
 This allows a very quick translation between the fixed-length index
-values and the TDB key, while seperating entries from other data
+values and the TDB key, while separating entries from other data
 in the TDB, should they be unlucky enough to start with the bytes of
 the 'DN=' prefix.
 
@@ -1148,7 +1148,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 		}
 		talloc_free(vstr);
 	} else {
-		/* Only need two seperators */
+		/* Only need two separators */
 		num_separators = 2;
 
 		/*
@@ -1197,7 +1197,7 @@ static bool ldb_kv_is_indexed(struct ldb_module *module,
 
 	if ((ldb_kv->cache->GUID_index_attribute != NULL) &&
 	    (ldb_attr_cmp(attr, ldb_kv->cache->GUID_index_attribute) == 0)) {
-		/* Implicity covered, this is the index key */
+		/* Implicitly covered, this is the index key */
 		return false;
 	}
 	if (ldb->schema.index_handler_override) {
@@ -2479,7 +2479,7 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 		ret = ldb_module_send_entry(ac->req, filtered_msg, NULL);
 		if (ret != LDB_SUCCESS) {
 			/* Regardless of success or failure, the msg
-			 * is the callbacks responsiblity, and should
+			 * is the callbacks responsibility, and should
 			 * not be talloc_free()'ed */
 			ac->request_terminated = true;
 			talloc_free(keys);
@@ -2899,7 +2899,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 	}
 
 	/* overallocate the list a bit, to reduce the number of
-	 * realloc trigered copies */
+	 * realloc triggered copies */
 	alloc_len = ((list->count+1)+7) & ~7;
 	list->dn = talloc_realloc(list, list->dn, struct ldb_val, alloc_len);
 	if (list->dn == NULL) {

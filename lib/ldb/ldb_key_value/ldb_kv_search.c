@@ -595,7 +595,7 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	ret = ldb_module_send_entry(ctx->req, filtered_msg, NULL);
 	if (ret != LDB_SUCCESS) {
 		/* Regardless of success or failure, the msg
-		 * is the callbacks responsiblity, and should
+		 * is the callbacks responsibility, and should
 		 * not be talloc_free()'ed */
 		ctx->request_terminated = true;
 		return ret;
