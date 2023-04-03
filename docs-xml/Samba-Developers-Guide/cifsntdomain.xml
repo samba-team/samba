@@ -2336,7 +2336,7 @@ Note:	mailslots will contain a response mailslot, to which the response
 <variablelist>
 <varlistentry>
 	<term>UINT16</term>
-<listitem><para>0x000A - Respose to Query for PDC</para></listitem></varlistentry>
+<listitem><para>0x000A - Response to Query for PDC</para></listitem></varlistentry>
 <varlistentry>
 	<term>STR</term>
 <listitem><para>machine name (in uppercase)</para></listitem></varlistentry>

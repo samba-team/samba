@@ -163,7 +163,7 @@ returns the byte at offset pos within buffer buf as an unsigned character.
 <para>
 	returns the value of the unsigned short (16 bit) little-endian integer at
 	offset pos within buffer buf.  An integer of this type is sometimes
-	refered to as "USHORT".
+	referred to as "USHORT".
 </para>
 </sect2>
 
@@ -225,7 +225,7 @@ pos within buffer buf.</para>
 <title>RSSVAL(buf,pos,val)</title>
 <para>sets the value of the unsigned short (16 bit) big-endian integer at
 offset pos within buffer buf to value val.
-refered to as "USHORT".</para>
+referred to as "USHORT".</para>
 </sect2>
 
 <sect2>

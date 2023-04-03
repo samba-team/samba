@@ -35,7 +35,7 @@ semantics.
 This abstraction layer now provides more features than a regular POSIX
 file system could fill in. It is not required that all of them should
 be implemented by your particular file system.  However, when those
-features are available, Samba would advertize them to a CIFS client
+features are available, Samba would advertise them to a CIFS client
 and they might be used by an application and in case of Windows client
 that might mean a client expects even more additional functionality
 when it encounters those features. There is a practical reason to
