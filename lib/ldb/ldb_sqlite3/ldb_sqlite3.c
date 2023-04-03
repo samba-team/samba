@@ -1199,7 +1199,7 @@ static int lsql_modify(struct lsql_context *ctx)
 		case LDB_FLAG_MOD_ADD:
 
 			if (el->num_values == 0) {
-				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
+				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illegal)",
 						       el->name, ldb_dn_get_linearized(msg->dn));
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
