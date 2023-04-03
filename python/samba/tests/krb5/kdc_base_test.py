@@ -493,6 +493,50 @@ class KDCBaseTest(RawKerberosTest):
 
         return res[0]
 
+    def create_auth_silo(self,
+                         silo_id,
+                         members=None,
+                         user_policy=None,
+                         computer_policy=None,
+                         service_policy=None,
+                         enforced=None):
+        samdb = self.get_samdb()
+
+        auth_silo_dn = self.get_authn_silos_dn()
+        auth_silo_dn.add_child(f'CN={silo_id}')
+
+        details = {
+            'dn': auth_silo_dn,
+            'objectClass': 'msDS-AuthNPolicySilo',
+        }
+
+        if enforced is True:
+            enforced = 'TRUE'
+        elif enforced is False:
+            enforced = 'FALSE'
+
+        if members is not None:
+            details['msDS-AuthNPolicySiloMembers'] = members
+        if user_policy is not None:
+            details['msDS-UserAuthNPolicy'] = user_policy
+        if computer_policy is not None:
+            details['msDS-ComputerAuthNPolicy'] = computer_policy
+        if service_policy is not None:
+            details['msDS-ServiceAuthNPolicy'] = service_policy
+        if enforced is not None:
+            details['msDS-AuthNPolicySiloEnforced'] = enforced
+
+        # Save the silo DN so it can be deleted in tearDown().
+        self.test_accounts.append(str(auth_silo_dn))
+
+        # Remove the silo if it exists; this will happen if a previous test run
+        # failed.
+        delete_force(samdb, auth_silo_dn)
+
+        samdb.add(details)
+
+        return auth_silo_dn
+
     def create_claim(self,
                      claim_id,
                      enabled=None,
