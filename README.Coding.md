@@ -183,7 +183,7 @@ This is bad:
 	 * with some more words...*/
 ```
 
-### Indention & Whitespace & 80 columns
+### Indentation & Whitespace & 80 columns
 
 To avoid confusion, indentations have to be tabs with length 8 (not 8
 ' ' characters).  When wrapping parameters for function calls,
