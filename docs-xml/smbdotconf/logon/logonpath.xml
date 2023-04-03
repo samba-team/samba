@@ -43,7 +43,7 @@
 	is used, at the time the user account is created the value configured
 	for this parameter is written to the passdb backend and that value will
 	over-ride the parameter value present in the smb.conf file. Any error
-	present in the passdb backend account record must be editted using the
+	present in the passdb backend account record must be edited using the
 	appropriate tool (pdbedit on the command-line, or any other locally
 	provided system tool).
 	</para></warning>

@@ -58,7 +58,7 @@
     controller, providing domain logon services to Windows and Samba
     clients of an NT4-like domain.  Clients must be joined to the domain to
     create a secure, trusted path across the network.  There must be
-    only one PDC per NetBIOS scope (typcially a broadcast network or
+    only one PDC per NetBIOS scope (typically a broadcast network or
     clients served by a single WINS server).</para>
 
     <para><anchor id="BDC"/><emphasis>SERVER ROLE = CLASSIC BACKUP DOMAIN CONTROLLER</emphasis></para>

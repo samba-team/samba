@@ -7,7 +7,7 @@
     depend on mmap working correctly on the running system. Samba requires a coherent
     mmap/read-write system memory cache. Currently only OpenBSD and HPUX do not have such a
     coherent cache, and on those platforms this parameter is overridden internally
-    to be effeceively <constant>no</constant>. On all systems this parameter should be left alone. This
+    to be effectively <constant>no</constant>. On all systems this parameter should be left alone. This
     parameter is provided to help the Samba developers track down problems with
     the tdb internal code.
     </para>

@@ -7,7 +7,7 @@
 	<para>
 	This parameter specifies where users are added to the tree. If this parameter is unset, 
 	the value of <smbconfoption name="ldap suffix"/> will be used instead.  The suffix 
-	string is pre-pended to the  <smbconfoption name="ldap suffix"/> string so use a partial DN.
+	string is prepended to the  <smbconfoption name="ldap suffix"/> string so use a partial DN.
 	</para>
 
 </description>
