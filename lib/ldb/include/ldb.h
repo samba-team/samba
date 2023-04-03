@@ -155,16 +155,16 @@ struct ldb_dn;
 #define LDB_FLAG_INTERNAL_MASK 0xFFFFFFF0
 
 /**
-  OID for logic AND comaprison.
+  OID for logic AND comparison.
 
-  This is the well known object ID for a logical AND comparitor.
+  This is the well known object ID for a logical AND comparator.
 */
 #define LDB_OID_COMPARATOR_AND  "1.2.840.113556.1.4.803"
 
 /**
   OID for logic OR comparison.
 
-  This is the well known object ID for a logical OR comparitor.
+  This is the well known object ID for a logical OR comparator.
 */
 #define LDB_OID_COMPARATOR_OR   "1.2.840.113556.1.4.804"
 
@@ -2343,7 +2343,7 @@ char* ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 */
 struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *control_strings);
 /**
-   Convert an array of string represention of a control into an array of ldb_control structures
+   Convert an array of string representation of a control into an array of ldb_control structures
 
    \param ldb LDB context
    \param mem_ctx TALLOC context to return result on, and to allocate error_string on

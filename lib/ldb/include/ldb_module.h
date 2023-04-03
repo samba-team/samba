@@ -39,7 +39,7 @@
 
 /*
  * Versions before 1.2.0 doesn't define these values
- * so we assime 1.1.29 (which was used in Samba 4.6)
+ * so we assume 1.1.29 (which was used in Samba 4.6)
  *
  * See https://bugzilla.samba.org/show_bug.cgi?id=12859
  */
