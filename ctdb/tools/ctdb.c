@@ -6168,8 +6168,7 @@ static const struct ctdb_cmd *match_command(const char *command)
 
 	for (i=0; i<ARRAY_SIZE(ctdb_commands); i++) {
 		cmd = &ctdb_commands[i];
-		if (strlen(command) == strlen(cmd->name) &&
-		    strncmp(command, cmd->name, strlen(command)) == 0) {
+		if (strcmp(command, cmd->name) == 0) {
 			return cmd;
 		}
 	}
