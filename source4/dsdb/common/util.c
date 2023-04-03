@@ -3973,7 +3973,7 @@ int dsdb_forest_functional_level(struct ldb_context *ldb)
 int dsdb_dc_functional_level(struct ldb_context *ldb)
 {
 	int *dcFunctionality =
-		talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
+		talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int);
 	if (!dcFunctionality) {
 		/* this is expected during initial provision */
 		DEBUG(4,(__location__ ": WARNING: domainControllerFunctionality not setup\n"));
