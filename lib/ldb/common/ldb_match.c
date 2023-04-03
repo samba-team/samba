@@ -203,7 +203,7 @@ static int ldb_match_equality(struct ldb_context *ldb,
 	}
 
 	/* TODO: handle the "*" case derived from an extended search
-	   operation without the attibute type defined */
+	   operation without the attribute type defined */
 	el = ldb_msg_find_element(msg, tree->u.equality.attr);
 	if (el == NULL) {
 		*matched = false;

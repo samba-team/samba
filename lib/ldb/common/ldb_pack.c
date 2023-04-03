@@ -122,7 +122,7 @@ static int ldb_pack_data_v1(struct ldb_context *ldb,
 	size += dn_len;
 
 	/*
-	 * First calcuate the buffer size we need, and check for
+	 * First calculate the buffer size we need, and check for
 	 * overflows
 	 */
 	for (i=0;i<message->num_elements;i++) {

@@ -58,7 +58,7 @@ struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg,
 
 /*
   see if two ldb_val structures contain exactly the same data
-  return 1 for a match, 0 for a mis-match
+  return 1 for a match, 0 for a mismatch
 */
 int ldb_val_equal_exact(const struct ldb_val *v1, const struct ldb_val *v2)
 {
@@ -1524,7 +1524,7 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 		return NULL;
 	}
 
-	/* we now excatly how long this string will be */
+	/* we now exactly how long this string will be */
 	ts = talloc_array(mem_ctx, char, 18);
 
 	/* formatted like: 20040408072012.0Z */
@@ -1640,7 +1640,7 @@ char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t)
 		return NULL;
 	}
 
-	/* we now excatly how long this string will be */
+	/* we now exactly how long this string will be */
 	ts = talloc_array(mem_ctx, char, 14);
 
 	/* formatted like: 20040408072012.0Z => 040408072012Z */

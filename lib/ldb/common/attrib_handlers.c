@@ -326,7 +326,7 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 	while (n2 && *s2 == ' ') { s2++; n2--; };
 
 	while (n1 && n2 && *s1 && *s2) {
-		/* the first 127 (0x7F) chars are ascii and utf8 guarantes they
+		/* the first 127 (0x7F) chars are ascii and utf8 guarantees they
 		 * never appear in multibyte sequences */
 		if (((unsigned char)s1[0]) & 0x80) goto utf8str;
 		if (((unsigned char)s2[0]) & 0x80) goto utf8str;
