@@ -130,7 +130,7 @@ static int fill_claim_int64(TALLOC_CTX *mem_ctx,
 			} else {
 				reason = "Unknown error";
 			}
-			DBG_WARNING("Failed to intepret value %s as INT64 "
+			DBG_WARNING("Failed to interpret value %s as INT64 "
 				    "while creating claim %s for attribute %s (%s); "
 				    "skipping value\n",
 				    (value->data != NULL) ? (const char *)value->data : "<unknown>",
@@ -182,7 +182,7 @@ static int fill_claim_uint64(TALLOC_CTX *mem_ctx,
 			} else {
 				reason = "Unknown error";
 			}
-			DBG_WARNING("Failed to intepret value %s as UINT64 "
+			DBG_WARNING("Failed to interpret value %s as UINT64 "
 				    "while creating claim %s for attribute %s (%s); "
 				    "skipping value\n",
 				    (value->data != NULL) ? (const char *)value->data : "<unknown>",
@@ -289,7 +289,7 @@ static int fill_claim_boolean(TALLOC_CTX *mem_ctx,
 			} else {
 				reason = "Unknown error";
 			}
-			DBG_WARNING("Failed to intepret value %s as BOOL "
+			DBG_WARNING("Failed to interpret value %s as BOOL "
 				    "while creating claim %s for attribute %s (%s); "
 				    "skipping value\n",
 				    (value->data != NULL) ? (const char *)value->data : "<unknown>",
