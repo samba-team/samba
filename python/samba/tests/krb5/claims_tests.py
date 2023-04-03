@@ -1958,6 +1958,90 @@ class ClaimsTests(KDCBaseTest):
         },
     ]
 
+    def test_auth_silo_claim(self):
+        self.run_auth_silo_claim_test()
+
+    def test_auth_silo_claim_unenforced(self):
+        # The claim is not present if the silo is unenforced.
+        self.run_auth_silo_claim_test(enforced=False,
+                                      expect_claim=False)
+
+    def test_auth_silo_claim_not_a_member(self):
+        # The claim is not present if the user is not a member of the silo.
+        self.run_auth_silo_claim_test(add_to_silo=False,
+                                      expect_claim=False)
+
+    def test_auth_silo_claim_unassigned(self):
+        # The claim is not present if the user is not assigned to the silo.
+        self.run_auth_silo_claim_test(assigned=False,
+                                      expect_claim=False)
+
+    def test_auth_silo_claim_assigned_to_wrong_dn(self):
+        samdb = self.get_samdb()
+
+        # The claim is not present if the user is assigned to some other DN.
+        self.run_auth_silo_claim_test(assigned=self.get_server_dn(samdb),
+                                      expect_claim=False)
+
+    def run_auth_silo_claim_test(self, *,
+                                 enforced=True,
+                                 add_to_silo=True,
+                                 assigned=True,
+                                 expect_claim=True):
+        # Create a new authentication silo.
+        silo_id = self.get_new_username()
+        silo_dn = self.create_auth_silo(silo_id, enforced=enforced)
+
+        account_options = None
+        if assigned is not False:
+            if assigned is True:
+                assigned = silo_dn
+
+            account_options = {
+                'additional_details': self.freeze({
+                    # The user is assigned to the authentication silo we just
+                    # created, or to some DN specified by a test.
+                    'msDS-AssignedAuthNPolicySilo': str(assigned),
+                }),
+            }
+
+        # Create the user account.
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts=account_options)
+
+        if add_to_silo:
+            # Add the account to the silo.
+            self.add_to_group(str(creds.get_dn()),
+                              silo_dn,
+                              'msDS-AuthNPolicySiloMembers',
+                              expect_attr=False)
+
+        claim_id = self.create_auth_silo_claim_id()
+
+        if expect_claim:
+            expected_claims = {
+                claim_id: {
+                    'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
+                    'type': claims.CLAIM_TYPE_STRING,
+                    # Expect a claim containing the name of the silo.
+                    'values': (silo_id,),
+                },
+            }
+            unexpected_claims = None
+            expect_client_claims = True
+        else:
+            expected_claims = None
+            expect_client_claims = None
+            unexpected_claims = {claim_id}
+
+        # Get a TGT and check whether the claim is present or missing.
+        self.get_tgt(creds,
+                     expect_pac=True,
+                     expect_client_claims=True,
+                     expected_client_claims=expected_claims,
+                     unexpected_client_claims=unexpected_claims)
+
 
 if __name__ == '__main__':
     global_asn1_print = False
