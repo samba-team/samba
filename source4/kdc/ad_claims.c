@@ -37,6 +37,17 @@
 
 #undef strcasecmp
 
+bool ad_claims_are_issued(struct ldb_context *samdb)
+{
+	/*
+	 * Claims aren’t issued by Samba unless the DC is at
+	 * FL2012.  This is to match Windows, which will offer
+	 * this feature as soon as the DC is upgraded.
+	 */
+	const int functional_level = dsdb_dc_functional_level(samdb);
+	return functional_level >= DS_DOMAIN_FUNCTION_2012;
+}
+
 static int acl_attr_cmp_fn(const char *a, const char * const *b)
 {
 	return ldb_attr_cmp(a, *b);
@@ -1237,6 +1248,10 @@ int get_claims_for_principal(struct ldb_context *ldb,
 	const struct dsdb_class *principal_class = NULL;
 
 	*claims_blob = data_blob_null;
+
+	if (!ad_claims_are_issued(ldb)) {
+		return LDB_SUCCESS;
+	}
 
 	principal_class_el = ldb_msg_find_element(principal,
 						  "objectClass");

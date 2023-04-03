@@ -32,12 +32,24 @@
 
 bool authn_policy_silos_and_policies_in_effect(struct ldb_context *samdb)
 {
+	/*
+	 * Authentication Silos and Authentication Policies are not
+	 * honoured by Samba unless the DC is at FL 2012 R2.  This is
+	 * to match Windows, which will offer these features as soon
+	 * as the DC is upgraded.
+	 */
 	const int functional_level = dsdb_dc_functional_level(samdb);
 	return functional_level >= DS_DOMAIN_FUNCTION_2012_R2;
 }
 
 bool authn_policy_allowed_ntlm_network_auth_in_effect(struct ldb_context *samdb)
 {
+	/*
+	 * The allowed NTLM network authentication Policies are not
+	 * honoured by Samba unless the DC is at FL2016.  This
+	 * is to match Windows, which will enforce these restrictions
+	 * as soon as the DC is upgraded.
+	 */
 	const int functional_level = dsdb_dc_functional_level(samdb);
 	return functional_level >= DS_DOMAIN_FUNCTION_2016;
 }

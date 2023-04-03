@@ -45,6 +45,39 @@ trace records belonging to the same request.  Field 'depth' allows to track the
 request nesting level. A new tool samba-log-parser is added for better log
 parsing.
 
+Kerberos Claims, Authentication Silos and NTLM authentication policies
+----------------------------------------------------------------------
+
+An initial, partial implementation of Active Directory Functional
+Level 2012, 2012R2 and 2016 is available in this release.
+
+While we continue to develop these features, existing domains can
+test the feature by selecting the functional level in provision or
+raising the DC functional level by setting
+
+ ad dc functional level = 2016
+
+in the smb.conf
+
+The smb.conf file on each DC must have 'ad dc functional level = 2016'
+set to have the partially complete feature available.  This will also,
+at first startup, update the server's own AD entry with the configured
+functional level.
+
+For new domains, add these parameters to 'samba-tool provision'
+
+--option="ad dc functional level = 2016" --function-level=2016
+
+The second option, setting the overall domain functional level
+indicates that all DCs should be at this functional level.
+
+To raise the domain functional level of an existing domain, after
+updating the smb.conf and restarting Samba run
+samba-tool domain schemaupgrade --schema=2019
+samba-tool domain functionalprep --function-level=2016
+samba-tool domain level raise --domain-level=2016 --forest-level=2016
+
+
 REMOVED FEATURES
 ================
 

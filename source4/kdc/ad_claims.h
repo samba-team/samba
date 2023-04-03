@@ -24,6 +24,8 @@
 #include "lib/util/data_blob.h"
 #include "ldb.h"
 
+bool ad_claims_are_issued(struct ldb_context *samdb);
+
 int get_claims_for_principal(struct ldb_context *ldb,
 			     TALLOC_CTX *mem_ctx,
 			     const struct ldb_message *principal,
