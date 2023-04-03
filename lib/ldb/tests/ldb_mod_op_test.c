@@ -2599,7 +2599,7 @@ static int test_ldb_callback_modify_during_search_callback1(struct ldb_request *
 	msg = ldb_msg_new(tmp_ctx);
 	assert_non_null(msg);
 
-	/* We deliberatly use ou= not cn= here */
+	/* We deliberately use ou= not cn= here */
 	msg->dn = ldb_dn_new_fmt(msg,
 				 ctx->test_ctx->ldb,
 				 "ou=test_search_cn_extra,%s",

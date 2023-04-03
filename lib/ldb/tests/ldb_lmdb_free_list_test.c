@@ -224,7 +224,7 @@ static void test_free_list_no_read_lock(void **state)
 	const char *KEY1 = "KEY01";
 
 	/*
-	 * Pipes etc to co-ordinate the processes
+	 * Pipes etc to coordinate the processes
 	 */
 	int to_child[2];
 	int to_parent[2];
@@ -367,7 +367,7 @@ static void test_free_list_read_lock(void **state)
 	const char *KEY1 = "KEY01";
 
 	/*
-	 * Pipes etc to co-ordinate the processes
+	 * Pipes etc to coordinate the processes
 	 */
 	int to_child[2];
 	int to_parent[2];
@@ -516,7 +516,7 @@ static void test_free_list_stale_reader(void **state)
 	const char *KEY1 = "KEY01";
 
 	/*
-	 * Pipes etc to co-ordinate the processes
+	 * Pipes etc to coordinate the processes
 	 */
 	int to_child[2];
 	int to_parent[2];

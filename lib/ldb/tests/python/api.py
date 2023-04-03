@@ -2110,7 +2110,7 @@ class AddModifyTests(LdbBaseTest):
                         "name": b"Admins",
                         "x": "z", "y": "a",
                         "objectUUID": b"0123456789abcde2"})
-            self.fail("Should have failed adding dupliate entry")
+            self.fail("Should have failed adding duplicate entry")
         except ldb.LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
@@ -2304,7 +2304,7 @@ class IndexedAddModifyTests(AddModifyTests):
                         "name": b"Admins",
                         "x": "z", "y": "a",
                         "objectUUID": b"0123456789abcdef"})
-            self.fail("Should have failed adding dupliate GUID")
+            self.fail("Should have failed adding duplicate GUID")
         except ldb.LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_CONSTRAINT_VIOLATION)
@@ -2319,7 +2319,7 @@ class IndexedAddModifyTests(AddModifyTests):
                         "name": b"Admins",
                         "x": "z", "y": "a",
                         "objectUUID": b"a123456789abcdef"})
-            self.fail("Should have failed adding dupliate GUID")
+            self.fail("Should have failed adding duplicate GUID")
         except ldb.LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
@@ -2334,7 +2334,7 @@ class IndexedAddModifyTests(AddModifyTests):
                         "name": b"Admins",
                         "x": "z", "y": "a",
                         "objectUUID": b"aaa3456789abcdef"})
-            self.fail("Should have failed adding dupliate DN")
+            self.fail("Should have failed adding duplicate DN")
         except ldb.LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)

@@ -412,7 +412,7 @@ seealso: cn=All Staff,ou=Groups,o=University of Michigan,c=TEST
 homepostaladdress: 123 Anystreet $ Ann Arbor, MI 48104
 mail: uham@mail.alumni.example.com
 description: a long attribute name, longer than 128 bytes so that we
- trigger sign extension problems in tdb_pack, no thats not long enough
+ trigger sign extension problems in tdb_pack, no that's not long enough
  yet, maybe this is. I'll just keep going till it triggers the error
 homephone: +1 313 555 8421
 pager: +1 313 555 2844

@@ -52,7 +52,7 @@ struct ldbtest_ctx {
  *
  * This test checks the current behaviour of the function, however
  * this is not in a public ABI and many of the tested behaviours are
- * not ideal.  If the behaviour is deliberatly improved, this test
+ * not ideal.  If the behaviour is deliberately improved, this test
  * should be updated without worry to the new better behaviour.
  *
  * In particular the test is particularly to ensure the current
@@ -198,7 +198,7 @@ static void test_filter_attrs_two_attr_matched_attrs(void **state)
 
 	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
 
-	/* deliberatly the other order */
+	/* deliberately the other order */
 	const char *attrs[] = {"bar", "foo", NULL};
 
 	uint8_t value1[] = "The value.......end";
@@ -273,7 +273,7 @@ static void test_filter_attrs_two_attr_matched_one_attr(void **state)
 
 	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
 
-	/* deliberatly the other order */
+	/* deliberately the other order */
 	const char *attrs[] = {"bar", NULL};
 
 	uint8_t value1[] = "The value.......end";
@@ -342,7 +342,7 @@ static void test_filter_attrs_two_dup_attr_matched_one_attr(void **state)
 
 	struct ldb_message *filtered_msg = ldb_msg_new(ctx);
 
-	/* deliberatly the other order */
+	/* deliberately the other order */
 	const char *attrs[] = {"bar", NULL};
 
 	uint8_t value1[] = "The value.......end";
@@ -739,7 +739,7 @@ static void test_filter_attrs_two_attr_matched_star(void **state)
 /*
  * Test against a record with only one attribute, matching the * in
  * the list, but without the DN being pre-filled.  Fails due to need
- * to contstruct the distinguishedName
+ * to construct the distinguishedName
  */
 static void test_filter_attrs_one_attr_matched_star_no_dn(void **state)
 {

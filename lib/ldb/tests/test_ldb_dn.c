@@ -136,7 +136,7 @@ static int extended_dn_read_ID(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-/* write out (resued for both HEX and clear for now) */
+/* write out (reused for both HEX and clear for now) */
 static int extended_dn_write_ID(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {

@@ -37,9 +37,9 @@
  * A KV module is expected to have the following behaviour
  *
  * - A transaction must be open to perform any read, write or delete operation
- * - Writes and Deletes should not be visible until a transaction is commited
+ * - Writes and Deletes should not be visible until a transaction is committed
  * - Nested transactions are not permitted
- * - transactions can be rolled back and commited.
+ * - transactions can be rolled back and committed.
  * - supports iteration over all records in the database
  * - supports the update_in_iterate operation allowing entries to be
  *   re-keyed.
@@ -1075,7 +1075,7 @@ static void test_write_transaction_isolation(void **state)
 	const char *VAL2 = "VALUE02";
 
 	/*
-	 * Pipes etc to co-ordinate the processes
+	 * Pipes etc to coordinate the processes
 	 */
 	int to_child[2];
 	int to_parent[2];
@@ -1222,7 +1222,7 @@ static void test_write_transaction_isolation(void **state)
 		}
 
 		/*
-		 * Wait for the transaction to be commited
+		 * Wait for the transaction to be committed
 		 */
 		ret = read(to_child[0], buf, 2);
 		if (ret != 2) {
@@ -1392,7 +1392,7 @@ static void test_delete_transaction_isolation(void **state)
 	const char *VAL2 = "VALUE02";
 
 	/*
-	 * Pipes etc to co-ordinate the processes
+	 * Pipes etc to coordinate the processes
 	 */
 	int to_child[2];
 	int to_parent[2];
@@ -1550,7 +1550,7 @@ static void test_delete_transaction_isolation(void **state)
 		}
 
 		/*
-		 * Wait for the transaction to be commited
+		 * Wait for the transaction to be committed
 		 */
 		ret = read(to_child[0], buf, 2);
 		if (ret != 2) {
