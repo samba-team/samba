@@ -2029,10 +2029,8 @@ class ClaimsTests(KDCBaseTest):
                 },
             }
             unexpected_claims = None
-            expect_client_claims = True
         else:
             expected_claims = None
-            expect_client_claims = None
             unexpected_claims = {claim_id}
 
         # Get a TGT and check whether the claim is present or missing.
