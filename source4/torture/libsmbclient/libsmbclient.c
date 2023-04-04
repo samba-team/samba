@@ -1542,17 +1542,30 @@ static bool torture_libsmbclient_getxattr(struct torture_context *tctx)
 			ret));
 
 	/*
-	 * Ensure getting a valid attribute returns 0.
+	 * Ensure getting a valid attribute computes its size.
 	 */
-	ret = smbc_getxattr(getxattr_name, "system.*", value, sizeof(value));
-	torture_assert_int_equal_goto(tctx,
-		ret,
-		0,
+	ret = smbc_getxattr(getxattr_name, "system.*", NULL, 0);
+	torture_assert_goto(tctx,
+		ret >= 0,
 		ok,
 		done,
 		talloc_asprintf(tctx,
-			"smbc_getxattr(foobar) on '%s' should "
-			"get -1, got %d\n",
+			"smbc_getxattr(foobar, NULL) on '%s' should "
+			"get >=0, got %d\n",
+			getxattr_name,
+			ret));
+
+	/*
+	 * Ensure getting a valid attribute returns its size.
+	 */
+	ret = smbc_getxattr(getxattr_name, "system.*", value, sizeof(value));
+	torture_assert_goto(tctx,
+		ret >= 0,
+		ok,
+		done,
+		talloc_asprintf(tctx,
+			"smbc_getxattr(foobar, value) on '%s' should "
+			"get >=0, got %d\n",
 			getxattr_name,
 			ret));
 
