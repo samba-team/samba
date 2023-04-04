@@ -1203,8 +1203,7 @@ static NTSTATUS samba_add_compounded_auth(TALLOC_CTX *mem_ctx,
  * structure. If the resulting structure is not talloc_free()d, it will be
  * reused on future calls to this function.
  */
-NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
-                                         struct samba_kdc_entry *skdc_entry,
+NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
                                          const struct ldb_message *msg,
                                          const struct auth_user_info_dc **user_info_dc)
 {
@@ -1422,7 +1421,7 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	const struct auth_user_info_dc *user_info_dc = NULL;
 
-	nt_status = samba_kdc_get_user_info_from_db(mem_ctx, skdc_entry, skdc_entry->msg, &user_info_dc);
+	nt_status = samba_kdc_get_user_info_from_db(skdc_entry, skdc_entry->msg, &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Getting user info for PAC failed: %s\n",
 			nt_errstr(nt_status));
@@ -2317,7 +2316,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_user_info_from_db(mem_ctx, client, client->msg, &user_info_dc);
+		nt_status = samba_kdc_get_user_info_from_db(client, client->msg, &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Getting user info for PAC failed: %s\n",
 				nt_errstr(nt_status));

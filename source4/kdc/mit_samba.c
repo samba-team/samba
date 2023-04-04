@@ -1064,8 +1064,7 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	status = samba_kdc_get_user_info_from_db(tmp_ctx,
-						 p,
+	status = samba_kdc_get_user_info_from_db(p,
 						 p->msg,
 						 &user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {
