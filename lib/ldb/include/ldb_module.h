@@ -103,8 +103,8 @@ struct ldb_module;
 #define LDB_FLAG_INTERNAL_SHARED_VALUES 0x200
 
 /*
- * this attribute has been access checked. We know the user has the right to
- * view it. Used internally in Samba aclread module.
+ * this attribute has been access checked. Used internally in Samba aclread
+ * module.
  */
 #define LDB_FLAG_INTERNAL_ACCESS_CHECKED 0x400
 
