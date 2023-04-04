@@ -2120,6 +2120,7 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 							 const krb5_const_pac device_pac,
 							 DATA_BLOB **device_info_blob)
 {
+	TALLOC_CTX *frame = NULL;
 	krb5_data device_logon_info;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
@@ -2142,10 +2143,12 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 		return code;
 	}
 
+	frame = talloc_stackframe();
+
 	device_logon_info_blob = data_blob_const(device_logon_info.data,
 						 device_logon_info.length);
 
-	ndr_err = ndr_pull_union_blob(&device_logon_info_blob, mem_ctx, &logon_info,
+	ndr_err = ndr_pull_union_blob(&device_logon_info_blob, frame, &logon_info,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 	smb_krb5_free_data_contents(context, &device_logon_info);
@@ -2153,6 +2156,7 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_ERR("can't parse device PAC LOGON_INFO: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(frame);
 		return EINVAL;
 	}
 
@@ -2160,31 +2164,37 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 	 * When creating the device info structure, existing resource groups are
 	 * discarded.
 	 */
-	code = samba_kdc_make_device_info(mem_ctx,
+	code = samba_kdc_make_device_info(frame,
 					  &logon_info.logon_info.info->info3,
 					  NULL, /* resource_groups */
 					  &info);
 	if (code != 0) {
+		talloc_free(frame);
 		return code;
 	}
 
-	code = samba_kdc_update_device_info(mem_ctx,
+	code = samba_kdc_update_device_info(frame,
 					    samdb,
 					    &logon_info,
 					    info.device_info.info);
 	if (code != 0) {
+		talloc_free(frame);
 		return code;
 	}
 
-	return samba_kdc_get_device_info_pac_blob(mem_ctx,
+	code = samba_kdc_get_device_info_pac_blob(mem_ctx,
 						  &info,
 						  device_info_blob);
+
+	talloc_free(frame);
+	return code;
 }
 
 static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 						      struct samba_kdc_entry *device,
 						      DATA_BLOB **device_info_blob)
 {
+	TALLOC_CTX *frame = NULL;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
 
@@ -2199,7 +2209,9 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
 	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 
-	nt_status = samba_kdc_get_user_info_dc(mem_ctx,
+	frame = talloc_stackframe();
+
+	nt_status = samba_kdc_get_user_info_dc(frame,
 					       device,
 					       asserted_identity,
 					       claims_valid,
@@ -2208,30 +2220,36 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(frame);
 		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
-	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, &device_info_dc,
+	nt_status = auth_convert_user_info_dc_saminfo3(frame, &device_info_dc,
 						       AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED,
 						       &info3,
 						       &resource_groups);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n",
 			  nt_errstr(nt_status)));
+		talloc_free(frame);
 		return nt_status_to_krb5(nt_status);
 	}
 
-	code = samba_kdc_make_device_info(mem_ctx,
+	code = samba_kdc_make_device_info(frame,
 					  info3,
 					  resource_groups,
 					  &info);
 	if (code != 0) {
+		talloc_free(frame);
 		return code;
 	}
 
-	return samba_kdc_get_device_info_pac_blob(mem_ctx,
+	code = samba_kdc_get_device_info_pac_blob(mem_ctx,
 						  &info,
 						  device_info_blob);
+
+	talloc_free(frame);
+	return code;
 }
 
 /**
