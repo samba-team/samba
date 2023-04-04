@@ -2419,7 +2419,7 @@ int smbc_getxattr(const char *url,
  *                  required to hold the attribute value will be returned,
  *                  but nothing will be placed into the value buffer.
  *
- * @return          0 on success, < 0 on error with errno set:
+ * @return          size on success, < 0 on error with errno set:
  *                  - EINVAL  The client library is not properly initialized
  *                            or one of the parameters is not of a correct
  *                            form
