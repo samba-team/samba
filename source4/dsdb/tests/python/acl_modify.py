@@ -14,10 +14,9 @@ import samba.getopt as options
 from ldb import ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba.dcerpc import security
 
 from samba.auth import system_session
-from samba import gensec, sd_utils
+from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 import samba.tests
@@ -63,51 +62,9 @@ class AclTests(samba.tests.TestCase):
     def setUp(self):
         super(AclTests, self).setUp()
 
-        strict_checking = samba.tests.env_get_var_value('STRICT_CHECKING', allow_missing=True)
-        if strict_checking is None:
-            strict_checking = '1'
-        self.strict_checking = bool(int(strict_checking))
-
         self.ldb_admin = SamDB(ldaphost, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb_admin.domain_dn()
-        self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
-        self.user_pass = "samba123@"
-        self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
-        self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
-        self.addCleanup(self.delete_admin_connection)
-        # used for anonymous login
-        self.creds_tmp = Credentials()
-        self.creds_tmp.set_username("")
-        self.creds_tmp.set_password("")
-        self.creds_tmp.set_domain(creds.get_domain())
-        self.creds_tmp.set_realm(creds.get_realm())
-        self.creds_tmp.set_workstation(creds.get_workstation())
         print("baseDN: %s" % self.base_dn)
-
-        # set AttributeAuthorizationOnLDAPAdd and BlockOwnerImplicitRights
-        self.set_heuristic(samba.dsdb.DS_HR_ATTR_AUTHZ_ON_LDAP_ADD, b'11')
-
-    def set_heuristic(self, index, values):
-        self.assertGreater(index, 0)
-        self.assertLess(index, 30)
-        self.assertIsInstance(values, bytes)
-
-        # Get the old "dSHeuristics" if it was set
-        dsheuristics = self.ldb_admin.get_dsheuristics()
-        # Reset the "dSHeuristics" as they were before
-        self.addCleanup(self.ldb_admin.set_dsheuristics, dsheuristics)
-        # Set the "dSHeuristics" to activate the correct behaviour
-        default_heuristics = b"000000000100000000020000000003"
-        if dsheuristics is None:
-            dsheuristics = b""
-        dsheuristics += default_heuristics[len(dsheuristics):]
-        dsheuristics = (dsheuristics[:index - 1] +
-                        values +
-                        dsheuristics[index - 1 + len(values):])
-        self.ldb_admin.set_dsheuristics(dsheuristics)
-
-    def get_user_dn(self, name):
-        return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
     def get_ldb_connection(self, target_username, target_password):
         creds_tmp = Credentials()
@@ -121,20 +78,6 @@ class AclTests(samba.tests.TestCase):
         creds_tmp.set_kerberos_state(DONT_USE_KERBEROS)  # kinit is too expensive to use in a tight loop
         ldb_target = SamDB(url=ldaphost, credentials=creds_tmp, lp=lp)
         return ldb_target
-
-    # Test if we have any additional groups for users than default ones
-    def assert_user_no_group_member(self, username):
-        res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % self.get_user_dn(username))
-        try:
-            self.assertEqual(res[0]["memberOf"][0], "")
-        except KeyError:
-            pass
-        else:
-            self.fail()
-
-    def delete_admin_connection(self):
-        del self.sd_utils
-        del self.ldb_admin
 
 
 class AclModifyTests(AclTests):
