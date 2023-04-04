@@ -1642,6 +1642,8 @@ class KDCBaseTest(RawKerberosTest):
             'secure_channel_type': None,
             'id': None,
             'force_nt4_hash': False,
+            'assigned_policy': None,
+            'assigned_silo': None,
         }
 
         account_opts = {
@@ -1692,7 +1694,9 @@ class KDCBaseTest(RawKerberosTest):
                             kerberos_enabled,
                             secure_channel_type,
                             id,
-                            force_nt4_hash):
+                            force_nt4_hash,
+                            assigned_policy,
+                            assigned_silo):
         if account_type is self.AccountType.USER:
             self.assertIsNone(spn)
             self.assertIsNone(delegation_to_spn)
@@ -1750,6 +1754,12 @@ class KDCBaseTest(RawKerberosTest):
 
         if spn is None and account_type is not self.AccountType.USER:
             spn = 'host/' + user_name
+
+        if assigned_policy is not None:
+            details['msDS-AssignedAuthNPolicy'] = assigned_policy
+
+        if assigned_silo is not None:
+            details['msDS-AssignedAuthNPolicySilo'] = assigned_silo
 
         creds, dn = self.create_account(samdb, user_name,
                                         account_type=account_type,
