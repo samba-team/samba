@@ -207,7 +207,7 @@ static bool ldb_attr_always_visible(const char *attr)
 }
 
 /* Collect a list of attributes required to match a given parse tree. */
-static int ldb_parse_tree_collect_acl_attrs(struct ldb_module *module,
+static int ldb_parse_tree_collect_acl_attrs(const struct ldb_module *module,
 					    TALLOC_CTX *mem_ctx,
 					    struct ldb_attr_vec *attrs,
 					    const struct ldb_parse_tree *tree)
