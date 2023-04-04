@@ -462,7 +462,7 @@ class cmd_domain_trust_list(DomainTrustCommand):
             if self.check_runtime_error(error, werror.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
                 # TODO: we could implement a fallback to lsa.EnumTrustDom()
                 raise CommandError("LOCAL_DC[%s]: netr_DsrEnumerateDomainTrusts not supported." % (
-                                   self.local_server))
+                                   local_server))
             raise self.LocalRuntimeError(self, error, "netr_DsrEnumerateDomainTrusts failed")
 
         a = local_netlogon_trusts.array
@@ -1878,15 +1878,15 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             except RuntimeError as error:
                 if self.check_runtime_error(error, werror.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
                     raise CommandError("LOCAL_DC[%s]: netr_DsRGetForestTrustInformation() not supported." % (
-                                       self.local_server))
+                                       local_server))
 
                 if self.check_runtime_error(error, werror.WERR_INVALID_FUNCTION):
                     raise CommandError("LOCAL_DC[%s]: netr_DsRGetForestTrustInformation() not supported." % (
-                                       self.local_server))
+                                       local_server))
 
                 if self.check_runtime_error(error, werror.WERR_NERR_ACFNOTLOADED):
                     raise CommandError("LOCAL_DC[%s]: netr_DsRGetForestTrustInformation() not supported." % (
-                                       self.local_server))
+                                       local_server))
 
                 raise self.LocalRuntimeError(self, error, "netr_DsRGetForestTrustInformation() failed")
 
