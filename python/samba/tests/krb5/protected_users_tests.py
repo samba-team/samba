@@ -688,9 +688,9 @@ class ProtectedUsersTests(KDCBaseTest):
         self.check_ticket_times(tgt, expected_end=till,
                                 expected_renew_time=till)
 
-        # Test that requesting a ticket with a long lifetime produces a ticket
-        # with that lifetime, unless the user is protected, whereupon the
-        # lifetime will be capped at four hours.
+    # Test that requesting a ticket with a long lifetime produces a ticket with
+    # that lifetime, unless the user is protected, whereupon the lifetime will
+    # be capped at four hours.
     def test_tgt_lifetime_longer_not_protected(self):
         client_creds = self._get_creds(protected=False)
 
