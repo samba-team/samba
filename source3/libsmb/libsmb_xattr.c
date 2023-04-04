@@ -2182,9 +2182,9 @@ SMBC_getxattr_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
 		/*
 		 * static function cacl_get returns a value greater than zero
-		 * on success. Map this to zero meaning success.
+		 * which is needed buffer size needed when size_t is 0.
 		 */
-                return ret < 0 ? -1 : 0;
+                return ret;
         }
 
         /* Unsupported attribute name */
