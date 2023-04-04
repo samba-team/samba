@@ -917,6 +917,7 @@ struct cli_qpathinfo2_state {
 	SMB_INO_T ino;
 };
 
+static void cli_qpathinfo2_done2(struct tevent_req *subreq);
 static void cli_qpathinfo2_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
@@ -931,6 +932,14 @@ struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_qpathinfo2_send(state, ev, cli, fname);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_qpathinfo2_done2, req);
+		return req;
+	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_QUERY_FILE_ALL_INFO,
 				    68, CLI_BUFFER_SIZE);
@@ -939,6 +948,29 @@ struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, cli_qpathinfo2_done, req);
 	return req;
+}
+
+static void cli_qpathinfo2_done2(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_qpathinfo2_state *state =
+		tevent_req_data(req, struct cli_qpathinfo2_state);
+	NTSTATUS status;
+
+	status = cli_smb2_qpathinfo2_recv(subreq,
+					  &state->create_time,
+					  &state->access_time,
+					  &state->write_time,
+					  &state->change_time,
+					  &state->size,
+					  &state->attr,
+					  &state->ino);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
 static void cli_qpathinfo2_done(struct tevent_req *subreq)
@@ -1031,18 +1063,6 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_qpathinfo2(cli,
-					fname,
-					create_time,
-					access_time,
-					write_time,
-					change_time,
-					size,
-					pattr,
-					ino);
-	}
 
 	frame = talloc_stackframe();
 
