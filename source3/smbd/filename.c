@@ -840,7 +840,7 @@ static NTSTATUS openat_pathref_fsp_case_insensitive(
 	if (IS_VETO_PATH(dirfsp->conn, smb_fname_rel->base_name)) {
 		DBG_DEBUG("veto files rejecting last component %s\n",
 			  smb_fname_str_dbg(smb_fname_rel));
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_NETWORK_OPEN_RESTRICTION;
 	}
 
 	status = openat_pathref_fsp(dirfsp, smb_fname_rel);
@@ -906,7 +906,7 @@ static NTSTATUS openat_pathref_fsp_case_insensitive(
 			DBG_DEBUG("veto files rejecting last component %s\n",
 				  smb_fname_str_dbg(smb_fname_rel));
 			TALLOC_FREE(cache_key.data);
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			return NT_STATUS_NETWORK_OPEN_RESTRICTION;
 		}
 
 		status = openat_pathref_fsp(dirfsp, smb_fname_rel);
@@ -936,7 +936,7 @@ lookup:
 		if (IS_VETO_PATH(dirfsp->conn, smb_fname_rel->base_name)) {
 			DBG_DEBUG("veto files rejecting last component %s\n",
 				smb_fname_str_dbg(smb_fname_rel));
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			return NT_STATUS_NETWORK_OPEN_RESTRICTION;
 		}
 
 		status = openat_pathref_fsp(dirfsp, smb_fname_rel);
@@ -1341,6 +1341,10 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		goto done;
 	}
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_OPEN_RESTRICTION)) {
+		/* A vetoed file, pretend it's not there  */
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
