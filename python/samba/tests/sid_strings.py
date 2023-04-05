@@ -41,8 +41,7 @@ sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 
-@DynamicTestCase
-class SidStringTests(TestCase):
+class SidStringBase(TestCase):
     @classmethod
     def setUpDynamicTestCases(cls):
         if env_get_var_value('CHECK_ALL_COMBINATIONS',
@@ -157,6 +156,10 @@ cn: {object_name}
         owner_sid = str(descriptor.owner_sid)
 
         self.assertEqual(expected_sid, owner_sid)
+
+
+@DynamicTestCase
+class SidStringTests(SidStringBase):
 
     cases = {
         'AA': 'S-1-5-32-579',
