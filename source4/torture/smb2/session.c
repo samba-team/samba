@@ -34,6 +34,17 @@
 #include "lib/param/param.h"
 #include "lib/util/tevent_ntstatus.h"
 
+/* Ticket lifetime we want to request in seconds */
+#define KRB5_TICKET_LIFETIME 5
+/* Allowed clock skew in seconds */
+#define KRB5_CLOCKSKEW 5
+/* Time till ticket fully expired in seconds */
+#define KRB5_TICKET_EXPIRETIME KRB5_TICKET_LIFETIME + KRB5_CLOCKSKEW
+
+#define texpand(x) #x
+#define GENSEC_GSSAPI_REQUESTED_LIFETIME(x) \
+	"gensec_gssapi:requested_life_time=" texpand(x)
+
 #define CHECK_CREATED(tctx, __io, __created, __attribute)			\
 	do {									\
 		torture_assert_int_equal(tctx, (__io)->out.create_action,	\
@@ -54,6 +65,20 @@
 			break; \
 		} \
 	}
+
+static void sleep_remaining(struct torture_context *tctx,
+			    const struct timeval *endtime)
+{
+	struct timeval current = tevent_timeval_current();
+	double remaining_secs = timeval_elapsed2(&current, endtime);
+
+	remaining_secs = remaining_secs < 1.0 ? 1.0 : remaining_secs;
+	torture_comment(
+		tctx,
+		"sleep for %2.f second(s) that the krb5 ticket expires",
+		remaining_secs);
+	smb_msleep((int)(remaining_secs * 1000));
+}
 
 /**
  * basic test for doing a session reconnect
@@ -1070,6 +1095,8 @@ static bool test_session_expire1i(struct torture_context *tctx,
 	struct smb2_create io1;
 	union smb_fileinfo qfinfo;
 	size_t i;
+	struct timeval endtime;
+	bool ticket_expired = false;
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
 	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
@@ -1088,7 +1115,9 @@ static bool test_session_expire1i(struct torture_context *tctx,
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
-	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
+	lpcfg_set_option(
+		tctx->lp_ctx,
+		GENSEC_GSSAPI_REQUESTED_LIFETIME(KRB5_TICKET_LIFETIME));
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 	if (force_signing) {
@@ -1107,6 +1136,12 @@ static bool test_session_expire1i(struct torture_context *tctx,
 			      lpcfg_socket_options(tctx->lp_ctx),
 			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
 			      );
+	/*
+	 * We request a ticket lifetime of KRB5_TICKET_LIFETIME seconds.
+	 * Give the server at least KRB5_TICKET_LIFETIME + KRB5_CLOCKSKEW + a
+	 * few more milliseconds for this to kick in.
+	 */
+	endtime = timeval_current_ofs(KRB5_TICKET_EXPIRETIME, 500 * 1000);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_connect failed");
 
@@ -1145,19 +1180,28 @@ static bool test_session_expire1i(struct torture_context *tctx,
 	qfinfo.access_information.in.file.handle = _h1;
 
 	for (i=0; i < 2; i++) {
-		torture_comment(tctx, "query info => OK\n");
+		torture_comment(tctx, "%s: query info => OK\n",
+				current_timestring(tctx, true));
 
 		ZERO_STRUCT(qfinfo.access_information.out);
 		status = smb2_getinfo_file(tree, tctx, &qfinfo);
+		torture_comment(tctx, "%s: %s:%s: after smb2_getinfo_file() => %s\n",
+			current_timestring(tctx, true),
+			__location__, __func__,
+			nt_errstr(status));
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_getinfo_file failed");
 
-		torture_comment(tctx, "sleep 10 seconds\n");
-		smb_msleep(10*1000);
+		sleep_remaining(tctx, &endtime);
 
-		torture_comment(tctx, "query info => EXPIRED\n");
+		torture_comment(tctx, "%s: query info => EXPIRED\n",
+				current_timestring(tctx, true));
 		ZERO_STRUCT(qfinfo.access_information.out);
 		status = smb2_getinfo_file(tree, tctx, &qfinfo);
+		torture_comment(tctx, "%s: %s:%s: after smb2_getinfo_file() => %s\n",
+			current_timestring(tctx, true),
+			__location__, __func__,
+			nt_errstr(status));
 		torture_assert_ntstatus_equal_goto(tctx, status,
 					NT_STATUS_NETWORK_SESSION_EXPIRED,
 					ret, done, "smb2_getinfo_file "
@@ -1174,10 +1218,18 @@ static bool test_session_expire1i(struct torture_context *tctx,
 				tree->session->smbXcli, true);
 		}
 
-		torture_comment(tctx, "reauth => OK\n");
+		torture_comment(tctx, "%s: reauth => OK\n",
+				current_timestring(tctx, true));
 		status = smb2_session_setup_spnego(tree->session,
 						   credentials,
 						   0 /* previous_session_id */);
+		/*
+		 * We request a ticket lifetime of KRB5_TICKET_LIFETIME seconds.
+		 * Give the server at least KRB5_TICKET_LIFETIME +
+		 * KRB5_CLOCKSKEW + a few more milliseconds for this to kick in.
+		 */
+		endtime = timeval_current_ofs(KRB5_TICKET_EXPIRETIME,
+					      500 * 1000);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
 
@@ -1185,8 +1237,30 @@ static bool test_session_expire1i(struct torture_context *tctx,
 			tree->session->smbXcli, false);
 	}
 
+	ticket_expired = timeval_expired(&endtime);
+	if (ticket_expired) {
+		struct timeval current = timeval_current();
+		double remaining_secs = timeval_elapsed2(&current, &endtime);
+		remaining_secs = remaining_secs < 0.0 ? remaining_secs * -1.0
+						      : remaining_secs;
+		torture_warning(
+			tctx,
+			"The ticket already expired %.2f seconds ago. "
+			"You might want to increase KRB5_TICKET_LIFETIME.",
+			remaining_secs);
+	}
+	torture_assert(tctx,
+		       ticket_expired == false,
+		       "The kerberos ticket already expired");
 	ZERO_STRUCT(qfinfo.access_information.out);
+	torture_comment(tctx, "%s: %s:%s: before smb2_getinfo_file()\n",
+			current_timestring(tctx, true),
+			__location__, __func__);
 	status = smb2_getinfo_file(tree, tctx, &qfinfo);
+	torture_comment(tctx, "%s: %s:%s: after smb2_getinfo_file() => %s\n",
+			current_timestring(tctx, true),
+			__location__, __func__,
+			nt_errstr(status));
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_getinfo_file failed");
 
@@ -1199,7 +1273,7 @@ done:
 	}
 
 	talloc_free(tree);
-	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=0");
+	lpcfg_set_option(tctx->lp_ctx, GENSEC_GSSAPI_REQUESTED_LIFETIME(0));
 	return ret;
 }
 
@@ -1262,6 +1336,7 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	struct smb2_request *req = NULL;
 	struct smb2_notify ntf1;
 	struct smb2_notify ntf2;
+	struct timeval endtime;
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
 	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
@@ -1280,7 +1355,9 @@ static bool test_session_expire2i(struct torture_context *tctx,
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
-	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
+	lpcfg_set_option(
+		tctx->lp_ctx,
+		GENSEC_GSSAPI_REQUESTED_LIFETIME(KRB5_TICKET_LIFETIME));
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 	options.signing = SMB_SIGNING_REQUIRED;
@@ -1300,6 +1377,12 @@ static bool test_session_expire2i(struct torture_context *tctx,
 			      lpcfg_socket_options(tctx->lp_ctx),
 			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
 			      );
+	/*
+	 * We request a ticket lifetime of KRB5_TICKET_LIFETIME seconds.
+	 * Give the server at least KRB5_TICKET_LIFETIME + KRB5_CLOCKSKEW + a
+	 * few more milliseconds for this to kick in.
+	 */
+	endtime = timeval_current_ofs(KRB5_TICKET_EXPIRETIME, 500 * 1000);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_connect failed");
 
@@ -1383,8 +1466,7 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	torture_assert_goto(tctx, req->state <= SMB2_REQUEST_RECV, ret, done,
 			    "smb2_notify finished");
 
-	torture_comment(tctx, "sleep 10 seconds\n");
-	smb_msleep(10*1000);
+	sleep_remaining(tctx, &endtime);
 
 	torture_comment(tctx, "query info => EXPIRED\n");
 	ZERO_STRUCT(qfinfo.access_information.out);
@@ -1598,7 +1680,7 @@ done:
 	}
 
 	talloc_free(tree);
-	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=0");
+	lpcfg_set_option(tctx->lp_ctx, GENSEC_GSSAPI_REQUESTED_LIFETIME(0));
 	return ret;
 }
 
@@ -1630,6 +1712,7 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 	struct smb2_create io1;
 	union smb_fileinfo qfinfo;
 	bool connected;
+	struct timeval endtime;
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
 	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
@@ -1643,7 +1726,9 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
-	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
+	lpcfg_set_option(
+		tctx->lp_ctx,
+		GENSEC_GSSAPI_REQUESTED_LIFETIME(KRB5_TICKET_LIFETIME));
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 	options.signing = SMB_SIGNING_REQUIRED;
 
@@ -1659,6 +1744,12 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 			      lpcfg_socket_options(tctx->lp_ctx),
 			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
 			      );
+	/*
+	 * We request a ticket lifetime of KRB5_TICKET_LIFETIME seconds.
+	 * Give the server at least KRB5_TICKET_LIFETIME + KRB5_CLOCKSKEW + a
+	 * few more milliseconds for this to kick in.
+	 */
+	endtime = timeval_current_ofs(KRB5_TICKET_EXPIRETIME, 500 * 1000);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_connect failed");
 
@@ -1699,8 +1790,7 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_getinfo_file failed");
 
-	torture_comment(tctx, "sleep 10 seconds\n");
-	smb_msleep(10*1000);
+	sleep_remaining(tctx, &endtime);
 
 	torture_comment(tctx, "query info => EXPIRED\n");
 	ZERO_STRUCT(qfinfo.access_information.out);
@@ -1722,7 +1812,7 @@ done:
 	}
 
 	talloc_free(tree);
-	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=0");
+	lpcfg_set_option(tctx->lp_ctx, GENSEC_GSSAPI_REQUESTED_LIFETIME(0));
 	return ret;
 }
 
