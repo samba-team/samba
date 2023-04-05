@@ -225,8 +225,8 @@ class KDCBaseTest(RawKerberosTest):
         if self._authn_policy_config_dn is None:
             authn_policy_config_dn = samdb.get_config_basedn()
 
-            self.assertTrue(authn_policy_config_dn.add_child(
-                'CN=AuthN Policy Configuration,CN=Services'))
+            authn_policy_config_dn.add_child(
+                'CN=AuthN Policy Configuration,CN=Services')
             details = {
                 'dn': authn_policy_config_dn,
                 'objectClass': 'container',
@@ -252,7 +252,7 @@ class KDCBaseTest(RawKerberosTest):
 
         if self._authn_policies_dn is None:
             authn_policies_dn = self.get_authn_policy_config_dn()
-            self.assertTrue(authn_policies_dn.add_child('CN=AuthN Policies'))
+            authn_policies_dn.add_child('CN=AuthN Policies')
             details = {
                 'dn': authn_policies_dn,
                 'objectClass': 'msDS-AuthNPolicies',
@@ -277,7 +277,7 @@ class KDCBaseTest(RawKerberosTest):
 
         if self._authn_silos_dn is None:
             authn_silos_dn = self.get_authn_policy_config_dn()
-            self.assertTrue(authn_silos_dn.add_child('CN=AuthN Silos'))
+            authn_silos_dn.add_child('CN=AuthN Silos')
             details = {
                 'dn': authn_silos_dn,
                 'objectClass': 'msDS-AuthNPolicySilos',
@@ -581,7 +581,7 @@ class KDCBaseTest(RawKerberosTest):
         samdb = self.get_samdb()
 
         policy_dn = self.get_authn_policies_dn()
-        self.assertTrue(policy_dn.add_child(f'CN={policy_id}'))
+        policy_dn.add_child(f'CN={policy_id}')
 
         details = {
             'dn': policy_dn,
