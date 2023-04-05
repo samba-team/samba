@@ -841,6 +841,7 @@ class ProtectedUsersTests(KDCBaseTest):
                 expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
 
             rep, kdc_exchange_dict = self._test_as_exchange(
+                creds=creds,
                 cname=cname,
                 realm=realm,
                 sname=sname,
@@ -884,6 +885,7 @@ class ProtectedUsersTests(KDCBaseTest):
         expected_realm = realm.upper()
 
         rep, kdc_exchange_dict = self._test_as_exchange(
+            creds=creds,
             cname=cname,
             realm=realm,
             sname=sname,
@@ -953,6 +955,7 @@ class ProtectedUsersTests(KDCBaseTest):
             unexpected_flags = krb5_asn1.TicketFlags(unexpected_flags)
 
         rep, kdc_exchange_dict = self._test_as_exchange(
+            creds=creds,
             cname=cname,
             realm=realm,
             sname=sname,
@@ -987,6 +990,7 @@ class ProtectedUsersTests(KDCBaseTest):
         expected_error = KDC_ERR_POLICY if expect_error else 0
 
         rep, kdc_exchange_dict = self._test_as_exchange(
+            creds=creds,
             cname=cname,
             realm=realm,
             sname=sname,

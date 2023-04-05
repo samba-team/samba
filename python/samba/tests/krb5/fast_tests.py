@@ -1752,6 +1752,7 @@ class FAST_Tests(KDCBaseTest):
                     decryption_key = krbtgt_decryption_key
 
                 kdc_exchange_dict = self.as_exchange_dict(
+                    creds=client_creds,
                     expected_crealm=expected_crealm,
                     expected_cname=expected_cname,
                     expected_anon=expected_anon,
@@ -1789,6 +1790,7 @@ class FAST_Tests(KDCBaseTest):
                     expect_edata=expect_edata)
             else:  # KRB_TGS_REP
                 kdc_exchange_dict = self.tgs_exchange_dict(
+                    creds=client_creds,
                     expected_crealm=expected_crealm,
                     expected_cname=expected_cname,
                     expected_anon=expected_anon,

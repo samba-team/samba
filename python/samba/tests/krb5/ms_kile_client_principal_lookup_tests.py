@@ -129,7 +129,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket
@@ -187,7 +187,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, mc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=mc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket
@@ -251,7 +251,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the service ticket
@@ -323,7 +323,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc, expect_pac=False,
+            creds=uc, service_creds=mc, expect_pac=False,
             expect_edata=False,
             expected_error_mode=KDC_ERR_TGT_REVOKED)
         self.check_error_rep(rep, KDC_ERR_TGT_REVOKED)
@@ -382,7 +382,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket
@@ -487,7 +487,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket
@@ -552,7 +552,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket
@@ -618,7 +618,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket
@@ -693,7 +693,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc, expect_pac=False,
+            creds=uc, service_creds=mc, expect_pac=False,
             expect_edata=False,
             expected_error_mode=KDC_ERR_TGT_REVOKED)
         self.check_error_rep(rep, KDC_ERR_TGT_REVOKED)
@@ -754,7 +754,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc)
+            creds=uc, service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the pac, and the ticket

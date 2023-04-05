@@ -151,6 +151,7 @@ def connect_kdc(pipe,
     # Try making a Kerberos AS-REQ to the KDC. This should fail, either due to
     # the user's account being locked out or due to using the wrong password.
     as_rep, kdc_exchange_dict = as_req_base._test_as_exchange(
+        creds=user_creds,
         cname=cname,
         realm=realm,
         sname=sname,

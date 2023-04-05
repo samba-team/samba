@@ -2265,7 +2265,7 @@ class KDCBaseTest(RawKerberosTest):
 
     def tgs_req(self, cname, sname, realm, ticket, key, etypes,
                 expected_error_mode=0, padata=None, kdc_options=0,
-                to_rodc=False, service_creds=None, expect_pac=True,
+                to_rodc=False, creds=None, service_creds=None, expect_pac=True,
                 expect_edata=None, expected_flags=None, unexpected_flags=None):
         '''Send a TGS-REQ, returns the response and the decrypted and
            decoded enc-part
@@ -2302,6 +2302,7 @@ class KDCBaseTest(RawKerberosTest):
             return padata, req_body
 
         kdc_exchange_dict = self.tgs_exchange_dict(
+            creds=creds,
             expected_crealm=realm,
             expected_cname=cname,
             expected_srealm=realm,
@@ -2542,6 +2543,7 @@ class KDCBaseTest(RawKerberosTest):
             pac_options = '1'  # supports claims
 
         rep, kdc_exchange_dict = self._test_as_exchange(
+            creds=creds,
             cname=cname,
             realm=realm,
             sname=sname,
@@ -2594,6 +2596,7 @@ class KDCBaseTest(RawKerberosTest):
         expected_realm = realm.upper()
 
         rep, kdc_exchange_dict = self._test_as_exchange(
+            creds=creds,
             cname=cname,
             realm=realm,
             sname=sname,

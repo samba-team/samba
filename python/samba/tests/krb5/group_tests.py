@@ -1875,6 +1875,7 @@ class GroupTests(KDCBaseTest):
 
         # Perform an AS-REQ with the user account.
         as_rep, kdc_exchange_dict = self._test_as_exchange(
+            creds=user_creds,
             cname=cname,
             realm=realm,
             sname=sname,
@@ -1934,6 +1935,7 @@ class GroupTests(KDCBaseTest):
         # Perform a TGS-REQ with the user account.
 
         kdc_exchange_dict = self.tgs_exchange_dict(
+            creds=user_creds,
             expected_crealm=ticket.crealm,
             expected_cname=cname,
             expected_srealm=realm,

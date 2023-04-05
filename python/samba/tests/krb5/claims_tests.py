@@ -462,6 +462,7 @@ class ClaimsTests(KDCBaseTest):
 
         # Perform constrained delegation.
         kdc_exchange_dict = self.tgs_exchange_dict(
+            creds=user_creds,
             expected_crealm=user_realm,
             expected_cname=user_cname,
             expected_srealm=service_realm,
@@ -683,6 +684,7 @@ class ClaimsTests(KDCBaseTest):
         # attribute is still present on the account.
 
         kdc_exchange_dict = self.tgs_exchange_dict(
+            creds=user_creds,
             expected_crealm=user_tgt.crealm,
             expected_cname=user_tgt.cname,
             expected_srealm=srealm,
@@ -1736,6 +1738,7 @@ class ClaimsTests(KDCBaseTest):
         # armor TGT. The claim value should not have changed.
 
         kdc_exchange_dict = self.tgs_exchange_dict(
+            creds=user_creds,
             expected_crealm=user_tgt.crealm,
             expected_cname=user_tgt.cname,
             expected_srealm=srealm,

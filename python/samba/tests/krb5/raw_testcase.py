@@ -2459,6 +2459,7 @@ class RawKerberosTest(TestCaseInTempDir):
         return check_rep_fn(kdc_exchange_dict, callback_dict, rep)
 
     def as_exchange_dict(self,
+                         creds=None,
                          expected_crealm=None,
                          expected_cname=None,
                          expected_anon=False,
@@ -2531,6 +2532,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'rep_msg_type': KRB_AS_REP,
             'rep_asn1Spec': krb5_asn1.AS_REP,
             'rep_encpart_asn1Spec': krb5_asn1.EncASRepPart,
+            'creds': creds,
             'expected_crealm': expected_crealm,
             'expected_cname': expected_cname,
             'expected_anon': expected_anon,
@@ -2599,6 +2601,7 @@ class RawKerberosTest(TestCaseInTempDir):
         return kdc_exchange_dict
 
     def tgs_exchange_dict(self,
+                          creds=None,
                           expected_crealm=None,
                           expected_cname=None,
                           expected_anon=False,
@@ -2674,6 +2677,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'rep_msg_type': KRB_TGS_REP,
             'rep_asn1Spec': krb5_asn1.TGS_REP,
             'rep_encpart_asn1Spec': krb5_asn1.EncTGSRepPart,
+            'creds': creds,
             'expected_crealm': expected_crealm,
             'expected_cname': expected_cname,
             'expected_anon': expected_anon,
@@ -4904,6 +4908,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           etypes,
                           padata,
                           kdc_options,
+                          creds=None,
                           renew_time=None,
                           expected_account_name=None,
                           expected_groups=None,
@@ -4950,6 +4955,7 @@ class RawKerberosTest(TestCaseInTempDir):
             generate_padata_fn = None
 
         kdc_exchange_dict = self.as_exchange_dict(
+            creds=creds,
             expected_crealm=expected_crealm,
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,

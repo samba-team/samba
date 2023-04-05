@@ -97,6 +97,7 @@ class AsReqBaseTest(KDCBaseTest):
             etypes,
             None,
             kdc_options,
+            creds=client_creds,
             expected_supported_etypes=krbtgt_supported_etypes,
             expected_account_name=user_name,
             pac_request=True,
@@ -199,6 +200,7 @@ class AsReqKerberosTests(AsReqBaseTest):
             expected_error_mode = KDC_ERR_ETYPE_NOSUPP
 
         kdc_exchange_dict = self.as_exchange_dict(
+            creds=client_creds,
             expected_crealm=expected_crealm,
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,

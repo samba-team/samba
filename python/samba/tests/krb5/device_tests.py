@@ -2072,6 +2072,7 @@ class DeviceTests(KDCBaseTest):
         # Perform a TGS-REQ with the user account.
 
         kdc_exchange_dict = self.tgs_exchange_dict(
+            creds=user_creds,
             expected_crealm=user_tgt.crealm,
             expected_cname=user_tgt.cname,
             expected_srealm=srealm,

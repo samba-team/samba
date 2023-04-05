@@ -308,7 +308,7 @@ class EtypeTests(KdcTgsBaseTests):
 
         # Perform the TGS-REQ.
         ticket = self._tgs_req(tgt, expected_error=expected_error,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                kdc_options=str(krb5_asn1.KDCOptions('canonicalize')),
                                expected_supported_etypes=target_creds.tgs_supported_enctypes,
                                expected_ticket_etype=expected_etype,
@@ -459,7 +459,7 @@ class EtypeTests(KdcTgsBaseTests):
         target_creds = self._server_creds(supported=aes256_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(AES256_CTS_HMAC_SHA1_96,))
 
         self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
@@ -479,7 +479,7 @@ class EtypeTests(KdcTgsBaseTests):
             expected_error = KDC_ERR_ETYPE_NOSUPP
 
         ticket = self._tgs_req(tgt, expected_error=expected_error,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(ARCFOUR_HMAC_MD5,))
 
         if not self.forced_rc4:
@@ -498,7 +498,7 @@ class EtypeTests(KdcTgsBaseTests):
         target_creds = self._server_creds(supported=aes256_bit | aes256_sk_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(AES256_CTS_HMAC_SHA1_96,))
 
         self.assertEqual(AES256_CTS_HMAC_SHA1_96, ticket.decryption_key.etype)
@@ -519,7 +519,7 @@ class EtypeTests(KdcTgsBaseTests):
             expected_error = KDC_ERR_ETYPE_NOSUPP
 
         ticket = self._tgs_req(tgt, expected_error=expected_error,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(ARCFOUR_HMAC_MD5,))
 
         if not self.forced_rc4:
@@ -537,7 +537,7 @@ class EtypeTests(KdcTgsBaseTests):
         target_creds = self._server_creds(supported=rc4_bit)
 
         self._tgs_req(tgt, expected_error=KDC_ERR_ETYPE_NOSUPP,
-                      target_creds=target_creds,
+                      creds=creds, target_creds=target_creds,
                       etypes=(AES256_CTS_HMAC_SHA1_96,))
 
     # Perform a TGS-REQ for a service ticket, specifying RC4, when the target
@@ -550,7 +550,7 @@ class EtypeTests(KdcTgsBaseTests):
         target_creds = self._server_creds(supported=rc4_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(ARCFOUR_HMAC_MD5,))
 
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
@@ -567,7 +567,7 @@ class EtypeTests(KdcTgsBaseTests):
         target_creds = self._server_creds(supported=rc4_bit | aes256_sk_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(AES256_CTS_HMAC_SHA1_96,))
 
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
@@ -583,7 +583,7 @@ class EtypeTests(KdcTgsBaseTests):
         target_creds = self._server_creds(supported=rc4_bit | aes256_sk_bit)
 
         ticket = self._tgs_req(tgt, expected_error=0,
-                               target_creds=target_creds,
+                               creds=creds, target_creds=target_creds,
                                etypes=(ARCFOUR_HMAC_MD5,))
 
         self.assertEqual(ARCFOUR_HMAC_MD5, ticket.decryption_key.etype)
