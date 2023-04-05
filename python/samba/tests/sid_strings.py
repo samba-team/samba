@@ -41,6 +41,9 @@ sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 
+late_ERR_CONSTRAINT_VIOLATION = b"a hack to allow Windows to sometimes fail late"
+
+
 class SidStringBase(TestCase):
     @classmethod
     def setUpDynamicTestCases(cls):
@@ -88,7 +91,30 @@ class SidStringBase(TestCase):
         class_dn = f'CN={class_name},{self.schema_dn}'
 
         governs_id = f'1.3.6.1.4.1.7165.4.6.2.9.{self.timestamp[-8:]}.{suffix}'
-        if expected_sid is not None:
+
+        # expected_sid can be a SID string, an error code, None, or a
+        # special value indicating a deferred error, as follows:
+        #
+        #  * a number represents the expected error code at the *first*
+        #    hurdle, creating the classSchema object.
+        #
+        #  * late_ERR_CONSTRAINT_VIOLATION means an error when
+        #    creating an object based on the class schema.
+        #
+        #  * None means a somewhat unspecified error or failure to set
+        #    the object owner sid.
+        #
+        #  * a string is the expected owner sid. The rid is borrowed
+        #  * and tacked onto the governs-id.
+
+        if expected_sid is None:
+            expected_err = ldb.ERR_UNWILLING_TO_PERFORM
+        elif isinstance(expected_sid, int):
+            expected_err = expected_sid
+        elif expected_sid is late_ERR_CONSTRAINT_VIOLATION:
+            expected_err = None
+        else:
+            expected_err = None
             # Append the RID to our OID to ensure more uniqueness.
             rid = expected_sid.rsplit('-', 1)[1]
             governs_id += f'.{rid}'
@@ -106,9 +132,11 @@ defaultSecurityDescriptor: O:{code}
             self.ldb.add_ldif(ldif)
         except ldb.LdbError as err:
             num, _ = err.args
-            self.assertEqual(num, ldb.ERR_UNWILLING_TO_PERFORM)
-            self.assertIsNone(expected_sid)
+            self.assertEqual(num, expected_err)
             return
+        else:
+            if isinstance(expected_sid, int):
+                self.fail("should have failed")
 
         # Search for created objectclass
         res = self.ldb.search(class_dn, scope=ldb.SCOPE_BASE,
@@ -133,7 +161,18 @@ dn: {object_dn}
 objectClass: {class_ldap_display_name}
 cn: {object_name}
 '''
-        self.ldb.add_ldif(ldif)
+        if expected_sid is late_ERR_CONSTRAINT_VIOLATION:
+            expected_err = ldb.ERR_CONSTRAINT_VIOLATION
+
+        try:
+            self.ldb.add_ldif(ldif)
+        except ldb.LdbError as err:
+            num, _ = err.args
+            self.assertEqual(num, expected_err)
+            return
+
+        if expected_sid is not None:
+            self.assertIsNone(expected_err)
 
         # Search for created object
         res = self.ldb.search(object_dn, scope=ldb.SCOPE_BASE,
