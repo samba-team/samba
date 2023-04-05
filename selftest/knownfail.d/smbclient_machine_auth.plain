@@ -1,0 +1,7 @@
+# These envs don't have forceuser/forcegroup shares
+^samba3.blackbox.smbclient_machine_auth.plain.smbclient...addc.forcegroup\(ad_dc:local\)
+^samba3.blackbox.smbclient_machine_auth.plain.smbclient...addc.forceuser\(ad_dc:local\)
+^samba3.blackbox.smbclient_machine_auth.plain.smbclient...dc5.forcegroup\(fl2000dc:local\)
+^samba3.blackbox.smbclient_machine_auth.plain.smbclient...dc5.forceuser\(fl2000dc:local\)
+^samba3.blackbox.smbclient_machine_auth.plain.smbclient...s4member.forcegroup\(s4member:local\)
+^samba3.blackbox.smbclient_machine_auth.plain.smbclient...s4member.forceuser\(s4member:local\)

@@ -4,7 +4,7 @@
 
 if [ $# -lt 2 ]; then
 	cat <<EOF
-Usage: test_smbclient_machine_auth.sh SERVER SMBCLIENT <smbclient arguments>
+Usage: test_smbclient_machine_auth.sh SERVER SMBCLIENT CONFIGURATION <smbclient arguments>
 EOF
 	exit 1
 fi
@@ -31,8 +31,14 @@ test_smbclient "smbclient //${SERVER}/tmp" \
 	"quit" "//${SERVER}/tmp" --machine-pass -p 139 "${ADDARGS}" || \
 	failed=$((failed + 1))
 
-# Testing these here helps because we know the machine account isn't already this user/group
-testit "smbclient //$SERVER/forceuser" $SMBCLIENT //$SERVER/tmp --machine-pass -p 139 -c quit $ADDARGS
-testit "smbclient //$SERVER/forcegroup" $SMBCLIENT //$SERVER/tmp --machine-pass -p 139 -c quit $ADDARGS
+# Testing these here helps because we know the machine account isn't already
+# this user/group.
+test_smbclient "smbclient //${SERVER}/forceuser" \
+	"quit" "//${SERVER}/forceuser" --machine-pass -p 139 "${ADDARGS}" || \
+	failed=$((failed + 1))
+
+test_smbclient "smbclient //${SERVER}/forcegroup" \
+	"quit" "//${SERVER}/forcegroup" --machine-pass -p 139 "${ADDARGS}" || \
+	failed=$((failed + 1))
 
 exit ${failed}
