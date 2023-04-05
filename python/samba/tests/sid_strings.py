@@ -16,10 +16,10 @@
 #
 
 import os
-import random
 import string
 import sys
 import time
+from hashlib import blake2b
 
 import ldb
 
@@ -81,14 +81,14 @@ class SidStringTests(TestCase):
         cls.timestamp = str(int(time.time()))
 
     def _test_sid_string_with_args(self, code, expected_sid):
-        random_suffix = random.randint(0, 100000)
+        suffix = int(blake2b(code.encode(), digest_size=3).hexdigest(), 16)
 
-        class_name = f'my-Sid-String-Class-{self.timestamp}-{random_suffix}'
+        class_name = f'my-Sid-String-Class-{self.timestamp}-{suffix}'
         class_ldap_display_name = class_name.replace('-', '')
 
         class_dn = f'CN={class_name},{self.schema_dn}'
 
-        governs_id = f'1.3.6.1.4.1.7165.4.6.2.9.{random_suffix}'
+        governs_id = f'1.3.6.1.4.1.7165.4.6.2.9.{self.timestamp[-8:]}.{suffix}'
         if expected_sid is not None:
             # Append the RID to our OID to ensure more uniqueness.
             rid = expected_sid.rsplit('-', 1)[1]
@@ -126,7 +126,7 @@ schemaUpdateNow: 1
 '''
         self.ldb.modify_ldif(ldif)
 
-        object_name = f'sddl_{self.timestamp}_{random_suffix}'
+        object_name = f'sddl_{self.timestamp}_{suffix}'
         object_dn = f'CN={object_name},{self.base_dn}'
 
         ldif = f'''
