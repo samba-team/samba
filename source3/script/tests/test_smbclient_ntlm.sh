@@ -4,7 +4,7 @@
 
 if [ $# -lt 6 ]; then
 	cat <<EOF
-Usage: test_smbclient_ntlm.sh SERVER USERNAME PASSWORD MAPTOGUEST SMBCLIENT PROTOCOL <smbclient arguments>
+Usage: test_smbclient_ntlm.sh SERVER USERNAME PASSWORD MAPTOGUEST SMBCLIENT PROTOCOL CONFIGURATION <smbclient arguments>
 EOF
 	exit 1
 fi
@@ -16,7 +16,8 @@ MAPTOGUEST="$4"
 SMBCLIENT="$5"
 PROTOCOL="$6"
 SMBCLIENT="$VALGRIND ${SMBCLIENT}"
-shift 6
+CONFIGURATION=${7}
+shift 7
 ADDARGS="$*"
 
 incdir=$(dirname $0)/../../../testprogs/blackbox
