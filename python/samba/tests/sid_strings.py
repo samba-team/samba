@@ -199,7 +199,7 @@ cn: {object_name}
 
 @DynamicTestCase
 class SidStringTests(SidStringBase):
-
+    """Testing two letter aliases."""
     cases = {
         'AA': 'S-1-5-32-579',
         'AC': 'S-1-15-2-1',
@@ -273,6 +273,50 @@ class SidStringTests(SidStringBase):
         'BR': None,
         'IF': None,
         'LK': None,
+    }
+
+
+@DynamicTestCase
+class SidStringsThatStartWithS(SidStringBase):
+    """Testing normal or normal-adjacent SIDs"""
+    cases = {
+        # testing explicit string to string round trips.
+        'S-1-5-32-579': 'S-1-5-32-579',
+        'S-1-5-0x20-579': 'S-1-5-32-579',  # hex
+        'S-1-0x05-32-579': 'S-1-5-32-579',
+        'S-1-5-040-579': 'S-1-5-40-579',   # no octal
+        'S-1-0x50000000-32-579': 'S-1-1342177280-32-579',
+        'S-1-0x500000000-32-579': 'S-1-0x500000000-32-579',
+        'S-1-21474836480-32-579': 'S-1-0x500000000-32-579',  # >32 bit is hex
+        f'S-1-5-{(1 << 32) - 1}-579': 'S-1-5-4294967295-579',
+        f'S-1-{(1 << 48) - 1}-579': 'S-1-0xffffffffffff-579',
+        f'S-1-{(1 << 48)}-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-99999999999999999999999999999999999999-32-11111111111': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-5-0-579': 'S-1-5-0-579',
+        'S-1-0-0-579': 'S-1-0-0-579',
+        'S-1-0x5-0x20-0x243': 'S-1-5-32-579',
+        'S-1-5-32--579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-5-32- 579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-5-32 -579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-5-3 2-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        ' S-1-1-1-1-1-1-1': ldb.ERR_UNWILLING_TO_PERFORM,
+        # go to lower case in hex.
+        'S-1-0xABcDef123-0xABCDef-579': 'S-1-0xabcdef123-11259375-579',
+        'S-1-1-1-1-1-1-1': 'S-1-1-1-1-1-1-1',
+        's-1-5-32-579': 'S-1-5-32-579',
+        'S-01-5-32-579': 'S-1-5-32-579',
+        'S-000000001-5-32-579': 'S-1-5-32-579',
+        # some strings from https://bugzilla.samba.org/show_bug.cgi?id=14213
+        'S-1-0': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-22': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-22-1': 'S-1-22-1',
+        'S-1-22-1-0': 'S-1-22-1-0',
+        'S-1-3-0': 'S-1-3-0',
+        'S-1-3-99': 'S-1-3-99',
+        'S-01-05-020-0243': 'S-1-5-20-243',
+        'S-000000000001-5-20-243': 'S-1-5-20-243',
+        'S-1-000000000000000005-20-243': 'S-1-5-20-243',
+        'S-1-5-20-00000000000243': 'S-1-5-20-243',
     }
 
 
