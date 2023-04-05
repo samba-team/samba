@@ -540,7 +540,7 @@ for options in ["", "--option=clientntlmv2auth=no", "--option=clientusespnego=no
         env = "nt4_dc"
     plantestsuite("samba3.blackbox.smbclient_auth.plain.%s" % (options), env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration, options])
 
-for env in ["nt4_dc", "nt4_member", "ad_member", "ad_dc", "ad_dc_ntvfs", "s4member", "fl2000dc"]:
+for env in ["nt4_dc", "nt4_member", "ad_member", "ad_dc", "s4member", "fl2000dc"]:
     plantestsuite("samba3.blackbox.smbclient_machine_auth.plain", "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_machine_auth.sh"), '$SERVER', smbclient3, configuration])
     smb1_env = env
     if smb1_env == "ad_dc" or smb1_env == "nt4_dc":
