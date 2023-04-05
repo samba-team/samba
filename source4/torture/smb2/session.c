@@ -1073,12 +1073,18 @@ static bool test_session_expire1i(struct torture_context *tctx,
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
 	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
-		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
-		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
+		torture_warning(tctx,
+				"smb2.session.expire1 requires "
+				"--use-kerberos=required!");
+		torture_skip(tctx,
+			     "smb2.session.expire1 requires "
+			     "--use-kerberos=required!");
 	}
 
-	torture_assert_int_equal(tctx, use_kerberos, CRED_USE_KERBEROS_REQUIRED,
-				 "please use -k yes");
+	torture_assert_int_equal(tctx,
+				 use_kerberos,
+				 CRED_USE_KERBEROS_REQUIRED,
+				 "please use --use-kerberos=required");
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
@@ -1259,12 +1265,18 @@ static bool test_session_expire2i(struct torture_context *tctx,
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
 	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
-		torture_warning(tctx, "smb2.session.expire2 requires -k yes!");
-		torture_skip(tctx, "smb2.session.expire2 requires -k yes!");
+		torture_warning(tctx,
+				"smb2.session.expire1 requires "
+				"--use-kerberos=required!");
+		torture_skip(tctx,
+			     "smb2.session.expire1 requires "
+			     "--use-kerberos=required!");
 	}
 
-	torture_assert_int_equal(tctx, use_kerberos, CRED_USE_KERBEROS_REQUIRED,
-				 "please use -k yes");
+	torture_assert_int_equal(tctx,
+				 use_kerberos,
+				 CRED_USE_KERBEROS_REQUIRED,
+				 "please use --use-kerberos=required");
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
@@ -1621,8 +1633,12 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
 	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
-		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
-		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
+		torture_warning(tctx,
+				"smb2.session.expire1 requires "
+				"--use-kerberos=required!");
+		torture_skip(tctx,
+			     "smb2.session.expire1 requires "
+			     "--use-kerberos=required!");
 	}
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
