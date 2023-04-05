@@ -889,14 +889,14 @@ int main(int argc, char **argv)
 			ok = false;
 			goto done;
 		}
-	}
 
-	if (c < -1) {
-		fprintf(stderr, "%s: %s\n",
-			poptBadOption(pc, POPT_BADOPTION_NOALIAS),
-			poptStrerror(c));
-		ok = true;
-		goto done;
+		if (c < -1) {
+			fprintf(stderr, "%s: %s\n",
+				poptBadOption(pc, POPT_BADOPTION_NOALIAS),
+				poptStrerror(c));
+			ok = false;
+			goto done;
+		}
 	}
 
 	if ((opt.send_stdout || resume || opt.outputfile) && opt.update) {
