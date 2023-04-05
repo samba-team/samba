@@ -70,9 +70,9 @@ class ManyLDAPTest(samba.tests.TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
-        cls.base_dn = self.ldb.domain_dn()
+        cls.base_dn = cls.ldb.domain_dn()
         cls.OU_NAME_MANY="many_ou" + format(random.randint(0, 99999), "05")
-        cls.ou_dn = ldb.Dn(self.ldb, "ou=" + self.OU_NAME_MANY + "," + str(self.base_dn))
+        cls.ou_dn = ldb.Dn(cls.ldb, "ou=" + cls.OU_NAME_MANY + "," + str(cls.base_dn))
 
         samba.tests.delete_force(cls.ldb, cls.ou_dn,
                                  controls=['tree_delete:1'])
@@ -91,7 +91,7 @@ class ManyLDAPTest(samba.tests.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        samba.tests.delete_force(cls.ldb, self.ou_dn,
+        samba.tests.delete_force(cls.ldb, cls.ou_dn,
                                  controls=['tree_delete:1'])
 
     def test_unindexed_iterator_search(self):
