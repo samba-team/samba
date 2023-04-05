@@ -644,6 +644,8 @@ NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon);
 NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid);
 NTSTATUS smb1srv_tcon_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
+			     uint32_t session_global_id,
+			     const char *share_name,
 			     NTTIME now,
 			     struct smbXsrv_tcon **_tcon);
 NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
@@ -652,6 +654,9 @@ NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
 NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_client *client);
 NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session);
 NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
+			     uint32_t session_global_id,
+			     uint8_t encryption_flags,
+			     const char *share_name,
 			     NTTIME now,
 			     struct smbXsrv_tcon **_tcon);
 NTSTATUS smb2srv_tcon_lookup(struct smbXsrv_session *session,

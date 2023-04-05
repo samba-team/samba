@@ -737,6 +737,9 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 				    enum protocol_types protocol,
 				    struct server_id server_id,
 				    NTTIME now,
+				    uint32_t session_global_id,
+				    uint8_t encryption_flags,
+				    const char *share_name,
 				    struct smbXsrv_tcon **_tcon)
 {
 	struct db_record *local_rec = NULL;
@@ -765,6 +768,14 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 		return status;
 	}
 	tcon->global = global;
+
+	global->session_global_id = session_global_id;
+	global->encryption_flags = encryption_flags;
+	global->share_name = talloc_strdup(global, share_name);
+	if (global->share_name == NULL) {
+		TALLOC_FREE(tcon);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (protocol >= PROTOCOL_SMB2_02) {
 		uint64_t id = global->tcon_global_id;
@@ -1097,14 +1108,21 @@ NTSTATUS smb1srv_tcon_table_init(struct smbXsrv_connection *conn)
 }
 
 NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
+			     uint32_t session_global_id,
+			     const char *share_name,
 			     NTTIME now,
 			     struct smbXsrv_tcon **_tcon)
 {
 	struct server_id id = messaging_server_id(conn->client->msg_ctx);
+	const uint8_t encryption_flags = 0;
 
 	return smbXsrv_tcon_create(conn->client->tcon_table,
 				   conn->protocol,
-				   id, now, _tcon);
+				   id, now,
+				   session_global_id,
+				   encryption_flags,
+				   share_name,
+				   _tcon);
 }
 
 NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
@@ -1153,6 +1171,9 @@ NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session)
 }
 
 NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
+			     uint32_t session_global_id,
+			     uint8_t encryption_flags,
+			     const char *share_name,
 			     NTTIME now,
 			     struct smbXsrv_tcon **_tcon)
 {
@@ -1160,7 +1181,11 @@ NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
 
 	return smbXsrv_tcon_create(session->tcon_table,
 				   PROTOCOL_SMB2_02,
-				   id, now, _tcon);
+				   id, now,
+				   session_global_id,
+				   encryption_flags,
+				   share_name,
+				   _tcon);
 }
 
 NTSTATUS smb2srv_tcon_lookup(struct smbXsrv_session *session,

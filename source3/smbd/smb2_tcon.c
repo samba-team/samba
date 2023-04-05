@@ -217,6 +217,9 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	bool encryption_required = req->session->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED;
 	bool guest_session = false;
 	bool require_signed_tcon = false;
+	uint32_t session_global_id;
+	char *share_name = NULL;
+	uint8_t encryption_flags = 0;
 
 	*disconnect = false;
 
@@ -328,17 +331,39 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		}
 	}
 
-	/* create a new tcon as child of the session */
-	status = smb2srv_tcon_create(req->session, now, &tcon);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if (encryption_desired) {
-		tcon->global->encryption_flags |= SMBXSRV_ENCRYPTION_DESIRED;
+		encryption_flags |= SMBXSRV_ENCRYPTION_DESIRED;
 	}
 	if (encryption_required) {
-		tcon->global->encryption_flags |= SMBXSRV_ENCRYPTION_REQUIRED;
+		encryption_flags |= SMBXSRV_ENCRYPTION_REQUIRED;
+	}
+
+	session_global_id = req->session->global->session_global_id;
+	share_name = lp_servicename(talloc_tos(), lp_sub, snum);
+	if (share_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if ((lp_max_connections(snum) > 0)
+	    && (count_current_connections(lp_const_servicename(snum), true) >=
+		lp_max_connections(snum))) {
+
+		DBG_WARNING("Max connections (%d) exceeded for [%s][%s]\n",
+			  lp_max_connections(snum),
+			  lp_const_servicename(snum), share_name);
+		TALLOC_FREE(share_name);
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	/* create a new tcon as child of the session */
+	status = smb2srv_tcon_create(req->session,
+				     session_global_id,
+				     encryption_flags,
+				     share_name,
+				     now, &tcon);
+	TALLOC_FREE(share_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	compat_conn = make_connection_smb2(req,
@@ -350,26 +375,9 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return status;
 	}
 
-	tcon->global->share_name = lp_servicename(tcon->global,
-						  lp_sub,
-						  SNUM(compat_conn));
-	if (tcon->global->share_name == NULL) {
-		conn_free(compat_conn);
-		TALLOC_FREE(tcon);
-		return NT_STATUS_NO_MEMORY;
-	}
-	tcon->global->session_global_id =
-		req->session->global->session_global_id;
-
 	tcon->compat = talloc_move(tcon, &compat_conn);
 
 	tcon->status = NT_STATUS_OK;
-
-	status = smbXsrv_tcon_update(tcon);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(tcon);
-		return status;
-	}
 
 	if (IS_PRINT(tcon->compat)) {
 		*out_share_type = SMB2_SHARE_TYPE_PRINT;

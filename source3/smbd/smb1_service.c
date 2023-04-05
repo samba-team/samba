@@ -48,17 +48,43 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	uint32_t session_global_id;
+	char *share_name = NULL;
 	struct smbXsrv_tcon *tcon;
 	NTSTATUS status;
 	struct connection_struct *conn;
 
-	status = smb1srv_tcon_create(req->xconn, now, &tcon);
+	session_global_id = req->session->global->session_global_id;
+	share_name = lp_servicename(talloc_tos(), lp_sub, snum);
+	if (share_name == NULL) {
+		*pstatus = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
+	if ((lp_max_connections(snum) > 0)
+	    && (count_current_connections(lp_const_servicename(snum), true) >=
+		lp_max_connections(snum))) {
+
+		DBG_WARNING("Max connections (%d) exceeded for [%s][%s]\n",
+			  lp_max_connections(snum),
+			  lp_const_servicename(snum), share_name);
+		TALLOC_FREE(share_name);
+		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
+		return NULL;
+	}
+
+	status = smb1srv_tcon_create(req->xconn,
+				     session_global_id,
+				     share_name,
+				     now, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("make_connection_smb1: Couldn't find free tcon %s.\n",
-			 nt_errstr(status)));
+		DEBUG(0,("make_connection_smb1: Couldn't find free tcon for [%s] - %s\n",
+			 share_name, nt_errstr(status)));
+		TALLOC_FREE(share_name);
 		*pstatus = status;
 		return NULL;
 	}
+	TALLOC_FREE(share_name);
 
 	conn = conn_new(req->sconn);
 	if (!conn) {
@@ -83,24 +109,10 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 		return NULL;
 	}
 
-	tcon->global->share_name = lp_servicename(tcon->global, lp_sub, SNUM(conn));
-	if (tcon->global->share_name == NULL) {
-		conn_free(conn);
-		TALLOC_FREE(tcon);
-		*pstatus = NT_STATUS_NO_MEMORY;
-		return NULL;
-	}
-	tcon->global->session_global_id =
-		req->session->global->session_global_id;
-
 	tcon->compat = talloc_move(tcon, &conn);
 	tcon->status = NT_STATUS_OK;
 
-	*pstatus = smbXsrv_tcon_update(tcon);
-	if (!NT_STATUS_IS_OK(*pstatus)) {
-		TALLOC_FREE(tcon);
-		return NULL;
-	}
+	*pstatus = NT_STATUS_OK;
 
 	return tcon->compat;
 }
