@@ -84,6 +84,42 @@ EOF
 	fi
 }
 
+smbclient_create_expect_error()
+{
+	filename="$1.$$"
+	expected_error="$2"
+	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+	cat >"$tmpfile" <<EOF
+put $tmpfile $filename
+quit
+EOF
+
+	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/veto_files -I$SERVER_IP < $tmpfile 2>&1'
+	eval echo "$cmd"
+	out=$(eval "$cmd")
+	ret=$?
+	rm -f "$tmpfile"
+	rm -f "$SHAREPATH/$filename"
+
+	if [ $ret != 0 ]; then
+		printf "%s\n" "$out"
+		printf "failed accessing veto_files share with error %s\n" "$ret"
+		return 1
+	fi
+
+	if [ "$expected_error" = "NT_STATUS_OK" ]; then
+		printf "%s" "$out" | grep -c "NT_STATUS_" && false
+	else
+		printf "%s" "$out" | grep "$expected_error"
+	fi
+	ret=$?
+	if [ $ret != 0 ]; then
+		printf "%s\n" "$out"
+		printf "failed - should get %s doing \"put %s\"\n" "$expected_error" "$filename"
+		return 1
+	fi
+}
+
 #
 # Using the share "[veto_files]" ensure we
 # cannot fetch a veto'd file or file in a veto'd directory.
@@ -129,6 +165,16 @@ test_get_veto_file()
 	smbclient_get_expect_error "dir1/dir2/dir3/VHXE5P~M" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_get_expect_error "dir1/dir2/dir3/VF5SKC~B/file_inside_dir" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_get_expect_error "dir1/dir2/dir3/VF5SKC~B/testdir/file_inside_dir" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+
+	return 0
+}
+
+test_create_veto_file()
+{
+	# Test creating files
+	smbclient_create_expect_error "veto_name_file" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_create_expect_error "veto_name_dir/file_inside_dir" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_create_expect_error "dir1/veto_name_file" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 
 	return 0
 }
@@ -194,6 +240,7 @@ touch "$SHAREPATH/dir1/dir2/dir3/veto_name_dir\"mangle/file_inside_dir"
 mkdir "$SHAREPATH/dir1/dir2/dir3/veto_name_dir\"mangle/testdir"
 touch "$SHAREPATH/dir1/dir2/dir3/veto_name_dir\"mangle/testdir/file_inside_dir"
 
+testit "create_veto_file" test_create_veto_file || failed=$((failed + 1))
 testit "get_veto_file" test_get_veto_file || failed=$(("$failed" + 1))
 
 do_cleanup
