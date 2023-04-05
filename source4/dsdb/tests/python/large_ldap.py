@@ -299,7 +299,7 @@ class LargeLDAPTest(samba.tests.TestCase):
 
         # Create a large search expression that will take a long time to
         # evaluate.
-        expression = f'(jpegPhoto=*X*)' * 1000
+        expression = '(jpegPhoto=*X*)' * 2000
         expression = f'(|{expression})'
 
         # Perform the LDAP search.
