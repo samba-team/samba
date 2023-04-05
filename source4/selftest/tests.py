@@ -666,6 +666,17 @@ plantestsuite("samba4.blackbox.client_etypes_strong(ad_dc:client)", "ad_dc:clien
 plantestsuite("samba4.blackbox.net_ads_dns(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_net_ads_dns.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$USERNAME', '$PASSWORD'])
 plantestsuite("samba4.blackbox.samba-tool_ntacl(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_samba-tool_ntacl.sh"), '$PREFIX', '$DOMSID'])
 
+env = "ad_member:local"
+plantestsuite("samba4.blackbox.net_ads_search_server_P.primary", env,
+              [os.path.join(bbdir, "test_net_ads_search_server.sh"),
+              '$DC_SERVER', '$REALM'])
+plantestsuite("samba4.blackbox.net_ads_search_server_P.trust_e_both", env,
+              [os.path.join(bbdir, "test_net_ads_search_server.sh"),
+              '$TRUST_E_BOTH_SERVER', '$TRUST_E_BOTH_REALM'])
+plantestsuite("samba4.blackbox.net_ads_search_server_P.trust_f_both", env,
+              [os.path.join(bbdir, "test_net_ads_search_server.sh"),
+              '$TRUST_F_BOTH_SERVER', '$TRUST_F_BOTH_REALM'])
+
 if have_gnutls_fips_mode_support:
     plantestsuite("samba4.blackbox.weak_crypto.client", "ad_dc", [os.path.join(bbdir, "test_weak_crypto.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc"])
     plantestsuite("samba4.blackbox.test_weak_disable_ntlmssp_ldap", "ad_member:local", [os.path.join(bbdir, "test_weak_disable_ntlmssp_ldap.sh"),'$DC_USERNAME', '$DC_PASSWORD'])
