@@ -833,7 +833,7 @@ static void test_filter_attrs_in_place_one_attr_matched_dn(void **state)
 	assert_non_null(msg->dn);
 	assert_string_equal(msg->elements[0].name, "distinguishedName");
 	assert_int_equal(msg->elements[0].num_values, 1);
-	assert_string_equal(msg->elements[0].values[0].data,
+	assert_string_equal((char *)msg->elements[0].values[0].data,
 			    ldb_dn_get_linearized(msg->dn));
 }
 
