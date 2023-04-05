@@ -78,12 +78,12 @@ class SidStringTests(TestCase):
                         session_info=system_session(lp), lp=lp)
         cls.base_dn = cls.ldb.domain_dn()
         cls.schema_dn = cls.ldb.get_schema_basedn().get_linearized()
+        cls.timestamp = str(int(time.time()))
 
     def _test_sid_string_with_args(self, code, expected_sid):
         random_suffix = random.randint(0, 100000)
-        timestamp = time.strftime('%s', time.gmtime())
 
-        class_name = f'my-Sid-String-Class{timestamp}{random_suffix}'
+        class_name = f'my-Sid-String-Class-{self.timestamp}-{random_suffix}'
         class_ldap_display_name = class_name.replace('-', '')
 
         class_dn = f'CN={class_name},{self.schema_dn}'
@@ -126,7 +126,7 @@ schemaUpdateNow: 1
 '''
         self.ldb.modify_ldif(ldif)
 
-        object_name = f'sddl_{timestamp}_{random_suffix}'
+        object_name = f'sddl_{self.timestamp}_{random_suffix}'
         object_dn = f'CN={object_name},{self.base_dn}'
 
         ldif = f'''
