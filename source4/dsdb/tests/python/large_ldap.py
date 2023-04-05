@@ -145,6 +145,14 @@ class LargeLDAPTest(samba.tests.TestCase):
                 "sAMAccountName": user_name,
                 "jpegPhoto": b'a' * (2 * 1024 * 1024)})
 
+            ace = "(OD;;RP;{6bc69afa-7bd9-4184-88f5-28762137eb6a};;S-1-%d)" % x
+            dn = ldb.Dn(cls.ldb, "cn=" + user_name + "," + str(cls.ou_dn))
+
+            # add an ACE that denies access to the above random attr
+            # for a not-existing user.  This makes each SD distinct
+            # and so will slow SD parsing.
+            cls.sd_utils.dacl_add_ace(dn, ace)
+
     @classmethod
     def tearDownClass(cls):
         # Remake the connection for tear-down (old Samba drops the socket)
@@ -288,16 +296,6 @@ class LargeLDAPTest(samba.tests.TestCase):
         samdb = SamDB(url, credentials=creds,
                       session_info=system_session(lp),
                       lp=lp)
-
-        for x in range(200):
-            user_name = self.USER_NAME + format(x, "03")
-            ace = "(OD;;RP;{6bc69afa-7bd9-4184-88f5-28762137eb6a};;S-1-%d)" % x
-            dn = ldb.Dn(self.ldb, "cn=" + user_name + "," + str(self.ou_dn))
-
-            # add an ACE that denies access to the above random attr
-            # for a not-existing user.  This makes each SD distinct
-            # and so will slow SD parsing.
-            self.sd_utils.dacl_add_ace(dn, ace)
 
         # Create a large search expression that will take a long time to
         # evaluate.
