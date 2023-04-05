@@ -849,7 +849,7 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 
 	if (req_bitmap & SMB2_CRTCTX_AAPL_SERVER_CAPS) {
 		if ((client_caps & SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR) &&
-		    (handle->conn->tcon->compat->fs_capabilities & FILE_NAMED_STREAMS)) {
+		    (handle->conn->fs_capabilities & FILE_NAMED_STREAMS)) {
 			server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR;
 			config->readdir_attr_enabled = true;
 		}
@@ -875,7 +875,7 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 	}
 
 	if (req_bitmap & SMB2_CRTCTX_AAPL_VOLUME_CAPS) {
-		int val = lp_case_sensitive(SNUM(handle->conn->tcon->compat));
+		int val = lp_case_sensitive(SNUM(handle->conn));
 		uint64_t caps = 0;
 
 		switch (val) {
