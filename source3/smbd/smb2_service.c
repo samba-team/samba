@@ -620,21 +620,6 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 * in the logs. */
 	widelinks_warning(snum);
 
-	/*
-	 * Enforce the max connections parameter.
-	 */
-
-	if ((lp_max_connections(snum) > 0)
-	    && (count_current_connections(lp_const_servicename(SNUM(conn)), true) >=
-		lp_max_connections(snum))) {
-
-		DBG_WARNING("Max connections (%d) exceeded for %s\n",
-			  lp_max_connections(snum),
-			  lp_const_servicename(snum));
-		status = NT_STATUS_INSUFFICIENT_RESOURCES;
-		goto err_root_exit;
-	}
-
 	/* Invoke VFS make connection hook - this must be the first
 	   filesystem operation that we do. */
 
