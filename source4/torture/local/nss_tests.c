@@ -837,10 +837,51 @@ static bool test_membership(struct torture_context *tctx)
 	struct group *grp;
 	size_t num_grp;
 	int i;
+	const char *env = getenv("ENVNAME");
 
 	if (!old_pwd || !old_group) {
 		torture_comment(tctx, "ENV NSS_WRAPPER_PASSWD or NSS_WRAPPER_GROUP not set\n");
 		torture_skip(tctx, "nothing to test\n");
+	}
+
+	/*
+	 * test_membership_user() fails for ad_dc with error like this:
+	 *
+	 * WARNING!: ../../source4/torture/local/nss_tests.c:823:
+	 * num_user_groups was 3 (0x3), expected 2 (0x2): getgrouplist
+	 * and real inspection of grouplist gave different results
+
+	 * There are at least 3 reasons:
+
+	 * 1. For each ADDOMAIN user, there is also a group with the same name:
+
+$ bin/wbinfo --user-info ADDOMAIN/alice
+ADDOMAIN/alice:*:3000015:65531::/home/ADDOMAIN/alice:/bin/false
+
+$ bin/wbinfo --group-info ADDOMAIN/alice
+ADDOMAIN/alice:x:3000015:ADDOMAIN/alice
+
+	 * 2. ADDOMAIN/joe is the only user of "ADDOMAIN/Domain Users"
+	 * e.g. alice is not there:
+
+$ bin/wbinfo --group-info "ADDOMAIN/Domain users"
+ADDOMAIN/domain users:x:65531:ADDOMAIN/joe
+
+	 * 3. getgrouplist() for joe returns also "ADDOMAIN/samba users"
+	 * but "ADDOMAIN/samba users" is an empty group:
+
+$ bin/wbinfo --group-info "ADDOMAIN/samba users"
+ADDOMAIN/samba users:x:3000051:
+
+	 */
+
+	/* Only ad_member_idmap_rid sets 'winbind expand groups' */
+	if (strcmp(env, "ad_member_idmap_rid:local") != 0) {
+		torture_comment(tctx,
+				"Testing in env '%s' is not supported.\n",
+				env);
+		torture_skip(tctx, "nothing to test\n");
+		return true;
 	}
 
 	torture_assert(tctx, test_enum_passwd(tctx, &pwd, &num_pwd),
