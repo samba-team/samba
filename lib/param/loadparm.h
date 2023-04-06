@@ -169,7 +169,7 @@ struct file_lists {
 
 /*
  * This should be under the HAVE_KRB5 flag but since they're used
- * in lp_kerberos_method(), they ned to be always available
+ * in lp_kerberos_method(), they need to be always available
  * If you add any entries to KERBEROS_VERIFY defines, please modify USE.*KEYTAB macros
  * so they remain accurate.
  */

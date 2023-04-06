@@ -63,14 +63,14 @@ There is a lot of generated code, here, what generates what?
 The regular format of the CPP macros in param_functions.c is used to
 generate up the prototypes (mkproto.pl, mks3param_proto.pl), the service
 and globals table (mkparamdefs.pl), the glue table (mmks3param.pl) and
-the initilisation of the glue table (mks3param_ctx_table.pl).
+the initialisation of the glue table (mks3param_ctx_table.pl).
 
 I have tried combining some of these, but it just makes the scripts more
 complex.
 
 The CPP macros are defined in and expand in lib/param/loadparm.c and
 source3/param/loadparm.c to read the values from the generated
-stuctures.  They are CPP #included into these files so that the same
+structures.  They are CPP #included into these files so that the same
 macro has two definitions, depending on the system it is loading into.
 
 

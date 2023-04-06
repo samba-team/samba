@@ -173,7 +173,7 @@ static const char *lpcfg_string(const char *s)
  * for code compatibility between existing Samba4 and Samba3 code.
  */
 
-/* this global context supports the lp_*() function varients */
+/* this global context supports the lp_*() function variants */
 static struct loadparm_context *global_loadparm_context;
 
 #define FN_GLOBAL_SUBSTITUTED_STRING(fn_name,var_name) \
@@ -2111,7 +2111,7 @@ bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option)
 
 void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
-	/* For the seperation of lists values that we print below */
+	/* For the separation of lists values that we print below */
 	const char *list_sep = ", ";
 	int i;
 	switch (p->type)
@@ -3361,7 +3361,7 @@ static bool lpcfg_load_internal(struct loadparm_context *lp_ctx,
 		setenv("SMB_CONF_PATH", filename, 1);
 
 		/* set the context used by the lp_*() function
-		   varients */
+		   variants */
 		global_loadparm_context = lp_ctx;
 		lp_ctx->loaded = true;
 	}
