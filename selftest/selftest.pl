@@ -129,7 +129,11 @@ sub run_testsuite($$$$$)
 	Subunit::start_testsuite($name);
 	Subunit::progress_push();
 	Subunit::report_time();
-	system($cmd);
+	# Enable pipefail so that we catch failing testsuites that are part of a
+	# pipeline (typically, piped through filter-subunit). This won't catch
+	# any testsuite failures that are turned into testsuite-xfails by
+	# filter-subunit.
+	system("bash", "-o", "pipefail", "-c", $cmd);
 	Subunit::report_time();
 	Subunit::progress_pop();
 
