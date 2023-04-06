@@ -16,6 +16,7 @@
  */
 
 #include "includes.h"
+#include "source3/locking/proto.h"
 #include "rpc_worker.h"
 #include "librpc/gen_ndr/ndr_mdssvc.h"
 #include "librpc/gen_ndr/ndr_mdssvc_scompat.h"
@@ -38,8 +39,15 @@ static size_t mdssvc_servers(
 	void *private_data)
 {
 	static const struct dcesrv_endpoint_server *ep_servers[1] = { NULL };
+	bool ok;
 
 	lp_load_with_shares(get_dyn_CONFIGFILE());
+
+	ok = posix_locking_init(false);
+	if (!ok) {
+		DBG_ERR("posix_locking_init() failed\n");
+		exit(1);
+	}
 
 	ep_servers[0] = mdssvc_get_ep_server();
 
