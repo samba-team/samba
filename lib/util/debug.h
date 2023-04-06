@@ -325,12 +325,18 @@ enum debug_logtype {
 	DEBUG_CALLBACK = 5
 };
 
+enum debug_syslog_format {
+	DEBUG_SYSLOG_FORMAT_NO = 0,
+	DEBUG_SYSLOG_FORMAT_IN_LOGS = 1,
+	DEBUG_SYSLOG_FORMAT_ALWAYS = 2,
+};
+
 struct debug_settings {
 	size_t max_log_size;
 	bool timestamp_logs;
 	bool debug_prefix_timestamp;
 	bool debug_hires_timestamp;
-	bool debug_syslog_format;
+	enum debug_syslog_format debug_syslog_format;
 	bool debug_pid;
 	bool debug_uid;
 	bool debug_class;

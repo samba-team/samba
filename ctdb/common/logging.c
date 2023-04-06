@@ -146,7 +146,7 @@ static int file_log_setup(TALLOC_CTX *mem_ctx,
 			  const char *app_name)
 {
 	struct debug_settings settings = {
-		.debug_syslog_format = true,
+		.debug_syslog_format = DEBUG_SYSLOG_FORMAT_ALWAYS,
 		.debug_hires_timestamp = true,
 		.debug_no_stderr_redirect = true,
 	};

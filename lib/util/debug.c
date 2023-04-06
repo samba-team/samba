@@ -1557,10 +1557,25 @@ void check_log_size( void )
 static void Debug1(const char *msg, size_t msg_len)
 {
 	int old_errno = errno;
+	enum debug_logtype logtype = state.logtype;
 
 	debug_count++;
 
-	switch(state.logtype) {
+	if (state.settings.debug_syslog_format == DEBUG_SYSLOG_FORMAT_ALWAYS) {
+		switch(state.logtype) {
+		case DEBUG_STDOUT:
+		case DEBUG_STDERR:
+		case DEBUG_DEFAULT_STDOUT:
+		case DEBUG_DEFAULT_STDERR:
+			/* Behave the same as logging to a file */
+			logtype = DEBUG_FILE;
+			break;
+		default:
+			break;
+		}
+	}
+
+	switch(logtype) {
 	case DEBUG_CALLBACK:
 		debug_callback_log(msg, msg_len, current_msg_level);
 		break;
@@ -1749,23 +1764,31 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 
 	dbgsetclass(level, cls);
 
-	/* Don't print a header if we're logging to stdout. */
-	if ( state.logtype != DEBUG_FILE ) {
-		return( true );
+	/*
+	 * Don't print a header if we're logging to stdout,
+	 * unless 'debug syslog format = always'
+	 */
+	if (state.logtype != DEBUG_FILE &&
+	    state.settings.debug_syslog_format != DEBUG_SYSLOG_FORMAT_ALWAYS)
+	{
+		return true;
 	}
 
-	/* Print the header if timestamps are turned on.  If parameters are
-	 * not yet loaded, then default to timestamps on.
+	/*
+	 * Print the header if timestamps (or debug syslog format) is
+	 * turned on.  If parameters are not yet loaded, then default
+	 * to timestamps on.
 	 */
 	if (!(state.settings.timestamp_logs ||
 	      state.settings.debug_prefix_timestamp ||
-	      state.settings.debug_syslog_format)) {
+	      state.settings.debug_syslog_format != DEBUG_SYSLOG_FORMAT_NO))
+	{
 		return true;
 	}
 
 	GetTimeOfDay(&tv);
 
-	if (state.settings.debug_syslog_format) {
+	if (state.settings.debug_syslog_format != DEBUG_SYSLOG_FORMAT_NO) {
 		if (state.settings.debug_hires_timestamp) {
 			timeval_str_buf(&tv, true, true, &tvbuf);
 		} else {

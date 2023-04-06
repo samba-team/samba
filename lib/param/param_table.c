@@ -418,6 +418,18 @@ static const struct enum_list enum_spotlight_backend[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_debug_syslog_format[] = {
+	{DEBUG_SYSLOG_FORMAT_NO, "No"},
+	{DEBUG_SYSLOG_FORMAT_NO, "False"},
+	{DEBUG_SYSLOG_FORMAT_NO, "0"},
+	{DEBUG_SYSLOG_FORMAT_IN_LOGS, "in_logs"},
+	{DEBUG_SYSLOG_FORMAT_IN_LOGS, "Yes"},
+	{DEBUG_SYSLOG_FORMAT_IN_LOGS, "True"},
+	{DEBUG_SYSLOG_FORMAT_IN_LOGS, "1"},
+	{DEBUG_SYSLOG_FORMAT_ALWAYS, "always"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * NOTE: Handling of duplicated (synonym) parameters:

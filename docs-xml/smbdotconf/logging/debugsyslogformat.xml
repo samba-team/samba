@@ -1,14 +1,26 @@
 <samba:parameter name="debug syslog format"
                  context="G"
-                 type="boolean"
+                 type="enum"
+                 enumlist="enum_debug_syslog_format"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-    With this option enabled, debug messages are printed in a
+    With this option enabled (<constant>yes</constant> (alias
+    <constant>in_logs</constant>) or
+    <constant>always</constant>), debug messages are printed in a
     single-line format like that traditionally produced by syslog.
     The timestamp consists of an abbreviated month, space-padded date,
     and time including seconds.  This is followed by the hostname and
     the program name, with the process-ID in square brackets.
+    </para>
+
+    <para>The value <constant>always</constant> produces this log
+    format even to <constant>STDOUT</constant> or
+    <constant>STDERR</constant>
+    </para>
+
+    <para>The value <constant>no</constant> defers to other parameters
+    and typically produces traditional two-line Samba logs to log files.
     </para>
 
     <para>
