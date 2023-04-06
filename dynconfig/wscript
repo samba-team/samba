@@ -71,7 +71,7 @@ class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
 #               We may overwrite the related path. (Default: False)
 #
 # 'DELAY'     - The option refers to other options in the dynconfig list.
-#               We delay the initalization into a later stage. This
+#               We delay the initialization into a later stage. This
 #               makes sure the recursion works. (Default: False)
 #
 dynconfig = {
