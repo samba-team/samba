@@ -166,7 +166,7 @@ static void messaging_dgm_out_idle_handler(struct tevent_context *ev,
 }
 
 /*
- * Setup the idle handler to fire afer 1 second if the
+ * Setup the idle handler to fire after 1 second if the
  * queue is zero.
  */
 
