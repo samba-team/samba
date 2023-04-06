@@ -250,7 +250,7 @@ updateip)
 	$CTDB gratarp "$ip" "$niface"
 
 	# tickle all existing connections, so that dropped packets
-	# are retransmited and the tcp streams work
+	# are retransmitted and the tcp streams work
 	tickle_tcp_connections "$ip"
 	;;
 

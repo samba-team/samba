@@ -168,7 +168,7 @@ ipreallocated
 	events, even though these events may not run on some nodes if
 	there are no relevant changes.  That is, the "ipreallocated"
 	event is triggered unconditionally, even on nodes where public
-	IP addresses assignements have not changed.
+	IP addresses assignments have not changed.
 
 	This event is used to reconfigure services.
 

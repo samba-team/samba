@@ -744,7 +744,7 @@ ctdb_counter_get () {
     _ctdb_counter_common "$1"
     # unary counting!
     _val=$(wc -c < "$_counter_file" 2>/dev/null || echo 0)
-    # Strip leading spaces from ouput of wc (on freebsd)
+    # Strip leading spaces from output of wc (on freebsd)
     # shellcheck disable=SC2086
     echo $_val
 }
