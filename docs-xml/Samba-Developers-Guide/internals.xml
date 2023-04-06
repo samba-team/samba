@@ -361,7 +361,7 @@ An adjustment which tells the amount by which pointers in the returned
 data should be adjusted.  This value should be read with SVAL().  Basically,
 the address of the start of the returned data buffer should have the returned
 pointer value added to it and then have this value subtracted from it in
-order to obtain the currect offset into the returned data buffer.
+order to obtain the correct offset into the returned data buffer.
 </para></listitem>
 
 <listitem><para>

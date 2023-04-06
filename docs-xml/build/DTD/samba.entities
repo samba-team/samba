@@ -1,5 +1,5 @@
 <!--
-	vim:ft=dtd 
+	vim:ft=dtd
 -->
 
 <!-- Email Address' -->
@@ -387,7 +387,7 @@
 			This option is used to determine what naming services
 			and in what order to resolve host names to IP
 			addresses. The option takes a space-separated string of
-			different name resolution options. The best ist to wrap
+			different name resolution options. The best is to wrap
 			the whole --name-resolve=NAME-RESOLVE-ORDER into
 			quotes.
 		</para>
@@ -860,7 +860,7 @@
 	<term>-k|--kerberos=yes|no</term>
 	<listitem>
 		<para>
-			Wether to use kerberos authentication. This option is
+			Whether to use kerberos authentication. This option is
 			deprecated. Migrate to --use-kerberos!
 		</para>
 	</listitem>

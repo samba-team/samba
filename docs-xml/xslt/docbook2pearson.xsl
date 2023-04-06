@@ -837,7 +837,7 @@
 		   <xsl:otherwise>
 			   <xsl:if test="$refelem != ''">
 				   <xsl:message>
-					   <xsl:text>Cant't handle xref to </xsl:text>
+					   <xsl:text>Can't handle xref to </xsl:text>
 					   <xsl:value-of select="$refelem"/>
 					   <xsl:text>:</xsl:text>
 					   <xsl:value-of select="@linkend"/>
