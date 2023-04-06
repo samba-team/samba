@@ -27,7 +27,7 @@
 struct pthreadpool_tevent_job_state;
 
 /*
- * We need one pthreadpool_tevent_glue object per unique combintaion of tevent
+ * We need one pthreadpool_tevent_glue object per unique combination of tevent
  * contexts and pthreadpool_tevent objects. Maintain a list of used tevent
  * contexts in a pthreadpool_tevent.
  */
