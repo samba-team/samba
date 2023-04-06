@@ -2,7 +2,7 @@
 ## Submitted by Dirk Kastens <Dirk.Kastens@Uni-Osnabrueck.de>
 ##
 ## I translated the samba.schema to be used with IBM
-## SecureWay directoy server 3.2.2. You have to load
+## SecureWay directory server 3.2.2. You have to load
 ## it in your slapd32.conf with:
 ##
 ## dn: cn=IBM SecureWay, cn=Schemas, cn=Configuration
