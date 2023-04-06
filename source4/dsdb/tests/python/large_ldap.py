@@ -239,6 +239,8 @@ class LargeLDAPTest(samba.tests.TestCase):
             count += 1
         res1 = search1.result()
 
+        self.assertEqual(count, 200)
+
         # Now try breaking the 256MB limit
 
         count_jpeg = 0
