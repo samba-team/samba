@@ -41,7 +41,7 @@ architecture.
 
 	<para>
 In a taxonomy of databases ldb would sit half way between key/value
-pair databases (such as berkley db or tdb) and a full LDAP
+pair databases (such as berkeley db or tdb) and a full LDAP
 database. With a structured attribute oriented API like LDAP and good
 indexing capabilities, ldb can be used for quite sophisticated
 applications that need a light weight database, without the

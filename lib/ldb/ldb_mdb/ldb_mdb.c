@@ -369,7 +369,7 @@ done:
 	}
 
 	/*
-	 * Explicity invalidate the data, as the delete has done this
+	 * Explicitly invalidate the data, as the delete has done this
 	 */
 	data.length = 0;
 	data.data = NULL;
