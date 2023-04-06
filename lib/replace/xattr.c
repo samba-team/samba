@@ -42,7 +42,7 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode);
 #endif
 
 /**************************************************************************
- Wrappers for extented attribute calls. Based on the Linux package with
+ Wrappers for extended attribute calls. Based on the Linux package with
  support for IRIX and (Net|Free)BSD also. Expand as other systems have them.
 ****************************************************************************/
 

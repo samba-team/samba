@@ -20,7 +20,7 @@
  * for string length.  This covers a nasty loophole.
  *
  * The other functions are there to prevent NULL pointers from
- * causing nast effects.
+ * causing nasty effects.
  *
  * More Recently:
  *  Brandon Long <blong@fiction.net> 9/15/96 for mutt 0.43
@@ -77,7 +77,7 @@
  * Fix incorrect zpadlen handling in fmtfp.
  * Thanks to Ollie Oldham <ollie.oldham@metro-optix.com> for spotting it.
  * few mods to make it easier to compile the tests.
- * addedd the "Ollie" test to the floating point ones.
+ * added the "Ollie" test to the floating point ones.
  *
  * Martin Pool (mbp@samba.org) April 2003
  *    Remove NO_CONFIG_H so that the test case can be built within a source
@@ -550,7 +550,7 @@ static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in
 		}
 		for (i = 1; i < clist[pnum].num; i++) {
 			if (clist[pnum].chunks[0]->type != clist[pnum].chunks[i]->type) {
-				/* nooo noo no!
+				/* nooo no no!
 				 * all the references to a parameter
 				 * must be of the same type
 				 */
