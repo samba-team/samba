@@ -2856,6 +2856,9 @@ sub provision($$)
 	debug pid = yes
         max log size = 0
 
+	debug syslog format = always
+	debug hires timestamp = yes
+
 	state directory = $lockdir
 	cache directory = $lockdir
 

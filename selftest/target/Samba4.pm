@@ -810,6 +810,9 @@ sub provision_raw_step1($$)
         rpc server port:netlogon = 1026
 	include system krb5 conf = no
 
+	debug syslog format = always
+	debug hires timestamp = yes
+
 ";
 
 	print CONFFILE "
