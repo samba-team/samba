@@ -36,7 +36,7 @@ struct epoll_event_context {
 	/* a pointer back to the generic event_context */
 	struct tevent_context *ev;
 
-	/* when using epoll this is the handle from epoll_create */
+	/* when using epoll this is the handle from epoll_create1(2) */
 	int epoll_fd;
 
 	pid_t pid;
@@ -53,11 +53,11 @@ struct epoll_event_context {
 
 #ifdef TEST_PANIC_FALLBACK
 
-static int epoll_create_panic_fallback(struct epoll_event_context *epoll_ev,
-				       int size)
+static int epoll_create1_panic_fallback(struct epoll_event_context *epoll_ev,
+					int flags)
 {
 	if (epoll_ev->panic_fallback == NULL) {
-		return epoll_create(size);
+		return epoll_create1(flags);
 	}
 
 	/* 50% of the time, fail... */
@@ -66,7 +66,7 @@ static int epoll_create_panic_fallback(struct epoll_event_context *epoll_ev,
 		return -1;
 	}
 
-	return epoll_create(size);
+	return epoll_create1(flags);
 }
 
 static int epoll_ctl_panic_fallback(struct epoll_event_context *epoll_ev,
@@ -105,8 +105,8 @@ static int epoll_wait_panic_fallback(struct epoll_event_context *epoll_ev,
 	return epoll_wait(epfd, events, maxevents, timeout);
 }
 
-#define epoll_create(_size) \
-	epoll_create_panic_fallback(epoll_ev, _size)
+#define epoll_create1(_flags) \
+	epoll_create1_panic_fallback(epoll_ev, _flags)
 #define epoll_ctl(_epfd, _op, _fd, _event) \
 	epoll_ctl_panic_fallback(epoll_ev,_epfd, _op, _fd, _event)
 #define epoll_wait(_epfd, _events, _maxevents, _timeout) \
@@ -194,16 +194,12 @@ static int epoll_ctx_destructor(struct epoll_event_context *epoll_ev)
 */
 static int epoll_init_ctx(struct epoll_event_context *epoll_ev)
 {
-	epoll_ev->epoll_fd = epoll_create(64);
+	epoll_ev->epoll_fd = epoll_create1(EPOLL_CLOEXEC);
 	if (epoll_ev->epoll_fd == -1) {
 		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
-			     "Failed to create epoll handle.\n");
+			     "Failed to create epoll handle (%s).\n",
+			     strerror(errno));
 		return -1;
-	}
-
-	if (!ev_set_close_on_exec(epoll_ev->epoll_fd)) {
-		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_WARNING,
-			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
 	}
 
 	epoll_ev->pid = tevent_cached_getpid();
@@ -231,15 +227,10 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	}
 
 	close(epoll_ev->epoll_fd);
-	epoll_ev->epoll_fd = epoll_create(64);
+	epoll_ev->epoll_fd = epoll_create1(EPOLL_CLOEXEC);
 	if (epoll_ev->epoll_fd == -1) {
 		epoll_panic(epoll_ev, "epoll_create() failed", false);
 		return;
-	}
-
-	if (!ev_set_close_on_exec(epoll_ev->epoll_fd)) {
-		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_WARNING,
-			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
 	}
 
 	epoll_ev->pid = pid;

@@ -51,7 +51,7 @@ def configure(conf):
                 conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytevent', 'tevent', minversion=VERSION):
                 conf.define('USING_SYSTEM_PYTEVENT', 1)
 
-    if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
+    if conf.CHECK_FUNCS('epoll_create1', headers='sys/epoll.h'):
         conf.DEFINE('HAVE_EPOLL', 1)
 
     tevent_num_signals = 64
