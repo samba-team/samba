@@ -487,7 +487,7 @@ def configure(conf):
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups syscall setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
-    conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
+    conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create1')
     conf.CHECK_FUNCS('getprogname')
     if not conf.CHECK_FUNCS('copy_file_range'):
         conf.CHECK_CODE('''
@@ -710,7 +710,7 @@ syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
     conf.CHECK_DECLS('getgrent_r getpwent_r', reverse=True, headers='pwd.h grp.h')
     conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
 
-    if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
+    if conf.CONFIG_SET('HAVE_EPOLL_CREATE1') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
         conf.DEFINE('HAVE_EPOLL', 1)
 
     if conf.CHECK_FUNCS('eventfd', headers='sys/eventfd.h'):
