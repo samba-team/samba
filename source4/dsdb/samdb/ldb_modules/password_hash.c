@@ -1737,6 +1737,7 @@ static int setup_primary_userPassword(
 			return ret;
 		}
 	}
+	TALLOC_FREE(frame);
 	return LDB_SUCCESS;
 }
 
