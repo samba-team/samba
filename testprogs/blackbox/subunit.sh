@@ -118,7 +118,7 @@ testit_grep()
 	else
 		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
 	fi
-	return $status
+	return $gstatus
 }
 
 # This returns 0 if the command gave success and the grep value was found
