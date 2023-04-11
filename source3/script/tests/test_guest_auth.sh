@@ -88,7 +88,7 @@ $SMBCONTROL $CONFIGURATION smbd reload-config || {
 }
 
 testit "smbclient_guest_auth_without_members" \
-	test_smbclient &&
+	test_smbclient ||
 	failed=$(expr $failed + 1)
 
 # restore config
