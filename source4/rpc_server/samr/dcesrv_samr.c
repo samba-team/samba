@@ -2608,6 +2608,7 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 	case LDB_SUCCESS:
 		return NT_STATUS_OK;
 	case LDB_ERR_UNWILLING_TO_PERFORM:
+	case LDB_ERR_NO_SUCH_ATTRIBUTE:
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
