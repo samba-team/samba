@@ -1781,6 +1781,17 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call,
 			DBG_WARNING("No users in domain %s",
 				    ldb_dn_get_linearized(d_state->domain_dn));
 			talloc_free(ac);
+
+			/*
+			 * test_EnumDomainUsers_all() expects that r.out.sam
+			 * should be non-NULL, even if we have no entries.
+			 */
+			sam = talloc_zero(mem_ctx, struct samr_SamArray);
+			if (sam == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			*r->out.sam = sam;
+
 			return NT_STATUS_OK;
 		}
 
