@@ -326,6 +326,7 @@ static const struct flag_map decode_ace_access_mask[] = {
 static bool sddl_decode_access(const char *str, uint32_t *pmask)
 {
 	const char *str0 = str;
+        char *end = NULL;
 	uint32_t mask = 0;
 	unsigned long long numeric_mask;
 	int err;
@@ -336,15 +337,37 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 	 * per MS-DTYP and Windows behaviour, octal and decimal numbers are
 	 * also accepted.
 	 *
-	 * Windows will truncate overflowing numbers at 0xffffffff,
-	 * while we will wrap around, using only the lower 32 bits.
+	 * Windows has two behaviours we choose not to replicate:
+	 *
+	 * 1. numbers exceeding 0xffffffff are truncated at that point,
+	 *    turning on all access flags.
+	 *
+	 * 2. negative numbers are accepted, so e.g. -2 becomes 0xfffffffe.
 	 */
-	numeric_mask = smb_strtoull(str, NULL, 0, &err, SMB_STR_STANDARD);
+	numeric_mask = smb_strtoull(str, &end, 0, &err, SMB_STR_STANDARD);
 	if (err == 0) {
+		if (numeric_mask > UINT32_MAX) {
+			DBG_WARNING("Bad numeric flag value - %llu in %s\n",
+				    numeric_mask, str0);
+			return false;
+		}
+		if (end - str > sizeof("037777777777")) {
+			/* here's the tricky thing: if a number is big
+			 * enough to overflow the uint64, it might end
+			 * up small enough to fit in the uint32, and
+			 * we'd miss that it overflowed. So we count
+			 * the digits -- any more than 12 (for
+			 * "037777777777") is too long for 32 bits,
+			 * and the shortest 64-bit wrapping string is
+			 * 19 (for "0x1" + 16 zeros).
+			 */
+			DBG_WARNING("Bad numeric flag value in %s\n", str0);
+			return false;
+		}
 		*pmask = numeric_mask;
 		return true;
 	}
-	/* It's not a number, so we'll look for flags */
+	/* It's not a positive number, so we'll look for flags */
 
 	while ((str[0] != '\0') && isupper(str[0])) {
 		uint32_t flags = 0;
