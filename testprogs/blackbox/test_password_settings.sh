@@ -171,7 +171,7 @@ TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@04%"
 
 test_smbclient_expect_failure "Test login with user (NT_STATUS_PASSWORD_MUST_CHANGE)" \
-	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD && failed=$(expr $failed + 1)
+	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=$(expr $failed + 1)
 
 testit "change user password with 'samba-tool user password' (after must change flag set)" \
 	$VALGRIND $PYTHON $samba_tool user password "${CONFIGURATION}" -W$DOMAIN -U$DOMAIN/$TEST_USERNAME%$TEST_PASSWORD -k no --newpassword=$TEST_PASSWORD_NEW || failed=$(expr $failed + 1)

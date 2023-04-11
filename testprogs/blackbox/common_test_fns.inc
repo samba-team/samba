@@ -33,10 +33,11 @@ test_smbclient_expect_failure()
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
+		return 1
 	else
 		subunit_pass_test "$name"
+		return 0
 	fi
-	return $status
 }
 
 test_rpcclient_grep()
