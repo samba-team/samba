@@ -2263,6 +2263,7 @@ sub setup_maptoguest
 	print "PROVISIONING maptoguest...";
 
 	my $options = "
+domain logons = yes
 map to guest = bad user
 ntlm auth = yes
 server min protocol = LANMAN1
@@ -2286,6 +2287,7 @@ server min protocol = LANMAN1
 	if (not $self->check_or_start(
 		env_vars => $vars,
 		nmbd => "yes",
+		winbindd => "yes",
 		smbd => "yes")) {
 	       return undef;
 	}
