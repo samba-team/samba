@@ -121,7 +121,7 @@ testit_grep_count \
 #Unprivileged users should not be able to overwrite other's names
 testit_expect_failure \
 	"Unprivileged users should not be able to modify existing names" \
-	$net_tool ads dns register $MACHINENAME.$REALM $UNPRIVIP -U$UNPRIVUSER%$UNPRIVPASS &&
+	$net_tool ads dns register $MACHINENAME.$REALM $UNPRIVIP -U$UNPRIVUSER%$UNPRIVPASS ||
 	failed=$(expr $failed + 1)
 
 testit "We should be able to unregister the name $UNPRIVNAME.$REALM $IPADDRESS" \

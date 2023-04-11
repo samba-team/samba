@@ -39,7 +39,7 @@ check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -
 check "RootDSE (full)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base '(objectClass=*)' || failed=$(expr $failed + 1)
 check "RootDSE (extended)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base '(objectClass=*)' --extended-dn || failed=$(expr $failed + 1)
 if [ x$p = x"ldaps" ]; then
-	testit_expect_failure "RootDSE over SSLv3 should fail" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base DUMMY=x dnsHostName highestCommittedUSN --option='tlspriority=NONE:+VERS-SSL3.0:+MAC-ALL:+CIPHER-ALL:+RSA:+SIGN-ALL:+COMP-NULL' && failed=$(expr $failed + 1)
+	testit_expect_failure "RootDSE over SSLv3 should fail" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base DUMMY=x dnsHostName highestCommittedUSN --option='tlspriority=NONE:+VERS-SSL3.0:+MAC-ALL:+CIPHER-ALL:+RSA:+SIGN-ALL:+COMP-NULL' || failed=$(expr $failed + 1)
 fi
 
 echo "Getting defaultNamingContext"

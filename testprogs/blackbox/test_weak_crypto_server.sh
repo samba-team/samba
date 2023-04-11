@@ -56,7 +56,7 @@ unset GNUTLS_FORCE_FIPS_MODE
 testit "testparm-weak-crypto" test_weak_crypto_allowed || failed=$(expr $failed + 1)
 
 # We should not be allowed to use NTLM for connecting
-testit_expect_failure "rpclient.ntlm" $samba_rpcclient ncacn_np:${SERVER_IP}[ntlm] -U$USERNAME%$PASSWORD -c "getusername" && failed=$(expr $failed + 1)
+testit_expect_failure "rpclient.ntlm" $samba_rpcclient ncacn_np:${SERVER_IP}[ntlm] -U$USERNAME%$PASSWORD -c "getusername" || failed=$(expr $failed + 1)
 
 GNUTLS_FORCE_FIPS_MODE=1
 export GNUTLS_FORCE_FIPS_MODE

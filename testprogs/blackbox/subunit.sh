@@ -161,10 +161,11 @@ testit_expect_failure()
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "$output" | subunit_fail_test "$name"
+		return 1
 	else
 		subunit_pass_test "$name"
+		return 0
 	fi
-	return $status
 }
 
 # This returns 0 if the command gave a failure and the grep value was found

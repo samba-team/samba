@@ -74,7 +74,7 @@ if [ x"$TYPE" = x"member" ]; then
 	#test_rpcclient_expect_failure_grep "Fail03 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPFAIL" -U$CREDS && failed=`expr $failed + 1`
 	test_smbclient_expect_failure "Fail03 smbclient with $CREDS" 'ls' "$unc" -U$CREDS && failed=$(expr $failed + 1)
 	# winbindd doesn't handle user@domain yet
-	#testit_expect_failure "Fail03 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS && failed=`expr $failed + 1`
+	#testit_expect_failure "Fail03 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
 else
 	EXPCREDS="Account Name: $USERNAME, Authority Name: $DOMAIN"
 	# rpcclient doesn't handle -Uuser@domain yet
@@ -92,7 +92,7 @@ if [ x"$TYPE" = x"member" ]; then
 	#test_rpcclient_expect_failure_grep "Fail04 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPFAIL" -U$CREDS && failed=`expr $failed + 1`
 	test_smbclient_expect_failure "Fail04 smbclient with $CREDS" 'ls' "$unc" -U$CREDS && failed=$(expr $failed + 1)
 	# winbindd doesn't handle user@domain yet
-	#testit_expect_failure "Fail04 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS && failed=`expr $failed + 1`
+	#testit_expect_failure "Fail04 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
 else
 	EXPCREDS="Account Name: $USERNAME, Authority Name: $DOMAIN"
 	# rpcclient doesn't handle -Uuser@domain yet
@@ -122,7 +122,7 @@ WBCREDS="$TRUST_DOMAIN/$USERNAME%$PASSWORD"
 EXPFAIL="$TRUST_ERROR"
 test_rpcclient_expect_failure_grep "Fail06 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPFAIL" -U$CREDS && failed=$(expr $failed + 1)
 test_smbclient_expect_failure "Fail06 smbclient with $CREDS" 'ls' "$unc" -U$CREDS && failed=$(expr $failed + 1)
-testit_expect_failure "Fail06 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS && failed=$(expr $failed + 1)
+testit_expect_failure "Fail06 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=$(expr $failed + 1)
 
 DNAME="$TRUST_DOMAIN"
 NAME="$DNAME\\$TRUST_USERNAME"
@@ -163,7 +163,7 @@ if [ x"$TRUST_REALM" = x"$TRUST_DOMAIN" ]; then
 	#test_rpcclient_expect_failure_grep "Fail09 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPFAIL" -U$CREDS && failed=`expr $failed + 1`
 	test_smbclient_expect_failure "Fail09 smbclient with $CREDS" 'ls' "$unc" -U$CREDS && failed=$(expr $failed + 1)
 	# winbindd doesn't handle user@domain yet
-	#testit_expect_failure "Fail09 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS && failed=`expr $failed + 1`
+	#testit_expect_failure "Fail09 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
 else
 	EXPCREDS="Account Name: $TRUST_USERNAME, Authority Name: $TRUST_DOMAIN"
 	# rpcclient doesn't handle -Uuser@domain yet
@@ -182,7 +182,7 @@ if [ x"$TRUST_REALM" = x"$TRUST_DOMAIN" ]; then
 	#test_rpcclient_expect_failure_grep "Fail10 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPFAIL" -U$CREDS && failed=`expr $failed + 1`
 	test_smbclient_expect_failure "Fail10 smbclient with $CREDS" 'ls' "$unc" -U$CREDS && failed=$(expr $failed + 1)
 	# winbindd doesn't handle user@domain yet
-	#testit_expect_failure "Fail10 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS && failed=`expr $failed + 1`
+	#testit_expect_failure "Fail10 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
 else
 	EXPCREDS="Account Name: $TRUST_USERNAME, Authority Name: $TRUST_DOMAIN"
 	# rpcclient doesn't handle -Uuser@domain yet, maybe smbclient for now?

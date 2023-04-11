@@ -312,9 +312,9 @@ if test "$TARGET" = "ad_member"; then
 	testit "wbinfo --dc-info=$DOMAIN" $wbinfo --dc-info=$DOMAIN || failed=$(expr $failed + 1)
 fi
 
-testit_expect_failure "wbinfo -a against $TARGET with invalid password" $wbinfo -a "$DOMAIN/$USERNAME%InvalidPassword" && failed=$(expr $failed + 1)
+testit_expect_failure "wbinfo -a against $TARGET with invalid password" $wbinfo -a "$DOMAIN/$USERNAME%InvalidPassword" || failed=$(expr $failed + 1)
 
-testit_expect_failure "wbinfo -K against $TARGET with invalid password" $wbinfo -K "$DOMAIN/$USERNAME%InvalidPassword" && failed=$(expr $failed + 1)
+testit_expect_failure "wbinfo -K against $TARGET with invalid password" $wbinfo -K "$DOMAIN/$USERNAME%InvalidPassword" || failed=$(expr $failed + 1)
 
 rm -f $KRB5CCNAME_PATH
 

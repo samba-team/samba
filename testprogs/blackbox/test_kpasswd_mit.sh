@@ -100,7 +100,7 @@ expect kpasswd: Password mismatch while reading password
 EOF
 
 testit_expect_failure "kpasswd check password mismatch" \
-	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd $TEST_PRINCIPAL && failed=$(expr $failed + 1)
+	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd $TEST_PRINCIPAL || failed=$(expr $failed + 1)
 
 ###########################################################
 ### check that a short password is rejected
@@ -117,7 +117,7 @@ expect Password change rejected: Password too short, password must be at least 7
 EOF
 
 testit_expect_failure "kpasswd check short user password" \
-	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd $TEST_PRINCIPAL && failed=$(expr $failed + 1)
+	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd $TEST_PRINCIPAL || failed=$(expr $failed + 1)
 
 ###########################################################
 ### check that a weak password is rejected
@@ -134,7 +134,7 @@ expect Password change rejected: Password does not meet complexity requirement
 EOF
 
 testit_expect_failure "kpasswd check weak user password" \
-	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd $TEST_PRINCIPAL && failed=$(expr $failed + 1)
+	$texpect $PREFIX/tmpkpasswdscript $samba_kpasswd $TEST_PRINCIPAL || failed=$(expr $failed + 1)
 
 ###########################################################
 ### check that a strong password is accepted
