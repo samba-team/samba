@@ -82,7 +82,7 @@ test_rpcclient_expect_failure_grep()
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
-		return $status
+		return 1
 	fi
 	printf '%s' "$output" | grep -q "$grep"
 	gstatus=$?
@@ -91,7 +91,7 @@ test_rpcclient_expect_failure_grep()
 	else
 		printf '%s' "$output" | subunit_fail_test "$name"
 	fi
-	return $status
+	return $gstatus
 }
 
 kerberos_kinit()
