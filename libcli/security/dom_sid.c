@@ -131,7 +131,8 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 			const char **endp)
 {
 	const char *p;
-	char *q;
+	char *q = NULL;
+	char *end = NULL;
 	uint64_t conv;
 	int error = 0;
 
@@ -158,10 +159,25 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	if (!isdigit(*q)) {
 		goto format_error;
 	}
+	while (q[0] == '0' && isdigit((unsigned char)q[1])) {
+		/*
+		 * strtoull will think this is octal, which is not how SIDs
+		 * work! So let's walk along until there are no leading zeros
+		 * (or a single zero).
+		 */
+		q++;
+	}
 
 	/* get identauth */
-	conv = smb_strtoull(q, &q, 0, &error, SMB_STR_STANDARD);
+	conv = smb_strtoull(q, &end, 0, &error, SMB_STR_STANDARD);
 	if (conv & AUTHORITY_MASK || error != 0) {
+		goto format_error;
+	}
+	if (conv >= (1ULL << 48) || end - q > 15) {
+		/*
+		 * This identauth looks like a big number, but resolves to a
+		 * small number after rounding.
+		 */
 		goto format_error;
 	}
 
@@ -174,6 +190,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	sidout->id_auth[5] = (conv & 0x0000000000ffULL);
 
 	sidout->num_auths = 0;
+	q = end;
 	if (*q != '-') {
 		/* Just id_auth, no subauths */
 		goto done;
@@ -182,8 +199,6 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	q++;
 
 	while (true) {
-		char *end;
-
 		if (!isdigit(*q)) {
 			goto format_error;
 		}
