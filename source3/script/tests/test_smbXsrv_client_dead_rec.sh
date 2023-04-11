@@ -49,7 +49,6 @@ CLIENT_PID=$!
 
 exec 100>smbclient-stdin 101<smbclient-stdout 102<smbclient-stderr
 
-export UID_WRAPPER_ROOT=1
 SMBD_PID=$(UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 "$SMBSTATUS" -p "$CONF" | awk '/^[0-9]+/ {print $1}' | sort -u)
 
 # Kill the first connection, leaves dead record in smbXsrv_client_global.tdb
