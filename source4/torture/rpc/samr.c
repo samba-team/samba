@@ -8801,7 +8801,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	torture_assert(tctx, test_samr_handle_Close(b, tctx, &domain_handle), "Failed to close SAMR domain handle");
 
-	torture_assert(tctx, test_Connect(b, tctx, &ctx->handle), "Faile to re-connect SAMR handle");
+	torture_assert(tctx, test_Connect(b, tctx, &ctx->handle), "Failed to re-connect SAMR handle");
 	/* reconnect the main handle */
 
 	if (!ret) {
