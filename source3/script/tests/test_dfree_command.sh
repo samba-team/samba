@@ -41,13 +41,15 @@ test_smbclient_dfree()
 		received=$(echo "$output" | awk '/blocks of size/ {print $1, $5, $6}')
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
+			return 0
 		else
 			echo "$output" | subunit_fail_test "$name"
+			return 1
 		fi
 	else
 		echo "$output" | subunit_fail_test "$name"
+		return $status
 	fi
-	return $status
 }
 
 if [ $protocol = "SMB3" ]; then

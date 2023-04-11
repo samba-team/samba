@@ -128,13 +128,15 @@ test_smbclient_dfree()
 		received=$(echo "$output" | awk '/blocks of size/ {print $1, $5, $6}')
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
+			return 0
 		else
 			echo "$output" | subunit_fail_test "$name"
+			return 1
 		fi
 	else
 		echo "$output" | subunit_fail_test "$name"
+		return $status
 	fi
-	return $status
 }
 
 # Issue two queries to different directories in one session to test
@@ -158,13 +160,15 @@ test_smbclient_dfree_2()
 			tr '\n' ' ')
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
+			return 0
 		else
 			echo "$output" | subunit_fail_test "$name"
+			return 1
 		fi
 	else
 		echo "$output" | subunit_fail_test "$name"
+		return $status
 	fi
-	return $status
 }
 
 test_smbcquotas()
@@ -193,13 +197,15 @@ test_smbcquotas()
 		received=$(echo "$output" | awk "/$SERVER\\/$user/ {printf \"%s%s%s\", \$3, \$4, \$5}")
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
+			return 0
 		else
 			echo "$output" | subunit_fail_test "$name"
+			return 1
 		fi
 	else
 		echo "$output" | subunit_fail_test "$name"
+		return $status
 	fi
-	return $status
 }
 
 if [ $protocol != "SMB3" ] && [ $protocol != "NT1" ]; then
