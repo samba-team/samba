@@ -26,40 +26,6 @@ samba_tool="$VALGRIND $samba4bindir/samba-tool"
 
 ldbmodify=$(system_or_builddir_binary ldbmodify "${BINDIR}")
 
-testfail()
-{
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "failure: $name"
-	else
-		echo "success: $name"
-	fi
-	return $status
-}
-
-knownfail()
-{
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "failure: $name [unexpected success]"
-		status=1
-	else
-		echo "knownfail: $name"
-		status=0
-	fi
-	return $status
-}
-
 # Create new testing account
 testit "user add" $PYTHON $samba_tool user create --given-name="rfc2307" \
 	--surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd \
