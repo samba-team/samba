@@ -152,7 +152,7 @@ done:
 					  0,
 					  &state->ph,
 					  &state->mdscmd_close.status);
-		ZERO_STRUCT(state);
+		ZERO_STRUCTP(state);
 	}
 	return ok;
 }
@@ -180,7 +180,7 @@ static bool torture_rpc_mdssvc_close(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
 					"dcerpc_mdssvc_close failed\n");
 
-	ZERO_STRUCT(state);
+	ZERO_STRUCTP(state);
 
 done:
 	return ok;
