@@ -41,14 +41,14 @@ smbtorture4_options.extend([
 ])
 
 
-def plansmbtorture4testsuite(name, env, options, description=''):
+def plansmbtorture4testsuite(name, env, options, description='', environ=None):
     if description == '':
         modname = "samba3.%s" % (name, )
     else:
         modname = "samba3.%s %s" % (name, description)
 
     selftesthelpers.plansmbtorture4testsuite(
-        name, env, options, target='samba3', modname=modname)
+        name, env, options, target='samba3', modname=modname, environ=environ)
 
 def compare_versions(version1, version2):
     for i in range(max(len(version1),len(version2))):
