@@ -47,9 +47,6 @@ cd "$SELFTEST_TMPDIR" || exit 1
 rm -f smbclient-stdin smbclient-stdout smbclient-stderr
 mkfifo smbclient-stdin smbclient-stdout smbclient-stderr
 
-UID_WRAPPER_ROOT=1
-export UID_WRAPPER_ROOT
-
 smbstatus_num_sessions()
 {
 	UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 "$SMBSTATUS" "$CONF" --json | jq -M '.sessions | length'
