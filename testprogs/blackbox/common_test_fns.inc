@@ -64,7 +64,7 @@ test_rpcclient_grep()
 	else
 		printf '%s' "$output" | subunit_fail_test "$name"
 	fi
-	return $status
+	return $gstatus
 }
 
 test_rpcclient_expect_failure_grep()
