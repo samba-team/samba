@@ -2377,7 +2377,7 @@ sub check_env($$)
 	offlinebackupdc      => ["backupfromdc"],
 	labdc                => ["backupfromdc"],
 
-	# aliases in order to split autbuild tasks
+	# aliases in order to split autobuild tasks
 	fl2008dc             => ["ad_dc"],
 	ad_dc_default        => ["ad_dc"],
 	ad_dc_default_smb1   => ["ad_dc_smb1"],
