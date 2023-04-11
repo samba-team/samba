@@ -93,6 +93,7 @@ finally:
 
 have_heimdal_support = ("SAMBA4_USES_HEIMDAL" in config_hash)
 have_gnutls_fips_mode_support = ("HAVE_GNUTLS_FIPS_MODE_SUPPORTED" in config_hash)
+have_cluster_support = "CLUSTER_SUPPORT" in config_hash
 
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldaps with options %s(ad_dc_ntvfs)" % options, "ad_dc_ntvfs",
@@ -1167,7 +1168,10 @@ planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$U
 planoldpythontestsuite("ad_dc", "samba.tests.sid_strings")
 
 # Run the import test in environments that may not have the ad-dc built
-for env in ['fileserver_smb1', 'nt4_member', 'clusteredmember', 'ktest', 'nt4_dc', 'nt4_dc_smb1_done', 'nt4_dc_smb1', 'simpleserver', 'fileserver_smb1_done', 'fileserver', 'maptoguest', 'nt4_dc_schannel']:
+envs = ['fileserver_smb1', 'nt4_member', 'ktest', 'nt4_dc', 'nt4_dc_smb1_done', 'nt4_dc_smb1', 'simpleserver', 'fileserver_smb1_done', 'fileserver', 'maptoguest', 'nt4_dc_schannel']
+if have_cluster_support:
+    envs.append('clusteredmember')
+for env in envs:
     planoldpythontestsuite(env, "samba.tests.imports")
 
 have_fast_support = 1

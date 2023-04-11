@@ -94,6 +94,8 @@ with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
 
 have_smb3_unix_extensions = ("HAVE_SMB3_UNIX_EXTENSIONS" in config_hash)
 
+have_cluster_support = "CLUSTER_SUPPORT" in config_hash
+
 def is_module_enabled(module):
     if module in config_hash["STRING_SHARED_MODULES"]:
         return True
@@ -1545,16 +1547,17 @@ plantestsuite("samba3.blackbox.smbXsrv_client_dead_rec", "fileserver:local",
                '$SERVER_IP',
                "tmp"])
 
-plantestsuite("samba3.blackbox.smbXsrv_client_cross_node", "clusteredmember:local",
-              [os.path.join(samba3srcdir,
-                            "script/tests/test_smbXsrv_client_cross_node.sh"),
-               configuration,
-               'ctdb0', 'ctdb1',
-               "tmp"])
-plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
-              [os.path.join(samba3srcdir,
-                            "script/tests/test_registry_share.sh"),
-               "$SERVER", '$DC_USERNAME', "$DC_PASSWORD"])
+if have_cluster_support:
+    plantestsuite("samba3.blackbox.smbXsrv_client_cross_node", "clusteredmember:local",
+                  [os.path.join(samba3srcdir,
+                                "script/tests/test_smbXsrv_client_cross_node.sh"),
+                   configuration,
+                   'ctdb0', 'ctdb1',
+                   "tmp"])
+    plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
+                  [os.path.join(samba3srcdir,
+                                "script/tests/test_registry_share.sh"),
+                   "$SERVER", '$DC_USERNAME', "$DC_PASSWORD"])
 
 env = 'fileserver'
 plantestsuite("samba3.blackbox.virus_scanner", "%s:local" % (env),
@@ -1660,28 +1663,29 @@ plantestsuite("samba3.blackbox.smbclient-mget",
                "$PASSWORD",
                "valid_users"])
 
-t = "readdir-timestamp"
-plantestsuite(
-    "samba3.smbtorture_s3.plain.%s" % t,
-    "clusteredmember",
-    [os.path.join(samba3srcdir,
-                  "script/tests/test_smbtorture_s3.sh"),
-     t,
-     '//foo/bar',
-     '$DOMAIN\\\\$DC_USERNAME',
-     '$DC_PASSWORD',
-     smbtorture3,
-     "",
-     "-b $PREFIX/clusteredmember/unclists/tmp.txt -N 5 -o 10"])
+if have_cluster_support:
+    t = "readdir-timestamp"
+    plantestsuite(
+        "samba3.smbtorture_s3.plain.%s" % t,
+        "clusteredmember",
+        [os.path.join(samba3srcdir,
+                      "script/tests/test_smbtorture_s3.sh"),
+         t,
+         '//foo/bar',
+         '$DOMAIN\\\\$DC_USERNAME',
+         '$DC_PASSWORD',
+         smbtorture3,
+         "",
+         "-b $PREFIX/clusteredmember/unclists/tmp.txt -N 5 -o 10"])
 
-plantestsuite(
-    "samba3.net_machine_account",
-    "clusteredmember",
-    [os.path.join(samba3srcdir,
-                  "script/tests/test_net_machine_account.sh"),
-     "bin/net",
-     "$SERVERCONFFILE",
-     "$SERVER_IP"])
+    plantestsuite(
+        "samba3.net_machine_account",
+        "clusteredmember",
+        [os.path.join(samba3srcdir,
+                      "script/tests/test_net_machine_account.sh"),
+         "bin/net",
+         "$SERVERCONFFILE",
+         "$SERVER_IP"])
 
 plantestsuite(
     "samba3.net_lookup_ldap",
@@ -1724,27 +1728,28 @@ def planclusteredmembertestsuite(tname, prefix):
         modname=modnamearg)
 
 
-CLUSTERED_TESTS = [ 'smb2.deny.deny2' ]
+if have_cluster_support:
+    CLUSTERED_TESTS = [ 'smb2.deny.deny2' ]
 
-for test in CLUSTERED_TESTS:
-    planclusteredmembertestsuite(test, "$PREFIX")
+    for test in CLUSTERED_TESTS:
+        planclusteredmembertestsuite(test, "$PREFIX")
 
-CLUSTERED_LOCAL_TESTS = [
-    "ctdbd-conn1",
-    "local-dbwrap-ctdb1"
-]
+    CLUSTERED_LOCAL_TESTS = [
+        "ctdbd-conn1",
+        "local-dbwrap-ctdb1"
+    ]
 
-for t in CLUSTERED_LOCAL_TESTS:
-    plantestsuite(
-        "samba3.%s" % t,
-        "clusteredmember:local",
-        [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"),
-         t,
-         '//foo/bar',
-         '""',
-         '""',
-         smbtorture3,
-         "-N 1000 -o 2000"])
+    for t in CLUSTERED_LOCAL_TESTS:
+        plantestsuite(
+            "samba3.%s" % t,
+            "clusteredmember:local",
+            [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"),
+             t,
+             '//foo/bar',
+             '""',
+             '""',
+             smbtorture3,
+             "-N 1000 -o 2000"])
 
 if have_smb3_unix_extensions:
     planpythontestsuite("fileserver", "samba.tests.smb3unix")
