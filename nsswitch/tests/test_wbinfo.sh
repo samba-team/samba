@@ -29,10 +29,11 @@ testfail()
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "failure: $name"
+		return 1
 	else
 		echo "success: $name"
+		return 0
 	fi
-	return $status
 }
 
 knownfail()
@@ -183,7 +184,7 @@ else
 	echo "success: wbinfo -S check for sane mapping"
 fi
 
-testfail "wbinfo -S against $TARGET using invalid SID" $wbinfo -S "S-1-22-2-30000" && failed=$(expr $failed + 1)
+testfail "wbinfo -S against $TARGET using invalid SID" $wbinfo -S "S-1-22-2-30000" || failed=$(expr $failed + 1)
 
 testit "wbinfo -Y against $TARGET" $wbinfo -Y "S-1-22-2-30000" || failed=$(expr $failed + 1)
 
@@ -197,7 +198,7 @@ else
 	echo "success: wbinfo -Y check for sane mapping"
 fi
 
-testfail "wbinfo -Y against $TARGET using invalid SID" $wbinfo -Y "S-1-22-1-30000" && failed=$(expr $failed + 1)
+testfail "wbinfo -Y against $TARGET using invalid SID" $wbinfo -Y "S-1-22-1-30000" || failed=$(expr $failed + 1)
 
 testit "wbinfo -t against $TARGET" $wbinfo -t || failed=$(expr $failed + 1)
 
@@ -284,7 +285,7 @@ else
 	failed=$(expr $failed + 1)
 fi
 
-testfail "wbinfo --group-info against $TARGET with $USERNAME" $wbinfo --group-info $USERNAME && failed=$(expr $failed + 1)
+testfail "wbinfo --group-info against $TARGET with $USERNAME" $wbinfo --group-info $USERNAME || failed=$(expr $failed + 1)
 
 testit "wbinfo --gid-info against $TARGET" $wbinfo --gid-info $gid || failed=$(expr $failed + 1)
 
