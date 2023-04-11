@@ -118,7 +118,7 @@ remove_directory()
 	local xdir=${1}
 	shift
 
-	if [ "$xdir" == "/" ] || [ ! -d "$xdir" ] || [ -z "$(ls -A "$xdir")" ]; then
+	if [ "$xdir" = "/" ] || [ ! -d "$xdir" ] || [ -z "$(ls -A "$xdir")" ]; then
 		return
 	fi
 
