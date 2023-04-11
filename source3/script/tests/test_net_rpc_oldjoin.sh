@@ -17,9 +17,6 @@ incdir=$(dirname $0)/../../../testprogs/blackbox
 maccount="OLDJOINTEST"
 privatedir="$PREFIX/private"
 
-UID_WRAPPER_ROOT=1
-export UID_WRAPPER_ROOT
-
 OPTIONS="--configfile $SMB_CONF_PATH --option=netbiosname=$maccount --option=security=domain --option=domainlogons=no --option=privatedir=$privatedir"
 
 test_smbpasswd()
