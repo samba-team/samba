@@ -47,9 +47,6 @@ do_kinit()
 	echo $password | $samba_kinit $principal
 }
 
-UID_WRAPPER_ROOT=1
-export UID_WRAPPER_ROOT
-
 testit "reset password policies beside of minimum password age of 0 days" \
 	$VALGRIND $PYTHON $samba_tool domain passwordsettings set "${CONFIGURATION}" --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=$(expr $failed + 1)
 
