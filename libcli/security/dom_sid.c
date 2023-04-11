@@ -204,7 +204,15 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		}
 
 		conv = smb_strtoull(q, &end, 10, &error, SMB_STR_STANDARD);
-		if (conv > UINT32_MAX || error != 0) {
+		if (conv > UINT32_MAX || error != 0 || end - q > 12) {
+			/*
+			 * This sub-auth is greater than 4294967295,
+			 * and hence invalid. Windows will treat it as
+			 * 4294967295, while we prefer to refuse (old
+			 * versions of Samba will wrap, arriving at
+			 * another number altogether).
+                         */
+			DBG_NOTICE("bad sub-auth in %s\n", sidstr);
 			goto format_error;
 		}
 
