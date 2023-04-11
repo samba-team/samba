@@ -27,11 +27,15 @@ struct torture_suite;
 struct torture_tcase;
 struct torture_results;
 
+/*
+ * Arranged in precedence order. TORTURE_ERROR has the highest priority;
+ * TORTURE_OK the lowest.
+ */
 enum torture_result { 
 	TORTURE_OK=0, 
-	TORTURE_FAIL=1,
-	TORTURE_ERROR=2,
-	TORTURE_SKIP=3
+	TORTURE_SKIP=1,
+	TORTURE_FAIL=2,
+	TORTURE_ERROR=3
 };
 
 enum torture_progress_whence {

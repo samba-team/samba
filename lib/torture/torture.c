@@ -212,18 +212,22 @@ void torture_warning(struct torture_context *context, const char *comment, ...)
 void torture_result(struct torture_context *context, 
 		    enum torture_result result, const char *fmt, ...)
 {
-	va_list ap;
+	/* Of the two outcomes, keep that with the higher priority. */
+	if (result >= context->last_result) {
+		va_list ap;
 
-	va_start(ap, fmt);
+		va_start(ap, fmt);
 
-	if (context->last_reason) {
-		torture_warning(context, "%s", context->last_reason);
-		talloc_free(context->last_reason);
+		if (context->last_reason) {
+			torture_warning(context, "%s", context->last_reason);
+			talloc_free(context->last_reason);
+		}
+
+		context->last_result = result;
+		context->last_reason = talloc_vasprintf(context, fmt, ap);
+
+		va_end(ap);
 	}
-
-	context->last_result = result;
-	context->last_reason = talloc_vasprintf(context, fmt, ap);
-	va_end(ap);
 }
 
 /**

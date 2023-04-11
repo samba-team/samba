@@ -1,0 +1,2 @@
+^samba4.rpc.samr.users\ on\ ncacn_np\ with\ .samr.users\(ad_dc_slowtests\)
+^samba4.rpc.samr.users\ against\ s4member\ server\ with\ local\ creds.samr.users\(s4member\)

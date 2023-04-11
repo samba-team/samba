@@ -1,0 +1,4 @@
+# ServerAuthenticate2 returns NT_STATUS_DOWNGRADE_DETECTED, but we expect NT_STATUS_OK
+^samba4.rpc.netlogon-s3\ with\ .netlogon.SetPassword_with_flags\(ad_dc_default\)
+^samba4.rpc.netlogon-s3\ with\ validate.netlogon.SetPassword_with_flags\(ad_dc_default\)
+^samba4.rpc.netlogon-s3\ with\ bigendian.netlogon.SetPassword_with_flags\(ad_dc_default\)

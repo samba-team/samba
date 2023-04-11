@@ -1,0 +1,5 @@
+# TestPrivateFunctionsDomain is not implemented.
+# QueryDisplayInfo does not return all domain groups on the builtin domain handle.
+^samba3.rpc.samr.samr\(nt4_dc\)
+
+^samba3.rpc.samr.users.samr.users\(nt4_dc\)
