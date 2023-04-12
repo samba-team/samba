@@ -120,7 +120,8 @@ static int py_dom_sid_init(PyObject *self, PyObject *args, PyObject *kwargs)
 		return -1;
 
 	if (str != NULL && !dom_sid_parse(str, sid)) {
-		PyErr_SetString(PyExc_ValueError, "Unable to parse string");
+		PyErr_Format(PyExc_ValueError,
+			     "Unable to parse string: '%s'", str);
 		return -1;
 	}
 
