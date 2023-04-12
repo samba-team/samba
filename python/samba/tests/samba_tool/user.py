@@ -435,8 +435,8 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         for userobj in userlist:
             name = str(userobj.get("samaccountname", idx=0))
-            found = self.assertMatch(out, name,
-                                     "user '%s' not found" % name)
+            self.assertMatch(out, name,
+                             "user '%s' not found" % name)
 
 
     def test_list_base_dn(self):
@@ -459,8 +459,8 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         for userobj in userlist:
             name = str(userobj.get("samaccountname", idx=0))
-            found = self.assertMatch(out, name,
-                                     "user '%s' not found" % name)
+            self.assertMatch(out, name,
+                             "user '%s' not found" % name)
 
     def test_list_full_dn(self):
         (result, out, err) = self.runsubcmd("user", "list", "--full-dn",
@@ -481,8 +481,8 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         for userobj in userlist:
             name = str(userobj.get("dn", idx=0))
-            found = self.assertMatch(out, name,
-                                     "user '%s' not found" % name)
+            self.assertMatch(out, name,
+                             "user '%s' not found" % name)
 
     def test_list_hide_expired(self):
         expire_username = "expireUser"
