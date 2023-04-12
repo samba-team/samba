@@ -81,6 +81,7 @@ class SidStringBase(TestCase):
         cls.base_dn = cls.ldb.domain_dn()
         cls.schema_dn = cls.ldb.get_schema_basedn().get_linearized()
         cls.timestamp = str(int(time.time()))
+        cls.domain_sid = cls.ldb.get_domain_sid()
 
     def _test_sid_string_with_args(self, code, expected_sid):
         suffix = int(blake2b(code.encode(), digest_size=3).hexdigest(), 16)
@@ -185,16 +186,19 @@ cn: {object_name}
         data = res[0].get('nTSecurityDescriptor', idx=0)
         descriptor = ndr_unpack(security.descriptor, data)
 
-        domain_sid = self.ldb.get_domain_sid()
-
-        if expected_sid is None:
-            expected_sid = f'{domain_sid}-{security.DOMAIN_RID_ADMINS}'
-        else:
-            expected_sid = expected_sid.format(domain_sid=domain_sid)
-
+        expected_sid = self.format_expected_sid(expected_sid)
         owner_sid = str(descriptor.owner_sid)
-
         self.assertEqual(expected_sid, owner_sid)
+
+    def format_expected_sid(self, expected_sid):
+        if expected_sid is None:
+            return f'{self.domain_sid}-{security.DOMAIN_RID_ADMINS}'
+
+        if not isinstance(expected_sid, str):
+            # never going to match, should have failed already
+            return None
+
+        return expected_sid.format(domain_sid=self.domain_sid)
 
 
 @DynamicTestCase
