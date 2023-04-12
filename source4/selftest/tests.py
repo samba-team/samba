@@ -566,6 +566,8 @@ plantestsuite("samba4.blackbox.net_rpc_user(ad_dc)", "ad_dc", [os.path.join(bbdi
 
 plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join(bbdir, "test_primary_group.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX_ABS'])
 
+plantestsuite("samba4.blackbox.test_alias_membership", "ad_member_idmap_rid:local", [os.path.join(bbdir, "test_alias_membership.sh"), '$PREFIX_ABS'])
+
 plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
 
 if have_heimdal_support:
