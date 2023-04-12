@@ -352,6 +352,53 @@ class SidStringsThatStartWithS(SidStringBase):
     }
 
 
+@DynamicTestCase
+class SidStringBehavioursThatWindowsAllows(SidStringBase):
+    """Windows interpretations that we probably don't want to follow"""
+    cases = {
+        # saturating sub-auth values at 32 bits
+        'S-1-5-9999999999-579': 'S-1-5-4294967295-579',
+        'S-1-0x500000000-0x500000000-579': 'S-1-0x500000000-4294967295-579',
+        'S-1-5-11111111111111111111111111111111111-579': 'S-1-5-4294967295-579',
+        f'S-1-5-{(1 << 64) - 1}-579': 'S-1-5-4294967295-579',
+        f'S-1-5-{1 << 64}-579': 'S-1-5-4294967295-579',
+        # S-0x1- ?! on Windows this makes everything else a hex number.
+        'S-0x1-5-40-579': 'S-1-5-64-1401',
+        'S-0x1-0-0-579': 'S-1-0-0-1401',
+        'S-0x1-500000000-20-243': 'S-1-0x500000000-32-579',
+        'S-0x1-5-20-243': 'S-1-5-32-579',
+        'S-0x1-0x5-020-0243': 'S-1-5-32-579',
+        'S-1-0xABcDef123-0xABCDef123-579': 'S-1-0xabcdef123-4294967295-579',
+
+        'S-0-5-32-579': late_ERR_CONSTRAINT_VIOLATION,
+        'S-2-5-32-579': late_ERR_CONSTRAINT_VIOLATION,
+        'S-10-5-32-579': late_ERR_CONSTRAINT_VIOLATION,
+    }
+
+
+@DynamicTestCase
+class SidStringBehavioursThatSambaPrefers(SidStringBase):
+    """Aspirational alternative answers to the
+    SidStringBehavioursThatWindowsAllows cases."""
+    cases = {
+        'S-1-5-9999999999-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-0x500000000-0x500000000-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-5-11111111111111111111111111111111111-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        f'S-1-5-{(1 << 64) - 1}-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        f'S-1-5-{1 << 64}-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-0x1-5-40-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-0x1-0-0-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-0x1-500000000-20-243': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-0x1-5-20-243': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-0x1-0x5-020-0243': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-1-0xABcDef123-0xABCDef123-579': ldb.ERR_UNWILLING_TO_PERFORM,
+
+        'S-0-5-32-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-2-5-32-579': ldb.ERR_UNWILLING_TO_PERFORM,
+        'S-10-5-32-579': ldb.ERR_UNWILLING_TO_PERFORM,
+    }
+
+
 if __name__ == '__main__':
     global_asn1_print = False
     global_hexdump = False
