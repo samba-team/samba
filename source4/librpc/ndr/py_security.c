@@ -120,7 +120,7 @@ static int py_dom_sid_init(PyObject *self, PyObject *args, PyObject *kwargs)
 		return -1;
 
 	if (str != NULL && !dom_sid_parse(str, sid)) {
-		PyErr_SetString(PyExc_TypeError, "Unable to parse string");
+		PyErr_SetString(PyExc_ValueError, "Unable to parse string");
 		return -1;
 	}
 
@@ -285,7 +285,7 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 
 	secdesc = sddl_decode(NULL, sddl, sid);
 	if (secdesc == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Unable to parse SDDL");
+		PyErr_SetString(PyExc_ValueError, "Unable to parse SDDL");
 		return NULL;
 	}
 

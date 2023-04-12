@@ -399,7 +399,7 @@ changetype: modify
                 try:
                     membersid = security.dom_sid(member)
                     targetmember_dn = "<SID=%s>" % str(membersid)
-                except TypeError as e:
+                except ValueError:
                     pass
 
                 if targetmember_dn is None:

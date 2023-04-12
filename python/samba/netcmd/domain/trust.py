@@ -1815,14 +1815,14 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             for s in enable_sid_str:
                 try:
                     sid = security.dom_sid(s)
-                except TypeError as error:
+                except (ValueError, TypeError) as error:
                     raise CommandError("value[%s] specified for --enable-sid is not a valid SID" % s)
                 enable_sid.append(sid)
             disable_sid = []
             for s in disable_sid_str:
                 try:
                     sid = security.dom_sid(s)
-                except TypeError as error:
+                except (ValueError, TypeError) as error:
                     raise CommandError("value[%s] specified for --disable-sid is not a valid SID" % s)
                 disable_sid.append(sid)
             if len(enable_sid) > 0:
