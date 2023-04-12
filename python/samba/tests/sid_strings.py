@@ -399,6 +399,75 @@ class SidStringBehavioursThatSambaPrefers(SidStringBase):
     }
 
 
+@DynamicTestCase
+class SidStringsAsDnInSearchBase(SidStringBase):
+    """How does a bad <SID=x> dn work as a search base, if at all?
+
+    This suggests that Windows does the SID parsing
+    (INVALID_DN_SYNTAX) before starting the search (NO_SUCH_OBJECT).
+
+    Currently Samba does not.
+    """
+    skip_local = True
+    cases = {' S-1-1-1-1-1-1-1': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-0-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-000000000001-5-20-243': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-000000001-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-01-05-020-0243': ldb.ERR_NO_SUCH_OBJECT,
+             'S-01-5-32-11579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-0x1-0-0-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-0x1-0x5-020-0243': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-0x1-5-20-243': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-0x1-5-40-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-0x1-500000000-20-243': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-0': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0-0-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0x05-32-11579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0x5-0x20-0x243': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0x50000000-32-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0x500000000-0x500000000-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0x500000000-32-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-0xABcDef123-0xABCDef123-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-1-1-1-1-1-1': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-21474836480-32-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-22': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-22-1': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-22-1-0': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-281474976710655-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-281474976710656-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-3-0': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-3-99': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-0-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-040-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-0x20-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-11111111111111111111111111111111111-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-5-18446744073709551615-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-5-18446744073709551616-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-5-3 2-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-32 -11111579': None,
+             'S-1-5-32- 579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-5-32--579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-5-32-11579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-4294967295-579': ldb.ERR_NO_SUCH_OBJECT,
+             'S-1-5-9999999999-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-1-99999999999999999999999999999999999999-32-11111111111': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-10-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'S-2-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
+             's-1-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
+             'AA': ldb.ERR_INVALID_DN_SYNTAX,
+        }
+
+    def _test_sid_string_with_args(self, code, expected):
+        try:
+            self.ldb.search(base=f"<SID={code}>",
+                            scope=ldb.SCOPE_BASE,
+                            attrs=[])
+        except ldb.LdbError as e:
+            self.assertEqual(e.args[0], expected)
+        else:
+            self.assertIsNone(expected)
+
+
 if __name__ == '__main__':
     global_asn1_print = False
     global_hexdump = False
