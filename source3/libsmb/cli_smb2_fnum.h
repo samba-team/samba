@@ -26,12 +26,17 @@ struct cli_state;
 struct file_info;
 struct symlink_reparse_struct;
 
+struct cli_smb2_create_flags {
+	bool batch_oplock:1;
+	bool exclusive_oplock:1;
+};
+
 struct tevent_req *cli_smb2_create_fnum_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct cli_state *cli,
 	const char *fname,
-	uint32_t create_flags,
+	struct cli_smb2_create_flags create_flags,
 	uint32_t impersonation_level,
 	uint32_t desired_access,
 	uint32_t file_attributes,
@@ -49,7 +54,7 @@ NTSTATUS cli_smb2_create_fnum_recv(
 NTSTATUS cli_smb2_create_fnum(
 	struct cli_state *cli,
 	const char *fname,
-	uint32_t create_flags,
+	struct cli_smb2_create_flags create_flags,
 	uint32_t impersonation_level,
 	uint32_t desired_access,
 	uint32_t file_attributes,

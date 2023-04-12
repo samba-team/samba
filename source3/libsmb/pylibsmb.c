@@ -1135,12 +1135,17 @@ static PyObject *py_cli_create_ex(
 	}
 
 	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
+		struct cli_smb2_create_flags cflags = {
+			.batch_oplock = (CreateFlags & REQUEST_BATCH_OPLOCK),
+			.exclusive_oplock = (CreateFlags & REQUEST_OPLOCK),
+		};
+
 		req = cli_smb2_create_fnum_send(
 			NULL,
 			self->ev,
 			self->cli,
 			fname,
-			CreateFlags,
+			cflags,
 			ImpersonationLevel,
 			DesiredAccess,
 			FileAttributes,

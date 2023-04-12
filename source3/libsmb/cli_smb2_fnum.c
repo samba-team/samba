@@ -142,11 +142,11 @@ static NTSTATUS delete_smb2_handle_mapping(struct cli_state *cli,
  Oplock mapping code.
 ***************************************************************/
 
-static uint8_t flags_to_smb2_oplock(uint32_t create_flags)
+static uint8_t flags_to_smb2_oplock(struct cli_smb2_create_flags create_flags)
 {
-	if (create_flags & REQUEST_BATCH_OPLOCK) {
+	if (create_flags.batch_oplock) {
 		return SMB2_OPLOCK_LEVEL_BATCH;
-	} else if (create_flags & REQUEST_OPLOCK) {
+	} else if (create_flags.exclusive_oplock) {
 		return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
 	}
 
@@ -212,7 +212,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	struct tevent_context *ev,
 	struct cli_state *cli,
 	const char *fname_in,
-	uint32_t create_flags,
+	struct cli_smb2_create_flags create_flags,
 	uint32_t impersonation_level,
 	uint32_t desired_access,
 	uint32_t file_attributes,
@@ -392,7 +392,7 @@ NTSTATUS cli_smb2_create_fnum_recv(
 NTSTATUS cli_smb2_create_fnum(
 	struct cli_state *cli,
 	const char *fname,
-	uint32_t create_flags,
+	struct cli_smb2_create_flags create_flags,
 	uint32_t impersonation_level,
 	uint32_t desired_access,
 	uint32_t file_attributes,
@@ -810,7 +810,7 @@ struct tevent_req *cli_smb2_mkdir_send(
 		ev,				   /* ev */
 		cli,				   /* cli */
 		dname,				   /* fname */
-		0,				   /* create_flags */
+		(struct cli_smb2_create_flags){0}, /* create_flags */
 		SMB2_IMPERSONATION_IMPERSONATION,  /* impersonation_level */
 		FILE_READ_ATTRIBUTES,		   /* desired_access */
 		FILE_ATTRIBUTE_DIRECTORY,	   /* file_attributes */
@@ -898,7 +898,7 @@ struct tevent_req *cli_smb2_rmdir_send(
 		state->ev,
 		state->cli,
 		state->dname,
-		0,			/* create_flags */
+		(struct cli_smb2_create_flags){0},
 		SMB2_IMPERSONATION_IMPERSONATION,
 		DELETE_ACCESS,		/* desired_access */
 		FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -937,7 +937,7 @@ static void cli_smb2_rmdir_opened1(struct tevent_req *subreq)
 			state->ev,
 			state->cli,
 			state->dname,
-			0,			/* create_flags */
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -1068,7 +1068,7 @@ struct tevent_req *cli_smb2_unlink_send(
 		state->ev,	/* tevent_context */
 		state->cli,	/* cli_struct */
 		state->fname,	/* filename */
-		0,			/* create_flags */
+		(struct cli_smb2_create_flags){0},
 		SMB2_IMPERSONATION_IMPERSONATION,
 		DELETE_ACCESS,		/* desired_access */
 		FILE_ATTRIBUTE_NORMAL, /* file attributes */
@@ -1111,7 +1111,7 @@ static void cli_smb2_unlink_opened1(struct tevent_req *subreq)
 			state->ev,	/* tevent_context */
 			state->cli,	/* cli_struct */
 			state->fname,	/* filename */
-			0,			/* create_flags */
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_NORMAL, /* file attributes */
@@ -1473,7 +1473,7 @@ struct tevent_req *cli_smb2_list_send(
 		ev,					/* ev */
 		cli,					/* cli */
 		parent,					/* fname */
-		0,					/* create_flags */
+		(struct cli_smb2_create_flags){0},	/* create_flags */
 		SMB2_IMPERSONATION_IMPERSONATION,	/* impersonation_level */
 		SEC_DIR_LIST|SEC_DIR_READ_ATTRIBUTE,	/* desired_access */
 		FILE_ATTRIBUTE_DIRECTORY, 		/* file_attributes */
@@ -1722,7 +1722,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 
 	status = cli_smb2_create_fnum(cli,
 			name,
-			0,			/* create_flags */
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -1739,7 +1739,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 		/* Maybe a file ? */
 		status = cli_smb2_create_fnum(cli,
 			name,
-			0,			/* create_flags */
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,		/* desired_access */
 			0, /* file attributes */
@@ -1757,7 +1757,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 		/* Maybe a reparse point ? */
 		status = cli_smb2_create_fnum(cli,
 			name,
-			0,			/* create_flags */
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,		/* desired_access */
 			0, /* file attributes */
@@ -1996,7 +1996,7 @@ static struct tevent_req *get_fnum_from_path_send(
 		ev,		/* ev */
 		cli,		/* cli */
 		state->name,	/* fname */
-		0,		/* create_flags */
+		(struct cli_smb2_create_flags){0}, /* create_flags */
 		SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level */
 		desired_access,	/* desired_access */
 		0,		/* file_attributes */
@@ -2037,7 +2037,7 @@ static void get_fnum_from_path_opened_file(struct tevent_req *subreq)
 			state->ev,	/* ev */
 			state->cli,	/* cli */
 			state->name,	/* fname */
-			0,		/* create_flags */
+			(struct cli_smb2_create_flags){0}, /* create_flags */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation */
 			state->desired_access, /* desired_access */
 			0,		/* file_attributes */
@@ -2061,7 +2061,7 @@ static void get_fnum_from_path_opened_file(struct tevent_req *subreq)
 			state->ev,	/* ev */
 			state->cli,	/* cli */
 			state->name,	/* fname */
-			0,		/* create_flags */
+			(struct cli_smb2_create_flags){0}, /* create_flags */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation */
 			state->desired_access, /* desired_access */
 			0,		/* file_attributes */
@@ -2630,7 +2630,7 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, const char *path,
 	/* First open the top level directory. */
 	status = cli_smb2_create_fnum(cli,
 			path,
-			0,			/* create_flags */
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -2727,7 +2727,8 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 
 	/* First open the top level directory. */
 	status =
-	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+	    cli_smb2_create_fnum(cli, "",
+				 (struct cli_smb2_create_flags){0},
 				 SMB2_IMPERSONATION_IMPERSONATION,
 				 FILE_READ_ATTRIBUTES,     /* desired_access */
 				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -2808,7 +2809,8 @@ NTSTATUS cli_smb2_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 
 	/* First open the top level directory. */
 	status =
-	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+	    cli_smb2_create_fnum(cli, "",
+				 (struct cli_smb2_create_flags){0},
 				 SMB2_IMPERSONATION_IMPERSONATION,
 				 FILE_READ_ATTRIBUTES,     /* desired_access */
 				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -2888,7 +2890,8 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 
 	/* First open the top level directory. */
 	status =
-	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+	    cli_smb2_create_fnum(cli, "",
+				 (struct cli_smb2_create_flags){0},
 				 SMB2_IMPERSONATION_IMPERSONATION,
 				 FILE_READ_ATTRIBUTES,     /* desired_access */
 				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
@@ -3024,7 +3027,7 @@ struct tevent_req *cli_smb2_query_mxac_send(TALLOC_CTX *mem_ctx,
 		state->ev,
 		state->cli,
 		state->fname,
-		0,			/* create_flags */
+		(struct cli_smb2_create_flags){0},
 		SMB2_IMPERSONATION_IMPERSONATION,
 		FILE_READ_ATTRIBUTES,
 		0,			/* file attributes */

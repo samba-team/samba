@@ -2840,7 +2840,7 @@ bool run_smb2_sacl(int dummy)
 
 	status = cli_smb2_create_fnum(cli,
 			fname,
-			SMB2_OPLOCK_LEVEL_NONE,
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			SEC_FLAG_SYSTEM_SECURITY, /* desired access */
 			0, /* file_attributes, */
@@ -2878,7 +2878,7 @@ bool run_smb2_sacl(int dummy)
 
 	status = cli_smb2_create_fnum(cli,
 			fname,
-			SMB2_OPLOCK_LEVEL_NONE,
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			SEC_FLAG_SYSTEM_SECURITY|
 				FILE_WRITE_ATTRIBUTES, /* desired access */
@@ -2947,7 +2947,7 @@ bool run_smb2_sacl(int dummy)
 
 	status = cli_smb2_create_fnum(cli,
 			fname,
-			SMB2_OPLOCK_LEVEL_NONE,
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			SEC_FLAG_SYSTEM_SECURITY|
 				SEC_STD_WRITE_DAC, /* desired access */
@@ -3003,7 +3003,7 @@ bool run_smb2_sacl(int dummy)
 
 	status = cli_smb2_create_fnum(cli,
 			fname,
-			SMB2_OPLOCK_LEVEL_NONE,
+			(struct cli_smb2_create_flags){0},
 			SMB2_IMPERSONATION_IMPERSONATION,
 			SEC_FLAG_SYSTEM_SECURITY|
 				FILE_READ_ATTRIBUTES, /* desired access */
@@ -3117,7 +3117,7 @@ bool run_smb2_quota1(int dummy)
 	status = cli_smb2_create_fnum(
 		cli,
 		"\\",
-		SMB2_OPLOCK_LEVEL_NONE,
+		(struct cli_smb2_create_flags){0},
 		SMB2_IMPERSONATION_IMPERSONATION,
 		SEC_GENERIC_READ, /* desired access */
 		0, /* file_attributes, */
