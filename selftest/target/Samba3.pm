@@ -3677,7 +3677,7 @@ jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 	$createuser_env{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$createuser_env{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$createuser_env{NSS_WRAPPER_HOSTS} = $nss_wrapper_hosts;
-	$createuser_env{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
+	$createuser_env{NSS_WRAPPER_HOSTNAME} = "${hostname}.${dns_domain}";
 	if ($ENV{SAMBA_DNS_FAKING}) {
 		$createuser_env{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
 	} else {
@@ -3731,7 +3731,7 @@ jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ret{NSS_WRAPPER_HOSTS} = $nss_wrapper_hosts;
-	$ret{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
+	$ret{NSS_WRAPPER_HOSTNAME} = "${hostname}.${dns_domain}";
 	$ret{NSS_WRAPPER_MODULE_SO_PATH} = Samba::nss_wrapper_winbind_so_path($self);
 	$ret{NSS_WRAPPER_MODULE_FN_PREFIX} = "winbind";
 	if ($ENV{SAMBA_DNS_FAKING}) {
