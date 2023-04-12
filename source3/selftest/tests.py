@@ -1721,7 +1721,7 @@ def planclusteredmembertestsuite(tname, prefix):
     sharearg = '//$SERVER_IP/%s' % tshare
 
     return selftesthelpers.plansmbtorture4testsuite(
-        namearg,
+        tname,
         'clusteredmember',
         [extraargs, unclistarg, sharearg, autharg, tname],
         target='samba3',
