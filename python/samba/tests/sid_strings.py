@@ -47,6 +47,10 @@ late_ERR_CONSTRAINT_VIOLATION = b"a hack to allow Windows to sometimes fail late
 class SidStringBase(TestCase):
     @classmethod
     def setUpDynamicTestCases(cls):
+        if not hasattr(cls, 'skip_local'):
+            cls.skip_local = env_get_var_value('SAMBA_SID_STRINGS_SKIP_LOCAL',
+                                               allow_missing=True)
+
         if env_get_var_value('CHECK_ALL_COMBINATIONS',
                              allow_missing=True):
             for x in string.ascii_uppercase:
@@ -60,6 +64,9 @@ class SidStringBase(TestCase):
 
             cls.generate_dynamic_test('test_sid_string', name,
                                       code, expected_sid)
+            if not cls.skip_local:
+                cls.generate_dynamic_test('test_sid_string_internal', name,
+                                          code, expected_sid)
 
     @classmethod
     def setUpClass(cls):
@@ -199,6 +206,27 @@ cn: {object_name}
             return None
 
         return expected_sid.format(domain_sid=self.domain_sid)
+
+    def _test_sid_string_internal_with_args(self, code, expected_sid):
+        """We just want to test the SIDs, which Samba can't really do because
+        it doesn't parse them until creating an object using the
+        schema class, at which time it doesn't distinguish between a
+        missing value and a nonsense value.
+
+        So let's also run the test using libcli/security/sddl.c and
+        see what we *would* have done.
+        """
+        sddl = f"O:{code}"
+        domsid = security.dom_sid(self.domain_sid)
+
+        try:
+            sd = security.descriptor.from_sddl(sddl, domsid)
+        except ValueError:
+            # we don't have detail as to what went wrong
+            self.assertNotIsInstance(expected_sid, str)
+        else:
+            expected_sid = self.format_expected_sid(expected_sid)
+            self.assertEqual(expected_sid, str(sd.owner_sid))
 
 
 @DynamicTestCase
