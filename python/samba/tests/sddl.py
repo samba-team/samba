@@ -18,12 +18,49 @@
 """Tests for samba.dcerpc.security"""
 
 from samba.dcerpc import security
-from samba.tests import TestCase
+from samba.tests import TestCase, DynamicTestCase
 from samba.colour import c_RED, c_GREEN
 
 
-class SddlDecodeEncode(TestCase):
-    strings_non_canonical = [
+class SddlDecodeEncodeBase(TestCase):
+    maxDiff = 10000
+    @classmethod
+    def setUpDynamicTestCases(cls):
+        cls.domain_sid = security.dom_sid("S-1-2-3-4")
+        seen = set()
+        for pair in cls.strings:
+            if isinstance(pair, str):
+                pair = (pair, pair)
+
+            if pair in seen:
+                print(f"seen {pair} after {len(seen)}")
+            seen.add(pair)
+            sddl, canonical = pair
+            name = sddl
+            if len(name) > 120:
+                name = f"{name[:100]}+{len(name) - 100}-more-characters"
+            cls.generate_dynamic_test('test_sddl', name, sddl, canonical)
+
+    def _test_sddl_with_args(self, s, canonical):
+        try:
+            sd1 = security.descriptor.from_sddl(s, self.domain_sid)
+        except (TypeError, ValueError) as e:
+            self.fail(f"raised {e}")
+
+        sddl = sd1.as_sddl(self.domain_sid)
+        sd2 = security.descriptor.from_sddl(sddl, self.domain_sid)
+        self.assertEqual(sd1, sd2)
+        self.assertEqual(sddl, canonical)
+
+
+@DynamicTestCase
+class SddlNonCanonical(SddlDecodeEncodeBase):
+    """These ones are transformed in the round trip into a preferred
+    synonym. For example "S:D:" is accepted as input, but only "D:S:
+    will be output.
+    """
+    name = "non_canonical"
+    strings = [
         # format is (original, canonical); after passing through an SD
         # object, the SDDL will look like the canonical version.
         ("D:(A;;CC;;;BA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)",
@@ -421,7 +458,14 @@ class SddlDecodeEncode(TestCase):
         ("O:S-1-2-0x2D:(A;;GA;;;LG)", "O:S-1-2-2D:(A;;GA;;;LG)"),
     ]
 
-    strings_canonical = [
+
+@DynamicTestCase
+class SddlCanonical(SddlDecodeEncodeBase):
+    """These ones are expected to be returned in exactly the form they
+    start in. Hence we only have one string for each example.
+    """
+    name = "canonical"
+    strings = [
         # derived from GPO acl in provision, "-512D" could be misinterpreted
         ("O:S-1-5-21-1225132014-296224811-2507946102-512"
          "G:S-1-5-21-1225132014-296224811-2507946102-512"
@@ -446,43 +490,5 @@ class SddlDecodeEncode(TestCase):
         "D:P(A;;GA;;;LG)(A;;GX;;;AA)",
     ]
 
-    def _test_sddl_pair(self, sid, s, canonical):
-        try:
-            sd1 = security.descriptor.from_sddl(s, sid)
-        except TypeError as e:
-            self.fail()
 
-        sddl = sd1.as_sddl(sid)
-        sd2 = security.descriptor.from_sddl(sddl, sid)
-        self.assertEqual(sd1, sd2)
-        self.assertEqual(sddl, canonical)
 
-    def _test_list(self, strings):
-        sid = security.dom_sid("S-1-2-3-4")
-        failed = []
-        for x in strings:
-            if isinstance(x, str):
-                original, canonical = (x, x)
-            else:
-                original, canonical = x
-            try:
-                self._test_sddl_pair(sid, original, canonical)
-            except AssertionError:
-                failed.append((original, canonical))
-
-        for o, c in failed:
-            print(f"{c_RED(o)} -> {c} failed")
-        self.assertEqual(failed, [])
-
-    def test_sddl_non_canonical(self):
-        self._test_list(self.strings_non_canonical)
-
-    def test_sddl_canonical(self):
-        self._test_list(self.strings_canonical)
-
-    def test_multiflag(self):
-        sid = security.dom_sid("S-1-2-3-4")
-        raised = False
-        sd = security.descriptor.from_sddl("D:(A;;GWFX;;;DA)", sid)
-        sddl = sd.as_sddl(sid)
-        self.assertEqual(sd, security.descriptor.from_sddl(sddl, sid))

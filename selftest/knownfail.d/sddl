@@ -1,1 +1,1 @@
-^samba.tests.sddl.+.SddlDecodeEncode.test_sddl_non_canonical.none
+^samba.tests.sddl.+.SddlNonCanonical.test_sddl_D:.A;;GA;;;S-1-5000000000-30-40..none
