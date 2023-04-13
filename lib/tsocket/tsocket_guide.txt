@@ -246,7 +246,7 @@ abstracted socket.
 (Remember at the low level there is always only one IO in a specific
  direction allowed, only one tdgram_sendto_send() at a time).
 
-Some helpers that use 'tevent_queue' are avilable to simplify handling
+Some helpers that use 'tevent_queue' are available to simplify handling
 multiple IO requests. The functions just get a 'queue' argument and
 internally serialize all operations.
 
@@ -468,7 +468,7 @@ Virtual Sockets
 ===============
 
 The abstracted layout of tdgram_context and tstream_context
-allow implementations arround virtual sockets for encrypted tunnels
+allow implementations around virtual sockets for encrypted tunnels
 (like TLS, SASL or GSSAPI) or named pipes over smb.
 
 Named Pipe Auth (NPA) Sockets

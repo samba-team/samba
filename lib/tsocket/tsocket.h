@@ -93,7 +93,7 @@ struct iovec;
  *      ipv4:192.168.1.1:143
  *
  * Callers should not try to parse the string! The should use additional methods
- * of the specific tsocket_address implemention to get more details.
+ * of the specific tsocket_address implementation to get more details.
  *
  * @param[in]  addr     The address to convert.
  *
@@ -1251,7 +1251,7 @@ int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
  *
  * This function queues an iovector for sending to destination through an
  * existing stream socket. The async callback is triggered when the whole
- * vectror has been delivered to the underlying system socket.
+ * vector has been delivered to the underlying system socket.
  *
  * The caller needs to make sure that all non-scalar input parameters hang
  * around for the whole lifetime of the request.
