@@ -73,7 +73,7 @@ bool make_netmask(struct sockaddr_storage *pss_out,
 }
 
 /****************************************************************************
- Create a struct sockaddr_storage set to the broadcast or network adress from
+ Create a struct sockaddr_storage set to the broadcast or network address from
  an incoming sockaddr_storage.
 ****************************************************************************/
 
