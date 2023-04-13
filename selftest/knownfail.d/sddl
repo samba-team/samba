@@ -1,1 +1,1 @@
-^samba.tests.sddl.+.SddlDecodeEncode.test_sddl.none
+^samba.tests.sddl.+.SddlDecodeEncode.test_sddl_non_canonical.none
