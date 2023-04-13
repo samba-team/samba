@@ -7,9 +7,6 @@ EOF
 	exit 1
 fi
 
-TMPDIR="$PREFIX_ABS/$(basename $0)"
-export TMPDIR
-
 SERVER=$1
 USERNAME=$2
 PASSWORD=$3
@@ -17,6 +14,9 @@ DOMAIN=$4
 PREFIX_ABS=$5
 shift 5
 failed=0
+
+TMPDIR="$PREFIX_ABS/$(basename $0)"
+export TMPDIR
 
 . $(dirname $0)/subunit.sh
 . $(dirname $0)/common_test_fns.inc
