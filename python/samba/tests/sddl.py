@@ -20,6 +20,8 @@
 from samba.dcerpc import security
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.tests import TestCase
+from samba.colour import c_RED, c_GREEN
+
 
 class SddlDecodeEncode(TestCase):
     strings = [
@@ -172,14 +174,36 @@ class SddlDecodeEncode(TestCase):
         "D:PS:",
     ]
 
-    def test_sddl(self):
+    def _test_sddl_pair(self, sid, s, canonical):
+        try:
+            sd1 = security.descriptor.from_sddl(s, sid)
+        except TypeError as e:
+            self.fail()
+
+        sddl = sd1.as_sddl(sid)
+        sd2 = security.descriptor.from_sddl(sddl, sid)
+        self.assertEqual(sd1, sd2)
+        self.assertEqual(sddl, canonical)
+
+    def _test_list(self, strings):
         sid = security.dom_sid("S-1-2-3-4")
-        for s in self.strings:
-            sd = security.descriptor.from_sddl(s, sid)
-            sddl = sd.as_sddl(sid)
-            sd2 = security.descriptor.from_sddl(sddl, sid)
-            self.assertEqual(sd, sd2)
-            self.assertEqual(sd.as_sddl(), sd2.as_sddl())
+        failed = []
+        for x in strings:
+            if isinstance(x, str):
+                original, canonical = (x, x)
+            else:
+                original, canonical = x
+            try:
+                self._test_sddl_pair(sid, original, canonical)
+            except AssertionError:
+                failed.append((original, canonical))
+
+        for o, c in failed:
+            print(f"{c_RED(o)} -> {c} failed")
+        self.assertEqual(failed, [])
+
+    def test_sddl(self):
+        self._test_list(self.strings)
 
     def test_multiflag(self):
         sid = security.dom_sid("S-1-2-3-4")
