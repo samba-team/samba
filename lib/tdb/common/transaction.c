@@ -68,7 +68,7 @@
     although once a transaction is started then an exclusive lock is
     gained until the transaction is committed or cancelled
 
-  - the commit stategy involves first saving away all modified data
+  - the commit strategy involves first saving away all modified data
     into a linearised buffer in the transaction recovery area, then
     marking the transaction recovery area with a magic value to
     indicate a valid recovery record. In total 4 fsync/msync calls are

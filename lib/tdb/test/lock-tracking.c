@@ -1,4 +1,4 @@
-/* We save the locks so we can reaquire them. */
+/* We save the locks so we can reacquire them. */
 #include "../common/tdb_private.h"
 #include <unistd.h>
 #include <fcntl.h>

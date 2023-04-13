@@ -454,7 +454,7 @@ int tdb_mutex_allrecord_upgrade(struct tdb_context *tdb)
 
 	/*
 	 * Our only caller tdb_allrecord_upgrade()
-	 * garantees that we already own the allrecord lock.
+	 * guarantees that we already own the allrecord lock.
 	 *
 	 * Which means m->allrecord_mutex is still locked by us.
 	 */
@@ -502,7 +502,7 @@ void tdb_mutex_allrecord_downgrade(struct tdb_context *tdb)
 
 	/*
 	 * Our only caller tdb_allrecord_upgrade() (in the error case)
-	 * garantees that we already own the allrecord lock.
+	 * guarantees that we already own the allrecord lock.
 	 *
 	 * Which means m->allrecord_mutex is still locked by us.
 	 */
@@ -531,7 +531,7 @@ int tdb_mutex_allrecord_unlock(struct tdb_context *tdb)
 	/*
 	 * Our only callers tdb_allrecord_unlock() and
 	 * tdb_allrecord_lock() (in the error path)
-	 * garantee that we already own the allrecord lock.
+	 * guarantee that we already own the allrecord lock.
 	 *
 	 * Which means m->allrecord_mutex is still locked by us.
 	 */
@@ -982,7 +982,7 @@ cleanup:
 	 * tdb_robust_mutex_pid to -1. This is ok as this code path is only
 	 * called once per process.
 	 *
-	 * Leaving our signal handler avoids races with other threads potentialy
+	 * Leaving our signal handler avoids races with other threads potentially
 	 * setting up their SIGCHLD handlers.
 	 *
 	 * The worst thing that can happen is that the other newer signal

@@ -15,7 +15,7 @@ with a fcntl lock.
 The external locking API of tdb also allows one to lock the complete database, and
 ctdb uses this facility to freeze databases during a recovery. While the
 so-called allrecord lock is held, all linked lists and all individual records
-are frozen alltogether. Tdb achieves this by locking the complete file range
+are frozen altogether. Tdb achieves this by locking the complete file range
 with a single fcntl lock. Individual 1-byte locks for the linked lists
 conflict with this. Access to records is prevented by the one large fnctl byte
 range lock.
@@ -73,7 +73,7 @@ The setpshared functions indicate to the kernel that the mutex is about to be
 shared between processes in a common shared memory area.
 
 The process shared posix mutexes have the potential to replace fcntl locking
-to coordinate mmap access for tdbs. However, they are missing the criticial
+to coordinate mmap access for tdbs. However, they are missing the critical
 auto-cleanup property that fcntl provides when a process dies. A process that
 dies hard while holding a shared mutex has no chance to clean up the protected
 data structures and unlock the shared mutex. Thus with a pure process shared

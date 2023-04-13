@@ -94,7 +94,7 @@ static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
 	}
 
 	/*
-	 * It's required for some following code pathes
+	 * It's required for some following code paths
 	 * to have the fields on 'tdb' up-to-date.
 	 *
 	 * E.g. tdb_mutex_size() requires it
@@ -826,7 +826,7 @@ _PUBLIC_ int tdb_close(struct tdb_context *tdb)
 	return ret;
 }
 
-/* register a loging function */
+/* register a logging function */
 _PUBLIC_ void tdb_set_logging_function(struct tdb_context *tdb,
                                        const struct tdb_logging_context *log_ctx)
 {

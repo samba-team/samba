@@ -58,7 +58,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 			   that we have done at least one fcntl lock at the
 			   start of a search to guarantee that memory is
 			   coherent on SMP systems. If records are added by
-			   others during the search then thats OK, and we
+			   others during the search then that's OK, and we
 			   could possibly miss those with this trick, but we
 			   could miss them anyway without this trick, so the
 			   semantics don't change.

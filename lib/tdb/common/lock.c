@@ -812,7 +812,7 @@ _PUBLIC_ int tdb_lockall_unmark(struct tdb_context *tdb)
 	return tdb_allrecord_unlock(tdb, F_WRLCK, true);
 }
 
-/* lock entire database with write lock - nonblocking varient */
+/* lock entire database with write lock - nonblocking variant */
 _PUBLIC_ int tdb_lockall_nonblock(struct tdb_context *tdb)
 {
 	int ret = tdb_allrecord_lock(tdb, F_WRLCK, TDB_LOCK_NOWAIT, false);
@@ -834,7 +834,7 @@ _PUBLIC_ int tdb_lockall_read(struct tdb_context *tdb)
 	return tdb_allrecord_lock(tdb, F_RDLCK, TDB_LOCK_WAIT, false);
 }
 
-/* lock entire database with read lock - nonblock varient */
+/* lock entire database with read lock - nonblock variant */
 _PUBLIC_ int tdb_lockall_read_nonblock(struct tdb_context *tdb)
 {
 	int ret = tdb_allrecord_lock(tdb, F_RDLCK, TDB_LOCK_NOWAIT, false);
