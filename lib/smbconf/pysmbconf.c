@@ -602,12 +602,12 @@ PyDoc_STRVAR(obj_drop_doc,
 
 PyDoc_STRVAR(obj_set_parameter_doc,
 "set_parameter(str, str, str) -> None\n"
-"Set a configuration parmeter. Specify service name, parameter name,\n"
+"Set a configuration parameter. Specify service name, parameter name,\n"
 "and parameter value.\n");
 
 PyDoc_STRVAR(obj_set_global_parameter_doc,
 "set_global_parameter(str, str) -> None\n"
-"Set a global configuration parmeter. Specify the parameter name\n"
+"Set a global configuration parameter. Specify the parameter name\n"
 "and parameter value.\n");
 
 PyDoc_STRVAR(obj_delete_share_doc,

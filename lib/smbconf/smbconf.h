@@ -275,7 +275,7 @@ sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
  * @brief Set a global configuration parameter to the value provided.
  *
  * This adds a paramet in the [global] service. It also creates [global] if it
- * does't exist.
+ * doesn't exist.
  *
  * @param[in] ctx       The smbconf context to use.
  *
@@ -314,7 +314,7 @@ sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 /**
  * @brief Get the value of a global configuration parameter as a string.
  *
- * It also creates [global] if it does't exist.
+ * It also creates [global] if it doesn't exist.
  *
  * @param[in]  ctx      The smbconf context to use.
  *
@@ -350,7 +350,7 @@ sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 /**
  * @brief Delete a global parameter from the configuration.
  *
- * It also creates [global] if it does't exist.
+ * It also creates [global] if it doesn't exist.
  *
  * @param[in]  ctx      The smbconf context to use.
  *
