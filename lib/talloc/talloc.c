@@ -146,7 +146,7 @@ static struct {
 } while (0)
 
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
-/* Mark the whole chunk as not accessable */
+/* Mark the whole chunk as not accessible */
 #define TC_INVALIDATE_FULL_VALGRIND_CHUNK(_tc) do { \
 	size_t _flen = TC_HDR_SIZE + (_tc)->size; \
 	char *_fptr = (char *)(_tc); \
@@ -171,7 +171,7 @@ static struct {
 } while (0)
 
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
-/* Mark the unused bytes not accessable */
+/* Mark the unused bytes not accessible */
 #define TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { \
 	size_t _flen = (_tc)->size - (_new_size); \
 	char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
@@ -661,7 +661,7 @@ static inline void *tc_pool_first_chunk(struct talloc_pool_hdr *pool_hdr)
 	return tc_next_chunk(tc);
 }
 
-/* Mark the whole remaining pool as not accessable */
+/* Mark the whole remaining pool as not accessible */
 static inline void tc_invalidate_pool(struct talloc_pool_hdr *pool_hdr)
 {
 	size_t flen = tc_pool_space_left(pool_hdr);

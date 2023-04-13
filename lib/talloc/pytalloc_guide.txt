@@ -215,7 +215,7 @@ This will increment the reference counter for the talloc context.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 DEPRECATED! PyObject *pytalloc_CObject_FromTallocPtr(void *);
 
-Create a new pytalloc_Object for an abitrary talloc-maintained C pointer. This will
+Create a new pytalloc_Object for an arbitrary talloc-maintained C pointer. This will
 use a generic VoidPtr Python type, which just provides an opaque object in
 Python. The caller is responsible for incrementing the talloc reference count before calling
 this function - it will dereference the talloc pointer when it is garbage collected.
