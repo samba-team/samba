@@ -406,7 +406,9 @@ static void debug_lttng_log(int msg_level, const char *msg, size_t msg_len)
 static void debug_gpfs_reload(bool enabled, bool previously_enabled,
 			      const char *prog_name, char *option)
 {
-	gpfswrap_init();
+	if (enabled) {
+		gpfswrap_init();
+	}
 
 	if (enabled && !previously_enabled) {
 		gpfswrap_init_trace();
