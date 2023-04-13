@@ -565,6 +565,42 @@ class SidStringsAsDnInSearchFilter(SidStringBase):
             self.fail(f"expected no failure, got {e}")
 
 
+@DynamicTestCase
+class SidStringsForSimpleBind(SidStringBase):
+    """Check whether dodgy SID strings work differently for simple-bind.
+
+    One of the many fallbacks for ldap simple bind is SID strings. We
+    just want to ensure that SIDs that might fail strangely in SID
+    parsing don't leak that strangeness (they don't).
+    """
+    skip_local = True
+    # here we are testing only the SID-like SIDs ("S-1-...", not "AA")
+    cases = {}
+    cases.update(SidStringsThatStartWithS.cases)
+    cases.update(SidStringBehavioursThatSambaPrefers.cases)
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        server = os.environ['DC_SERVER']
+        cls.lp = param.LoadParm()
+        cls.host = f'ldap://{server}'
+
+    def _test_sid_string_with_args(self, code, _dummy):
+        bind_creds = Credentials()
+        bind_creds.set_username(code)
+        bind_creds.set_password("please")
+
+        try:
+            SamDB(url=self.host,
+                  lp=self.lp,
+                  credentials=bind_creds)
+            self.fail(f"{code} seems to have connected properly")
+        except ldb.LdbError as e:
+            num, msg = e.args
+            self.assertIn("NT_STATUS_INVALID_PARAMETER", msg)
+
+
 if __name__ == '__main__':
     global_asn1_print = False
     global_hexdump = False
