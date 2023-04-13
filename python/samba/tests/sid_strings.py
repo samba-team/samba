@@ -543,6 +543,28 @@ class SidStringsAsDnSearchWithDnObject(SidStringBase):
         self.assertIsNone(search_err)
 
 
+@DynamicTestCase
+class SidStringsAsDnInSearchFilter(SidStringBase):
+    """How does a bad <SID=x> dn work is a search filter?
+
+    Answer: on Windows it always works.
+    """
+    skip_local = True
+    cases = {}
+    cases.update(SidStringTests.cases)
+    cases.update(SidStringsThatStartWithS.cases)
+    cases.update(SidStringBehavioursThatSambaPrefers.cases)
+
+    def _test_sid_string_with_args(self, code, _dummy):
+        basedn = self.ldb.get_default_basedn()
+        try:
+            self.ldb.search(base=basedn,
+                            scope=ldb.SCOPE_ONELEVEL,
+                            expression="(distinguishedName=<SID={code}>)")
+        except ldb.LdbError as e:
+            self.fail(f"expected no failure, got {e}")
+
+
 if __name__ == '__main__':
     global_asn1_print = False
     global_hexdump = False
