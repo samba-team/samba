@@ -18,7 +18,6 @@
 """Tests for samba.dcerpc.security"""
 
 from samba.dcerpc import security
-from samba.ndr import ndr_pack, ndr_unpack
 from samba.tests import TestCase
 from samba.colour import c_RED, c_GREEN
 
