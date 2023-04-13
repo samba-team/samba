@@ -2900,24 +2900,12 @@ smbc_version(void);
 #endif
 
 /**@ingroup misc
- * Set the users credentials globally so they can be used for DFS
- * referrals. Probably best to use this function in the smbc_get_auth_data_fn
- * callback.
+ * @deprecated This interface has been deprecated use
+ * smbc_set_credentials_with_fallback() instead.
  *
- * @param workgroup      Workgroup of the user.
- *
- * @param user           Username of user.
- *
- * @param password       Password of user.
- *
- * @param use_kerberos   Whether to use Kerberos
- *
- * @param signing_state  One of these strings (all equivalents on same line):
- *                         "off", "no", "false"
- *                         "on", "yes", "true", "auto"
- *                         "force", "required", "forced"
+ * @see smbc_set_credentials_with_fallback()
  */
-
+DEPRECATED_SMBC_INTERFACE
 void
 smbc_set_credentials(const char *workgroup,
                      const char *user,
@@ -2925,13 +2913,20 @@ smbc_set_credentials(const char *workgroup,
                      smbc_bool use_kerberos,
                      const char *signing_state);
 
-/*
- * Wrapper around smbc_set_credentials.
- * Used to set correct credentials that will
- * be used to connect to DFS target share
- * in libsmbclient
+/**@ingroup misc
+ *
+ * Set the users credentials globally so they can be used for DFS
+ * referrals. Probably best to use this function in the smbc_get_auth_data_fn
+ * callback.
+ *
+ * @param ctx            The smb context.
+ *
+ * @param workgroup      Workgroup of the user.
+ *
+ * @param user           Username of user.
+ *
+ * @param password       Password of user.
  */
-
 void
 smbc_set_credentials_with_fallback(SMBCCTX *ctx,
 		                   const char *workgroup,
