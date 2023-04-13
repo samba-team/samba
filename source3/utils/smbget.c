@@ -19,6 +19,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/cmdline/cmdline.h"
+#include "lib/param/param.h"
 #include "libsmbclient.h"
 #include "cmdline_contexts.h"
 #include "auth/credentials/credentials.h"
@@ -99,62 +100,37 @@ static void human_readable(off_t s, char *buffer, int l)
  *
  * The command line parser will take care asking for a password interactively!
  */
-static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
-			  char *un, int unlen, char *pw, int pwlen)
+static void get_auth_data_with_context_fn(SMBCCTX *ctx,
+					  const char *srv,
+					  const char *shr,
+					  char *dom,
+					  int dom_len,
+					  char *usr,
+					  int usr_len,
+					  char *pwd,
+					  int pwd_len)
 {
 	struct cli_credentials *creds = samba_cmdline_get_creds();
 	const char *username = NULL;
 	const char *password = NULL;
 	const char *domain = NULL;
-	enum smb_signing_setting signing_state =
-		cli_credentials_get_smb_signing(creds);
-	enum credentials_use_kerberos use_kerberos =
-		cli_credentials_get_kerberos_state(creds);
-	enum smb_encryption_setting encryption_state =
-		cli_credentials_get_smb_encryption(creds);
-	const char *use_signing = "auto";
-
-	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
-		signing_state = SMB_SIGNING_REQUIRED;
-	}
 
 	username = cli_credentials_get_username(creds);
 	if (username != NULL) {
-		strncpy(un, username, unlen - 1);
+		strncpy(usr, username, usr_len - 1);
 	}
 
 	password = cli_credentials_get_password(creds);
 	if (password != NULL) {
-		strncpy(pw, password, pwlen-1);
+		strncpy(pwd, password, pwd_len - 1);
 	}
 
 	domain = cli_credentials_get_domain(creds);
 	if (domain != NULL) {
-		strncpy(wg, domain, wglen-1);
+		strncpy(dom, domain, dom_len - 1);
 	}
 
-	switch (signing_state) {
-	case SMB_SIGNING_REQUIRED:
-		use_signing = "required";
-		break;
-	case SMB_SIGNING_DEFAULT:
-	case SMB_SIGNING_DESIRED:
-	case SMB_SIGNING_IF_REQUIRED:
-		use_signing = "yes";
-		break;
-	case SMB_SIGNING_OFF:
-		use_signing = "off";
-		break;
-	default:
-		use_signing = "auto";
-		break;
-	}
-
-	smbc_set_credentials(domain,
-			     username,
-			     password,
-			     use_kerberos > CRED_USE_KERBEROS_DISABLED,
-			     use_signing);
+	smbc_set_credentials_with_fallback(ctx, domain, username, password);
 
 	if (!opt.quiet && username != NULL) {
 		if (username[0] == '\0') {
@@ -864,10 +840,15 @@ int main(int argc, char **argv)
 	enum smb_encryption_setting encryption_state = SMB_ENCRYPTION_DEFAULT;
 	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
 	smbc_smb_encrypt_level encrypt_level = SMBC_ENCRYPTLEVEL_DEFAULT;
+#if 0
+	enum smb_signing_setting signing_state = SMB_SIGNING_DEFAULT;
+	const char *use_signing = "auto";
+#endif
 	bool is_nt_hash = false;
 	uint32_t gensec_features;
 	bool use_wbccache = false;
 	SMBCCTX *smb_ctx = NULL;
+	int rc;
 
 	smb_init_locale();
 
@@ -940,16 +921,28 @@ int main(int argc, char **argv)
 
 	samba_cmdline_burn(argc, argv);
 
-	if (smbc_init(get_auth_data, debuglevel_get()) < 0) {
-		fprintf(stderr, "Unable to initialize libsmbclient\n");
-		ok = true;
-		goto done;
-	}
-	smb_ctx = smbc_set_context(NULL);
+	smb_ctx = smbc_new_context();
 	if (smb_ctx == NULL) {
-		ok = true;
+		fprintf(stderr, "Unable to initialize libsmbclient\n");
+		ok = false;
 		goto done;
 	}
+	smbc_setDebug(smb_ctx, debuglevel_get());
+
+	rc = smbc_setConfiguration(smb_ctx, lp_default_path());
+	if (rc < 0) {
+		ok = false;
+		goto done;
+	}
+
+	smbc_setFunctionAuthDataWithContext(smb_ctx,
+					    get_auth_data_with_context_fn);
+
+	ok = smbc_init_context(smb_ctx);
+	if (!ok) {
+		goto done;
+	}
+	smbc_set_context(smb_ctx);
 
 	encryption_state = cli_credentials_get_smb_encryption(creds);
 	switch (encryption_state) {
@@ -971,6 +964,30 @@ int main(int argc, char **argv)
 		encrypt_level = SMBC_ENCRYPTLEVEL_REQUIRE;
 	}
 	smbc_setOptionSmbEncryptionLevel(smb_ctx, encrypt_level);
+
+#if 0
+	signing_state = cli_credentials_get_smb_signing(creds);
+	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
+		signing_state = SMB_SIGNING_REQUIRED;
+	}
+	switch (signing_state) {
+	case SMB_SIGNING_REQUIRED:
+		use_signing = "required";
+		break;
+	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_DESIRED:
+	case SMB_SIGNING_IF_REQUIRED:
+		use_signing = "yes";
+		break;
+	case SMB_SIGNING_OFF:
+		use_signing = "off";
+		break;
+	default:
+		use_signing = "auto";
+		break;
+	}
+	/* FIXME: There is no libsmbclient function to set signing state */
+#endif
 
 	use_kerberos = cli_credentials_get_kerberos_state(creds);
 	switch (use_kerberos) {
