@@ -62,6 +62,7 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008,
     DS_GUID_COMPUTERS_CONTAINER,
     DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
+    DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
     DS_GUID_USERS_CONTAINER,
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
@@ -145,6 +146,7 @@ class KDCBaseTest(RawKerberosTest):
         COMPUTER = object()
         SERVER = object()
         RODC = object()
+        MANAGED_SERVICE = object()
 
     @classmethod
     def setUpClass(cls):
@@ -759,6 +761,8 @@ class KDCBaseTest(RawKerberosTest):
         if ou is None:
             if account_type is self.AccountType.COMPUTER:
                 guid = DS_GUID_COMPUTERS_CONTAINER
+            elif account_type is self.AccountType.MANAGED_SERVICE:
+                guid = DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER
             elif account_type is self.AccountType.SERVER:
                 guid = DS_GUID_DOMAIN_CONTROLLERS_CONTAINER
             else:
@@ -778,6 +782,10 @@ class KDCBaseTest(RawKerberosTest):
         if account_type is self.AccountType.USER:
             object_class = "user"
             account_control |= UF_NORMAL_ACCOUNT
+        elif account_type is self.AccountType.MANAGED_SERVICE:
+            object_class = "msDS-ManagedServiceAccount"
+            account_control |= UF_WORKSTATION_TRUST_ACCOUNT
+            secure_schannel_type = SEC_CHAN_WKSTA
         else:
             object_class = "computer"
             if account_type is self.AccountType.COMPUTER:
