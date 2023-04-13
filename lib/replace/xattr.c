@@ -233,7 +233,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 				errno = ENOSYS;
 				return -1;
 		}
-		/* Some error happend. Errno should be set by the previous call */
+		/* Some error happened. Errno should be set by the previous call */
 		if(list_size < 0)
 			return -1;
 		/* No attributes */
