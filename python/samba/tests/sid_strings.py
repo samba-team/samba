@@ -468,6 +468,81 @@ class SidStringsAsDnInSearchBase(SidStringBase):
             self.assertIsNone(expected)
 
 
+@DynamicTestCase
+class SidStringsAsDnSearchWithDnObject(SidStringBase):
+    """How does a bad <SID=x> dn work as a search base, if at all?
+
+    This time we parse the DN in ldb first.
+    """
+    skip_local = True
+    cases = {' S-1-1-1-1-1-1-1': ('parse error', None),
+             'S-0-5-32-579': (None, ldb.ERR_INVALID_DN_SYNTAX),
+             'S-000000000001-5-20-243': ('parse error', None),
+             'S-000000001-5-32-579': ('parse error', None),
+             'S-01-05-020-0243': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-0x1-0-0-579': ('parse error', None),
+             'S-0x1-0x5-020-0243': ('parse error', None),
+             'S-0x1-5-20-243': ('parse error', None),
+             'S-0x1-5-40-579': ('parse error', None),
+             'S-0x1-500000000-20-243': ('parse error', None),
+             'S-1-0': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-0-0-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-0x05-32-579': (None, None),
+             'S-1-0x5-0x20-0x243': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-0x50000000-32-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-0x500000000-0x500000000-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-0x500000000-32-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-0xABcDef123-0xABCDef123-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-1-1-1-1-1-1': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-21474836480-32-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-22': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-22-1': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-22-1-0': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-281474976710655-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-281474976710656-579': ('parse error', None),
+             'S-1-3-0': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-3-99': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-5-0-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-5-040-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-5-0x20-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-5-11111111111111111111111111111111111-579': ('parse error', None),
+             'S-1-5-18446744073709551615-579': ('parse error', None),
+             'S-1-5-18446744073709551616-579': ('parse error', None),
+             'S-1-5-3 2-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-5-32- 579': ('parse error', None),
+             'S-1-5-32--579': ('parse error', None),
+             'S-1-5-4294967295-579': (None, ldb.ERR_NO_SUCH_OBJECT),
+             'S-1-5-9999999999-579': ('parse error', None),
+             'S-1-99999999999999999999999999999999999999-32-11111111111': ('parse error',
+                                                                           None),
+             'S-10-5-32-579': (None, ldb.ERR_INVALID_DN_SYNTAX),
+             'S-2-5-32-579': (None, ldb.ERR_INVALID_DN_SYNTAX),
+             's-1-5-32-579': ('parse error', None),
+            }
+
+    def _test_sid_string_with_args(self, code, expected):
+        dn_err, search_err = expected
+        dn_str = f"<SID={code}>"
+        try:
+            dn = ldb.Dn(self.ldb, dn_str)
+        except ValueError:
+            self.assertEqual(dn_err, 'parse error')
+            return
+        except ldb.LdbError as e:
+            self.assertEqual(dn_err, e.args[0])
+            return
+
+        self.assertIsNone(dn_err)
+
+        try:
+            self.ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=['*'])
+        except ldb.LdbError as e:
+            self.assertEqual(search_err, e.args[0])
+            return
+
+        self.assertIsNone(search_err)
+
+
 if __name__ == '__main__':
     global_asn1_print = False
     global_hexdump = False
