@@ -37,7 +37,6 @@ from pyasn1.codec.ber.encoder import BitStringEncoder
 
 from pyasn1.error import PyAsn1Error
 
-from samba.compression import huffman_decompress
 from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, security
 from samba.gensec import FEATURE_SEAL
