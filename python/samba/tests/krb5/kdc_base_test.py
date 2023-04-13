@@ -747,12 +747,15 @@ class KDCBaseTest(RawKerberosTest):
 
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
-                       ou=None, account_control=0, add_dollar=True,
+                       ou=None, account_control=0, add_dollar=None,
                        expired_password=False, force_nt4_hash=False):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
         '''
+        if add_dollar is None and account_type is not self.AccountType.USER:
+            add_dollar = True
+
         if ou is None:
             if account_type is self.AccountType.COMPUTER:
                 guid = DS_GUID_COMPUTERS_CONTAINER
@@ -769,14 +772,14 @@ class KDCBaseTest(RawKerberosTest):
         # run failed
         delete_force(samdb, dn)
         account_name = name
+        if add_dollar:
+            account_name += '$'
         secure_schannel_type = SEC_CHAN_NULL
         if account_type is self.AccountType.USER:
             object_class = "user"
             account_control |= UF_NORMAL_ACCOUNT
         else:
             object_class = "computer"
-            if add_dollar:
-                account_name += '$'
             if account_type is self.AccountType.COMPUTER:
                 account_control |= UF_WORKSTATION_TRUST_ACCOUNT
                 secure_schannel_type = SEC_CHAN_WKSTA
