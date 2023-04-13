@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    replacement routines for xattr implementations
    Copyright (C) Jeremy Allison  1998-2005
@@ -10,7 +10,7 @@
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -196,7 +196,7 @@ static struct {
         int space;
 	const char *name;
 	size_t len;
-} 
+}
 extattr[] = {
 	{ EXTATTR_NAMESPACE_SYSTEM, EXTATTR_PREFIX("system.") },
         { EXTATTR_NAMESPACE_USER, EXTATTR_PREFIX("user.") },
@@ -245,7 +245,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 		   problem with the emulation.
 		*/
 		if(list == NULL) {
-			/* Take the worse case of one char attribute names - 
+			/* Take the worse case of one char attribute names -
 			   two bytes per name plus one more for sanity.
 			*/
 			total_size += list_size + (list_size/2 + 1)*extattr[t].len;
