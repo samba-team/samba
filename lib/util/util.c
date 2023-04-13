@@ -1086,7 +1086,7 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 }
 
 /**
-  varient of strcmp() that handles NULL ptrs
+  variant of strcmp() that handles NULL ptrs
 **/
 _PUBLIC_ int strcmp_safe(const char *s1, const char *s2)
 {

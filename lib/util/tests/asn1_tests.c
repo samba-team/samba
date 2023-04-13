@@ -75,7 +75,7 @@ static const char *oid_data_err[] = {
 		"2..5.4.130",	/* second sub-identifier is empty */
 		"2.5..4.130",	/* third sub-identifier is empty */
 		"2.abc.4.130", 	/* invalid sub-identifier */
-		"2.5abc.4.130", /* invalid sub-identifier (alpha-numeric)*/
+		"2.5abc.4.130", /* invalid sub-identifier (alphanumeric)*/
 };
 
 /* Data for successful Partial OIDs conversions */

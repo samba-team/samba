@@ -46,7 +46,7 @@ struct tfork;
  * @note There's one thing this thing can't protect us against and that is if a
  * process installs a SIGCHLD handler from one thread while another thread is
  * running inside tfork_create() or tfork_status() and the signal handler
- * doesn't forward signals for exitted childs it didn't fork, ie our childs.
+ * doesn't forward signals for exited children it didn't fork, ie our children.
  **/
 struct tfork *tfork_create(void);
 

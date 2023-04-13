@@ -103,7 +103,7 @@ struct tfork_state {
 
 /*
  * A global state that synchronizes access to handling SIGCHLD and waiting for
- * childs.
+ * children.
  */
 struct tfork_signal_state {
 	bool available;
@@ -677,7 +677,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 			_exit(errno);
 		}
 		/*
-		 * The caller exitted and didn't call tfork_status().
+		 * The caller exited and didn't call tfork_status().
 		 */
 		_exit(0);
 	}
@@ -699,7 +699,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 	 * Wait for our parent (the process that called tfork_create()) to
 	 * close() the socketpair fd in tfork_status().
 	 *
-	 * Again, the caller might have exitted without calling tfork_status().
+	 * Again, the caller might have exited without calling tfork_status().
 	 */
 	nread = sys_read(status_sp_waiter_fd, &c, 1);
 	if (nread == -1) {

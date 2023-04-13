@@ -73,7 +73,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 
 /*
  * Add a talloc object to the cache. The difference to memcache_add() is that
- * when the objects is to be discared, talloc_free is called for it. Also
+ * when the objects is to be discarded, talloc_free is called for it. Also
  * talloc_move() ownership of the object to the cache.
  *
  * Please note that the current implementation has a fixed relationship

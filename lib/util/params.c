@@ -64,7 +64,7 @@
  *  beginning with either a semicolon (';') or a pound sign ('#').
  *
  *  All whitespace in section names and parameter names is compressed
- *  to single spaces.  Leading and trailing whitespace is stipped from
+ *  to single spaces.  Leading and trailing whitespace is stripped from
  *  both names and values.
  *
  *  Only the first equals sign in a parameter line is significant.

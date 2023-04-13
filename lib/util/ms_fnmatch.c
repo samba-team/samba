@@ -19,7 +19,7 @@
 
 /*
    This module was originally based on fnmatch.c copyright by the Free
-   Software Foundation. It bears little (if any) resemblence to that
+   Software Foundation. It bears little (if any) resemblance to that
    code now
 */
 

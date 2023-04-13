@@ -313,7 +313,7 @@ static ssize_t pull_ascii_string(char *dest, const void *src, size_t dest_len, s
  * </dl>
  *
  * @param dest_len is the maximum length allowed in the
- * destination. If dest_len is -1 then no maxiumum is used.
+ * destination. If dest_len is -1 then no maximum is used.
  **/
 static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 {
@@ -409,7 +409,7 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
   STR_ASCII     use ascii even with unicode packet.
   STR_NOALIGN   means don't do alignment.
  dest_len is the maximum length allowed in the destination. If dest_len
- is -1 then no maxiumum is used.
+ is -1 then no maximum is used.
 **/
 
 _PUBLIC_ ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)

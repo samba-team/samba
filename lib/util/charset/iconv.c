@@ -213,7 +213,7 @@ static size_t sys_uconv(void *cd,
 
 	/*
 	 * The following transliteration function takes two parameters, the
-	 * lenght of the text to be converted (converted_len) and a limit which
+	 * length of the text to be converted (converted_len) and a limit which
 	 * may be smaller then converted_len. We just set limit to converted_len
 	 * and also ignore the value returned in limit.
 	 */
@@ -272,7 +272,7 @@ static size_t sys_uconv(void *cd,
 #endif
 
 /**
- * This is a simple portable iconv() implementaion.
+ * This is a simple portable iconv() implementation.
  *
  * It only knows about a very small number of character sets - just
  * enough that Samba works on systems that don't have iconv.

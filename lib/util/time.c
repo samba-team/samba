@@ -1166,7 +1166,7 @@ struct timespec nt_time_to_full_timespec(NTTIME nt)
  * Note: this function uses the full time_t range as valid date values including
  * (time_t)0 and -1. That means that struct timespec sentinel values (cf
  * is_omit_timespec()) can't be converted to sentinel values in a time_t
- * representation. Callers should therefor check the NTTIME value with
+ * representation. Callers should therefore check the NTTIME value with
  * null_nttime() before calling this function.
  **/
 time_t full_timespec_to_time_t(const struct timespec *_ts)
@@ -1204,7 +1204,7 @@ time_t full_timespec_to_time_t(const struct timespec *_ts)
  * Note: this function uses the full time_t range as valid date values including
  * (time_t)0 and -1. That means that NTTIME sentinel values of 0 and -1 which
  * represent a "not-set" value, can't be converted to sentinel values in a
- * time_t representation. Callers should therefor check the NTTIME value with
+ * time_t representation. Callers should therefore check the NTTIME value with
  * null_nttime() before calling this function.
  **/
 time_t nt_time_to_full_time_t(NTTIME nt)

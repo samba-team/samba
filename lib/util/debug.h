@@ -50,7 +50,7 @@ bool dbgsetclass(int level, int cls);
 
 /*
  * Define all new debug classes here. A class is represented by an entry in
- * the DEBUGLEVEL_CLASS array. Index zero of this arrray is equivalent to the
+ * the DEBUGLEVEL_CLASS array. Index zero of this array is equivalent to the
  * old DEBUGLEVEL. Any source file that does NOT add the following lines:
  *
  *   #undef  DBGC_CLASS
@@ -113,7 +113,7 @@ bool dbgsetclass(int level, int cls);
  *
  * DEBUGLVL()
  *   If the 'file specific' debug class level >= level OR the system-wide
- *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
+ *   DEBUGLEVEL (synonym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
  *   generate a header using the default macros for file, line, and
  *   function name. Returns True if the debug level was <= DEBUGLEVEL.
  *
@@ -121,7 +121,7 @@ bool dbgsetclass(int level, int cls);
  *
  * DEBUG()
  *   If the 'file specific' debug class level >= level OR the system-wide
- *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
+ *   DEBUGLEVEL (synonym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
  *   generate a header using the default macros for file, line, and
  *   function name. Each call to DEBUG() generates a new header *unless* the
  *   previous debug output was unterminated (i.e. no '\n').
@@ -131,7 +131,7 @@ bool dbgsetclass(int level, int cls);
  *
  * DEBUGC()
  *   If the 'macro specified' debug class level >= level OR the system-wide
- *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
+ *   DEBUGLEVEL (synonym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
  *   generate a header using the default macros for file, line, and
  *   function name. Each call to DEBUG() generates a new header *unless* the
  *   previous debug output was unterminated (i.e. no '\n').

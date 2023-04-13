@@ -118,7 +118,7 @@ _PUBLIC_ uint64_t generate_random_u64_range(uint64_t lower, uint64_t upper);
  * This is much lighter than generate_random_u64() and it's
  * designed for performance critical code paths.
  *
- * @veto_value It is garanteed that the return value if different from
+ * @veto_value It is guaranteed that the return value is different from
  *             the veto_value.
  *
  * @return a unique value per given state and process
@@ -158,7 +158,7 @@ _PUBLIC_ char *generate_random_password(TALLOC_CTX *mem_ctx, size_t min, size_t 
  *
  * If 'unix charset' is 'utf8' (the default) then
  * each utf16 character is a random value from 0x0000
- * 0xFFFF (exluding the surrogate ranges from 0xD800-0xDFFF)
+ * 0xFFFF (excluding the surrogate ranges from 0xD800-0xDFFF)
  * while the translation from CH_UTF16MUNGED
  * to CH_UTF8 replaces invalid values (see utf16_munged_pull()).
  *
@@ -273,7 +273,7 @@ _PUBLIC_ char *rfc1738_unescape(char *buf);
 _PUBLIC_ char *rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url);
 
 /**
-  varient of strcmp() that handles NULL ptrs
+  variant of strcmp() that handles NULL ptrs
 **/
 _PUBLIC_ int strcmp_safe(const char *s1, const char *s2);
 
@@ -321,7 +321,7 @@ _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val);
  *
  * @param[in]  s2  The second memory region to compare.
  *
- * @param[in]  n   The length of the memory to comapre.
+ * @param[in]  n   The length of the memory to compare.
  *
  * @return true when the memory regions are equal, false if not.
  */

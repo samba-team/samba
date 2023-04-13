@@ -257,7 +257,7 @@ done:
  *
  * @param[in]  subsystem  The name of the subsystem the module belongs too.
  *
- * @param[in]  module     Load a module using an abolute path.
+ * @param[in]  module     Load a module using an absolute path.
  *
  * @return  A NTSTATUS code
  */

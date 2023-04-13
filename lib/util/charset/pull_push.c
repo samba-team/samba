@@ -64,7 +64,7 @@ bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
  * The destination string should be free'd using talloc_free() if no longer
  * needed.
  *
- * @return True on succcess, false otherwise.
+ * @return True on success, false otherwise.
  */
 bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 		      size_t *converted_size)

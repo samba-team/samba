@@ -16,7 +16,7 @@
    and its supposedly escaped equivalent.
 
    The first part of the flag name indicates the direction of transformation;
-   tyhe second part is the expected result. For example, ESCAPE_EQ means the
+   the second part is the expected result. For example, ESCAPE_EQ means the
    escape is expected to succeed and result is expected to be equal to the
    given answer. ESCAPE_EQ_CASECMP is only equal when compared
    case-insensitively. UNESCAPE_ERR means unescaping the escaped string should

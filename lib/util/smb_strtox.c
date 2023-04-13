@@ -30,7 +30,7 @@
  * @param nptr		pointer to string which is to be converted
  * @param endptr	[optional] reference to remainder of the string
  * @param base		base of the numbering scheme
- * @param err		error occured during conversion
+ * @param err		error occurred during conversion
  * @flags		controlling conversion feature
  * @result		result of the conversion as provided by strtoul
  *
@@ -106,7 +106,7 @@ out:
  * @param nptr		pointer to string which is to be converted
  * @param endptr	[optional] reference to remainder of the string
  * @param base		base of the numbering scheme
- * @param err		error occured during conversion
+ * @param err		error occurred during conversion
  * @flags		controlling conversion feature
  * @result		result of the conversion as provided by strtoull
  *

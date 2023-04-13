@@ -54,7 +54,7 @@ do { \
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 /* We need a number of different prototypes for our
-   non-existent fuctions */
+   non-existent functions */
 char * __unsafe_string_function_usage_here__(void);
 
 size_t __unsafe_string_function_usage_here_size_t__(void);

@@ -60,7 +60,7 @@
  * and whatever is not in either of those are what RFC 1738 called "unsafe",
  * meaning that they should are canonically but not mandatorily escaped.
  *
- * Characters below 0x20 or above 0x7E are always enocded.
+ * Characters below 0x20 or above 0x7E are always encoded.
  */
 
 static const unsigned char escapees[127] = {

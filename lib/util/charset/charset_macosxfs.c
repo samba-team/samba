@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba charset module for Mac OS X/Darwin
    Copyright (C) Benjamin Riefenstahl 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -247,7 +247,7 @@ size_t macosxfs_encoding_pull(
 	} else {
 		/*
 		 * We would like to use a fixed buffer and a loop
-		 * here, but than we can't garantee that the input is
+		 * here, but then we can't guarantee that the input is
 		 * well-formed UTF-8, as we are supposed to do.
 		 */
 		static char *buffer = NULL;
@@ -304,7 +304,7 @@ size_t macosxfs_encoding_pull(
 	 * Add a converted null byte, if the CFString conversions
 	 * prevented that until now.
 	 */
-	if (0 == (*inbuf)[*inbytesleft-1] && 
+	if (0 == (*inbuf)[*inbytesleft-1] &&
 	    (0 != (*outbuf)[outsize*2-1] || 0 != (*outbuf)[outsize*2-2])) {
 
 		if ((outsize*2+2) > *outbytesleft) {
@@ -383,7 +383,7 @@ size_t macosxfs_encoding_push(
 
 	if (0 == charsconverted) {
 		debug_out("String conversion: "
-			  "Buffer too small or not convertable\n");
+			  "Buffer too small or not convertible\n");
 		hexdump("UTF16LE->UTF8 (old) input",
 			*inbuf, *inbytesleft);
 		errno = EILSEQ; /* Probably more likely. */
@@ -595,7 +595,7 @@ static size_t macosxfs_encoding_push(
 #endif /* USE_INTERNAL_API */
 
 #else /* DARWIN */
-     
+
 void charset_macosfs_dummy(void);
 void charset_macosfs_dummy(void)
 {

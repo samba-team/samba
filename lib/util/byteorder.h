@@ -55,7 +55,7 @@ then to extract a uint16_t value at offset 25 in a buffer you do this:
 char *buffer = foo_bar();
 uint16_t xx = SVAL(buffer,25);
 
-We are using the byteoder independence of the ANSI C bitshifts to do
+We are using the byteorder independence of the ANSI C bitshifts to do
 the work. A good optimising compiler should turn this into efficient
 code, especially if it happens to have the right byteorder :-)
 

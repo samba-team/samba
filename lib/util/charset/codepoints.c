@@ -16664,7 +16664,7 @@ smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 /**
  * Return the unicode codepoint for the next character in the input
  * string in the given src_charset.
- * The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
+ * The unicode codepoint (codepoint_t) is an unsigned 32 bit value.
  *
  * Also return the number of bytes consumed (which tells the caller
  * how many bytes to skip to get to the next src_charset-character).
