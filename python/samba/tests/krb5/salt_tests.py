@@ -69,6 +69,12 @@ class SaltTests(AsReqBaseTest):
             opts={'name_suffix': 'foo@bar'})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_at_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'name_suffix': 'foo@bar'})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_at_case_user(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
@@ -78,6 +84,12 @@ class SaltTests(AsReqBaseTest):
     def test_salt_at_case_mac(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
+            opts={'name_suffix': 'Foo@bar'})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_at_case_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
             opts={'name_suffix': 'Foo@bar'})
         self._run_as_req_enc_timestamp(client_creds)
 
@@ -93,6 +105,12 @@ class SaltTests(AsReqBaseTest):
             opts={'name_suffix': 'foo@@bar'})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_double_at_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'name_suffix': 'foo@@bar'})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_at_start_user(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
@@ -102,6 +120,12 @@ class SaltTests(AsReqBaseTest):
     def test_salt_at_start_mac(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '@foo'})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_at_start_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
             opts={'name_prefix': '@foo'})
         self._run_as_req_enc_timestamp(client_creds)
 
@@ -117,11 +141,25 @@ class SaltTests(AsReqBaseTest):
             opts={'name_suffix': 'foo@'})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_at_end_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'name_suffix': 'foo@',
+                  'add_dollar': True})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_at_end_no_dollar_mac(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'name_suffix': 'foo@',
                   'add_dollar': False})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_at_end_add_dollar_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'name_suffix': 'foo@',
+                  'add_dollar': True})
         self._run_as_req_enc_timestamp(client_creds)
 
     def test_salt_no_dollar_mac(self):
@@ -130,11 +168,24 @@ class SaltTests(AsReqBaseTest):
             opts={'add_dollar': False})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_add_dollar_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'add_dollar': True})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_dollar_mid_mac(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'name_suffix': 'foo$bar',
                   'add_dollar': False})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_dollar_mid_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'name_suffix': 'foo$bar',
+                  'add_dollar': True})
         self._run_as_req_enc_timestamp(client_creds)
 
     def test_salt_dollar_user(self):
@@ -146,6 +197,12 @@ class SaltTests(AsReqBaseTest):
     def test_salt_dollar_mac(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
+            opts={'name_suffix': 'foo$bar'})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_dollar_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
             opts={'name_suffix': 'foo$bar'})
         self._run_as_req_enc_timestamp(client_creds)
 
@@ -161,6 +218,12 @@ class SaltTests(AsReqBaseTest):
             opts={'name_suffix': 'foo$'})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_dollar_end_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'name_suffix': 'foo$'})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_user(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
@@ -173,6 +236,12 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'foo1'})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'foo24'})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_host_user(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
@@ -183,6 +252,12 @@ class SaltTests(AsReqBaseTest):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'upn': 'host/foo3'})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_upn_host_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'host/foo25'})
         self._run_as_req_enc_timestamp(client_creds)
 
     def test_salt_upn_realm_user(self):
@@ -199,6 +274,13 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'foo5@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'foo26@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_host_realm_user(self):
         realm = self.get_samdb().domain_dns_name()
         client_creds = self._get_creds(
@@ -211,6 +293,13 @@ class SaltTests(AsReqBaseTest):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'upn': 'host/foo7@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_upn_host_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'host/foo27@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
     def test_salt_upn_dollar_realm_user(self):
@@ -227,6 +316,13 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'foo9$@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_dollar_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'foo28$@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_host_dollar_realm_user(self):
         realm = self.get_samdb().domain_dns_name()
         client_creds = self._get_creds(
@@ -241,6 +337,13 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'host/foo11$@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_host_dollar_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'host/foo29$@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_other_realm_user(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
@@ -251,6 +354,12 @@ class SaltTests(AsReqBaseTest):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'upn': 'foo13@other.realm'})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_upn_other_realm_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'foo30@other.realm'})
         self._run_as_req_enc_timestamp(client_creds)
 
     def test_salt_upn_host_other_realm_user(self):
@@ -265,6 +374,12 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'host/foo15@other.realm'})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_host_other_realm_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'host/foo31@other.realm'})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_case_user(self):
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
@@ -275,6 +390,12 @@ class SaltTests(AsReqBaseTest):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'upn': 'Foo17'})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_upn_case_managed_service(self):
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'Foo32'})
         self._run_as_req_enc_timestamp(client_creds)
 
     def test_salt_upn_dollar_mid_realm_user(self):
@@ -291,6 +412,13 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'foo$19@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_dollar_mid_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'foo$33@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_host_dollar_mid_realm_user(self):
         realm = self.get_samdb().domain_dns_name()
         client_creds = self._get_creds(
@@ -305,6 +433,13 @@ class SaltTests(AsReqBaseTest):
             opts={'upn': 'host/foo$21@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_salt_upn_host_dollar_mid_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'host/foo$34@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
     def test_salt_upn_at_realm_user(self):
         realm = self.get_samdb().domain_dns_name()
         client_creds = self._get_creds(
@@ -317,6 +452,13 @@ class SaltTests(AsReqBaseTest):
         client_creds = self._get_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'upn': 'foo23@bar@' + realm})
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_salt_upn_at_realm_managed_service(self):
+        realm = self.get_samdb().domain_dns_name()
+        client_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            opts={'upn': 'foo35@bar@' + realm})
         self._run_as_req_enc_timestamp(client_creds)
 
 
