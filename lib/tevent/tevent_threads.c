@@ -302,12 +302,12 @@ struct tevent_thread_proxy *tevent_thread_proxy_create(
  *
  * pp_im must be a pointer to an immediate event talloced on
  * a context owned by the calling thread, or the NULL context.
- * Ownership of *pp_im will be transfered to the tevent library.
+ * Ownership of *pp_im will be transferred to the tevent library.
  *
  * pp_private can be null, or contents of *pp_private must be
  * talloc'ed memory on a context owned by the calling thread
  * or the NULL context. If non-null, ownership of *pp_private will
- * be transfered to the tevent library.
+ * be transferred to the tevent library.
  *
  * If you want to return a message, have the destination use the
  * same function call to send back to the caller.

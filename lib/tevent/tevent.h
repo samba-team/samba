@@ -2047,7 +2047,7 @@ pid_t tevent_cached_getpid(void);
  *
  * tevent_thread_call_depth_reset_from_req(struct tevent_req *req)
  *
- * If the call depth is used for trace indentation, it might be usefull to
+ * If the call depth is used for trace indentation, it might be useful to
  * reset the external variable to the call depth of currently processed tevent
  * request, since the ext. variable can be changed after return from a function
  * call that has created subrequests.
@@ -2062,7 +2062,7 @@ pid_t tevent_cached_getpid(void);
 
 /**
  * Activate call depth tracking and register external variable that will
- * be updated to the call epth of currenty processed tevent request.
+ * be updated to the call depth of currently processed tevent request.
  *
  * @param[in]  ptr   Address of external variable
  */
@@ -2820,7 +2820,7 @@ bool _tevent_context_push_use(struct tevent_context *ev,
  *
  * The wrapper event context might undo something like impersonation.
  *
- * This must be called after a succesful tevent_context_push_use().
+ * This must be called after a successful tevent_context_push_use().
  * Any ordering violation results in calling
  * the abort handler of the given tevent context.
  *
@@ -2872,7 +2872,7 @@ bool tevent_context_same_loop(struct tevent_context *ev1,
  * @defgroup tevent_compat The tevent compatibility functions
  * @ingroup tevent
  *
- * The following definitions are usueful only for compatibility with the
+ * The following definitions are useful only for compatibility with the
  * implementation originally developed within the samba4 code and will be
  * soon removed. Please NEVER use in new code.
  *

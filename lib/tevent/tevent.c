@@ -518,7 +518,7 @@ void tevent_common_check_double_free(TALLOC_CTX *ptr, const char *reason)
 }
 
 /*
-  create a event_context structure for a specific implemementation.
+  create a event_context structure for a specific implementation.
   This must be the first events call, and all subsequent calls pass
   this event_context as the first element. Event handlers also
   receive this as their first argument.

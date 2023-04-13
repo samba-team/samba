@@ -231,9 +231,9 @@ int main (int argc, char **argv)
     tevent_queue_stop(fronta);
     tevent_queue_start(fronta);
     if (tevent_queue_running(fronta)) {
-        printf ("Queue is runnning (length: %d)\n", tevent_queue_length(fronta));
+        printf ("Queue is running (length: %d)\n", tevent_queue_length(fronta));
     } else {
-        printf ("Queue is not runnning\n");
+        printf ("Queue is not running\n");
     }
 
     data = talloc(ev, struct juststruct);

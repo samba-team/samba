@@ -27,7 +27,7 @@ would be example, so examples describing all the types of events follow.
 This example shows how to set up an event which will be repeated for a minute
 with interval of 2 seconds (will be triggered 30 times). After exceeding this
 limit, the event loop will finish and all the memory resources will be freed.
-This is just example describing repeated activity, nothing usefull is done
+This is just example describing repeated activity, nothing useful is done
 within foo function
 
 @code
@@ -233,7 +233,7 @@ static void handler(struct tevent_context *ev,
                     void *private_data)
 {
 
-    // Do something usefull
+    // Do something useful
 
     printf("handling signal...\n");
     exit(EXIT_SUCCESS);

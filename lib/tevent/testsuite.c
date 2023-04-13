@@ -1091,7 +1091,7 @@ static void test_free_wrapper_signal_handler(struct tevent_context *ev,
 	 * signal handlers have highest priority in tevent, so this signal
 	 * handler will always be started before the other handlers
 	 * below. Freeing the (wrapper) event context here tests that the
-	 * wrapper implementation correclty handles the wrapper ev going away
+	 * wrapper implementation correctly handles the wrapper ev going away
 	 * with pending events.
 	 */
 	talloc_free(ev);
