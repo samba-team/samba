@@ -3408,6 +3408,11 @@ sub provision($$)
 	shadow:fixinodes = yes
 	smbd async dosmode = yes
 
+[shadow_depot]
+	path = $shadow_shrdir
+	comment = previous versions with streams_depot
+	vfs objects = streams_depot shadow_copy2
+
 [dfq]
 	path = $shrdir/dfree
 	vfs objects = acl_xattr fake_acls xattr_tdb fake_dfq

@@ -19,7 +19,7 @@
 
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.dcerpc import security
-from samba import NTSTATUSError
+from samba import NTSTATUSError,ntstatus
 from samba.ntstatus import NT_STATUS_DELETE_PENDING
 from samba.credentials import SMB_ENCRYPTION_REQUIRED
 import samba.tests.libsmb
@@ -201,6 +201,19 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         c.rmdir("subdir/b")
         c.rmdir("subdir")
         self.assertTrue(ret)
+
+    def test_libsmb_shadow_depot(self):
+        c = libsmb.Conn(self.server_ip, "shadow_depot", self.lp, self.creds)
+        try:
+            fnum=c.create("x:y",CreateDisposition=libsmb.FILE_CREATE)
+            c.close(fnum)
+        except:
+            self.fail()
+        finally:
+            # "c" might have crashed, get a new connection
+            c1 = libsmb.Conn(self.server_ip, "shadow_depot", self.lp, self.creds)
+            c1.unlink("x")
+            c1 = None
 
 if __name__ == "__main__":
     import unittest
