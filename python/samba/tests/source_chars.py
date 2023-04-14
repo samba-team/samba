@@ -23,7 +23,7 @@ from collections import Counter
 from samba.colour import c_RED, c_GREEN, c_DARK_YELLOW, switch_colour_off
 import re
 import unicodedata as u
-from samba.tests import TestCase
+from samba.tests import TestCase, SkipTest
 
 if not sys.stdout.isatty():
     switch_colour_off()
@@ -35,10 +35,15 @@ def _find_root():
                            stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE,
                            timeout=10)
-    except subprocess.SubprocessError as e:
-        print(c_RED(f"Error running git (is this a git tree?): {e}"))
-        print("This test is only useful in a git working tree")
-        sys.exit(1)
+    except subprocess.CalledProcessError as err:
+        print(c_RED("Error running git (is this a git tree?): %s" % (err)))
+
+        SkipTest("This test is only useful in a git working tree")
+        sys.exit(0)
+
+    if p.returncode != 0:
+        raise SkipTest("This test is only useful in a git working tree")
+        sys.exit(0)
 
     root = p.stdout.decode().strip()
 
@@ -54,8 +59,7 @@ def _find_root():
     return root
 
 
-ROOT = _find_root()
-
+ROOT = None
 
 IGNORED_FILES = (
     'examples/validchars/validchr.com',
@@ -202,6 +206,11 @@ def is_bad_char(c):
 
 
 class CharacterTests(TestCase):
+    def setUp(self):
+        global ROOT
+        if not ROOT:
+            ROOT = _find_root()
+
     def test_no_unexpected_format_chars(self):
         """This test tries to ensure that no source file has unicode control
         characters that can change the apparent order of other
