@@ -690,7 +690,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	SMB_ASSERT(dirfsp == NULL);
 	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));
 
-	create_it = (how->mode & O_CREAT);
+	create_it = (how->flags & O_CREAT);
 
 	/* Determine the stream name, and then open it. */
 	status = stream_smb_fname(
