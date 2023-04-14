@@ -920,6 +920,45 @@ static bool test_speed(void)
 	} while (private_timeval_elapsed(&tv) < 5.0);
 	fprintf(stderr, "malloc: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
 
+	printf("\n# TALLOC_ZERO VS CALLOC SPEED\n");
+
+	ctx = talloc_new(NULL);
+
+	tv = private_timeval_current();
+	count = 0;
+	do {
+		void *p1, *p2, *p3;
+		for (i=0;i<loop;i++) {
+			p1 = talloc_zero_size(ctx, loop % 100);
+			p2 = talloc_strdup(p1, "foo bar");
+			p3 = talloc_zero_size(p1, 300);
+			(void)p2;
+			(void)p3;
+			talloc_free(p1);
+		}
+		count += 3 * loop;
+	} while (private_timeval_elapsed(&tv) < 5.0);
+
+	fprintf(stderr, "talloc_zero: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+
+	talloc_free(ctx);
+
+	tv = private_timeval_current();
+	count = 0;
+	do {
+		void *p1, *p2, *p3;
+		for (i=0;i<loop;i++) {
+			p1 = calloc(1, loop % 100);
+			p2 = strdup("foo bar");
+			p3 = calloc(1, 300);
+			free(p1);
+			free(p2);
+			free(p3);
+		}
+		count += 3 * loop;
+	} while (private_timeval_elapsed(&tv) < 5.0);
+	fprintf(stderr, "calloc: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+
 	printf("success: speed\n");
 
 	return true;
