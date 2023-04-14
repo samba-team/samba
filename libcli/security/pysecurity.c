@@ -29,8 +29,8 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 {
 	NTSTATUS nt_status;
 	const char * const kwnames[] = { "security_descriptor", "token", "access_desired", NULL };
-	PyObject *py_sec_desc = Py_None;
-	PyObject *py_security_token = Py_None;
+	PyObject *py_sec_desc = NULL;
+	PyObject *py_security_token = NULL;
 	struct security_descriptor *security_descriptor;
 	struct security_token *security_token;
 	unsigned int access_desired; /* This is an unsigned int, not uint32_t,
