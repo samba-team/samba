@@ -549,6 +549,68 @@ class SddlShouldFail(SddlDecodeEncodeBase):
 
 
 @DynamicTestCase
+class SddlWindowsIsFussy(SddlDecodeEncodeBase):
+    """Windows won't accept these strings, seemingly for semantic rather than
+    syntactic reasons.
+    """
+    name = "windows_is_fussy"
+    should_succeed = True
+    strings = [
+        # Windows doesn't seem to want AU type in DACL.
+        ("D:(A;;RP;;;WD)"
+         "(AU;SA;CR;;;BA)"
+         "(AU;SA;CR;;;DU)"),
+    ]
+
+
+@DynamicTestCase
+class SddlWindowsIsLessFussy(SddlDecodeEncodeBase):
+    """Windows will accept these seemingly malformed strings, but Samba
+    won't.
+    """
+    name = "windows_is_less_fussy"
+    should_succeed = False
+    strings = [
+        # whitespace is ignored, repaired on return
+        ("D:(A;;GA;;; LG)", "D:(A;;GA;;;LG)"),
+        ("D: (A;;GA;;;LG)", "D:(A;;GA;;;LG)"),
+        # whitespace before string flags is ignored.
+        ("D:(A;; GA;;;LG)", "D:(A;;GA;;;LG)"),
+        # wrong case on type is ignored, fixed
+        ("D:(a;;GA;;;LG)", "D:(A;;GA;;;LG)"),
+        ("D:(A;;GA;;;lg)", "D:(A;;GA;;;LG)"),
+        ("D:(A;;ga;;;LG)", "D:(A;;GA;;;LG)"),
+        ("D: S:","D:S:"),
+
+        # whitespace around ACL flags
+        ("D: P(A;;GA;;;LG)", "D:P(A;;GA;;;LG)"),
+        ("D:P (A;;GA;;;LG)", "D:P(A;;GA;;;LG)"),
+
+        # whitespace between ACES
+        ("D:P(A;;GA;;;LG) (A;;GX;;;AA)",
+         "D:P(A;;GA;;;LG)(A;;GX;;;AA)"),
+
+        # whitespace in absent ace flags
+        ("D:(A; ;GA;;;LG)","D:(A;;GA;;;LG)"),
+
+        # and more whitespace.
+        ("D:(A;;GA;;; WD)", "D:(A;;GA;;;WD)"),
+        ("D:(A;;GA;;;WD )", "D:(A;;GA;;;WD)"),
+        ("D:(A;;GA;;; S-1-3-4)", "D:(A;;GA;;;OW)"),
+        ("D:(A;;GA;; ;S-1-3-4)", "D:(A;;GA;;;OW)"),
+        ("D:(A;;GA; ;;S-1-3-4)", "D:(A;;GA;;;OW)"),
+        ("D:(A;;GA;;; S-1-333-4)", "D:(A;;GA;;;S-1-333-4)"),
+        ("D:(A;;GA; ;;S-1-333-4)", "D:(A;;GA;;;S-1-333-4)"),
+        (" O:AA", "O:AA"),
+        ("  O:AA  ", "O:AA"),
+        ("  O:AA G:WD ", "O:AAG:WD"),
+
+        # spaces in some parts of the SID (not subauth)
+        ("O:S- 1- 2-3", "O:S-1-2-3"),
+    ]
+
+
+@DynamicTestCase
 class SddlWindowsIsWeird(SddlDecodeEncodeBase):
     """Windows will accept some very misleading SDDL strings.
     """
