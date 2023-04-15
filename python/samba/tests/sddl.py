@@ -62,6 +62,94 @@ class SddlDecodeEncodeBase(TestCase):
         with self.assertRaises(ValueError):
             security.descriptor.from_sddl(s, self.domain_sid)
 
+    def _test_write_test_strings(self):
+        """The file libcli/security/tests/windows/windows-sddl-tests.c, if
+        compiled on Windows under Cygwin or MSYS64, can run SDDL
+        parsing tests using the Windows API. This allows us to run the
+        same tests here and on Windows, to ensure we get the same
+        results.
+
+        That test program can read examples in a bespoke text format,
+        in which each line looks like:
+
+           original sddl -> returned sddl
+
+        That is, the separator consists of the 4 bytes " -> ".
+        Multi-line examples are not possible.
+
+        If you rename this method to start with 'test_' and run these
+        tests, the examples here will be written in this format in
+        files in /tmp. If you then copy them to Windows and run them
+        in your POSIX-y shell with
+
+          windows-sddl-tests -i path/to/*.txt
+
+        the results on Windows will be shown.
+        """
+        if getattr(self, 'name', None) is None:
+            print(f"not reading changes in {c_RED(self)} with no name "
+                  "(it is probably the base class)")
+            return
+
+        name = f"/tmp/{self.name}.txt"
+        with open(name, 'w') as f:
+            for p in self.strings:
+                if isinstance(p, str):
+                    p = (p, p)
+                print(f"{p[0]} -> {p[1]}", file=f)
+
+    def _test_00_read_test_strings(self):
+        """This is a complementary non-test to _test_write_test_strings, which
+        writes these tests in a format usable on Windows. In this
+        case, if the method is enabled as a test by removing the
+        leading '_', examples will be read. Unlike the write function,
+        this reads from 'libcli/security/tests/windows/' in the source
+        tree, and will replace the examples here with the ones there.
+        Along the way it allerts you to the changes.
+
+        If run, this test should run first, hence the 00 in its name.
+        """
+        if getattr(self, 'name', None) is None:
+            print(f"not reading changes in {c_RED(self)} with no name "
+                  "(it is probably the base class)")
+            return
+
+        from pathlib import Path
+        p = Path(__file__).parent
+        while not (p / 'libcli').is_dir():
+            q = p.parent
+            self.assertNotEqual(p, q)
+            p = q
+
+        filename = p / f"libcli/security/tests/windows/{self.name}.txt"
+
+        old_pairs = set()
+        for s in self.strings:
+            if isinstance(s, str):
+                s = (s, s)
+            old_pairs.add(s)
+
+        new_pairs = set()
+        with open(filename) as f:
+            for line in f:
+                o, _, c = line.rstrip().partition(' -> ')
+                new_pairs.add((o, c))
+
+        if old_pairs == new_pairs:
+            print(f"no change in {c_GREEN(self.name)}")
+            # nothing to do
+            return
+
+        print(f"change in {c_RED(self.name)}")
+        print("added:")
+        for x in sorted(new_pairs - old_pairs):
+            print(x)
+        print("removed:")
+        for x in sorted(old_pairs - new_pairs):
+            print(x)
+
+        self.strings[:] = sorted(new_pairs)
+        self.fail("test cases out of sync")
 
 @DynamicTestCase
 class SddlNonCanonical(SddlDecodeEncodeBase):
