@@ -1,1 +1,11 @@
 ^samba.tests.sddl.+.SddlNonCanonical.test_sddl_D:.A;;GA;;;S-1-5000000000-30-40..none
+^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;0x.75bcd15;;;LG..none
+^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;0x75bcd15	;;;LG..none
+^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;123456789.;;;LG..none
+^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;GA.;;;LG..none
+^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;GA;;;S-1-3-4...none
+^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;RP.;;;LG..none
+^samba.tests.sddl.+.SddlWindowsIsWeird.test_sddl_should_fail_D:.A;;-0xffffff55;;;LG..none
+^samba.tests.sddl.+.SddlWindowsIsWeird.test_sddl_should_fail_D:.A;;-9876543210;;;LG..none
+^samba.tests.sddl.+.SddlWindowsIsWeird.test_sddl_should_fail_D:.A;;-99;;;LG..none
+^samba.tests.sddl.+.SddlWindowsIsWeird.test_sddl_should_fail_D:.A;;100000000000000000000000;;;LG..none

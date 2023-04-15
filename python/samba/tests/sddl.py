@@ -503,4 +503,82 @@ class SddlCanonical(SddlDecodeEncodeBase):
     ]
 
 
+@DynamicTestCase
+class SddlShouldFail(SddlDecodeEncodeBase):
+    """These ones should be rejected.
+    """
+    name = "should_fail"
+    should_succeed = False
+    strings = [
+        "Z:(A;;GA;;;SY)",
+        "D:(Antlers;;GA;;;SY)",
+        "Q:(A;;GA;;;RU)",
+        "d:(A;;GA;;;LG)",
+        "D:((A;;GA;;;LG))",
+        "D:(A;;GA;;)",
+        "D :S:",
+        "S:(AU;SA;CROOO;;;WD)(AU;SA;CR;;;WD)",
+        "D:(A;;GA;;;S-1-0x1313131313131-513)",
+        "D:(A;;GA;a;;S-1-5-21-2447931902-1787058256-0x3961074038-1201)",
+        "D:(A;;GA;a;;S-1-5-21-2447931902-1787058256-0xec193176-1201)",
+        ("S:(OOU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+         "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"),
+        ("S:(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-00potato7c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+         "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-00chips7c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"),
+        "D:P:S:",
+        "D:(Ā;;GA;;;LG)", # macron on Ā
 
+        # whitespace around flags
+        "D:(A;;123456789 ;;;LG)",
+        "D:(A;;0x75bcd15\t;;;LG)",
+        "D:(A;; 0x75bcd15;;;LG",
+        "D:(A;;0x 75bcd15;;;LG)",
+        # Windows accepts space before string flags, not after.
+        "D:(A;;GA ;;;LG)",
+        "D:(A;;RP ;;;LG)",
+
+        # space after SID is bad
+        # but Windows accepts space before SID, after 2-letter SID
+        "D:(A;;GA;;;S-1-3-4 )",
+
+        "D:(A;;GA; f30e3bbf-9ff0-11d1-b603-0000f80367c1;;WD)",
+        "D:(A;;GA;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;;WD)",
+        "D:(A;;GA;; f30e3bbf-9ff0-11d1-b603-0000f80367c1;WD)",
+        "D:(A;;GA;;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;WD)",
+    ]
+
+
+@DynamicTestCase
+class SddlWindowsIsWeird(SddlDecodeEncodeBase):
+    """Windows will accept some very misleading SDDL strings.
+    """
+    name = "windows_is_weird"
+    should_succeed = False
+    strings = [
+        # overflow of hex turns on all flags
+        ("D:(A;;0x123456789;;;LG)",
+         "D:(A;;0xffffffff;;;LG)"),
+        # S-Ox1- makes all the rest of the SID hex.
+        ('D:(A;;CC;;;S-0x1-0-0-579)',
+         'D:(A;;CC;;;S-1-0-0-1401)'),
+        ('O:S-0x1-20-0-579', 'O:S-1-32-0-1401'),
+        ("D:(A;;GA;;;S-1-3-4294967296-3-4)",
+         "D:(A;;GA;;;S-1-3-4294967295-3-4)"),
+        # sid overflow
+        ("D:(A;;GA;;;S-1-3-0x100000000-3-4)",
+         "D:(A;;GA;;;S-1-3-4294967295-3-4)"),
+        ("D:(A;;GA;;;S-1-5-21-0x1313131313131-513)",
+         "D:(A;;GA;;;S-1-5-21-4294967295-513)"),
+        # negative numbers for access flags
+        ("D:(A;;-99;;;LG)",
+         "D:(A;;0xffffff9d;;;LG)"),
+        ("D:(A;;-0xffffff55;;;LG)",
+         "D:(A;;CCDCSWWPLO;;;LG)"),
+        # combine overflow with negatives
+        # -9876543210 == -0xffffffff  ==  -(-1)  ==  0x1  ==  CC flag
+        ("D:(A;;-9876543210;;;LG)",
+         "D:(A;;CC;;;LG)"),
+        # overflow of hex turns on all flags
+        ("D:(A;;100000000000000000000000;;;LG)",
+         "D:(A;;0xffffffff;;;LG)"),
+    ]
