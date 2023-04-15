@@ -36,10 +36,16 @@ class SddlDecodeEncodeBase(TestCase):
                 print(f"seen {pair} after {len(seen)}")
             seen.add(pair)
             sddl, canonical = pair
+
             name = sddl
             if len(name) > 120:
                 name = f"{name[:100]}+{len(name) - 100}-more-characters"
-            cls.generate_dynamic_test('test_sddl', name, sddl, canonical)
+
+            if cls.should_succeed:
+                cls.generate_dynamic_test('test_sddl', name, sddl, canonical)
+            else:
+                cls.generate_dynamic_test('test_sddl_should_fail',
+                                          name, sddl, canonical)
 
     def _test_sddl_with_args(self, s, canonical):
         try:
@@ -52,6 +58,10 @@ class SddlDecodeEncodeBase(TestCase):
         self.assertEqual(sd1, sd2)
         self.assertEqual(sddl, canonical)
 
+    def _test_sddl_should_fail_with_args(self, s, canonical):
+        with self.assertRaises(ValueError):
+            security.descriptor.from_sddl(s, self.domain_sid)
+
 
 @DynamicTestCase
 class SddlNonCanonical(SddlDecodeEncodeBase):
@@ -60,6 +70,7 @@ class SddlNonCanonical(SddlDecodeEncodeBase):
     will be output.
     """
     name = "non_canonical"
+    should_succeed = True
     strings = [
         # format is (original, canonical); after passing through an SD
         # object, the SDDL will look like the canonical version.
@@ -465,6 +476,7 @@ class SddlCanonical(SddlDecodeEncodeBase):
     start in. Hence we only have one string for each example.
     """
     name = "canonical"
+    should_succeed = True
     strings = [
         # derived from GPO acl in provision, "-512D" could be misinterpreted
         ("O:S-1-5-21-1225132014-296224811-2507946102-512"
