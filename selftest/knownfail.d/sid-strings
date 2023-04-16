@@ -50,12 +50,16 @@
 ^samba.tests.sid_strings.+.SidStringTests.test_sid_string_internal_aA.ad_dc
 ^samba.tests.sid_strings.+.SidStringTests.test_sid_string_internal_aa.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-0-5-32-579.ad_dc
+^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-1-0x500000000-0x500000000-579.ad_dc
+^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-1-0xABcDef123-0xABCDef123-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-1-3-0.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-1-5-3.2-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-10-5-32-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnInSearchBase.test_sid_string_S-2-5-32-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-0-5-32-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-1-0x05-32-579.ad_dc
+^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-1-0x500000000-0x500000000-579.ad_dc
+^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-1-0xABcDef123-0xABCDef123-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-1-3-0.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-1-5-3.2-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsAsDnSearchWithDnObject.test_sid_string_S-10-5-32-579.ad_dc
@@ -72,7 +76,6 @@
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-22.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-281474976710656-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-5-0x20-579.ad_dc
-^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-5-20-00000000000243.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-5-3.2-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-5-32--579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_S-1-5-32-.579.ad_dc
@@ -88,6 +91,5 @@
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_internal_S-1-0xABcDef123-0xABCDef-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_internal_S-1-22.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_internal_S-1-5-0x20-579.ad_dc
-^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_internal_S-1-5-20-00000000000243.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_internal_s-1-5-32-579.ad_dc
 ^samba.tests.sid_strings.+.SidStringsThatStartWithS.test_sid_string_s-1-5-32-579.ad_dc

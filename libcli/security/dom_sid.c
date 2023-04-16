@@ -202,8 +202,15 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		if (!isdigit(*q)) {
 			goto format_error;
 		}
-
-		conv = smb_strtoull(q, &end, 10, &error, SMB_STR_STANDARD);
+		while (q[0] == '0' && isdigit((unsigned char)q[1])) {
+			/*
+			 * strtoull will think this is octal, which is not how
+			 * SIDs work! So let's walk along until there are no
+			 * leading zeros (or a single zero).
+			 */
+			q++;
+		}
+		conv = smb_strtoull(q, &end, 0, &error, SMB_STR_STANDARD);
 		if (conv > UINT32_MAX || error != 0 || end - q > 12) {
 			/*
 			 * This sub-auth is greater than 4294967295,
