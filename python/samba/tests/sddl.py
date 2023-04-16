@@ -56,7 +56,11 @@ class SddlDecodeEncodeBase(TestCase):
         sddl = sd1.as_sddl(self.domain_sid)
         sd2 = security.descriptor.from_sddl(sddl, self.domain_sid)
         self.assertEqual(sd1, sd2)
-        self.assertEqual(sddl, canonical)
+        if '0X' in canonical.upper():
+            # let's chill out about case in hex numbers.
+            self.assertEqual(sddl.upper(), canonical.upper())
+        else:
+            self.assertEqual(sddl, canonical)
 
     def _test_sddl_should_fail_with_args(self, s, canonical):
         with self.assertRaises(ValueError):
