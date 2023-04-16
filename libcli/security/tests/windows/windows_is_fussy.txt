@@ -1,0 +1,1 @@
+D:(A;;RP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU) -> D:(A;;RP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)

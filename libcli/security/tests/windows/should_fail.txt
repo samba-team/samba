@@ -1,0 +1,42 @@
+Z:(A;;GA;;;SY) -> Z:(A;;GA;;;SY)
+D:(Antlers;;GA;;;SY) -> D:(Antlers;;GA;;;SY)
+Q:(A;;GA;;;RU) -> Q:(A;;GA;;;RU)
+d:(A;;GA;;;LG) -> d:(A;;GA;;;LG)
+D:((A;;GA;;;LG)) -> D:((A;;GA;;;LG))
+D:(A;;GA;;) -> D:(A;;GA;;)
+D :S: -> D :S:
+S:(AU;SA;CROOO;;;WD)(AU;SA;CR;;;WD) -> S:(AU;SA;CROOO;;;WD)(AU;SA;CR;;;WD)
+D:(A;;GA;;;S-1-0x1313131313131-513) -> D:(A;;GA;;;S-1-0x1313131313131-513)
+D:(A;;GA;a;;S-1-5-21-2447931902-1787058256-0x3961074038-1201) -> D:(A;;GA;a;;S-1-5-21-2447931902-1787058256-0x3961074038-1201)
+D:(A;;GA;a;;S-1-5-21-2447931902-1787058256-0xec193176-1201) -> D:(A;;GA;a;;S-1-5-21-2447931902-1787058256-0xec193176-1201)
+S:(OOU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD) -> S:(OOU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
+S:(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-00potato7c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-00chips7c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD) -> S:(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-00potato7c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-00chips7c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
+D:P:S: -> D:P:S:
+D:(Ā;;GA;;;LG) -> D:(Ā;;GA;;;LG)
+D:(A;;123456789 ;;;LG) -> D:(A;;123456789 ;;;LG)
+D:(A;;0x75bcd15	;;;LG) -> D:(A;;0x75bcd15	;;;LG)
+D:(A;; 0x75bcd15;;;LG -> D:(A;; 0x75bcd15;;;LG
+D:(A;;0x 75bcd15;;;LG) -> D:(A;;0x 75bcd15;;;LG)
+D:(A;;GA ;;;LG) -> D:(A;;GA ;;;LG)
+D:(A;;RP ;;;LG) -> D:(A;;RP ;;;LG)
+D:(A;;GA;;;S-1-3-4 ) -> D:(A;;GA;;;S-1-3-4 )
+D:(A;;GA; f30e3bbf-9ff0-11d1-b603-0000f80367c1;;WD) -> D:(A;;GA; f30e3bbf-9ff0-11d1-b603-0000f80367c1;;WD)
+D:(A;;GA;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;;WD) -> D:(A;;GA;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;;WD)
+D:(A;;GA;; f30e3bbf-9ff0-11d1-b603-0000f80367c1;WD) -> D:(A;;GA;; f30e3bbf-9ff0-11d1-b603-0000f80367c1;WD)
+D:(A;;GA;;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;WD) -> D:(A;;GA;;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;WD)
+D:(A;;GA;;{f30e3bbf-9ff0-11d1-b603-0000f80367c1};WD) -> D:(A;;GA;;{f30e3bbf-9ff0-11d1-b603-0000f80367c1};WD)
+D:(A;;GA;;0123456789abcdef;WD) -> D:(A;;GA;;0123456789abcdef;WD)
+D:(A;;GA;;0123456789abcdef0123456789abcdef;WD) -> D:(A;;GA;;0123456789abcdef0123456789abcdef;WD)
+D:AI(A;CI;RP LCLOR C;;;AU) -> D:AI(A;CI;RP LCLOR C;;;AU)
+D:AI(A;CI;RP LC	LORC;;;AU) -> D:AI(A;CI;RP LC	LORC;;;AU)
+D:AI(A;CI;RP LC	 LORC;;;AU) -> D:AI(A;CI;RP LC	 LORC;;;AU)
+O:S -> O:S
+O:S- -> O:S-
+O:S-1 -> O:S-1
+O:S-10 -> O:S-10
+O:S-0 -> O:S-0
+O:S-1- -> O:S-1-
+O:S-0x1 -> O:S-0x1
+O:S-0x1- -> O:S-0x1-
+O: -> O:
+O:XX -> O:XX

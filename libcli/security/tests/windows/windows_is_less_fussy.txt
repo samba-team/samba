@@ -1,0 +1,23 @@
+D:(A;;GA;;; LG) -> D:(A;;GA;;;LG)
+D: (A;;GA;;;LG) -> D:(A;;GA;;;LG)
+D: AI(A;;GA;;;LG) -> D:AI(A;;GA;;;LG)
+D:(a;;GA;;;LG) -> D:(A;;GA;;;LG)
+D:(A;;GA;;;lg) -> D:(A;;GA;;;LG)
+D:(A;;ga;;;LG) -> D:(A;;GA;;;LG)
+D: S: -> D:S:
+D: P(A;;GA;;;LG) -> D:P(A;;GA;;;LG)
+D:P (A;;GA;;;LG) -> D:P(A;;GA;;;LG)
+D:P(A;;GA;;;LG) (A;;GX;;;AA) -> D:P(A;;GA;;;LG)(A;;GX;;;AA)
+D:(A; ;GA;;;LG) -> D:(A;;GA;;;LG)
+D:AI (A;;GA;;;LG) -> D:AI (A;;GA;;;LG)
+D:(A;;GA;;; WD) -> D:(A;;GA;;;WD)
+D:(A;;GA;;;WD ) -> D:(A;;GA;;;WD)
+D:(A;;GA;;; S-1-3-4) -> D:(A;;GA;;;OW)
+D:(A;;GA;; ;S-1-3-4) -> D:(A;;GA;;;OW)
+D:(A;;GA; ;;S-1-3-4) -> D:(A;;GA;;;OW)
+D:(A;;GA;;; S-1-333-4) -> D:(A;;GA;;;S-1-333-4)
+D:(A;;GA; ;;S-1-333-4) -> D:(A;;GA;;;S-1-333-4)
+ O:AA -> O:AA
+  O:AA   -> O:AA
+  O:AA G:WD  -> O:AAG:WD
+O:S- 1- 2-3 -> O:S-1-2-3
