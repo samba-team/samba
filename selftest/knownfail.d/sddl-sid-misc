@@ -6,10 +6,6 @@
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_invalidate_getntacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_invalidate_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_invalidate_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_policies_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_policies_check_getposixacl.ad_dc_no_nss:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_policies_dir_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_policies_dir_check_getposixacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_smbd_getntacl.ad_dc:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_smbd_getntacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_smbd_getntacl_smbd.ad_dc:local
@@ -22,10 +18,6 @@
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_smbd_setposixacl_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_smbd_setposixacl_group_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_smbd_setposixacl_group_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_sysvol_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_sysvol_check_getposixacl.ad_dc_no_nss:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_sysvol_dir_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.PosixAclMappingTests.test_setntacl_sysvol_dir_check_getposixacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setposixacl_dir_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setposixacl_dir_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.PosixAclMappingTests.test_setposixacl_getntacl_smbd.ad_dc:local
@@ -40,10 +32,6 @@
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_invalidate_getntacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_invalidate_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_invalidate_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_policies_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_policies_check_getposixacl.ad_dc_no_nss:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_policies_dir_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_policies_dir_check_getposixacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_smbd_getntacl.ad_dc:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_smbd_getntacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_smbd_getntacl_smbd.ad_dc:local
@@ -56,10 +44,6 @@
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_smbd_setposixacl_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_smbd_setposixacl_group_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_smbd_setposixacl_group_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_sysvol_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_sysvol_check_getposixacl.ad_dc_no_nss:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_sysvol_dir_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setntacl_sysvol_dir_check_getposixacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setposixacl_dir_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setposixacl_dir_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.SessionedPosixAclMappingTests.test_setposixacl_getntacl_smbd.ad_dc:local
@@ -74,10 +58,6 @@
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_invalidate_getntacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_invalidate_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_invalidate_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_policies_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_policies_check_getposixacl.ad_dc_no_nss:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_policies_dir_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_policies_dir_check_getposixacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_smbd_getntacl.ad_dc:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_smbd_getntacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_smbd_getntacl_smbd.ad_dc:local
@@ -90,10 +70,6 @@
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_smbd_setposixacl_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_smbd_setposixacl_group_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_smbd_setposixacl_group_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_sysvol_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_sysvol_check_getposixacl.ad_dc_no_nss:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_sysvol_dir_check_getposixacl.ad_dc:local
-^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setntacl_sysvol_dir_check_getposixacl.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setposixacl_dir_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setposixacl_dir_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setposixacl_getntacl_smbd.ad_dc:local
@@ -104,6 +80,3 @@
 ^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdChangedomsidTestCase.test_s3fs_check.ad_dc:local
 ^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdGetSetTestCase.test_ntvfs_check.ad_dc:local
 ^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdGetSetTestCase.test_s3fs_check.ad_dc:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdSysvolTestCase.test_ntvfs_check.ad_dc:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdSysvolTestCase.test_s3fs_check.ad_dc:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdSysvolTestCase.test_with_missing_files.ad_dc:local

@@ -1598,8 +1598,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     return samdb
 
 
-SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
-POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
+SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x1f01ff;;;BA)(A;OICI;0x1200a9;;;SO)(A;OICI;0x1f01ff;;;SY)(A;OICI;0x1200a9;;;AU)"
+POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x1f01ff;;;BA)(A;OICI;0x1200a9;;;SO)(A;OICI;0x1f01ff;;;SY)(A;OICI;0x1200a9;;;AU)(A;OICI;0x1301bf;;;PA)"
 SYSVOL_SERVICE = "sysvol"
 
 
