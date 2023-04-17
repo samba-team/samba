@@ -42,6 +42,14 @@
 
 #include "talloc_testsuite.h"
 
+#ifndef disable_optimization
+#if __has_attribute(optimize)
+#define disable_optimization __attribute__((optimize("O0")))
+#else /* disable_optimization */
+#define disable_optimization
+#endif
+#endif /* disable_optimization */
+
 static struct timeval private_timeval_current(void)
 {
 	struct timeval tv;
@@ -854,6 +862,7 @@ static bool test_unref_reparent(void)
 /*
   measure the speed of talloc versus malloc
 */
+static bool test_speed(void) disable_optimization;
 static bool test_speed(void)
 {
 	void *ctx = talloc_new(NULL);
