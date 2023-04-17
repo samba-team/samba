@@ -76,7 +76,3 @@
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setposixacl_getntacl_smbd.ad_dc_no_nss:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setposixacl_group_getntacl_smbd.ad_dc:local
 ^samba.tests.posixacl.+.UnixSessionedPosixAclMappingTests.test_setposixacl_group_getntacl_smbd.ad_dc_no_nss:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdChangedomsidTestCase.test_ntvfs_check.ad_dc:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdChangedomsidTestCase.test_s3fs_check.ad_dc:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdGetSetTestCase.test_ntvfs_check.ad_dc:local
-^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdGetSetTestCase.test_s3fs_check.ad_dc:local
