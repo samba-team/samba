@@ -109,5 +109,3 @@
 ^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdSysvolTestCase.test_ntvfs_check.ad_dc:local
 ^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdSysvolTestCase.test_s3fs_check.ad_dc:local
 ^samba.tests.samba_tool.ntacl.samba.tests.samba_tool.ntacl.NtACLCmdSysvolTestCase.test_with_missing_files.ad_dc:local
-^samba3.blackbox.large_acl.NT1.able.to.retrieve.a.large.ACL.if.VFS.supports.it.fileserver_smb1_done
-^samba3.blackbox.large_acl.SMB3.able.to.retrieve.a.large.ACL.if.VFS.supports.it.fileserver
