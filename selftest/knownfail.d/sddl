@@ -4,6 +4,9 @@
 ^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;GA.;;;LG..none
 ^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;GA;;;S-1-3-4...none
 ^samba.tests.sddl.+.SddlShouldFail.test_sddl_should_fail_D:.A;;RP.;;;LG..none
+^samba.tests.sddl.+.SddlWindowsFlagsAreDifferent.test_sddl_D:.A;;0x001f01ff;;;WD..A;;0x001f01ff;;;S-1.+S
+^samba.tests.sddl.+.SddlWindowsFlagsAreDifferent.test_sddl_D:.A;;FA;;;WD..none
+^samba.tests.sddl.+.SddlWindowsFlagsAreDifferent.test_sddl_O:S-1-5-21-2212615479-2695158682-210137546.+:
 ^samba.tests.sddl.+.SddlWindowsIsLessFussy.test_sddl_should_fail_D:.A;.;GA;;;LG..none
 ^samba.tests.sddl.+.SddlWindowsIsLessFussy.test_sddl_should_fail_D:.A;;.GA;;;LG..none
 ^samba.tests.sddl.+.SddlWindowsIsLessFussy.test_sddl_should_fail_D:.A;;GA;;;WD...none
