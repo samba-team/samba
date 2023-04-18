@@ -57,9 +57,9 @@ class gp_centrify_crontab_ext(gp_pol_ext, gp_file_applier):
                 entries = []
                 for e in pol_conf.entries:
                     if e.keyname == section and e.data.strip():
-                        cron_dir = '/etc/cron.d' if not cdir else cdir
                         entries.append(e.data)
                 def applier_func(entries):
+                    cron_dir = '/etc/cron.d' if not cdir else cdir
                     with NamedTemporaryFile(prefix='gp_', mode="w+",
                             delete=False, dir=cron_dir) as f:
                         contents = intro
