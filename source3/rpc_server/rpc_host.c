@@ -68,6 +68,8 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "nsswitch/winbind_client.h"
+#include "libcli/security/dom_sid.h"
+#include "libcli/security/security_token.h"
 
 extern bool override_logfile;
 
@@ -1321,8 +1323,17 @@ again:
 			worker = rpc_host_find_worker(server);
 		}
 	} else {
+		struct auth_session_info_transport *session_info =
+			pending_client->client->npa_info6->session_info;
+		uint32_t flags = 0;
+		bool found;
+
+		found = security_token_find_npa_flags(
+			session_info->session_info->security_token,
+			&flags);
+
 		/* fresh assoc group requested */
-		if (pending_client->client->npa_info6->need_idle_server != 0) {
+		if (found & (flags & SAMBA_NPA_FLAGS_NEED_IDLE)) {
 			worker = rpc_host_find_idle_worker(server);
 		} else {
 			worker = rpc_host_find_worker(server);
