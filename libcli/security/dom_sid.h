@@ -68,6 +68,7 @@ extern const struct dom_sid global_sid_Samba_SMB3;
 
 extern const struct dom_sid global_sid_Samba_NPA_Flags;
 #define SAMBA_NPA_FLAGS_NEED_IDLE 1
+#define SAMBA_NPA_FLAGS_WINBIND_OFF 2
 
 enum lsa_SidType;
 
