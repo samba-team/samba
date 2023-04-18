@@ -24,6 +24,8 @@
 #include "libcli/named_pipe_auth/tstream_u32_read.h"
 #include "lib/util/tevent_unix.h"
 #include "auth/auth_util.h"
+#include "libcli/security/dom_sid.h"
+#include "libcli/security/security_token.h"
 
 /**
  * @file local_np.c
@@ -499,6 +501,12 @@ struct tevent_req *local_np_connect_send(
 	struct named_pipe_auth_req_info6 *i6 = NULL;
 	const char *socket_dir = NULL;
 	char *lower_case_pipename = NULL;
+	struct dom_sid npa_sid = global_sid_Samba_NPA_Flags;
+	uint32_t npa_flags = 0;
+	struct security_token *token = NULL;
+	NTSTATUS status;
+	size_t num_npa_sids;
+	bool ok;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct local_np_connect_state);
@@ -506,6 +514,19 @@ struct tevent_req *local_np_connect_send(
 		return NULL;
 	}
 	state->ev = ev;
+
+	num_npa_sids =
+		security_token_count_flag_sids(session_info->security_token,
+					       &npa_sid,
+					       1,
+					       NULL);
+	if (num_npa_sids != 0) {
+		DBG_ERR("ERROR: %zu NPA Flags SIDs have already been "
+			"detected in the security token!\n",
+			num_npa_sids);
+		tevent_req_error(req, EACCES);
+		return tevent_req_post(req, ev);
+	}
 
 	socket_dir = lp_parm_const_string(
 		GLOBAL_SECTION_SNUM, "external_rpc_pipe", "socket_dir",
@@ -603,7 +624,26 @@ struct tevent_req *local_np_connect_send(
 		return tevent_req_post(req, ev);
 	}
 
-	i6->need_idle_server = need_idle_server;
+	if (need_idle_server) {
+		npa_flags |= SAMBA_NPA_FLAGS_NEED_IDLE;
+	}
+
+	ok = sid_append_rid(&npa_sid, npa_flags);
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+
+	token = i6->session_info->session_info->security_token;
+
+	status = add_sid_to_array_unique(token,
+					 &npa_sid,
+					 &token->sids,
+					 &token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
 
 	subreq = np_sock_connect_send(
 		state, state->ev, state->socketpath, state->npa_req);
