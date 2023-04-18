@@ -461,6 +461,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 					    hdb_entry *client,
 					    hdb_entry *server,
 					    hdb_entry *krbtgt,
+					    EncTicketPart *ticket,
 					    krb5_pac pac,
 					    krb5_boolean *is_trusted)
 {
@@ -575,7 +576,6 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 		 * check for an incoming trust, as they use a different secret
 		 * and can't be confused with a normal TGT.
 		 */
-		krb5_ticket *tgt = kdc_request_get_ticket(r);
 
 		struct timeval now = krb5_kdc_get_time();
 
@@ -583,7 +583,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 		 * Check if the ticket is in the last two minutes of its
 		 * life.
 		 */
-		KerberosTime lifetime = rk_time_sub(tgt->ticket.endtime, now.tv_sec);
+		KerberosTime lifetime = rk_time_sub(ticket->endtime, now.tv_sec);
 		if (lifetime <= CHANGEPW_LIFETIME) {
 			/*
 			 * This ticket has at most two minutes left to live. It

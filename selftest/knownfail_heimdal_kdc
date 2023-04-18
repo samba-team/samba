@@ -40,11 +40,6 @@
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_no_auth_data_required_b
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_rodc_issued
 #
-# KDC TGS tests
-#
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_kpasswd.ad_dc
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_kpasswd.ad_dc
-#
 # https://bugzilla.samba.org/show_bug.cgi?id=14886: Tests for accounts not revealed to the RODC
 #
 # The KDC should not accept tickets from an RODC for accounts not in the msDS-RevealedUsers list.
