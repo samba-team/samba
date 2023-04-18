@@ -290,7 +290,6 @@ struct dom_sid *dom_sid_parse_length(TALLOC_CTX *mem_ctx, const DATA_BLOB *sid)
 struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 {
 	struct dom_sid *ret;
-	int i;
 
 	if (!dom_sid) {
 		return NULL;
@@ -300,19 +299,7 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 	if (!ret) {
 		return NULL;
 	}
-
-	ret->sid_rev_num = dom_sid->sid_rev_num;
-	ret->id_auth[0] = dom_sid->id_auth[0];
-	ret->id_auth[1] = dom_sid->id_auth[1];
-	ret->id_auth[2] = dom_sid->id_auth[2];
-	ret->id_auth[3] = dom_sid->id_auth[3];
-	ret->id_auth[4] = dom_sid->id_auth[4];
-	ret->id_auth[5] = dom_sid->id_auth[5];
-	ret->num_auths = dom_sid->num_auths;
-
-	for (i=0;i<dom_sid->num_auths;i++) {
-		ret->sub_auths[i] = dom_sid->sub_auths[i];
-	}
+	sid_copy(ret, dom_sid);
 
 	return ret;
 }
