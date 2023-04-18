@@ -42,6 +42,8 @@
 #include "nsswitch/winbind_client.h"
 #include "source3/include/messages.h"
 #include "libcli/security/security_token.h"
+#include "libcli/security/dom_sid.h"
+#include "source3/include/proto.h"
 
 /*
  * This is the generic code that becomes the
@@ -181,6 +183,9 @@ static void rpc_worker_new_client(
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	DATA_BLOB buffer = { .data = NULL };
 	struct ncacn_packet *pkt = NULL;
+	struct security_token *token = NULL;
+	uint32_t npa_flags, state_flags;
+	bool found_npa_flags;
 	NTSTATUS status;
 	int ret;
 
@@ -374,11 +379,29 @@ static void rpc_worker_new_client(
 	}
 	sock = -1;
 
-	if (security_token_is_system(
-		    info7->session_info->session_info->security_token) &&
-	    (transport != NCALRPC)) {
+	token = info7->session_info->session_info->security_token;
+
+	if (security_token_is_system(token) && (transport != NCALRPC)) {
 		DBG_DEBUG("System token only allowed on NCALRPC\n");
 		goto fail;
+	}
+
+	state_flags = DCESRV_CALL_STATE_FLAG_MAY_ASYNC;
+
+	found_npa_flags = security_token_find_npa_flags(token, &npa_flags);
+	if (found_npa_flags) {
+		if (npa_flags & SAMBA_NPA_FLAGS_WINBIND_OFF) {
+			state_flags |=
+				DCESRV_CALL_STATE_FLAG_WINBIND_OFF;
+		}
+
+		/*
+		 * Delete the flags so that we don't bail in
+		 * local_np_connect_send() on subsequent
+		 * connects. Once we connect to another RPC service, a
+		 * new flags sid will be added if required.
+		 */
+		security_token_del_npa_flags(token);
 	}
 
 	ncacn_conn->p.msg_ctx = global_messaging_context();
@@ -389,7 +412,7 @@ static void rpc_worker_new_client(
 					 ep,
 					 info7->session_info->session_info,
 					 global_event_context(),
-					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
+					 state_flags,
 					 &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("Failed to connect to endpoint: %s\n",

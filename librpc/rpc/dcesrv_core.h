@@ -125,6 +125,7 @@ struct dcesrv_call_state {
 #define DCESRV_CALL_STATE_FLAG_MAY_ASYNC (1<<1)
 #define DCESRV_CALL_STATE_FLAG_MULTIPLEXED (1<<3)
 #define DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL (1<<4)
+#define DCESRV_CALL_STATE_FLAG_WINBIND_OFF (1 << 5)
 	uint32_t state_flags;
 
 	/* the time the request arrived in the server */
