@@ -35,6 +35,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "system/network.h"
 #include "lib/util/idtree_random.h"
+#include "nsswitch/winbind_client.h"
 
 /**
  * @file
@@ -1839,6 +1840,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct ndr_pull *pull;
+	bool turn_winbind_on = false;
 	NTSTATUS status;
 
 	if (auth->auth_invalid) {
@@ -1954,8 +1956,23 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			 pull->data_size - pull->offset));
 	}
 
+	if (call->state_flags & DCESRV_CALL_STATE_FLAG_WINBIND_OFF) {
+		bool winbind_active = !winbind_env_set();
+		if (winbind_active) {
+			DBG_DEBUG("turning winbind off\n");
+			(void)winbind_off();
+			turn_winbind_on = true;
+		}
+	}
+
 	/* call the dispatch function */
 	status = call->context->iface->dispatch(call, call, call->r);
+
+	if (turn_winbind_on) {
+		DBG_DEBUG("turning winbind on\n");
+		(void)winbind_on();
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("dcerpc fault in call %s:%02x - %s\n",
 			 call->context->iface->name,

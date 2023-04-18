@@ -26,6 +26,7 @@
 #include "auth/auth_util.h"
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/security_token.h"
+#include "nsswitch/winbind_client.h"
 
 /**
  * @file local_np.c
@@ -627,6 +628,11 @@ struct tevent_req *local_np_connect_send(
 
 	if (need_idle_server) {
 		npa_flags |= SAMBA_NPA_FLAGS_NEED_IDLE;
+	}
+
+	ok = winbind_env_set();
+	if (ok) {
+		npa_flags |= SAMBA_NPA_FLAGS_WINBIND_OFF;
 	}
 
 	ok = sid_append_rid(&npa_sid, npa_flags);
