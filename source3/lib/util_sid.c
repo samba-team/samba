@@ -189,3 +189,18 @@ bool security_token_find_npa_flags(const struct security_token *token,
 	sid_peek_rid(npa_flags_sid, _flags);
 	return true;
 }
+
+void security_token_del_npa_flags(struct security_token *token)
+{
+	const struct dom_sid *npa_flags_sid = NULL;
+	size_t num_npa_sids;
+
+	num_npa_sids =
+		security_token_count_flag_sids(token,
+					       &global_sid_Samba_NPA_Flags,
+					       1,
+					       &npa_flags_sid);
+	SMB_ASSERT(num_npa_sids == 1);
+
+	del_sid_from_array(npa_flags_sid, &token->sids, &token->num_sids);
+}
