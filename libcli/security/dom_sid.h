@@ -66,6 +66,9 @@ extern const struct dom_sid global_sid_Unix_NFS_Mode;
 extern const struct dom_sid global_sid_Unix_NFS_Other;
 extern const struct dom_sid global_sid_Samba_SMB3;
 
+extern const struct dom_sid global_sid_Samba_NPA_Flags;
+#define SAMBA_NPA_FLAGS_NEED_IDLE 1
+
 struct auth_SidAttr;
 enum lsa_SidType;
 

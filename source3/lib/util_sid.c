@@ -170,3 +170,22 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+bool security_token_find_npa_flags(const struct security_token *token,
+				   uint32_t *_flags)
+{
+	const struct dom_sid *npa_flags_sid = NULL;
+	size_t num_npa_sids;
+
+	num_npa_sids =
+		security_token_count_flag_sids(token,
+					       &global_sid_Samba_NPA_Flags,
+					       1,
+					       &npa_flags_sid);
+	if (num_npa_sids != 1) {
+		return false;
+	}
+
+	sid_peek_rid(npa_flags_sid, _flags);
+	return true;
+}

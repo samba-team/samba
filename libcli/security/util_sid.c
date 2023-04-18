@@ -165,6 +165,13 @@ const struct dom_sid global_sid_Unix_NFS_Other =		/* Unix other, MS NFS and Appl
 const struct dom_sid global_sid_Samba_SMB3 =
 {1, 1, {0,0,0,0,0,22}, {1397571891, }};
 
+const struct dom_sid global_sid_Samba_NPA_Flags = {1,
+						   1,
+						   {0, 0, 0, 0, 0, 22},
+						   {
+							   2041152804,
+						   }};
+
 /* Unused, left here for documentary purposes */
 #if 0
 #define SECURITY_NULL_SID_AUTHORITY    0
