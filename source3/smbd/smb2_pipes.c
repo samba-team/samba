@@ -78,7 +78,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		uint16_t srv_smb_encrypt = DCERPC_SMB_ENCRYPTION_REQUIRED;
 		uint16_t cipher = xconn->smb2.server.cipher;
 		struct dom_sid smb3_sid = global_sid_Samba_SMB3;
-		uint32_t i;
+		size_t num_smb3_sids;
 		bool ok;
 
 		session_info = copy_session_info(fsp, conn->session_info);
@@ -94,17 +94,16 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		 *
 		 * Make sure we don't have a SMB3 SID in the security token!
 		 */
-		for (i = 0; i < security_token->num_sids; i++) {
-			int cmp;
-
-			cmp = dom_sid_compare_domain(&security_token->sids[i],
-						     &smb3_sid);
-			if (cmp == 0) {
-				DBG_ERR("ERROR: An SMB3 SID has already been "
-					"detected in the security token!\n");
-				file_free(smb_req, fsp);
-				return NT_STATUS_ACCESS_DENIED;
-			}
+		num_smb3_sids = security_token_count_flag_sids(security_token,
+							       &smb3_sid,
+							       3,
+							       NULL);
+		if (num_smb3_sids != 0) {
+			DBG_ERR("ERROR: %zu SMB3 SIDs have already been "
+				"detected in the security token!\n",
+				num_smb3_sids);
+			file_free(smb_req, fsp);
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		ok = sid_append_rid(&smb3_sid, dialect);
