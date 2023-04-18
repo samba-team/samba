@@ -1280,21 +1280,10 @@ SMBCCTX * smbc_init_context(SMBCCTX * context);
 /**@ingroup misc
  * Initialize the samba client library.
  *
- * Must be called before using any of the smbclient API function
- *
- * @param fn        The function that will be called to obtaion
- *                  authentication credentials.
- *
- * @param debug     Allows caller to set the debug level. Can be
- *                  changed in smb.conf file. Allows caller to set
- *                  debugging if no smb.conf.
- *
- * @return          0 on success, < 0 on error with errno set:
- *                  - ENOMEM Out of memory
- *                  - ENOENT The smb.conf file would not load
- *
+ * @deprecated use smbc_init_context()
+ * @see smbc_init_context()
  */
-
+DEPRECATED_SMBC_INTERFACE
 int smbc_init(smbc_get_auth_data_fn fn, int debug);
 
 /**@ingroup misc
