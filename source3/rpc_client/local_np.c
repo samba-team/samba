@@ -274,18 +274,17 @@ static void np_sock_connect_read_done(struct tevent_req *subreq)
 		tevent_req_error(req, ndr_map_error2errno(ndr_err));
 		return;
 	}
-	if (state->npa_rep->level != 6) {
-		DBG_DEBUG("npa level = %"PRIu32", expected 6\n",
+	if (state->npa_rep->level != 7) {
+		DBG_DEBUG("npa level = %" PRIu32 ", expected 7\n",
 			  state->npa_rep->level);
 		tevent_req_error(req, EIO);
 		return;
 	}
 
-	ret = tstream_npa_existing_stream(
-		state,
-		&state->transport,
-		state->npa_rep->info.info6.file_type,
-		&state->npa_stream);
+	ret = tstream_npa_existing_stream(state,
+					  &state->transport,
+					  state->npa_rep->info.info7.file_type,
+					  &state->npa_stream);
 	if (ret == -1) {
 		ret = errno;
 		DBG_DEBUG("tstream_npa_existing_stream failed: %s\n",
@@ -498,7 +497,7 @@ struct tevent_req *local_np_connect_send(
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct local_np_connect_state *state = NULL;
-	struct named_pipe_auth_req_info6 *i6 = NULL;
+	struct named_pipe_auth_req_info7 *i7 = NULL;
 	const char *socket_dir = NULL;
 	char *lower_case_pipename = NULL;
 	struct dom_sid npa_sid = global_sid_Samba_NPA_Flags;
@@ -553,14 +552,14 @@ struct tevent_req *local_np_connect_send(
 	if (tevent_req_nomem(state->npa_req, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->npa_req->level = 6;
+	state->npa_req->level = 7;
 
-	i6 = &state->npa_req->info.info6;
+	i7 = &state->npa_req->info.info7;
 
-	i6->transport = transport;
+	i7->transport = transport;
 
 	/* we don't have "int" in IDL, make sure we don't overflow */
-	SMB_ASSERT(i6->transport == transport);
+	SMB_ASSERT(i7->transport == transport);
 
 	if (remote_client_name == NULL) {
 		remote_client_name = get_myname(state->npa_req);
@@ -569,7 +568,7 @@ struct tevent_req *local_np_connect_send(
 			return tevent_req_post(req, ev);
 		}
 	}
-	i6->remote_client_name = remote_client_name;
+	i7->remote_client_name = remote_client_name;
 
 	if (remote_client_addr == NULL) {
 		struct tsocket_address *addr = NULL;
@@ -581,18 +580,19 @@ struct tevent_req *local_np_connect_send(
 		}
 		remote_client_addr = addr;
 	}
-	i6->remote_client_addr = tsocket_address_inet_addr_string(
-		remote_client_addr, state->npa_req);
-	if (i6->remote_client_addr == NULL) {
+	i7->remote_client_addr =
+		tsocket_address_inet_addr_string(remote_client_addr,
+						 state->npa_req);
+	if (i7->remote_client_addr == NULL) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
-	i6->remote_client_port = tsocket_address_inet_port(remote_client_addr);
+	i7->remote_client_port = tsocket_address_inet_port(remote_client_addr);
 
 	if (local_server_name == NULL) {
 		local_server_name = remote_client_name;
 	}
-	i6->local_server_name = local_server_name;
+	i7->local_server_name = local_server_name;
 
 	if (local_server_addr == NULL) {
 		struct tsocket_address *addr = NULL;
@@ -604,23 +604,24 @@ struct tevent_req *local_np_connect_send(
 		}
 		local_server_addr = addr;
 	}
-	i6->local_server_addr = tsocket_address_inet_addr_string(
-		local_server_addr, state->npa_req);
-	if (i6->local_server_addr == NULL) {
+	i7->local_server_addr =
+		tsocket_address_inet_addr_string(local_server_addr,
+						 state->npa_req);
+	if (i7->local_server_addr == NULL) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
-	i6->local_server_port = tsocket_address_inet_port(local_server_addr);
+	i7->local_server_port = tsocket_address_inet_port(local_server_addr);
 
-	i6->session_info = talloc_zero(
-		state->npa_req, struct auth_session_info_transport);
-	if (tevent_req_nomem(i6->session_info, req)) {
+	i7->session_info = talloc_zero(state->npa_req,
+				       struct auth_session_info_transport);
+	if (tevent_req_nomem(i7->session_info, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	i6->session_info->session_info = copy_session_info(
-		i6->session_info, session_info);
-	if (tevent_req_nomem(i6->session_info->session_info, req)) {
+	i7->session_info->session_info =
+		copy_session_info(i7->session_info, session_info);
+	if (tevent_req_nomem(i7->session_info->session_info, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -634,7 +635,7 @@ struct tevent_req *local_np_connect_send(
 		return tevent_req_post(req, ev);
 	}
 
-	token = i6->session_info->session_info->security_token;
+	token = i7->session_info->session_info->security_token;
 
 	status = add_sid_to_array_unique(token,
 					 &npa_sid,
