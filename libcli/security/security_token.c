@@ -67,13 +67,13 @@ void security_token_debug(int dbg_class, int dbg_lev, const struct security_toke
 
 bool security_token_is_sid(const struct security_token *token, const struct dom_sid *sid)
 {
+	bool ret;
+
 	if (token->sids == NULL) {
 		return false;
 	}
-	if (dom_sid_equal(&token->sids[PRIMARY_USER_SID_INDEX], sid)) {
-		return true;
-	}
-	return false;
+	ret = dom_sid_equal(&token->sids[PRIMARY_USER_SID_INDEX], sid);
+	return ret;
 }
 
 bool security_token_is_system(const struct security_token *token)
