@@ -202,7 +202,7 @@ struct rpc_server {
 	 * between RPC servers: netlogon requires samr, everybody
 	 * requires winreg. And if a deep call in netlogon asks for a
 	 * samr connection, this must never end up in the same
-	 * process. named_pipe_auth_req_info6->need_idle_server is set
+	 * process. named_pipe_auth_req_info7->need_idle_server is set
 	 * in those cases.
 	 */
 	struct rpc_work_process *workers;
@@ -730,14 +730,14 @@ static int rpc_server_get_endpoints_recv(
  * anonymous session info.
  */
 
-static NTSTATUS rpc_host_generate_npa_info6_from_sock(
+static NTSTATUS rpc_host_generate_npa_info7_from_sock(
 	TALLOC_CTX *mem_ctx,
 	enum dcerpc_transport_t transport,
 	int sock,
 	const struct samba_sockaddr *peer_addr,
-	struct named_pipe_auth_req_info6 **pinfo6)
+	struct named_pipe_auth_req_info7 **pinfo7)
 {
-	struct named_pipe_auth_req_info6 *info6 = NULL;
+	struct named_pipe_auth_req_info7 *info7 = NULL;
 	struct samba_sockaddr local_addr = {
 		.sa_socklen = sizeof(struct sockaddr_storage),
 	};
@@ -760,26 +760,28 @@ static NTSTATUS rpc_host_generate_npa_info6_from_sock(
 	tsocket_address_to_name_fn = (transport == NCACN_IP_TCP) ?
 		tsocket_address_inet_addr_string : tsocket_address_unix_path;
 
-	info6 = talloc_zero(mem_ctx, struct named_pipe_auth_req_info6);
-	if (info6 == NULL) {
+	info7 = talloc_zero(mem_ctx, struct named_pipe_auth_req_info7);
+	if (info7 == NULL) {
 		goto fail;
 	}
-	info6->session_info = talloc_zero(
-		info6, struct auth_session_info_transport);
-	if (info6->session_info == NULL) {
+	info7->session_info =
+		talloc_zero(info7, struct auth_session_info_transport);
+	if (info7->session_info == NULL) {
 		goto fail;
 	}
 
 	status = make_session_info_anonymous(
-		info6->session_info, &info6->session_info->session_info);
+		info7->session_info,
+		&info7->session_info->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("make_session_info_anonymous failed: %s\n",
 			  nt_errstr(status));
 		goto fail;
 	}
 
-	ret = tsocket_address_bsd_from_samba_sockaddr(
-		info6, peer_addr, &taddr);
+	ret = tsocket_address_bsd_from_samba_sockaddr(info7,
+						      peer_addr,
+						      &taddr);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_DEBUG("tsocket_address_bsd_from_samba_sockaddr failed: "
@@ -787,22 +789,22 @@ static NTSTATUS rpc_host_generate_npa_info6_from_sock(
 			  strerror(errno));
 		goto fail;
 	}
-	remote_client_addr = tsocket_address_to_name_fn(taddr, info6);
+	remote_client_addr = tsocket_address_to_name_fn(taddr, info7);
 	if (remote_client_addr == NULL) {
 		DBG_DEBUG("tsocket_address_to_name_fn failed\n");
 		goto nomem;
 	}
 	TALLOC_FREE(taddr);
 
-	remote_client_name = talloc_strdup(info6, remote_client_addr);
+	remote_client_name = talloc_strdup(info7, remote_client_addr);
 	if (remote_client_name == NULL) {
 		DBG_DEBUG("talloc_strdup failed\n");
 		goto nomem;
 	}
 
 	if (transport == NCACN_IP_TCP) {
-		bool ok = samba_sockaddr_get_port(
-			peer_addr, &info6->remote_client_port);
+		bool ok = samba_sockaddr_get_port(peer_addr,
+						  &info7->remote_client_port);
 		if (!ok) {
 			DBG_DEBUG("samba_sockaddr_get_port failed\n");
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -817,8 +819,9 @@ static NTSTATUS rpc_host_generate_npa_info6_from_sock(
 		goto fail;
 	}
 
-	ret = tsocket_address_bsd_from_samba_sockaddr(
-		info6, &local_addr, &taddr);
+	ret = tsocket_address_bsd_from_samba_sockaddr(info7,
+						      &local_addr,
+						      &taddr);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_DEBUG("tsocket_address_bsd_from_samba_sockaddr failed: "
@@ -826,22 +829,22 @@ static NTSTATUS rpc_host_generate_npa_info6_from_sock(
 			  strerror(errno));
 		goto fail;
 	}
-	local_server_addr = tsocket_address_to_name_fn(taddr, info6);
+	local_server_addr = tsocket_address_to_name_fn(taddr, info7);
 	if (local_server_addr == NULL) {
 		DBG_DEBUG("tsocket_address_to_name_fn failed\n");
 		goto nomem;
 	}
 	TALLOC_FREE(taddr);
 
-	local_server_name = talloc_strdup(info6, local_server_addr);
+	local_server_name = talloc_strdup(info7, local_server_addr);
 	if (local_server_name == NULL) {
 		DBG_DEBUG("talloc_strdup failed\n");
 		goto nomem;
 	}
 
 	if (transport == NCACN_IP_TCP) {
-		bool ok = samba_sockaddr_get_port(
-			&local_addr, &info6->local_server_port);
+		bool ok = samba_sockaddr_get_port(&local_addr,
+						  &info7->local_server_port);
 		if (!ok) {
 			DBG_DEBUG("samba_sockaddr_get_port failed\n");
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -870,22 +873,24 @@ static NTSTATUS rpc_host_generate_npa_info6_from_sock(
 			TALLOC_FREE(remote_client_name);
 
 			ret = tsocket_address_unix_from_path(
-				info6, AS_SYSTEM_MAGIC_PATH_TOKEN, &taddr);
+				info7,
+				AS_SYSTEM_MAGIC_PATH_TOKEN,
+				&taddr);
 			if (ret == -1) {
 				DBG_DEBUG("tsocket_address_unix_from_path "
 					  "failed\n");
 				goto nomem;
 			}
 
-			remote_client_addr = tsocket_address_unix_path(
-				taddr, info6);
+			remote_client_addr =
+				tsocket_address_unix_path(taddr, info7);
 			if (remote_client_addr == NULL) {
 				DBG_DEBUG("tsocket_address_unix_path "
 					  "failed\n");
 				goto nomem;
 			}
-			remote_client_name = talloc_strdup(
-				info6, remote_client_addr);
+			remote_client_name =
+				talloc_strdup(info7, remote_client_addr);
 			if (remote_client_name == NULL) {
 				DBG_DEBUG("talloc_strdup failed\n");
 				goto nomem;
@@ -893,18 +898,18 @@ static NTSTATUS rpc_host_generate_npa_info6_from_sock(
 		}
 	}
 
-	info6->remote_client_addr = remote_client_addr;
-	info6->remote_client_name = remote_client_name;
-	info6->local_server_addr = local_server_addr;
-	info6->local_server_name = local_server_name;
+	info7->remote_client_addr = remote_client_addr;
+	info7->remote_client_name = remote_client_name;
+	info7->local_server_addr = local_server_addr;
+	info7->local_server_name = local_server_name;
 
-	*pinfo6 = info6;
+	*pinfo7 = info7;
 	return NT_STATUS_OK;
 
 nomem:
 	status = NT_STATUS_NO_MEMORY;
 fail:
-	TALLOC_FREE(info6);
+	TALLOC_FREE(info7);
 	return status;
 }
 
@@ -993,12 +998,12 @@ static struct tevent_req *rpc_host_bind_read_send(
 		return req;
 	}
 
-	status = rpc_host_generate_npa_info6_from_sock(
+	status = rpc_host_generate_npa_info7_from_sock(
 		state->client,
 		transport,
 		state->sock,
 		peer_addr,
-		&state->client->npa_info6);
+		&state->client->npa_info7);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
@@ -1030,27 +1035,26 @@ static void rpc_host_bind_read_got_npa(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct rpc_host_bind_read_state *state = tevent_req_data(
 		req, struct rpc_host_bind_read_state);
-	struct named_pipe_auth_req_info6 *info6 = NULL;
+	struct named_pipe_auth_req_info7 *info7 = NULL;
 	int ret, err;
 
-	ret = tstream_npa_accept_existing_recv(
-		subreq,
-		&err,
-		state,
-		&state->npa_stream,
-		&info6,
-		NULL,		/* transport */
-		NULL,		/* remote_client_addr */
-		NULL,		/* remote_client_name */
-		NULL,		/* local_server_addr */
-		NULL,		/* local_server_name */
-		NULL);		/* session_info */
+	ret = tstream_npa_accept_existing_recv(subreq,
+					       &err,
+					       state,
+					       &state->npa_stream,
+					       &info7,
+					       NULL,  /* transport */
+					       NULL,  /* remote_client_addr */
+					       NULL,  /* remote_client_name */
+					       NULL,  /* local_server_addr */
+					       NULL,  /* local_server_name */
+					       NULL); /* session_info */
 	if (ret == -1) {
 		tevent_req_error(req, err);
 		return;
 	}
 
-	state->client->npa_info6 = talloc_move(state->client, &info6);
+	state->client->npa_info7 = talloc_move(state->client, &info7);
 
 	subreq = dcerpc_read_ncacn_packet_send(
 		state, state->ev, state->npa_stream);
@@ -1324,7 +1328,7 @@ again:
 		}
 	} else {
 		struct auth_session_info_transport *session_info =
-			pending_client->client->npa_info6->session_info;
+			pending_client->client->npa_info7->session_info;
 		uint32_t flags = 0;
 		bool found;
 
