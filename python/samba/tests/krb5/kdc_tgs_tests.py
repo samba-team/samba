@@ -178,7 +178,6 @@ class KdcTgsBaseTests(KDCBaseTest):
                  generate_padata_fn=None,
                  sname=None,
                  srealm=None,
-                 use_fast=False,
                  till=None,
                  etypes=None,
                  expected_ticket_etype=None,
