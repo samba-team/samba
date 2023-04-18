@@ -20,6 +20,7 @@
 #include "librpc/gen_ndr/auth.h"
 #include "lib/crypto/gnutls_helpers.h"
 #include "libcli/security/dom_sid.h"
+#include "libcli/security/security_token.h"
 #include "libcli/smb/smb2_constants.h"
 
 #include "dcerpc_helper.h"
@@ -75,23 +76,17 @@ bool dcerpc_is_transport_encrypted(struct auth_session_info *session_info)
 	uint16_t dialect = 0;
 	uint16_t encrypt = 0;
 	uint16_t cipher = 0;
-	uint32_t i;
+	size_t num_smb3_sids;
 	bool ok;
 
-	for (i = 0; i < token->num_sids; i++) {
-		int cmp;
-
-		/* There is only one SMB3 SID allowed! */
-		cmp = dom_sid_compare_domain(&token->sids[i], &smb3_dom_sid);
-		if (cmp == 0) {
-			if (smb3_sid == NULL) {
-				smb3_sid = &token->sids[i];
-			} else {
-				DBG_ERR("ERROR: The SMB3 SID has been detected "
-					"multiple times\n");
-				return false;
-			}
-		}
+	num_smb3_sids = security_token_count_flag_sids(token,
+						       &smb3_dom_sid,
+						       3,
+						       &smb3_sid);
+	if (num_smb3_sids > 1) {
+		DBG_ERR("ERROR: The SMB3 SID has been detected %zu times\n",
+			num_smb3_sids);
+		return false;
 	}
 
 	if (smb3_sid == NULL) {
