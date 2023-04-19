@@ -1709,7 +1709,6 @@ class KDCBaseTest(RawKerberosTest):
                             assigned_policy,
                             assigned_silo):
         if account_type is self.AccountType.USER:
-            self.assertIsNone(spn)
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
             self.assertFalse(trusted_to_auth_for_delegation)
