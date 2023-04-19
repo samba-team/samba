@@ -46,7 +46,6 @@
 #define HTTP_MAX_HEADER_SIZE	0x1FFFF
 
 struct cli_credentials;
-struct loadparm_ctx;
 
 enum http_cmd_type {
 	HTTP_REQ_GET		= 1 << 0,
