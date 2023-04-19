@@ -29,6 +29,10 @@ incdir=$(dirname "$0")/../../../testprogs/blackbox
 
 failed=0
 
+TMPDIR=${PREFIX_ABS}/$(basename "${0}")
+mkdir -p "${TMPDIR}" || exit 1
+cd "${TMPDIR}" || exit 1
+
 #
 # Cleanup function.
 #
@@ -51,7 +55,7 @@ smbclient_get_expect_error()
 {
 	filename1="$1"
 	expected_error="$2"
-	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+	tmpfile=${TMPDIR}/smbclient_interactive_prompt_commands
 	cat >"$tmpfile" <<EOF
 get $filename1 got_file
 quit
@@ -88,7 +92,7 @@ smbclient_create_expect_error()
 {
 	filename="$1.$$"
 	expected_error="$2"
-	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+	tmpfile=${TMPDIR}/smbclient_interactive_prompt_commands
 	cat >"$tmpfile" <<EOF
 put $tmpfile $filename
 quit
@@ -244,5 +248,7 @@ testit "create_veto_file" test_create_veto_file || failed=$((failed + 1))
 testit "get_veto_file" test_get_veto_file || failed=$(("$failed" + 1))
 
 do_cleanup
+
+cd "${PREFIX_ABS}" && rm -rf ${TMPDIR}
 
 exit "$failed"
