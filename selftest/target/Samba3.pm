@@ -1974,6 +1974,10 @@ sub setup_fileserver
 	path = $veto_sharedir
 	delete veto files = yes
 
+[veto_files_nohidden]
+	path = $veto_sharedir
+	veto files = /.*/
+
 [veto_files]
 	path = $veto_sharedir
 	veto files = /veto_name*/
