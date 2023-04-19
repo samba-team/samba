@@ -381,13 +381,13 @@ again:
 
 	status = idmap_tdb_common_new_mapping(dom, &uid_map);
 	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("test_sid2unixid1: could not create uid map!\n"));
+		DEBUG(0, ("test_sid2unixid2: could not create uid map!\n"));
 		return false;
 	}
 
 	status = idmap_tdb_common_new_mapping(dom, &gid_map);
 	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("test_sid2unixid1: could not create gid map!\n"));
+		DEBUG(0, ("test_sid2unixid2: could not create gid map!\n"));
 		return false;
 	}
 
@@ -397,12 +397,12 @@ again:
 
 	status = idmap_tdb_common_sid_to_unixid(dom, &test_map);
 	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("test_sid2unixid1: sid2unixid failed for uid!\n"));
+		DEBUG(0, ("test_sid2unixid2: sid2unixid failed for uid!\n"));
 		return false;
 	}
 
 	if(test_map.xid.id!=uid_map.xid.id) {
-		DEBUG(0, ("test_sid2unixid1: sid2unixid returned wrong uid!\n"));
+		DEBUG(0, ("test_sid2unixid2: sid2unixid returned wrong uid!\n"));
 		return false;
 	}
 
@@ -410,12 +410,12 @@ again:
 
 	status = idmap_tdb_common_sid_to_unixid(dom, &test_map);
 	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("test_sid2unixid1: sid2unixid failed for gid!\n"));
+		DEBUG(0, ("test_sid2unixid2: sid2unixid failed for gid!\n"));
 		return false;
 	}
 
 	if(test_map.xid.id!=gid_map.xid.id) {
-		DEBUG(0, ("test_sid2unixid1: sid2unixid returned wrong gid!\n"));
+		DEBUG(0, ("test_sid2unixid2: sid2unixid returned wrong gid!\n"));
 		return false;
 	}
 
@@ -428,7 +428,7 @@ again:
 		goto again;
 	}
 
-	DEBUG(0, ("test_sid2unixid1: PASSED!\n"));
+	DEBUG(0, ("test_sid2unixid2: PASSED!\n"));
 
 	return true;
 }
