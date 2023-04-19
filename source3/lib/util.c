@@ -743,6 +743,11 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 		return False;
 	}
 
+	/* Do not reject path components if namelist is set to '.*' */
+	if (ISDOT(name) || ISDOTDOT(name)) {
+		return false;
+	}
+
 	DEBUG(8, ("is_in_path: %s\n", name));
 
 	/* Get the last component of the unix name. */
