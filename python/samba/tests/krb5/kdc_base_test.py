@@ -1627,7 +1627,7 @@ class KDCBaseTest(RawKerberosTest):
         opts_default = {
             'name_prefix': None,
             'name_suffix': None,
-            'add_dollar': True,
+            'add_dollar': None,
             'upn': None,
             'spn': None,
             'additional_details': None,
