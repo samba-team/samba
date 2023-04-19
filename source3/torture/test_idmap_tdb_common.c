@@ -977,7 +977,7 @@ out:
 	return retval;
 }
 
-#define CHECKRESULT(r) if(!r) {return r;}
+#define CHECKRESULT(r) if(!r) {TALLOC_FREE(stack); return r;}
 
 bool run_idmap_tdb_common_test(int dummy)
 {
@@ -989,11 +989,13 @@ bool run_idmap_tdb_common_test(int dummy)
 
 	dom = createdomain(memctx);
 	if (dom == NULL) {
+		TALLOC_FREE(stack);
 		return false;
 	}
 
 	status = dom->methods->init(dom);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(stack);
 		return false;
 	}
 
