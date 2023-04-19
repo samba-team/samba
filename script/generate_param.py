@@ -51,10 +51,10 @@ def iterate_all(path):
     """
 
     try:
-        p = open(path, 'r')
+        with open(path, 'r') as p:
+            out = p.read()
     except IOError as e:
         raise Exception("Error opening parameters file")
-    out = p.read()
 
     # parse the parameters xml file
     root = ET.fromstring(out)
