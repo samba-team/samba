@@ -21,7 +21,7 @@ import errno
 import tdb
 import pwd
 sys.path.insert(0, "bin/python")
-from samba import NTSTATUSError
+from samba import NTSTATUSError, WERRORError
 from configparser import ConfigParser
 from io import StringIO
 import traceback
@@ -582,6 +582,12 @@ def get_dc_hostname(creds, lp):
                                                           nbt.NBT_SERVER_DS))
     return cldap_ret.pdc_dns_name
 
+def get_dc_netbios_hostname(creds, lp):
+    net = Net(creds=creds, lp=lp)
+    cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
+                                                          nbt.NBT_SERVER_DS))
+    return cldap_ret.pdc_name
+
 
 ''' Fetch a list of GUIDs for applicable GPOs '''
 
@@ -753,9 +759,21 @@ def merge_nt_token(token_1, token_2):
 def site_dn_for_machine(samdb, dc_hostname, lp, creds, hostname):
     # [MS-GPOL] 3.2.5.1.4 Site Search
     config_context = samdb.get_config_basedn()
-    c = netlogon.netlogon("ncacn_np:%s[seal]" % dc_hostname, lp, creds)
-    site_name = c.netr_DsRGetSiteName(hostname)
-    return 'CN={},CN=Sites,{}'.format(site_name, config_context)
+    try:
+        c = netlogon.netlogon("ncacn_np:%s[seal]" % dc_hostname, lp, creds)
+        site_name = c.netr_DsRGetSiteName(hostname)
+        return 'CN={},CN=Sites,{}'.format(site_name, config_context)
+    except WERRORError:
+        # Fallback to the old method found in ads_site_dn_for_machine
+        nb_hostname = get_dc_netbios_hostname(creds, lp)
+        res = samdb.search(config_context, ldb.SCOPE_SUBTREE,
+                           "(cn=%s)" % nb_hostname, ['dn'])
+        if res.count != 1:
+            raise ldb.LdbError(ldb.ERR_NO_SUCH_OBJECT,
+                               'site_dn_for_machine: no result')
+        dn = res.msgs[0]['dn']
+        site_dn = dn.parent().parent()
+        return site_dn
 
 def get_gpo_list(dc_hostname, creds, lp, username):
     '''Get the full list of GROUP_POLICY_OBJECTs for a given username.
