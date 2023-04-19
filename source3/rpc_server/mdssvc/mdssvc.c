@@ -1126,7 +1126,7 @@ static bool slrpc_fetch_query_results(struct mds_ctx *mds_ctx,
 			goto error;
 		}
 		if (slq->state == SLQ_STATE_FULL) {
-			slq->state = SLQ_STATE_RESULTS;
+			slq->state = SLQ_STATE_RUNNING;
 			slq->mds_ctx->backend->search_cont(slq);
 		}
 		break;
