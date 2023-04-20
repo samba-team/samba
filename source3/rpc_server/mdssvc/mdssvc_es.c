@@ -800,7 +800,7 @@ static void mds_es_search_http_read_done(struct tevent_req *subreq)
 	}
 	DBG_DEBUG("Hits: %zu\n", hits);
 
-	for (i = 0; i < hits; i++) {
+	for (i = 0; i < hits && s->from + i < s->max; i++) {
 		const char *path = NULL;
 
 		match = json_array_get(matches, i);
