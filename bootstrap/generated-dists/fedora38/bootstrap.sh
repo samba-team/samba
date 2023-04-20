@@ -7,18 +7,12 @@
 
 set -xueo pipefail
 
-yum update -y
-yum install -y dnf-plugins-core
-yum install -y epel-release
+dnf update -y
 
-yum -v repolist all
-yum config-manager --set-enabled powertools -y
-
-yum update -y
-
-yum install -y \
+dnf install -y \
     --setopt=install_weak_deps=False \
-    "@Development Tools" \
+    @development-tools \
+    ShellCheck \
     acl \
     attr \
     autoconf \
@@ -55,6 +49,7 @@ yum install -y \
     krb5-devel \
     krb5-server \
     krb5-workstation \
+    lcov \
     libacl-devel \
     libarchive-devel \
     libattr-devel \
@@ -68,12 +63,14 @@ yum install -y \
     libtasn1-tools \
     libtirpc-devel \
     libunwind-devel \
+    liburing-devel \
     libuuid-devel \
     libxslt \
     lmdb \
     lmdb-devel \
     make \
     mingw64-gcc \
+    mold \
     ncurses-devel \
     openldap-devel \
     pam-devel \
@@ -82,8 +79,9 @@ yum install -y \
     perl-Archive-Tar \
     perl-ExtUtils-MakeMaker \
     perl-JSON \
+    perl-JSON-Parse \
     perl-Parse-Yapp \
-    perl-Test-Simple \
+    perl-Test-Base \
     perl-generators \
     perl-interpreter \
     pkgconfig \
@@ -92,10 +90,10 @@ yum install -y \
     psmisc \
     python3 \
     python3-cryptography \
+    python3-dateutil \
     python3-devel \
     python3-dns \
     python3-gpg \
-    python3-iso8601 \
     python3-libsemanage \
     python3-markdown \
     python3-policycoreutils \
@@ -110,6 +108,7 @@ yum install -y \
     rpcsvc-proto-devel \
     rsync \
     sed \
+    shfmt \
     sudo \
     systemd-devel \
     tar \
@@ -122,4 +121,6 @@ yum install -y \
     yum-utils \
     zlib-devel
 
-yum clean all
+dnf clean all
+
+update-crypto-policies --set DEFAULT:AD-SUPPORT

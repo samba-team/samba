@@ -135,6 +135,7 @@ PKGS = [
     ('', 'mold'),
     ('', 'ShellCheck'),
     ('', 'shfmt'),
+    ('', 'crypto-policies-scripts'),
 
     ('python3', 'python3'),
     ('python3-cryptography', 'python3-cryptography'), # for krb5 tests
@@ -268,6 +269,8 @@ dnf install -y \
     {pkgs}
 
 dnf clean all
+
+update-crypto-policies --set DEFAULT:AD-SUPPORT
 """
 
 DNF_BOOTSTRAP_MIT = r"""
@@ -508,21 +511,10 @@ RPM_DISTS = {
             'shfmt': '',
         }
     },
-    'fedora37': {
-        'docker_image': 'quay.io/fedora/fedora:37',
-        'vagrant_box': 'fedora/37-cloud-base',
+    'fedora38': {
+        'docker_image': 'quay.io/fedora/fedora:38',
+        'vagrant_box': 'fedora/38-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'perl-FindBin': '',
-            'python3-iso8601': 'python3-dateutil',
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
-        }
-    },
-    'f37mit120': {
-        'docker_image': 'quay.io/fedora/fedora:37',
-        'vagrant_box': 'fedora/37-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP_MIT,
         'replace': {
             'lsb-release': 'redhat-lsb',
             'perl-FindBin': '',

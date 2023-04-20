@@ -25,6 +25,7 @@ yum install -y \
     ccache \
     chrpath \
     compat-gnutls37-devel \
+    crypto-policies-scripts \
     cups-devel \
     curl \
     dbus-devel \

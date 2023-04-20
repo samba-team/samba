@@ -105,10 +105,7 @@ ubuntu2204:
 debian11:
   extends: .build_image_template
 
-fedora37:
-  extends: .build_image_template
-
-f37mit120:
+fedora38:
   extends: .build_image_template
 
 centos8s:

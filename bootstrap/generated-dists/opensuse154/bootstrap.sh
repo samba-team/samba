@@ -22,6 +22,7 @@ zypper --non-interactive install \
     bison \
     ccache \
     chrpath \
+    crypto-policies-scripts \
     cups-devel \
     curl \
     dbus-1-devel \
