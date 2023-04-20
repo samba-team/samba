@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    byte range lock tester - with local filesystem support
    Copyright (C) Andrew Tridgell 1999
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -108,7 +108,7 @@ static bool try_close(struct cli_state *c, int fstype, int fd)
 	return False;
 }
 
-static bool try_lock(struct cli_state *c, int fstype, 
+static bool try_lock(struct cli_state *c, int fstype,
 		     int fd, unsigned start, unsigned len,
 		     enum brl_type op)
 {
@@ -131,7 +131,7 @@ static bool try_lock(struct cli_state *c, int fstype,
 	return False;
 }
 
-static bool try_unlock(struct cli_state *c, int fstype, 
+static bool try_unlock(struct cli_state *c, int fstype,
 		       int fd, unsigned start, unsigned len)
 {
 	struct flock lock;
@@ -150,9 +150,9 @@ static bool try_unlock(struct cli_state *c, int fstype,
 	}
 
 	return False;
-}	
+}
 
-static void print_brl(struct file_id id, struct server_id pid, 
+static void print_brl(struct file_id id, struct server_id pid,
 		      enum brl_type lock_type,
 		      enum brl_flavour lock_flav,
 		      br_off start, br_off size,
@@ -160,7 +160,7 @@ static void print_brl(struct file_id id, struct server_id pid,
 {
 	struct file_id_buf idbuf;
 
-	printf("%6d   %s    %s  %.0f:%.0f(%.0f)\n", 
+	printf("%6d   %s    %s  %.0f:%.0f(%.0f)\n",
 	       (int)procid_to_pid(&pid),
 	       file_id_str_buf(id, &idbuf),
 	       lock_type==READ_LOCK?"R":"W",
@@ -168,7 +168,7 @@ static void print_brl(struct file_id id, struct server_id pid,
 
 }
 
-/***************************************************** 
+/*****************************************************
 return a connection to a server
 *******************************************************/
 static struct cli_state *connect_one(char *share)
@@ -192,7 +192,7 @@ static struct cli_state *connect_one(char *share)
 	share++;
 
 	server_n = server;
-	
+
 	if (!got_pass) {
 		char pwd[256] = {0};
 		int rc;
@@ -240,8 +240,8 @@ static struct cli_state *connect_one(char *share)
 }
 
 
-static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
-		      char *nfs[NSERVERS], 
+static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS],
+		      char *nfs[NSERVERS],
 		      int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		      char *share1, char *share2)
 {
@@ -271,7 +271,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 
 
 
-static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		     char *nfs[NSERVERS],
 		     int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		     struct record *rec)
@@ -288,9 +288,9 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	bool ret[NSERVERS];
 
 	if (r1 < READ_PCT) {
-		op = READ_LOCK; 
+		op = READ_LOCK;
 	} else {
-		op = WRITE_LOCK; 
+		op = WRITE_LOCK;
 	}
 
 	if (r2 < LOCK_PCT) {
@@ -302,7 +302,7 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 		if (showall || ret[0] != ret[1]) {
 			printf("lock   conn=%u fstype=%u f=%u range=%u:%u(%u) op=%s -> %u:%u\n",
-			       conn, fstype, f, 
+			       conn, fstype, f,
 			       start, start+len-1, len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret[0], ret[1]);
@@ -318,7 +318,7 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 		if (showall || (!hide_unlock_fails && (ret[0] != ret[1]))) {
 			printf("unlock conn=%u fstype=%u f=%u range=%u:%u(%u)       -> %u:%u\n",
-			       conn, fstype, f, 
+			       conn, fstype, f,
 			       start, start+len-1, len,
 			       ret[0], ret[1]);
 		}
@@ -344,11 +344,11 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	return True;
 }
 
-static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			char *nfs[NSERVERS],
 			int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES])
 {
-	int server, conn, f, fstype; 
+	int server, conn, f, fstype;
 
 	for (server=0;server<NSERVERS;server++)
 	for (fstype=0;fstype<NUMFSTYPES;fstype++)
@@ -364,11 +364,11 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	}
 }
 
-static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		       char *nfs[NSERVERS],
 		       int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES])
 {
-	int server, fstype, conn, f; 
+	int server, fstype, conn, f;
 
 	for (server=0;server<NSERVERS;server++)
 	for (fstype=0;fstype<NUMFSTYPES;fstype++)
@@ -385,7 +385,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 }
 
 
-static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		  char *nfs[NSERVERS],
 		  int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		  int n)
@@ -405,7 +405,7 @@ static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 
 
 /* each server has two connections open to it. Each connection has two file
-   descriptors open on the file - 8 file descriptors in total 
+   descriptors open on the file - 8 file descriptors in total
 
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
@@ -415,7 +415,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 	struct cli_state *cli[NSERVERS][NCONNECTIONS];
 	char *nfs[NSERVERS];
 	int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES];
-	int n, i, n1; 
+	int n, i, n1;
 
 	nfs[0] = nfspath1;
 	nfs[1] = nfspath2;
@@ -430,7 +430,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 		recorded[n].fstype = random() % NUMFSTYPES;
 		recorded[n].f = random() % NFILES;
 		recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
-		recorded[n].len = 1 + 
+		recorded[n].len = 1 +
 			random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 		recorded[n].start *= RANGE_MULTIPLE;
 		recorded[n].len *= RANGE_MULTIPLE;
@@ -496,7 +496,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 		       recorded[i].start,
 		       recorded[i].len,
 		       recorded[i].needed);
-	}	
+	}
 }
 
 
