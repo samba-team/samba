@@ -41,7 +41,7 @@ interface mdssvc
 		[in]        uint32          unkn1, /* always 0, status ? */
 		[in]        uint32          device_id,
 		[in]        uint32          unkn3, /* = mdssvc_open.unkn2 ? */
-		[in]        uint32          unkn4, /* always 0 ? */
+		[in]        uint32          next_fragment, /* Set to 1 to request next fragment*/
 		[in]        uint32          flags, /* always 0x6b000001 ? */
 		[in]        mdssvc_blob     request_blob,
 		[in]        uint32          unkn5, /* always 0 ? */
