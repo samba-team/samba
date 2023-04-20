@@ -459,8 +459,11 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 
 		if (searched_site == NULL ||
 		    strcmp(searched_site, site_name) != 0) {
-			DEBUG(2,(__location__ ": Site: %s %s\n",
-				searched_site, site_name));
+			DEBUG(2,
+			      (__location__ ": Site: %s %s\n",
+			       searched_site != NULL ? searched_site
+						     : "UNKNOWN",
+			       site_name));
 
 			/*
 			 * Do all the site but the one of the client
