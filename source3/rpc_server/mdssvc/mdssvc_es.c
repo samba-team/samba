@@ -398,7 +398,7 @@ static bool mds_es_search(struct sl_query *slq)
 		.ev = mds_es_ctx->mdssvc_es_ctx->mdssvc_ctx->ev_ctx,
 		.mds_es_ctx = mds_es_ctx,
 		.slq = slq,
-		.size = MAX_SL_RESULTS,
+		.size = SL_PAGESIZE,
 	};
 
 	/* 0 would mean no limit */
@@ -502,7 +502,7 @@ static void mds_es_search_done(struct tevent_req *subreq)
 		goto trigger;
 	}
 
-	if (slq->query_results->num_results >= MAX_SL_RESULTS) {
+	if (slq->query_results->num_results >= SL_PAGESIZE) {
 		slq->state = SLQ_STATE_FULL;
 		goto trigger;
 	}
@@ -693,7 +693,7 @@ static void mds_es_search_http_send_done(struct tevent_req *subreq)
 	subreq = http_read_response_send(state,
 					 state->ev,
 					 state->s->mds_es_ctx->http_conn,
-					 MAX_SL_RESULTS * 8192);
+					 SL_PAGESIZE * 8192);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
