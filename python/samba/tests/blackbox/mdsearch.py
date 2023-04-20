@@ -100,7 +100,7 @@ class MdfindBlackboxTests(BlackboxTestCase):
         config = os.environ["SMB_CONF_PATH"]
 
         json_in = r'''{
-          "from": 0, "size": 100, "_source": ["path.real"],
+          "from": 0, "size": 50, "_source": ["path.real"],
           "query": {
             "query_string": {
               "query": "(samba*) AND path.real.fulltext:\"%BASEPATH%\""

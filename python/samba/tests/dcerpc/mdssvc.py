@@ -125,7 +125,7 @@ class MdssvcTests(RpcInterfaceTestCase):
 
     def test_mdscli_search(self):
         exp_json_query = r'''{
-          "from": 0, "size": 100, "_source": ["path.real"],
+          "from": 0, "size": 50, "_source": ["path.real"],
           "query": {
             "query_string": {
               "query": "(samba*) AND path.real.fulltext:\"%BASEPATH%\""
@@ -157,7 +157,7 @@ class MdssvcTests(RpcInterfaceTestCase):
             r'kMDItemFSName=="x\\x"'
         )
         exp_json_query = r'''{
-          "from": 0, "size": 100, "_source": ["path.real"],
+          "from": 0, "size": 50, "_source": ["path.real"],
           "query": {
             "query_string": {
               "query": "(file.filename:x\\+x OR file.filename:x\\*x OR file.filename:x=x OR file.filename:x'x OR file.filename:x\\?x OR file.filename:x\\ x OR file.filename:x\\(x OR file.filename:x\\\"x OR file.filename:x\\\\x) AND path.real.fulltext:\"%BASEPATH%\""
