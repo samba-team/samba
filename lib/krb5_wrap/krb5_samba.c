@@ -1752,7 +1752,8 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		if (keep_old_kvno && ((kt_entry.vno & 0xff) == (old_kvno & 0xff))) {
 			DEBUG(5, (__location__ ": Saving previous (kvno %d) "
 				  "entry for principal: %s.\n",
-				  old_kvno, princ_s));
+				  old_kvno,
+				  princ_s != NULL ? princ_s : "UNKNOWN"));
 			continue;
 		}
 
@@ -1762,13 +1763,15 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		{
 			DEBUG(5, (__location__ ": Saving entry with kvno [%d] "
 				  "enctype [%d] for principal: %s.\n",
-				  kvno, kt_entry_enctype, princ_s));
+				  kvno, kt_entry_enctype,
+				  princ_s != NULL ? princ_s : "UNKNOWN"));
 			continue;
 		}
 
 		DEBUG(5, (__location__ ": Found old entry for principal: %s "
 			  "(kvno %d) - trying to remove it.\n",
-			  princ_s, kt_entry.vno));
+			  princ_s != NULL ? princ_s : "UNKNOWN",
+			  kt_entry.vno));
 
 		ret = krb5_kt_end_seq_get(context, keytab, &cursor);
 		ZERO_STRUCT(cursor);
@@ -1785,7 +1788,9 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		}
 
 		DEBUG(5, (__location__ ": removed old entry for principal: "
-			  "%s (kvno %d).\n", princ_s, kt_entry.vno));
+			  "%s (kvno %d).\n",
+			  princ_s != NULL ? princ_s : "UNKNOWN",
+			  kt_entry.vno));
 
 		ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 		if (ret) {
