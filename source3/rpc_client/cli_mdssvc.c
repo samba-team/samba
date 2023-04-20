@@ -608,6 +608,7 @@ static void mdscli_get_results_cmd_done(struct tevent_req *subreq)
 	size_t oldsize, newsize;
 	DALLOC_CTX *d = NULL;
 	uint64_t *uint64p = NULL;
+	bool search_in_progress = false;
 	sl_cnids_t *cnids = NULL;
 	size_t ncnids;
 	size_t i;
@@ -696,9 +697,8 @@ static void mdscli_get_results_cmd_done(struct tevent_req *subreq)
 	}
 
 	if (*uint64p == 35) {
-		DBG_DEBUG("search done: %s", dalloc_dump(d, 0));
-		tevent_req_done(req);
-		return;
+		DBG_DEBUG("Search in progress\n");
+		search_in_progress = true;
 	}
 
 	cnids = dalloc_get(d, "DALLOC_CTX", 0, "sl_cnids_t", 1);
@@ -709,7 +709,7 @@ static void mdscli_get_results_cmd_done(struct tevent_req *subreq)
 	}
 
 	ncnids = dalloc_size(cnids->ca_cnids);
-	if (ncnids == 0) {
+	if (ncnids == 0 && !search_in_progress) {
 		tevent_req_nterror(req, NT_STATUS_NO_MORE_MATCHES);
 		return;
 	}

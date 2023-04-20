@@ -197,12 +197,20 @@ int main(int argc, char **argv)
 			}
 			break;
 		}
+
+		ncnids = talloc_array_length(cnids);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PENDING) &&
+		    ncnids == 0)
+		{
+			sleep(1);
+			continue;
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("mdscli_get_results failed\n");
 			goto fail_free_messaging;
 		}
 
-		ncnids = talloc_array_length(cnids);
 		if (ncnids == 0) {
 			break;
 		}

@@ -88,6 +88,7 @@ static PyObject *search_get_results(PyObject *self,
 	 *   py_dcerpc_interface_init_helper()
 	 *   -> dcerpc_pipe_connect()
 	 */
+again:
 	req = mdscli_get_results_send(frame,
 				      pipe->ev,
 				      search);
@@ -102,13 +103,17 @@ static PyObject *search_get_results(PyObject *self,
 	}
 
 	status = mdscli_get_results_recv(req, frame, &cnids);
+	TALLOC_FREE(req);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PENDING)) {
+		sleep(1);
+		goto again;
+	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_MATCHES))
 	{
 		PyErr_SetNTSTATUS(status);
 		goto out;
 	}
-	TALLOC_FREE(req);
 
 	result = Py_BuildValue("[]");
 
