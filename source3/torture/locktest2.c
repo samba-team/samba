@@ -293,6 +293,10 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		op = WRITE_LOCK;
 	}
 
+	if (fstype >= NUMFSTYPES) {
+		return false;
+	}
+
 	if (r2 < LOCK_PCT) {
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
