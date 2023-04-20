@@ -800,9 +800,11 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 	}
 
 	epoll_ev->panic_state = &panic_triggered;
-	epoll_check_reopen(epoll_ev);
-	if (panic_triggered) {
-		return tevent_common_fd_destructor(fde);
+	if (epoll_ev->pid != tevent_cached_getpid()) {
+		epoll_check_reopen(epoll_ev);
+		if (panic_triggered) {
+			return tevent_common_fd_destructor(fde);
+		}
 	}
 
 	if (mpx_fde != NULL) {
@@ -847,12 +849,14 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 
 	talloc_set_destructor(fde, epoll_event_fd_destructor);
 
-	epoll_ev->panic_state = &panic_triggered;
-	epoll_check_reopen(epoll_ev);
-	if (panic_triggered) {
-		return fde;
+	if (epoll_ev->pid != tevent_cached_getpid()) {
+		epoll_ev->panic_state = &panic_triggered;
+		epoll_check_reopen(epoll_ev);
+		if (panic_triggered) {
+			return fde;
+		}
+		epoll_ev->panic_state = NULL;
 	}
-	epoll_ev->panic_state = NULL;
 
 	epoll_update_event(epoll_ev, fde);
 
@@ -876,12 +880,14 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 
 	fde->flags = flags;
 
-	epoll_ev->panic_state = &panic_triggered;
-	epoll_check_reopen(epoll_ev);
-	if (panic_triggered) {
-		return;
+	if (epoll_ev->pid != tevent_cached_getpid()) {
+		epoll_ev->panic_state = &panic_triggered;
+		epoll_check_reopen(epoll_ev);
+		if (panic_triggered) {
+			return;
+		}
+		epoll_ev->panic_state = NULL;
 	}
-	epoll_ev->panic_state = NULL;
 
 	epoll_update_event(epoll_ev, fde);
 }
@@ -916,15 +922,17 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 		return 0;
 	}
 
-	epoll_ev->panic_state = &panic_triggered;
-	epoll_ev->panic_force_replay = true;
-	epoll_check_reopen(epoll_ev);
-	if (panic_triggered) {
-		errno = EINVAL;
-		return -1;
+	if (epoll_ev->pid != tevent_cached_getpid()) {
+		epoll_ev->panic_state = &panic_triggered;
+		epoll_ev->panic_force_replay = true;
+		epoll_check_reopen(epoll_ev);
+		if (panic_triggered) {
+			errno = EINVAL;
+			return -1;
+		}
+		epoll_ev->panic_force_replay = false;
+		epoll_ev->panic_state = NULL;
 	}
-	epoll_ev->panic_force_replay = false;
-	epoll_ev->panic_state = NULL;
 
 	return epoll_event_loop(epoll_ev, &tval);
 }
