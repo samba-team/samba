@@ -35,7 +35,7 @@
  * so we can only store so many elements there anyway.
  */
 #define MAX_SLQ_TOC 1024*64
-#define MAX_SLQ_TOCIDX 1024
+#define MAX_SLQ_TOCIDX 1024*8
 #define MAX_SLQ_COUNT 4096
 #define MAX_SL_STRLEN 1024
 
