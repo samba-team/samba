@@ -1079,6 +1079,7 @@ planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.timecmd")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.join")
+planpythontestsuite("ad_dc_default:local", "samba.tests.ldap_whoami")
 planpythontestsuite("ad_member_s3_join", "samba.tests.samba_tool.join_member")
 planpythontestsuite("ad_dc_default",
                     "samba.tests.samba_tool.join_lmdb_size")
