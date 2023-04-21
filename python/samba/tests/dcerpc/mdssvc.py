@@ -166,7 +166,7 @@ class MdssvcTests(RpcInterfaceTestCase):
         }'''
         fake_json_response = r'''{
           "hits" : {
-            "total" : {"value" : 2},
+            "total" : {"value" : 9},
             "hits" : [
               {"_source" : {"path" : {"real" : "%BASEPATH%/x+x"}}},
               {"_source" : {"path" : {"real" : "%BASEPATH%/x*x"}}},
