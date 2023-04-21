@@ -145,7 +145,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	/* Get the revision number. */
 	p = sidstr + 2;
 
-	if (!isdigit(*p)) {
+	if (!isdigit((unsigned char)*p)) {
 		goto format_error;
 	}
 
@@ -156,7 +156,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	sidout->sid_rev_num = (uint8_t) conv;
 	q++;
 
-	if (!isdigit(*q)) {
+	if (!isdigit((unsigned char)*q)) {
 		goto format_error;
 	}
 	while (q[0] == '0' && isdigit((unsigned char)q[1])) {
@@ -199,7 +199,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	q++;
 
 	while (true) {
-		if (!isdigit(*q)) {
+		if (!isdigit((unsigned char)*q)) {
 			goto format_error;
 		}
 		while (q[0] == '0' && isdigit((unsigned char)q[1])) {
