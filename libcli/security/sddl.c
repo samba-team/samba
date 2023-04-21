@@ -69,18 +69,14 @@ static bool sddl_map_flags(const struct flag_map *map, const char *str,
 		*plen = 0;
 	}
 	*pflags = 0;
-	while (str[0] && isupper(str[0])) {
+	while (str[0] != '\0' && isupper((unsigned char)str[0])) {
 		size_t len;
 		uint32_t flags;
 		bool found;
 
 		found = sddl_map_flag(map, str, &len, &flags);
 		if (!found) {
-                        if (unknown_flag_is_part_of_next_thing) {
-                                return true;
-                        }
-			DEBUG(1, ("Unknown flag - %s in %s\n", str, str0));
-			return false;
+			break;
 		}
 
 		*pflags |= flags;
@@ -89,7 +85,19 @@ static bool sddl_map_flags(const struct flag_map *map, const char *str,
 		}
 		str += len;
 	}
-	return true;
+	/*
+	 * For ACL flags, unknown_flag_is_part_of_next_thing is set,
+	 * and we expect some more stuff that isn't flags.
+	 *
+         * For ACE flags, unknown_flag_is_part_of_next_thing is unset,
+         * and the flags have been tokenised into their own little
+         * string. We don't expect anything here, even whitespace.
+         */
+        if (*str == '\0' || unknown_flag_is_part_of_next_thing) {
+                return true;
+        }
+	DBG_WARNING("Unknown flag - '%s' in '%s'\n", str, str0);
+        return false;
 }
 
 
