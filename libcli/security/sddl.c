@@ -369,7 +369,11 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 			 * and the shortest 64-bit wrapping string is
 			 * 19 (for "0x1" + 16 zeros).
 			 */
-			DBG_WARNING("Bad numeric flag value in %s\n", str0);
+			DBG_WARNING("Bad numeric flag value in '%s'\n", str0);
+			return false;
+		}
+		if (*end != '\0') {
+			DBG_WARNING("Bad characters in '%s'\n", str0);
 			return false;
 		}
 		*pmask = numeric_mask;
@@ -393,7 +397,10 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 		mask |= flags;
 		str += len;
 	}
-
+        if (*str != '\0') {
+		DBG_WARNING("Bad characters in '%s'\n", str0);
+                return false;
+        }
 	*pmask = mask;
 	return true;
 }
