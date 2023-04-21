@@ -64,7 +64,8 @@ class SddlDecodeEncodeBase(TestCase):
 
     def _test_sddl_should_fail_with_args(self, s, canonical):
         with self.assertRaises(ValueError):
-            security.descriptor.from_sddl(s, self.domain_sid)
+            sd = security.descriptor.from_sddl(s, self.domain_sid)
+            print(sd.as_sddl(self.domain_sid))
 
     def _test_write_test_strings(self):
         """The file libcli/security/tests/windows/windows-sddl-tests.c, if
