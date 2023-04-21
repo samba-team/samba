@@ -3204,31 +3204,12 @@ class KDCBaseTest(RawKerberosTest):
         username, domain = creds.get_ntlm_username_domain()
         workstation = 'Workstation'
 
-        target_info = ntlmssp.AV_PAIR_LIST()
-        target_info.count = 3
-        computername = ntlmssp.AV_PAIR()
-        computername.AvId = ntlmssp.MsvAvNbComputerName
-        computername.Value = workstation
-
-        domainname = ntlmssp.AV_PAIR()
-        domainname.AvId = ntlmssp.MsvAvNbDomainName
-        domainname.Value = domain
-
-        eol = ntlmssp.AV_PAIR()
-        eol.AvId = ntlmssp.MsvAvEOL
-        target_info.pair = [domainname, computername, eol]
-
-        target_info_blob = ndr_pack(target_info)
-
-        challenge = b'abcdefgh'
-        response = creds.get_ntlm_response(flags=0,
-                                           challenge=challenge,
-                                           target_info=target_info_blob)
-
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'secure_channel_type': misc.SEC_CHAN_WKSTA})
 
+        # Calling this initializes netlogon_creds on mach_creds, as is required
+        # before calling mach_creds.encrypt_samr_password().
         conn = netlogon.netlogon(f'ncacn_ip_tcp:{server}[schannel,seal]',
                                  self.get_lp(),
                                  mach_creds)
@@ -3247,6 +3228,28 @@ class KDCBaseTest(RawKerberosTest):
             logon.ntpassword = nt_pass
 
         elif logon_type == netlogon.NetlogonNetworkInformation:
+            computername = ntlmssp.AV_PAIR()
+            computername.AvId = ntlmssp.MsvAvNbComputerName
+            computername.Value = workstation
+
+            domainname = ntlmssp.AV_PAIR()
+            domainname.AvId = ntlmssp.MsvAvNbDomainName
+            domainname.Value = domain
+
+            eol = ntlmssp.AV_PAIR()
+            eol.AvId = ntlmssp.MsvAvEOL
+
+            target_info = ntlmssp.AV_PAIR_LIST()
+            target_info.count = 3
+            target_info.pair = [domainname, computername, eol]
+
+            target_info_blob = ndr_pack(target_info)
+
+            challenge = b'abcdefgh'
+            response = creds.get_ntlm_response(flags=0,
+                                               challenge=challenge,
+                                               target_info=target_info_blob)
+
             logon = netlogon.netr_NetworkInfo()
 
             logon.challenge = list(challenge)
