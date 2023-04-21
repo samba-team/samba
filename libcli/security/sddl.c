@@ -486,7 +486,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	}
 	ace->trustee = *sid;
 	talloc_free(sid);
-
+	if (*s != '\0') {
+		return false;
+	}
 	return true;
 }
 
