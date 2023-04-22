@@ -572,6 +572,12 @@ class SddlNonCanonical(SddlDecodeEncodeBase):
           ''.join(f"(A;;0xabc{i:03};;;S-1-5-21-11111111-22222222-33333333-{i})"
                   for i in range(101, 601)))
          ),
+
+        # Windows allows a space in the middle of access flags
+        ("D:AI(A;CI;RP LCLORC;;;AU)", "D:AI(A;CI;LCRPLORC;;;AU)"),
+        ("D:AI(A;CI;RP LCLO  RC;;;AU)", "D:AI(A;CI;LCRPLORC;;;AU)"),
+        # space before string flags is ignored.
+        ("D:(A;; GA;;;LG)", "D:(A;;GA;;;LG)"),
     ]
 
 
@@ -650,6 +656,25 @@ class SddlShouldFail(SddlDecodeEncodeBase):
         "D:(A;;GA;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;;WD)",
         "D:(A;;GA;; f30e3bbf-9ff0-11d1-b603-0000f80367c1;WD)",
         "D:(A;;GA;;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;WD)",
+
+        # space splits a flag in half.
+        "D:AI(A;CI;RP LCLOR C;;;AU)",
+        # tabs in flags
+        "D:AI(A;CI;RP LC\tLORC;;;AU)",
+        "D:AI(A;CI;RP LC\t LORC;;;AU)",
+
+        # incomplete SIDs
+        "O:S",
+        "O:S-",
+        "O:S-1",
+        "O:S-10",
+        "O:S-0",
+        "O:S-1-",
+        "O:S-0x1",
+        "O:S-0x1-",
+
+        "O:",
+        "O:XX",
     ]
 
 
@@ -679,8 +704,8 @@ class SddlWindowsIsLessFussy(SddlDecodeEncodeBase):
         # whitespace is ignored, repaired on return
         ("D:(A;;GA;;; LG)", "D:(A;;GA;;;LG)"),
         ("D: (A;;GA;;;LG)", "D:(A;;GA;;;LG)"),
-        # whitespace before string flags is ignored.
-        ("D:(A;; GA;;;LG)", "D:(A;;GA;;;LG)"),
+        # whitespace before ACL string flags is ignored.
+        ("D: AI(A;;GA;;;LG)", "D:AI(A;;GA;;;LG)"),
         # wrong case on type is ignored, fixed
         ("D:(a;;GA;;;LG)", "D:(A;;GA;;;LG)"),
         ("D:(A;;GA;;;lg)", "D:(A;;GA;;;LG)"),
@@ -697,6 +722,9 @@ class SddlWindowsIsLessFussy(SddlDecodeEncodeBase):
 
         # whitespace in absent ace flags
         ("D:(A; ;GA;;;LG)","D:(A;;GA;;;LG)"),
+
+        # space after ACL flags
+        ("D:AI (A;;GA;;;LG)", "D:AI(A;;GA;;;LG)"),
 
         # and more whitespace.
         ("D:(A;;GA;;; WD)", "D:(A;;GA;;;WD)"),
