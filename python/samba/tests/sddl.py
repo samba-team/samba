@@ -114,7 +114,7 @@ class SddlDecodeEncode(TestCase):
 
          (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;BO)"
            "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)"
-           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+           "(A;;WPRPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
            "(A;;RPCRLCLORCSDDT;;;CO)"
            "(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)"
            "(A;;RPLCLORC;;;AU)"
@@ -156,9 +156,9 @@ class SddlDecodeEncode(TestCase):
          ("D:(A;;RPLCLORC;;;BO)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)",
           "D:(A;;LCRPLORC;;;BO)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)(A;;LCRPLORC;;;AU)"),
 
-        (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;BO)"
+        (("D:(A;;WPCRCCDCLCLORCWOWDSDDTSWRP;;;BO)"
           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)"
-          "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+          "(A;;RPWPCRCCDCLCLORCWOWDSDSWDT;;;SY)"
           "(A;;RPCRLCLORCSDDT;;;CO)"
           "(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)"
           "(A;;RPLCLORC;;;AU)"
@@ -204,9 +204,9 @@ class SddlDecodeEncode(TestCase):
           "(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)"
           "(A;;LCRPLORC;;;AU)")),
 
-        (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;BO)"
-          "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)"
-          "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+        (("D:(A;;;;;BO)"
+          "(A;;;;;AO)"
+          "(A;;;;;SY)"
           "(A;;RPCRLCLORCSDDT;;;CO)"
           "(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)"
           "(A;;RPLCLORC;;;AU)"
@@ -224,9 +224,9 @@ class SddlDecodeEncode(TestCase):
           "(OA;;WP;bf967950-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)"
           "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)"
           "(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;SU)"),
-         ("D:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BO)"
-          "(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;AO)"
-          "(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)"
+         ("D:(A;;;;;BO)"
+          "(A;;;;;AO)"
+          "(A;;;;;SY)"
           "(A;;LCRPDTLOCRSDRC;;;CO)"
           "(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)"
           "(A;;LCRPLORC;;;AU)"
@@ -245,12 +245,8 @@ class SddlDecodeEncode(TestCase):
           "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)"
           "(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;SU)")),
 
-        (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;BO)"
-          "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
-          "(A;;RPLCLORC;;;AU)",
-          "D:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BO)"
-          "(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)"
-          "(A;;LCRPLORC;;;AU)")),
+        ("D:(A;;RPLCLORC;;;AU)",
+         "D:(A;;LCRPLORC;;;AU)"),
 
         (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;BO)"
           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
@@ -283,7 +279,7 @@ class SddlDecodeEncode(TestCase):
           "(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)"
           "(A;;LCRPLORC;;;AU)S:(AU;SA;WPCR;;;WD)")),
 
-        (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;BO)"
+        (("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSWRP;;;BO)"
           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)"
           "(A;;RPLCLORC;;;PS)"
@@ -395,8 +391,12 @@ class SddlDecodeEncode(TestCase):
          "D:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;LG)"),
         ("D:(A;;0xe00f0000;;;LG)",
          "D:(A;;SDRCWDWOGXGWGR;;;LG)"),
-        ("D:(A;;01234567;;;LG)",
-         "D:(A;;0x53977;;;LG)"),
+
+        # ACL flags
+        ("D:ARPAI(A;;GA;;;SY)", "D:PARAI(A;;GA;;;SY)"),
+        ("D:AIPAR(A;;GA;;;SY)", "D:PARAI(A;;GA;;;SY)"),
+        ("D:PARP(A;;GA;;;SY)", "D:PAR(A;;GA;;;SY)"),
+        ("D:PPPPPPPPPPPP(A;;GA;;;SY)", "D:P(A;;GA;;;SY)"),
 
         # hex vs decimal
         ('D:(A;;CC;;;S-1-21474836480-32-579)',
@@ -405,8 +405,8 @@ class SddlDecodeEncode(TestCase):
          "D:(A;;GA;;;S-1-0x12A05F200-30-40)"),
         ("D:(A;;GA;;;S-1-0x2-3-4)",
          "D:(A;;GA;;;S-1-2-3-4)"),
-        ("D:(A;;GA;;;S-1-0x2-3-4)",
-         "D:(A;;GA;;;S-1-2-3-4)"),
+        ("D:(A;;GA;;;S-1-0x20-3-4)",
+         "D:(A;;GA;;;S-1-32-3-4)"),
         ("D:(A;;GA;;;S-1-3-0x00000002-3-4)",
          "D:(A;;GA;;;S-1-3-2-3-4)"),
         ("D:(A;;GA;;;S-1-3-0xffffffff-3-4)",
@@ -415,11 +415,17 @@ class SddlDecodeEncode(TestCase):
          "D:(A;;GA;;;S-1-5-21-1-2-3-513)"),
         ("D:(A;;GA;;;S-1-5-21-2447931902-1787058256-3961074038-0x4b1)",
          "D:(A;;GA;;;S-1-5-21-2447931902-1787058256-3961074038-1201)"),
-        ("D:(A;;GA;;;S-1-5-21-0x1-0x2-0x3-513)",
-         "D:(A;;GA;;;S-1-5-21-1-2-3-513)"),
-        ]
+
+        # ambiguous 'D', looks like part of the SID but isn't
+        ("O:S-1-2-0x200D:", "O:S-1-2-512D:"),
+        ("O:S-1-2-0x2D:(A;;GA;;;LG)", "O:S-1-2-2D:(A;;GA;;;LG)"),
+    ]
 
     strings_canonical = [
+        # derived from GPO acl in provision, "-512D" could be misinterpreted
+        ("O:S-1-5-21-1225132014-296224811-2507946102-512"
+         "G:S-1-5-21-1225132014-296224811-2507946102-512"
+         "D:P"),
         "D:(A;;GA;;;SY)",
         "D:(A;;GA;;;RU)",
         "D:(A;;GA;;;LG)",
@@ -435,6 +441,9 @@ class SddlDecodeEncode(TestCase):
         "D:(A;;GA;;;S-1-3-4294967295-3-4)",
         "D:(A;;GA;;;S-1-5-21-1-2-3-513)",
         "D:(A;;GA;;;S-1-5-21-2447931902-1787058256-3961074038-1201)",
+        "O:S-1-2-512D:",
+        "D:PARAI(A;;GA;;;SY)",
+        "D:P(A;;GA;;;LG)(A;;GX;;;AA)",
     ]
 
     def _test_sddl_pair(self, sid, s, canonical):
