@@ -381,11 +381,23 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 	}
 	/* It's not a positive number, so we'll look for flags */
 
-	while ((str[0] != '\0') && isupper(str[0])) {
+	while ((str[0] != '\0') &&
+	       (isupper((unsigned char)str[0]) || str[0] == ' ')) {
 		uint32_t flags = 0;
 		size_t len = 0;
 		bool found;
-
+		while (str[0] == ' ') {
+			/*
+			 * Following Windows we accept spaces between flags
+			 * but not after flags. Not tabs, though, never tabs.
+			 */
+			str++;
+			if (str[0] == '\0') {
+				DBG_WARNING("trailing whitespace in flags "
+					    "- '%s'\n", str0);
+				return false;
+			}
+		}
 		found = sddl_map_flag(
 			ace_access_mask, str, &len, &flags);
 		found |= sddl_map_flag(
