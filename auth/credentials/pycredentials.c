@@ -1033,6 +1033,11 @@ static PyObject *py_creds_encrypt_samr_password(PyObject *self,
 		return NULL;
 	}
 
+	if (creds->netlogon_creds == NULL) {
+		PyErr_Format(PyExc_ValueError, "NetLogon credentials not set");
+		return NULL;
+	}
+
 	if (!PyArg_ParseTuple(args, "O", &py_cp)) {
 		return NULL;
 	}
