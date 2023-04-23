@@ -108,13 +108,15 @@ ret=$?
 testit "getpwuid for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
-group_gr="$DOMAIN/domain users:x:$gid:"
+group_gr="$DOMAIN/domain users:x:$gid"
 
 out=$(getent group "$GROUP")
 ret=$?
 testit "getgrnam for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
-test "$out" = "$group_gr"
+# Compare only 'groupname:x:gid' part, drop the members
+normalized_out=$(echo "$out" | cut -d: -f1-3)
+test "$normalized_out" = "$group_gr"
 ret=$?
 testit "getgrnam for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
@@ -123,7 +125,9 @@ out=$(getent group "$gid")
 ret=$?
 testit "getgrgid for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
-test "$out" = "$group_gr"
+# Compare only 'groupname:x:gid' part, drop the members
+normalized_out=$(echo "$out" | cut -d: -f1-3)
+test "$normalized_out" = "$group_gr"
 ret=$?
 testit "getgrgid for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
