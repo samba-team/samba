@@ -492,8 +492,7 @@ static void py_dcerpc_ndr_pointer_dealloc(PyObject* self)
 	struct py_dcerpc_ndr_pointer *obj =
 		pytalloc_get_type(self, struct py_dcerpc_ndr_pointer);
 
-	Py_DECREF(obj->value);
-	obj->value = NULL;
+	Py_CLEAR(obj->value);
 
 	self->ob_type->tp_free(self);
 }
@@ -512,7 +511,7 @@ static int py_dcerpc_ndr_pointer_set_value(PyObject *self, PyObject *value, void
 	struct py_dcerpc_ndr_pointer *obj =
 		pytalloc_get_type(self, struct py_dcerpc_ndr_pointer);
 
-	Py_DECREF(obj->value);
+	Py_CLEAR(obj->value);
 	obj->value = value;
 	Py_INCREF(obj->value);
 	return 0;

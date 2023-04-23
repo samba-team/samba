@@ -1668,10 +1668,7 @@ struct py_cli_notify_state {
 static void py_cli_notify_state_dealloc(struct py_cli_notify_state *self)
 {
 	TALLOC_FREE(self->req);
-	if (self->py_cli_state != NULL) {
-		Py_DECREF(self->py_cli_state);
-		self->py_cli_state = NULL;
-	}
+	Py_CLEAR(self->py_cli_state);
 	Py_TYPE(self)->tp_free(self);
 }
 
@@ -1823,8 +1820,7 @@ static PyObject *py_cli_notify_get_changes(struct py_cli_notify_state *self,
 
 	ok = py_tevent_req_wait_exc(py_cli_state, req);
 	self->req = NULL;
-	Py_DECREF(self->py_cli_state);
-	self->py_cli_state = NULL;
+	Py_CLEAR(self->py_cli_state);
 	if (!ok) {
 		return NULL;
 	}

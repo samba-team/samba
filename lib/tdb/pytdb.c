@@ -450,7 +450,7 @@ static PyObject *tdb_iter_next(PyTdbIteratorObject *self)
 
 static void tdb_iter_dealloc(PyTdbIteratorObject *self)
 {
-	Py_DECREF(self->iteratee);
+	Py_CLEAR(self->iteratee);
 	PyObject_Del(self);
 }
 

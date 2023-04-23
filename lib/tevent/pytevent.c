@@ -241,7 +241,7 @@ static void py_tevent_timer_dealloc(TeventTimer_Object *self)
 	if (self->timer) {
 		talloc_free(self->timer);
 	}
-	Py_DECREF(self->callback);
+	Py_CLEAR(self->callback);
 	PyObject_Del(self);
 }
 
@@ -282,7 +282,7 @@ struct TeventTimer_Object_ref {
 static int TeventTimer_Object_ref_destructor(struct TeventTimer_Object_ref *ref)
 {
 	ref->obj->timer = NULL;
-	Py_DECREF(ref->obj);
+	Py_CLEAR(ref->obj);
 	return 0;
 }
 

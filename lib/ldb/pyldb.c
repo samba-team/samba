@@ -2134,10 +2134,7 @@ static int py_ldb_search_iterator_reply_destructor(struct py_ldb_search_iterator
 		reply->py_iter = NULL;
 	}
 
-	if (reply->obj != NULL) {
-		Py_DECREF(reply->obj);
-		reply->obj = NULL;
-	}
+	Py_CLEAR(reply->obj);
 
 	return 0;
 }
@@ -2679,9 +2676,9 @@ static PyTypeObject PyLdb = {
 static void py_ldb_result_dealloc(PyLdbResultObject *self)
 {
 	talloc_free(self->mem_ctx);
-	Py_DECREF(self->msgs);
-	Py_DECREF(self->referals);
-	Py_DECREF(self->controls);
+	Py_CLEAR(self->msgs);
+	Py_CLEAR(self->referals);
+	Py_CLEAR(self->controls);
 	Py_TYPE(self)->tp_free(self);
 }
 
@@ -2775,10 +2772,10 @@ static PyTypeObject PyLdbResult = {
 
 static void py_ldb_search_iterator_dealloc(PyLdbSearchIteratorObject *self)
 {
-	Py_XDECREF(self->state.exception);
+	Py_CLEAR(self->state.exception);
 	TALLOC_FREE(self->mem_ctx);
 	ZERO_STRUCT(self->state);
-	Py_DECREF(self->ldb);
+	Py_CLEAR(self->ldb);
 	Py_TYPE(self)->tp_free(self);
 }
 
@@ -2885,7 +2882,7 @@ static PyObject *py_ldb_search_iterator_abandon(PyLdbSearchIteratorObject *self,
 		return NULL;
 	}
 
-	Py_XDECREF(self->state.exception);
+	Py_CLEAR(self->state.exception);
 	TALLOC_FREE(self->mem_ctx);
 	ZERO_STRUCT(self->state);
 	Py_RETURN_NONE;
@@ -4289,7 +4286,7 @@ static int py_module_del_transaction(struct ldb_module *mod)
 
 static int py_module_destructor(struct ldb_module *mod)
 {
-	Py_DECREF((PyObject *)mod->private_data);
+	Py_CLEAR(mod->private_data);
 	return 0;
 }
 
