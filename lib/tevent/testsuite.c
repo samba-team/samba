@@ -367,6 +367,12 @@ static bool test_fd_speed2(struct torture_context *test,
 	return test_fd_speedX(test, test_data, 1);
 }
 
+static bool test_fd_speed3(struct torture_context *test,
+			   const void *test_data)
+{
+	return test_fd_speedX(test, test_data, 2);
+}
+
 struct test_event_fd1_state {
 	struct torture_context *tctx;
 	const char *backend;
@@ -1978,6 +1984,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "fd_speed2",
 					       test_fd_speed2,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "fd_speed3",
+					       test_fd_speed3,
 					       (const void *)list[i]);
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "fd1",
