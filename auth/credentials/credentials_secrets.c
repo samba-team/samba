@@ -387,6 +387,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 
 				FALL_THROUGH;
 			case ROLE_ACTIVE_DIRECTORY_DC:
+			case ROLE_IPA_DC:
 				use_kerberos = CRED_USE_KERBEROS_DESIRED;
 				break;
 			}

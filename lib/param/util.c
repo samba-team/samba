@@ -266,6 +266,7 @@ const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx)
 {
 	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_ACTIVE_DIRECTORY_DC:
+	case ROLE_IPA_DC:
 		return lpcfg_dnsdomain(lp_ctx);
 	default:
 		return NULL;
