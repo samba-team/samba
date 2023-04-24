@@ -101,7 +101,7 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	This example shows how tdb2 is used as a the default idmap backend.
+	This example shows how tdb2 is used as the default idmap backend.
 	</para>
 
 	<programlisting>
@@ -111,7 +111,7 @@
 	</programlisting>
 
 	<para>
-	This example shows how tdb2 is used as a the default idmap backend
+	This example shows how tdb2 is used as the default idmap backend
 	using an external program via the script parameter:
 	</para>
 

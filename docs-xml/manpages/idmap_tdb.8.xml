@@ -49,7 +49,7 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	This example shows how tdb is used as a the default idmap backend.
+	This example shows how tdb is used as the default idmap backend.
 	This configured range is used for uid and gid allocation.
 	</para>
 

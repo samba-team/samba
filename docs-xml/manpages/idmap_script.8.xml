@@ -109,7 +109,7 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	This example shows how script is used as a the default idmap backend
+	This example shows how script is used as the default idmap backend
 	using an external program via the script parameter:
 	</para>
 
