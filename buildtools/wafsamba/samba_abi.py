@@ -42,7 +42,8 @@ def normalise_signature(sig):
 def normalise_varargs(sig):
     '''cope with older versions of gdb'''
     sig = re.sub(r',\s\.\.\.', '', sig)
-    return sig
+    # Make sure we compare bytes and not strings
+    return bytes(sig, encoding='utf-8').decode('unicode_escape')
 
 
 def parse_sigs(sigs, abi_match):
