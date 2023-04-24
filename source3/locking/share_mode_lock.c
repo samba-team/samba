@@ -885,7 +885,7 @@ static NTSTATUS get_static_share_mode_data(
 		return status;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
-		DBG_GET_SHARE_MODE_LOCK(status,
+		DBG_GET_SHARE_MODE_LOCK(state.status,
 			"get_static_share_mode_data_fn failed: %s\n",
 			nt_errstr(state.status));
 		return state.status;
