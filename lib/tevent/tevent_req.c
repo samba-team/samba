@@ -27,6 +27,8 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
+#undef tevent_req_set_callback
+
 char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
 	return talloc_asprintf(mem_ctx,
@@ -381,7 +383,16 @@ void tevent_req_reset_endtime(struct tevent_req *req)
 
 void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt)
 {
+	return _tevent_req_set_callback(req, fn, NULL, pvt);
+}
+
+void _tevent_req_set_callback(struct tevent_req *req,
+			      tevent_req_fn fn,
+			      const char *fn_name,
+			      void *pvt)
+{
 	req->async.fn = fn;
+	req->async.fn_name = fn_name;
 	req->async.private_data = pvt;
 }
 

@@ -44,6 +44,10 @@ struct tevent_req {
 		 * @brief Private data for the completion function
 		 */
 		void *private_data;
+		/**
+		 * @brief  The completion function name, for flow tracing.
+		 */
+		const char *fn_name;
 	} async;
 
 	/**

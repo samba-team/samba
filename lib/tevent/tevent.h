@@ -1019,6 +1019,13 @@ typedef void (*tevent_req_fn)(struct tevent_req *subreq);
  *                      callback.
  */
 void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt);
+void _tevent_req_set_callback(struct tevent_req *req,
+			      tevent_req_fn fn,
+			      const char *fn_name,
+			      void *pvt);
+
+#define tevent_req_set_callback(req, fn, pvt) \
+	_tevent_req_set_callback(req, fn, #fn, pvt)
 
 #ifdef DOXYGEN
 /**
