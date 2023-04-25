@@ -385,7 +385,7 @@ void smb2_request_set_async_internal(struct smbd_smb2_request *req,
 	req->async_internal = async_internal;
 }
 
-static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
+static struct smbd_smb2_request *smbd_smb2_request_allocate(struct smbXsrv_connection *xconn)
 {
 	TALLOC_CTX *mem_pool;
 	struct smbd_smb2_request *req;
@@ -400,18 +400,21 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	req = talloc_zero(mem_pool, struct smbd_smb2_request);
+	req = talloc(mem_pool, struct smbd_smb2_request);
 	if (req == NULL) {
 		talloc_free(mem_pool);
 		return NULL;
 	}
-	talloc_reparent(mem_pool, mem_ctx, req);
+	talloc_reparent(mem_pool, xconn, req);
 #if 0
 	TALLOC_FREE(mem_pool);
 #endif
-
-	req->last_session_id = UINT64_MAX;
-	req->last_tid = UINT32_MAX;
+	*req = (struct smbd_smb2_request) {
+		.sconn = xconn->client->sconn,
+		.xconn = xconn,
+		.last_session_id = UINT64_MAX,
+		.last_tid = UINT32_MAX,
+	};
 
 	talloc_set_destructor(req, smbd_smb2_request_destructor);
 
@@ -650,7 +653,6 @@ static NTSTATUS smbd_smb2_request_create(struct smbXsrv_connection *xconn,
 					 const uint8_t *_inpdu, size_t size,
 					 struct smbd_smb2_request **_req)
 {
-	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
 	uint8_t *inpdu = NULL;
@@ -692,8 +694,6 @@ static NTSTATUS smbd_smb2_request_create(struct smbXsrv_connection *xconn,
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	req->sconn = sconn;
-	req->xconn = xconn;
 
 	inpdu = talloc_memdup(req, _inpdu, size);
 	if (inpdu == NULL) {
@@ -1924,8 +1924,6 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 		return NULL;
 	}
 
-	newreq->sconn = req->sconn;
-	newreq->xconn = req->xconn;
 	newreq->session = req->session;
 	newreq->do_encryption = req->do_encryption;
 	newreq->do_signing = req->do_signing;
@@ -4551,8 +4549,8 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 
 static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn)
 {
-	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
+	struct smbd_smb2_request *req = NULL;
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
 
@@ -4584,14 +4582,14 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn
 	}
 
 	/* ask for the next request */
-	ZERO_STRUCTP(state);
-	state->req = smbd_smb2_request_allocate(xconn);
-	if (state->req == NULL) {
+	req = smbd_smb2_request_allocate(xconn);
+	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->req->sconn = sconn;
-	state->req->xconn = xconn;
-	state->min_recv_size = lp_min_receive_file_size();
+	*state = (struct smbd_smb2_request_read_state) {
+		.req = req,
+		.min_recv_size = lp_min_receive_file_size(),
+	};
 
 	TEVENT_FD_READABLE(xconn->transport.fde);
 
@@ -4971,6 +4969,8 @@ again:
 
 	if (state->pktlen > 0) {
 		if (state->doing_receivefile && !is_smb2_recvfile_write(state)) {
+			size_t ofs = state->pktlen;
+
 			/*
 			 * Not a possible receivefile write.
 			 * Read the rest of the data.
@@ -4985,10 +4985,10 @@ again:
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			state->vector.iov_base = (void *)(state->pktbuf +
-				state->pktlen);
-			state->vector.iov_len = (state->pktfull -
-				state->pktlen);
+			state->vector = (struct iovec) {
+				.iov_base = (void *)(state->pktbuf + ofs),
+				.iov_len = (state->pktfull - ofs),
+			};
 
 			state->pktlen = state->pktfull;
 			goto again;
@@ -5037,8 +5037,10 @@ again:
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->vector.iov_base = (void *)state->pktbuf;
-	state->vector.iov_len = state->pktlen;
+	state->vector = (struct iovec) {
+		.iov_base = (void *)state->pktbuf,
+		.iov_len = state->pktlen,
+	};
 
 	goto again;
 
@@ -5049,15 +5051,15 @@ got_full:
 			 state->hdr.nbt[0]));
 
 		req = state->req;
-		ZERO_STRUCTP(state);
-		state->req = req;
-		state->min_recv_size = lp_min_receive_file_size();
+		*state = (struct smbd_smb2_request_read_state) {
+			.req = req,
+			.min_recv_size = lp_min_receive_file_size(),
+		};
 		req = NULL;
 		goto again;
 	}
 
 	req = state->req;
-	state->req = NULL;
 
 	req->request_time = timeval_current();
 	now = timeval_to_nttime(&req->request_time);
@@ -5081,7 +5083,9 @@ got_full:
 		req->smb1req->unread_bytes = state->pktfull - state->pktlen;
 	}
 
-	ZERO_STRUCTP(state);
+	*state = (struct smbd_smb2_request_read_state) {
+		.req = NULL,
+	};
 
 	req->current_idx = 1;
 
