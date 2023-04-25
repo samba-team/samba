@@ -1437,11 +1437,18 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 # S4U tests
 #
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_authentication_asserted_identity.fl2003dc:local
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rc4_client_checksum.fl2003dc:local
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rodc_issued.fl2003dc:local
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_service_asserted_identity.fl2003dc:local
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_asserted_identity.fl2003dc:local
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_existing_delegation_info\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_missing_client_checksum\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rc4_client_checksum.ad_dc_default
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_rodc_issued\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_client_checksum\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_zeroed_client_checksum\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_existing_delegation_info\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_missing_client_checksum\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_rc4_client_checksum\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_rodc_issued\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_unkeyed_client_checksum\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_zeroed_client_checksum\(
 #
 # etype tests
 #

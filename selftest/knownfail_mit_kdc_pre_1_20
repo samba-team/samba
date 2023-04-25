@@ -152,6 +152,7 @@ samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.Simple
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_bronze_bit_constrained_delegation_old_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_bronze_bit_rbcd_old_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_authentication_asserted_identity\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_existing_delegation_info\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_missing_client_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_missing_service_checksum\(
@@ -160,11 +161,10 @@ samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.Simple
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_no_service_pac\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_no_service_pac_no_auth_data_required\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_pac_options_rbcd\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_service_asserted_identity\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_client_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_service_checksum\(
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_zeroed_client_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_zeroed_service_checksum\(
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_missing_client_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_missing_service_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_a\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_b\(
@@ -175,6 +175,7 @@ samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.Simple
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_unkeyed_client_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_zeroed_client_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self\(
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_asserted_identity\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_client_not_delegated\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_crc32_unkeyed_checksum\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_forwardable\(
@@ -191,7 +192,6 @@ samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.Simple
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_without_forwardable\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_wrong_sname\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd\(
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_existing_delegation_info\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_auth_data_required\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_rodc_issued\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_unkeyed_service_checksum\(
