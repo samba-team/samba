@@ -30,6 +30,9 @@
 #include "auth/gensec/gensec.h"
 #include "lib/util/string_wrappers.h"
 #include "source3/lib/substitute.h"
+#ifdef HAVE_VALGRIND_CALLGRIND_H
+#include <valgrind/callgrind.h>
+#endif /* HAVE_VALGRIND_CALLGRIND_H */
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -914,6 +917,19 @@ static void smbd_smb2_request_process_negprot_mc_done(struct tevent_req *subreq)
 	 */
 	status = smbd_smb2_request_done(req, state->outbody, &state->outdyn);
 	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * This allows us to support starting smbd under
+		 * callgrind and only start the overhead and
+		 * instrumentation after the SMB2 negprot,
+		 * this allows us to profile only useful
+		 * stuff and not all the smbd startup, forking
+		 * and multichannel handling.
+		 *
+		 * valgrind --tool=callgrind --instr-atstart=no smbd
+		 */
+#ifdef CALLGRIND_START_INSTRUMENTATION
+		CALLGRIND_START_INSTRUMENTATION;
+#endif
 		return;
 	}
 
