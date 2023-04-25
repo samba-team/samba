@@ -25,6 +25,8 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/smb_strtox.h"
 #include "system/locale.h"
+#include "lib/util/util_str_hex.h"
+
 
 struct sddl_transition_state {
 	const struct dom_sid *machine_sid;
@@ -417,6 +419,16 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 	return true;
 }
 
+
+static bool sddl_decode_guid(const char *str, struct GUID *guid)
+{
+        if (strlen(str) != 36) {
+                return false;
+        }
+        return parse_guid_string(str, guid);
+}
+
+
 /*
   decode an ACE
   return true on success, false on failure
@@ -472,9 +484,8 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* object */
 	if (tok[3][0] != 0) {
-		NTSTATUS status = GUID_from_string(tok[3],
-						   &ace->object.object.type.type);
-		if (!NT_STATUS_IS_OK(status)) {
+		ok = sddl_decode_guid(tok[3], &ace->object.object.type.type);
+		if (!ok) {
 			return false;
 		}
 		ace->object.object.flags |= SEC_ACE_OBJECT_TYPE_PRESENT;
@@ -482,9 +493,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* inherit object */
 	if (tok[4][0] != 0) {
-		NTSTATUS status = GUID_from_string(tok[4],
-						   &ace->object.object.inherited_type.inherited_type);
-		if (!NT_STATUS_IS_OK(status)) {
+		ok = sddl_decode_guid(tok[4],
+				      &ace->object.object.inherited_type.inherited_type);
+		if (!ok) {
 			return false;
 		}
 		ace->object.object.flags |= SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT;
