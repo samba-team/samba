@@ -657,6 +657,15 @@ class SddlShouldFail(SddlDecodeEncodeBase):
         "D:(A;;GA;; f30e3bbf-9ff0-11d1-b603-0000f80367c1;WD)",
         "D:(A;;GA;;f30e3bbf-9ff0-11d1-b603-0000f80367c1 ;WD)",
 
+        # Samba used to use GUID_from_string(), which would take
+        # anything GUID-ish, including {}-wrapped GUIDs, hyphen-less
+        # hexstrings, and 16 raw bytes. But we only want one kind.
+        "D:(A;;GA;;{f30e3bbf-9ff0-11d1-b603-0000f80367c1};WD)",
+        # would have been treated as raw bytes.
+        "D:(A;;GA;;0123456789abcdef;WD)",
+        # would have been 16 hex pairs.
+        "D:(A;;GA;;0123456789abcdef0123456789abcdef;WD)",
+
         # space splits a flag in half.
         "D:AI(A;CI;RP LCLOR C;;;AU)",
         # tabs in flags
