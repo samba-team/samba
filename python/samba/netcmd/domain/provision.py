@@ -189,7 +189,7 @@ class cmd_domain_provision(Command):
             if suggested_forwarder is None:
                 suggested_forwarder = "none"
 
-        if len(self.raw_argv) == 1:
+        if not self.raw_argv:
             interactive = True
 
         if interactive:
