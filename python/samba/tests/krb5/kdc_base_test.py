@@ -1677,9 +1677,8 @@ class KDCBaseTest(RawKerberosTest):
             **opts
         }
 
-        cache_key = tuple(sorted(account_opts.items()))
-
         if use_cache:
+            cache_key = tuple(sorted(account_opts.items()))
             creds = self.account_cache.get(cache_key)
             if creds is not None:
                 return creds
