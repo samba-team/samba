@@ -300,6 +300,10 @@ class KDCBaseTest(RawKerberosTest):
         return ldb.Dn(samdb, str(self._authn_silos_dn))
 
     def tearDown(self):
+        # Run any cleanups that may modify accounts prior to deleting those
+        # accounts.
+        self.doCleanups()
+
         # Clean up any accounts created for single tests.
         if self._ldb is not None:
             for dn in reversed(self.test_accounts):
@@ -750,7 +754,8 @@ class KDCBaseTest(RawKerberosTest):
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
                        ou=None, account_control=0, add_dollar=None,
-                       expired_password=False, force_nt4_hash=False):
+                       expired_password=False, force_nt4_hash=False,
+                       preserve=True):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
@@ -820,8 +825,17 @@ class KDCBaseTest(RawKerberosTest):
             details["pwdLastSet"] = "0"
         if additional_details is not None:
             details.update(additional_details)
-        # Save the account name so it can be deleted in tearDownClass
-        self.accounts.append(dn)
+        if preserve:
+            # Mark this account for deletion in tearDownClass() after all the
+            # tests in this class finish.
+            self.accounts.append(dn)
+        else:
+            # Mark this account for deletion in tearDown() after the current
+            # test finishes. Because the time complexity of deleting an account
+            # in Samba scales with the number of accounts, it is faster to
+            # delete accounts as soon as possible than to keep them around
+            # until all the tests are finished.
+            self.test_accounts.append(dn)
         samdb.add(details)
 
         expected_kvno = 1
@@ -1670,13 +1684,13 @@ class KDCBaseTest(RawKerberosTest):
             if creds is not None:
                 return creds
 
-        creds = self.create_account_opts(**account_opts)
+        creds = self.create_account_opts(use_cache, **account_opts)
         if use_cache:
             self.account_cache[cache_key] = creds
 
         return creds
 
-    def create_account_opts(self, *,
+    def create_account_opts(self, use_cache, *,
                             account_type,
                             name_prefix,
                             name_suffix,
@@ -1779,7 +1793,8 @@ class KDCBaseTest(RawKerberosTest):
                                         account_control=user_account_control,
                                         add_dollar=add_dollar,
                                         force_nt4_hash=force_nt4_hash,
-                                        expired_password=expired_password)
+                                        expired_password=expired_password,
+                                        preserve=use_cache)
 
         expected_etypes = None
         if force_nt4_hash:
