@@ -76,7 +76,7 @@ static void wb_query_user_list_gotrids(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("dcerpc_wbint_QueryUserList returned %"PRIu32" users\n",
+	D_DEBUG("dcerpc_wbint_QueryUserRidList returned %"PRIu32" users\n",
 		state->rids.num_rids);
 
 	subreq = dcerpc_wbint_LookupRids_send(
