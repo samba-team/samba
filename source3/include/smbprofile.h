@@ -497,6 +497,11 @@ static inline void smbprofile_dump_schedule(void)
 	smbprofile_dump_schedule_timer();
 }
 
+static inline bool smbprofile_active(void)
+{
+	return smbprofile_state.config.do_count;
+}
+
 static inline bool smbprofile_dump_pending(void)
 {
 	if (smbprofile_state.internal.te == NULL) {
@@ -573,6 +578,11 @@ static inline uint64_t profile_timestamp(void)
 #define END_PROFILE_BYTES(x)
 
 #define PROFILE_TIMESTAMP(x) (*(x)=(struct timespec){0})
+
+static inline bool smbprofile_active(void)
+{
+	return false;
+}
 
 static inline bool smbprofile_dump_pending(void)
 {
