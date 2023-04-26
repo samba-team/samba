@@ -2165,7 +2165,11 @@ static ssize_t ad_read_meta(vfs_handle_struct *handle,
 	/* Now parse entries */
 	ok = ad_unpack(ad, ADEID_NUM_XATTR, AD_DATASZ_XATTR);
 	if (!ok) {
-		DEBUG(2, ("invalid AppleDouble metadata xattr\n"));
+		DBG_WARNING(
+			"Invalid AppleDouble xattr metadata (%s) in file: %s - "
+			"Consider deleting the corrupted file.\n",
+			smb_fname->base_name,
+			ad->ad_fsp->fsp_name->base_name);
 		errno = EINVAL;
 		rc = -1;
 		goto exit;
@@ -2374,8 +2378,10 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 		       ADEID_NUM_DOT_UND,
 		       ad->ad_fsp->fsp_name->st.st_ex_size);
 	if (!ok) {
-		DBG_ERR("invalid AppleDouble resource %s\n",
-			smb_fname->base_name);
+		DBG_WARNING("Invalid AppleDouble resource (%s) in file: %s - "
+			    "Consider deleting the corrupted file.\n",
+			    smb_fname->base_name,
+			    ad->ad_fsp->fsp_name->base_name);
 		errno = EINVAL;
 		return -1;
 	}
@@ -2384,8 +2390,10 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 	    || (ad_getentrylen(ad, ADEID_FINDERI) < ADEDLEN_FINDERI)
 	    || (ad_getentryoff(ad, ADEID_RFORK) < ADEDOFF_RFORK_DOT_UND))
 	{
-		DBG_ERR("invalid AppleDouble resource %s\n",
-			smb_fname->base_name);
+		DBG_WARNING("Invalid AppleDouble resource (%s) in file: %s - "
+			    "Consider deleting the corrupted file.\n",
+			    smb_fname->base_name,
+			    ad->ad_fsp->fsp_name->base_name);
 		errno = EINVAL;
 		return -1;
 	}
