@@ -3249,7 +3249,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 	}
 
 	DEBUG(10,("samba_kdc_check_s4u2proxy: client[%s] allowed target[%s]\n",
-		 client_dn, tmp));
+		 client_dn, target_principal_name));
 	talloc_free(mem_ctx);
 	return 0;
 
