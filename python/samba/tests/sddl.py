@@ -578,6 +578,44 @@ class SddlNonCanonical(SddlDecodeEncodeBase):
         ("D:AI(A;CI;RP LCLO  RC;;;AU)", "D:AI(A;CI;LCRPLORC;;;AU)"),
         # space before string flags is ignored.
         ("D:(A;; GA;;;LG)", "D:(A;;GA;;;LG)"),
+
+        # from 'samba3.blackbox.large_acl.NT1.able to retrieve a large ACL if VFS supports it'
+        (("D:(A;;0x001f01ff;;;WD)" +
+          ''.join(f"(A;;0x001f01ff;;;S-1-5-21-11111111-22222222-33333333-{i})"
+                  for i in range(1001, 1201))),
+         ("D:(A;;FA;;;WD)" +
+          ''.join(f"(A;;FA;;;S-1-5-21-11111111-22222222-33333333-{i})"
+                  for i in range(1001, 1201)))
+         ),
+
+        # from samba4.blackbox.samba-tool_ntacl, but using 0x1f01ff in place of FA (which it will become)
+        (("O:S-1-5-21-2212615479-2695158682-2101375468-512"
+          "G:S-1-5-21-2212615479-2695158682-2101375468-513"
+          "D:P(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
+          "(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
+          "(A;OICIIO;0x001f01ff;;;CO)"
+          "(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
+          "(A;OICI;0x001f01ff;;;SY)"
+          "(A;OICI;0x001200a9;;;AU)"
+          "(A;OICI;0x001200a9;;;ED)"
+          "S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;"
+          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+          "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
+          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"),
+         ("O:S-1-5-21-2212615479-2695158682-2101375468-512"
+          "G:S-1-5-21-2212615479-2695158682-2101375468-513"
+          "D:P(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
+          "(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
+          "(A;OICIIO;FA;;;CO)"
+          "(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
+          "(A;OICI;FA;;;SY)"
+          "(A;OICI;0x1200a9;;;AU)"
+          "(A;OICI;0x1200a9;;;ED)"
+          "S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;"
+          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+          "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
+          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)")),
+
     ]
 
 
@@ -611,6 +649,7 @@ class SddlCanonical(SddlDecodeEncodeBase):
         "O:S-1-2-512D:",
         "D:PARAI(A;;GA;;;SY)",
         "D:P(A;;GA;;;LG)(A;;GX;;;AA)",
+        "D:(A;;FA;;;WD)"
     ]
 
 
@@ -749,115 +788,6 @@ class SddlWindowsIsLessFussy(SddlDecodeEncodeBase):
 
         # spaces in some parts of the SID (not subauth)
         ("O:S- 1- 2-3", "O:S-1-2-3"),
-    ]
-
-
-@DynamicTestCase
-class SddlWindowsFlagsAreDifferent(SddlDecodeEncodeBase):
-    """On Windows the 'FA' symbol means 0x1f01ff, while on Samba it means
-    0x1ff (Samba is SEC_FILE_ALL, Windows is SEC_FILE_ALL |
-    SEC_STD_ALL).
-
-    https://lists.samba.org/archive/cifs-protocol/2010-February/001387.html
-    is maybe relevant.
-    """
-    name = "windows_flags_are_different"
-    should_succeed = True
-    strings = [
-        # from 'samba3.blackbox.large_acl.NT1.able to retrieve a large ACL if VFS supports it'
-        (("D:(A;;0x001f01ff;;;WD)" +
-          ''.join(f"(A;;0x001f01ff;;;S-1-5-21-11111111-22222222-33333333-{i})"
-                  for i in range(1001, 1201))),
-         ("D:(A;;FA;;;WD)" +
-          ''.join(f"(A;;FA;;;S-1-5-21-11111111-22222222-33333333-{i})"
-                  for i in range(1001, 1201)))
-         ),
-        # from samba4.blackbox.samba-tool_ntacl, but using FA in place of 0x1f01ff
-        (("O:S-1-5-21-2212615479-2695158682-2101375468-512"
-          "G:S-1-5-21-2212615479-2695158682-2101375468-513"
-          "D:P(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
-          "(A;OICIIO;0x001f01ff;;;CO)"
-          "(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;0x001f01ff;;;SY)"
-          "(A;OICI;0x001200a9;;;AU)"
-          "(A;OICI;0x001200a9;;;ED)"
-          "S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
-          "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"),
-         ("O:S-1-5-21-2212615479-2695158682-2101375468-512"
-          "G:S-1-5-21-2212615479-2695158682-2101375468-513"
-          "D:P(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
-          "(A;OICIIO;FA;;;CO)"
-          "(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;FA;;;SY)"
-          "(A;OICI;0x1200a9;;;AU)"
-          "(A;OICI;0x1200a9;;;ED)"
-          "S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
-          "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)")),
-
-        ("D:(A;;FA;;;WD)", "D:(A;;FA;;;WD)"),
-    ]
-
-
-@DynamicTestCase
-class SddlSambaDoesItsOwnThing(SddlDecodeEncodeBase):
-    """Samba's corresponding strings for the "windows flags are different"
-    examples.
-    """
-    name = "samba_does_its_own_thing"
-    should_succeed = True
-    strings = [
-        # from 'samba3.blackbox.large_acl.NT1.able to retrieve a large ACL if VFS supports it'
-        (("D:(A;;0x001f01ff;;;WD)" +
-          ''.join(f"(A;;0x001f01ff;;;S-1-5-21-11111111-22222222-33333333-{i})"
-                  for i in range(1001, 1201))),
-         ("D:(A;;0x1f01ff;;;WD)" +
-          ''.join(f"(A;;0x1f01ff;;;S-1-5-21-11111111-22222222-33333333-{i})"
-                  for i in range(1001, 1201)))
-         ),
-        # On Samba this is like a canonical test (same string
-        # returned), but Windows will turn all the 0x1f01ff into FA.
-        (("D:(A;;0x1f01ff;;;WD)" +
-          ''.join(f"(A;;0x1f01ff;;;S-1-5-21-11111111-22222222-33333333-{i})"
-                  for i in range(1001, 1201))),
-         ("D:(A;;0x1f01ff;;;WD)" +
-          ''.join(f"(A;;0x1f01ff;;;S-1-5-21-11111111-22222222-33333333-{i})"
-                  for i in range(1001, 1201)))
-         ),
-        # from samba4.blackbox.samba-tool_ntacl, removing 00 padding in 0x flags
-        (("O:S-1-5-21-2212615479-2695158682-2101375468-512"
-          "G:S-1-5-21-2212615479-2695158682-2101375468-513"
-          "D:P(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
-          "(A;OICIIO;0x001f01ff;;;CO)"
-          "(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;0x001f01ff;;;SY)"
-          "(A;OICI;0x001200a9;;;AU)"
-          "(A;OICI;0x001200a9;;;ED)"
-          "S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
-          "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"),
-         ("O:S-1-5-21-2212615479-2695158682-2101375468-512"
-          "G:S-1-5-21-2212615479-2695158682-2101375468-513"
-          "D:P(A;OICI;0x1f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;0x1f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
-          "(A;OICIIO;0x1f01ff;;;CO)"
-          "(A;OICI;0x1f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
-          "(A;OICI;0x1f01ff;;;SY)"
-          "(A;OICI;0x1200a9;;;AU)"
-          "(A;OICI;0x1200a9;;;ED)"
-          "S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
-          "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
-          "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)")),
-
-        ("D:(A;;FA;;;WD)", "D:(A;;CCDCLCSWRPWPDTLOCR;;;WD)"),
     ]
 
 
