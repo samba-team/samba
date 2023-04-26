@@ -616,6 +616,13 @@ class SddlNonCanonical(SddlDecodeEncodeBase):
           "(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;"
           "bf967aa5-0de6-11d0-a285-00aa003049e2;WD)")),
 
+        (("O:LAG:BAD:P(A;OICI;0x1f01ff;;;BA)"),
+         ("O:LAG:BAD:P(A;OICI;FA;;;BA)")),
+
+        (("O:LAG:BAD:(A;;0x1ff;;;WD)",
+          ("O:LAG:BAD:(A;;CCDCLCSWRPWPDTLOCR;;;WD)"))),
+
+        ("D:(A;;FAGX;;;SY)", "D:(A;;0x201f01ff;;;SY)"),
     ]
 
 
@@ -649,7 +656,10 @@ class SddlCanonical(SddlDecodeEncodeBase):
         "O:S-1-2-512D:",
         "D:PARAI(A;;GA;;;SY)",
         "D:P(A;;GA;;;LG)(A;;GX;;;AA)",
-        "D:(A;;FA;;;WD)"
+        "D:(A;;FA;;;WD)",
+        "D:(A;;CCDCLCSWRPWPDTLOCR;;;WD)",
+        "D:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)"
+
     ]
 
 
