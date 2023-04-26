@@ -914,8 +914,6 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	struct rpc_pipe_client *samr_pipe = NULL;
 	struct dcerpc_binding_handle *h = NULL;
 	struct policy_handle dom_pol = { .handle_type = 0, };
-	struct lsa_Strings lsa_names = { .count = 0, };
-	struct samr_Ids samr_types = { .count = 0, };
 	enum lsa_SidType *types = NULL;
 	char **names = NULL;
 	const char *domain_name = NULL;
@@ -997,49 +995,73 @@ again:
 	}
 	h = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_LookupRids(
-		h,
-		tmp_ctx,
-		&dom_pol,
-		num_rids,
-		rids,
-		&lsa_names,
-		&samr_types,
-		&result);
+	/*
+	 * Magic number 1000 comes from samr.idl
+	 */
 
-	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
-		retry = true;
-		goto again;
-	}
+	for (i = 0; i < num_rids; i += 1000) {
+		uint32_t num_lookup_rids = MIN(num_rids - i, 1000);
+		struct lsa_Strings lsa_names = {
+			.count = 0,
+		};
+		struct samr_Ids samr_types = {
+			.count = 0,
+		};
+		uint32_t j;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dcerpc_samr_LookupRids failed: %s\n",
-			  nt_errstr(status));
-		goto fail;
-	}
-	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
-		DBG_DEBUG("dcerpc_samr_LookupRids resulted in %s\n",
-			  nt_errstr(result));
-		status = result;
-		goto fail;
-	}
+		status = dcerpc_samr_LookupRids(h,
+						tmp_ctx,
+						&dom_pol,
+						num_lookup_rids,
+						&rids[i],
+						&lsa_names,
+						&samr_types,
+						&result);
 
-	for (i=0; i<num_rids; i++) {
-		types[i] = samr_types.ids[i];
-		names[i] = talloc_move(
-			names,
-			discard_const_p(char *, &lsa_names.names[i].string));
+		if (!retry &&
+		    reset_connection_on_error(domain, samr_pipe, status)) {
+			retry = true;
+			goto again;
+		}
 
-		if (names[i] != NULL) {
-			char *normalized = NULL;
-			NTSTATUS nstatus = normalize_name_map(
-				names, domain_name, names[i], &normalized);
-			if (NT_STATUS_IS_OK(nstatus) ||
-			    NT_STATUS_EQUAL(nstatus, NT_STATUS_FILE_RENAMED)) {
-				names[i] = normalized;
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dcerpc_samr_LookupRids failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+			DBG_DEBUG("dcerpc_samr_LookupRids resulted in %s\n",
+				  nt_errstr(result));
+			status = result;
+			goto fail;
+		}
+
+		for (j = 0; j < num_lookup_rids; j++) {
+			uint32_t dst = i + j;
+
+			types[dst] = samr_types.ids[j];
+			names[dst] = talloc_move(
+				names,
+				discard_const_p(char *,
+						&lsa_names.names[j].string));
+			if (names[dst] != NULL) {
+				char *normalized = NULL;
+				NTSTATUS nstatus =
+					normalize_name_map(names,
+							   domain_name,
+							   names[dst],
+							   &normalized);
+				if (NT_STATUS_IS_OK(nstatus) ||
+				    NT_STATUS_EQUAL(nstatus,
+						    NT_STATUS_FILE_RENAMED)) {
+					names[dst] = normalized;
+				}
 			}
 		}
+
+		TALLOC_FREE(samr_types.ids);
+		TALLOC_FREE(lsa_names.names);
 	}
 
 done:
