@@ -145,7 +145,7 @@ class LargeLDAPTest(samba.tests.TestCase):
                 "sAMAccountName": user_name,
                 "jpegPhoto": b'a' * (2 * 1024 * 1024)})
 
-            ace = "(OD;;RP;{6bc69afa-7bd9-4184-88f5-28762137eb6a};;S-1-%d)" % x
+            ace = "(OD;;RP;6bc69afa-7bd9-4184-88f5-28762137eb6a;;S-1-%d)" % x
             dn = ldb.Dn(cls.ldb, "cn=" + user_name + "," + str(cls.ou_dn))
 
             # add an ACE that denies access to the above random attr
