@@ -1697,8 +1697,43 @@ struct smbd_tevent_trace_state {
 	SMBPROFILE_BASIC_ASYNC_STATE(profile_idle);
 };
 
+static inline void smbd_tevent_trace_callback_before_loop_once(
+	struct smbd_tevent_trace_state *state)
+{
+	talloc_free(state->frame);
+	state->frame = talloc_stackframe_pool(8192);
+}
+
+static inline void smbd_tevent_trace_callback_after_loop_once(
+	struct smbd_tevent_trace_state *state)
+{
+	TALLOC_FREE(state->frame);
+}
+
 static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 				       void *private_data)
+{
+	struct smbd_tevent_trace_state *state =
+		(struct smbd_tevent_trace_state *)private_data;
+
+	switch (point) {
+	case TEVENT_TRACE_BEFORE_WAIT:
+		break;
+	case TEVENT_TRACE_AFTER_WAIT:
+		break;
+	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
+		smbd_tevent_trace_callback_before_loop_once(state);
+		break;
+	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		smbd_tevent_trace_callback_after_loop_once(state);
+		break;
+	}
+
+	errno = 0;
+}
+
+static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
+					       void *private_data)
 {
 	struct smbd_tevent_trace_state *state =
 		(struct smbd_tevent_trace_state *)private_data;
@@ -1732,11 +1767,10 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 		}
 		break;
 	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
-		TALLOC_FREE(state->frame);
-		state->frame = talloc_stackframe_pool(8192);
+		smbd_tevent_trace_callback_before_loop_once(state);
 		break;
 	case TEVENT_TRACE_AFTER_LOOP_ONCE:
-		TALLOC_FREE(state->frame);
+		smbd_tevent_trace_callback_after_loop_once(state);
 		break;
 	}
 
@@ -2009,8 +2043,15 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	TALLOC_FREE(trace_state.frame);
 
-	tevent_set_trace_callback(ev_ctx, smbd_tevent_trace_callback,
-				  &trace_state);
+	if (smbprofile_active()) {
+		tevent_set_trace_callback(ev_ctx,
+					  smbd_tevent_trace_callback_profile,
+					  &trace_state);
+	} else {
+		tevent_set_trace_callback(ev_ctx,
+					  smbd_tevent_trace_callback,
+					  &trace_state);
+	}
 
 	ret = tevent_loop_wait(ev_ctx);
 	if (ret != 0) {
