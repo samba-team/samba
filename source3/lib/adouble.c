@@ -967,14 +967,14 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 	 */
 
 	if (bufsize < (AD_HEADER_LEN + (AD_ENTRY_LEN * nentries))) {
-		DEBUG(1, ("bad size\n"));
+		DBG_NOTICE("Bad size\n");
 		return false;
 	}
 
 	ad->ad_magic = RIVAL(ad->ad_data, 0);
 	ad->ad_version = RIVAL(ad->ad_data, ADEDOFF_VERSION);
 	if ((ad->ad_magic != AD_MAGIC) || (ad->ad_version != AD_VERSION)) {
-		DEBUG(1, ("wrong magic or version\n"));
+		DBG_NOTICE("Wrong magic or version\n");
 		return false;
 	}
 
@@ -982,8 +982,7 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 
 	adentries = RSVAL(ad->ad_data, ADEDOFF_NENTRIES);
 	if (adentries != nentries) {
-		DEBUG(1, ("invalid number of entries: %zu\n",
-			  adentries));
+		DBG_NOTICE("Invalid number of entries: %zu\n", adentries);
 		return false;
 	}
 
@@ -995,7 +994,7 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		len = RIVAL(ad->ad_data, AD_HEADER_LEN + (i * AD_ENTRY_LEN) + 8);
 
 		if (!eid || eid >= ADEID_MAX) {
-			DEBUG(1, ("bogus eid %d\n", eid));
+			DBG_NOTICE("Bogus eid %d\n", eid);
 			return false;
 		}
 
@@ -1005,16 +1004,22 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		 * ensure the specified offset is within that bound
 		 */
 		if ((off > bufsize) && (eid != ADEID_RFORK)) {
-			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
-				  eid, off, len));
+			DBG_NOTICE("Fogus eid %d: off: %" PRIu32
+				   ", len: %" PRIu32 "\n",
+				   eid,
+				   off,
+				   len);
 			return false;
 		}
 
 		ok = ad_entry_check_size(eid, bufsize, off, len);
 		if (!ok) {
-			DBG_ERR("bogus eid [%"PRIu32"] bufsize [%zu] "
-				"off [%"PRIu32"] len [%"PRIu32"]\n",
-				eid, bufsize, off, len);
+			DBG_NOTICE("bogus eid [%" PRIu32 "] bufsize [%zu] "
+				   "off [%" PRIu32 "] len [%" PRIu32 "]\n",
+				   eid,
+				   bufsize,
+				   off,
+				   len);
 			return false;
 		}
 
@@ -1022,8 +1027,11 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		 * That would be obviously broken
 		 */
 		if (off > filesize) {
-			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
-				  eid, off, len));
+			DBG_NOTICE("Bogus eid %d: off: %" PRIu32
+				   ", len: %" PRIu32 "\n",
+				   eid,
+				   off,
+				   len);
 			return false;
 		}
 
@@ -1032,9 +1040,11 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		 * filesize.
 		 */
 		if (off + len < off) {
-			DEBUG(1, ("offset wrap in eid %d: off: %" PRIu32
-				  ", len: %" PRIu32 "\n",
-				  eid, off, len));
+			DBG_NOTICE("offset wrap in eid %d: off: %" PRIu32
+				   ", len: %" PRIu32 "\n",
+				   eid,
+				   off,
+				   len);
 			return false;
 
 		}
@@ -1045,9 +1055,11 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 			 * out.
 			 */
 			if (eid != ADEID_RFORK) {
-				DEBUG(1, ("bogus eid %d: off: %" PRIu32
-					  ", len: %" PRIu32 "\n",
-					  eid, off, len));
+				DBG_NOTICE("Bogus eid %d: off: %" PRIu32
+					   ", len: %" PRIu32 "\n",
+					   eid,
+					   off,
+					   len);
 				return false;
 			}
 
@@ -1056,8 +1068,10 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 			 * the size to entryoffset - filesize.
 			 */
 			len = filesize - off;
-			DEBUG(1, ("Limiting ADEID_RFORK: off: %" PRIu32
-				  ", len: %" PRIu32 "\n", off, len));
+			DBG_NOTICE("Limiting ADEID_RFORK: off: %" PRIu32
+				   ", len: %" PRIu32 "\n",
+				   off,
+				   len);
 		}
 
 		ad->ad_eid[eid].ade_off = off;
