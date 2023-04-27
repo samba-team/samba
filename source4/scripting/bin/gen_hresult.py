@@ -22,7 +22,7 @@
 #
 
 
-import sys, os.path, io, string
+import sys
 
 # parsed error data
 Errors = []
