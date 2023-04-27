@@ -115,7 +115,7 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	}
 	/*
 	 * The following rid_crypt obfuscation isn't session specific
-	 * and not really needed here, because we allways know the rid of the
+	 * and not really needed here, because we always know the rid of the
 	 * user account.
 	 *
 	 * some attributes with this 'additional encryption' include
@@ -240,7 +240,7 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 
 	/*
 	 * The following rid_crypt obfuscation isn't session specific
-	 * and not really needed here, because we allways know the rid of the
+	 * and not really needed here, because we always know the rid of the
 	 * user account.
 	 *
 	 * some attributes with this 'additional encryption' include
