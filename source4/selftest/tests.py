@@ -852,6 +852,11 @@ for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "chgdcpass", "rodc"]:
 
     planpythontestsuite(env + ":local", "samba.tests.ntlm_auth")
 
+plantestsuite(
+    "samba.wbinfo_u_large_ad.(ad_dc:local)",
+    "ad_dc:local",
+    [os.path.join(samba3srcdir, "script/tests/test_wbinfo_u_large_ad.sh")])
+
 for env in ["ktest"]:
     planpythontestsuite(env + ":local", "samba.tests.ntlm_auth_krb5")
 
