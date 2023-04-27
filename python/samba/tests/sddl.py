@@ -604,6 +604,7 @@ class SddlNonCanonical(SddlDecodeEncodeBase):
         ("D:AI(A;CI;RP LCLO  RC;;;AU)", "D:AI(A;CI;LCRPLORC;;;AU)"),
         # space before string flags is ignored.
         ("D:(A;; GA;;;LG)", "D:(A;;GA;;;LG)"),
+        ("D:(A;; 0x75bcd15;;;LG)", "D:(A;;0x75bcd15;;;LG)"),
 
         # from 'samba3.blackbox.large_acl.NT1.able to retrieve a large ACL if VFS supports it'
         (("D:(A;;0x001f01ff;;;WD)" +
@@ -722,6 +723,11 @@ class SddlShouldFail(SddlDecodeEncodeBase):
         # Windows accepts space before string flags, not after.
         "D:(A;;GA ;;;LG)",
         "D:(A;;RP ;;;LG)",
+        # wrong numbers of ';'
+        "D:(A;;GA;;;LG;)",
+        "D:(A;;GA;;;LG;;)",
+        "D:(A;;GA)",
+        f"D:(A;{';' * 10000})",
 
         # space after SID is bad
         # but Windows accepts space before SID, after 2-letter SID
@@ -759,6 +765,11 @@ class SddlShouldFail(SddlDecodeEncodeBase):
 
         "O:",
         "O:XX",
+
+        "D:("
+        "D:()"
+        "D:())"
+        "D:(A;;0x75bcd15;;;LG))",
     ]
 
 
