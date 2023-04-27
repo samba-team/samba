@@ -97,7 +97,7 @@
  * to be granted in order to fulfill the requested access.
  *
  * The GUID is optional, if specified it restricts this object tree and its
- * childs to object/attributes that inherits from this GUID.
+ * children to object/attributes that inherits from this GUID.
  * For DS access an object inherits from a GUID if one of its class has this GUID
  * in the schemaIDGUID attribute.
  */

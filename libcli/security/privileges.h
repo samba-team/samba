@@ -49,7 +49,7 @@ typedef struct {
 const char* get_privilege_dispname( const char *name );
 
 /*******************************************************************
- return the number of elements in the 'short' privlege array (traditional source3 behaviour)
+ return the number of elements in the 'short' privilege array (traditional source3 behaviour)
 *******************************************************************/
 
 int num_privileges_in_short_list( void );

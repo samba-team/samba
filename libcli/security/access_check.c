@@ -644,7 +644,7 @@ done:
  * Perform DS access checks for the user represented by its security_token, on
  * the provided security descriptor. If an tree associating GUID and access
  * required is provided then object access (OA) are checked as well. *
- * @param[in]   sd             The security descritor against which the required
+ * @param[in]   sd             The security descriptor against which the required
  *                             access are requested
  *
  * @param[in]   token          The security_token associated with the user to

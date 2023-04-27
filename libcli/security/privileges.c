@@ -234,7 +234,7 @@ const char* get_privilege_dispname( const char *name )
 }
 
 /*******************************************************************
- return the number of elements in the 'short' privlege array (traditional source3 behaviour)
+ return the number of elements in the 'short' privilege array (traditional source3 behaviour)
 *******************************************************************/
 
 int num_privileges_in_short_list( void )
@@ -442,7 +442,7 @@ bool security_token_system_privilege(const struct security_token *token)
 */
 void security_token_set_privilege(struct security_token *token, enum sec_privilege privilege)
 {
-	/* Relies on the fact that an invalid privilage will return 0, so won't change this */
+	/* Relies on the fact that an invalid privilege will return 0, so won't change this */
 	token->privilege_mask |= sec_privilege_mask(privilege);
 }
 

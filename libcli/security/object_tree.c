@@ -24,7 +24,7 @@
  *               the object tree that must be constructed to perform access checks.
  *               The object tree is an unbalanced tree of depth 3, indexed by
  *               object type guid. Perhaps a different data structure
- *               should be concidered later to improve performance
+ *               should be considered later to improve performance
  *
  *  Author: Nadezhda Ivanova
  */

@@ -66,7 +66,7 @@ const struct dom_sid global_sid_Authenticated_Users =	/* All authenticated rids 
 { 1, 1, {0,0,0,0,0,5}, {11,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #if 0
 /* for documentation S-1-5-12 */
-const struct dom_sid global_sid_Restriced =			/* Restriced Code */
+const struct dom_sid global_sid_Restriced =			/* Restricted Code */
 { 1, 1, {0,0,0,0,0,5}, {12,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #endif
 

@@ -304,7 +304,7 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 			/*
 			 * If the ACE had an explicit object class
 			 * schemaId, but no attribute/propertySet
-			 * we need to downgrate the _OBJECT variants
+			 * we need to downgrade the _OBJECT variants
 			 * to the normal ones.
 			 */
 			if (inherited_property == NULL) {

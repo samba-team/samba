@@ -226,7 +226,7 @@ NTSTATUS security_descriptor_for_client(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * ... and remove everthing not wanted
+	 * ... and remove everything not wanted
 	 */
 
 	if (!(sec_info & SECINFO_OWNER)) {
