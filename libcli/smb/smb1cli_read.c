@@ -43,7 +43,7 @@ static void smb1cli_readx_done(struct tevent_req *subreq);
  * @param[in] mem_ctx The memory context for the result.
  * @param[in] ev The event context to work on.
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.
@@ -220,7 +220,7 @@ static void smb1cli_readx_done(struct tevent_req *subreq)
  * @param[out] received The number of bytes received.
  * @param[out] rcvbuf Pointer to the bytes received.
  *
- * @return NT_STATUS_OK or STATUS_BUFFER_OVERFLOW on succsess.
+ * @return NT_STATUS_OK or STATUS_BUFFER_OVERFLOW on success.
  */
 NTSTATUS smb1cli_readx_recv(struct tevent_req *req,
 			    uint32_t *received,

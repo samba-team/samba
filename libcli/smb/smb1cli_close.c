@@ -38,7 +38,7 @@ static void smb1cli_close_done(struct tevent_req *subreq);
  * @param[in] mem_ctx  The memory context for the result.
  * @param[in] ev The event context to work on.
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier.
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.
@@ -133,7 +133,7 @@ NTSTATUS smb1cli_close_recv(struct tevent_req *req)
  * @see smb1cli_close_send(), smb1cli_close_recv()
  *
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier.
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.

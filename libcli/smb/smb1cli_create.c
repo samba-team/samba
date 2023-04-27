@@ -39,7 +39,7 @@ static void smb1cli_ntcreatex_done(struct tevent_req *subreq);
  * @param[in] mem_ctx The memory context for the result.
  * @param[in] ev The event context to work on.
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.
@@ -189,7 +189,7 @@ static void smb1cli_ntcreatex_done(struct tevent_req *subreq)
  * @param[in] req A tevent request created with smb1cli_ntcreatex_send()
  * @param[out] pfnum The file id of the opened file or directory.
  *
- * @return NT_STATUS_OK on succsess
+ * @return NT_STATUS_OK on success
  */
 NTSTATUS smb1cli_ntcreatex_recv(struct tevent_req *req, uint16_t *pfnum)
 {
@@ -214,7 +214,7 @@ NTSTATUS smb1cli_ntcreatex_recv(struct tevent_req *req, uint16_t *pfnum)
  * @see smb1cli_ntcreatex_send() smb1cli_ntcreatex_recv()
  *
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.
@@ -231,7 +231,7 @@ NTSTATUS smb1cli_ntcreatex_recv(struct tevent_req *req, uint16_t *pfnum)
  * @param[in] SecurityFlags
  * @param[out] pfnum The file id representing the file or directory created or opened.
  *
- * @return  NT_STATUS_OK on succsess
+ * @return  NT_STATUS_OK on success
  */
 NTSTATUS smb1cli_ntcreatex(struct smbXcli_conn *conn,
 			   uint32_t timeout_msec,

@@ -27,8 +27,8 @@
  */
 #define NBSSmessage     0x00   /* session message */
 #define NBSSrequest     0x81   /* session request */
-#define NBSSpositive    0x82   /* positiv session response */
-#define NBSSnegative    0x83   /* negativ session response */
+#define NBSSpositive    0x82   /* positive session response */
+#define NBSSnegative    0x83   /* negative session response */
 #define NBSSretarget    0x84   /* retarget session response */
 #define NBSSkeepalive   0x85   /* keepalive */
 
@@ -400,7 +400,7 @@ enum csc_policy {
 #define FILE_CASE_PRESERVED_NAMES       0x00000002
 #define FILE_UNICODE_ON_DISK            0x00000004
 /* According to cifs9f, this is 4, not 8 */
-/* Acconding to testing, this actually sets the security attribute! */
+/* According to testing, this actually sets the security attribute! */
 #define FILE_PERSISTENT_ACLS            0x00000008
 #define FILE_FILE_COMPRESSION           0x00000010
 #define FILE_VOLUME_QUOTAS              0x00000020

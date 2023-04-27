@@ -3226,7 +3226,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		 * nonce wrap, or the security of the whole
 		 * communication and the keys is destroyed.
 		 * We must drop the connection once we have
-		 * transfered too much data.
+		 * transferred too much data.
 		 *
 		 * NOTE: We assume nonces greater than 8 bytes.
 		 */
@@ -3888,7 +3888,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			if (!NT_STATUS_IS_OK(status)) {
 				/*
 				 * Only check the signature of the last response
-				 * of a successfull session auth. This matches
+				 * of a successful session auth. This matches
 				 * Windows behaviour for NTLM auth and reauth.
 				 */
 				state->smb2.require_signed_response = false;
@@ -6540,7 +6540,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	 * nonce wrap, or the security of the whole
 	 * communication and the keys is destroyed.
 	 * We must drop the connection once we have
-	 * transfered too much data.
+	 * transferred too much data.
 	 *
 	 * NOTE: We assume nonces greater than 8 bytes.
 	 */

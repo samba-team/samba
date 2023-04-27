@@ -42,7 +42,7 @@ static void smb1cli_writex_done(struct tevent_req *subreq);
  * @param[in] mem_ctx The memory context for the result.
  * @param[in] ev The event context to work on.
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.
@@ -190,7 +190,7 @@ static void smb1cli_writex_done(struct tevent_req *subreq)
  * @param[out] pwritten The number of bytes written to the file.
  * @param[out] pavailable Valid if writing to a named pipe or IO device.
  *
- * @return NT_STATUS_OK on succsess.
+ * @return NT_STATUS_OK on success.
  */
 NTSTATUS smb1cli_writex_recv(struct tevent_req *req, uint32_t *pwritten, uint16_t *pavailable)
 {
@@ -216,7 +216,7 @@ NTSTATUS smb1cli_writex_recv(struct tevent_req *req, uint32_t *pwritten, uint16_
  * @see smb1cli_writex_send(), smb1cli_writex_recv()
  *
  * @param[in] conn The smb connection.
- * @param[in] timeout_msec If positiv a timeout for the request.
+ * @param[in] timeout_msec If positive a timeout for the request.
  * @param[in] pid The process identifier
  * @param[in] tcon The smb tree connect.
  * @param[in] session The smb session.
@@ -228,7 +228,7 @@ NTSTATUS smb1cli_writex_recv(struct tevent_req *req, uint32_t *pwritten, uint16_
  * @param[out] pwritten The number of bytes written to the file.
  * @param[out] pavailable Valid if writing to a named pipe or IO device.
  *
- * @return NT_STATUS_OK on succsess.
+ * @return NT_STATUS_OK on success.
  */
 NTSTATUS smb1cli_writex(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,

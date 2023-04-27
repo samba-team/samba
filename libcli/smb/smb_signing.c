@@ -30,13 +30,13 @@
 /* Used by the SMB1 signing functions. */
 
 struct smb1_signing_state {
-	/* is signing localy allowed */
+	/* is signing locally allowed */
 	bool allowed;
 
-	/* is signing localy desired */
+	/* is signing locally desired */
 	bool desired;
 
-	/* is signing localy mandatory */
+	/* is signing locally mandatory */
 	bool mandatory;
 
 	/* is signing negotiated by the peer */

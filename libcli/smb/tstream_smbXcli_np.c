@@ -112,7 +112,7 @@ static int tstream_smbXcli_np_destructor(struct tstream_smbXcli_np *cli_nps)
 	 * tstream_disconnect_send()/_recv(), this will
 	 * never be called.
 	 *
-	 * We use a maximun timeout of 1 second == 1000 msec.
+	 * We use a maximum timeout of 1 second == 1000 msec.
 	 */
 	cli_nps->timeout = MIN(cli_nps->timeout, 1000);
 

@@ -212,7 +212,7 @@ bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
 }
 
 /***********************************************************
- Common function for pushing stings, used by smb_bytes_push_str()
+ Common function for pushing strings, used by smb_bytes_push_str()
  and trans_bytes_push_str(). Only difference is the align_odd
  parameter setting.
 ***********************************************************/
@@ -431,7 +431,7 @@ NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
  *
  * @param[in]  str  The string to translate.
  *
- * @return A corresponding enum @smb_signing_setting tranlated from the string.
+ * @return A corresponding enum @smb_signing_setting translated from the string.
  */
 enum smb_signing_setting smb_signing_setting_translate(const char *str)
 {
@@ -450,7 +450,7 @@ enum smb_signing_setting smb_signing_setting_translate(const char *str)
  *
  * @param[in]  str  The string to translate.
  *
- * @return A corresponding enum @smb_encryption_setting tranlated from the
+ * @return A corresponding enum @smb_encryption_setting translated from the
  *         string.
  */
 enum smb_encryption_setting smb_encryption_setting_translate(const char *str)
