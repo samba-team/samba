@@ -1770,10 +1770,11 @@ class KDCBaseTest(RawKerberosTest):
             details['msDS-AllowedToDelegateTo'] = delegation_to_spn
 
         if delegation_from_dn:
-            security_descriptor = self.get_security_descriptor(
-                delegation_from_dn)
+            if isinstance(delegation_from_dn, str):
+                delegation_from_dn = self.get_security_descriptor(
+                    delegation_from_dn)
             details['msDS-AllowedToActOnBehalfOfOtherIdentity'] = (
-                security_descriptor)
+                delegation_from_dn)
 
         if spn is None and account_type is not self.AccountType.USER:
             spn = 'host/' + user_name
