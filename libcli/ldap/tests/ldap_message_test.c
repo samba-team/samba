@@ -50,7 +50,7 @@
 void cm_print_error(const char * const format, ...);
 /*
  * helper function and macro to compare an ldap error code constant with the
- * coresponding nt_status code
+ * corresponding nt_status code
  */
 #define NT_STATUS_LDAP_V(code) (0xF2000000 | code)
 static void _assert_ldap_status_equal(
@@ -159,7 +159,7 @@ static void test_recursion_depth_large(void **state)
 
 
 	/*
-	 * Load a test data file containg 10,000 or clauses in encoded as
+	 * Load a test data file containing 10,000 or clauses in encoded as
 	 * an ASN.1 packet.
 	 */
 	buffer = talloc_zero_array(test_ctx, uint8_t, BUFF_SIZE);
