@@ -301,7 +301,7 @@ class KdcTgsBaseTests(KDCBaseTest):
             self.check_error_rep(rep, expected_error)
             return None
         else:
-            self.check_reply(rep, KRB_TGS_REP)
+            self.check_tgs_reply(rep)
             return kdc_exchange_dict['rep_ticket_creds']
 
 
