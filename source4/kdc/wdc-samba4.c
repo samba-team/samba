@@ -136,7 +136,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
 	}
 
-	mem_ctx = talloc_named(client->context, 0, "samba_get_pac context");
+	mem_ctx = talloc_named(client->context, 0, "samba_wdc_get_pac context");
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
