@@ -17,6 +17,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #include "includes.h"
+#include "system/dir.h"
 #include "system/filesys.h"
 #include "lib/policy/policy.h"
 #include "libcli/raw/smb.h"
@@ -422,15 +423,20 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 	char *entry_local_path = NULL;
 	char *entry_remote_path = NULL;
 	int local_fd = -1, remote_fd = -1;
-	int buf[1024];
-	int nread, total_read;
+	char buf[4096];
+	ssize_t nread, total_read;
+	ssize_t nwrite, total_write;
 	struct stat s;
 	NTSTATUS status;
 
 	dir = opendir(local_path);
+	if (!dir) {
+		DEBUG(0, ("Failed to open directory: %s\n", local_path));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	while ((dirent = readdir(dir)) != NULL) {
-		if (strcmp(dirent->d_name, ".") == 0 ||
-				strcmp(dirent->d_name, "..") == 0) {
+		if (ISDOT(dirent->d_name) || ISDOTDOT(dirent->d_name)) {
 			continue;
 		}
 
@@ -455,10 +461,19 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 		if (s.st_mode & S_IFDIR) {
 			DEBUG(6, ("Pushing directory %s to %s on sysvol\n",
 			          entry_local_path, entry_remote_path));
-			smbcli_mkdir(gp_ctx->cli->tree, entry_remote_path);
+			status = smbcli_mkdir(gp_ctx->cli->tree,
+					      entry_remote_path);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
 			if (depth < GP_MAX_DEPTH) {
-				push_recursive(gp_ctx, entry_local_path,
-				               entry_remote_path, depth+1);
+				status = push_recursive(gp_ctx,
+							entry_local_path,
+							entry_remote_path,
+							depth + 1);
+				if (!NT_STATUS_IS_OK(status)) {
+					goto done;
+				}
 			}
 		} else {
 			DEBUG(6, ("Pushing file %s to %s on sysvol\n",
@@ -481,18 +496,28 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 				goto done;
 			}
 			total_read = 0;
-			while ((nread = read(local_fd, &buf, sizeof(buf)))) {
+			total_write = 0;
+			while ((nread = read(local_fd, buf, sizeof(buf)))) {
 				if (nread == -1) {
 					DBG_ERR("read failed with errno %s\n",
 						strerror(errno));
 					status = NT_STATUS_UNSUCCESSFUL;
-					close(local_fd);
-					local_fd = -1;
 					goto done;
 				}
-				smbcli_write(gp_ctx->cli->tree, remote_fd, 0,
-						&buf, total_read, nread);
+				nwrite = smbcli_write(gp_ctx->cli->tree,
+						      remote_fd, 0, buf,
+						      total_read, nread);
+				if (nwrite < 0) {
+					status = NT_STATUS_UNSUCCESSFUL;
+					goto done;
+				}
 				total_read += nread;
+				total_write += nwrite;
+			}
+			if (total_read != total_write) {
+				/* Weird and should not happen */
+				status = NT_STATUS_UNEXPECTED_IO_ERROR;
+				goto done;
 			}
 
 			close(local_fd);
