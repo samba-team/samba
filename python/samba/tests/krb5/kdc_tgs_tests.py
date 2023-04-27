@@ -172,10 +172,14 @@ class KdcTgsBaseTests(KDCBaseTest):
     def _tgs_req(self, tgt, expected_error, creds, target_creds, *,
                  armor_tgt=None,
                  kdc_options='0',
+                 pac_options=None,
                  expected_cname=None,
                  expected_sname=None,
+                 expected_account_name=None,
                  additional_ticket=None,
+                 decryption_key=None,
                  generate_padata_fn=None,
+                 generate_fast_padata_fn=None,
                  sname=None,
                  srealm=None,
                  till=None,
@@ -188,7 +192,9 @@ class KdcTgsBaseTests(KDCBaseTest):
                  expect_requester_sid=None,
                  expect_edata=False,
                  expected_sid=None,
-                 expected_status=None):
+                 expected_status=None,
+                 expected_proxy_target=None,
+                 expected_transited_services=None):
         if srealm is False:
             srealm = None
         elif srealm is None:
@@ -217,11 +223,13 @@ class KdcTgsBaseTests(KDCBaseTest):
 
         if additional_ticket is not None:
             additional_tickets = [additional_ticket.ticket]
-            decryption_key = additional_ticket.session_key
+            if decryption_key is None:
+                decryption_key = additional_ticket.session_key
         else:
             additional_tickets = None
-            decryption_key = self.TicketDecryptionKey_from_creds(
-                target_creds, etype=expected_ticket_etype)
+            if decryption_key is None:
+                decryption_key = self.TicketDecryptionKey_from_creds(
+                    target_creds, etype=expected_ticket_etype)
 
         subkey = self.RandomKey(tgt.session_key.etype)
 
@@ -238,14 +246,13 @@ class KdcTgsBaseTests(KDCBaseTest):
             generate_fast_fn = self.generate_simple_fast
             generate_fast_armor_fn = self.generate_ap_req
 
-            pac_options = '1'  # claims support
+            if pac_options is None:
+                pac_options = '1'  # claims support
         else:
             armor_subkey = None
             armor_key = None
             generate_fast_fn = None
             generate_fast_armor_fn = None
-
-            pac_options = None
 
         if etypes is None:
             etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
@@ -266,8 +273,10 @@ class KdcTgsBaseTests(KDCBaseTest):
             expected_cname=expected_cname,
             expected_srealm=srealm,
             expected_sname=expected_sname,
+            expected_account_name=expected_account_name,
             ticket_decryption_key=decryption_key,
             generate_padata_fn=generate_padata_fn,
+            generate_fast_padata_fn=generate_fast_padata_fn,
             generate_fast_fn=generate_fast_fn,
             generate_fast_armor_fn=generate_fast_armor_fn,
             check_error_fn=check_error_fn,
@@ -288,7 +297,9 @@ class KdcTgsBaseTests(KDCBaseTest):
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
-            expected_sid=expected_sid)
+            expected_sid=expected_sid,
+            expected_proxy_target=expected_proxy_target,
+            expected_transited_services=expected_transited_services)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=None,
