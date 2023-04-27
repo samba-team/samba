@@ -859,6 +859,10 @@ static bool test_unref_reparent(void)
 	return true;
 }
 
+/* Make the size big enough to not fit into the stack */
+#define ALLOC_SIZE (128 * 1024)
+#define ALLOC_DUP_STRING "talloc talloc talloc talloc talloc talloc talloc"
+
 /*
   measure the speed of talloc versus malloc
 */
@@ -878,9 +882,9 @@ static bool test_speed(void)
 	do {
 		void *p1, *p2, *p3;
 		for (i=0;i<loop;i++) {
-			p1 = talloc_size(ctx, loop % 100);
-			p2 = talloc_strdup(p1, "foo bar");
-			p3 = talloc_size(p1, 300);
+			p1 = talloc_size(ctx, loop % ALLOC_SIZE);
+			p2 = talloc_strdup(p1, ALLOC_DUP_STRING);
+			p3 = talloc_size(p1, ALLOC_SIZE);
 			(void)p2;
 			(void)p3;
 			talloc_free(p1);
@@ -892,16 +896,16 @@ static bool test_speed(void)
 
 	talloc_free(ctx);
 
-	ctx = talloc_pool(NULL, 1024);
+	ctx = talloc_pool(NULL, ALLOC_SIZE * 2);
 
 	tv = private_timeval_current();
 	count = 0;
 	do {
 		void *p1, *p2, *p3;
 		for (i=0;i<loop;i++) {
-			p1 = talloc_size(ctx, loop % 100);
-			p2 = talloc_strdup(p1, "foo bar");
-			p3 = talloc_size(p1, 300);
+			p1 = talloc_size(ctx, loop % ALLOC_SIZE);
+			p2 = talloc_strdup(p1, ALLOC_DUP_STRING);
+			p3 = talloc_size(p1, ALLOC_SIZE);
 			(void)p2;
 			(void)p3;
 			talloc_free(p1);
@@ -918,9 +922,9 @@ static bool test_speed(void)
 	do {
 		void *p1, *p2, *p3;
 		for (i=0;i<loop;i++) {
-			p1 = malloc(loop % 100);
-			p2 = strdup("foo bar");
-			p3 = malloc(300);
+			p1 = malloc(loop % ALLOC_SIZE);
+			p2 = strdup(ALLOC_DUP_STRING);
+			p3 = malloc(ALLOC_SIZE);
 			free(p1);
 			free(p2);
 			free(p3);
@@ -938,9 +942,9 @@ static bool test_speed(void)
 	do {
 		void *p1, *p2, *p3;
 		for (i=0;i<loop;i++) {
-			p1 = talloc_zero_size(ctx, loop % 100);
-			p2 = talloc_strdup(p1, "foo bar");
-			p3 = talloc_zero_size(p1, 300);
+			p1 = talloc_zero_size(ctx, loop % ALLOC_SIZE);
+			p2 = talloc_strdup(p1, ALLOC_DUP_STRING);
+			p3 = talloc_zero_size(p1, ALLOC_SIZE);
 			(void)p2;
 			(void)p3;
 			talloc_free(p1);
@@ -957,9 +961,9 @@ static bool test_speed(void)
 	do {
 		void *p1, *p2, *p3;
 		for (i=0;i<loop;i++) {
-			p1 = calloc(1, loop % 100);
-			p2 = strdup("foo bar");
-			p3 = calloc(1, 300);
+			p1 = calloc(1, loop % ALLOC_SIZE);
+			p2 = strdup(ALLOC_DUP_STRING);
+			p3 = calloc(1, ALLOC_SIZE);
 			free(p1);
 			free(p2);
 			free(p3);
