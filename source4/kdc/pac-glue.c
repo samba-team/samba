@@ -2263,8 +2263,6 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
  *
  * @param client    The client samba kdc entry.
 
- * @param server_principal  The server principal
-
  * @param krbtgt    The krbtgt samba kdc entry.
  *
  * @param device    The computer's samba kdc entry; used for compound
@@ -2281,7 +2279,6 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
-				     const krb5_principal server_principal,
 				     const struct samba_kdc_entry *krbtgt,
 				     const struct samba_kdc_entry *device,
 				     const krb5_const_pac *device_pac,

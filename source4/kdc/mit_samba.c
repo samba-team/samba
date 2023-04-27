@@ -692,7 +692,6 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    context,
 				    flags,
 				    client_skdc_entry,
-				    server->princ,
 				    krbtgt_skdc_entry,
 				    NULL, /* device */
 				    NULL, /* device_pac */
@@ -813,7 +812,6 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    context,
 				    flags,
 				    client_skdc_entry,
-				    server->princ,
 				    krbtgt_skdc_entry,
 				    NULL, /* device */
 				    NULL, /* device_pac */
