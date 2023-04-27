@@ -250,7 +250,7 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 	}
 
 	if (s->max_life != NULL) {
-		h->max_life = malloc(sizeof(unsigned int));
+		h->max_life = malloc(sizeof(*h->max_life));
 		if (h->max_life == NULL) {
 			rc = ENOMEM;
 			goto error;
@@ -261,7 +261,7 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 	}
 
 	if (s->max_renew != NULL) {
-		h->max_renew = malloc(sizeof(unsigned int));
+		h->max_renew = malloc(sizeof(*h->max_renew));
 		if (h->max_renew == NULL) {
 			rc = ENOMEM;
 			goto error;

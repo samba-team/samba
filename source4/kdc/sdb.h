@@ -98,8 +98,8 @@ struct sdb_entry {
 	time_t *valid_start;
 	time_t *valid_end;
 	time_t *pw_end;
-	unsigned int *max_life;
-	unsigned int *max_renew;
+	int *max_life;
+	int *max_renew;
 	struct SDBFlags flags;
 };
 
