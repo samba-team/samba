@@ -1004,7 +1004,7 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		 * ensure the specified offset is within that bound
 		 */
 		if ((off > bufsize) && (eid != ADEID_RFORK)) {
-			DBG_NOTICE("Fogus eid %d: off: %" PRIu32
+			DBG_NOTICE("Bogus eid %d: off: %" PRIu32
 				   ", len: %" PRIu32 "\n",
 				   eid,
 				   off,
@@ -1014,7 +1014,7 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 
 		ok = ad_entry_check_size(eid, bufsize, off, len);
 		if (!ok) {
-			DBG_NOTICE("bogus eid [%" PRIu32 "] bufsize [%zu] "
+			DBG_NOTICE("Bogus eid [%" PRIu32 "] bufsize [%zu] "
 				   "off [%" PRIu32 "] len [%" PRIu32 "]\n",
 				   eid,
 				   bufsize,
