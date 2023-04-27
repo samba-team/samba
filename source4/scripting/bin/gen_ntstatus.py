@@ -126,9 +126,8 @@ def main ():
         sys.exit()
 
     # read in the data
-    file_contents = io.open(input_file, "rt", encoding='utf8')
-
-    errors = parseErrorDescriptions(file_contents, False, transformErrorName)
+    with io.open(input_file, "rt", encoding='utf8') as file_contents:
+        errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
     print("writing new header file: %s" % gen_headerfile_name)
     out_file = io.open(gen_headerfile_name, "wt", encoding='utf8')
