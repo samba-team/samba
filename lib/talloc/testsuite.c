@@ -892,7 +892,7 @@ static bool test_speed(void)
 		count += 3 * loop;
 	} while (private_timeval_elapsed(&tv) < 5.0);
 
-	fprintf(stderr, "talloc: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+	fprintf(stderr, "talloc:\t\t%.0f ops/sec\n", count/private_timeval_elapsed(&tv));
 
 	talloc_free(ctx);
 
@@ -915,7 +915,7 @@ static bool test_speed(void)
 
 	talloc_free(ctx);
 
-	fprintf(stderr, "talloc_pool: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+	fprintf(stderr, "talloc_pool:\t%.0f ops/sec\n", count/private_timeval_elapsed(&tv));
 
 	tv = private_timeval_current();
 	count = 0;
@@ -931,7 +931,7 @@ static bool test_speed(void)
 		}
 		count += 3 * loop;
 	} while (private_timeval_elapsed(&tv) < 5.0);
-	fprintf(stderr, "malloc: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+	fprintf(stderr, "malloc:\t\t%.0f ops/sec\n", count/private_timeval_elapsed(&tv));
 
 	printf("\n# TALLOC_ZERO VS CALLOC SPEED\n");
 
@@ -952,7 +952,7 @@ static bool test_speed(void)
 		count += 3 * loop;
 	} while (private_timeval_elapsed(&tv) < 5.0);
 
-	fprintf(stderr, "talloc_zero: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+	fprintf(stderr, "talloc_zero:\t%.0f ops/sec\n", count/private_timeval_elapsed(&tv));
 
 	talloc_free(ctx);
 
@@ -970,7 +970,7 @@ static bool test_speed(void)
 		}
 		count += 3 * loop;
 	} while (private_timeval_elapsed(&tv) < 5.0);
-	fprintf(stderr, "calloc: %.0f ops/sec\n", count/private_timeval_elapsed(&tv));
+	fprintf(stderr, "calloc:\t\t%.0f ops/sec\n", count/private_timeval_elapsed(&tv));
 
 	printf("success: speed\n");
 
