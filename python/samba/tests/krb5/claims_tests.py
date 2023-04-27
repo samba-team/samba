@@ -1993,7 +1993,7 @@ class ClaimsTests(KDCBaseTest):
                                  expect_claim=True):
         # Create a new authentication silo.
         silo_id = self.get_new_username()
-        silo_dn = self.create_auth_silo(silo_id, enforced=enforced)
+        silo_dn = self.create_authn_silo(silo_id, enforced=enforced)
 
         account_options = None
         if assigned is not False:
@@ -2020,7 +2020,7 @@ class ClaimsTests(KDCBaseTest):
                               'msDS-AuthNPolicySiloMembers',
                               expect_attr=False)
 
-        claim_id = self.create_auth_silo_claim_id()
+        claim_id = self.create_authn_silo_claim_id()
 
         if expect_claim:
             expected_claims = {
