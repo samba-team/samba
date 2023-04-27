@@ -807,7 +807,7 @@ class KDCBaseTest(RawKerberosTest):
 
         details = {
             "dn": dn,
-            "objectclass": object_class,
+            "objectClass": object_class,
             "sAMAccountName": account_name,
             "userAccountControl": str(account_control),
             "unicodePwd": utf16pw}
