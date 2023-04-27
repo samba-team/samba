@@ -37,7 +37,6 @@ from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
     KRB_ERROR,
-    KRB_TGS_REP,
     KDC_ERR_BADKEYVER,
     KDC_ERR_BADMATCH,
     KDC_ERR_ETYPE_NOSUPP,
