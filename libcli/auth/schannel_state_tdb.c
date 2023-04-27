@@ -34,7 +34,7 @@
 
 /******************************************************************************
  Open or create the schannel session store tdb.  Non-static so it can
- be called from parent processes to corectly handle TDB_CLEAR_IF_FIRST
+ be called from parent processes to correctly handle TDB_CLEAR_IF_FIRST
 *******************************************************************************/
 
 struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
@@ -550,7 +550,7 @@ NTSTATUS schannel_save_challenge(struct loadparm_context *lp_ctx,
  remote machine stored in the schannel database.
 
  The credentials are (re)read and from the schannel database, and
- written back after the caclulations are performed.
+ written back after the calculations are performed.
 
  If the creds_out parameter is not NULL returns the credentials.
  ********************************************************************/

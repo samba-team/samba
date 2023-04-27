@@ -224,7 +224,7 @@ bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
 /**
  * @brief Decode AES password buffer to password in the given charset.
  *
- * @param mem_ctx       The memory context to allocate the deocded passwrod on.
+ * @param mem_ctx       The memory context to allocate the decoded password on.
  *
  * @param in_buffer[514] The in buffer with the decrypted password data.
  *

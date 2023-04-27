@@ -24,7 +24,7 @@
 
 /*
   this is a tiny msrpc packet generator. I am only using this to
-  avoid tying this code to a particular varient of our rpc code. This
+  avoid tying this code to a particular variant of our rpc code. This
   generator is not general enough for all our rpc needs, its just
   enough for the spnego/ntlmssp code
 

@@ -131,7 +131,7 @@ char *sess_decrypt_string(TALLOC_CTX *mem_ctx,
 	}
 
 	if (IVAL(out.data, 4) != 1) {
-		DEBUG(0,("Unexpected revision number %d in session crypted string\n",
+		DEBUG(0,("Unexpected revision number %d in session encrypted string\n",
 			 IVAL(out.data, 4)));
 		data_blob_free(&out);
 		return NULL;
@@ -204,7 +204,7 @@ NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DAT
 	int rc, slen;
 
 	if (blob->length < 8) {
-		DEBUG(0, ("Unexpected length %d in session crypted secret (BLOB)\n",
+		DEBUG(0, ("Unexpected length %d in session encrypted secret (BLOB)\n",
 			  (int)blob->length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -221,14 +221,14 @@ NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DAT
 	}
 
 	if (IVAL(out.data, 4) != 1) {
-		DEBUG(2,("Unexpected revision number %d in session crypted secret (BLOB)\n",
+		DEBUG(2,("Unexpected revision number %d in session encrypted secret (BLOB)\n",
 			 IVAL(out.data, 4)));
 		return NT_STATUS_UNKNOWN_REVISION;
 	}
 		
 	slen = IVAL(out.data, 0);
 	if (slen > blob->length - 8) {
-		DEBUG(0,("Invalid crypt length %d in session crypted secret (BLOB)\n", slen));
+		DEBUG(0,("Invalid crypt length %d in session encrypted secret (BLOB)\n", slen));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
