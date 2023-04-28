@@ -140,6 +140,7 @@ struct test_smb2_bench_echo_state {
 	struct test_smb2_bench_echo_conn *conns;
 	size_t num_loops;
 	struct test_smb2_bench_echo_loop *loops;
+	size_t pending_loops;
 	struct timeval starttime;
 	int timecount;
 	int timelimit;
@@ -166,6 +167,8 @@ struct test_smb2_bench_echo_loop {
 	struct timeval starttime;
 	uint64_t num_started;
 	uint64_t num_finished;
+	uint64_t total_finished;
+	uint64_t max_finished;
 	double total_latency;
 	double min_latency;
 	double max_latency;
@@ -200,7 +203,7 @@ static void test_smb2_bench_echo_loop_do(
 				      loop->conn->tree->session->transport->conn,
 				      1000);
 	torture_assert_goto(state->tctx, loop->req != NULL,
-			    state->ok, asserted, "smb2_create_send");
+			    state->ok, asserted, "smb2cli_echo_send");
 
 	tevent_req_set_callback(loop->req,
 				test_smb2_bench_echo_loop_done,
@@ -233,6 +236,7 @@ static void test_smb2_bench_echo_loop_done(struct tevent_req *req)
 	}
 
 	loop->num_finished += 1;
+	loop->total_finished += 1;
 	loop->total_latency += latency;
 
 	if (latency < loop->min_latency) {
@@ -241,6 +245,15 @@ static void test_smb2_bench_echo_loop_done(struct tevent_req *req)
 
 	if (latency > loop->max_latency) {
 		loop->max_latency = latency;
+	}
+
+	if (loop->total_finished >= loop->max_finished) {
+		if (state->pending_loops > 0) {
+			state->pending_loops -= 1;
+		}
+		if (state->pending_loops == 0) {
+			goto asserted;
+		}
 	}
 
 	TALLOC_FREE(frame);
@@ -355,6 +368,7 @@ static bool test_smb2_bench_echo(struct torture_context *tctx,
 	int torture_qdepth = torture_setting_int(tctx, "qdepth", 1);
 	size_t i;
 	size_t li = 0;
+	int looplimit = torture_setting_int(tctx, "looplimit", -1);
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct tevent_timer *te = NULL;
 	uint32_t timeout_msec;
@@ -418,6 +432,11 @@ static bool test_smb2_bench_echo(struct torture_context *tctx,
 			struct test_smb2_bench_echo_loop *loop = &state->loops[li];
 
 			loop->idx = li++;
+			if (looplimit != -1) {
+				loop->max_finished = looplimit;
+			} else {
+				loop->max_finished = UINT64_MAX;
+			}
 			loop->state = state;
 			loop->conn = &state->conns[i];
 			loop->im = tevent_create_immediate(state->loops);
@@ -436,6 +455,7 @@ static bool test_smb2_bench_echo(struct torture_context *tctx,
 	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
 
 	state->starttime = timeval_current();
+	state->pending_loops = state->num_loops;
 
 	te = tevent_add_timer(tctx->ev,
 			      state,
@@ -932,8 +952,8 @@ struct torture_suite *torture_smb2_bench_init(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "bench");
 
 	torture_suite_add_1smb2_test(suite, "oplock1", test_smb2_bench_oplock);
-	torture_suite_add_1smb2_test(suite, "path-contention-shared", test_smb2_bench_path_contention_shared);
 	torture_suite_add_1smb2_test(suite, "echo", test_smb2_bench_echo);
+	torture_suite_add_1smb2_test(suite, "path-contention-shared", test_smb2_bench_path_contention_shared);
 
 	suite->description = talloc_strdup(suite, "SMB2-BENCH tests");
 
