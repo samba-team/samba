@@ -618,7 +618,7 @@ def get_gpo(samdb, gpo_dn):
                            controls=['sd_flags:1:%d' % sd_flags])
     except Exception:
         log.error('Failed to fetch gpo object with nTSecurityDescriptor')
-        return
+        raise
     if res.count != 1:
         raise ldb.LdbError(ldb.ERR_NO_SUCH_OBJECT,
                            'get_gpo: search failed')
