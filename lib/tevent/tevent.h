@@ -39,6 +39,15 @@
 #define __has_attribute(x) 0
 #endif
 
+#ifdef TEVENT_DEPRECATED
+#ifndef _DEPRECATED_
+#if __has_attribute(deprecated) || (__GNUC__ >= 3)
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
+#endif
 
 struct tevent_context;
 struct tevent_ops;
@@ -2523,13 +2532,6 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 #endif
 
 #ifdef TEVENT_DEPRECATED
-#ifndef _DEPRECATED_
-#if __has_attribute(deprecated) || (__GNUC__ >= 3)
-#define _DEPRECATED_ __attribute__ ((deprecated))
-#else
-#define _DEPRECATED_
-#endif
-#endif
 void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
 void tevent_loop_set_nesting_hook(struct tevent_context *ev,
 				  tevent_nesting_hook hook,
