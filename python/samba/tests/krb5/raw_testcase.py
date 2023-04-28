@@ -38,7 +38,7 @@ from pyasn1.codec.ber.encoder import BitStringEncoder
 from pyasn1.error import PyAsn1Error
 
 from samba.credentials import Credentials
-from samba.dcerpc import claims, krb5pac, netlogon, security
+from samba.dcerpc import claims, krb5pac, netlogon, samr, security
 from samba.gensec import FEATURE_SEAL
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc.misc import (
@@ -466,6 +466,14 @@ class KerberosCredentials(Credentials):
         contents = binascii.a2b_hex(hexkey)
         key = kcrypto.Key(etype, contents)
         self.forced_keys[etype] = RodcPacEncryptionKey(key, self.kvno)
+
+        # Also set the NT hash of computer accounts for which we don’t know the
+        # password.
+        if etype == kcrypto.Enctype.RC4 and self.get_password() is None:
+            nt_hash = samr.Password()
+            nt_hash.hash = list(contents)
+
+            self.set_nt_hash(nt_hash)
 
     def get_forced_key(self, etype):
         etype = int(etype)
