@@ -2977,6 +2977,14 @@ class KDCBaseTest(RawKerberosTest):
         msg[name] = ldb.MessageElement(values, flag, name)
         samdb.modify(msg)
 
+    def remove_attribute(self, samdb, dn_str, name):
+        flag = ldb.FLAG_MOD_DELETE
+
+        dn = ldb.Dn(samdb, dn_str)
+        msg = ldb.Message(dn)
+        msg[name] = ldb.MessageElement([], flag, name)
+        samdb.modify(msg)
+
     def create_ccache(self, cname, ticket, enc_part):
         """ Lay out a version 4 on-disk credentials cache, to be read using the
             FILE: protocol.
