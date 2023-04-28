@@ -2038,11 +2038,6 @@ pid_t tevent_cached_getpid(void);
  *
  * Part 1: activation/deactivation
  *
- * tevent_thread_call_depth_activate(), tevent_thread_call_depth_deactivate()
- *
- * Activating registers external size_t variable that will be maintained with
- * the current call depth.
- *
  * Part 2: Mark the request (and its subrequests) to be tracked
  *
  * tevent_thread_call_depth_start(struct tevent_req *req)
@@ -2069,25 +2064,13 @@ pid_t tevent_cached_getpid(void);
  * @{
  */
 
-/**
- * Activate call depth tracking and register external variable that will
- * be updated to the call depth of currently processed tevent request.
- *
- * @param[in]  ptr   Address of external variable
- */
-void tevent_thread_call_depth_activate(size_t *ptr);
+#ifdef TEVENT_DEPRECATED
 
-/**
- * Deactivate call depth tracking. Can be used in the child process,
- * after fork.
- */
-void tevent_thread_call_depth_deactivate(void);
+void tevent_thread_call_depth_activate(size_t *ptr) _DEPRECATED_;
+void tevent_thread_call_depth_deactivate(void) _DEPRECATED_;
+void tevent_thread_call_depth_start(struct tevent_req *req) _DEPRECATED_;
 
-/**
- * This request will have call depth set to 1, its subrequest will get 2 and so
- * on. All other requests will have call depth 0.
- */
-void tevent_thread_call_depth_start(struct tevent_req *req);
+#endif
 
 /**
  * Set the external variable to the call depth of the request req.
