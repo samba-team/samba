@@ -546,6 +546,32 @@ static PyObject *py_creds_get_nt_hash(PyObject *self, PyObject *unused)
 	return ret;
 }
 
+static PyObject *py_creds_set_nt_hash(PyObject *self, PyObject *args)
+{
+	PyObject *py_cp = Py_None;
+	const struct samr_Password *pwd = NULL;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "O|i", &py_cp, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	pwd = pytalloc_get_type(py_cp, struct samr_Password);
+	if (pwd == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	return PyBool_FromLong(cli_credentials_set_nt_hash(creds, pwd, obt));
+}
+
 static PyObject *py_creds_get_kerberos_state(PyObject *self, PyObject *unused)
 {
 	int state;
@@ -1388,6 +1414,13 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_name  = "get_nt_hash",
 		.ml_meth  = py_creds_get_nt_hash,
 		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_nt_hash",
+		.ml_meth  = py_creds_set_nt_hash,
+		.ml_flags = METH_VARARGS,
+		.ml_doc = "S.set_net_sh(samr_Password[, credentials.SPECIFIED]) -> bool\n"
+			"Change NT hash.",
 	},
 	{
 		.ml_name  = "get_kerberos_state",
