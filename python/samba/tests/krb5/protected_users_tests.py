@@ -60,6 +60,17 @@ class ProtectedUsersTests(KDCBaseTest):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
+        samdb = self.get_samdb()
+
+        # Get the old ‘minPwdAge’.
+        minPwdAge = samdb.get_minPwdAge()
+
+        # Reset the ‘minPwdAge’ as it was before.
+        self.addCleanup(samdb.set_minPwdAge, minPwdAge)
+
+        # Set it temporarily to ‘0’.
+        samdb.set_minPwdAge('0')
+
     # Get account credentials for testing.
     def _get_creds(self,
                    protected,
@@ -134,7 +145,7 @@ class ProtectedUsersTests(KDCBaseTest):
 
         self._test_samr_change_password(
             client_creds,
-            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
+            expect_error=None)
 
     def test_samr_change_password_protected(self):
         # Use a non-cached account so that it is not locked out for other
