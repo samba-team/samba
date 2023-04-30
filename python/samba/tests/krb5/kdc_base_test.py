@@ -537,8 +537,8 @@ class KDCBaseTest(RawKerberosTest):
         if enforced is not None:
             details['msDS-AuthNPolicySiloEnforced'] = enforced
 
-        # Save the silo DN so it can be deleted in tearDown().
-        self.test_accounts.append(str(authn_silo_dn))
+        # Save the silo DN so it can be deleted in tearDownClass().
+        self.accounts.append(str(authn_silo_dn))
 
         # Remove the silo if it exists; this will happen if a previous test run
         # failed.
