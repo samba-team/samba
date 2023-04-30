@@ -88,7 +88,9 @@ void dns_marshall_buffer(struct dns_buffer *buf, const uint8_t *data,
 		buf->data = new_data;
 	}
 
-	memcpy(buf->data + buf->offset, data, len);
+	if (data != NULL) {
+		memcpy(buf->data + buf->offset, data, len);
+	}
 	buf->offset += len;
 	return;
 }
