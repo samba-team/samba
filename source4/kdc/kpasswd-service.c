@@ -379,9 +379,11 @@ reply:
 	RSSVAL(reply->data, 0, reply->length);
 	RSSVAL(reply->data, 2, 1);
 	RSSVAL(reply->data, 4, ap_rep_blob.length);
-	memcpy(reply->data + HEADER_LEN,
-	       ap_rep_blob.data,
-	       ap_rep_blob.length);
+	if (ap_rep_blob.data != NULL) {
+		memcpy(reply->data + HEADER_LEN,
+		       ap_rep_blob.data,
+		       ap_rep_blob.length);
+	}
 	memcpy(reply->data + HEADER_LEN + ap_rep_blob.length,
 	       enc_data_blob.data,
 	       enc_data_blob.length);
