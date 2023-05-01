@@ -898,10 +898,10 @@ enum ndr_err_code ndr_pull_compression_end(struct ndr_pull *subndr,
   push a compressed subcontext
 */
 enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
-				    struct ndr_push **_uncomndr,
-				    enum ndr_compression_alg compression_alg)
+				    struct ndr_push **_uncomndr)
 {
 	struct ndr_push *uncomndr;
+	enum ndr_compression_alg compression_alg = subndr->cstate->type;
 
 	switch (compression_alg) {
 	case NDR_COMPRESSION_NONE:
@@ -928,12 +928,13 @@ enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
   push a compressed subcontext
 */
 enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
-				  struct ndr_push *uncomndr,
-				  enum ndr_compression_alg compression_alg)
+				  struct ndr_push *uncomndr)
 {
 	struct ndr_pull *ndrpull;
 	bool last = false;
 	z_stream z;
+
+	enum ndr_compression_alg compression_alg = subndr->cstate->type;
 
 	ndrpull = talloc_zero(uncomndr, struct ndr_pull);
 	NDR_ERR_HAVE_NO_MEMORY(ndrpull);
@@ -1034,11 +1035,16 @@ enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
 }
 
 enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
-						  enum ndr_compression_alg compression_alg,
-						  struct ndr_compression_state **state)
+						  enum ndr_compression_alg compression_alg)
 {
 	struct ndr_compression_state *s;
 	int z_ret;
+
+	/*
+	 * Avoid confusion, NULL out ndr->cstate at the start of the
+	 * compression block
+	 */
+	ndr->cstate = NULL;
 
 	s = talloc_zero(ndr, struct ndr_compression_state);
 	NDR_ERR_HAVE_NO_MEMORY(s);
@@ -1079,8 +1085,7 @@ enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
 		break;
 	}
 
-
-	*state = s;
+	ndr->cstate = s;
 
 	return NDR_ERR_SUCCESS;
 }
