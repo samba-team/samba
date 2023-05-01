@@ -977,35 +977,23 @@ enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code generic_mszip_init(TALLOC_CTX *mem_ctx,
-					    struct ndr_compression_state *state)
+static enum ndr_err_code generic_mszip_init(struct ndr_compression_state *state)
 {
-	z_stream *z = talloc_zero(mem_ctx, z_stream);
+	z_stream *z = talloc_zero(state, z_stream);
 	NDR_ERR_HAVE_NO_MEMORY(z);
 
 	z->zalloc = ndr_zlib_alloc;
 	z->zfree  = ndr_zlib_free;
-	z->opaque = mem_ctx;
+	z->opaque = state;
 
 	state->alg.mszip.z = z;
 	state->alg.mszip.dict_size = 0;
 	/* pre-alloc dictionary */
-	state->alg.mszip.dict = talloc_array(mem_ctx, uint8_t, 0x8000);
+	state->alg.mszip.dict = talloc_array(state, uint8_t, 0x8000);
 	NDR_ERR_HAVE_NO_MEMORY(state->alg.mszip.dict);
 
 	return NDR_ERR_SUCCESS;
 }
-
-static void generic_mszip_free(struct ndr_compression_state *state)
-{
-	if (state == NULL) {
-		return;
-	}
-
-	TALLOC_FREE(state->alg.mszip.z);
-	TALLOC_FREE(state->alg.mszip.dict);
-}
-
 
 enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
 						  enum ndr_compression_alg compression_alg,
@@ -1025,7 +1013,7 @@ enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
 	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
 		break;
 	case NDR_COMPRESSION_MSZIP_CAB:
-		NDR_CHECK(generic_mszip_init(ndr, s));
+		NDR_CHECK(generic_mszip_init(s));
 		z_ret = inflateInit2(s->alg.mszip.z, -MAX_WBITS);
 		if (z_ret != Z_OK) {
 			return ndr_pull_error(ndr, NDR_ERR_COMPRESSION,
@@ -1043,44 +1031,6 @@ enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
 	*state = s;
 
 	return NDR_ERR_SUCCESS;
-}
-
-void ndr_pull_compression_state_free(struct ndr_compression_state *state)
-{
-	if (state == NULL) {
-		return;
-	}
-
-	switch (state->type) {
-	case NDR_COMPRESSION_NONE:
-	case NDR_COMPRESSION_MSZIP:
-	case NDR_COMPRESSION_XPRESS:
-	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
-		break;
-	case NDR_COMPRESSION_MSZIP_CAB:
-		generic_mszip_free(state);
-		break;
-	default:
-		break;
-	}
-	TALLOC_FREE(state);
-}
-
-static int ndr_push_compression_state_free(struct ndr_compression_state *state)
-{
-	switch (state->type) {
-	case NDR_COMPRESSION_NONE:
-	case NDR_COMPRESSION_MSZIP:
-	case NDR_COMPRESSION_XPRESS:
-	case NDR_COMPRESSION_XPRESS_HUFF_RAW:
-		break;
-	case NDR_COMPRESSION_MSZIP_CAB:
-		generic_mszip_free(state);
-		break;
-	default:
-		break;
-	}
-	return 0;
 }
 
 enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
@@ -1109,7 +1059,7 @@ enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
 	case NDR_COMPRESSION_MSZIP:
 		break;
 	case NDR_COMPRESSION_MSZIP_CAB:
-		NDR_CHECK(generic_mszip_init(ndr, s));
+		NDR_CHECK(generic_mszip_init(s));
 		z_ret = deflateInit2(s->alg.mszip.z,
 				     Z_DEFAULT_COMPRESSION,
 				     Z_DEFLATED,
@@ -1129,7 +1079,6 @@ enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
 		break;
 	}
 
-	talloc_set_destructor(s, ndr_push_compression_state_free);
 
 	*state = s;
 

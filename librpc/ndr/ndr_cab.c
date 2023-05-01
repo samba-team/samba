@@ -369,8 +369,7 @@ static enum ndr_err_code ndr_pull_folder_cfdata(struct ndr_pull *ndr,
 		}
 	}
 
-	ndr_pull_compression_state_free(ndr->cstate);
-	ndr->cstate = NULL;
+	TALLOC_FREE(ndr->cstate);
 
 	return NDR_ERR_SUCCESS;
 }
