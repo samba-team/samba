@@ -46,11 +46,11 @@ struct opt {
 	char *outputfile;
 	size_t blocksize;
 
-	bool quiet;
-	bool dots;
-	bool verbose;
-	bool send_stdout;
-	bool update;
+	int quiet;
+	int dots;
+	int verbose;
+	int send_stdout;
+	int update;
 	unsigned limit_rate;
 };
 static struct opt opt = { .blocksize = SMB_DEFAULT_BLOCKSIZE };
@@ -720,7 +720,7 @@ int main(int argc, char **argv)
 {
 	int c = 0;
 	const char *file = NULL;
-	bool smb_encrypt = false;
+	int smb_encrypt = false;
 	int resume = 0, recursive = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ok = false;
