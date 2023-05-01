@@ -627,7 +627,7 @@ static bool smb_download_file(const char *base, const char *name,
 					/* Pause until `ticks_to_fill_bucket` */
 					double sleep_us
 					 = (ticks_to_fill_bucket - diff_ticks)
-					  * 1000000 / CLOCKS_PER_SEC;
+					  * 1000000.0 / CLOCKS_PER_SEC;
 					usleep(sleep_us);
 				}
 				/* Reset the byte counter and the ticks. */
