@@ -441,7 +441,6 @@ static struct tevent_req *process_request_send(
 	if (req == NULL) {
 		return NULL;
 	}
-	tevent_thread_call_depth_start(req);
 	state->cli_state = cli_state;
 	state->ev = ev;
 
@@ -1638,7 +1637,10 @@ int main(int argc, const char **argv)
 
 	if (lp_winbind_debug_traceid()) {
 		winbind_debug_traceid_setup(global_event_context());
-		tevent_thread_call_depth_activate(debug_call_depth_addr());
+		winbind_debug_call_depth_setup(debug_call_depth_addr());
+		tevent_thread_call_depth_set_callback(
+			debuglevel_get() > 1 ? winbind_call_flow : NULL,
+			NULL);
 	}
 	ok = initialize_password_db(true, global_event_context());
 	if (!ok) {
