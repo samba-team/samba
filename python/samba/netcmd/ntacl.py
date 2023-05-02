@@ -70,7 +70,7 @@ def get_local_domain_sid(lp):
 class cmd_ntacl_set(Command):
     """Set ACLs on a file."""
 
-    synopsis = "%prog <acl> <file> [options]"
+    synopsis = "%prog <acl> <path> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -81,6 +81,7 @@ class cmd_ntacl_set(Command):
     takes_options = [
         # --quiet is not used at all...
         Option("-q", "--quiet", help=Option.SUPPRESS_HELP, action="store_true"),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
                choices=["native", "tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
@@ -89,10 +90,10 @@ class cmd_ntacl_set(Command):
         Option("--service", help="Name of the smb.conf service to use when applying the ACLs", type="string")
     ]
 
-    takes_args = ["acl", "file"]
+    takes_args = ["acl", "path"]
 
-    def run(self, acl, file, use_ntvfs=False, use_s3fs=False,
-            quiet=False, xattr_backend=None, eadb_file=None,
+    def run(self, acl, path, use_ntvfs=False, use_s3fs=False,
+            quiet=False, verbose=False, xattr_backend=None, eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None,
             service=None):
         logger = self.get_logger()
@@ -104,15 +105,28 @@ class cmd_ntacl_set(Command):
         elif use_s3fs:
             use_ntvfs = False
 
-        setntacl(lp,
-                 file,
-                 acl,
-                 str(domain_sid),
-                 system_session_unix(),
-                 xattr_backend,
-                 eadb_file,
-                 use_ntvfs=use_ntvfs,
-                 service=service)
+        def _setntacl_path(_path):
+            if verbose:
+                if os.path.islink(_path):
+                    self.outf.write("symlink: %s\n" % _path)
+                elif os.path.isdir(_path):
+                    self.outf.write("dir: %s\n" % _path)
+                else:
+                    self.outf.write("file: %s\n" % _path)
+            try:
+                return setntacl(lp,
+                                _path,
+                                acl,
+                                str(domain_sid),
+                                system_session_unix(),
+                                xattr_backend,
+                                eadb_file,
+                                use_ntvfs=use_ntvfs,
+                                service=service)
+            except Exception as e:
+                raise CommandError("Could not set acl for %s: %s" % (_path, e))
+
+        _setntacl_path(path)
 
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
