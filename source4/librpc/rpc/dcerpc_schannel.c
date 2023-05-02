@@ -173,6 +173,9 @@ static void continue_srv_challenge(struct tevent_req *subreq)
 
 	/* prepare credentials for auth2 request */
 	s->mach_pwd = cli_credentials_get_nt_hash(s->credentials, c);
+	if (s->mach_pwd == NULL) {
+		return composite_error(c, NT_STATUS_INTERNAL_ERROR);
+	}
 
 	/* auth2 request arguments */
 	s->a.in.server_name      = s->r.in.server_name;
