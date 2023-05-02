@@ -37,7 +37,6 @@ static NTSTATUS posix_eadb_add_list(struct tdb_wrap *ea_tdb, TALLOC_CTX *ctx, co
 {
 	DATA_BLOB blob;
 	TALLOC_CTX *mem_ctx;
-	const char *s;
 	NTSTATUS status;
 	size_t len;
 
@@ -49,15 +48,20 @@ static NTSTATUS posix_eadb_add_list(struct tdb_wrap *ea_tdb, TALLOC_CTX *ctx, co
 
 	status = pull_xattr_blob_tdb_raw(ea_tdb, mem_ctx, XATTR_LIST_ATTR,
 				     fname, fd, 100, &blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		blob = data_blob(NULL, 0);
-	}
+	if (NT_STATUS_IS_OK(status)) {
+		const char *s;
 
-	for (s=(const char *)blob.data; s < (const char *)(blob.data+blob.length); s += strlen(s) + 1) {
-		if (strcmp(attr_name, s) == 0) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_OK;
+		for (s = (const char *)blob.data;
+		     s < (const char *)(blob.data + blob.length);
+		     s += strlen(s) + 1) {
+			if (strcmp(attr_name, s) == 0) {
+				talloc_free(mem_ctx);
+				return NT_STATUS_OK;
+			}
 		}
+	} else {
+		blob = data_blob(NULL, 0);
+		/* No need to parse an empty blob */
 	}
 
 	len = strlen(attr_name) + 1;
