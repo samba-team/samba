@@ -231,7 +231,7 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 	}
 
 	/*
-	 * Strong keys could be unsupported (NT4) or disables. So retry with the
+	 * Strong keys could be unsupported (NT4) or disabled. So retry with the
 	 * flags returned by the server. - asn
 	 */
 	if (NT_STATUS_EQUAL(s->a.out.result, NT_STATUS_ACCESS_DENIED)) {
