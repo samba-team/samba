@@ -87,6 +87,8 @@ class cmd_ntacl_set(Command):
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
         Option("--use-ntvfs", help="Set the ACLs directly to the TDB or xattr for use with the ntvfs file server", action="store_true"),
         Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server via the VFS layer", action="store_true"),
+        Option("--recursive", help="Set the ACLs for directories and their contents recursively", action="store_true"),
+        Option("--follow-symlinks", help="Follow symlinks", action="store_true"),
         Option("--service", help="Name of the smb.conf service to use when applying the ACLs", type="string")
     ]
 
@@ -95,7 +97,7 @@ class cmd_ntacl_set(Command):
     def run(self, acl, path, use_ntvfs=False, use_s3fs=False,
             quiet=False, verbose=False, xattr_backend=None, eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None,
-            service=None):
+            recursive=False, follow_symlinks=False, service=None):
         logger = self.get_logger()
         lp = sambaopts.get_loadparm()
         domain_sid = get_local_domain_sid(lp)
@@ -106,6 +108,12 @@ class cmd_ntacl_set(Command):
             use_ntvfs = False
 
         def _setntacl_path(_path):
+            if not follow_symlinks and os.path.islink(_path):
+                if recursive:
+                    self.outf.write("ignored symlink: %s\n" % _path)
+                    return
+                raise CommandError("symlink: %s: requires --follow-symlinks" % (_path))
+
             if verbose:
                 if os.path.islink(_path):
                     self.outf.write("symlink: %s\n" % _path)
@@ -127,6 +135,13 @@ class cmd_ntacl_set(Command):
                 raise CommandError("Could not set acl for %s: %s" % (_path, e))
 
         _setntacl_path(path)
+
+        if recursive and os.path.isdir(path):
+            for root, dirs, files in os.walk(path, followlinks=follow_symlinks):
+                for name in files:
+                    _setntacl_path(os.path.join(root, name))
+                for name in dirs:
+                    _setntacl_path(os.path.join(root, name))
 
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
