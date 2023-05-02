@@ -2327,8 +2327,8 @@ static void ban_node_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct node_ban_state *state = tevent_req_data(
-		req, struct node_ban_state);
+	struct ban_node_state *state = tevent_req_data(
+		req, struct ban_node_state);
 	struct ctdb_reply_control *reply;
 	int ret;
 	bool status;
