@@ -878,12 +878,12 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			continue;
 		}
 
-		el = &msg->elements[msg->num_elements-1];
-
 		a = ldb_schema_attribute_by_name(ldb, attr);
+		el = (msg->num_elements > 0
+		      ? &msg->elements[msg->num_elements - 1]
+		      : NULL);
 
-		if (msg->num_elements > 0 && ldb_attr_cmp(attr, el->name) == 0 &&
-		    flags == el->flags) {
+		if (el && ldb_attr_cmp(attr, el->name) == 0 && flags == el->flags) {
 			/* its a continuation */
 			el->values =
 				talloc_realloc(msg->elements, el->values,
