@@ -1429,7 +1429,7 @@ NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx
 			      "(&(sAMAccountName=%s)(objectclass=user))",
 			      ldb_binary_encode_string(mem_ctx, account_name));
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		DEBUG(3,("sam_search_user: Couldn't find user [%s] in samdb, under %s\n",
+		DEBUG(3,("authsam_search_account: Couldn't find user [%s] in samdb, under %s\n",
 			 account_name, ldb_dn_get_linearized(domain_dn)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
