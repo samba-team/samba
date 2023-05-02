@@ -2863,6 +2863,554 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
 
+class DeviceRestrictionTests(ConditionalAceBaseTests):
+    def test_pac_groups_not_present(self):
+        """Test that authentication fails if the device does not belong to some
+        required groups.
+        """
+
+        required_sids = {
+            ('S-1-2-3-4', SidType.EXTRA_SID, self.default_attrs),
+            ('S-1-9-8-7', SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that requires the device to belong to
+        # certain groups.
+        client_policy_sddl = self.allow_if(
+            f'Member_of {self.sddl_array_from_sids(required_sids)}')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_pac_groups_present(self):
+        """Test that authentication succeeds if the device belongs to some
+        required groups.
+        """
+
+        required_sids = {
+            ('S-1-2-3-4', SidType.EXTRA_SID, self.default_attrs),
+            ('S-1-9-8-7', SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        device_sids = required_sids | {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the required groups to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_sids,
+                                  new_sids=device_sids),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to belong to
+        # certain groups.
+        client_policy_sddl = self.allow_if(
+            f'Member_of {self.sddl_array_from_sids(required_sids)}')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication succeeds.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=client_policy)
+
+    def test_pac_resource_groups_present(self):
+        """Test that authentication succeeds if the device belongs to some
+        required resource groups.
+        """
+
+        required_sids = {
+            ('S-1-2-3-4', SidType.RESOURCE_SID, self.resource_attrs),
+            ('S-1-2-3-5', SidType.RESOURCE_SID, self.resource_attrs),
+            ('S-1-2-3-6', SidType.RESOURCE_SID, self.resource_attrs),
+        }
+
+        device_sids = required_sids | {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the required groups to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_sids,
+                                  new_sids=device_sids),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to belong to
+        # certain groups.
+        client_policy_sddl = self.allow_if(
+            f'Member_of {self.sddl_array_from_sids(required_sids)}')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_pac_resource_groups_present_to_service_sid_compression(self):
+        """Test that authentication succeeds if the device belongs to some
+        required resource groups, and the request is to a service that supports
+        SID compression.
+        """
+
+        required_sids = {
+            ('S-1-2-3-4', SidType.RESOURCE_SID, self.resource_attrs),
+            ('S-1-2-3-5', SidType.RESOURCE_SID, self.resource_attrs),
+            ('S-1-2-3-6', SidType.RESOURCE_SID, self.resource_attrs),
+        }
+
+        device_sids = required_sids | {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the required groups to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_sids,
+                                  new_sids=device_sids),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to belong to
+        # certain groups.
+        client_policy_sddl = self.allow_if(
+            f'Member_of {self.sddl_array_from_sids(required_sids)}')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'target'})
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_pac_resource_groups_present_to_service_no_sid_compression(self):
+        """Test that authentication succeeds if the device belongs to some
+        required resource groups, and the request is to a service that does not
+        support SID compression.
+        """
+
+        required_sids = {
+            ('S-1-2-3-4', SidType.RESOURCE_SID, self.resource_attrs),
+            ('S-1-2-3-5', SidType.RESOURCE_SID, self.resource_attrs),
+            ('S-1-2-3-6', SidType.RESOURCE_SID, self.resource_attrs),
+        }
+
+        device_sids = required_sids | {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the required groups to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_sids,
+                                  new_sids=device_sids),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to belong to
+        # certain groups.
+        client_policy_sddl = self.allow_if(
+            f'Member_of {self.sddl_array_from_sids(required_sids)}')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'id': 'target',
+                'supported_enctypes': (
+                    security.KERB_ENCTYPE_RC4_HMAC_MD5) | (
+                        security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK),
+                'sid_compression_support': False,
+            })
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_pac_well_known_groups_not_present(self):
+        """Test that authentication fails if the device does not belong to one
+        or more required well‐known groups.
+        """
+
+        required_sids = {
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, self.default_attrs),
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (self.service_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        device_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Modify the machine account’s TGT to contain only the SID of the
+        # machine account’s primary group.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_sids,
+                                  new_sids=device_sids),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to belong to
+        # certain groups.
+        client_policy_sddl = self.allow_if(
+            f'Member_of_any {self.sddl_array_from_sids(required_sids)}')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_pac_device_info(self):
+        """Test the groups of the client and the device after performing a
+        FAST‐armored AS‐REQ.
+        """
+
+        device_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the required groups to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_sids,
+                                  new_sids=device_sids),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create a user account.
+        client_creds = self._get_creds(account_type=self.AccountType.USER)
+
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'target'})
+
+        expected_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            # The client’s groups are to include the Asserted Identity and
+            # Claims Valid SIDs.
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        samdb = self.get_samdb()
+        domain_sid_str = samdb.get_domain_sid()
+
+        expected_sids = self.map_sids(expected_sids, None, domain_sid_str)
+
+        # Show that authentication succeeds. Check that the groups in the PAC
+        # are as expected.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_groups=expected_sids,
+                             expect_device_info=False,
+                             expected_device_groups=None)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds)
+
+    def test_pac_claims_not_present(self):
+        """Test that authentication fails if the device does not have a
+        required claim.
+        """
+
+        claim_id = 'the name of the claim'
+        claim_value = 'the value of the claim'
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that requires the device to have a
+        # certain claim.
+        client_policy_sddl = self.allow_if(
+            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_pac_claims_present(self):
+        """Test that authentication succeeds if the device has a required
+        claim.
+        """
+
+        claim_id = 'the name of the claim'
+        claim_value = 'the value of the claim'
+
+        pac_claims = [
+            (claims.CLAIMS_SOURCE_TYPE_AD, [
+                (claim_id, claims.CLAIM_TYPE_STRING, [claim_value]),
+            ]),
+        ]
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the required claim to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=partial(self.set_pac_claims,
+                                  client_claims=pac_claims),
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to have a
+        # certain claim.
+        client_policy_sddl = self.allow_if(
+            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication succeeds.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=client_policy)
+
+    def test_pac_claims_invalid(self):
+        """Test that authentication fails if the device’s required claim is not
+        valid.
+        """
+
+        claim_id = 'the name of the claim'
+        claim_value = 'the value of the claim'
+
+        pac_claims = [
+            (claims.CLAIMS_SOURCE_TYPE_AD, [
+                (claim_id, claims.CLAIM_TYPE_STRING, [claim_value]),
+            ]),
+        ]
+
+        # The device’s SIDs do not include the Claims Valid SID.
+        device_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+        }
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Add the SIDs and the required claim to the machine account’s TGT.
+        mach_tgt = self.modified_ticket(
+            mach_tgt,
+            modify_pac_fn=[
+                partial(self.set_pac_claims, client_claims=pac_claims),
+                partial(self.set_pac_sids, new_sids=device_sids)],
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        # Create an authentication policy that requires the device to have a
+        # certain claim.
+        client_policy_sddl = self.allow_if(
+            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+        client_policy = self.create_authn_policy(
+            enforced=True, user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        target_creds = self.get_krbtgt_creds()
+
+        # Show that authentication fails.
+        self._armored_as_req(client_creds,
+                             target_creds,
+                             mach_tgt,
+                             expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=client_policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+
 class TgsReqServicePolicyTests(ConditionalAceBaseTests):
     def test_pac_groups_not_present(self):
         """Test that authorization succeeds if the client does not belong to
@@ -3722,6 +4270,83 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
 
         self.check_tgs_log(client_creds, target_creds,
                            policy=target_policy)
+
+    def test_simple_as_req_client_and_target_policy(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that explicitly allows the machine
+        # account for a user.
+        client_policy_sddl = f'O:SYD:(XA;;CR;;;{mach_creds.get_sid()};(Member_of {{SID({mach_creds.get_sid()}), SID({mach_creds.get_sid()})}}))'
+        client_policy = self.create_authn_policy(enforced=True,
+                                                 user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly allows the user account to obtain a service ticket.
+        target_policy_sddl = f'O:SYD:(XA;;CR;;;{client_creds.get_sid()};(Member_of SID({client_creds.get_sid()})))'
+        target_policy = self.create_authn_policy(enforced=True,
+                                                 computer_allowed_to=target_policy_sddl)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=target_policy)
+
+        expected_groups = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        # Show that obtaining a service ticket with an AS‐REQ is allowed.
+        self._armored_as_req(client_creds,
+                          target_creds,
+                          mach_tgt,
+                          expected_groups=expected_groups)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=client_policy,
+                          server_policy=target_policy)
+
+    def test_simple_as_req_client_policy_only(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that explicitly allows the machine
+        # account for a user.
+        client_policy_sddl = f'O:SYD:(XA;;CR;;;{mach_creds.get_sid()};(Member_of SID({mach_creds.get_sid()})))'
+        client_policy = self.create_authn_policy(enforced=True,
+                                                 user_allowed_from=client_policy_sddl)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=client_policy)
+
+        expected_groups = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        # Show that obtaining a service ticket with an AS‐REQ is allowed.
+        self._armored_as_req(client_creds,
+                          self.get_krbtgt_creds(),
+                          mach_tgt,
+                          expected_groups=expected_groups)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=client_policy)
 
 
 if __name__ == '__main__':

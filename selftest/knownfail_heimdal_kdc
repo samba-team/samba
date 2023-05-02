@@ -262,3 +262,9 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_claims_invalid_no_attrs\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_claims_present\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_info_no_compound_id_support\(ad_dc\)
+#
+# Conditional ACE device restrictions
+#
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_claims_present\(ad_dc\)
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_groups_present\(ad_dc\)
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_simple_as_req_client_policy_only\(ad_dc\)
