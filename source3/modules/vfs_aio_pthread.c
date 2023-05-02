@@ -468,6 +468,13 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (fsp->conn->sconn->pool == NULL) {
+		/*
+		 * a threadpool is required for async support
+		 */
+		aio_allow_open = false;
+	}
+
 	if (fsp->conn->sconn->client->server_multi_channel_enabled) {
 		/*
 		 * This module is not compatible with multi channel yet.
