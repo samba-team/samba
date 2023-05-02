@@ -294,6 +294,115 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
                                      opts=opts,
                                      use_cache=cached)
 
+    def _fast_as_req(self,
+                     client_creds,
+                     target_creds,
+                     armor_tgt,
+                     expected_error=0,
+                     expect_status=None,
+                     expected_status=None,
+                     expected_groups=None,
+                     expect_device_info=None,
+                     expected_device_groups=None,
+                     expect_device_claims=None,
+                     expected_device_claims=None):
+        client_username = client_creds.get_username()
+        client_realm = client_creds.get_realm()
+        client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                 names=[client_username])
+
+        target_name = target_creds.get_username()
+        target_sname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL, names=[target_name])
+        target_realm = target_creds.get_realm()
+        target_decryption_key = self.TicketDecryptionKey_from_creds(
+            target_creds)
+        target_etypes = target_creds.tgs_supported_enctypes
+
+        authenticator_subkey = self.RandomKey(kcrypto.Enctype.AES256)
+        armor_key = self.generate_armor_key(authenticator_subkey,
+                                            armor_tgt.session_key)
+
+        preauth_key = self.PasswordKey_from_creds(client_creds,
+                                                  kcrypto.Enctype.AES256)
+
+        client_challenge_key = (
+            self.generate_client_challenge_key(armor_key, preauth_key))
+        fast_padata = [self.get_challenge_pa_data(client_challenge_key)]
+
+        def _generate_fast_padata(kdc_exchange_dict,
+                                  _callback_dict,
+                                  req_body):
+            return list(fast_padata), req_body
+
+        etypes = kcrypto.Enctype.AES256, kcrypto.Enctype.RC4
+
+        if expected_error:
+            check_error_fn = self.generic_check_kdc_error
+            check_rep_fn = None
+        else:
+            check_error_fn = None
+            check_rep_fn = self.generic_check_kdc_rep
+
+        pac_options = '1'  # claims support
+
+        samdb = self.get_samdb()
+        domain_sid_str = samdb.get_domain_sid()
+
+        if expected_groups is not None:
+            expected_groups = self.map_sids(expected_groups, None, domain_sid_str)
+
+        if expected_device_groups is not None:
+            expected_device_groups = self.map_sids(expected_device_groups, None, domain_sid_str)
+
+        kdc_exchange_dict = self.as_exchange_dict(
+            creds=client_creds,
+            expected_crealm=client_realm,
+            expected_cname=client_cname,
+            expected_srealm=target_realm,
+            expected_sname=target_sname,
+            expected_supported_etypes=target_etypes,
+            ticket_decryption_key=target_decryption_key,
+            generate_fast_fn=self.generate_simple_fast,
+            generate_fast_armor_fn=self.generate_ap_req,
+            generate_fast_padata_fn=_generate_fast_padata,
+            fast_armor_type=FX_FAST_ARMOR_AP_REQUEST,
+            check_error_fn=check_error_fn,
+            check_rep_fn=check_rep_fn,
+            check_kdc_private_fn=self.generic_check_kdc_private,
+            expected_error_mode=expected_error,
+            expected_salt=client_creds.get_salt(),
+            expect_status=expect_status,
+            expected_status=expected_status,
+            expected_groups=expected_groups,
+            expect_device_info=expect_device_info,
+            expected_device_domain_sid=domain_sid_str,
+            expected_device_groups=expected_device_groups,
+            expect_device_claims=expect_device_claims,
+            expected_device_claims=expected_device_claims,
+            authenticator_subkey=authenticator_subkey,
+            preauth_key=preauth_key,
+            armor_key=armor_key,
+            armor_tgt=armor_tgt,
+            armor_subkey=authenticator_subkey,
+            kdc_options='0',
+            pac_options=pac_options,
+            # PA-DATA types are not important for these tests.
+            check_patypes=False)
+
+        rep = self._generic_kdc_exchange(
+            kdc_exchange_dict,
+            cname=client_cname,
+            realm=client_realm,
+            sname=target_sname,
+            etypes=etypes)
+        if expected_error:
+            self.check_error_rep(rep, expected_error)
+            return None
+        else:
+            self.check_as_reply(rep)
+            return kdc_exchange_dict['rep_ticket_creds']
+
     @staticmethod
     def audit_type(msg):
         return AuditType(msg['type'])
@@ -6530,6 +6639,269 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
                       armor_tgt=mach_tgt)
 
         self.check_tgs_log(client_creds, target_creds, policy=policy)
+
+    def test_authn_policy_allowed_to_computer_allow_as_req(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly allows the user account to obtain a service ticket.
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
+        denied = 'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=denied,
+                                          computer_allowed_to=allowed,
+                                          service_allowed_to=denied)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # Show that obtaining a service ticket with an AS-REQ is allowed.
+        self._fast_as_req(client_creds, target_creds, mach_tgt)
+
+        self.check_as_log(client_creds,
+                          server_policy=policy)
+
+    def test_authn_policy_allowed_to_computer_deny_as_req(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=allowed,
+                                          computer_allowed_to=denied,
+                                          service_allowed_to=allowed)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # Show that obtaining a service ticket with an AS-REQ is denied.
+        self._fast_as_req(
+            client_creds, target_creds, mach_tgt,
+            expected_error=KDC_ERR_POLICY,
+            # We aren’t particular about whether or not we get an NTSTATUS.
+            expect_status=None,
+            expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_as_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_authn_policy_allowed_to_user_allow_as_req(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a user and explicitly
+        # allows the user account to obtain a service ticket.
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
+        denied = 'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=allowed,
+                                          computer_allowed_to=denied,
+                                          service_allowed_to=denied)
+
+        # Create a user account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy,
+                                       spn='host/{account}')
+
+        # Show that obtaining a service ticket with an AS-REQ is allowed.
+        self._fast_as_req(client_creds, target_creds, mach_tgt)
+
+        self.check_as_log(client_creds,
+                          server_policy=policy)
+
+    def test_authn_policy_allowed_to_user_deny_as_req(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a user and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=denied,
+                                          computer_allowed_to=allowed,
+                                          service_allowed_to=allowed)
+
+        # Create a user account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy,
+                                       spn='host/{account}')
+
+        # Show that obtaining a service ticket with an AS-REQ is denied.
+        self._fast_as_req(
+            client_creds, target_creds, mach_tgt,
+            expected_error=KDC_ERR_POLICY,
+            # We aren’t particular about whether or not we get an NTSTATUS.
+            expect_status=None,
+            expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_as_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_authn_policy_allowed_to_service_allow_as_req(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a managed service and
+        # explicitly allows the user account to obtain a service ticket.
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
+        denied = 'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=denied,
+                                          computer_allowed_to=denied,
+                                          service_allowed_to=allowed)
+
+        # Create a managed service account with the assigned policy.
+        target_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            assigned_policy=policy)
+
+        # Show that obtaining a service ticket with an AS-REQ is allowed.
+        self._fast_as_req(client_creds, target_creds, mach_tgt)
+
+        self.check_as_log(client_creds,
+                          server_policy=policy)
+
+    def test_authn_policy_allowed_to_service_deny_as_req(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a managed service and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=allowed,
+                                          computer_allowed_to=allowed,
+                                          service_allowed_to=denied)
+
+        # Create a managed service account with the assigned policy.
+        target_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            assigned_policy=policy)
+
+        # Show that obtaining a service ticket with an AS-REQ is denied.
+        self._fast_as_req(
+            client_creds, target_creds, mach_tgt,
+            expected_error=KDC_ERR_POLICY,
+            # We aren’t particular about whether or not we get an NTSTATUS.
+            expect_status=None,
+            expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_as_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_authn_policy_allowed_to_computer_allow_as_req_no_fast(self):
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly allows the user account to obtain a service ticket.
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
+        denied = 'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=denied,
+                                          computer_allowed_to=allowed,
+                                          service_allowed_to=denied)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # Show that obtaining a service ticket with an AS-REQ is allowed.
+        self._as_req(client_creds, 0, target_creds,
+                     etype=(kcrypto.Enctype.AES256,))
+
+        self.check_as_log(client_creds,
+                          server_policy=policy)
+
+    def test_authn_policy_allowed_to_computer_deny_as_req_no_fast(self):
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_to=allowed,
+                                          computer_allowed_to=denied,
+                                          service_allowed_to=allowed)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # Show that obtaining a service ticket with an AS-REQ is denied.
+        self._as_req(client_creds, KDC_ERR_POLICY, target_creds,
+                     etype=(kcrypto.Enctype.AES256,))
+
+        self.check_as_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_ntlm_allow_user(self):
         # Create an authentication policy allowing NTLM authentication for
