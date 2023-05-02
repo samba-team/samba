@@ -79,7 +79,8 @@ class cmd_ntacl_set(Command):
     }
 
     takes_options = [
-        Option("-q", "--quiet", help="Be quiet", action="store_true"),
+        # --quiet is not used at all...
+        Option("-q", "--quiet", help=Option.SUPPRESS_HELP, action="store_true"),
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
                choices=["native", "tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
