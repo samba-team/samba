@@ -824,7 +824,10 @@ int _tevent_loop_once(struct tevent_context *ev, const char *location)
 	tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_LOOP_ONCE);
 
 	/* New event (and request) will always start with call depth 0. */
-	tevent_thread_call_depth_set(0);
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_RESET,
+					NULL,
+					0,
+					__func__);
 
 	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {

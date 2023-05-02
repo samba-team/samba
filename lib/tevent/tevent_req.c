@@ -141,10 +141,13 @@ struct tevent_req *__tevent_req_create(TALLOC_CTX *mem_ctx,
 	*ppdata = data;
 
 	/* Initially, talloc_zero_size() sets internal.call_depth to 0 */
-	if (parent != NULL && parent->internal.call_depth > 0) {
+	if (parent != NULL) {
 		req->internal.call_depth = parent->internal.call_depth + 1;
-		tevent_thread_call_depth_set(req->internal.call_depth);
 	}
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_CREATE,
+					req,
+					req->internal.call_depth,
+					func);
 
 	return req;
 }
@@ -165,23 +168,32 @@ void _tevent_req_notify_callback(struct tevent_req *req, const char *location)
 	}
 	if (req->async.fn != NULL) {
 		/* Calling back the parent code, decrement the call depth. */
-		tevent_thread_call_depth_set(req->internal.call_depth > 0 ?
-					     req->internal.call_depth - 1 : 0);
+		size_t new_depth = req->internal.call_depth > 0 ?
+				   req->internal.call_depth - 1 : 0;
+		tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_NOTIFY_CB,
+						req,
+						new_depth,
+						req->async.fn_name);
 		req->async.fn(req);
 	}
 }
 
 static void tevent_req_cleanup(struct tevent_req *req)
 {
-	if (req->private_cleanup.fn == NULL) {
-		return;
-	}
-
 	if (req->private_cleanup.state >= req->internal.state) {
 		/*
 		 * Don't call the cleanup_function multiple times for the same
 		 * state recursively
 		 */
+		return;
+	}
+
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_CLEANUP,
+					req,
+					req->internal.call_depth,
+					req->private_cleanup.fn_name);
+
+	if (req->private_cleanup.fn == NULL) {
 		return;
 	}
 
@@ -429,6 +441,11 @@ void _tevent_req_set_cancel_fn(struct tevent_req *req,
 
 bool _tevent_req_cancel(struct tevent_req *req, const char *location)
 {
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_CANCEL,
+					req,
+					req->internal.call_depth,
+					req->private_cancel.fn_name);
+
 	if (req->private_cancel.fn == NULL) {
 		return false;
 	}

@@ -70,6 +70,10 @@ static int tevent_queue_entry_destructor(struct tevent_queue_entry *e)
 	}
 
 	tevent_trace_queue_callback(q->list->ev, e, TEVENT_EVENT_TRACE_DETACH);
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_QUEUE_LEAVE,
+					q->list->req,
+					q->list->req->internal.call_depth,
+					e->trigger_name);
 	DLIST_REMOVE(q->list, e);
 	q->length--;
 
@@ -155,7 +159,10 @@ static void tevent_queue_immediate_trigger(struct tevent_context *ev,
 	tevent_trace_queue_callback(ev, q->list,
 				    TEVENT_EVENT_TRACE_BEFORE_HANDLER);
 	/* Set the call depth of the request coming from the queue. */
-	tevent_thread_call_depth_set(q->list->req->internal.call_depth);
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_QUEUE_TRIGGER,
+					q->list->req,
+					q->list->req->internal.call_depth,
+					q->list->trigger_name);
 	q->list->triggered = true;
 	q->list->trigger(q->list->req, q->list->private_data);
 }
@@ -218,6 +225,10 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 	queue->length++;
 	talloc_set_destructor(e, tevent_queue_entry_destructor);
 	tevent_trace_queue_callback(ev, e, TEVENT_EVENT_TRACE_ATTACH);
+	tevent_thread_call_depth_notify(TEVENT_CALL_FLOW_REQ_QUEUE_ENTER,
+					req,
+					req->internal.call_depth,
+					e->trigger_name);
 
 	if (!queue->running) {
 		return e;

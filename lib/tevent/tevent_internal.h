@@ -507,7 +507,21 @@ void tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 					       bool replay));
 #endif
 
-void tevent_thread_call_depth_set(size_t depth);
+static inline void tevent_thread_call_depth_notify(
+			enum tevent_thread_call_depth_cmd cmd,
+			struct tevent_req *req,
+			size_t depth,
+			const char *fname)
+{
+	if (tevent_thread_call_depth_state_g.cb != NULL) {
+		tevent_thread_call_depth_state_g.cb(
+			tevent_thread_call_depth_state_g.cb_private,
+			cmd,
+			req,
+			depth,
+			fname);
+	}
+}
 
 void tevent_trace_point_callback(struct tevent_context *ev,
 				 enum tevent_trace_point);

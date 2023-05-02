@@ -2066,6 +2066,10 @@ pid_t tevent_cached_getpid(void);
  *
  * Part 1: activation/deactivation
  *
+ * void tevent_thread_call_depth_set_callback(f, private_data)
+ * Register a callback that can track 'call depth' and 'request flow'
+ * NULL as a function callback means deactivation.
+ *
  * Part 2: Mark the request (and its subrequests) to be tracked
  *
  * tevent_thread_call_depth_start(struct tevent_req *req)
@@ -2092,6 +2096,40 @@ pid_t tevent_cached_getpid(void);
  * @{
  */
 
+enum tevent_thread_call_depth_cmd {
+	TEVENT_CALL_FLOW_REQ_RESET,
+	TEVENT_CALL_FLOW_REQ_CREATE,
+	TEVENT_CALL_FLOW_REQ_CANCEL,
+	TEVENT_CALL_FLOW_REQ_CLEANUP,
+	TEVENT_CALL_FLOW_REQ_NOTIFY_CB,
+	TEVENT_CALL_FLOW_REQ_QUEUE_ENTER,
+	TEVENT_CALL_FLOW_REQ_QUEUE_TRIGGER,
+	TEVENT_CALL_FLOW_REQ_QUEUE_LEAVE,
+};
+
+typedef void (*tevent_call_depth_callback_t)(
+	void *private_data,
+	enum tevent_thread_call_depth_cmd cmd,
+	struct tevent_req *req,
+	size_t depth,
+	const char *fname);
+
+struct tevent_thread_call_depth_state {
+	tevent_call_depth_callback_t cb;
+	void *cb_private;
+};
+
+extern __thread struct tevent_thread_call_depth_state
+	tevent_thread_call_depth_state_g;
+
+/**
+ * Register callback function for request/subrequest call depth / flow tracking.
+ *
+ * @param[in]  f  External call depth and flow handling function
+ */
+void tevent_thread_call_depth_set_callback(tevent_call_depth_callback_t f,
+					   void *private_data);
+
 #ifdef TEVENT_DEPRECATED
 
 void tevent_thread_call_depth_activate(size_t *ptr) _DEPRECATED_;
@@ -2101,12 +2139,18 @@ void tevent_thread_call_depth_start(struct tevent_req *req) _DEPRECATED_;
 #endif
 
 /**
- * Set the external variable to the call depth of the request req.
+ * Reset the external call depth to the call depth of the request.
  *
- * @param[in]  req   Request from which the call depth is assigned to ext.
+ * @param[in]  req   Request from which the call depth is reset.
  * variable.
  */
 void tevent_thread_call_depth_reset_from_req(struct tevent_req *req);
+
+void _tevent_thread_call_depth_reset_from_req(struct tevent_req *req,
+					      const char *fname);
+
+#define tevent_thread_call_depth_reset_from_req(req) \
+	_tevent_thread_call_depth_reset_from_req(req, __func__)
 
 /* @} */
 

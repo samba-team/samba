@@ -27,6 +27,8 @@
 #include "tevent.h"
 #include "tevent_internal.h"
 
+#undef tevent_thread_call_depth_reset_from_req
+
 /********************************************************************
  * Debug wrapper functions, modeled (with lot's of code copied as is)
  * after the ev debug wrapper functions
@@ -294,7 +296,8 @@ void tevent_trace_queue_callback(struct tevent_context *ev,
 	}
 }
 
-static __thread size_t *tevent_thread_call_depth_ptr = NULL;
+_PRIVATE_ __thread
+struct tevent_thread_call_depth_state tevent_thread_call_depth_state_g;
 
 void tevent_thread_call_depth_activate(size_t *ptr)
 {
@@ -310,14 +313,37 @@ void tevent_thread_call_depth_start(struct tevent_req *req)
 
 void tevent_thread_call_depth_reset_from_req(struct tevent_req *req)
 {
-	if (tevent_thread_call_depth_ptr != NULL) {
-		*tevent_thread_call_depth_ptr = req->internal.call_depth;
+	_tevent_thread_call_depth_reset_from_req(req, NULL);
+}
+
+void _tevent_thread_call_depth_reset_from_req(struct tevent_req *req,
+					     const char *fname)
+{
+	if (tevent_thread_call_depth_state_g.cb != NULL) {
+		tevent_thread_call_depth_state_g.cb(
+			tevent_thread_call_depth_state_g.cb_private,
+			TEVENT_CALL_FLOW_REQ_RESET,
+			req,
+			req->internal.call_depth,
+			fname);
 	}
 }
 
-_PRIVATE_ void tevent_thread_call_depth_set(size_t depth)
+void tevent_thread_call_depth_set_callback(tevent_call_depth_callback_t f,
+					   void *private_data)
 {
-	if (tevent_thread_call_depth_ptr != NULL) {
-		*tevent_thread_call_depth_ptr = depth;
+	/* In case of deactivation, make sure that call depth is set to 0 */
+	if (tevent_thread_call_depth_state_g.cb != NULL) {
+		tevent_thread_call_depth_state_g.cb(
+			tevent_thread_call_depth_state_g.cb_private,
+			TEVENT_CALL_FLOW_REQ_RESET,
+			NULL,
+			0,
+			"tevent_thread_call_depth_set_callback");
 	}
+	tevent_thread_call_depth_state_g = (struct tevent_thread_call_depth_state)
+	{
+		.cb = f,
+		.cb_private = private_data,
+	};
 }
