@@ -204,7 +204,16 @@ static char *smb2_dfs_share_path(TALLOC_CTX *ctx,
 ***************************************************************/
 
 struct cli_smb2_create_fnum_state {
+	struct tevent_context *ev;
 	struct cli_state *cli;
+	char *fname;
+	struct cli_smb2_create_flags create_flags;
+	uint32_t impersonation_level;
+	uint32_t desired_access;
+	uint32_t file_attributes;
+	uint32_t share_access;
+	uint32_t create_disposition;
+	uint32_t create_options;
 	struct smb2_create_blobs in_cblobs;
 	struct smb2_create_blobs out_cblobs;
 	struct smb_create_returns cr;
@@ -243,15 +252,23 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->cli = cli;
+	state->create_flags = create_flags;
+	state->impersonation_level = impersonation_level;
+	state->desired_access = desired_access;
+	state->file_attributes = file_attributes;
+	state->share_access = share_access;
+	state->create_disposition = create_disposition;
+
+	if (cli->backup_intent) {
+		create_options |= FILE_OPEN_FOR_BACKUP_INTENT;
+	}
+	state->create_options = create_options;
 
 	fname = talloc_strdup(state, fname_in);
 	if (tevent_req_nomem(fname, req)) {
 		return tevent_req_post(req, ev);
-	}
-
-	if (cli->backup_intent) {
-		create_options |= FILE_OPEN_FOR_BACKUP_INTENT;
 	}
 
 	if (cli->smb2.client_smb311_posix) {
@@ -316,15 +333,21 @@ struct tevent_req *cli_smb2_create_fnum_send(
 
 	/* Or end in a '\' */
 	if (fname_len > 0 && fname[fname_len-1] == '\\') {
-		fname[fname_len-1] = '\0';
+		fname_len -= 1;
 	}
 
-	subreq = smb2cli_create_send(state, ev,
+	state->fname = talloc_strndup(state, fname, fname_len);
+	if (tevent_req_nomem(state->fname, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_create_send(state,
+				     ev,
 				     cli->conn,
 				     cli->timeout,
 				     cli->smb2.session,
 				     cli->smb2.tcon,
-				     fname,
+				     state->fname,
 				     flags_to_smb2_oplock(create_flags),
 				     impersonation_level,
 				     desired_access,
@@ -352,6 +375,7 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 		req, struct cli_smb2_create_fnum_state);
 	uint64_t fid_persistent, fid_volatile;
 	struct smb2_create_blob *posix = NULL;
+	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 
 	status = smb2cli_create_recv(subreq,
@@ -362,6 +386,46 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 				     &state->out_cblobs,
 				     &state->symlink);
 	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)) {
+
+		if (state->create_options & FILE_OPEN_REPARSE_POINT) {
+			/*
+			 * Should not happen, but you never know...
+			 */
+			tevent_req_nterror(
+				req, NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED);
+			return;
+		}
+
+		state->create_options |= FILE_OPEN_REPARSE_POINT;
+
+		subreq = smb2cli_create_send(state,
+					     state->ev,
+					     cli->conn,
+					     cli->timeout,
+					     cli->smb2.session,
+					     cli->smb2.tcon,
+					     state->fname,
+					     flags_to_smb2_oplock(
+						     state->create_flags),
+					     state->impersonation_level,
+					     state->desired_access,
+					     state->file_attributes,
+					     state->share_access,
+					     state->create_disposition,
+					     state->create_options,
+					     &state->in_cblobs);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					cli_smb2_create_fnum_done,
+					req);
+		state->subreq = subreq;
+		return;
+	}
+
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
