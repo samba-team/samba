@@ -145,6 +145,18 @@ bld.SAMBA_LIBRARY('ad_claims',
 	private_library=True,
 	)
 
+bld.SAMBA_LIBRARY('authn_policy',
+	source='authn_policy.c',
+	deps='ldb talloc samba-util',
+	private_library=True,
+	)
+
+bld.SAMBA_LIBRARY('authn_policy_util',
+	source='authn_policy_util.c',
+	deps='authn_policy samdb dsdb-module',
+	private_library=True,
+	)
+
 bld.SAMBA_SUBSYSTEM('KPASSWD_GLUE',
         source='kpasswd_glue.c',
         deps='ldb com_err')
