@@ -34,6 +34,12 @@ bool winbindd_use_cache(void);
 void winbindd_set_use_cache(bool use_cache);
 char *get_winbind_priv_pipe_dir(void);
 void winbindd_flush_caches(void);
+void winbind_debug_call_depth_setup(size_t *depth);
+void winbind_call_flow(void *private_data,
+		       enum tevent_thread_call_depth_cmd cmd,
+		       struct tevent_req *req,
+		       size_t depth,
+		       const char *fname);
 bool winbindd_reload_services_file(const char *lfile);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */

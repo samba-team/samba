@@ -475,3 +475,39 @@ bool winbindd_reload_services_file(const char *lfile)
 
 	return(ret);
 }
+
+static size_t *debug_call_depth = NULL;
+
+void winbind_debug_call_depth_setup(size_t *depth)
+{
+	debug_call_depth = depth;
+}
+
+void winbind_call_flow(void *private_data,
+		       enum tevent_thread_call_depth_cmd cmd,
+		       struct tevent_req *req,
+		       size_t depth,
+		       const char *fname)
+{
+	switch (cmd) {
+	case TEVENT_CALL_FLOW_REQ_CREATE:
+		*debug_call_depth = depth;
+		DEBUG(20, ("flow: -> %s\n", fname));
+		break;
+	case TEVENT_CALL_FLOW_REQ_NOTIFY_CB:
+		*debug_call_depth = depth;
+		DEBUG(20, ("flow: <- %s\n", fname));
+		break;
+	case TEVENT_CALL_FLOW_REQ_QUEUE_TRIGGER:
+		*debug_call_depth = depth;
+		break;
+	case TEVENT_CALL_FLOW_REQ_RESET:
+		*debug_call_depth = depth;
+		break;
+	case TEVENT_CALL_FLOW_REQ_CANCEL:
+	case TEVENT_CALL_FLOW_REQ_CLEANUP:
+	case TEVENT_CALL_FLOW_REQ_QUEUE_ENTER:
+	case TEVENT_CALL_FLOW_REQ_QUEUE_LEAVE:
+		break;
+	}
+}
