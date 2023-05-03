@@ -26,7 +26,7 @@
  *
  * @param[in]  len  The size of the buffer to fill.
  */
-void generate_random_buffer(uint8_t *out, int len);
+void generate_random_buffer(uint8_t *out, size_t len);
 
 /**
  * @brief Generate random values for long term keys and passwords.
@@ -35,7 +35,7 @@ void generate_random_buffer(uint8_t *out, int len);
  *
  * @param[in]  len  The size of the buffer to fill.
  */
-void generate_secret_buffer(uint8_t *out, int len);
+void generate_secret_buffer(uint8_t *out, size_t len);
 
 /**
  * @brief Generate random values for a nonce buffer.
@@ -46,4 +46,4 @@ void generate_secret_buffer(uint8_t *out, int len);
  *
  * @param[in]  len  The size of the buffer to fill.
  */
-void generate_nonce_buffer(uint8_t *out, int len);
+void generate_nonce_buffer(uint8_t *out, size_t len);

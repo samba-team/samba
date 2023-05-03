@@ -45,7 +45,7 @@ _NORETURN_ static void genrand_panic(int err,
 }
 
 
-_PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
+_PUBLIC_ void generate_random_buffer(uint8_t *out, size_t len)
 {
 	/* Random number generator for temporary keys. */
 	int ret = gnutls_rnd(GNUTLS_RND_RANDOM, out, len);
@@ -54,7 +54,7 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 	}
 }
 
-_PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
+_PUBLIC_ void generate_secret_buffer(uint8_t *out, size_t len)
 {
 	/*
 	 * Random number generator for long term keys.
@@ -62,7 +62,7 @@ _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 	 * The key generator, will re-seed after a fixed amount of bytes is
 	 * generated (typically less than the nonce), and will also re-seed
 	 * based on time, i.e., after few hours of operation without reaching
-	 * the limit for a re-seed. For its re-seed it mixes mixes data obtained
+	 * the limit for a re-seed. For its re-seed it mixes data obtained
 	 * from the OS random device with the previous key.
 	 */
 	int ret = gnutls_rnd(GNUTLS_RND_KEY, out, len);
@@ -71,7 +71,7 @@ _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 	}
 }
 
-_PUBLIC_ void generate_nonce_buffer(uint8_t *out, int len)
+_PUBLIC_ void generate_nonce_buffer(uint8_t *out, size_t len)
 {
 	/*
 	 * Random number generator for nonce and initialization vectors.
