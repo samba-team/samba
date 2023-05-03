@@ -953,6 +953,13 @@ void winbindd_msg_reload_services_parent(struct messaging_context *msg,
 
 	winbindd_reload_services_file((const char *)private_data);
 
+	/* Set tevent_thread_call_depth_set_callback according to debug level */
+	if (lp_winbind_debug_traceid() && debuglevel_get() > 1) {
+		tevent_thread_call_depth_set_callback(winbind_call_flow, NULL);
+	} else {
+		tevent_thread_call_depth_set_callback(NULL, NULL);
+	}
+
 	forall_children(winbind_msg_relay_fn, &state);
 }
 
