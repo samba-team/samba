@@ -120,6 +120,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/etype_tests.py',
     'python/samba/tests/krb5/device_tests.py',
     'python/samba/tests/krb5/claims_in_pac.py',
+    'python/samba/tests/krb5/authn_policy_tests.py',
 }
 
 EXCLUDE_HELP = {

@@ -1986,6 +1986,10 @@ for env, forced_rc4 in [('ad_dc', False),
             'DC_SERVER_IPV6': '$SERVER_IPV6',
             'FORCED_RC4': int(forced_rc4),
         })
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.authn_policy_tests',
+    environ=krb5_environ)
 
 for env in [
         'vampire_dc',
