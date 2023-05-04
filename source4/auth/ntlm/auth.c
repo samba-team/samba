@@ -423,7 +423,9 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				 state->user_info_dc->info->account_name,
 				 &state->user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid);
 
-	*user_info_dc = talloc_move(mem_ctx, &state->user_info_dc);
+	/* Release our handle to state->user_info_dc. */
+	*user_info_dc = talloc_reparent(state, mem_ctx, state->user_info_dc);
+	state->user_info_dc = NULL;
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
