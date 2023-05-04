@@ -43,6 +43,7 @@ def read_submodule_status(path, env=None):
         cwd=path)
     (stdout, stderr) = p.communicate(None)
     for l in stdout.splitlines():
+        l = l.decode('utf-8')
         l = l.rstrip()
         status = l[0]
         l = l[1:]
