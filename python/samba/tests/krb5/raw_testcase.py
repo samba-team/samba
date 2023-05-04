@@ -732,6 +732,12 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_nt_hash = '1'
         cls.expect_nt_hash = bool(int(expect_nt_hash))
 
+        expect_nt_status = samba.tests.env_get_var_value('EXPECT_NT_STATUS',
+                                                         allow_missing=True)
+        if expect_nt_status is None:
+            expect_nt_status = '1'
+        cls.expect_nt_status = bool(int(expect_nt_status))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -2508,6 +2514,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          check_kdc_private_fn=None,
                          callback_dict=None,
                          expected_error_mode=0,
+                         expect_status=None,
                          expected_status=None,
                          expected_salt=None,
                          authenticator_subkey=None,
@@ -2581,6 +2588,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'check_kdc_private_fn': check_kdc_private_fn,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
+            'expect_status': expect_status,
             'expected_status': expected_status,
             'expected_salt': expected_salt,
             'authenticator_subkey': authenticator_subkey,
@@ -2650,6 +2658,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           check_rep_fn=None,
                           check_kdc_private_fn=None,
                           expected_error_mode=0,
+                          expect_status=None,
                           expected_status=None,
                           callback_dict=None,
                           tgt=None,
@@ -2727,6 +2736,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'check_kdc_private_fn': check_kdc_private_fn,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
+            'expect_status': expect_status,
             'expected_status': expected_status,
             'tgt': tgt,
             'body_checksum_type': body_checksum_type,
@@ -3830,6 +3840,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
             self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
+        expect_status = kdc_exchange_dict['expect_status']
         expected_status = kdc_exchange_dict['expected_status']
         expect_edata = kdc_exchange_dict['expect_edata']
         if expect_edata is None:
@@ -3840,36 +3851,31 @@ class RawKerberosTest(TestCaseInTempDir):
         if inner and expect_edata is self.expect_padata_outer:
             expect_edata = False
         if not expect_edata:
-            self.assertIsNone(expected_status)
-            if self.strict_checking:
+            self.assertFalse(expect_status)
+            if self.strict_checking or expect_status is False:
                 self.assertElementMissing(rep, 'e-data')
             return rep
         edata = self.getElementValue(rep, 'e-data')
-        if self.strict_checking:
+        if self.strict_checking or expect_status:
             self.assertIsNotNone(edata)
         if edata is not None:
-            if rep_msg_type == KRB_TGS_REP and not sent_fast:
+            try:
                 error_data = self.der_decode(
                     edata,
                     asn1Spec=krb5_asn1.KERB_ERROR_DATA())
-                self.assertEqual(KERB_ERR_TYPE_EXTENDED,
-                                 error_data['data-type'])
+            except PyAsn1Error:
+                if expect_status:
+                    # The test requires that the KDC be declared to support
+                    # NTSTATUS values in e-data to proceed.
+                    self.assertTrue(
+                        self.expect_nt_status,
+                        'expected status code (which, according to '
+                        'EXPECT_NT_STATUS=0, the KDC does not support)')
 
-                extended_error = error_data['data-value']
+                    self.fail('expected to get status code')
 
-                self.assertEqual(12, len(extended_error))
-
-                status = int.from_bytes(extended_error[:4], 'little')
-                flags = int.from_bytes(extended_error[8:], 'little')
-
-                self.assertEqual(expected_status, status)
-
-                self.assertEqual(3, flags)
-            else:
-                self.assertIsNone(expected_status)
-
-                rep_padata = self.der_decode(edata,
-                                             asn1Spec=krb5_asn1.METHOD_DATA())
+                rep_padata = self.der_decode(
+                    edata, asn1Spec=krb5_asn1.METHOD_DATA())
                 self.assertGreater(len(rep_padata), 0)
 
                 if sent_fast:
@@ -3893,6 +3899,30 @@ class RawKerberosTest(TestCaseInTempDir):
                                                     error_code)
 
                 kdc_exchange_dict['preauth_etype_info2'] = etype_info2
+            else:
+                self.assertTrue(self.expect_nt_status,
+                                'got status code, but EXPECT_NT_STATUS=0')
+
+                if expect_status is not None:
+                    self.assertTrue(expect_status,
+                                    'got unexpected status code')
+
+                self.assertEqual(KERB_ERR_TYPE_EXTENDED,
+                                 error_data['data-type'])
+
+                extended_error = error_data['data-value']
+
+                self.assertEqual(12, len(extended_error))
+
+                status = int.from_bytes(extended_error[:4], 'little')
+                flags = int.from_bytes(extended_error[8:], 'little')
+
+                self.assertEqual(expected_status, status)
+
+                if rep_msg_type == KRB_TGS_REP:
+                    self.assertEqual(3, flags)
+                else:
+                    self.assertEqual(1, flags)
 
         return rep
 
@@ -4955,6 +4985,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_device_claims=None,
                           unexpected_device_claims=None,
                           expect_edata=None,
+                          expect_status=None,
+                          expected_status=None,
                           rc4_support=True,
                           to_rodc=False):
 
@@ -5012,6 +5044,8 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_device_claims=expected_device_claims,
             unexpected_device_claims=unexpected_device_claims,
             expect_edata=expect_edata,
+            expect_status=expect_status,
+            expected_status=expected_status,
             rc4_support=rc4_support,
             to_rodc=to_rodc)
 

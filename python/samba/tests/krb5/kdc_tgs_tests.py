@@ -191,6 +191,7 @@ class KdcTgsBaseTests(KDCBaseTest):
                  expect_requester_sid=None,
                  expect_edata=False,
                  expected_sid=None,
+                 expect_status=None,
                  expected_status=None,
                  expected_proxy_target=None,
                  expected_transited_services=None):
@@ -282,6 +283,7 @@ class KdcTgsBaseTests(KDCBaseTest):
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error,
+            expect_status=expect_status,
             expected_status=expected_status,
             tgt=tgt,
             armor_key=armor_key,
@@ -1619,6 +1621,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         self._run_tgs(tgt, creds, expected_error=(KDC_ERR_GENERIC,
                                            KDC_ERR_BADKEYVER),
                       expect_edata=True,
+                      expect_status=self.expect_nt_status,
                       expected_status=ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
 
     def test_renew_rc4(self):
@@ -1645,6 +1648,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         self._s4u2self(tgt, creds, expected_error=(KDC_ERR_GENERIC,
                                                    KDC_ERR_BADKEYVER),
                        expect_edata=True,
+                       expect_status=self.expect_nt_status,
                        expected_status=ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
 
     def test_user2user_rc4(self):
@@ -2930,7 +2934,7 @@ class KdcTgsTests(KdcTgsBaseTests):
     def _run_tgs(self, tgt, creds, expected_error, *, expect_pac=True,
                  expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
                  expect_requester_sid=None, expected_sid=None,
-                 expect_edata=False, expected_status=None):
+                 expect_edata=False, expect_status=None, expected_status=None):
         target_creds = self.get_service_creds()
         return self._tgs_req(
             tgt, expected_error, creds, target_creds,
@@ -2940,6 +2944,7 @@ class KdcTgsTests(KdcTgsBaseTests):
             expect_requester_sid=expect_requester_sid,
             expected_sid=expected_sid,
             expect_edata=expect_edata,
+            expect_status=expect_status,
             expected_status=expected_status)
 
     # These tests fail against Windows, which does not implement ticket
@@ -2977,7 +2982,8 @@ class KdcTgsTests(KdcTgsBaseTests):
             expected_sid=expected_sid)
 
     def _s4u2self(self, tgt, tgt_creds, expected_error, *, expect_pac=True,
-                  expect_edata=False, expected_status=None):
+                  expect_edata=False, expect_status=None,
+                  expected_status=None):
         user_creds = self._get_mach_creds()
 
         user_name = user_creds.get_username()
@@ -3000,6 +3006,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                              expected_cname=user_cname,
                              generate_padata_fn=generate_s4u2self_padata,
                              expect_edata=expect_edata,
+                             expect_status=expect_status,
                              expected_status=expected_status,
                              expect_pac=expect_pac)
 

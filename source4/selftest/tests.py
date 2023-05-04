@@ -1205,6 +1205,7 @@ expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_padata = int('SAMBA4_USES_HEIMDAL' in config_hash)
+expect_nt_status = 0
 krb5_environ = {
     'SERVICE_USERNAME': '$SERVER',
     'ADMIN_USERNAME': '$DC_USERNAME',
@@ -1223,6 +1224,7 @@ krb5_environ = {
     'CHECK_CNAME': check_cname,
     'CHECK_PADATA': check_padata,
     'KADMIN_IS_TGS': kadmin_is_tgs,
+    'EXPECT_NT_STATUS': expect_nt_status,
 }
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("none", "samba.tests.krb5.claims_in_pac")

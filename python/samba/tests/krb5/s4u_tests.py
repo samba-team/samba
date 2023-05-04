@@ -303,6 +303,8 @@ class S4UKerberosTests(KDCBaseTest):
 
             return [pa_s4u], req_body
 
+        expect_status = self.expect_nt_status and expected_status is not None
+
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=realm,
             expected_cname=client_cname,
@@ -321,6 +323,7 @@ class S4UKerberosTests(KDCBaseTest):
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error_mode,
+            expect_status=expect_status,
             expected_status=expected_status,
             tgt=service_tgt,
             authenticator_subkey=authenticator_subkey,
@@ -733,6 +736,8 @@ class S4UKerberosTests(KDCBaseTest):
         transited_service = f'host/{service1_name}@{service1_realm}'
         expected_transited_services.append(transited_service)
 
+        expect_status = self.expect_nt_status and expected_status is not None
+
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=client_realm,
             expected_cname=client_cname,
@@ -748,6 +753,7 @@ class S4UKerberosTests(KDCBaseTest):
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error_mode,
+            expect_status=expect_status,
             expected_status=expected_status,
             callback_dict={},
             tgt=service1_tgt,
