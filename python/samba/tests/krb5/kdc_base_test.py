@@ -3311,7 +3311,7 @@ class KDCBaseTest(RawKerberosTest):
                        validation_level=netlogon.NetlogonValidationSamInfo2):
         samdb = self.get_samdb()
 
-        server = samdb.host_dns_name()
+        dc_server = samdb.host_dns_name()
         username, domain = creds.get_ntlm_username_domain()
         workstation = 'Workstation'
 
@@ -3321,7 +3321,7 @@ class KDCBaseTest(RawKerberosTest):
 
         # Calling this initializes netlogon_creds on mach_creds, as is required
         # before calling mach_creds.encrypt_samr_password().
-        conn = netlogon.netlogon(f'ncacn_ip_tcp:{server}[schannel,seal]',
+        conn = netlogon.netlogon(f'ncacn_ip_tcp:{dc_server}[schannel,seal]',
                                  self.get_lp(),
                                  mach_creds)
 
@@ -3387,7 +3387,7 @@ class KDCBaseTest(RawKerberosTest):
 
         try:
             (validation, authoritative, flags) = (
-                conn.netr_LogonSamLogonEx(server,
+                conn.netr_LogonSamLogonEx(dc_server,
                                           mach_creds.get_workstation(),
                                           logon_type,
                                           logon,
