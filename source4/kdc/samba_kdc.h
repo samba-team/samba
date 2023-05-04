@@ -63,6 +63,8 @@ struct samba_kdc_entry {
 	struct ldb_message *msg;
 	struct ldb_dn *realm_dn;
 	struct auth_user_info_dc *user_info_dc;
+	const struct authn_kerberos_client_policy *client_policy;
+	const struct authn_server_policy *server_policy;
 	bool is_krbtgt;
 	bool is_rodc;
 	bool is_trust;

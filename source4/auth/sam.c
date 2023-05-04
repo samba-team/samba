@@ -64,12 +64,23 @@
 	/* Needed for RODC rule processing */	\
 	"msDS-KrbTgtLinkBL"
 
+#define AUTHN_POLICY_ATTRS                     \
+	/* Required for authentication policies / silos */ \
+	"msDS-AssignedAuthNPolicy",             \
+	"msDS-AssignedAuthNPolicySilo"
+
 const char *krbtgt_attrs[] = {
+	/*
+	 * Authentication policies will not be enforced on the TGS
+	 * account. Don’t include the relevant attributes in the account search.
+	 */
 	KRBTGT_ATTRS, NULL
 };
 
 const char *server_attrs[] = {
-	KRBTGT_ATTRS, NULL
+	KRBTGT_ATTRS,
+	AUTHN_POLICY_ATTRS,
+	NULL
 };
 
 const char *user_attrs[] = {
@@ -82,6 +93,7 @@ const char *user_attrs[] = {
 	"msDS-ResultantPSO",
 
 	KRBTGT_ATTRS,
+	AUTHN_POLICY_ATTRS,
 
 	"logonHours",
 

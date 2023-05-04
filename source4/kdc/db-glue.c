@@ -34,6 +34,7 @@
 #include "../lib/crypto/md4.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "kdc/authn_policy_util.h"
 #include "kdc/sdb.h"
 #include "kdc/samba_kdc.h"
 #include "kdc/db-glue.h"
@@ -1089,6 +1090,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		ENC_ALL_TYPES;
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
+	const struct authn_kerberos_client_policy *authn_client_policy = NULL;
+	const struct authn_server_policy *authn_server_policy = NULL;
+
 	ZERO_STRUCTP(entry);
 
 	if (supported_enctypes == 0) {
@@ -1392,6 +1396,34 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	*entry->max_renew = kdc_db_ctx->policy.renewal_lifetime;
 
+	/*
+	 * A principal acting as a client that is not being looked up as the
+	 * principal of an armor ticket may have an authentication policy apply
+	 * to it.
+	 */
+	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT &&
+	    (flags & SDB_F_FOR_AS_REQ) &&
+	    !(flags & SDB_F_ARMOR_PRINCIPAL))
+	{
+		ret = authn_policy_kerberos_client(kdc_db_ctx->samdb, mem_ctx, msg,
+						   &authn_client_policy);
+		if (ret) {
+			goto out;
+		}
+	}
+
+	/*
+	 * A principal acting as a server may have an authentication policy
+	 * apply to it.
+	 */
+	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
+		ret = authn_policy_server(kdc_db_ctx->samdb, mem_ctx, msg,
+					  &authn_server_policy);
+		if (ret) {
+			goto out;
+		}
+	}
+
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
 		int result;
 		const struct auth_user_info_dc *user_info_dc = NULL;
@@ -1627,6 +1659,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	p->msg = talloc_steal(p, msg);
 	p->supported_enctypes = pa_supported_enctypes;
+
+	p->client_policy = talloc_steal(p, authn_client_policy);
+	p->server_policy = talloc_steal(p, authn_server_policy);
 
 out:
 	if (ret != 0) {
