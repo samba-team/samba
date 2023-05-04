@@ -3376,6 +3376,9 @@ class KDCBaseTest(RawKerberosTest):
         identity_info = netlogon.netr_IdentityInfo()
         identity_info.domain_name.string = domain
         identity_info.account_name.string = username
+        identity_info.parameter_control = (
+            netlogon.MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT) | (
+                netlogon.MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT)
         identity_info.workstation.string = workstation
 
         logon.identity_info = identity_info
