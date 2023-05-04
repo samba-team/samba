@@ -194,7 +194,8 @@ class KdcTgsBaseTests(KDCBaseTest):
                  expect_status=None,
                  expected_status=None,
                  expected_proxy_target=None,
-                 expected_transited_services=None):
+                 expected_transited_services=None,
+                 check_patypes=True):
         if srealm is False:
             srealm = None
         elif srealm is None:
@@ -300,7 +301,8 @@ class KdcTgsBaseTests(KDCBaseTest):
             expect_requester_sid=expect_requester_sid,
             expected_sid=expected_sid,
             expected_proxy_target=expected_proxy_target,
-            expected_transited_services=expected_transited_services)
+            expected_transited_services=expected_transited_services,
+            check_patypes=check_patypes)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=None,

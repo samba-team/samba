@@ -2512,6 +2512,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          check_error_fn=None,
                          check_rep_fn=None,
                          check_kdc_private_fn=None,
+                         check_patypes=True,
                          callback_dict=None,
                          expected_error_mode=0,
                          expect_status=None,
@@ -2586,6 +2587,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'check_error_fn': check_error_fn,
             'check_rep_fn': check_rep_fn,
             'check_kdc_private_fn': check_kdc_private_fn,
+            'check_patypes': check_patypes,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
             'expect_status': expect_status,
@@ -2657,6 +2659,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           check_error_fn=None,
                           check_rep_fn=None,
                           check_kdc_private_fn=None,
+                          check_patypes=True,
                           expected_error_mode=0,
                           expect_status=None,
                           expected_status=None,
@@ -2734,6 +2737,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'check_error_fn': check_error_fn,
             'check_rep_fn': check_rep_fn,
             'check_kdc_private_fn': check_kdc_private_fn,
+            'check_patypes': check_patypes,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
             'expect_status': expect_status,
@@ -4031,58 +4035,63 @@ class RawKerberosTest(TestCaseInTempDir):
             if expected_aes is None:
                 expect_etype_info = True
 
-        expected_patypes = ()
-        if sent_fast and error_code != 0:
-            expected_patypes += (PADATA_FX_ERROR,)
-            expected_patypes += (PADATA_FX_COOKIE,)
+        if expect_etype_info:
+            self.assertGreater(len(expect_etype_info2), 0)
 
-        if rep_msg_type == KRB_TGS_REP:
-            sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
-            if ('1' in sent_pac_options
-                    and error_code not in (0, KDC_ERR_GENERIC)):
-                expected_patypes += (PADATA_PAC_OPTIONS,)
-        elif error_code != KDC_ERR_GENERIC:
-            if expect_etype_info:
-                self.assertGreater(len(expect_etype_info2), 0)
-                expected_patypes += (PADATA_ETYPE_INFO,)
-            if len(expect_etype_info2) != 0:
-                expected_patypes += (PADATA_ETYPE_INFO2,)
+        sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
 
-            if error_code not in (KDC_ERR_PREAUTH_FAILED, KDC_ERR_SKEW,
-                                  KDC_ERR_POLICY, KDC_ERR_CLIENT_REVOKED):
-                if sent_fast:
-                    expected_patypes += (PADATA_ENCRYPTED_CHALLENGE,)
-                else:
-                    expected_patypes += (PADATA_ENC_TIMESTAMP,)
-
-                if not sent_enc_challenge:
-                    expected_patypes += (PADATA_PK_AS_REQ,)
-                    expected_patypes += (PADATA_PK_AS_REP_19,)
-
-            if (self.kdc_fast_support
-                    and not sent_fast
-                    and not sent_enc_challenge):
-                expected_patypes += (PADATA_FX_FAST,)
+        check_patypes = kdc_exchange_dict['check_patypes']
+        if check_patypes:
+            expected_patypes = ()
+            if sent_fast and error_code != 0:
+                expected_patypes += (PADATA_FX_ERROR,)
                 expected_patypes += (PADATA_FX_COOKIE,)
 
-        require_strict = {PADATA_FX_COOKIE,
-                          PADATA_FX_FAST,
-                          PADATA_PAC_OPTIONS,
-                          PADATA_PK_AS_REP_19,
-                          PADATA_PK_AS_REQ,
-                          PADATA_PKINIT_KX,
-                          PADATA_GSS}
-        strict_edata_checking = kdc_exchange_dict['strict_edata_checking']
-        if not strict_edata_checking:
-            require_strict.add(PADATA_ETYPE_INFO2)
-            require_strict.add(PADATA_ENCRYPTED_CHALLENGE)
+            if rep_msg_type == KRB_TGS_REP:
+                if ('1' in sent_pac_options
+                        and error_code not in (0, KDC_ERR_GENERIC)):
+                    expected_patypes += (PADATA_PAC_OPTIONS,)
+            elif error_code != KDC_ERR_GENERIC:
+                if expect_etype_info:
+                    expected_patypes += (PADATA_ETYPE_INFO,)
+                if len(expect_etype_info2) != 0:
+                    expected_patypes += (PADATA_ETYPE_INFO2,)
 
-        got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
-        self.assertSequenceElementsEqual(expected_patypes, got_patypes,
-                                         require_strict=require_strict)
+                if error_code not in (KDC_ERR_PREAUTH_FAILED, KDC_ERR_SKEW,
+                                      KDC_ERR_POLICY, KDC_ERR_CLIENT_REVOKED):
+                    if sent_fast:
+                        expected_patypes += (PADATA_ENCRYPTED_CHALLENGE,)
+                    else:
+                        expected_patypes += (PADATA_ENC_TIMESTAMP,)
 
-        if not expected_patypes:
-            return None
+                    if not sent_enc_challenge:
+                        expected_patypes += (PADATA_PK_AS_REQ,)
+                        expected_patypes += (PADATA_PK_AS_REP_19,)
+
+                if (self.kdc_fast_support
+                        and not sent_fast
+                        and not sent_enc_challenge):
+                    expected_patypes += (PADATA_FX_FAST,)
+                    expected_patypes += (PADATA_FX_COOKIE,)
+
+            require_strict = {PADATA_FX_COOKIE,
+                              PADATA_FX_FAST,
+                              PADATA_PAC_OPTIONS,
+                              PADATA_PK_AS_REP_19,
+                              PADATA_PK_AS_REQ,
+                              PADATA_PKINIT_KX,
+                              PADATA_GSS}
+            strict_edata_checking = kdc_exchange_dict['strict_edata_checking']
+            if not strict_edata_checking:
+                require_strict.add(PADATA_ETYPE_INFO2)
+                require_strict.add(PADATA_ENCRYPTED_CHALLENGE)
+
+            got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
+            self.assertSequenceElementsEqual(expected_patypes, got_patypes,
+                                             require_strict=require_strict)
+
+            if not expected_patypes:
+                return None
 
         pa_dict = self.get_pa_dict(rep_padata)
 
