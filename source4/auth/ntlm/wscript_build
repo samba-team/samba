@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('auth4_sam_module',
 	source='auth_sam.c',
 	subsystem='auth4',
 	init_function='auth4_sam_init',
-	deps='samdb auth4_sam NTLMSSP_COMMON samba-hostconfig RPC_NDR_IRPC MESSAGING db-glue',
+	deps='samdb auth4_sam NTLMSSP_COMMON samba-hostconfig RPC_NDR_IRPC MESSAGING db-glue authn_policy_util',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 

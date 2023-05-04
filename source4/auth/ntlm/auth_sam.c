@@ -39,6 +39,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "kdc/authn_policy_util.h"
 #include "kdc/db-glue.h"
 
 #undef DBGC_CLASS
@@ -733,9 +734,11 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 				     bool *authoritative)
 {
 	NTSTATUS nt_status;
+	int ret;
 	bool interactive = (user_info->password_state == AUTH_PASSWORD_HASH);
 	uint32_t acct_flags = samdb_result_acct_flags(msg, NULL);
 	struct netr_SendToSamBase *send_to_sam = NULL;
+	const struct authn_ntlm_client_policy *authn_client_policy = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -761,6 +764,24 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_SMARTCARD_LOGON_REQUIRED;
 		}
+	}
+
+	/* See whether an authentication policy applies to the client. */
+	ret = authn_policy_ntlm_client(sam_ctx,
+				       tmp_ctx,
+				       msg,
+				       &authn_client_policy);
+	if (ret) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	nt_status = authn_policy_ntlm_apply_device_restriction(mem_ctx,
+							       authn_client_policy,
+							       NULL /* client_audit_info_out */);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
 	}
 
 	nt_status = authsam_password_check_and_record(auth_context, tmp_ctx,
