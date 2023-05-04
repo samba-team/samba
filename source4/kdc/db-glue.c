@@ -1092,6 +1092,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	const struct authn_kerberos_client_policy *authn_client_policy = NULL;
 	const struct authn_server_policy *authn_server_policy = NULL;
+	int64_t enforced_tgt_lifetime;
 
 	ZERO_STRUCTP(entry);
 
@@ -1424,6 +1425,24 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 	}
 
+	enforced_tgt_lifetime = authn_policy_enforced_tgt_lifetime(authn_client_policy);
+	if (enforced_tgt_lifetime != 0) {
+		int64_t lifetime = enforced_tgt_lifetime;
+
+		lifetime /= INT64_C(1000) * 1000 * 10;
+		lifetime = MIN(lifetime, INT_MAX);
+		lifetime = MAX(lifetime, INT_MIN);
+
+		/*
+		 * Set both lifetime and renewal time based only on the
+		 * configured maximum lifetime — not on the configured renewal
+		 * time. Yes, this is what Windows does.
+		 */
+		lifetime = MIN(*entry->max_life, lifetime);
+		*entry->max_life = lifetime;
+		*entry->max_renew = lifetime;
+	}
+
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
 		int result;
 		const struct auth_user_info_dc *user_info_dc = NULL;
@@ -1455,7 +1474,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		protected_user = result;
 
-		if (protected_user) {
+		if (protected_user && enforced_tgt_lifetime == 0)
+		{
+			/*
+			 * If a TGT lifetime hasn’t been set, Protected Users
+			 * enforces a four hour TGT lifetime.
+			 */
 			*entry->max_life = MIN(*entry->max_life, 4 * 60 * 60);
 			*entry->max_renew = MIN(*entry->max_renew, 4 * 60 * 60);
 
