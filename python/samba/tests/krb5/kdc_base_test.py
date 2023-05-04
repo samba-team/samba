@@ -3308,22 +3308,24 @@ class KDCBaseTest(RawKerberosTest):
     # Test SamLogon. Authentication should succeed for non-protected accounts,
     # and fail for protected accounts.
     def _test_samlogon(self, creds, logon_type, expect_error=None,
-                       validation_level=netlogon.NetlogonValidationSamInfo2):
+                       validation_level=netlogon.NetlogonValidationSamInfo2,
+                       domain_joined_mach_creds=None):
         samdb = self.get_samdb()
+
+        if domain_joined_mach_creds is None:
+            domain_joined_mach_creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts={'secure_channel_type': misc.SEC_CHAN_WKSTA})
 
         dc_server = samdb.host_dns_name()
         username, domain = creds.get_ntlm_username_domain()
-        workstation = 'Workstation'
-
-        mach_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={'secure_channel_type': misc.SEC_CHAN_WKSTA})
+        workstation = domain_joined_mach_creds.get_username()
 
         # Calling this initializes netlogon_creds on mach_creds, as is required
         # before calling mach_creds.encrypt_samr_password().
         conn = netlogon.netlogon(f'ncacn_ip_tcp:{dc_server}[schannel,seal]',
                                  self.get_lp(),
-                                 mach_creds)
+                                 domain_joined_mach_creds)
 
         if logon_type == netlogon.NetlogonInteractiveInformation:
             logon = netlogon.netr_PasswordInfo()
@@ -3333,7 +3335,7 @@ class KDCBaseTest(RawKerberosTest):
 
             nt_pass = samr.Password()
             nt_pass.hash = list(creds.get_nt_hash())
-            mach_creds.encrypt_samr_password(nt_pass)
+            domain_joined_mach_creds.encrypt_samr_password(nt_pass)
 
             logon.lmpassword = lm_pass
             logon.ntpassword = nt_pass
@@ -3388,7 +3390,7 @@ class KDCBaseTest(RawKerberosTest):
         try:
             (validation, authoritative, flags) = (
                 conn.netr_LogonSamLogonEx(dc_server,
-                                          mach_creds.get_workstation(),
+                                          domain_joined_mach_creds.get_workstation(),
                                           logon_type,
                                           logon,
                                           validation_level,
