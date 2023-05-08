@@ -21,7 +21,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
+#include <krb5/krb5.h>
+
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+#include "libcli/util/ntstatus.h"
+#include "libcli/util/werror.h"
 #include "librpc/gen_ndr/auth.h"
+#include "kdc/samba_kdc.h"
 
 enum samba_asserted_identity {
 	SAMBA_ASSERTED_IDENTITY_IGNORE = 0,
@@ -120,6 +129,7 @@ krb5_error_code samba_kdc_validate_pac_blob(
  * In the RODC case, to confirm that the returned user is permitted to
  * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
  */
+struct dom_sid;
 WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_sids,
 					  const struct dom_sid *object_sids,
 					  const struct samba_kdc_entry *rodc,
