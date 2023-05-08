@@ -23,6 +23,8 @@
 #ifndef _NTSTATUS_H
 #define _NTSTATUS_H
 
+#include <stdint.h>
+
 #include "libcli/util/ntstatus_gen.h"
 
 /* the following rather strange looking definitions of NTSTATUS
