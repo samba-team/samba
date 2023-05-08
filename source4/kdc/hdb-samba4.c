@@ -559,7 +559,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 
 	hdb_auth_status = heim_number_get_int(hdb_auth_status_obj);
 
-	pa_type_obj = heim_audit_getkv((heim_svc_req_desc)r, "pa");
+	pa_type_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_PA_NAME);
 	if (pa_type_obj != NULL) {
 		pa_type = heim_string_get_utf8(pa_type_obj);
 	}
