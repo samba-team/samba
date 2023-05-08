@@ -24,6 +24,10 @@
 #ifndef _SAMBA_KDC_H_
 #define _SAMBA_KDC_H_
 
+#include "lib/replace/replace.h"
+#include "system/time.h"
+#include "libcli/util/ntstatus.h"
+
 struct samba_kdc_policy {
 	time_t svc_tkt_lifetime;
 	time_t usr_tkt_lifetime;
