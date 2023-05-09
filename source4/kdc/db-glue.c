@@ -3447,7 +3447,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	struct auth_session_info *session_info;
 	struct samba_kdc_db_context *kdc_db_ctx;
 	/* The idea here is very simple.  Using Kerberos to
-	 * authenticate the KDC to the LDAP server is higly likely to
+	 * authenticate the KDC to the LDAP server is highly likely to
 	 * be circular.
 	 *
 	 * In future we may set this up to use EXERNAL and SSL

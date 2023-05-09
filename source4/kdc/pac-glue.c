@@ -2571,7 +2571,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	/*
 	 * The server account may be set not to want the PAC.
 	 *
-	 * While this is wasteful if the above cacluations were done
+	 * While this is wasteful if the above calculations were done
 	 * and now thrown away, this is cleaner as we do any ticket
 	 * signature checking etc always.
 	 *

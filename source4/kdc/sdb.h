@@ -114,7 +114,7 @@ struct sdb_entry {
 #define SDB_F_GET_SERVER	8	/* fetch server */
 #define SDB_F_GET_KRBTGT	16	/* fetch krbtgt */
 #define SDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
-#define SDB_F_CANON		32	/* want canonicalition */
+#define SDB_F_CANON		32	/* want canonicalization */
 #define SDB_F_ADMIN_DATA	64	/* want data that kdc don't use  */
 #define SDB_F_KVNO_SPECIFIED	128	/* we want a particular KVNO */
 #define SDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
@@ -131,7 +131,7 @@ struct sdb_entry {
 				 SDB_F_FOR_TGS_REQ)
 
 /* This is not supported by HDB */
-#define SDB_F_FORCE_CANON	16384	/* force canonicalition */
+#define SDB_F_FORCE_CANON	16384	/* force canonicalization */
 
 void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
