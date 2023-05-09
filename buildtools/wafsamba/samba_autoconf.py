@@ -364,7 +364,7 @@ def CHECK_SIGN(conf, v, headers=None):
     return False
 
 @conf
-def CHECK_VALUEOF(conf, v, headers=None, define=None):
+def CHECK_VALUEOF(conf, v, headers=None, define=None, lib=None):
     '''check the value of a variable/define'''
     ret = True
     v_define = define
@@ -376,6 +376,7 @@ def CHECK_VALUEOF(conf, v, headers=None, define=None):
                   execute=True,
                   define_ret=True,
                   quote=False,
+                  lib=lib,
                   headers=headers,
                   local_include=False,
                   msg="Checking value of %s" % v):
