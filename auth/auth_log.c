@@ -491,8 +491,6 @@ static void log_no_json(struct imessaging_context *msg_ctx,
 				   "compiled with jansson\n");
 		}
 	}
-
-	return;
 }
 
 static void log_authentication_event_json(
@@ -508,7 +506,6 @@ static void log_authentication_event_json(
 	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
-	return;
 }
 
 static void log_successful_authz_event_json(
@@ -523,7 +520,6 @@ static void log_successful_authz_event_json(
 	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
-	return;
 }
 
 #endif
