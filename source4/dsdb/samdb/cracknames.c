@@ -281,7 +281,9 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	krb5_error_code ret;
 	krb5_principal principal;
 	char *realm;
+	char *realm_encoded = NULL;
 	char *unparsed_name_short;
+	const char *unparsed_name_short_encoded = NULL;
 	const char *domain_attrs[] = { NULL };
 	struct ldb_result *domain_res = NULL;
 
@@ -301,15 +303,21 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	realm = smb_krb5_principal_get_realm(
 		mem_ctx, smb_krb5_context->krb5_context, principal);
 
+	realm_encoded = ldb_binary_encode_string(mem_ctx, realm);
+	if (realm_encoded == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
 	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 			     samdb_partitions_dn(sam_ctx, mem_ctx),
 			     LDB_SCOPE_ONELEVEL,
 			     domain_attrs,
 			     "(&(objectClass=crossRef)(|(dnsRoot=%s)(netbiosName=%s))"
 			     "(systemFlags:"LDB_OID_COMPARATOR_AND":=%u))",
-			     ldb_binary_encode_string(mem_ctx, realm),
-			     ldb_binary_encode_string(mem_ctx, realm),
+			     realm_encoded,
+			     realm_encoded,
 			     SYSTEM_FLAG_CR_NTDS_DOMAIN);
+	TALLOC_FREE(realm_encoded);
 	TALLOC_FREE(realm);
 
 	if (ldb_ret != LDB_SUCCESS) {
@@ -349,9 +357,15 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
+	unparsed_name_short_encoded = ldb_binary_encode_string(mem_ctx, unparsed_name_short);
+	if (unparsed_name_short_encoded == NULL) {
+		free(unparsed_name_short);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
 	/* This may need to be extended for more userPrincipalName variations */
 	result_filter = talloc_asprintf(mem_ctx, "(&(samAccountName=%s)(objectClass=user))",
-					ldb_binary_encode_string(mem_ctx, unparsed_name_short));
+					unparsed_name_short_encoded);
 
 	domain_filter = talloc_asprintf(mem_ctx, "(distinguishedName=%s)", ldb_dn_get_linearized(domain_res->msgs[0]->dn));
 
@@ -522,6 +536,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
 	{
 		char *str, *s, *account;
+		const char *str_encoded = NULL;
 		scope = LDB_SCOPE_ONELEVEL;
 
 		if (strlen(name) == 0) {
@@ -552,8 +567,13 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		s[0] = '\0';
 		s++;
 
+		str_encoded = ldb_binary_encode_string(mem_ctx, str);
+		if (str_encoded == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
 		domain_filter = talloc_asprintf(mem_ctx, "(&(objectClass=crossRef)(dnsRoot=%s)(systemFlags:%s:=%u))",
-						ldb_binary_encode_string(mem_ctx, str),
+						str_encoded,
 						LDB_OID_COMPARATOR_AND,
 						SYSTEM_FLAG_CR_NTDS_DOMAIN);
 		W_ERROR_HAVE_NO_MEMORY(domain_filter);
@@ -579,6 +599,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
 		char *p;
 		char *domain;
+		char *domain_encoded = NULL;
 		const char *account = NULL;
 
 		domain = talloc_strdup(mem_ctx, name);
@@ -596,15 +617,27 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			account = &p[1];
 		}
 
+		domain_encoded = ldb_binary_encode_string(mem_ctx, domain);
+		if (domain_encoded == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
 		domain_filter = talloc_asprintf(mem_ctx, 
 						"(&(objectClass=crossRef)(netbiosName=%s)(systemFlags:%s:=%u))",
-						ldb_binary_encode_string(mem_ctx, domain),
+						domain_encoded,
 						LDB_OID_COMPARATOR_AND,
 						SYSTEM_FLAG_CR_NTDS_DOMAIN);
 		W_ERROR_HAVE_NO_MEMORY(domain_filter);
 		if (account) {
+			const char *account_encoded = NULL;
+
+			account_encoded = ldb_binary_encode_string(mem_ctx, account);
+			if (account_encoded == NULL) {
+				return WERR_NOT_ENOUGH_MEMORY;
+			}
+
 			result_filter = talloc_asprintf(mem_ctx, "(sAMAccountName=%s)",
-							ldb_binary_encode_string(mem_ctx, account));
+							account_encoded);
 			W_ERROR_HAVE_NO_MEMORY(result_filter);
 		}
 
@@ -646,11 +679,18 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		break;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
+		const char *name_encoded = NULL;
+
 		domain_filter = NULL;
 
+		name_encoded = ldb_binary_encode_string(mem_ctx, name);
+		if (name_encoded == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
 		result_filter = talloc_asprintf(mem_ctx, "(|(displayName=%s)(samAccountName=%s))",
-						ldb_binary_encode_string(mem_ctx, name), 
-						ldb_binary_encode_string(mem_ctx, name));
+						name_encoded,
+						name_encoded);
 		W_ERROR_HAVE_NO_MEMORY(result_filter);
 		break;
 	}
@@ -679,6 +719,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL: {
 		krb5_principal principal;
 		char *unparsed_name;
+		const char *unparsed_name_encoded = NULL;
 
 		ret = smb_krb5_init_context(mem_ctx, 
 					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
@@ -716,9 +757,14 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 
+		unparsed_name_encoded = ldb_binary_encode_string(mem_ctx, unparsed_name);
+		if (unparsed_name_encoded == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
 		/* The ldb_binary_encode_string() here avoid LDAP filter injection attacks */
 		result_filter = talloc_asprintf(mem_ctx, "(&(userPrincipalName=%s)(objectClass=user))",
-						ldb_binary_encode_string(mem_ctx, unparsed_name));
+						unparsed_name_encoded);
 
 		free(unparsed_name);
 		W_ERROR_HAVE_NO_MEMORY(result_filter);
@@ -727,6 +773,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL: {
 		krb5_principal principal;
 		char *unparsed_name_short;
+		const char *unparsed_name_short_encoded = NULL;
 		const krb5_data *component;
 		char *service;
 
@@ -764,6 +811,13 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
+		unparsed_name_short_encoded = ldb_binary_encode_string(mem_ctx, unparsed_name_short);
+		if (unparsed_name_short_encoded == NULL) {
+			krb5_free_principal(smb_krb5_context->krb5_context, principal);
+			free(unparsed_name_short);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
 		component = krb5_princ_component(smb_krb5_context->krb5_context,
 						 principal, 0);
 		service = (char *)component->data;
@@ -772,6 +826,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			(strcasecmp(service, "host") == 0)) {
 			/* the 'cn' attribute is just the leading part of the name */
 			char *computer_name;
+			const char *computer_name_encoded = NULL;
 			component = krb5_princ_component(
 						smb_krb5_context->krb5_context,
 						principal, 1);
@@ -783,12 +838,19 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
+			computer_name_encoded = ldb_binary_encode_string(mem_ctx, computer_name);
+			if (computer_name_encoded == NULL) {
+				krb5_free_principal(smb_krb5_context->krb5_context, principal);
+				free(unparsed_name_short);
+				return WERR_NOT_ENOUGH_MEMORY;
+			}
+
 			result_filter = talloc_asprintf(mem_ctx, "(|(&(servicePrincipalName=%s)(objectClass=user))(&(cn=%s)(objectClass=computer)))", 
-							ldb_binary_encode_string(mem_ctx, unparsed_name_short), 
-							ldb_binary_encode_string(mem_ctx, computer_name));
+							unparsed_name_short_encoded,
+							computer_name_encoded);
 		} else {
 			result_filter = talloc_asprintf(mem_ctx, "(&(servicePrincipalName=%s)(objectClass=user))",
-							ldb_binary_encode_string(mem_ctx, unparsed_name_short));
+							unparsed_name_short_encoded);
 		}
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		free(unparsed_name_short);

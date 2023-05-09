@@ -237,6 +237,12 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 	} else if (user[0]) {
 		struct ldb_result *user_res = NULL;
+		const char *user_encoded = NULL;
+
+		user_encoded = ldb_binary_encode_string(mem_ctx, user);
+		if (user_encoded == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		/* We must exclude disabled accounts, but otherwise do the bitwise match the client asked for */
 		ret = ldb_search(sam_ctx, mem_ctx, &user_res,
@@ -245,7 +251,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 "(&(objectClass=user)(samAccountName=%s)"
 					 "(!(userAccountControl:" LDB_OID_COMPARATOR_AND ":=%u))"
 					 "(userAccountControl:" LDB_OID_COMPARATOR_OR ":=%u))", 
-					 ldb_binary_encode_string(mem_ctx, user),
+					 user_encoded,
 					 UF_ACCOUNTDISABLE, uac);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find reference to user '%s' with ACB 0x%8x under %s: %s\n",

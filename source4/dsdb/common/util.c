@@ -3062,6 +3062,12 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	dn = ldb_dn_new(mem_ctx, ldb, NULL);
 	for (i=0; split_realm[i]; i++) {
 		binary_encoded = ldb_binary_encode_string(tmp_ctx, split_realm[i]);
+		if (binary_encoded == NULL) {
+			DEBUG(2, ("Failed to add dc= element to DN %s\n",
+				  ldb_dn_get_linearized(dn)));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 		if (!ldb_dn_add_base_fmt(dn, "dc=%s", binary_encoded)) {
 			DEBUG(2, ("Failed to add dc=%s element to DN %s\n",
 				  binary_encoded, ldb_dn_get_linearized(dn)));
@@ -3164,14 +3170,20 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	};
 	struct ldb_result *res_domain_ref;
 	char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
+	int ret_domain;
+
+	if (escaped_domain == NULL) {
+		return NULL;
+	}
+
 	/* find the domain's DN */
-	int ret_domain = ldb_search(ldb, mem_ctx,
-					    &res_domain_ref,
-					    samdb_partitions_dn(ldb, mem_ctx),
-					    LDB_SCOPE_ONELEVEL,
-					    domain_ref_attrs,
-					    "(&(nETBIOSName=%s)(objectclass=crossRef))",
-					    escaped_domain);
+	ret_domain = ldb_search(ldb, mem_ctx,
+				&res_domain_ref,
+				samdb_partitions_dn(ldb, mem_ctx),
+				LDB_SCOPE_ONELEVEL,
+				domain_ref_attrs,
+				"(&(nETBIOSName=%s)(objectclass=crossRef))",
+				escaped_domain);
 	if (ret_domain != LDB_SUCCESS) {
 		return NULL;
 	}
