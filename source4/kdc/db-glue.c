@@ -2122,11 +2122,11 @@ static krb5_error_code samba_kdc_lookup_trust(krb5_context context, struct ldb_c
 		return SDB_ERR_NOENTRY;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		int ret = ENOMEM;
-		krb5_set_error_message(context, ret, "get_sam_result_trust: out of memory");
+		krb5_set_error_message(context, ret, "samba_kdc_lookup_trust: out of memory");
 		return ret;
 	} else {
 		int ret = EINVAL;
-		krb5_set_error_message(context, ret, "get_sam_result_trust: %s", nt_errstr(status));
+		krb5_set_error_message(context, ret, "samba_kdc_lookup_trust: %s", nt_errstr(status));
 		return ret;
 	}
 }
