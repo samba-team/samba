@@ -169,10 +169,10 @@ static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 	};
 	const struct ldb_val *val;
 
-	mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_fetch context");
+	mem_ctx = talloc_named(kdc_db_ctx, 0, "hdb_samba4_fetch_fast_cookie context");
 	if (!mem_ctx) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "samba_kdc_fetch: talloc_named() failed!");
+		krb5_set_error_message(context, ret, "hdb_samba4_fetch_fast_cookie: talloc_named() failed!");
 		return ret;
 	}
 
