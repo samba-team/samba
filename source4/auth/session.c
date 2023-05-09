@@ -49,53 +49,25 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 	return session_info;
 }
 
-_PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
-					     struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
-					     struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
-					     const struct auth_user_info_dc *user_info_dc,
-					     uint32_t session_info_flags,
-					     struct auth_session_info **_session_info)
+_PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
+					       struct loadparm_context *lp_ctx, /* Optional, if you don't want privileges */
+					       struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
+					       const struct auth_user_info_dc *user_info_dc,
+					       uint32_t session_info_flags,
+					       struct security_token **_security_token)
 {
-	struct auth_session_info *session_info;
+	struct security_token *security_token = NULL;
 	NTSTATUS nt_status;
-	uint32_t i, num_sids = 0;
-
-	const char *filter;
-
+	uint32_t i;
+	uint32_t num_sids = 0;
+	const char *filter = NULL;
 	struct auth_SidAttr *sids = NULL;
-	const struct dom_sid *anonymous_sid, *system_sid;
+	const struct dom_sid *anonymous_sid = NULL;
+	const struct dom_sid *system_sid = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-
-	session_info = talloc_zero(tmp_ctx, struct auth_session_info);
-	if (session_info == NULL) {
-		TALLOC_FREE(tmp_ctx);
+	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	session_info->info = talloc_reference(session_info, user_info_dc->info);
-
-	session_info->torture = talloc_zero(session_info, struct auth_user_info_torture);
-	if (session_info->torture == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	session_info->torture->num_dc_sids = user_info_dc->num_sids;
-	session_info->torture->dc_sids = talloc_reference(session_info, user_info_dc->sids);
-	if (session_info->torture->dc_sids == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* unless set otherwise, the session key is the user session
-	 * key from the auth subsystem */ 
-	session_info->session_key = data_blob_talloc(session_info, user_info_dc->user_session_key.data, user_info_dc->user_session_key.length);
-	if (!session_info->session_key.data && session_info->session_key.length) {
-		if (session_info->session_key.data == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	anonymous_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_ANONYMOUS);
@@ -176,7 +148,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &sids[PRIMARY_USER_SID_INDEX].sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
-	} else if (sam_ctx) {
+	} else if (sam_ctx != NULL) {
 		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 					 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
@@ -211,12 +183,72 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_status = security_token_create(session_info,
+	nt_status = security_token_create(mem_ctx,
 					  lp_ctx,
 					  num_sids,
 					  sids,
 					  session_info_flags,
-					  &session_info->security_token);
+					  &security_token);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+
+	talloc_steal(mem_ctx, security_token);
+	*_security_token = security_token;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
+					     struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
+					     struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
+					     const struct auth_user_info_dc *user_info_dc,
+					     uint32_t session_info_flags,
+					     struct auth_session_info **_session_info)
+{
+	struct auth_session_info *session_info;
+	NTSTATUS nt_status;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	session_info = talloc_zero(tmp_ctx, struct auth_session_info);
+	if (session_info == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session_info->info = talloc_reference(session_info, user_info_dc->info);
+
+	session_info->torture = talloc_zero(session_info, struct auth_user_info_torture);
+	if (session_info->torture == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	session_info->torture->num_dc_sids = user_info_dc->num_sids;
+	session_info->torture->dc_sids = talloc_reference(session_info, user_info_dc->sids);
+	if (session_info->torture->dc_sids == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* unless set otherwise, the session key is the user session
+	 * key from the auth subsystem */
+	session_info->session_key = data_blob_talloc(session_info, user_info_dc->user_session_key.data, user_info_dc->user_session_key.length);
+	if (!session_info->session_key.data && session_info->session_key.length) {
+		if (session_info->session_key.data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	nt_status = auth_generate_security_token(session_info,
+						 lp_ctx,
+						 sam_ctx,
+						 user_info_dc,
+						 session_info_flags,
+						 &session_info->security_token);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;

@@ -36,6 +36,12 @@ struct auth_session_info *system_session(struct loadparm_context *lp_ctx) ;
 NTSTATUS auth_anonymous_user_info_dc(TALLOC_CTX *mem_ctx,
 					     const char *netbios_name,
 					     struct auth_user_info_dc **interim_info);
+NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
+				       struct loadparm_context *lp_ctx, /* Optional, if you don't want privileges */
+				       struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
+				       const struct auth_user_info_dc *user_info_dc,
+				       uint32_t session_info_flags,
+				       struct security_token **_security_token);
 NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 				    struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
 				    struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
