@@ -1421,13 +1421,19 @@ NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx
 					 struct ldb_message **ret_msg)
 {
 	int ret;
+	char *account_name_encoded = NULL;
+
+	account_name_encoded = ldb_binary_encode_string(mem_ctx, account_name);
+	if (account_name_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* pull the user attributes */
 	ret = dsdb_search_one(sam_ctx, mem_ctx, ret_msg, domain_dn, LDB_SCOPE_SUBTREE,
 			      user_attrs,
 			      DSDB_SEARCH_SHOW_EXTENDED_DN,
 			      "(&(sAMAccountName=%s)(objectclass=user))",
-			      ldb_binary_encode_string(mem_ctx, account_name));
+			      account_name_encoded);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(3,("authsam_search_account: Couldn't find user [%s] in samdb, under %s\n",
 			 account_name, ldb_dn_get_linearized(domain_dn)));
