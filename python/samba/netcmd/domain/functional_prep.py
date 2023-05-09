@@ -30,7 +30,7 @@ from samba.netcmd import Command, CommandError, Option
 from samba.netcmd.fsmo import get_fsmo_roleowner
 from samba.samdb import SamDB
 
-from .common import string_to_level
+from samba import functional_level
 
 
 class cmd_domain_functional_prep(Command):
@@ -66,7 +66,12 @@ class cmd_domain_functional_prep(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         H = kwargs.get("H")
-        target_level = string_to_level(kwargs.get("function_level"))
+        function_level = kwargs.get("function_level")
+        try:
+            target_level = functional_level.string_to_level(function_level)
+        except KeyError:
+            raise CommandError(f"'{function_level}' is not known to Samba as an AD functional level")
+
         forest_prep = kwargs.get("forest_prep")
         domain_prep = kwargs.get("domain_prep")
 

@@ -29,7 +29,7 @@ from .backup import cmd_domain_backup
 from .claim import cmd_domain_claim
 from .classicupgrade import cmd_domain_classicupgrade
 from .common import (common_join_options, common_ntvfs_options,
-                     common_provision_join_options, string_to_level)
+                     common_provision_join_options)
 from .dcpromo import cmd_domain_dcpromo
 from .demote import cmd_domain_demote
 from .functional_prep import cmd_domain_functional_prep

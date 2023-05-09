@@ -29,7 +29,7 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba.netcmd import Command, CommandError, Option
 from samba.samdb import SamDB
 
-from .common import level_to_string, string_to_level
+from samba import functional_level
 
 
 class cmd_domain_level(Command):
@@ -118,23 +118,26 @@ class cmd_domain_level(Command):
 
             self.message("")
 
-            outstr = level_to_string(level_forest)
+            outstr = functional_level.level_to_string(level_forest)
             self.message("Forest function level: (Windows) " + outstr)
 
             if level_domain == DS_DOMAIN_FUNCTION_2000 and level_domain_mixed:
                 outstr = "2000 mixed (NT4 DC support)"
             else:
-                outstr = level_to_string(level_domain)
+                outstr = functional_level.level_to_string(level_domain)
             self.message("Domain function level: (Windows) " + outstr)
 
-            outstr = level_to_string(min_level_dc)
+            outstr = functional_level.level_to_string(min_level_dc)
             self.message("Lowest function level of a DC: (Windows) " + outstr)
 
         elif subcommand == "raise":
             msgs = []
 
             if domain_level is not None:
-                new_level_domain = string_to_level(domain_level)
+                try:
+                    new_level_domain = functional_level.string_to_level(domain_level)
+                except KeyError:
+                    raise CommandError(f"New functional level '{domain_level}' is not known to Samba as an AD functional level")
 
                 if new_level_domain <= level_domain and level_domain_mixed == 0:
                     raise CommandError("Domain function level can't be smaller than or equal to the actual one!")

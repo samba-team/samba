@@ -24,16 +24,6 @@
 
 from uuid import UUID
 
-from samba.dsdb import (
-    DS_DOMAIN_FUNCTION_2000,
-    DS_DOMAIN_FUNCTION_2003,
-    DS_DOMAIN_FUNCTION_2008,
-    DS_DOMAIN_FUNCTION_2008_R2,
-    DS_DOMAIN_FUNCTION_2012,
-    DS_DOMAIN_FUNCTION_2012_R2,
-    DS_DOMAIN_FUNCTION_2003_MIXED,
-    DS_DOMAIN_FUNCTION_2016
-)
 from samba.netcmd import CommandError, Option
 from samba.samdb import get_default_backend_store
 
@@ -74,43 +64,6 @@ common_join_options = [
            default="SAMBA_INTERNAL"),
     Option("-v", "--verbose", help="Be verbose", action="store_true")
 ]
-
-
-string_version_to_constant = {
-    "2000": DS_DOMAIN_FUNCTION_2000,
-    "2003": DS_DOMAIN_FUNCTION_2003,
-    "2008": DS_DOMAIN_FUNCTION_2008,
-    "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
-    "2012": DS_DOMAIN_FUNCTION_2012,
-    "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
-    "2016": DS_DOMAIN_FUNCTION_2016,
-}
-
-
-def string_to_level(string):
-    """Interpret a string indicating a functional level."""
-    try:
-        return string_version_to_constant[string]
-    except KeyError as e:
-        raise CommandError(f"'{string}' is not a valid domain level")
-
-
-def level_to_string(level):
-    """turn the level enum number into a printable string."""
-    if level < DS_DOMAIN_FUNCTION_2000:
-        return "invalid"
-    strings = {
-        DS_DOMAIN_FUNCTION_2000: "2000",
-        DS_DOMAIN_FUNCTION_2003_MIXED: \
-            "2003 with mixed domains/interim (NT4 DC support)",
-        DS_DOMAIN_FUNCTION_2003: "2003",
-        DS_DOMAIN_FUNCTION_2008: "2008",
-        DS_DOMAIN_FUNCTION_2008_R2: "2008 R2",
-        DS_DOMAIN_FUNCTION_2012: "2012",
-        DS_DOMAIN_FUNCTION_2012_R2: "2012 R2",
-        DS_DOMAIN_FUNCTION_2016: "2016",
-    }
-    return strings.get(level, "higher than 2016")
 
 
 def parse_text(value):
