@@ -53,6 +53,7 @@ manpages='''
          manpages/traffic_replay.7
          manpages/wbinfo.1
          manpages/winbindd.8
+         manpages/samba-log-parser.1
          '''
 
 pam_winbind_manpages = '''
