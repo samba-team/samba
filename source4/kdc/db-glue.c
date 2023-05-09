@@ -2997,6 +2997,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	if (!mem_ctx) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "samba_kdc_firstkey: talloc_named() failed!");
+		TALLOC_FREE(priv);
 		return ret;
 	}
 
@@ -3170,6 +3171,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		krb5_set_error_message(context, ret,
 				       "samba_kdc_check_s4u2proxy:"
 				       " ldb_dn_get_linearized() failed!");
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
@@ -3187,6 +3189,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 	 * delegation target, allow to forward.
 	 */
 	if (target_principal == NULL) {
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -3218,6 +3221,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		krb5_set_error_message(context, ret,
 				       "samba_kdc_check_s4u2proxy:"
 				       " talloc_strdup() failed!");
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
@@ -3471,6 +3475,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 
 	session_info = system_session(kdc_db_ctx->lp_ctx);
 	if (session_info == NULL) {
+		talloc_free(kdc_db_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
