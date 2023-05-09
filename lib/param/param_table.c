@@ -34,6 +34,7 @@
 #include "libcli/auth/ntlm_check.h"
 #include "libcli/smb/smb_constants.h"
 #include "libds/common/roles.h"
+#include "libds/common/flags.h"
 #include "source4/lib/tls/tls.h"
 #include "auth/credentials/credentials.h"
 #include "source3/librpc/gen_ndr/ads.h"
@@ -427,6 +428,12 @@ static const struct enum_list enum_debug_syslog_format[] = {
 	{DEBUG_SYSLOG_FORMAT_IN_LOGS, "True"},
 	{DEBUG_SYSLOG_FORMAT_IN_LOGS, "1"},
 	{DEBUG_SYSLOG_FORMAT_ALWAYS, "always"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_ad_functional_level[] = {
+	{DS_DOMAIN_FUNCTION_2008_R2, "2008_R2"},
+	{DS_DOMAIN_FUNCTION_2016, "2016"},
 	{-1, NULL}
 };
 

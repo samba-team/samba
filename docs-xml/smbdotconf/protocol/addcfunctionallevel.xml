@@ -1,0 +1,56 @@
+<samba:parameter name="ad dc functional level"
+                 context="G"
+                 type="enum"
+                 function="ad_dc_functional_level"
+                 enumlist="enum_ad_functional_level"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>The value of the parameter (a string) is the Active
+    Directory functional level that this Domain Controller will claim
+    to support.  </para>
+
+    <para>Possible values are :</para>
+    <itemizedlist>
+	<listitem>
+	    <para><constant>2008_R2</constant>: Similar to Windows
+	    2008 R2 Functional Level</para>
+	</listitem>
+	<listitem>
+	    <para><constant>2016</constant>: Similar to Windows
+	    2016 Functional Level</para>
+	</listitem>
+    </itemizedlist>
+
+    <para>Normally this option should not be set as Samba will operate
+    per the released functionality of the Samba Active Directory
+    Domain Controller. </para>
+
+    <para>However to access incomplete features in domain functional
+    level 2016 it may be useful to
+    set this value, prior to upgrading the domain functional level. </para>
+
+    <para>If this is set manually, the protection against mismatching
+    features between domain controllers is reduced, so all domain
+    controllers should be running the same version of Samba, to ensure
+    that behaviour as seen by the client is the same no matter which
+    DC is contacted.</para>
+
+    <para>Setting this to <constant>2016</constant> will allow
+    raising the domain functional level with <command>samba-tool
+    domain level raise --domain-level=2016</command> and provide
+    access to Samba's Kerberos Claims and Dynamic Access
+    Control feature.</para>
+
+    <warning><para> The Samba's Kerberos Claims and Dynamic Access
+    Control features enabled with <constant>2016</constant> are
+    incomplete in Samba 4.19.  </para></warning>
+
+
+</description>
+
+<!-- DO NOT MODIFY without discussion: take care to only update this
+     default once Samba implements the core aspects of Active
+     Directory Domain and Forest Functional Level 2016 -->
+<value type="default">2008_R2</value>
+<value type="example">2016</value>
+</samba:parameter>

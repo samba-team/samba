@@ -80,6 +80,7 @@
 #include "source3/lib/substitute.h"
 #include "source3/librpc/gen_ndr/ads.h"
 #include "lib/util/time_basic.h"
+#include "libds/common/flags.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -994,6 +995,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	 * a named-pipe helper.
 	 */
 	Globals.rpc_start_on_demand_helpers = true;
+
+	Globals.ad_dc_functional_level = DS_DOMAIN_FUNCTION_2008_R2,
 
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
