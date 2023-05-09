@@ -302,6 +302,9 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 	realm = smb_krb5_principal_get_realm(
 		mem_ctx, smb_krb5_context->krb5_context, principal);
+	if (realm == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	realm_encoded = ldb_binary_encode_string(mem_ctx, realm);
 	if (realm_encoded == NULL) {
