@@ -2361,17 +2361,17 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		}
 
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			krb5_warnx(context, "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+			krb5_warnx(context, "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 				   (unsigned)(krbtgt_number));
 			krb5_set_error_message(context, SDB_ERR_NOENTRY,
-					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+					       "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
 			return SDB_ERR_NOENTRY;
 		} else if (lret != LDB_SUCCESS) {
-			krb5_warnx(context, "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+			krb5_warnx(context, "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 				   (unsigned)(krbtgt_number));
 			krb5_set_error_message(context, SDB_ERR_NOENTRY,
-					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+					       "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
 			return SDB_ERR_NOENTRY;
 		}
@@ -2380,7 +2380,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
 					      flags, kvno, realm_dn, msg, entry);
 		if (ret != 0) {
-			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
+			krb5_warnx(context, "samba_kdc_fetch_krbtgt: self krbtgt message2entry failed");
 		}
 		return ret;
 
@@ -2399,10 +2399,10 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			direction = OUTBOUND;
 			realm = realm_from_princ;
 		} else {
-			krb5_warnx(context, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
+			krb5_warnx(context, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
 				   realm_from_princ,
 				   realm_princ_comp);
-			krb5_set_error_message(context, SDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
+			krb5_set_error_message(context, SDB_ERR_NOENTRY, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
 					       realm_from_princ,
 					       realm_princ_comp);
 			return SDB_ERR_NOENTRY;
@@ -2415,8 +2415,8 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 				       realm, realm_dn, &msg);
 
 		if (ret != 0) {
-			krb5_warnx(context, "samba_kdc_fetch: could not find principal in DB");
-			krb5_set_error_message(context, ret, "samba_kdc_fetch: could not find principal in DB");
+			krb5_warnx(context, "samba_kdc_fetch_krbtgt: could not find principal in DB");
+			krb5_set_error_message(context, ret, "samba_kdc_fetch_krbtgt: could not find principal in DB");
 			return ret;
 		}
 
@@ -2424,9 +2424,9 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 						    direction,
 						    realm_dn, flags, kvno, msg, entry);
 		if (ret != 0) {
-			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed for %s",
+			krb5_warnx(context, "samba_kdc_fetch_krbtgt: trust_message2entry failed for %s",
 				   ldb_dn_get_linearized(msg->dn));
-			krb5_set_error_message(context, ret, "samba_kdc_fetch: "
+			krb5_set_error_message(context, ret, "samba_kdc_fetch_krbtgt: "
 					       "trust_message2entry failed for %s",
 					       ldb_dn_get_linearized(msg->dn));
 		}
@@ -2551,8 +2551,8 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		enterprise_principal = NULL;
 
 		if (ret != 0) {
-			krb5_set_error_message(context, ret, "samba_kdc_lookup_principal: could not parse principal");
-			krb5_warnx(context, "samba_kdc_lookup_principal: could not parse principal");
+			krb5_set_error_message(context, ret, "samba_kdc_lookup_server: could not parse principal");
+			krb5_warnx(context, "samba_kdc_lookup_server: could not parse principal");
 			return ret;
 		}
 
@@ -2634,12 +2634,12 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 		code = krb5_unparse_name(context, principal, &client_name);
 		if (code == 0) {
 			krb5_warnx(context,
-				   "samba_kdc_fetch: message2entry failed for "
+				   "samba_kdc_fetch_server: message2entry failed for "
 				   "%s",
 				   client_name);
 		} else {
 			krb5_warnx(context,
-				   "samba_kdc_fetch: message2entry and "
+				   "samba_kdc_fetch_server: message2entry and "
 				   "krb5_unparse_name failed");
 		}
 		SAFE_FREE(client_name);
@@ -3101,7 +3101,7 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "samba_kdc_fetch: talloc_named() failed!");
+		krb5_set_error_message(context, ret, "samba_kdc_check_pkinit_ms_upn_match: talloc_named() failed!");
 		return ret;
 	}
 
@@ -3582,7 +3582,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  "(&(objectClass=user)(samAccountName=krbtgt))");
 
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("samba_kdc_fetch: could not find own KRBTGT in DB: %s\n", ldb_errstring(kdc_db_ctx->samdb)));
+			DEBUG(1, ("samba_kdc_setup_db_ctx: could not find own KRBTGT in DB: %s\n", ldb_errstring(kdc_db_ctx->samdb)));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
