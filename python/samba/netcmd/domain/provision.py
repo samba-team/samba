@@ -44,6 +44,7 @@ from samba.netcmd import Command, CommandError, Option
 from samba.provision import DEFAULT_MIN_PWD_LENGTH, ProvisioningError, provision
 from samba.provision.common import FILL_DRS, FILL_FULL, FILL_NT4SYNC
 from samba.samdb import get_default_backend_store
+from samba import functional_level
 
 from .common import common_ntvfs_options, common_provision_join_options
 
@@ -258,14 +259,10 @@ class cmd_domain_provision(Command):
         else:
             self.logger.info("Administrator password will be set randomly!")
 
-        if function_level == "2000":
-            dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
-        elif function_level == "2003":
-            dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
-        elif function_level == "2008":
-            dom_for_fun_level = DS_DOMAIN_FUNCTION_2008
-        elif function_level == "2008_R2":
-            dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
+        try:
+            dom_for_fun_level = functional_level.string_to_level(function_level)
+        except KeyError as e:
+            raise CommandError(f"'{function_level}' is not a valid domain level")
 
         if adprep_level is None:
             # Select the adprep_level default based
