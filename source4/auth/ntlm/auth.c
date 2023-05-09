@@ -581,7 +581,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	if (!pac_blob) {
 		/*
-		 * This should already be catched at the main
+		 * This should already have been caught at the main
 		 * gensec layer, but better check twice
 		 */
 		return NT_STATUS_INTERNAL_ERROR;
