@@ -48,6 +48,9 @@ static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 		return NULL;
 	}
 	retstr = generate_random_str(NULL, len);
+	if (retstr == NULL) {
+		return PyErr_NoMemory();
+	}
 	ret = PyUnicode_FromStringAndSize(retstr, len);
 	talloc_free(retstr);
 	return ret;
