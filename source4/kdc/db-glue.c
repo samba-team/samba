@@ -3284,7 +3284,7 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	const DATA_BLOB *data = NULL;
 	struct security_descriptor *rbcd_security_descriptor = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
-	struct auth_session_info *session_info = NULL;
+	struct security_token *security_token = NULL;
 	uint32_t session_info_flags = AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
 	/*
 	 * Testing shows that although Windows grants SEC_ADS_GENERIC_ALL access
@@ -3368,12 +3368,12 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
-	nt_status = auth_generate_session_info(mem_ctx,
-					       kdc_db_ctx->lp_ctx,
-					       kdc_db_ctx->samdb,
-					       user_info_dc,
-					       session_info_flags,
-					       &session_info);
+	nt_status = auth_generate_security_token(mem_ctx,
+						 kdc_db_ctx->lp_ctx,
+						 kdc_db_ctx->samdb,
+						 user_info_dc,
+						 session_info_flags,
+						 &security_token);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		code = map_errno_from_nt_status(nt_status);
 		goto out;
@@ -3406,12 +3406,12 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(security_token, session_info->security_token);
+		NDR_PRINT_DEBUG(security_token, security_token);
 		NDR_PRINT_DEBUG(security_descriptor, rbcd_security_descriptor);
 	}
 
 	nt_status = sec_access_check_ds(rbcd_security_descriptor,
-					session_info->security_token,
+					security_token,
 					access_desired,
 					&access_granted,
 					NULL,
