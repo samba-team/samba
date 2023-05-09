@@ -3345,7 +3345,6 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 				       &server_name);
 	if (code != 0) {
 		DBG_ERR("Unable to parse server_principal!\n");
-		SAFE_FREE(client_name);
 		goto out;
 	}
 
