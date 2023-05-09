@@ -291,11 +291,13 @@ NTSTATUS dsdb_add_domain_group(struct ldb_context *ldb,
 				   "(&(sAMAccountName=%s)(objectclass=group))",
 				   groupname_encoded);
 	if (name != NULL) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_GROUP_EXISTS;
 	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	if (msg == NULL) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -338,6 +340,7 @@ NTSTATUS dsdb_add_domain_group(struct ldb_context *ldb,
 	group_sid = samdb_search_dom_sid(ldb, tmp_ctx,
 					 msg->dn, "objectSid", NULL);
 	if (group_sid == NULL) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -369,6 +372,7 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 
 	if (ldb_transaction_start(ldb) != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to start transaction in dsdb_add_domain_alias(): %s\n", ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -433,6 +437,7 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 	if (ldb_transaction_commit(ldb) != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to commit transaction in dsdb_add_domain_alias(): %s\n",
 			  ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
