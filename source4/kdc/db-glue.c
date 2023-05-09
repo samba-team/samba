@@ -3313,7 +3313,6 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	proxy_dn = ldb_dn_get_linearized(proxy_skdc_entry->msg->dn);
 	if (proxy_dn == NULL) {
 		DBG_ERR("ldb_dn_get_linearized failed for proxy_dn!\n");
-		TALLOC_FREE(mem_ctx);
 		if (errno == 0) {
 			errno = ENOMEM;
 		}
