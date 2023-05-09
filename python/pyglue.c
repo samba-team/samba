@@ -79,11 +79,11 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 	retstr = generate_random_password(NULL, min, max);
 	if (retstr == NULL) {
 		if (errno == EINVAL) {
-			PyErr_Format(PyExc_ValueError,
-				     "invalid range: %zd - %zd",
-				     min, max);
+			return PyErr_Format(PyExc_ValueError,
+					    "invalid range: %zd - %zd",
+					    min, max);
 		}
-		return NULL;
+		return PyErr_NoMemory();
 	}
 	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
@@ -114,11 +114,11 @@ static PyObject *py_generate_random_machine_password(PyObject *self, PyObject *a
 	retstr = generate_random_machine_password(NULL, min, max);
 	if (retstr == NULL) {
 		if (errno == EINVAL) {
-			PyErr_Format(PyExc_ValueError,
-				     "invalid range: %zd - %zd",
-				     min, max);
+			return PyErr_Format(PyExc_ValueError,
+					    "invalid range: %zd - %zd",
+					    min, max);
 		}
-		return NULL;
+		return PyErr_NoMemory();
 	}
 	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
@@ -357,7 +357,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	lp_ctx = lpcfg_from_py_object(tmp_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		talloc_free(tmp_ctx);
-		return NULL;
+		return PyErr_NoMemory();
 	}
 
 	load_interface_list(tmp_ctx, lp_ctx, &ifaces);
