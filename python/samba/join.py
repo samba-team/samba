@@ -50,7 +50,7 @@ import tempfile
 from collections import OrderedDict
 from samba.common import get_string
 from samba.netcmd import CommandError
-from samba import dsdb
+from samba import dsdb, functional_level
 
 
 class DCJoinException(Exception):
@@ -554,7 +554,12 @@ class DCJoinContext(object):
         nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec["msDS-Behavior-Version"] = str(samba.dsdb.DS_DOMAIN_FUNCTION_2008_R2)
+            # This allows an override via smb.conf or --option using
+            # "ad dc functional level" to make us seem like 2016 to
+            # join such a domain for (say) a migration, or to test the
+            # partially implemented 2016 support.
+            domainControllerFunctionality = functional_level.dc_level_from_lp(ctx.lp)
+            rec["msDS-Behavior-Version"] = str(domainControllerFunctionality)
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-HasDomainNCs"] = ctx.base_dn
