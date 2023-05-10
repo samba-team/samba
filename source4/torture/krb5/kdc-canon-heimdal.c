@@ -574,7 +574,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	assertion_message = talloc_asprintf(tctx,
 					    "krb5_get_init_creds_password returned a different principal %s to what was expected %s",
 					    got_principal_string, expected_principal_string);
-	krb5_free_unparsed_name(k5_context, got_principal_string);
+	krb5_xfree(got_principal_string);
 
 	torture_assert(tctx, krb5_principal_compare(k5_context,
 						    my_creds.client, expected_principal),
