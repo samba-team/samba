@@ -60,3 +60,24 @@ def level_to_string(level):
         DS_DOMAIN_FUNCTION_2016: "2016",
     }
     return strings.get(level, "higher than 2016")
+
+def dc_level_from_lp(lp):
+    """Return the ad dc functional level as an integer from a LoadParm"""
+
+    # I don't like the RuntimeError here, but these "can't happen"
+    # except by a developer stuffup.
+
+    smb_conf_dc_functional_level = lp.get('ad dc functional level')
+    if smb_conf_dc_functional_level is None:
+        # This shouldn't be possible, except if the default option
+        # value is not in the loadparm enum table
+        raise RuntimeError(f"'ad dc functional level' in smb.conf unrecognised!")
+
+    try:
+        return string_to_level(smb_conf_dc_functional_level)
+    except KeyError:
+        # This shouldn't be possible at all, unless the table in
+        # python/samba/functional_level.py is not a superset of that
+        # in lib/param/param_table.c
+        raise RuntimeError(f"'ad dc functional level = {smb_conf_dc_functional_level}'"
+                           " in smb.conf is not valid!")
