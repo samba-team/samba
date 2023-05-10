@@ -126,6 +126,7 @@ from samba.samdb import SamDB
 from samba.dbchecker import dbcheck
 from samba.provision.kerberos import create_kdc_conf
 from samba.samdb import get_default_backend_store
+from samba import functional_level
 
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04FB984F9"
@@ -1353,15 +1354,16 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
             1000, 1000000000, 1000)
         raise ProvisioningError(error)
 
+    domainControllerFunctionality = functional_level.dc_level_from_lp(lp)
+
     # ATTENTION: Do NOT change these default values without discussion with the
     # team and/or release manager. They have a big impact on the whole program!
-    domainControllerFunctionality = DS_DOMAIN_FUNCTION_2008_R2
-
     if dom_for_fun_level is None:
         dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
 
     if dom_for_fun_level > domainControllerFunctionality:
-        raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008_R2). This won't work!")
+        level = functional_level.level_to_string(domainControllerFunctionality)
+        raise ProvisioningError(f"You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level ({level}). This won't work!")
 
     domainFunctionality = dom_for_fun_level
     forestFunctionality = dom_for_fun_level
