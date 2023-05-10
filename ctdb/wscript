@@ -685,6 +685,11 @@ def build(bld):
                      includes='include',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_BINARY('ctdb_smnotify_helper',
+                     source=('failover/smnotify_helper.c'),
+                     deps='sys_rw replace',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_GENERATOR('ctdb-smnotify-h',
                         source='utils/smnotify/smnotify.x',
                         target='utils/smnotify/smnotify.h',
