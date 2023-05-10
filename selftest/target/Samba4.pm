@@ -1670,7 +1670,9 @@ sub provision_ad_dc_ntvfs($$$)
 	server require schannel:LOCALDC\$ = no
 	server schannel require seal:LOCALDC\$ = no
 	";
-	push (@{$extra_provision_options}, "--use-ntvfs");
+	push (@{$extra_provision_options},
+	      "--base-schema=2008_R2",
+	      "--use-ntvfs");
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
