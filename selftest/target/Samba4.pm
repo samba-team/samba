@@ -2380,7 +2380,7 @@ sub check_env($$)
 	labdc                => ["backupfromdc"],
 
 	# aliases in order to split autobuild tasks
-	fl2008dc             => ["ad_dc"],
+	fl2008dc             => ["ad_dc_ntvfs"],
 	ad_dc_default        => ["ad_dc"],
 	ad_dc_default_smb1   => ["ad_dc_smb1"],
 	ad_dc_default_smb1_done   => ["ad_dc_default_smb1"],
@@ -2407,17 +2407,8 @@ sub return_alias_env
 
 sub setup_fl2008dc
 {
-	my ($self, $path) = @_;
-
-	my $extra_args = ["--base-schema=2008_R2"];
-	my $env = $self->provision_ad_dc_ntvfs($path, $extra_args);
-	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "standard"))) {
-		    warn("Failed to start fl2008dc");
-		        return undef;
-		}
-	}
-	return $env;
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env)
 }
 
 sub setup_ad_dc_default
