@@ -1969,7 +1969,7 @@ sub read_config_h($)
 	return \%ret;
 }
 
-sub provision_ad_dc($$$$$$$)
+sub provision_ad_dc()
 {
 	my ($self,
 	    $prefix,
@@ -1978,7 +1978,8 @@ sub provision_ad_dc($$$$$$$)
 	    $realm,
 	    $force_fips_mode,
 	    $smbconf_args,
-	    $extra_provision_options) = @_;
+	    $extra_provision_options,
+	    $functional_level) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 
@@ -1992,6 +1993,10 @@ sub provision_ad_dc($$$$$$$)
 	}
 
 	my $config_h = {};
+
+	if (!defined($functional_level)) {
+		$functional_level = "2008";
+	}
 
 	if (defined($ENV{CONFIG_H})) {
 		$config_h = read_config_h($ENV{CONFIG_H});
@@ -2142,7 +2147,7 @@ sub provision_ad_dc($$$$$$$)
 				   $hostname,
 				   $domain,
 				   $realm,
-				   "2008",
+				   $functional_level,
 				   "locDCpass1",
 				   undef,
 				   undef,
@@ -2714,7 +2719,7 @@ sub setup_rodc
 
 sub _setup_ad_dc
 {
-	my ($self, $path, $conf_opts, $server, $dom) = @_;
+	my ($self, $path, $conf_opts, $server, $dom, $functional_level) = @_;
 
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->{target3}->have_ads()) {
@@ -2734,7 +2739,8 @@ sub _setup_ad_dc
 					 $dom,
 					 undef,
 					 $conf_opts,
-					 undef);
+					 undef,
+					 $functional_level);
 	unless ($env) {
 		return undef;
 	}
