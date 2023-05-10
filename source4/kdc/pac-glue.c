@@ -1166,43 +1166,32 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    enum samba_asserted_identity asserted_identity,
 				    enum samba_claims_valid claims_valid,
 				    enum samba_compounded_auth compounded_auth,
-				    struct auth_user_info_dc *user_info_dc_out)
+				    struct auth_user_info_dc **user_info_dc_out)
 {
 	NTSTATUS nt_status;
-	const struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *user_info_dc_from_db = NULL;
+	struct auth_user_info_dc *user_info_dc = NULL;
 
-	nt_status = samba_kdc_get_user_info_from_db(skdc_entry, skdc_entry->msg, &user_info_dc);
+	nt_status = samba_kdc_get_user_info_from_db(skdc_entry, skdc_entry->msg, &user_info_dc_from_db);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Getting user info for PAC failed: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
 
-
 	/* Make a shallow copy of the user_info_dc structure. */
-	*user_info_dc_out = *user_info_dc;
-	if (user_info_dc->sids != NULL) {
-		/*
-		 * Because we want to modify the SIDs in the user_info_dc
-		 * structure, adding various well-known SIDs such as Asserted
-		 * Identity or Claims Valid, make a copy of the SID array to
-		 * guard against modification of the original.
-		 */
-		user_info_dc_out->sids = talloc_memdup(mem_ctx,
-						       user_info_dc_out->sids,
-						       talloc_get_size(user_info_dc_out->sids));
-		if (user_info_dc_out->sids == NULL) {
-			DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
-				nt_errstr(nt_status));
-			return NT_STATUS_NO_MEMORY;
-		}
+	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, user_info_dc_from_db, &user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
+			nt_errstr(nt_status));
+		return nt_status;
 	}
 
 	/* Here we modify the SIDs to add the Asserted Identity SID. */
 	nt_status = samba_add_asserted_identity(mem_ctx,
 						asserted_identity,
-						&user_info_dc_out->sids,
-						&user_info_dc_out->num_sids);
+						&user_info_dc->sids,
+						&user_info_dc->num_sids);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
@@ -1211,7 +1200,7 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_add_claims_valid(mem_ctx,
 					   claims_valid,
-					   user_info_dc_out);
+					   user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
@@ -1220,12 +1209,14 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_add_compounded_auth(mem_ctx,
 					      compounded_auth,
-					      user_info_dc_out);
+					      user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Compounded Authentication: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
+
+	*user_info_dc_out = user_info_dc;
 
 	return NT_STATUS_OK;
 }
@@ -1952,7 +1943,7 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
 
-	struct auth_user_info_dc device_info_dc;
+	struct auth_user_info_dc *device_info_dc = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups = NULL;
 
@@ -1978,7 +1969,7 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
-	nt_status = auth_convert_user_info_dc_saminfo3(frame, &device_info_dc,
+	nt_status = auth_convert_user_info_dc_saminfo3(frame, device_info_dc,
 						       AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED,
 						       &info3,
 						       &resource_groups);
@@ -2251,6 +2242,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *device_claims_blob = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	int is_tgs = false;
+	struct auth_user_info_dc *user_info_dc = NULL;
 	enum auth_group_inclusion group_inclusion;
 	size_t i = 0;
 
@@ -2357,8 +2349,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!client_pac_is_trusted) {
-		struct auth_user_info_dc user_info_dc = {};
-
 		/*
 		 * In this case the RWDC discards the PAC an RODC generated.
 		 * Windows adds the asserted_identity in this case too.
@@ -2396,7 +2386,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
-						       &user_info_dc,
+						       user_info_dc,
 						       group_inclusion,
 						       &pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2407,7 +2397,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
-							&user_info_dc,
+							user_info_dc,
 							&upn_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_upn_info_blob failed: %s\n",
@@ -2417,7 +2407,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
-							     &user_info_dc,
+							     user_info_dc,
 							     &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_requester_sid_blob failed: %s\n",
@@ -2668,5 +2658,7 @@ done:
 	TALLOC_FREE(pac_blob);
 	TALLOC_FREE(upn_blob);
 	TALLOC_FREE(deleg_blob);
+	/* Release our handle to user_info_dc. */
+	talloc_unlink(mem_ctx, user_info_dc);
 	return code;
 }

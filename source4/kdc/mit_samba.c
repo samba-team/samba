@@ -464,7 +464,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		      krb5_pac *pac)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_user_info_dc user_info_dc = {};
+	struct auth_user_info_dc *user_info_dc = NULL;
 	DATA_BLOB *logon_info_blob = NULL;
 	DATA_BLOB *upn_dns_info_blob = NULL;
 	DATA_BLOB *cred_ndr = NULL;
@@ -531,7 +531,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	}
 
 	nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
-						  &user_info_dc,
+						  user_info_dc,
 						  group_inclusion,
 						  &logon_info_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -550,7 +550,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	}
 
 	nt_status = samba_kdc_get_upn_info_blob(tmp_ctx,
-						&user_info_dc,
+						user_info_dc,
 						&upn_dns_info_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
@@ -567,7 +567,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		}
 
 		nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
-							     &user_info_dc,
+							     user_info_dc,
 							     &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);

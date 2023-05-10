@@ -125,7 +125,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
 	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 
-	struct auth_user_info_dc user_info_dc = {};
+	struct auth_user_info_dc *user_info_dc = NULL;
 
 	/* Only include resource groups in a service ticket. */
 	if (is_krbtgt) {
@@ -157,7 +157,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
-						  &user_info_dc,
+						  user_info_dc,
 						  group_inclusion,
 						  &logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -176,7 +176,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
-						&user_info_dc,
+						user_info_dc,
 						&upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -193,7 +193,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		}
 
 		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
-							     &user_info_dc,
+							     user_info_dc,
 							     &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);

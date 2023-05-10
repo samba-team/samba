@@ -104,7 +104,7 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    enum samba_asserted_identity asserted_identity,
 				    enum samba_claims_valid claims_valid,
 				    enum samba_compounded_auth compounded_auth,
-				    struct auth_user_info_dc *_user_info_dc);
+				    struct auth_user_info_dc **user_info_dc_out);
 
 NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				krb5_context context,
