@@ -516,43 +516,69 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	struct auth_user_info *info;
 
 	info = talloc_zero(mem_ctx, struct auth_user_info);
-	NT_STATUS_HAVE_NO_MEMORY(info);
+	if (info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (base->account_name.string) {
 		info->account_name = talloc_strdup(info, base->account_name.string);
 	} else {
 		info->account_name = talloc_strdup(info, account_name);
 	}
-	NT_STATUS_HAVE_NO_MEMORY(info->account_name);
+	if (info->account_name == NULL) {
+		talloc_free(info);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (base->logon_domain.string) {
 		info->domain_name = talloc_strdup(info, base->logon_domain.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
+		if (info->domain_name == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (base->full_name.string) {
 		info->full_name = talloc_strdup(info, base->full_name.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->full_name);
+		if (info->full_name == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (base->logon_script.string) {
 		info->logon_script = talloc_strdup(info, base->logon_script.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->logon_script);
+		if (info->logon_script == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (base->profile_path.string) {
 		info->profile_path = talloc_strdup(info, base->profile_path.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->profile_path);
+		if (info->profile_path == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (base->home_directory.string) {
 		info->home_directory = talloc_strdup(info, base->home_directory.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->home_directory);
+		if (info->home_directory == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (base->home_drive.string) {
 		info->home_drive = talloc_strdup(info, base->home_drive.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->home_drive);
+		if (info->home_drive == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (base->logon_server.string) {
 		info->logon_server = talloc_strdup(info, base->logon_server.string);
-		NT_STATUS_HAVE_NO_MEMORY(info->logon_server);
+		if (info->logon_server == NULL) {
+			talloc_free(info);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	info->last_logon = base->logon_time;
 	info->last_logoff = base->logoff_time;
@@ -661,7 +687,9 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	}
 
 	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
-	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
+	if (user_info_dc == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	   Here is where we should check the list of
@@ -670,28 +698,35 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	*/
 	if (!base->domain_sid) {
 		DEBUG(0, ("Cannot operate on a Netlogon Validation without a domain SID"));
+		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* The IDL layer would be a better place to check this, but to
 	 * guard the integer addition below, we double-check */
 	if (base->groups.count > 65535) {
+		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
 
 	user_info_dc->sids = talloc_array(user_info_dc, struct auth_SidAttr,  user_info_dc->num_sids + base->groups.count);
-	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
+	if (user_info_dc->sids == NULL) {
+		talloc_free(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid = *base->domain_sid;
 	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid, base->rid)) {
+		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid = *base->domain_sid;
 	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid, base->primary_gid)) {
+		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	/*
@@ -705,6 +740,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < base->groups.count; i++) {
 		user_info_dc->sids[user_info_dc->num_sids].sid = *base->domain_sid;
 		if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid, base->groups.rids[i].rid)) {
+			talloc_free(user_info_dc);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		user_info_dc->sids[user_info_dc->num_sids].attrs = base->groups.rids[i].attributes;
@@ -722,6 +758,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	 * guard the integer addition below, we double-check
 	 */
 	if (sidcount > UINT16_MAX) {
+		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -733,6 +770,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		dgrps = talloc_realloc(user_info_dc, dgrps, struct auth_SidAttr,
 				       dgrps_count);
 		if (dgrps == NULL) {
+			talloc_free(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -751,6 +789,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 
 	status = make_user_info_SamBaseInfo(user_info_dc, account_name, base, authenticated, &user_info_dc->info);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(user_info_dc);
 		return status;
 	}
 
@@ -758,6 +797,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		user_info_dc->info->dns_domain_name = talloc_strdup(user_info_dc->info,
 								    dns_domainname);
 		if (user_info_dc->info->dns_domain_name == NULL) {
+			talloc_free(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -766,6 +806,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		user_info_dc->info->user_principal_name = talloc_strdup(user_info_dc->info,
 									principal);
 		if (user_info_dc->info->user_principal_name == NULL) {
+			talloc_free(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -776,14 +817,20 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		user_info_dc->user_session_key = data_blob(NULL, 0);
 	} else {
 		user_info_dc->user_session_key = data_blob_talloc(user_info_dc, base->key.key, sizeof(base->key.key));
-		NT_STATUS_HAVE_NO_MEMORY(user_info_dc->user_session_key.data);
+		if (user_info_dc->user_session_key.data == NULL) {
+			talloc_free(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (all_zero(base->LMSessKey.key, sizeof(base->LMSessKey.key))) {
 		user_info_dc->lm_session_key = data_blob(NULL, 0);
 	} else {
 		user_info_dc->lm_session_key = data_blob_talloc(user_info_dc, base->LMSessKey.key, sizeof(base->LMSessKey.key));
-		NT_STATUS_HAVE_NO_MEMORY(user_info_dc->lm_session_key.data);
+		if (user_info_dc->lm_session_key.data == NULL) {
+			talloc_free(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	*_user_info_dc = user_info_dc;
@@ -832,6 +879,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			break;
 		default:
 			DBG_ERR("invalid group inclusion parameter: %u\n", group_inclusion);
+			talloc_free(user_info_dc);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
@@ -870,6 +918,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			ok = sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid,
 					    rg->groups.rids[i].rid);
 			if (!ok) {
+				talloc_free(user_info_dc);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 			user_info_dc->sids[user_info_dc->num_sids].attrs = rg->groups.rids[i].attributes;
@@ -883,6 +932,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 				talloc_strdup(user_info_dc->info,
 					      pac_upn_dns_info->upn_name);
 			if (user_info_dc->info->user_principal_name == NULL) {
+				talloc_free(user_info_dc);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
@@ -891,6 +941,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			talloc_strdup(user_info_dc->info,
 				      pac_upn_dns_info->dns_domain_name);
 		if (user_info_dc->info->dns_domain_name == NULL) {
+			talloc_free(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
 
