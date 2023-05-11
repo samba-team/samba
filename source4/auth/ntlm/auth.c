@@ -231,7 +231,7 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 		 */
 		user_info_tmp = talloc_zero(state, struct auth_usersupplied_info);
 		if (tevent_req_nomem(user_info_tmp, req)) {
-			return tevent_req_post(req, ev);;
+			return tevent_req_post(req, ev);
 		}
 
 		/*
