@@ -1995,9 +1995,19 @@ sub provision_ad_dc()
 	my $config_h = {};
 
 	if (!defined($functional_level)) {
-		$functional_level = "2008";
+		$functional_level = "2016";
 	}
 
+	# If we choose to have distinct environments for experimental
+	# 2012 as well as the experimental 2016 support, we should
+	# extend what we match here.
+	if ($functional_level eq "2016") {
+		$smbconf_args = "$smbconf_args
+
+[global]
+	ad dc functional level = 2016
+";
+	}
 	if (defined($ENV{CONFIG_H})) {
 		$config_h = read_config_h($ENV{CONFIG_H});
 	}
@@ -2987,13 +2997,16 @@ sub setup_schema_dc
 	# provision the PDC using an older base schema
 	my $provision_args = ["--base-schema=2008_R2", "--backend-store=$self->{default_ldb_backend}"];
 
+	# We set the functional level to 2008_R2 to match the older
+	# base-schema (to allow schema upgrade to be tested)
 	my $env = $self->provision_ad_dc($path,
 					 "liveupgrade1dc",
 					 "SCHEMADOMAIN",
 					 "schema.samba.example.com",
 					 undef,
 					 "drs: max link sync = 2",
-					 $provision_args);
+					 $provision_args,
+					 "2008_R2");
 	unless ($env) {
 		return undef;
 	}
