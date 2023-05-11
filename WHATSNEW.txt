@@ -1,4 +1,83 @@
                    ==============================
+                   Release Notes for Samba 4.17.8
+                            May 11, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.17 release series.
+
+
+Changes since 4.17.7
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15302: log flood: smbd_calculate_access_mask_fsp: Access denied:
+     message level should be lower.
+   * BUG 15306: Floating point exception (FPE) via cli_pull_send at
+     source3/libsmb/clireadwrite.c.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15328: test_tstream_more_tcp_user_timeout_spin fails intermittently on
+     Rackspace GitLab runners.
+   * BUG 15329: Reduce flapping of ridalloc test.
+   * BUG 15351: large_ldap test is unreliable.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15143: New filename parser doesn't check veto files smb.conf parameter.
+   * BUG 15354: mdssvc may crash when initializing.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15313: Large directory optimization broken for non-lcomp path elements.
+   * BUG 15357: streams_depot fails to create streams.
+   * BUG 15358: shadow_copy2 and streams_depot don't play well together.
+   * BUG 15366: wbinfo -u fails on ad dc with >1000 users.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15317: winbindd idmap child contacts the domain controller without a
+     need.
+   * BUG 15318: idmap_autorid may fail to map sids of trusted domains for the
+     first time.
+   * BUG 15319: idmap_hash doesn't use ID_TYPE_BOTH for reverse mappings.
+   * BUG 15323: net ads search -P doesn't work against servers in other domains.
+   * BUG 15338: DS ACEs might be inherited to unrelated object classes.
+   * BUG 15353: Temporary smbXsrv_tcon_global.tdb can't be parsed.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15360: Setting veto files = /.*/ break listing directories.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14810: CVE-2020-25720 [SECURITY] Create Child permission should not
+     allow full write to all attributes (additional changes).
+   * BUG 15329: Reduce flapping of ridalloc test.
+
+o  Nathaniel W. Turner <nturner@exagrid.com>
+   * BUG 15325: dsgetdcname: assumes local system uses IPv4.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.17.7
                            March 29, 2023
                    ==============================
@@ -67,8 +146,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.17.6
                            March 09, 2023
