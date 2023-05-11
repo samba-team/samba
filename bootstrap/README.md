@@ -34,6 +34,15 @@ Just calculate the sha1sum for consistency checks:
 The checksum needs to be added as `SAMBA_CI_CONTAINER_TAG` in
 the toplevel .gitlab-ci-main.yml file.
 
+NOTE: Remember to remove any files not tracked by git from the bootstrap
+directory before running bootstrap/template.py.
+
+  git clean -dfx bootstrap
+
+Otherwise the files will affect the checksum but because they are not
+checked in and won't be pushed to CI system the checksum calculated there
+won't match.
+
 ## User Stories
 
 As a gitlab-ci user, I can use this tool to build new CI docker images:
