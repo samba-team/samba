@@ -2233,6 +2233,16 @@ bool tevent_queue_add(struct tevent_queue *queue,
 		      tevent_queue_trigger_fn_t trigger,
 		      void *private_data);
 
+bool _tevent_queue_add(struct tevent_queue *queue,
+		      struct tevent_context *ev,
+		      struct tevent_req *req,
+		      tevent_queue_trigger_fn_t trigger,
+		      const char* trigger_name,
+		      void *private_data);
+
+#define tevent_queue_add(queue, ev, req, trigger, private_data) \
+     _tevent_queue_add(queue, ev, req, trigger, #trigger, private_data)
+
 /**
  * @brief Add a tevent request to the queue.
  *
@@ -2265,6 +2275,17 @@ struct tevent_queue_entry *tevent_queue_add_entry(
 					struct tevent_req *req,
 					tevent_queue_trigger_fn_t trigger,
 					void *private_data);
+
+struct tevent_queue_entry *_tevent_queue_add_entry(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					const char* trigger_name,
+					void *private_data);
+
+#define tevent_queue_add_entry(queue, ev, req, trigger, private_data) \
+	_tevent_queue_add_entry(queue, ev, req, trigger, #trigger, private_data);
 
 /**
  * @brief Add a tevent request to the queue using a possible optimization.
@@ -2308,6 +2329,17 @@ struct tevent_queue_entry *tevent_queue_add_optimize_empty(
 					struct tevent_req *req,
 					tevent_queue_trigger_fn_t trigger,
 					void *private_data);
+
+struct tevent_queue_entry *_tevent_queue_add_optimize_empty(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					const char* trigger_name,
+					void *private_data);
+
+#define tevent_queue_add_optimize_empty(queue, ev, req, trigger, private_data) \
+	_tevent_queue_add_optimize_empty(queue, ev, req, trigger, #trigger, private_data)
 
 /**
  * @brief Untrigger an already triggered queue entry.
