@@ -730,37 +730,28 @@ int json_add_version(struct json_object *object, int major, int minor)
 /*
  * @brief add an ISO 8601 timestamp to the object.
  *
- * Add the current date and time as a timestamp in ISO 8601 format
- * to a JSON object
+ * Add a date and time as a timestamp in ISO 8601 format to a JSON object
  *
- * "timestamp":"2017-03-06T17:18:04.455081+1300"
+ * "time":"2017-03-06T17:18:04.455081+1300"
  *
  *
  * @param object the JSON object to be updated.
+ * @param name the name.
+ * @param time the value to set.
  *
  * @return 0 the operation was successful
  *        -1 the operation failed
  */
-int json_add_timestamp(struct json_object *object)
+int json_add_time(struct json_object *object, const char *name, const struct timeval tv)
 {
 	char buffer[40];	/* formatted time less usec and timezone */
 	char timestamp[65];	/* the formatted ISO 8601 time stamp	 */
 	char tz[10];		/* formatted time zone			 */
 	struct tm* tm_info;	/* current local time			 */
-	struct timeval tv;	/* current system time			 */
-	int r;			/* response code from gettimeofday	 */
 	int ret;		/* return code from json operations	*/
 
 	if (json_is_invalid(object)) {
-		DBG_ERR("Unable to add time stamp, target object is invalid\n");
-		return JSON_ERROR;
-	}
-
-	r = gettimeofday(&tv, NULL);
-	if (r) {
-		DBG_ERR("Unable to get time of day: (%d) %s\n",
-			errno,
-			strerror(errno));
+		DBG_ERR("Unable to add time, target object is invalid\n");
 		return JSON_ERROR;
 	}
 
@@ -779,11 +770,46 @@ int json_add_timestamp(struct json_object *object)
 		buffer,
 		tv.tv_usec,
 		tz);
-	ret = json_add_string(object, "timestamp", timestamp);
+	ret = json_add_string(object, name, timestamp);
 	if (ret != 0) {
-		DBG_ERR("Unable to add time stamp to JSON object\n");
+		DBG_ERR("Unable to add time to JSON object\n");
 	}
 	return ret;
+}
+
+/*
+ * @brief add an ISO 8601 timestamp to the object.
+ *
+ * Add the current date and time as a timestamp in ISO 8601 format
+ * to a JSON object
+ *
+ * "timestamp":"2017-03-06T17:18:04.455081+1300"
+ *
+ *
+ * @param object the JSON object to be updated.
+ *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ */
+int json_add_timestamp(struct json_object *object)
+{
+	struct timeval tv;	/* current system time			 */
+	int r;			/* response code from gettimeofday	 */
+
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add time stamp, target object is invalid\n");
+		return JSON_ERROR;
+	}
+
+	r = gettimeofday(&tv, NULL);
+	if (r) {
+		DBG_ERR("Unable to get time of day: (%d) %s\n",
+			errno,
+			strerror(errno));
+		return JSON_ERROR;
+	}
+
+	return json_add_time(object, "timestamp", tv);
 }
 
 /*

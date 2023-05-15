@@ -78,6 +78,7 @@ _WARN_UNUSED_RESULT_ int json_add_stringn(struct json_object *object,
 _WARN_UNUSED_RESULT_ int json_add_version(struct json_object *object,
 					  int major,
 					  int minor);
+_WARN_UNUSED_RESULT_ int json_add_time(struct json_object *object, const char *name, struct timeval tv);
 _WARN_UNUSED_RESULT_ int json_add_timestamp(struct json_object *object);
 _WARN_UNUSED_RESULT_ int json_add_address(
     struct json_object *object,
