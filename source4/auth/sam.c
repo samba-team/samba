@@ -503,7 +503,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	user_info_dc->num_sids = num_sids;
 
 	user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
-	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->info);
+	if (user_info_dc->info == NULL) {
+		talloc_free(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 	info->account_name = talloc_strdup(info, str);
