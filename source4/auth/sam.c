@@ -724,6 +724,74 @@ _PUBLIC_ NTSTATUS authsam_update_user_info_dc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Make a shallow copy of a talloc-allocated user_info_dc structure, holding a
+ * reference to each of the original fields.
+ */
+NTSTATUS authsam_shallow_copy_user_info_dc(TALLOC_CTX *mem_ctx,
+					   const struct auth_user_info_dc *user_info_dc_in,
+					   struct auth_user_info_dc **user_info_dc_out)
+{
+	struct auth_user_info_dc *user_info_dc = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
+	if (user_info_dc == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	*user_info_dc = *user_info_dc_in;
+
+	if (user_info_dc->info != NULL) {
+		if (talloc_reference(user_info_dc, user_info_dc->info) == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	if (user_info_dc->user_session_key.data != NULL) {
+		if (talloc_reference(user_info_dc, user_info_dc->user_session_key.data) == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	if (user_info_dc->lm_session_key.data != NULL) {
+		if (talloc_reference(user_info_dc, user_info_dc->lm_session_key.data) == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	if (user_info_dc->sids != NULL) {
+		/*
+		 * Because we want to modify the SIDs in the user_info_dc
+		 * structure, adding various well-known SIDs such as Asserted
+		 * Identity or Claims Valid, make a copy of the SID array to
+		 * guard against modification of the original.
+		 *
+		 * It’s better not to make a reference, because anything that
+		 * tries to call talloc_realloc() on the original or the copy
+		 * will fail when called for any referenced talloc context.
+		 */
+		user_info_dc->sids = talloc_memdup(mem_ctx,
+						   user_info_dc->sids,
+						   talloc_get_size(user_info_dc->sids));
+		if (user_info_dc->sids == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	*user_info_dc_out = user_info_dc;
+	user_info_dc = NULL;
+
+out:
+	talloc_free(user_info_dc);
+	return status;
+}
+
 NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
 				   const char **attrs,
