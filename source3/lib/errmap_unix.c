@@ -122,6 +122,9 @@ static const struct {
 #ifdef ERANGE
 	{ ERANGE, NT_STATUS_INTEGER_OVERFLOW },
 #endif
+#ifdef ENXIO
+	{ ENXIO, NT_STATUS_ILLEGAL_FUNCTION },
+#endif
 };
 
 /*********************************************************************
