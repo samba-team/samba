@@ -968,7 +968,7 @@ int json_add_guid(struct json_object *object,
 		guid_str = GUID_buf_string(guid, &guid_buff);
 		ret = json_add_string(object, name, guid_str);
 		if (ret != 0) {
-			DBG_ERR("Unable to guid GUID [%s] value [%s]\n",
+			DBG_ERR("Unable to add GUID [%s] value [%s]\n",
 				name,
 				guid_str);
 			return ret;
