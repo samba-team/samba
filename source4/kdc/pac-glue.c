@@ -1204,7 +1204,8 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 						&user_info_dc_out->sids,
 						&user_info_dc_out->num_sids);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add asserted identity!\n");
+		DBG_ERR("Failed to add asserted identity: %s\n",
+			nt_errstr(nt_status));
 		return nt_status;
 	}
 
@@ -1212,7 +1213,8 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 					   claims_valid,
 					   user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Claims Valid!\n");
+		DBG_ERR("Failed to add Claims Valid: %s\n",
+			nt_errstr(nt_status));
 		return nt_status;
 	}
 
@@ -1220,7 +1222,8 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 					      compounded_auth,
 					      user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Compounded Authentication!\n");
+		DBG_ERR("Failed to add Compounded Authentication: %s\n",
+			nt_errstr(nt_status));
 		return nt_status;
 	}
 
@@ -1280,7 +1283,8 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 					      compounded_auth,
 					      user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Compounded Authentication!\n");
+		DBG_ERR("Failed to add Compounded Authentication: %s\n",
+			nt_errstr(nt_status));
 		return nt_status;
 	}
 
