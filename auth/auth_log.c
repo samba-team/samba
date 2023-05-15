@@ -149,7 +149,6 @@ static void log_authentication_event_json(
 {
 	struct json_object wrapper = json_empty_object;
 	struct json_object authentication = json_empty_object;
-	char negotiate_flags[11];
 	char logon_id[19];
 	int rc = 0;
 	const char *clientDomain = ui->orig_client.domain_name ?
@@ -257,12 +256,9 @@ static void log_authentication_event_json(
 	if (rc != 0) {
 		goto failure;
 	}
-	snprintf(negotiate_flags,
-		 sizeof( negotiate_flags),
-		 "0x%08X",
-		 ui->netlogon_trust_account.negotiate_flags);
-	rc = json_add_string(
-	    &authentication, "netlogonNegotiateFlags", negotiate_flags);
+	rc = json_add_flags32(
+	    &authentication, "netlogonNegotiateFlags",
+	    ui->netlogon_trust_account.negotiate_flags);
 	if (rc != 0) {
 		goto failure;
 	}
@@ -368,7 +364,6 @@ static void log_successful_authz_event_json(
 {
 	struct json_object wrapper = json_empty_object;
 	struct json_object authorization = json_empty_object;
-	char account_flags[11];
 	int rc = 0;
 
 	authorization = json_new_object();
@@ -426,12 +421,7 @@ static void log_successful_authz_event_json(
 	if (rc != 0) {
 		goto failure;
 	}
-
-	snprintf(account_flags,
-		 sizeof(account_flags),
-		 "0x%08X",
-		 session_info->info->acct_flags);
-	rc = json_add_string(&authorization, "accountFlags", account_flags);
+	rc = json_add_flags32(&authorization, "accountFlags", session_info->info->acct_flags);
 	if (rc != 0) {
 		goto failure;
 	}

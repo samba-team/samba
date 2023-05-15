@@ -908,6 +908,57 @@ int json_add_guid(struct json_object *object,
 }
 
 /*
+ * @brief Add a hex-formatted string representation of a 32-bit integer to a
+ * json object.
+ *
+ * Add a hex-formatted string representation of a 32-bit flags integer to the
+ * object.
+ *
+ * "accountFlags":"0x12345678"
+ *
+ *
+ * @param object the JSON object to be updated.
+ * @param name the name.
+ * @param flags the flags.
+ *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
+ *
+ */
+int json_add_flags32(struct json_object *object,
+		  const char *name,
+		  const uint32_t flags)
+{
+	int ret = 0;
+	char buf[sizeof("0x12345678")];
+
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add flags [%s], "
+			"target object is invalid\n",
+			name);
+		return JSON_ERROR;
+	}
+
+	ret = snprintf(buf, sizeof (buf), "0x%08X", flags);
+	if (ret != sizeof (buf) - 1) {
+		DBG_ERR("Unable to format flags [%s] value [0x%08X]\n",
+			name,
+			flags);
+		return JSON_ERROR;
+	}
+
+	ret = json_add_string(object, name, buf);
+	if (ret != 0) {
+		DBG_ERR("Unable to add flags [%s] value [%s]\n",
+			name,
+			buf);
+	}
+
+	return ret;
+}
+
+/*
  * @brief Replaces the object for a given key with a given json object.
  *
  * If key already exists, the value will be replaced. Otherwise the given
