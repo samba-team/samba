@@ -26,9 +26,37 @@ import sys
 import traceback
 import textwrap
 
+from .validators import ValidationError
+
 
 class Option(SambaOption):
+    ATTRS = SambaOption.ATTRS + ["validators"]
     SUPPRESS_HELP = optparse.SUPPRESS_HELP
+
+    def run_validators(self, opt, value):
+        """Runs the list of validators on the current option.
+
+        If the validator raises ValidationError, turn that into CommandError
+        which gives nicer output.
+        """
+        validators = getattr(self, "validators") or []
+
+        for validator in validators:
+            try:
+                validator(opt, value)
+            except ValidationError as e:
+                raise CommandError(e)
+
+    def convert_value(self, opt, value):
+        """Override convert_value to run validators just after.
+
+        This can also be done in process() but there we would have to
+        replace the entire method.
+        """
+        value = super().convert_value(opt, value)
+        self.run_validators(opt, value)
+        return value
+
 
 # This help formatter does text wrapping and preserves newlines
 
