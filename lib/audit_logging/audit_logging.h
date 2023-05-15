@@ -62,6 +62,9 @@ _WARN_UNUSED_RESULT_ int json_add_int(struct json_object *object,
 _WARN_UNUSED_RESULT_ int json_add_bool(struct json_object *object,
 				       const char *name,
 				       const bool value);
+_WARN_UNUSED_RESULT_ int json_add_optional_bool(struct json_object *object,
+						const char *name,
+						const bool *value);
 _WARN_UNUSED_RESULT_ int json_add_string(struct json_object *object,
 					 const char *name,
 					 const char *value);

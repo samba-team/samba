@@ -451,6 +451,50 @@ int json_add_bool(struct json_object *object,
 }
 
 /*
+ * @brief Add an optional boolean value to a JSON object.
+ *
+ * Add an optional boolean value named 'name' to the json object.
+ *
+ * @param object the JSON object to be updated.
+ * @param name the name.
+ * @param value the value.
+ *
+ * @return 0 the operation was successful
+ *        -1 the operation failed
+ *
+ */
+int json_add_optional_bool(struct json_object *object,
+			   const char *name,
+			   const bool *value)
+{
+	int ret = 0;
+
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to add boolean [%s] value [%d], "
+			"target object is invalid\n",
+			name,
+			*value);
+		return JSON_ERROR;
+	}
+
+	if (value != NULL) {
+		ret = json_object_set_new(object->root, name, json_boolean(*value));
+		if (ret != 0) {
+			DBG_ERR("Unable to add boolean [%s] value [%d]\n", name, *value);
+			return ret;
+		}
+	} else {
+		ret = json_object_set_new(object->root, name, json_null());
+		if (ret != 0) {
+			DBG_ERR("Unable to add null boolean [%s]\n", name);
+			return ret;
+		}
+	}
+
+	return ret;
+}
+
+/*
  * @brief Add a string value to a JSON object.
  *
  * Add a string value named 'name' to the json object.
