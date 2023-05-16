@@ -1,1 +1,1 @@
-^samba.tests.samba_tool.claim.samba.tests.samba_tool.claim.ClaimCmdTestCase.test_claim_type_delete_protected\(.*\)
+^samba.tests.samba_tool.domain_claim.samba.tests.samba_tool.domain_claim.ClaimCmdTestCase.test_claim_type_delete_protected\(.*\)
