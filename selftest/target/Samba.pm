@@ -129,7 +129,7 @@ sub setup_env($$$)
 	}
 	if ($env eq "UNKNOWN") {
 		warn("unknown environment '$envname'");
-		return undef;
+		return $env;
 	}
 
 	$target->{vars}->{$envname} = $env;
