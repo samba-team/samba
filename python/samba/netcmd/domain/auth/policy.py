@@ -22,16 +22,14 @@
 
 import samba.getopt as options
 from ldb import LdbError
-from samba.netcmd import CommandError, Option, SuperCommand
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AuthenticationPolicy
 from samba.netcmd.domain.models.auth_policy import MIN_TGT_LIFETIME,\
     MAX_TGT_LIFETIME, StrongNTLMPolicy
 from samba.netcmd.validators import Range
 
-from .base import SiloCommand
 
-
-class cmd_domain_auth_policy_list(SiloCommand):
+class cmd_domain_auth_policy_list(Command):
     """List authentication policies on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -51,11 +49,11 @@ class cmd_domain_auth_policy_list(SiloCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Authentication policies grouped by cn.
         policies = {policy.cn: policy.as_dict()
-                    for policy in AuthenticationPolicy.query(self.ldb)}
+                    for policy in AuthenticationPolicy.query(ldb)}
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -65,7 +63,7 @@ class cmd_domain_auth_policy_list(SiloCommand):
                 self.outf.write(f"{policy}\n")
 
 
-class cmd_domain_auth_policy_view(SiloCommand):
+class cmd_domain_auth_policy_view(Command):
     """View an authentication policy on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -88,10 +86,10 @@ class cmd_domain_auth_policy_view(SiloCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if authentication policy exists first.
-        policy = AuthenticationPolicy.get(self.ldb, cn=name)
+        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is None:
             raise CommandError(f"Authentication policy {name} not found.")
 
@@ -99,7 +97,7 @@ class cmd_domain_auth_policy_view(SiloCommand):
         self.print_json(policy.as_dict())
 
 
-class cmd_domain_auth_policy_create(SiloCommand):
+class cmd_domain_auth_policy_create(Command):
     """Create an authentication policy on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -171,10 +169,10 @@ class cmd_domain_auth_policy_create(SiloCommand):
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Make sure authentication policy doesn't already exist.
-        policy = AuthenticationPolicy.get(self.ldb, cn=name)
+        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is not None:
             raise CommandError(f"Authentication policy {name} already exists.")
 
@@ -199,10 +197,10 @@ class cmd_domain_auth_policy_create(SiloCommand):
 
         # Create policy.
         try:
-            policy.save(self.ldb)
+            policy.save(ldb)
 
             if protect:
-                policy.protect(self.ldb)
+                policy.protect(ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -210,7 +208,7 @@ class cmd_domain_auth_policy_create(SiloCommand):
         self.outf.write(f"Created authentication policy: {name}\n")
 
 
-class cmd_domain_auth_policy_modify(SiloCommand):
+class cmd_domain_auth_policy_modify(Command):
     """Modify authentication policies on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -281,10 +279,10 @@ class cmd_domain_auth_policy_modify(SiloCommand):
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if authentication policy exists.
-        policy = AuthenticationPolicy.get(self.ldb, cn=name)
+        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is None:
             raise CommandError(f"Authentication policy {name} not found.")
 
@@ -322,12 +320,12 @@ class cmd_domain_auth_policy_modify(SiloCommand):
 
         # Update policy.
         try:
-            policy.save(self.ldb)
+            policy.save(ldb)
 
             if protect:
-                policy.protect(self.ldb)
+                policy.protect(ldb)
             elif unprotect:
-                policy.unprotect(self.ldb)
+                policy.unprotect(ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -335,7 +333,7 @@ class cmd_domain_auth_policy_modify(SiloCommand):
         self.outf.write(f"Updated authentication policy: {name}\n")
 
 
-class cmd_domain_auth_policy_delete(SiloCommand):
+class cmd_domain_auth_policy_delete(Command):
     """Delete authentication policies on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -360,19 +358,19 @@ class cmd_domain_auth_policy_delete(SiloCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if authentication policy exists first.
-        policy = AuthenticationPolicy.get(self.ldb, cn=name)
+        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is None:
             raise CommandError(f"Authentication policy {name} not found.")
 
         # Delete item, --force removes delete protection first.
         try:
             if force:
-                policy.unprotect(self.ldb)
+                policy.unprotect(ldb)
 
-            policy.delete(self.ldb)
+            policy.delete(ldb)
         except LdbError as e:
             if not force:
                 raise CommandError(

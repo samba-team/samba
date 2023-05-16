@@ -22,13 +22,11 @@
 
 import samba.getopt as options
 from ldb import Dn, LdbError
-from samba.netcmd import CommandError, Option, SuperCommand
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AuthenticationSilo, User
 
-from .base import SiloCommand
 
-
-class cmd_domain_auth_silo_member_add(SiloCommand):
+class cmd_domain_auth_silo_member_add(Command):
     """Add a member to an authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -57,18 +55,18 @@ class cmd_domain_auth_silo_member_add(SiloCommand):
         if not member:
             raise CommandError("Argument --member is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if authentication silo exists first.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
         # Try a Dn first, then sAMAccountName.
         try:
-            user = User.get(self.ldb, dn=Dn(self.ldb, member))
+            user = User.get(ldb, dn=Dn(ldb, member))
         except ValueError:
-            user = User.get(self.ldb, username=member)
+            user = User.get(ldb, username=member)
 
         # Ensure the user actually exists first.
         if user is None:
@@ -76,8 +74,7 @@ class cmd_domain_auth_silo_member_add(SiloCommand):
 
         # Check if user isn't already assigned to another silo.
         if user.assigned_silo:
-            assigned_silo = AuthenticationSilo.get(self.ldb,
-                                                   dn=user.assigned_silo)
+            assigned_silo = AuthenticationSilo.get(ldb, dn=user.assigned_silo)
             raise CommandError(
                 f"Member '{member}' is already in the {assigned_silo} silo.")
 
@@ -91,15 +88,15 @@ class cmd_domain_auth_silo_member_add(SiloCommand):
         user.assigned_silo = silo.dn
 
         try:
-            silo.save(self.ldb)
-            user.save(self.ldb)
+            silo.save(ldb)
+            user.save(ldb)
         except LdbError as e:
             raise CommandError(e)
 
         self.outf.write(f"User '{user.name}' added to the {name} silo.\n")
 
 
-class cmd_domain_auth_silo_member_list(SiloCommand):
+class cmd_domain_auth_silo_member_list(Command):
     """List all members in the authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -125,15 +122,15 @@ class cmd_domain_auth_silo_member_list(SiloCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if authentication silo exists first.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
         # Fetch all members.
-        members = [User.get(self.ldb, dn=dn) for dn in silo.members]
+        members = [User.get(ldb, dn=dn) for dn in silo.members]
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -143,7 +140,7 @@ class cmd_domain_auth_silo_member_list(SiloCommand):
                 self.outf.write(f"{member.dn}\n")
 
 
-class cmd_domain_auth_silo_member_remove(SiloCommand):
+class cmd_domain_auth_silo_member_remove(Command):
     """Remove a member from an authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -172,18 +169,18 @@ class cmd_domain_auth_silo_member_remove(SiloCommand):
         if not member:
             raise CommandError("Argument --member is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if authentication silo exists first.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
         # Try a Dn first, then sAMAccountName.
         try:
-            user = User.get(self.ldb, dn=Dn(self.ldb, member))
+            user = User.get(ldb, dn=Dn(ldb, member))
         except ValueError:
-            user = User.get(self.ldb, username=member)
+            user = User.get(ldb, username=member)
 
         # Ensure the user actually exists first.
         if user is None:
@@ -198,8 +195,8 @@ class cmd_domain_auth_silo_member_remove(SiloCommand):
             raise CommandError(f"User '{member}' is not in the {name} silo.")
 
         try:
-            silo.save(self.ldb)
-            user.save(self.ldb)
+            silo.save(ldb)
+            user.save(ldb)
         except LdbError as e:
             raise CommandError(e)
 

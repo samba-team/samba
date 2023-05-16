@@ -22,14 +22,13 @@
 
 import samba.getopt as options
 from ldb import LdbError
-from samba.netcmd import CommandError, Option, SuperCommand
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 
-from .base import SiloCommand
 from .silo_member import cmd_domain_auth_silo_member
 
 
-class cmd_domain_auth_silo_list(SiloCommand):
+class cmd_domain_auth_silo_list(Command):
     """List authentication silos on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -49,11 +48,11 @@ class cmd_domain_auth_silo_list(SiloCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Authentication silos grouped by cn.
         silos = {silo.cn: silo.as_dict()
-                 for silo in AuthenticationSilo.query(self.ldb)}
+                 for silo in AuthenticationSilo.query(ldb)}
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -63,7 +62,7 @@ class cmd_domain_auth_silo_list(SiloCommand):
                 self.outf.write(f"{silo}\n")
 
 
-class cmd_domain_auth_silo_view(SiloCommand):
+class cmd_domain_auth_silo_view(Command):
     """View an authentication silo on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -86,10 +85,10 @@ class cmd_domain_auth_silo_view(SiloCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if silo exists first.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
@@ -97,7 +96,7 @@ class cmd_domain_auth_silo_view(SiloCommand):
         self.print_json(silo.as_dict())
 
 
-class cmd_domain_auth_silo_create(SiloCommand):
+class cmd_domain_auth_silo_create(Command):
     """Create a new authentication silo on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -172,10 +171,10 @@ class cmd_domain_auth_silo_create(SiloCommand):
             service_policy = service_policy or policy
             computer_policy = computer_policy or policy
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Make sure silo doesn't already exist.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is not None:
             raise CommandError(f"Authentication silo {name} already exists.")
 
@@ -184,15 +183,15 @@ class cmd_domain_auth_silo_create(SiloCommand):
 
         # Set user policy
         if user_policy:
-            silo.user_policy = self.get_policy(self.ldb, user_policy).dn
+            silo.user_policy = self.get_policy(ldb, user_policy).dn
 
         # Set service policy
         if service_policy:
-            silo.service_policy = self.get_policy(self.ldb, service_policy).dn
+            silo.service_policy = self.get_policy(ldb, service_policy).dn
 
         # Set computer policy
         if computer_policy:
-            silo.computer_policy = self.get_policy(self.ldb, computer_policy).dn
+            silo.computer_policy = self.get_policy(ldb, computer_policy).dn
 
         # Either --enforce will be set or --audit but never both.
         # The default if both are missing is enforce=True.
@@ -203,10 +202,10 @@ class cmd_domain_auth_silo_create(SiloCommand):
 
         # Create silo
         try:
-            silo.save(self.ldb)
+            silo.save(ldb)
 
             if protect:
-                silo.protect(self.ldb)
+                silo.protect(ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -214,7 +213,7 @@ class cmd_domain_auth_silo_create(SiloCommand):
         self.outf.write(f"Created authentication silo: {name}\n")
 
 
-class cmd_domain_auth_silo_modify(SiloCommand):
+class cmd_domain_auth_silo_modify(Command):
     """Modify an authentication silo on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -289,10 +288,10 @@ class cmd_domain_auth_silo_modify(SiloCommand):
             service_policy = service_policy or policy
             computer_policy = computer_policy or policy
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if silo exists first.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
@@ -310,28 +309,28 @@ class cmd_domain_auth_silo_modify(SiloCommand):
         if user_policy == "":
             silo.user_policy = None
         elif user_policy:
-            silo.user_policy = self.get_policy(self.ldb, user_policy).dn
+            silo.user_policy = self.get_policy(ldb, user_policy).dn
 
         # Set or unset service policy.
         if service_policy == "":
             silo.service_policy = None
         elif service_policy:
-            silo.service_policy = self.get_policy(self.ldb, service_policy).dn
+            silo.service_policy = self.get_policy(ldb, service_policy).dn
 
         # Set or unset computer policy.
         if computer_policy == "":
             silo.computer_policy = None
         elif computer_policy:
-            silo.computer_policy = self.get_policy(self.ldb, computer_policy).dn
+            silo.computer_policy = self.get_policy(ldb, computer_policy).dn
 
         # Update silo
         try:
-            silo.save(self.ldb)
+            silo.save(ldb)
 
             if protect:
-                silo.protect(self.ldb)
+                silo.protect(ldb)
             elif unprotect:
-                silo.unprotect(self.ldb)
+                silo.unprotect(ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -339,7 +338,7 @@ class cmd_domain_auth_silo_modify(SiloCommand):
         self.outf.write(f"Updated authentication silo: {name}\n")
 
 
-class cmd_domain_auth_silo_delete(SiloCommand):
+class cmd_domain_auth_silo_delete(Command):
     """Delete an authentication silo on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -364,19 +363,19 @@ class cmd_domain_auth_silo_delete(SiloCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if silo exists first.
-        silo = AuthenticationSilo.get(self.ldb, cn=name)
+        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
         # Delete silo
         try:
             if force:
-                silo.unprotect(self.ldb)
+                silo.unprotect(ldb)
 
-            silo.delete(self.ldb)
+            silo.delete(ldb)
         except LdbError as e:
             if not force:
                 raise CommandError(
