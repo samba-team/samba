@@ -21,15 +21,12 @@
 #
 
 import binascii
-import json
 import os
 
 import samba.getopt as options
-from ldb import FLAG_MOD_REPLACE, LdbError, Message, MessageElement
-from samba.auth import system_session
+from ldb import LdbError
 from samba.netcmd import CommandError, Option, SuperCommand
-from samba.samdb import SamDB
-from samba.sd_utils import SDUtils
+from samba.netcmd.domain.models import ClaimType, ValueType
 
 from .base import ClaimCommand
 
@@ -89,7 +86,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         """
         value_types = getattr(self, "_claim_value_types", None)
         if value_types is None:
-            value_types = {v["cn"]: v for v in self.get_value_types()}
+            value_types = {v.cn: v for v in ValueType.query(self.ldb)}
             setattr(self, "_claim_value_types", value_types)
         return value_types
 
@@ -99,8 +96,8 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         Uses the LDAP attribute syntax to find the matching claim value type.
         """
         attribute_syntax = str(attribute["attributeSyntax"])
-        claim_type_dn = SYNTAX_TO_CLAIM_TYPE_CN[attribute_syntax]
-        return self.claim_value_types[claim_type_dn]["msDS-ClaimValueType"]
+        claim_type_cn = SYNTAX_TO_CLAIM_TYPE_CN[attribute_syntax]
+        return self.claim_value_types[claim_type_cn].claim_value_type
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             attribute_name=None, class_names=None, display_name=None,
@@ -119,15 +116,12 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
 
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if a claim type with this display name already exists.
         # Note: you can register the same claim type under another display name.
         display_name = display_name or attribute_name
-        claim_type = self.get_claim_type(display_name)
+        claim_type = ClaimType.get(self.ldb, display_name=display_name)
         if claim_type:
             raise CommandError(f"Claim type {display_name} already exists, "
                                "but you can use --name to use another name.")
@@ -139,49 +133,44 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         except (LookupError, ValueError) as e:
             raise CommandError(e)
 
-        # Generate the new Claim Type dn.
+        # Generate the new Claim Type cn.
         # Windows creates a random number here containing 16 hex digits.
         # We can achieve something similar using urandom(8)
         instance = binascii.hexlify(os.urandom(8)).decode()
-        claim_type_dn = self.get_claim_types_dn()
-        claim_type_dn.add_child(f"CN=ad://ext/{display_name}:{instance}")
+        cn = f"ad://ext/{display_name}:{instance}"
 
         # adminDescription should be present but still have a fallback.
         if description is None:
             description = str(attribute["adminDescription"] or attribute_name)
 
-        # msDS-ClaimIsValueSpaceRestricted is always FALSE because we don't
+        # claim_is_value_space_restricted is always False because we don't
         # yet support creating claims with a restricted possible values list.
-        value_space_restricted = "FALSE"
-
-        message = {
-            "dn": claim_type_dn,
-            "description": description,
-            "displayName": display_name,
-            "Enabled": str(not disable).upper(),
-            "objectClass": "msDS-ClaimType",
-            "msDS-ClaimAttributeSource": str(attribute.dn),
-            "msDS-ClaimIsSingleValued": str(attribute["isSingleValued"]),
-            "msDS-ClaimIsValueSpaceRestricted": value_space_restricted,
-            "msDS-ClaimSourceType": "AD",
-            "msDS-ClaimTypeAppliesToClass": [str(obj.dn) for obj in applies_to],
-            "msDS-ClaimValueType": str(self.get_claim_value_type(attribute)),
-        }
+        claim_type = ClaimType(
+            cn=cn,
+            description=description,
+            display_name=display_name,
+            enabled=not disable,
+            claim_attribute_source=attribute.dn,
+            claim_is_single_valued=str(attribute["isSingleValued"]) == "TRUE",
+            claim_is_value_space_restricted=False,
+            claim_source_type="AD",
+            claim_type_applies_to_class=[obj.dn for obj in applies_to],
+            claim_value_type=self.get_claim_value_type(attribute),
+        )
 
         # Either --enable will be set or --disable but never both.
+        # The default if both are missing is enabled=True.
         if enable is not None:
-            message["Enabled"] = str(enable).upper()
+            claim_type.enabled = enable
         else:
-            message["Enabled"] = str(not disable).upper()
+            claim_type.enabled = not disable
 
-        # Do the add, treat LdbError as CommandError.
+        # Create claim type
         try:
-            self.ldb.add(message)
+            claim_type.save(self.ldb)
 
-            # Protect claim types from accidental deletion.
             if protect:
-                utils = SDUtils(self.ldb)
-                utils.dacl_add_ace(claim_type_dn, "(D;;DTSD;;;WD)")
+                claim_type.protect(self.ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -237,33 +226,22 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
 
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists.
-        claim_type = self.get_claim_type(display_name)
+        claim_type = ClaimType.get(self.ldb, display_name=display_name)
         if not claim_type:
             raise CommandError(f"Claim type {display_name} not found.")
 
-        # Update message.
-        update_attrs = Message()
-        update_attrs.dn = claim_type.dn
-
-        # Change the description of the claim type.
-        if description is not None:
-            update_attrs.add(
-                MessageElement(description, FLAG_MOD_REPLACE, "description"))
-
-        # Enable or disable the claim type.
-        # Check existing value to avoid LDAP error.
+        # Either --enable will be set or --disable but never both.
         if enable:
-            update_attrs.add(
-                MessageElement("TRUE", FLAG_MOD_REPLACE, "Enabled"))
+            claim_type.enabled = True
         elif disable:
-            update_attrs.add(
-                MessageElement("FALSE", FLAG_MOD_REPLACE, "Enabled"))
+            claim_type.enabled = False
+
+        # Update the description.
+        if description is not None:
+            claim_type.description = description
 
         # Change class names for claim type.
         if class_names is not None:
@@ -272,22 +250,16 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
             except (LookupError, ValueError) as e:
                 raise CommandError(e)
 
-            update_attrs.add(
-                MessageElement([str(obj.dn) for obj in applies_to],
-                               FLAG_MOD_REPLACE, "msDS-ClaimTypeAppliesToClass"))
+            claim_type.claim_type_applies_to_class = [obj.dn for obj in applies_to]
 
+        # Update claim type.
         try:
-            # Update claim type.
-            if len(update_attrs) > 0:
-                self.ldb.modify(update_attrs)
+            claim_type.save(self.ldb)
 
-            # Protect or unprotect the claim type from accidental deletion.
             if protect:
-                utils = SDUtils(self.ldb)
-                utils.dacl_add_ace(claim_type.dn, "(D;;DTSD;;;WD)")
+                claim_type.protect(self.ldb)
             elif unprotect:
-                utils = SDUtils(self.ldb)
-                utils.dacl_delete_aces(claim_type.dn, "(D;;DTSD;;;WD)")
+                claim_type.unprotect(self.ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -320,28 +292,19 @@ class cmd_domain_claim_claim_type_delete(ClaimCommand):
         if not display_name:
             raise CommandError("Argument --name is required.")
 
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
-        # Check if attribute exists first to avoid raising LdbError.
-        claim_type = self.get_claim_type(display_name)
-        if not claim_type:
+        # Check if claim type exists first.
+        claim_type = ClaimType.get(self.ldb, display_name=display_name)
+        if claim_type is None:
             raise CommandError(f"Claim type {display_name} not found.")
 
-        # If force is set try to unlock the item first.
-        if force:
-            try:
-                utils = SDUtils(self.ldb)
-                utils.dacl_delete_aces(claim_type.dn, "(D;;DTSD;;;WD)")
-            except LdbError as e:
-                raise CommandError(e)
-
-        # Delete the claim type.
-        # Show hint about using --force if it fails.
+        # Delete claim type.
         try:
-            self.ldb.delete(claim_type.dn)
+            if force:
+                claim_type.unprotect(self.ldb)
+
+            claim_type.delete(self.ldb)
         except LdbError as e:
             if not force:
                 raise CommandError(
@@ -372,18 +335,16 @@ class cmd_domain_claim_claim_type_list(ClaimCommand):
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             output_format=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Claim types grouped by displayName.
-        claim_types = {c["displayName"]: c for c in self.get_claim_types()}
+        claim_types = {claim_type.display_name: claim_type.as_dict()
+                       for claim_type in ClaimType.query(self.ldb)}
 
         # Using json output format gives more detail.
         if output_format == "json":
-            json_data = json.dumps(claim_types, indent=2, sort_keys=True)
-            self.outf.write(f"{json_data}\n")
+            self.print_json(claim_types)
         else:
             for claim_type in claim_types.keys():
                 self.outf.write(f"{claim_type}\n")
@@ -409,22 +370,18 @@ class cmd_domain_claim_claim_type_view(ClaimCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             display_name=None):
 
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
-
         if not display_name:
             raise CommandError("Argument --name is required.")
 
-        claim_type = self.get_claim_type(display_name)
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+
+        # Check if claim type exists first.
+        claim_type = ClaimType.get(self.ldb, display_name=display_name)
         if claim_type is None:
             raise CommandError(f"Claim type {display_name} not found.")
 
-        # Display one claim type as JSON.
-        serialized = self.serialize_message(claim_type)
-        json_data = json.dumps(serialized, indent=2, sort_keys=True)
-        self.outf.write(f"{json_data}\n")
+        # Display claim type as JSON.
+        self.print_json(claim_type.as_dict())
 
 
 class cmd_domain_claim_claim_type(SuperCommand):

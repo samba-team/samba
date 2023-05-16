@@ -20,12 +20,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import json
-
 import samba.getopt as options
-from samba.auth import system_session
 from samba.netcmd import CommandError, Option, SuperCommand
-from samba.samdb import SamDB
+from samba.netcmd.domain.models import ValueType
 
 from .base import ClaimCommand
 
@@ -50,21 +47,18 @@ class cmd_domain_claim_value_type_list(ClaimCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
-        # Claim value types grouped by displayName.
-        value_types = {v["displayName"]: v for v in self.get_value_types()}
+        # Value types grouped by display name.
+        value_types = {value_type.display_name: value_type.as_dict()
+                       for value_type in ValueType.query(self.ldb)}
 
         # Using json output format gives more detail.
         if output_format == "json":
-            json_data = json.dumps(value_types, indent=2, sort_keys=True)
-            self.outf.write(f"{json_data}\n")
+            self.print_json(value_types)
         else:
-            for claim_type in value_types.keys():
-                self.outf.write(f"{claim_type}\n")
+            for value_type in value_types.keys():
+                self.outf.write(f"{value_type}\n")
 
 
 class cmd_domain_claim_value_type_view(ClaimCommand):
@@ -88,22 +82,18 @@ class cmd_domain_claim_value_type_view(ClaimCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             display_name=None):
 
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        self.ldb = SamDB(ldap_url, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
-
         if not display_name:
             raise CommandError("Argument --name is required.")
 
-        value_type = self.get_value_type(display_name)
+        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+
+        # Check if value type exists first.
+        value_type = ValueType.get(self.ldb, display_name=display_name)
         if value_type is None:
             raise CommandError(f"Value type {display_name} not found.")
 
-        # Display one value type as JSON.
-        serialized = self.serialize_message(value_type)
-        json_data = json.dumps(serialized, indent=2, sort_keys=True)
-        self.outf.write(f"{json_data}\n")
+        # Display vale type as JSON.
+        self.print_json(value_type.as_dict())
 
 
 class cmd_domain_claim_value_type(SuperCommand):

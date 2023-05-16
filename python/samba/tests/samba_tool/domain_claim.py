@@ -562,7 +562,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         # check a few fields only
         self.assertEqual(value_type["name"], "MS-DS-Text")
         self.assertEqual(value_type["displayName"], "Text")
-        self.assertEqual(value_type["msDS-ClaimValueType"], "3")
+        self.assertEqual(value_type["msDS-ClaimValueType"], 3)
 
     def test_value_type_view_name_missing(self):
         """Test viewing a claim value type with missing --name is handled."""
