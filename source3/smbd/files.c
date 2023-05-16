@@ -840,6 +840,11 @@ openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
 		DBG_DEBUG("fsp_new() failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
+
+	GetTimeOfDay(&fsp->open_time);
+	fsp_set_gen_id(fsp);
+	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
+
 	fsp->fsp_name = &full_fname;
 
 #ifdef O_PATH
