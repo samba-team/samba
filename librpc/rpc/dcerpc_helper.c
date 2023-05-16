@@ -49,7 +49,12 @@ static bool smb3_sid_parse(const struct dom_sid *sid,
 	}
 
 	cipher = sid->sub_auths[3];
-	if (cipher > SMB2_ENCRYPTION_AES128_GCM) {
+	if (cipher > 256) {
+		/*
+		 * It is unlikely that we
+		 * ever have more then 256
+		 * encryption algorithms
+		 */
 		return false;
 	}
 
