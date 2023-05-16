@@ -21,13 +21,11 @@
 #
 
 import samba.getopt as options
-from samba.netcmd import CommandError, Option, SuperCommand
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import ValueType
 
-from .base import ClaimCommand
 
-
-class cmd_domain_claim_value_type_list(ClaimCommand):
+class cmd_domain_claim_value_type_list(Command):
     """List claim values types on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -47,11 +45,11 @@ class cmd_domain_claim_value_type_list(ClaimCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Value types grouped by display name.
         value_types = {value_type.display_name: value_type.as_dict()
-                       for value_type in ValueType.query(self.ldb)}
+                       for value_type in ValueType.query(ldb)}
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -61,7 +59,7 @@ class cmd_domain_claim_value_type_list(ClaimCommand):
                 self.outf.write(f"{value_type}\n")
 
 
-class cmd_domain_claim_value_type_view(ClaimCommand):
+class cmd_domain_claim_value_type_view(Command):
     """View a single claim value type on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -84,10 +82,10 @@ class cmd_domain_claim_value_type_view(ClaimCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if value type exists first.
-        value_type = ValueType.get(self.ldb, display_name=name)
+        value_type = ValueType.get(ldb, display_name=name)
         if value_type is None:
             raise CommandError(f"Value type {name} not found.")
 

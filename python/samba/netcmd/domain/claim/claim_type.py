@@ -25,14 +25,12 @@ import os
 
 import samba.getopt as options
 from ldb import LdbError
-from samba.netcmd import CommandError, Option, SuperCommand
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AttributeSchema, ClassSchema,\
     ClaimType, ValueType
 
-from .base import ClaimCommand
 
-
-class cmd_domain_claim_claim_type_create(ClaimCommand):
+class cmd_domain_claim_claim_type_create(Command):
     """Create claim types on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -82,22 +80,21 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if a claim type with this display name already exists.
         # Note: you can register the same claim type under another display name.
         display_name = name or attribute_name
-        claim_type = ClaimType.get(self.ldb, display_name=display_name)
+        claim_type = ClaimType.get(ldb, display_name=display_name)
         if claim_type:
             raise CommandError(f"Claim type {display_name} already exists, "
                                "but you can use --name to use another name.")
 
         # Lookup attribute and class names in schema.
         try:
-            applies_to = [ClassSchema.lookup(self.ldb, name)
-                          for name in class_names]
-            attribute = AttributeSchema.lookup(self.ldb, attribute_name)
-            value_type = ValueType.lookup(self.ldb, attribute)
+            applies_to = [ClassSchema.lookup(ldb, name) for name in class_names]
+            attribute = AttributeSchema.lookup(ldb, attribute_name)
+            value_type = ValueType.lookup(ldb, attribute)
         except (LookupError, ValueError) as e:
             raise CommandError(e)
 
@@ -135,10 +132,10 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
 
         # Create claim type
         try:
-            claim_type.save(self.ldb)
+            claim_type.save(ldb)
 
             if protect:
-                claim_type.protect(self.ldb)
+                claim_type.protect(ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -150,7 +147,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
             self.outf.write("\n")
 
 
-class cmd_domain_claim_claim_type_modify(ClaimCommand):
+class cmd_domain_claim_claim_type_modify(Command):
     """Modify claim types on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -194,10 +191,10 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists.
-        claim_type = ClaimType.get(self.ldb, display_name=name)
+        claim_type = ClaimType.get(ldb, display_name=name)
         if not claim_type:
             raise CommandError(f"Claim type {name} not found.")
 
@@ -214,7 +211,7 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         # Change class names for claim type.
         if class_names is not None:
             try:
-                applies_to = [ClassSchema.lookup(self.ldb, name)
+                applies_to = [ClassSchema.lookup(ldb, name)
                               for name in class_names]
             except (LookupError, ValueError) as e:
                 raise CommandError(e)
@@ -223,12 +220,12 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
 
         # Update claim type.
         try:
-            claim_type.save(self.ldb)
+            claim_type.save(ldb)
 
             if protect:
-                claim_type.protect(self.ldb)
+                claim_type.protect(ldb)
             elif unprotect:
-                claim_type.unprotect(self.ldb)
+                claim_type.unprotect(ldb)
         except LdbError as e:
             raise CommandError(e)
 
@@ -236,7 +233,7 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         self.outf.write(f"Updated claim type: {name}\n")
 
 
-class cmd_domain_claim_claim_type_delete(ClaimCommand):
+class cmd_domain_claim_claim_type_delete(Command):
     """Delete claim types on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -261,19 +258,19 @@ class cmd_domain_claim_claim_type_delete(ClaimCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists first.
-        claim_type = ClaimType.get(self.ldb, display_name=name)
+        claim_type = ClaimType.get(ldb, display_name=name)
         if claim_type is None:
             raise CommandError(f"Claim type {name} not found.")
 
         # Delete claim type.
         try:
             if force:
-                claim_type.unprotect(self.ldb)
+                claim_type.unprotect(ldb)
 
-            claim_type.delete(self.ldb)
+            claim_type.delete(ldb)
         except LdbError as e:
             if not force:
                 raise CommandError(
@@ -285,7 +282,7 @@ class cmd_domain_claim_claim_type_delete(ClaimCommand):
         self.outf.write(f"Deleted claim type: {name}\n")
 
 
-class cmd_domain_claim_claim_type_list(ClaimCommand):
+class cmd_domain_claim_claim_type_list(Command):
     """List claim types on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -305,11 +302,11 @@ class cmd_domain_claim_claim_type_list(ClaimCommand):
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Claim types grouped by displayName.
         claim_types = {claim_type.display_name: claim_type.as_dict()
-                       for claim_type in ClaimType.query(self.ldb)}
+                       for claim_type in ClaimType.query(ldb)}
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -319,7 +316,7 @@ class cmd_domain_claim_claim_type_list(ClaimCommand):
                 self.outf.write(f"{claim_type}\n")
 
 
-class cmd_domain_claim_claim_type_view(ClaimCommand):
+class cmd_domain_claim_claim_type_view(Command):
     """View a single claim type on the domain."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -341,10 +338,10 @@ class cmd_domain_claim_claim_type_view(ClaimCommand):
         if not name:
             raise CommandError("Argument --name is required.")
 
-        self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists first.
-        claim_type = ClaimType.get(self.ldb, display_name=name)
+        claim_type = ClaimType.get(ldb, display_name=name)
         if claim_type is None:
             raise CommandError(f"Claim type {name} not found.")
 
