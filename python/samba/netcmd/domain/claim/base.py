@@ -20,7 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ldb import SCOPE_ONELEVEL
 from samba.netcmd import Command
 
 
@@ -30,38 +29,3 @@ class ClaimCommand(Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ldb = None
-
-    def get_attribute_from_schema(self, name):
-        """Find DN by name in attribute schema.
-
-        :raises LookupError: if not found.
-        """
-        if not name:
-            raise ValueError("Attribute name is required.")
-        return self.get_object_from_schema(name, "attributeSchema")
-
-    def get_class_from_schema(self, name):
-        """Find DN by name in class schema.
-
-        :raises LookupError: if not found.
-        """
-        if not name:
-            raise ValueError("Class name is required.")
-        return self.get_object_from_schema(name, "classSchema")
-
-    def get_object_from_schema(self, name, object_class):
-        """Gets a single item from the schema by name and object class.
-
-        :raises LookupError: if not found.
-        """
-        schema_dn = self.ldb.get_schema_basedn()
-
-        res = self.ldb.search(base=schema_dn,
-                              scope=SCOPE_ONELEVEL,
-                              expression=(f"(&(objectClass={object_class})"
-                                          f"(lDAPDisplayName={name}))"))
-
-        if len(res) != 1:
-            raise LookupError(f"Could not locate {name} in {object_class}.")
-
-        return res[0]

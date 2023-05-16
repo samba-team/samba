@@ -26,7 +26,8 @@ import os
 import samba.getopt as options
 from ldb import LdbError
 from samba.netcmd import CommandError, Option, SuperCommand
-from samba.netcmd.domain.models import ClaimType, ValueType
+from samba.netcmd.domain.models import AttributeSchema, ClassSchema,\
+    ClaimType, ValueType
 
 from .base import ClaimCommand
 
@@ -95,8 +96,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
 
         Uses the LDAP attribute syntax to find the matching claim value type.
         """
-        attribute_syntax = str(attribute["attributeSyntax"])
-        claim_type_cn = SYNTAX_TO_CLAIM_TYPE_CN[attribute_syntax]
+        claim_type_cn = SYNTAX_TO_CLAIM_TYPE_CN[attribute.attribute_syntax]
         return self.claim_value_types[claim_type_cn].claim_value_type
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
@@ -127,8 +127,9 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
 
         # Lookup attribute and class names in schema.
         try:
-            applies_to = [self.get_class_from_schema(name) for name in class_names]
-            attribute = self.get_attribute_from_schema(attribute_name)
+            applies_to = [ClassSchema.lookup(self.ldb, name)
+                          for name in class_names]
+            attribute = AttributeSchema.lookup(self.ldb, attribute_name)
         except (LookupError, ValueError) as e:
             raise CommandError(e)
 
@@ -140,7 +141,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
 
         # adminDescription should be present but still have a fallback.
         if description is None:
-            description = str(attribute["adminDescription"] or attribute_name)
+            description = attribute.admin_description or display_name
 
         # claim_is_value_space_restricted is always False because we don't
         # yet support creating claims with a restricted possible values list.
@@ -150,7 +151,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
             display_name=display_name,
             enabled=not disable,
             claim_attribute_source=attribute.dn,
-            claim_is_single_valued=str(attribute["isSingleValued"]) == "TRUE",
+            claim_is_single_valued=attribute.is_single_valued,
             claim_is_value_space_restricted=False,
             claim_source_type="AD",
             claim_type_applies_to_class=[obj.dn for obj in applies_to],
@@ -245,7 +246,8 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         # Change class names for claim type.
         if class_names is not None:
             try:
-                applies_to = [self.get_class_from_schema(name) for name in class_names]
+                applies_to = [ClassSchema.lookup(self.ldb, name)
+                              for name in class_names]
             except (LookupError, ValueError) as e:
                 raise CommandError(e)
 
