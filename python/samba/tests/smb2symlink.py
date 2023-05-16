@@ -169,7 +169,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             { 'unparsed_path_length' : 0,
               'substitute_name' : rel_dest,
               'print_name' : rel_dest,
-              'flags' : 0 })
+              'flags' : 1 })
 
         self.clean_file(smb1, symlink)
 
