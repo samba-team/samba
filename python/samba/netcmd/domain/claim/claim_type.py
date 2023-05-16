@@ -31,18 +31,6 @@ from samba.netcmd.domain.models import AttributeSchema, ClassSchema,\
 
 from .base import ClaimCommand
 
-# LDAP Syntax to Claim Type CN lookup table.
-# These are the ones actively used by AD claim type attributes.
-SYNTAX_TO_CLAIM_TYPE_CN = {
-    "2.5.5.1": "MS-DS-Text",     # Object(DS-DN)
-    "2.5.5.2": "MS-DS-Text",     # String(Object-Identifier)
-    "2.5.5.8": "MS-DS-YesNo",    # Boolean
-    "2.5.5.9": "MS-DS-Number",   # Integer
-    "2.5.5.12": "MS-DS-Text",    # String(Unicode)
-    "2.5.5.15": "MS-DS-Text",    # String(NT-Sec-Desc)
-    "2.5.5.16": "MS-DS-Number",  # LargeInteger
-}
-
 
 class cmd_domain_claim_claim_type_create(ClaimCommand):
     """Create claim types on the domain."""
@@ -78,27 +66,6 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
                dest="unprotect", action="store_true")
     ]
 
-    @property
-    def claim_value_types(self):
-        """Property that returns a dict of claim value types keyed by CN.
-
-        NOTE: Can be replaced with @cached_property when the minimum Python
-        version becomes 3.8
-        """
-        value_types = getattr(self, "_claim_value_types", None)
-        if value_types is None:
-            value_types = {v.cn: v for v in ValueType.query(self.ldb)}
-            setattr(self, "_claim_value_types", value_types)
-        return value_types
-
-    def get_claim_value_type(self, attribute):
-        """Returns the correct claim value type for the given attribute.
-
-        Uses the LDAP attribute syntax to find the matching claim value type.
-        """
-        claim_type_cn = SYNTAX_TO_CLAIM_TYPE_CN[attribute.attribute_syntax]
-        return self.claim_value_types[claim_type_cn].claim_value_type
-
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
             attribute_name=None, class_names=None, description=None,
             disable=None, enable=None, protect=None, unprotect=None):
@@ -130,6 +97,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
             applies_to = [ClassSchema.lookup(self.ldb, name)
                           for name in class_names]
             attribute = AttributeSchema.lookup(self.ldb, attribute_name)
+            value_type = ValueType.lookup(self.ldb, attribute)
         except (LookupError, ValueError) as e:
             raise CommandError(e)
 
@@ -155,7 +123,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
             claim_is_value_space_restricted=False,
             claim_source_type="AD",
             claim_type_applies_to_class=[obj.dn for obj in applies_to],
-            claim_value_type=self.get_claim_value_type(attribute),
+            claim_value_type=value_type.claim_value_type,
         )
 
         # Either --enable will be set or --disable but never both.

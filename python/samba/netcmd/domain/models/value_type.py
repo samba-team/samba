@@ -23,6 +23,18 @@
 from .fields import BooleanField, DnField, IntegerField, StringField
 from .model import Model
 
+# LDAP Syntax to Value Type CN lookup table.
+# These are the lookups used by known AD attributes, add new ones as required.
+SYNTAX_TO_VALUE_TYPE_CN = {
+    "2.5.5.1": "MS-DS-Text",     # Object(DS-DN)
+    "2.5.5.2": "MS-DS-Text",     # String(Object-Identifier)
+    "2.5.5.8": "MS-DS-YesNo",    # Boolean
+    "2.5.5.9": "MS-DS-Number",   # Integer
+    "2.5.5.12": "MS-DS-Text",    # String(Unicode)
+    "2.5.5.15": "MS-DS-Text",    # String(NT-Sec-Desc)
+    "2.5.5.16": "MS-DS-Number",  # LargeInteger
+}
+
 
 class ValueType(Model):
     description = StringField("description")
@@ -49,6 +61,33 @@ class ValueType(Model):
     @staticmethod
     def get_object_class():
         return "msDS-ValueType"
+
+    @classmethod
+    def lookup(cls, ldb, attribute):
+        """Helper function to get ValueType by attribute or raise LookupError.
+
+        :param ldb: Ldb connection
+        :param attribute: AttributeSchema object
+        :raises: LookupError if not found
+        :raises: ValueError for unknown attribute syntax
+        """
+        # If attribute is None.
+        if not attribute:
+            raise ValueError("Attribute is required for value type lookup.")
+
+        # Unknown attribute syntax as it isn't in the lookup table.
+        syntax = attribute.attribute_syntax
+        cn = SYNTAX_TO_VALUE_TYPE_CN.get(syntax)
+        if not cn:
+            raise ValueError(f"Unable to process attribute syntax {syntax}")
+
+        # This should always return something but should still be handled.
+        value_type = cls.get(ldb, cn=cn)
+        if value_type is None:
+            raise LookupError(
+                f"Could not find claim value type for {attribute}.")
+
+        return value_type
 
     def __str__(self):
         return str(self.display_name)
