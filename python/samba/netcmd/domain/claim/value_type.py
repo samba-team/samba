@@ -76,21 +76,20 @@ class cmd_domain_claim_value_type_view(ClaimCommand):
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name",
                help="Display name of claim value type to view (required).",
-               dest="display_name", action="store", type=str),
+               dest="name", action="store", type=str),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
-            display_name=None):
+    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
 
-        if not display_name:
+        if not name:
             raise CommandError("Argument --name is required.")
 
         self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if value type exists first.
-        value_type = ValueType.get(self.ldb, display_name=display_name)
+        value_type = ValueType.get(self.ldb, display_name=name)
         if value_type is None:
-            raise CommandError(f"Value type {display_name} not found.")
+            raise CommandError(f"Value type {name} not found.")
 
         # Display vale type as JSON.
         self.print_json(value_type.as_dict())

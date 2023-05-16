@@ -61,7 +61,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         Option("--class", help="Object classes to set claim type to.",
                dest="class_names", action="append", type=str),
         Option("--name", help="Optional display name or use attribute name.",
-               dest="display_name", action="store", type=str),
+               dest="name", action="store", type=str),
         Option("--description",
                help="Optional description or use from attribute.",
                dest="description", action="store", type=str),
@@ -99,10 +99,9 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         claim_type_cn = SYNTAX_TO_CLAIM_TYPE_CN[attribute_syntax]
         return self.claim_value_types[claim_type_cn].claim_value_type
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
-            attribute_name=None, class_names=None, display_name=None,
-            description=None, disable=None, enable=None, protect=None,
-            unprotect=None):
+    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+            attribute_name=None, class_names=None, description=None,
+            disable=None, enable=None, protect=None, unprotect=None):
 
         # required attributes
         if not attribute_name:
@@ -120,7 +119,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
 
         # Check if a claim type with this display name already exists.
         # Note: you can register the same claim type under another display name.
-        display_name = display_name or attribute_name
+        display_name = name or attribute_name
         claim_type = ClaimType.get(self.ldb, display_name=display_name)
         if claim_type:
             raise CommandError(f"Claim type {display_name} already exists, "
@@ -196,7 +195,7 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to modify (required).",
-               dest="display_name", action="store", type=str),
+               dest="name", action="store", type=str),
         Option("--class", help="Object classes to set claim type to.",
                dest="class_names", action="append", type=str),
         Option("--description", help="Set the claim type description.",
@@ -215,11 +214,11 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
                dest="unprotect", action="store_true")
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
-            display_name=None, class_names=None, description=None,
-            enable=None, disable=None, protect=None, unprotect=None):
+    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+            class_names=None, description=None, enable=None, disable=None,
+            protect=None, unprotect=None):
 
-        if not display_name:
+        if not name:
             raise CommandError("Argument --name is required.")
         if enable and disable:
             raise CommandError("--enable and --disable cannot be used together.")
@@ -229,9 +228,9 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
         self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists.
-        claim_type = ClaimType.get(self.ldb, display_name=display_name)
+        claim_type = ClaimType.get(self.ldb, display_name=name)
         if not claim_type:
-            raise CommandError(f"Claim type {display_name} not found.")
+            raise CommandError(f"Claim type {name} not found.")
 
         # Either --enable will be set or --disable but never both.
         if enable:
@@ -264,7 +263,7 @@ class cmd_domain_claim_claim_type_modify(ClaimCommand):
             raise CommandError(e)
 
         # Claim type updated successfully.
-        self.outf.write(f"Updated claim type: {display_name}\n")
+        self.outf.write(f"Updated claim type: {name}\n")
 
 
 class cmd_domain_claim_claim_type_delete(ClaimCommand):
@@ -281,23 +280,23 @@ class cmd_domain_claim_claim_type_delete(ClaimCommand):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to delete (required).",
-               dest="display_name", action="store", type=str),
+               dest="name", action="store", type=str),
         Option("--force", help="Force claim type delete even if it is protected.",
                dest="force", action="store_true")
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
-            display_name=None, force=None):
+            name=None, force=None):
 
-        if not display_name:
+        if not name:
             raise CommandError("Argument --name is required.")
 
         self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists first.
-        claim_type = ClaimType.get(self.ldb, display_name=display_name)
+        claim_type = ClaimType.get(self.ldb, display_name=name)
         if claim_type is None:
-            raise CommandError(f"Claim type {display_name} not found.")
+            raise CommandError(f"Claim type {name} not found.")
 
         # Delete claim type.
         try:
@@ -313,7 +312,7 @@ class cmd_domain_claim_claim_type_delete(ClaimCommand):
                 raise CommandError(e)
 
         # Claim type deleted successfully.
-        self.outf.write(f"Deleted claim type: {display_name}\n")
+        self.outf.write(f"Deleted claim type: {name}\n")
 
 
 class cmd_domain_claim_claim_type_list(ClaimCommand):
@@ -364,21 +363,20 @@ class cmd_domain_claim_claim_type_view(ClaimCommand):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to view (required).",
-               dest="display_name", action="store", type=str),
+               dest="name", action="store", type=str),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
-            display_name=None):
+    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
 
-        if not display_name:
+        if not name:
             raise CommandError("Argument --name is required.")
 
         self.ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Check if claim type exists first.
-        claim_type = ClaimType.get(self.ldb, display_name=display_name)
+        claim_type = ClaimType.get(self.ldb, display_name=name)
         if claim_type is None:
-            raise CommandError(f"Claim type {display_name} not found.")
+            raise CommandError(f"Claim type {name} not found.")
 
         # Display claim type as JSON.
         self.print_json(claim_type.as_dict())
