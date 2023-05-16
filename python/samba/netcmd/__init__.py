@@ -142,7 +142,7 @@ class Command(object):
             print(f"{err}{klass}: {msg} - {evalue}", file=self.errf)
 
     def show_command_error(self, e):
-        '''display a command error'''
+        """display a command error"""
         if isinstance(e, CommandError):
             (etype, evalue, etraceback) = e.exception_info
             inner_exception = e.inner_exception
