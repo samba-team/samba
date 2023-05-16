@@ -70,10 +70,13 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         self.host = "ldap://{DC_SERVER}".format(**os.environ)
         self.creds = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
         self.samdb = self.getSamDB("-H", self.host, self.creds)
-
-        # Generate some known claim types.
-        # Use unique names that aren't in the ATTRIBUTES list.
         self.claim_types = []
+
+        # Generate some known claim types used by tests.
+        for attribute in ATTRIBUTES:
+            self.create_claim_type(attribute, classes=["user"])
+
+        # Generate some more with unique names not in the ATTRIBUTES list.
         self.create_claim_type("accountExpires", name="expires",
                                classes=["user"])
         self.create_claim_type("department", name="dept", classes=["user"],
@@ -220,14 +223,19 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """
         # Each known attribute must be in the schema.
         for attribute in ATTRIBUTES:
+            # Use a different name, so we don't clash with existing attributes.
+            name = "test_create_" + attribute
+
             result, out, err = self.runcmd("domain", "claim", "claim-type",
-                                           "create", f"--attribute={attribute}",
+                                           "create",
+                                           "--attribute", attribute,
+                                           "--name", name,
                                            "--class=user")
             self.assertIsNone(result, msg=err)
 
             # It should have used the attribute name as displayName.
-            claim_type = self.get_claim_type(attribute)
-            self.assertEqual(str(claim_type["displayName"]), attribute)
+            claim_type = self.get_claim_type(name)
+            self.assertEqual(str(claim_type["displayName"]), name)
             self.assertEqual(str(claim_type["Enabled"]), "TRUE")
             self.assertEqual(str(claim_type["objectClass"][-1]), "msDS-ClaimType")
             self.assertEqual(str(claim_type["msDS-ClaimSourceType"]), "AD")
