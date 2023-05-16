@@ -1263,16 +1263,18 @@ update_siginfo_msg(time_t exp, const char *srv)
 
 #ifdef HAVE_SIGACTION
 static void
-handle_siginfo(int sig)
+handler(int sig)
 {
-    struct iovec iov[2];
+    if (sig == SIGINFO) {
+        struct iovec iov[2];
 
-    iov[0].iov_base = rk_UNCONST(siginfo_msg);
-    iov[0].iov_len = strlen(siginfo_msg);
-    iov[1].iov_base = "\n";
-    iov[1].iov_len = 1;
+        iov[0].iov_base = rk_UNCONST(siginfo_msg);
+        iov[0].iov_len = strlen(siginfo_msg);
+        iov[1].iov_base = "\n";
+        iov[1].iov_len = 1;
 
-    writev(STDERR_FILENO, iov, sizeof(iov)/sizeof(iov[0]));
+        writev(STDERR_FILENO, iov, sizeof(iov)/sizeof(iov[0]));
+    } /* else ignore interrupts; our progeny will not ignore them */
 }
 #endif
 
@@ -1890,9 +1892,11 @@ main(int argc, char **argv)
 #ifdef HAVE_SIGACTION
 	memset(&sa, 0, sizeof(sa));
 	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = handle_siginfo;
+	sa.sa_handler = handler;
 
 	sigaction(SIGINFO, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 #endif
 
 	ret = simple_execvp_timed(argv[1], argv+1,

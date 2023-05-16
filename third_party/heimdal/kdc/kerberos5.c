@@ -2561,11 +2561,11 @@ _kdc_as_rep(astgs_request_t r)
          */
         if (r->pa_max_life > 0)
             t = rk_time_add(start, min(rk_time_sub(t, start), r->pa_max_life));
-        else if (r->client->max_life && *r->client->max_life)
+        else if (r->client->max_life)
 	    t = rk_time_add(start, min(rk_time_sub(t, start),
                                        *r->client->max_life));
 
-	if (r->server->max_life && *r->server->max_life)
+	if (r->server->max_life)
 	    t = rk_time_add(start, min(rk_time_sub(t, start),
                                        *r->server->max_life));
 
@@ -2576,6 +2576,13 @@ _kdc_as_rep(astgs_request_t r)
 	t = min(t, rk_time_add(start, realm->max_life));
 #endif
 	r->et.endtime = t;
+
+	if (start > r->et.endtime) {
+	    _kdc_set_e_text(r, "Requested effective lifetime is negative or too short");
+	    ret = KRB5KDC_ERR_NEVER_VALID;
+	    goto out;
+	}
+
 	if(f.renewable_ok && r->et.endtime < *b->till){
 	    f.renewable = 1;
 	    if(b->rtime == NULL){
@@ -2589,10 +2596,10 @@ _kdc_as_rep(astgs_request_t r)
 	    t = *b->rtime;
 	    if(t == 0)
 		t = MAX_TIME;
-	    if(r->client->max_renew && *r->client->max_renew)
+	    if(r->client->max_renew)
 		t = rk_time_add(start, min(rk_time_sub(t, start),
                                            *r->client->max_renew));
-	    if(r->server->max_renew && *r->server->max_renew)
+	    if(r->server->max_renew)
 		t = rk_time_add(start, min(rk_time_sub(t, start),
                                            *r->server->max_renew));
 #if 0

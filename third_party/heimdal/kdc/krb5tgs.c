@@ -1908,7 +1908,7 @@ server_lookup:
 
     /* Validate armor TGT before potentially including device claims */
     if (priv->armor_ticket) {
-	ret = _kdc_fast_check_armor_pac(priv);
+	ret = _kdc_fast_check_armor_pac(priv, HDB_F_FOR_TGS_REQ);
 	if (ret)
 	    goto out;
     }

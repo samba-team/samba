@@ -834,10 +834,9 @@ _kdc_free_fast_state(KDCFastState *state)
 }
 
 krb5_error_code
-_kdc_fast_check_armor_pac(astgs_request_t r)
+_kdc_fast_check_armor_pac(astgs_request_t r, int flags)
 {
     krb5_error_code ret;
-    int flags;
     krb5_boolean ad_kdc_issued = FALSE;
     krb5_pac mspac = NULL;
     krb5_principal armor_client_principal = NULL;
@@ -845,7 +844,7 @@ _kdc_fast_check_armor_pac(astgs_request_t r)
     hdb_entry *armor_client = NULL;
     char *armor_client_principal_name = NULL;
 
-    flags = HDB_F_FOR_TGS_REQ;
+    flags |= HDB_F_ARMOR_PRINCIPAL;
     if (_kdc_synthetic_princ_used_p(r->context, r->armor_ticket))
 	flags |= HDB_F_SYNTHETIC_OK;
     if (r->req.req_body.kdc_options.canonicalize)
