@@ -19,8 +19,10 @@
 import optparse
 import samba
 from samba import colour
+from samba.auth import system_session
 from samba.getopt import SambaOption, OptionError
 from samba.logger import get_samba_logger
+from samba.samdb import SamDB
 from ldb import LdbError, ERR_INVALID_CREDENTIALS
 import sys
 import traceback
@@ -140,6 +142,13 @@ class Command(object):
             print(f"{err}{klass}: {msg}", file=self.errf)
         else:
             print(f"{err}{klass}: {msg} - {evalue}", file=self.errf)
+
+    def ldb_connect(self, ldap_url, sambaopts, credopts):
+        """Helper to connect to Ldb database using command line opts."""
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        return SamDB(ldap_url, credentials=creds,
+                     session_info=system_session(lp), lp=lp)
 
     def show_command_error(self, e):
         """display a command error"""

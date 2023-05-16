@@ -22,24 +22,15 @@
 
 import json
 
-from samba.auth import system_session
 from samba.netcmd import Command, CommandError
 from samba.netcmd.encoders import JSONEncoder
 from samba.netcmd.domain.models import AuthenticationPolicy
-from samba.samdb import SamDB
 
 
 class SiloCommand(Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ldb = None
-
-    def ldb_connect(self, ldap_url, sambaopts, credopts):
-        """Helper to connect to Ldb database using command line opts."""
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        return SamDB(ldap_url, credentials=creds,
-                     session_info=system_session(lp), lp=lp)
 
     def print_json(self, data):
         """Print json on the screen using consistent formatting and sorting.

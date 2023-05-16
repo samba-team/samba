@@ -23,10 +23,8 @@
 import json
 
 from ldb import SCOPE_ONELEVEL
-from samba.auth import system_session
 from samba.netcmd import Command
 from samba.netcmd.encoders import JSONEncoder
-from samba.samdb import SamDB
 
 
 class ClaimCommand(Command):
@@ -35,13 +33,6 @@ class ClaimCommand(Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ldb = None
-
-    def ldb_connect(self, ldap_url, sambaopts, credopts):
-        """Helper to connect to Ldb database using command line opts."""
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        return SamDB(ldap_url, credentials=creds,
-                     session_info=system_session(lp), lp=lp)
 
     def print_json(self, data):
         """Print json on the screen using consistent formatting and sorting.
