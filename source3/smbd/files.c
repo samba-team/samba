@@ -800,17 +800,18 @@ static bool full_path_extend(char **dir, const char *atname)
 	return (*dir) != NULL;
 }
 
-NTSTATUS openat_pathref_dirfsp_nosymlink(
-	TALLOC_CTX *mem_ctx,
-	struct connection_struct *conn,
-	const char *path_in,
-	NTTIME twrp,
-	bool posix,
-	struct smb_filename **_smb_fname,
-	size_t *unparsed,
-	char **substitute)
+static NTSTATUS
+openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
+				      struct connection_struct *conn,
+				      struct files_struct *in_dirfsp,
+				      const char *path_in,
+				      NTTIME twrp,
+				      bool posix,
+				      struct smb_filename **_smb_fname,
+				      size_t *unparsed,
+				      char **substitute)
 {
-	struct files_struct *dirfsp = conn->cwd_fsp;
+	struct files_struct *dirfsp = in_dirfsp;
 	struct smb_filename full_fname = {
 		.base_name = NULL,
 		.twrp = twrp,
@@ -1099,14 +1100,14 @@ next:
 	if (next != NULL) {
 		struct files_struct *tmp = NULL;
 
-		if (dirfsp != conn->cwd_fsp) {
+		if (dirfsp != in_dirfsp) {
 			fd_close(dirfsp);
 		}
 
 		tmp = dirfsp;
 		dirfsp = fsp;
 
-		if (tmp == conn->cwd_fsp) {
+		if (tmp == in_dirfsp) {
 			status = fsp_new(conn, conn, &fsp);
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_DEBUG("fsp_new() failed: %s\n",
@@ -1123,7 +1124,7 @@ next:
 		goto next;
 	}
 
-	if (dirfsp != conn->cwd_fsp) {
+	if (dirfsp != in_dirfsp) {
 		SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
 		fd_close(dirfsp);
 		dirfsp->fsp_name = NULL;
@@ -1187,7 +1188,7 @@ fail:
 		fsp = NULL;
 	}
 
-	if ((dirfsp != NULL) && (dirfsp != conn->cwd_fsp)) {
+	if ((dirfsp != NULL) && (dirfsp != in_dirfsp)) {
 		SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
 		fd_close(dirfsp);
 		dirfsp->fsp_name = NULL;
@@ -1196,6 +1197,27 @@ fail:
 	}
 
 	TALLOC_FREE(path);
+	return status;
+}
+
+NTSTATUS openat_pathref_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
+					 struct connection_struct *conn,
+					 const char *path_in,
+					 NTTIME twrp,
+					 bool posix,
+					 struct smb_filename **_smb_fname,
+					 size_t *unparsed,
+					 char **substitute)
+{
+	NTSTATUS status = openat_pathref_fsp_nosymlink_internal(mem_ctx,
+								conn,
+								conn->cwd_fsp,
+								path_in,
+								twrp,
+								posix,
+								_smb_fname,
+								unparsed,
+								substitute);
 	return status;
 }
 
