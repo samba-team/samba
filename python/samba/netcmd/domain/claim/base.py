@@ -20,11 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import json
-
 from ldb import SCOPE_ONELEVEL
 from samba.netcmd import Command
-from samba.netcmd.encoders import JSONEncoder
 
 
 class ClaimCommand(Command):
@@ -33,15 +30,6 @@ class ClaimCommand(Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ldb = None
-
-    def print_json(self, data):
-        """Print json on the screen using consistent formatting and sorting.
-
-        A custom JSONEncoder class is used to help with serializing unknown
-        objects such as Dn for example.
-        """
-        json.dump(data, self.outf, cls=JSONEncoder, indent=2, sort_keys=True)
-        self.outf.write("\n")
 
     def get_attribute_from_schema(self, name):
         """Find DN by name in attribute schema.
