@@ -21,6 +21,7 @@
 #
 
 from enum import IntEnum
+from ldb import Dn
 
 from .fields import BooleanField, EnumField, IntegerField, StringField
 from .model import Model
@@ -71,3 +72,27 @@ class AuthenticationPolicy(Model):
     @staticmethod
     def get_object_class():
         return "msDS-AuthNPolicy"
+
+    @staticmethod
+    def lookup(ldb, name):
+        """Helper function to return auth policy or raise LookupError.
+
+        :param ldb: Ldb connection
+        :param name: Either DN or name of Authentication Policy
+        :raises: LookupError if not found
+        :raises: ValueError if name is not set
+        """
+        if not name:
+            raise ValueError("Attribute 'name' is required.")
+
+        try:
+            # It's possible name is already a Dn.
+            dn = name if isinstance(name, Dn) else Dn(ldb, name)
+            policy = AuthenticationPolicy.get(ldb, dn=dn)
+        except ValueError:
+            policy = AuthenticationPolicy.get(ldb, cn=name)
+
+        if policy is None:
+            raise LookupError(f"Authentication policy {name} not found.")
+
+        return policy

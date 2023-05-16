@@ -20,21 +20,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.netcmd import Command, CommandError
-from samba.netcmd.domain.models import AuthenticationPolicy
+from samba.netcmd import Command
 
 
 class SiloCommand(Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ldb = None
-
-    def get_policy(self, name):
-        """Helper function to return auth policy or raise CommandError.
-
-        :raises CommandError: if the policy was not found.
-        """
-        policy = AuthenticationPolicy.get(self.ldb, cn=name)
-        if policy is None:
-            raise CommandError(f"Authentication policy {name} not found.")
-        return policy

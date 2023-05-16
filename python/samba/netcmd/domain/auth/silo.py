@@ -23,7 +23,7 @@
 import samba.getopt as options
 from ldb import LdbError
 from samba.netcmd import CommandError, Option, SuperCommand
-from samba.netcmd.domain.models import AuthenticationSilo
+from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 
 from .base import SiloCommand
 from .silo_member import cmd_domain_auth_silo_member
@@ -141,6 +141,18 @@ class cmd_domain_auth_silo_create(SiloCommand):
                dest="enforce", action="store_true")
     ]
 
+    @staticmethod
+    def get_policy(ldb, name):
+        """Helper function to fetch auth policy or raise CommandError.
+
+        :param ldb: Ldb connection
+        :param name: Either the DN or name of authentication policy
+        """
+        try:
+            return AuthenticationPolicy.lookup(ldb, name)
+        except (LookupError, ValueError) as e:
+            raise CommandError(e)
+
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
             description=None, policy=None, user_policy=None,
             service_policy=None, computer_policy=None, protect=None,
@@ -172,15 +184,15 @@ class cmd_domain_auth_silo_create(SiloCommand):
 
         # Set user policy
         if user_policy:
-            silo.user_policy = self.get_policy(user_policy).dn
+            silo.user_policy = self.get_policy(self.ldb, user_policy).dn
 
         # Set service policy
         if service_policy:
-            silo.service_policy = self.get_policy(service_policy).dn
+            silo.service_policy = self.get_policy(self.ldb, service_policy).dn
 
         # Set computer policy
         if computer_policy:
-            silo.computer_policy = self.get_policy(computer_policy).dn
+            silo.computer_policy = self.get_policy(self.ldb, computer_policy).dn
 
         # Either --enforce will be set or --audit but never both.
         # The default if both are missing is enforce=True.
@@ -246,6 +258,18 @@ class cmd_domain_auth_silo_modify(SiloCommand):
                dest="enforce", action="store_true")
     ]
 
+    @staticmethod
+    def get_policy(ldb, name):
+        """Helper function to fetch auth policy or raise CommandError.
+
+        :param ldb: Ldb connection
+        :param name: Either the DN or name of authentication policy
+        """
+        try:
+            return AuthenticationPolicy.lookup(ldb, name)
+        except (LookupError, ValueError) as e:
+            raise CommandError(e)
+
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
             description=None, policy=None, user_policy=None,
             service_policy=None, computer_policy=None, protect=None,
@@ -282,13 +306,23 @@ class cmd_domain_auth_silo_modify(SiloCommand):
         if description is not None:
             silo.description = description
 
-        # Silo policies.
-        if user_policy is not None:
-            silo.user_policy = self.get_policy(user_policy).dn
-        if service_policy is not None:
-            silo.service_policy = self.get_policy(service_policy).dn
-        if computer_policy is not None:
-            silo.computer_policy = self.get_policy(computer_policy).dn
+        # Set or unset user policy.
+        if user_policy == "":
+            silo.user_policy = None
+        elif user_policy:
+            silo.user_policy = self.get_policy(self.ldb, user_policy).dn
+
+        # Set or unset service policy.
+        if service_policy == "":
+            silo.service_policy = None
+        elif service_policy:
+            silo.service_policy = self.get_policy(self.ldb, service_policy).dn
+
+        # Set or unset computer policy.
+        if computer_policy == "":
+            silo.computer_policy = None
+        elif computer_policy:
+            silo.computer_policy = self.get_policy(self.ldb, computer_policy).dn
 
         # Update silo
         try:
