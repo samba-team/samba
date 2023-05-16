@@ -149,7 +149,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
             cmd.append("--force")
 
         result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         self.assertIn("Deleted claim type", out)
 
     def get_claim_type(self, name):
@@ -166,7 +166,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
     def test_claim_type_list(self):
         """Test listing claim types in list format."""
         result, out, err = self.runcmd("domain", "claim", "claim-type", "list")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # check each claim type we created is there
         for claim_type in self.claim_types:
@@ -176,7 +176,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """Test listing claim types in JSON format."""
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "list", "--json")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # we should get valid json
         json_result = json.loads(out)
@@ -190,7 +190,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """Test viewing a single claim type."""
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "view", "--name", "expires")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # we should get valid json
         claim_type = json.loads(out)
@@ -223,7 +223,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
             result, out, err = self.runcmd("domain", "claim", "claim-type",
                                            "create", f"--attribute={attribute}",
                                            "--class=user")
-            self.assertIsNone(result)
+            self.assertIsNone(result, msg=err)
 
             # It should have used the attribute name as displayName.
             claim_type = self.get_claim_type(attribute)
@@ -238,7 +238,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "create", "--attribute=msNPAllowDialin",
                                        "--name=boolAttr", "--class=user")
 
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("boolAttr")
         self.assertEqual(str(claim_type["displayName"]), "boolAttr")
         self.assertEqual(str(claim_type["msDS-ClaimValueType"]), "6")
@@ -249,7 +249,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "create", "--attribute=adminCount",
                                        "--name=intAttr", "--class=user")
 
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("intAttr")
         self.assertEqual(str(claim_type["displayName"]), "intAttr")
         self.assertEqual(str(claim_type["msDS-ClaimValueType"]), "1")
@@ -260,7 +260,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "create", "--attribute=givenName",
                                        "--name=textAttr", "--class=user")
 
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("textAttr")
         self.assertEqual(str(claim_type["displayName"]), "textAttr")
         self.assertEqual(str(claim_type["msDS-ClaimValueType"]), "3")
@@ -272,7 +272,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "--name=home", "--class=user",
                                        "--disable")
 
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("home")
         self.assertEqual(str(claim_type["displayName"]), "home")
         self.assertEqual(str(claim_type["Enabled"]), "FALSE")
@@ -284,7 +284,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "--name=cellphone", "--class=user",
                                        "--protect")
 
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("cellphone")
         self.assertEqual(str(claim_type["displayName"]), "cellphone")
 
@@ -303,7 +303,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=street",
                                        "--name=streetName", "--class=user")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("streetName")
         applies_to = [str(dn) for dn in claim_type["msDS-ClaimTypeAppliesToClass"]]
         self.assertEqual(str(claim_type["displayName"]), "streetName")
@@ -315,7 +315,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=extensionName",
                                        "--name=ext", "--class=computer")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("ext")
         applies_to = [str(dn) for dn in claim_type["msDS-ClaimTypeAppliesToClass"]]
         self.assertEqual(str(claim_type["displayName"]), "ext")
@@ -328,7 +328,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "create", "--attribute=msDS-PrimaryComputer",
                                        "--name=primaryComputer", "--class=user",
                                        "--class=computer")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("primaryComputer")
         applies_to = [str(dn) for dn in claim_type["msDS-ClaimTypeAppliesToClass"]]
         self.assertEqual(str(claim_type["displayName"]), "primaryComputer")
@@ -349,14 +349,14 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=msDS-SiteName",
                                        "--name=siteName", "--class=computer")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("siteName")
         self.assertIsNotNone(claim_type)
 
         # Do the deletion.
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "delete", "--name=siteName")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Claim type shouldn't exist anymore.
         claim_type = self.get_claim_type("siteName")
@@ -369,7 +369,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "create", "--attribute=postalCode",
                                        "--name=postcode", "--class=user",
                                        "--protect")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("postcode")
         self.assertIsNotNone(claim_type)
 
@@ -385,7 +385,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         # Try a force delete instead.
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "delete", "--name=postcode", "--force")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Claim type shouldn't exist anymore.
         claim_type = self.get_claim_type("siteName")
@@ -403,7 +403,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "company",
                                        "--description=NewDescription")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Verify fields were changed.
         claim_type = self.get_claim_type("company")
@@ -426,7 +426,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "seeAlso",
                                        "--class=computer")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("seeAlso")
         applies_to = [str(dn) for dn in claim_type["msDS-ClaimTypeAppliesToClass"]]
         self.assertNotIn(user_dn, applies_to)
@@ -436,7 +436,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "seeAlso",
                                        "--class=user")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("seeAlso")
         applies_to = [str(dn) for dn in claim_type["msDS-ClaimTypeAppliesToClass"]]
         self.assertIn(user_dn, applies_to)
@@ -446,7 +446,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "seeAlso",
                                        "--class=user", "--class=computer")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
         claim_type = self.get_claim_type("seeAlso")
         applies_to = [str(dn) for dn in claim_type["msDS-ClaimTypeAppliesToClass"]]
         self.assertIn(user_dn, applies_to)
@@ -457,7 +457,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "catalogs",
                                        "--disable")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Check that claim type was disabled.
         claim_type = self.get_claim_type("catalogs")
@@ -466,7 +466,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "catalogs",
                                        "--enable")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Check that claim type was enabled.
         claim_type = self.get_claim_type("catalogs")
@@ -478,7 +478,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "pager",
                                        "--protect")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Check that claim type was protected.
         claim_type = self.get_claim_type("pager")
@@ -488,7 +488,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "pager",
                                        "--unprotect")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # Check that claim type was unprotected.
         claim_type = self.get_claim_type("pager")
@@ -522,7 +522,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
     def test_value_type_list(self):
         """Test listing claim value types in list format."""
         result, out, err = self.runcmd("domain", "claim", "value-type", "list")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # base list of value types is there
         for value_type in VALUE_TYPES:
@@ -532,7 +532,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """Test listing claim value types in JSON format."""
         result, out, err = self.runcmd("domain", "claim", "value-type",
                                        "list", "--json")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # we should get valid json
         json_result = json.loads(out)
@@ -546,7 +546,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """Test viewing a single claim value type."""
         result, out, err = self.runcmd("domain", "claim", "value-type",
                                        "view", "--name", "Text")
-        self.assertIsNone(result)
+        self.assertIsNone(result, msg=err)
 
         # we should get valid json
         value_type = json.loads(out)
