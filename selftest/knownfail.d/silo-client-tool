@@ -1,0 +1,2 @@
+^samba.tests.samba_tool.domain_auth_silo.samba.tests.samba_tool.domain_auth_silo.AuthSiloCmdTestCase.test_authentication_silo_delete_protected\(.*\)
+^samba.tests.samba_tool.domain_auth_policy.samba.tests.samba_tool.domain_auth_policy.AuthPolicyCmdTestCase.test_authentication_policy_delete_protected\(.*\)
