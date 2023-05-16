@@ -332,7 +332,7 @@ userPassword: """ + userpass + """
         if "lockoutThreshold" in res[0]:
             lockoutThreshold = res[0]["lockoutThreshold"][0]
         else:
-            lockoutTreshold = 0
+            lockoutThreshold = 0
 
         self.addCleanup(self.ldb.modify_ldif, """
 dn: """ + base_dn + """
