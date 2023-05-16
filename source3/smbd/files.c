@@ -791,6 +791,15 @@ fail:
 	return status;
 }
 
+static bool full_path_extend(char **dir, const char *atname)
+{
+	talloc_asprintf_addbuf(dir,
+			       "%s%s",
+			       (*dir)[0] == '\0' ? "" : "/",
+			       atname);
+	return (*dir) != NULL;
+}
+
 NTSTATUS openat_pathref_dirfsp_nosymlink(
 	TALLOC_CTX *mem_ctx,
 	struct connection_struct *conn,
@@ -815,7 +824,7 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	struct smb_filename *result = NULL;
 	struct files_struct *fsp = NULL;
 	char *path = NULL, *next = NULL;
-	bool case_sensitive;
+	bool case_sensitive, ok;
 	int fd;
 	NTSTATUS status;
 	struct vfs_open_how how = {
@@ -1081,14 +1090,9 @@ next:
 
 	fsp->fsp_flags.is_directory = true; /* See O_DIRECTORY above */
 
-	full_fname.base_name = talloc_asprintf_append_buffer(
-			full_fname.base_name,
-			"%s%s",
-			full_fname.base_name[0] == '\0' ? "" : "/",
-			rel_fname.base_name);
-
-	if (full_fname.base_name == NULL) {
-		DBG_DEBUG("talloc_asprintf_append_buffer() failed\n");
+	ok = full_path_extend(&full_fname.base_name, rel_fname.base_name);
+	if (!ok) {
+		DBG_DEBUG("full_path_extend() failed\n");
 		goto nomem;
 	}
 
