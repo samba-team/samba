@@ -17,16 +17,17 @@
 #
 
 import optparse
+import sys
+import textwrap
+import traceback
+
 import samba
+from ldb import ERR_INVALID_CREDENTIALS, LdbError
 from samba import colour
 from samba.auth import system_session
 from samba.getopt import SambaOption, OptionError
 from samba.logger import get_samba_logger
 from samba.samdb import SamDB
-from ldb import LdbError, ERR_INVALID_CREDENTIALS
-import sys
-import traceback
-import textwrap
 
 from .validators import ValidationError
 
