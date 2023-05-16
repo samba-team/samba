@@ -1534,7 +1534,7 @@ plantestsuite_loadlist("samba4.ldap.large_ldap.straight_ldap.python(%s)" % env, 
 
 planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', 'DATA_DIR' : os.path.join(samba4srcdir, 'dsdb/tests/python/testdata/')}, name="samba4.ldap.sort.python", extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
-plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(DSDB_PYTEST_DIR, "linked_attributes.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc)", "ad_dc:local", [python, os.path.join(DSDB_PYTEST_DIR, "linked_attributes.py"), '$PREFIX_ABS/ad_dc/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
 plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs:local",
