@@ -680,7 +680,7 @@ static bool is_valid_claim_attribute_syntax(const DATA_BLOB source_syntax,
 
 static int get_all_claims(struct ldb_context *ldb,
 			  TALLOC_CTX *mem_ctx,
-			  struct ldb_dn *principal_dn,
+			  const struct ldb_message *principal,
 			  uint32_t principal_class_id,
 			  DATA_BLOB *claims_blob)
 {
@@ -944,12 +944,13 @@ static int get_all_claims(struct ldb_context *ldb,
 		}
 
 		ret = ldb_search(ldb, tmp_ctx, &principal_res,
-				 principal_dn,
+				 principal->dn,
 				 LDB_SCOPE_BASE,
 				 ad_claim_attrs, NULL);
 		if (ret != LDB_SUCCESS) {
+			const char *dn = ldb_dn_get_linearized(principal->dn);
 			DBG_ERR("Failed to find principal %s to construct claims\n",
-				ldb_dn_get_linearized(principal_dn));
+				dn != NULL ? dn : "<NULL>");
 			talloc_free(tmp_ctx);
 			return ret;
 		}
@@ -1044,7 +1045,7 @@ static int get_all_claims(struct ldb_context *ldb,
 
 int get_claims_for_principal(struct ldb_context *ldb,
 			     TALLOC_CTX *mem_ctx,
-			     struct ldb_dn *principal_dn,
+			     const struct ldb_message *principal,
 			     DATA_BLOB *claims_blob)
 {
 	struct ldb_result *principal_res = NULL;
@@ -1062,7 +1063,7 @@ int get_claims_for_principal(struct ldb_context *ldb,
 	*claims_blob = data_blob_null;
 
 	ret = ldb_search(ldb, mem_ctx, &principal_res,
-			 principal_dn,
+			 principal->dn,
 			 LDB_SCOPE_BASE,
 			 principal_attrs, NULL);
 	if (ret != LDB_SUCCESS) {
@@ -1087,7 +1088,7 @@ int get_claims_for_principal(struct ldb_context *ldb,
 
 	return get_all_claims(ldb,
 			      mem_ctx,
-			      principal_dn,
+			      principal,
 			      principal_class->governsID_id,
 			      claims_blob);
 }

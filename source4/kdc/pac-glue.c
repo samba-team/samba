@@ -245,7 +245,7 @@ NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 static
 NTSTATUS samba_get_claims_blob(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *samdb,
-			       struct ldb_dn *principal_dn,
+			       const struct ldb_message *principal,
 			       DATA_BLOB *client_claims_data)
 {
 	union PAC_INFO client_claims;
@@ -257,7 +257,7 @@ NTSTATUS samba_get_claims_blob(TALLOC_CTX *mem_ctx,
 
 	ret = get_claims_for_principal(samdb,
 				       mem_ctx,
-				       principal_dn,
+				       principal,
 				       client_claims_data);
 	if (ret != LDB_SUCCESS) {
 		return dsdb_ldb_err_to_ntstatus(ret);
@@ -1148,7 +1148,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_get_claims_blob(mem_ctx,
 					  p->kdc_db_ctx->samdb,
-					  p->msg->dn,
+					  p->msg,
 					  claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Building claims failed: %s\n",

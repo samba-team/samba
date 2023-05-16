@@ -26,7 +26,7 @@
 
 int get_claims_for_principal(struct ldb_context *ldb,
 			     TALLOC_CTX *mem_ctx,
-			     struct ldb_dn *principal_dn,
+			     const struct ldb_message *principal,
 			     DATA_BLOB *claims_blob);
 
 #endif
