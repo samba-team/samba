@@ -549,7 +549,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	const char *pa_type = NULL;
 	struct auth_usersupplied_info ui;
 	size_t sa_socklen = 0;
-	int final_ret = 0;
+	krb5_error_code final_ret = 0;
 
 	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_AUTH_EVENT);
 	if (hdb_auth_status_obj == NULL) {
