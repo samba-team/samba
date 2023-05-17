@@ -100,7 +100,7 @@ static PyObject *py_generate_random_machine_password(PyObject *self, PyObject *a
 		/*
 		 * The real range checks happens in
 		 * generate_random_machine_password().
-		 * Here we are just filter out any negative numbers.
+		 * Here we just filter out any negative numbers.
 		 */
 		PyErr_Format(PyExc_ValueError,
 			     "invalid range: %zd - %zd",
