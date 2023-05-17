@@ -32,8 +32,9 @@ test_get_acl()
 {
 	testfile="$1"
 	exptextedacl="$2"
+	shift 2
 
-	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl) || return $?
+	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl "$@") || return $?
 
 	test "$retacl" = "$exptextedacl"
 }
@@ -67,19 +68,12 @@ test_set_acl_ntvfs()
 test_changedomsid()
 {
 	testfile="$1"
+	shift 1
 
 	$PYTHON $samba_tool ntacl changedomsid \
 		"$domain_sid" "$new_domain_sid" "$testfile" \
 		--service=tmp \
-		$CONFIGURATION
-
-	retacl=$($PYTHON $samba_tool ntacl get \
-		"$testfile" \
-		--as-sddl \
-		--service=tmp \
-		$CONFIGURATION) || return $?
-
-	test "$retacl" = "$new_acl_without_padding"
+		$CONFIGURATION "$@"
 }
 
 test_changedomsid_ntvfs()
@@ -121,6 +115,11 @@ testit "set_ntacl" test_set_acl "$testfile" "$acl" || failed=$(expr $failed + 1)
 testit "get_ntacl" test_get_acl "$testfile" "$acl_without_padding" || failed=$(expr $failed + 1)
 
 testit "changedomsid" test_changedomsid "$testfile" || failed=$(expr $failed + 1)
+testit "get_ntacl_after_changedomsid" \
+	test_get_acl "$testfile" "$new_acl_without_padding" \
+		--service=tmp \
+		$CONFIGURATION \
+	|| failed=$(expr $failed + 1)
 
 testit "set_ntacl_ntvfs" test_set_acl_ntvfs "$testfile" "$acl" || failed=$(expr $failed + 1)
 testit "get_ntacl_ntvfs" test_get_acl_ntvfs "$testfile" "$acl_without_padding" || \
