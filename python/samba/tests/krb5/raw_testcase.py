@@ -4984,13 +4984,15 @@ class RawKerberosTest(TestCaseInTempDir):
             krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
         }
 
+        current_time = time.time()
+
         # Set authtime and starttime to an hour in the past, to show that they
         # do not affect ticket rejection.
-        start_time = self.get_KerberosTime(offset=-60 * 60)
+        start_time = self.get_KerberosTime(epoch=current_time, offset=-60 * 60)
 
         # Set the endtime of the ticket relative to our current time, so that
         # the ticket has 'lifetime' seconds remaining to live.
-        end_time = self.get_KerberosTime(offset=lifetime)
+        end_time = self.get_KerberosTime(epoch=current_time, offset=lifetime)
 
         # Modify the times in the ticket.
         def modify_ticket_times(enc_part):
