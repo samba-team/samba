@@ -1048,29 +1048,13 @@ int get_claims_for_principal(struct ldb_context *ldb,
 			     const struct ldb_message *principal,
 			     DATA_BLOB *claims_blob)
 {
-	struct ldb_result *principal_res = NULL;
-	static const char * const principal_attrs[] = {
-		"objectClass",
-		NULL
-	};
-
 	struct ldb_message_element *principal_class_el = NULL;
 	struct dsdb_schema *schema = NULL;
 	const struct dsdb_class *principal_class = NULL;
 
-	int ret;
-
 	*claims_blob = data_blob_null;
 
-	ret = ldb_search(ldb, mem_ctx, &principal_res,
-			 principal->dn,
-			 LDB_SCOPE_BASE,
-			 principal_attrs, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	principal_class_el = ldb_msg_find_element(principal_res->msgs[0],
+	principal_class_el = ldb_msg_find_element(principal,
 						  "objectClass");
 	if (principal_class_el == NULL) {
 		return ldb_operr(ldb);
