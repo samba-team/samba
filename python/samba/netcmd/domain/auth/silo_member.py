@@ -72,23 +72,12 @@ class cmd_domain_auth_silo_member_add(Command):
         if user is None:
             raise CommandError(f"User '{member}' not found.")
 
-        # Check if user isn't already assigned to another silo.
-        if user.assigned_silo:
-            assigned_silo = AuthenticationSilo.get(ldb, dn=user.assigned_silo)
-            raise CommandError(
-                f"Member '{member}' is already in the {assigned_silo} silo.")
-
-        # Check if the user isn't already in this silo.
-        if user.dn in silo.members:
-            raise CommandError(
-                f"Member '{member}' is already in the {name} silo.")
-
-        # Add user dn to silo members and set the assigned silo.
-        silo.members.append(user.dn)
+        # Set the assigned silo.
         user.assigned_silo = silo.dn
 
+        # Add member and save user.
         try:
-            silo.save(ldb)
+            silo.add_member(ldb, user)
             user.save(ldb)
         except LdbError as e:
             raise CommandError(e)
@@ -186,16 +175,12 @@ class cmd_domain_auth_silo_member_remove(Command):
         if user is None:
             raise CommandError(f"User '{member}' not found.")
 
-        # Make sure member is in the silo before removing them.
-        # Also unset the assigned silo on the User object.
-        if user.dn in silo.members:
-            silo.members.remove(user.dn)
-            user.assigned_silo = None
-        else:
-            raise CommandError(f"User '{member}' is not in the {name} silo.")
+        # Unset the assigned silo.
+        user.assigned_silo = None
 
+        # Remove member and save user.
         try:
-            silo.save(ldb)
+            silo.remove_member(ldb, user)
             user.save(ldb)
         except LdbError as e:
             raise CommandError(e)

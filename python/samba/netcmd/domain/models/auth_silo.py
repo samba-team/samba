@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE, Message, MessageElement
+
 from .fields import DnField, BooleanField, StringField
 from .model import Model
 
@@ -47,3 +49,43 @@ class AuthenticationSilo(Model):
     @staticmethod
     def get_object_class():
         return "msDS-AuthNPolicySilo"
+
+    def add_member(self, ldb, member):
+        """Add a member to the Authentication Silo.
+
+        Rather than saving the silo object and writing the entire member
+        list out again, just add one member only.
+
+        :param ldb: Ldb connection
+        :param member: Member to add to silo
+        """
+        # Create a message with only an add member operation.
+        message = Message(dn=self.dn)
+        message.add(MessageElement(str(member.dn), FLAG_MOD_ADD,
+                                   "msDS-AuthNPolicySiloMembers"))
+
+        # Update authentication silo.
+        ldb.modify(message)
+
+        # If the modify operation was successful refresh members field.
+        self.refresh(ldb, fields=["members"])
+
+    def remove_member(self, ldb, member):
+        """Remove a member to the Authentication Silo.
+
+        Rather than saving the silo object and writing the entire member
+        list out again, just remove one member only.
+
+        :param ldb: Ldb connection
+        :param member: Member to remove from silo
+        """
+        # Create a message with only a remove member operation.
+        message = Message(dn=self.dn)
+        message.add(MessageElement(str(member.dn), FLAG_MOD_DELETE,
+                                   "msDS-AuthNPolicySiloMembers"))
+
+        # Update authentication silo.
+        ldb.modify(message)
+
+        # If the modify operation was successful refresh members field.
+        self.refresh(ldb, fields=["members"])
