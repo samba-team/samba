@@ -4975,7 +4975,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return pac
 
-    def modify_requester_sid_time(self, ticket, lifetime, requester_sid=None):
+    def modify_lifetime(self, ticket, lifetime, requester_sid=None):
         # Get the krbtgt key.
         krbtgt_creds = self.get_krbtgt_creds()
 
