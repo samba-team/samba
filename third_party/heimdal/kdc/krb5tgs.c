@@ -126,7 +126,7 @@ _kdc_check_pac(astgs_request_t r,
     /* Verify the KDC signatures. */
     ret = _kdc_pac_verify(r,
 			  client_principal, delegated_proxy_principal,
-			  client, server, krbtgt, pac, &is_trusted);
+			  client, server, krbtgt, tkt, pac, &is_trusted);
     if (ret == 0) {
 	if (is_trusted) {
 	    krb5_pac_set_trusted(pac, true);

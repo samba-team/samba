@@ -145,6 +145,7 @@ struct verify_uc {
     hdb_entry *client;
     hdb_entry *server;
     hdb_entry *krbtgt;
+    EncTicketPart *ticket;
     krb5_pac pac;
     krb5_boolean *is_trusted;
 };
@@ -163,7 +164,8 @@ verify(krb5_context context, const void *plug, void *plugctx, void *userctx)
 			 uc->r,
 			 uc->client_principal,
 			 uc->delegated_proxy_principal,
-			 uc->client, uc->server, uc->krbtgt, uc->pac,
+			 uc->client, uc->server, uc->krbtgt,
+			 uc->ticket, uc->pac,
 			 uc->is_trusted);
     return ret;
 }
@@ -175,6 +177,7 @@ _kdc_pac_verify(astgs_request_t r,
 		hdb_entry *client,
 		hdb_entry *server,
 		hdb_entry *krbtgt,
+		EncTicketPart *ticket,
 		krb5_pac pac,
 		krb5_boolean *is_trusted)
 {
@@ -189,6 +192,7 @@ _kdc_pac_verify(astgs_request_t r,
     uc.client = client;
     uc.server = server;
     uc.krbtgt = krbtgt;
+    uc.ticket = ticket,
     uc.pac = pac;
     uc.is_trusted = is_trusted;
 

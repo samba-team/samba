@@ -70,6 +70,7 @@ typedef krb5_error_code
 					   hdb_entry *,/* client */
 					   hdb_entry *,/* server */
 					   hdb_entry *,/* krbtgt */
+					   EncTicketPart *, /* ticket */
 					   krb5_pac, /* pac */
 					   krb5_boolean *); /* is_trusted */
 
