@@ -147,12 +147,13 @@ def connect_kdc(pipe,
             error_code = rep.get('error-code')
             if error_code == KDC_ERR_CLIENT_REVOKED:
                 # The account was locked out.
+                kdc_exchange_dict['expected_status'] = (
+                    ntstatus.NT_STATUS_ACCOUNT_LOCKED_OUT)
+
                 if expect_status:
                     # Expect to get a LOCKED_OUT NTSTATUS code.
                     kdc_exchange_dict['expect_edata'] = True
                     kdc_exchange_dict['expect_status'] = True
-                    kdc_exchange_dict['expected_status'] = (
-                        ntstatus.NT_STATUS_ACCOUNT_LOCKED_OUT)
 
             elif error_code == KDC_ERR_PREAUTH_FAILED:
                 # Just a wrong password: the account wasn’t locked out. Don’t
