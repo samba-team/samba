@@ -37,6 +37,7 @@ from pyasn1.codec.ber.encoder import BitStringEncoder
 
 from pyasn1.error import PyAsn1Error
 
+from samba import unix2nttime
 from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, samr, security
 from samba.gensec import FEATURE_SEAL
@@ -4953,6 +4954,84 @@ class RawKerberosTest(TestCaseInTempDir):
             name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
 
         return krbtgt_sname
+
+    def add_requester_sid(self, pac, sid):
+        pac_buffers = pac.buffers
+
+        buffer_types = [pac_buffer.type for pac_buffer in pac_buffers]
+        self.assertNotIn(krb5pac.PAC_TYPE_REQUESTER_SID, buffer_types)
+
+        requester_sid = krb5pac.PAC_REQUESTER_SID()
+        requester_sid.sid = security.dom_sid(sid)
+
+        requester_sid_buffer = krb5pac.PAC_BUFFER()
+        requester_sid_buffer.type = krb5pac.PAC_TYPE_REQUESTER_SID
+        requester_sid_buffer.info = requester_sid
+
+        pac_buffers.append(requester_sid_buffer)
+
+        pac.buffers = pac_buffers
+        pac.num_buffers += 1
+
+        return pac
+
+    def modify_requester_sid_time(self, ticket, sid, lifetime):
+        # Get the krbtgt key.
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+        checksum_keys = {
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
+        }
+
+        # Set authtime and starttime to an hour in the past, to show that they
+        # do not affect ticket rejection.
+        start_time = self.get_KerberosTime(offset=-60 * 60)
+
+        # Set the endtime of the ticket relative to our current time, so that
+        # the ticket has 'lifetime' seconds remaining to live.
+        end_time = self.get_KerberosTime(offset=lifetime)
+
+        # Modify the times in the ticket.
+        def modify_ticket_times(enc_part):
+            enc_part['authtime'] = start_time
+            if 'starttime' in enc_part:
+                enc_part['starttime'] = start_time
+
+            enc_part['endtime'] = end_time
+
+            return enc_part
+
+        # We have to set the times in both the ticket and the PAC, otherwise
+        # Heimdal will complain.
+        def modify_pac_time(pac):
+            pac_buffers = pac.buffers
+
+            for pac_buffer in pac_buffers:
+                if pac_buffer.type == krb5pac.PAC_TYPE_LOGON_NAME:
+                    logon_time = self.get_EpochFromKerberosTime(start_time)
+                    pac_buffer.info.logon_time = unix2nttime(logon_time)
+                    break
+            else:
+                self.fail('failed to find LOGON_NAME PAC buffer')
+
+            pac.buffers = pac_buffers
+
+            return pac
+
+        # Add a requester SID to show that the KDC will then accept this
+        # kpasswd ticket as if it were a TGT.
+        def modify_pac_fn(pac):
+            pac = self.add_requester_sid(pac, sid=sid)
+            pac = modify_pac_time(pac)
+            return pac
+
+        # Do the actual modification.
+        return self.modified_ticket(ticket,
+                                    new_ticket_key=krbtgt_key,
+                                    modify_fn=modify_ticket_times,
+                                    modify_pac_fn=modify_pac_fn,
+                                    checksum_keys=checksum_keys)
 
     def _test_as_exchange(self,
                           cname,
