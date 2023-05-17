@@ -646,25 +646,6 @@ static char *get_netbios_name(TALLOC_CTX *mem_ctx, HostAddresses *addrs)
 	return nb_name;
 }
 
-/* this function allocates 'data' using malloc.
- * The caller is responsible for freeing it */
-static void samba_kdc_build_edata_reply(NTSTATUS nt_status, krb5_data *e_data)
-{
-	e_data->data = malloc(12);
-	if (e_data->data == NULL) {
-		e_data->length = 0;
-		e_data->data = NULL;
-		return;
-	}
-	e_data->length = 12;
-
-	SIVAL(e_data->data, 0, NT_STATUS_V(nt_status));
-	SIVAL(e_data->data, 4, 0);
-	SIVAL(e_data->data, 8, 1);
-
-	return;
-}
-
 static krb5_error_code samba_wdc_check_client_access(void *priv,
 						     astgs_request_t r)
 {
@@ -701,24 +682,6 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 		ret2 = hdb_samba4_set_ntstatus(r, nt_status, ret);
 		if (ret2) {
 			ret = ret2;
-		}
-
-		if (kdc_request_get_rep(r)->padata) {
-			krb5_data kd;
-
-			samba_kdc_build_edata_reply(nt_status, &kd);
-			ret2 = krb5_padata_add(kdc_request_get_context((kdc_request_t)r), kdc_request_get_rep(r)->padata,
-					       KRB5_PADATA_PW_SALT,
-					       kd.data, kd.length);
-			if (ret2) {
-				/*
-				 * So we do not leak the allocated
-				 * memory on kd in the error case
-				 */
-				krb5_data_free(&kd);
-
-				ret = ret2;
-			}
 		}
 
 		return ret;
