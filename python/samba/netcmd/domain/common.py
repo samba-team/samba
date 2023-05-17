@@ -22,9 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from uuid import UUID
-
-from samba.netcmd import CommandError, Option
+from samba.netcmd import Option
 from samba.samdb import get_default_backend_store
 
 common_ntvfs_options = [
@@ -64,15 +62,3 @@ common_join_options = [
            default="SAMBA_INTERNAL"),
     Option("-v", "--verbose", help="Be verbose", action="store_true")
 ]
-
-
-def parse_text(value):
-    """Parse message element to string value."""
-    if value is not None:
-        return str(value)
-
-
-def parse_guid(value):
-    """Parse message element containing utf-16 le encoded uuid to string."""
-    if value is not None:
-        return str(UUID(bytes_le=value[0]))
