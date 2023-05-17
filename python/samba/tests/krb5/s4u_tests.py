@@ -267,6 +267,7 @@ class S4UKerberosTests(KDCBaseTest):
             unexpected_flags = krb5_asn1.TicketFlags(unexpected_flags)
 
         expected_error_mode = kdc_dict.pop('expected_error_mode', 0)
+        expect_status = kdc_dict.pop('expect_status', None)
         expected_status = kdc_dict.pop('expected_status', None)
         if expected_error_mode:
             check_error_fn = self.generic_check_kdc_error
@@ -275,6 +276,7 @@ class S4UKerberosTests(KDCBaseTest):
             check_error_fn = None
             check_rep_fn = self.generic_check_kdc_rep
 
+            self.assertIsNone(expect_status)
             self.assertIsNone(expected_status)
 
         kdc_options = kdc_dict.pop('kdc_options', '0')
@@ -302,8 +304,6 @@ class S4UKerberosTests(KDCBaseTest):
                 ctype=None)
 
             return [pa_s4u], req_body
-
-        expect_status = self.expect_nt_status and expected_status is not None
 
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=realm,
@@ -710,6 +710,7 @@ class S4UKerberosTests(KDCBaseTest):
         service2_etypes = service2_creds.tgs_supported_enctypes
 
         expected_error_mode = kdc_dict.pop('expected_error_mode')
+        expect_status = kdc_dict.pop('expect_status', None)
         expected_status = kdc_dict.pop('expected_status', None)
         if expected_error_mode:
             check_error_fn = self.generic_check_kdc_error
@@ -718,6 +719,7 @@ class S4UKerberosTests(KDCBaseTest):
             check_error_fn = None
             check_rep_fn = self.generic_check_kdc_rep
 
+            self.assertIsNone(expect_status)
             self.assertIsNone(expected_status)
 
         expect_edata = kdc_dict.pop('expect_edata', None)
@@ -735,8 +737,6 @@ class S4UKerberosTests(KDCBaseTest):
 
         transited_service = f'host/{service1_name}@{service1_realm}'
         expected_transited_services.append(transited_service)
-
-        expect_status = self.expect_nt_status and expected_status is not None
 
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=client_realm,
@@ -873,6 +873,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_BADOPTION,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_delegation': False
             })
@@ -935,6 +937,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_BADOPTION,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
                 'allow_delegation': True,
                 'modify_client_tkt_fn': functools.partial(
@@ -1000,6 +1004,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_BADOPTION,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_FOUND,
                 'allow_rbcd': False,
                 'pac_options': '0001'  # supports RBCD
@@ -1013,6 +1019,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_MODIFIED,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
@@ -1027,6 +1035,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_MODIFIED,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NO_MATCH,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
@@ -1058,6 +1068,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_MODIFIED,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
@@ -1075,6 +1087,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_MODIFIED,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NO_MATCH,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
@@ -1112,6 +1126,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_BADOPTION,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
@@ -1127,6 +1143,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_BADOPTION,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_rbcd': True,
                 'pac_options': '1'  # does not support RBCD
@@ -1141,6 +1159,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': KDC_ERR_BADOPTION,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NO_MATCH,
                 'allow_rbcd': True,
                 'pac_options': '1',  # does not support RBCD
@@ -1171,6 +1191,8 @@ class S4UKerberosTests(KDCBaseTest):
             {
                 'expected_error_mode': (KDC_ERR_MODIFIED,
                                         KDC_ERR_BAD_INTEGRITY),
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
@@ -1207,6 +1229,9 @@ class S4UKerberosTests(KDCBaseTest):
                 self._run_delegation_test(
                     {
                         'expected_error_mode': KDC_ERR_GENERIC,
+                        # We aren’t particular about whether or not we get an
+                        # NTSTATUS.
+                        'expect_status': None,
                         'expected_status':
                             ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES,
                         'allow_delegation': True,
@@ -1228,6 +1253,9 @@ class S4UKerberosTests(KDCBaseTest):
                 self._run_delegation_test(
                     {
                         'expected_error_mode': expected_error_mode,
+                        # We aren’t particular about whether or not we get an
+                        # NTSTATUS.
+                        'expect_status': None,
                         'expected_status':
                             ntstatus.NT_STATUS_NOT_SUPPORTED,
                         'allow_rbcd': True,
@@ -1246,6 +1274,9 @@ class S4UKerberosTests(KDCBaseTest):
                 self._run_delegation_test(
                     {
                         'expected_error_mode': KDC_ERR_GENERIC,
+                        # We aren’t particular about whether or not we get an
+                        # NTSTATUS.
+                        'expect_status': None,
                         'expected_status':
                             ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES,
                         'allow_rbcd': True,
@@ -1275,14 +1306,19 @@ class S4UKerberosTests(KDCBaseTest):
                 if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
                     expected_error_mode = (KDC_ERR_MODIFIED,
                                            KDC_ERR_BAD_INTEGRITY)
+                    # We aren’t particular about whether or not we get an
+                    # NTSTATUS.
+                    expect_status = None
                     expected_status = ntstatus.NT_STATUS_WRONG_PASSWORD
                 else:
                     expected_error_mode = 0
+                    expect_status = None
                     expected_status = None
 
                 self._run_delegation_test(
                     {
                         'expected_error_mode': expected_error_mode,
+                        'expect_status': expect_status,
                         'expected_status': expected_status,
                         'allow_delegation': True,
                         'modify_service_tgt_fn': functools.partial(
@@ -1298,6 +1334,9 @@ class S4UKerberosTests(KDCBaseTest):
                 self._run_delegation_test(
                     {
                         'expected_error_mode': KDC_ERR_MODIFIED,
+                        # We aren’t particular about whether or not we get an
+                        # NTSTATUS.
+                        'expect_status': None,
                         'expected_status':
                             ntstatus.NT_STATUS_NOT_SUPPORTED,
                         'allow_rbcd': True,
@@ -1314,14 +1353,19 @@ class S4UKerberosTests(KDCBaseTest):
             with self.subTest(checksum=checksum):
                 if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
                     expected_error_mode = KDC_ERR_MODIFIED
+                    # We aren’t particular about whether or not we get an
+                    # NTSTATUS.
+                    expect_status = None
                     expected_status = ntstatus.NT_STATUS_WRONG_PASSWORD
                 else:
                     expected_error_mode = 0
+                    expect_status = None
                     expected_status = None
 
                 self._run_delegation_test(
                     {
                         'expected_error_mode': expected_error_mode,
+                        'expect_status': expect_status,
                         'expected_status': expected_status,
                         'allow_rbcd': True,
                         'pac_options': '0001',  # supports RBCD
@@ -1360,6 +1404,9 @@ class S4UKerberosTests(KDCBaseTest):
             for ctype in self.unkeyed_ctypes:
                 with self.subTest(checksum=checksum, ctype=ctype):
                     if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
+                        # We aren’t particular about whether or not we get an
+                        # NTSTATUS.
+                        expect_status = None
                         if ctype == Cksumtype.SHA1:
                             expected_error_mode = (KDC_ERR_SUMTYPE_NOSUPP,
                                                    KDC_ERR_INAPP_CKSUM)
@@ -1371,11 +1418,13 @@ class S4UKerberosTests(KDCBaseTest):
                                 ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
                     else:
                         expected_error_mode = 0
+                        expect_status = None
                         expected_status = None
 
                     self._run_delegation_test(
                         {
                             'expected_error_mode': expected_error_mode,
+                            'expect_status': expect_status,
                             'expected_status': expected_status,
                             'allow_delegation': True,
                             'modify_service_tgt_fn': functools.partial(
@@ -1399,6 +1448,9 @@ class S4UKerberosTests(KDCBaseTest):
                     self._run_delegation_test(
                         {
                             'expected_error_mode': expected_error_mode,
+                            # We aren’t particular about whether or not we get
+                            # an NTSTATUS.
+                            'expect_status': None,
                             'expected_status':
                                 ntstatus.NT_STATUS_NOT_SUPPORTED,
                             'allow_rbcd': True,
@@ -1416,6 +1468,9 @@ class S4UKerberosTests(KDCBaseTest):
             for ctype in self.unkeyed_ctypes:
                 with self.subTest(checksum=checksum, ctype=ctype):
                     if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
+                        # We aren’t particular about whether or not we get an
+                        # NTSTATUS.
+                        expect_status = None
                         if ctype == Cksumtype.SHA1:
                             expected_error_mode = KDC_ERR_SUMTYPE_NOSUPP
                             expected_status = ntstatus.NT_STATUS_LOGON_FAILURE
@@ -1425,11 +1480,13 @@ class S4UKerberosTests(KDCBaseTest):
                                 ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
                     else:
                         expected_error_mode = 0
+                        expect_status = None
                         expected_status = None
 
                     self._run_delegation_test(
                         {
                             'expected_error_mode': expected_error_mode,
+                            'expect_status': expect_status,
                             'expected_status': expected_status,
                             'allow_rbcd': True,
                             'pac_options': '0001',  # supports RBCD
@@ -1469,6 +1526,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': expected_error_mode,
+                # We aren’t particular about whether or not we get an NTSTATUS.
+                'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
