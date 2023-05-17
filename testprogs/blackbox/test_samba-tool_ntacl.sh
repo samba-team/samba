@@ -2,13 +2,14 @@
 # Blackbox tests for samba-tool ntacl get/set on member server
 # Copyright (C) 2018 Björn Baumbach <bb@sernet.de>
 
-if [ $# -ne 2 ]; then
-	echo "Usage: test_samba-tool_ntacl.sh PREFIX DOMSID"
+if [ $# -ne 3 ]; then
+	echo "Usage: test_samba-tool_ntacl.sh PREFIX DOMSID CONFIGURATION"
 	exit 1
 fi
 
 PREFIX=$1
 domain_sid=$2
+CONFIGURATION=$3
 
 failed=0
 
@@ -50,7 +51,7 @@ test_get_acl_ntvfs()
 	testfile="$1"
 	exptextedacl="$2"
 
-	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl --use-ntvfs --xattr-backend=tdb --configfile=$PREFIX/ad_member/lib/server.conf) || return $?
+	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl --use-ntvfs --xattr-backend=tdb $CONFIGURATION) || return $?
 
 	test "$retacl" = "$exptextedacl"
 }
@@ -60,7 +61,7 @@ test_set_acl_ntvfs()
 	testfile="$1"
 	acl="$2"
 
-	$PYTHON $samba_tool ntacl set "$acl" "$testfile" --use-ntvfs --xattr-backend=tdb --configfile=$PREFIX/ad_member/lib/server.conf
+	$PYTHON $samba_tool ntacl set "$acl" "$testfile" --use-ntvfs --xattr-backend=tdb $CONFIGURATION
 }
 
 test_changedomsid()
@@ -70,13 +71,13 @@ test_changedomsid()
 	$PYTHON $samba_tool ntacl changedomsid \
 		"$domain_sid" "$new_domain_sid" "$testfile" \
 		--service=tmp \
-		--configfile=$PREFIX/ad_member/lib/server.conf
+		$CONFIGURATION
 
 	retacl=$($PYTHON $samba_tool ntacl get \
 		"$testfile" \
 		--as-sddl \
 		--service=tmp \
-		--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
+		$CONFIGURATION) || return $?
 
 	test "$retacl" = "$new_acl_without_padding"
 }
@@ -89,14 +90,14 @@ test_changedomsid_ntvfs()
 		"$domain_sid" "$new_domain_sid" "$testfile" \
 		--use-ntvfs \
 		--xattr-backend=tdb \
-		--configfile=$PREFIX/ad_member/lib/server.conf
+		$CONFIGURATION
 
 	retacl=$($PYTHON $samba_tool ntacl get \
 		"$testfile" \
 		--as-sddl \
 		--xattr-backend=tdb \
 		--use-ntvfs \
-		--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
+		$CONFIGURATION) || return $?
 	test "$retacl" = "$new_acl_without_padding"
 }
 
