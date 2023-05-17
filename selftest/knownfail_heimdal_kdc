@@ -57,13 +57,6 @@
 #
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samr_change_password_protected.ad_dc
 #
-# Lockout tests
-#
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc_ntstatus.ad_dc:local
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_bad_pwd_kdc_ntstatus.ad_dc:local
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_kdc_ntstatus.ad_dc:local
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_rename_kdc_ntstatus.ad_dc:local
-#
 # Group tests
 #
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_nested_group_addition_compression_tgs_req_to_service.ad_dc
@@ -132,7 +125,6 @@
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_samr_pwd_change_deny_service_allowed_from.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_samr_pwd_change_deny_service_not_allowed_from.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_simple_bind_deny_user.ad_dc
-^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_tgt_lifetime_min.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_allowed_to_computer_allow_asserted_identity.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_allowed_to_computer_allow_claims_valid.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_allowed_to_computer_allow_compounded_auth.ad_dc

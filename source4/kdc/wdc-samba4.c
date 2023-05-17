@@ -685,28 +685,43 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 						  password_change);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		krb5_error_code ret;
+		krb5_error_code ret2;
+
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
 			return ENOMEM;
 		}
 
+		ret = samba_kdc_map_policy_err(nt_status);
+
+		/*
+		 * Add the NTSTATUS to the request so we can return it in the
+		 * ‘e-data’ field later.
+		 */
+		ret2 = hdb_samba4_set_ntstatus(r, nt_status, ret);
+		if (ret2) {
+			ret = ret2;
+		}
+
 		if (kdc_request_get_rep(r)->padata) {
-			int ret;
 			krb5_data kd;
 
 			samba_kdc_build_edata_reply(nt_status, &kd);
-			ret = krb5_padata_add(kdc_request_get_context((kdc_request_t)r), kdc_request_get_rep(r)->padata,
-					      KRB5_PADATA_PW_SALT,
-					      kd.data, kd.length);
-			if (ret != 0) {
+			ret2 = krb5_padata_add(kdc_request_get_context((kdc_request_t)r), kdc_request_get_rep(r)->padata,
+					       KRB5_PADATA_PW_SALT,
+					       kd.data, kd.length);
+			if (ret2) {
 				/*
 				 * So we do not leak the allocated
 				 * memory on kd in the error case
 				 */
 				krb5_data_free(&kd);
+
+				ret = ret2;
 			}
 		}
 
-		return samba_kdc_map_policy_err(nt_status);
+		return ret;
 	}
 
 	/* Now do the standard Heimdal check */

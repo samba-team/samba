@@ -570,6 +570,96 @@ krb5_error_code hdb_samba4_set_ntstatus(astgs_request_t r,
 	return 0;
 }
 
+static krb5_error_code hdb_samba4_make_nt_status_edata(const NTSTATUS status,
+						       const uint32_t flags,
+						       krb5_data *edata_out)
+{
+    const uint32_t status_code = NT_STATUS_V(status);
+    const uint32_t zero = 0;
+    KERB_ERROR_DATA error_data;
+    krb5_data e_data;
+
+    krb5_error_code ret;
+    size_t size;
+
+    /* The raw KERB-ERR-TYPE-EXTENDED structure. */
+    uint8_t data[12];
+
+    PUSH_LE_U32(data, 0, status_code);
+    PUSH_LE_U32(data, 4, zero);
+    PUSH_LE_U32(data, 8, flags);
+
+    e_data = (krb5_data) {
+	    .data = &data,
+	    .length = sizeof(data),
+    };
+
+    error_data = (KERB_ERROR_DATA) {
+	    .data_type = kERB_ERR_TYPE_EXTENDED,
+	    .data_value = &e_data,
+    };
+
+    ASN1_MALLOC_ENCODE(KERB_ERROR_DATA,
+		       edata_out->data, edata_out->length,
+		       &error_data,
+		       &size, ret);
+    if (ret) {
+	    return ret;
+    }
+    if (size != edata_out->length) {
+	    /* Internal ASN.1 encoder error */
+	    krb5_data_free(edata_out);
+	    return KRB5KRB_ERR_GENERIC;
+    }
+
+    return 0;
+}
+
+static krb5_error_code hdb_samba4_set_edata_from_ntstatus(hdb_request_t r, const NTSTATUS status)
+{
+	const KDC_REQ *req = kdc_request_get_req((astgs_request_t)r);
+	krb5_error_code ret = 0;
+	krb5_data e_data;
+	uint32_t flags = 1;
+
+	if (req->msg_type == krb_tgs_req) {
+		/* This flag is used to indicate a TGS-REQ. */
+		flags |= 2;
+	}
+
+	ret = hdb_samba4_make_nt_status_edata(status, flags, &e_data);
+	if (ret) {
+		return ret;
+	}
+
+	ret = kdc_set_e_data((astgs_request_t)r, e_data);
+	if (ret) {
+		krb5_data_free(&e_data);
+	}
+
+	return ret;
+}
+
+static NTSTATUS hdb_samba4_get_ntstatus(hdb_request_t r)
+{
+	struct hdb_ntstatus_obj *status_obj = NULL;
+
+	status_obj = heim_audit_getkv((heim_svc_req_desc)r, SAMBA_HDB_NT_STATUS);
+	if (status_obj == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (r->error_code != status_obj->current_error) {
+		/*
+		 * The error code has changed from what we expect. Consider the
+		 * NTSTATUS to be invalidated.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	return status_obj->status;
+}
+
 static krb5_error_code hdb_samba4_audit(krb5_context context,
 					HDB *db,
 					hdb_entry *entry,
@@ -589,6 +679,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	struct auth_usersupplied_info ui;
 	size_t sa_socklen = 0;
 	krb5_error_code final_ret = 0;
+	NTSTATUS edata_status;
+
+	edata_status = hdb_samba4_get_ntstatus(r);
 
 	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_AUTH_EVENT);
 	if (hdb_auth_status_obj == NULL) {
@@ -705,6 +798,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			status = authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
 								  domain_dn, true, frame, &send_to_sam);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+				edata_status = status;
+
 				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 				r->error_code = final_ret;
 				rwdc_fallback = kdc_db_ctx->rodc;
@@ -712,8 +807,14 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				final_ret = KRB5KRB_ERR_GENERIC;
 				r->error_code = final_ret;
 				rwdc_fallback = kdc_db_ctx->rodc;
-			} else if (kdc_db_ctx->rodc && send_to_sam != NULL) {
-				reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
+			} else {
+				if (r->error_code == KRB5KDC_ERR_NEVER_VALID) {
+					edata_status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
+				}
+
+				if (kdc_db_ctx->rodc && send_to_sam != NULL) {
+					reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
+				}
 			}
 
 			/* This is the final sucess */
@@ -758,6 +859,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
 			status = authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+				edata_status = status;
+
 				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 				r->error_code = final_ret;
 			} else {
@@ -765,7 +868,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			}
 			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_LOCKED_OUT) {
-			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+			edata_status = status = NT_STATUS_ACCOUNT_LOCKED_OUT;
 			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_NAME_UNAUTHORIZED) {
 			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
@@ -787,6 +890,15 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			status = NT_STATUS_INTERNAL_ERROR;
 			final_ret = KRB5KRB_ERR_GENERIC;
 			r->error_code = final_ret;
+		}
+
+		if (!NT_STATUS_IS_OK(edata_status)) {
+			krb5_error_code code;
+
+			code = hdb_samba4_set_edata_from_ntstatus(r, edata_status);
+			if (code) {
+				r->error_code = final_ret = code;
+			}
 		}
 
 		if (rwdc_fallback) {

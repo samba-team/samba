@@ -1205,7 +1205,7 @@ expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_padata = int('SAMBA4_USES_HEIMDAL' in config_hash)
-expect_nt_status = 0
+expect_nt_status = int('SAMBA4_USES_HEIMDAL' in config_hash)
 krb5_environ = {
     'SERVICE_USERNAME': '$SERVER',
     'ADMIN_USERNAME': '$DC_USERNAME',
