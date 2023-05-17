@@ -773,8 +773,8 @@ static int get_all_claims(struct ldb_context *ldb,
 
 	/*
 	 * Allocate enough space for all AD claim attributes, followed by space
-	 * for a NULL marker (so it can be passed as the attributes filter to
-	 * ldb_search()).
+	 * for a NULL marker (so it can be passed as the attributes filter to an
+	 * LDB search).
 	 */
 	ad_claim_attrs = talloc_array(tmp_ctx,
 				      const char *,
@@ -920,8 +920,7 @@ static int get_all_claims(struct ldb_context *ldb,
 	}
 
 	if (ad_claims_count) {
-		struct ldb_result *principal_res = NULL;
-		const struct ldb_message *principal_msg = NULL;
+		struct ldb_message *principal_msg = NULL;
 
 		/* Shrink the arrays to remove any unused space. */
 		ad_claim_attrs = talloc_realloc(tmp_ctx,
@@ -943,10 +942,14 @@ static int get_all_claims(struct ldb_context *ldb,
 			return ldb_oom(ldb);
 		}
 
-		ret = ldb_search(ldb, tmp_ctx, &principal_res,
-				 principal->dn,
-				 LDB_SCOPE_BASE,
-				 ad_claim_attrs, NULL);
+		ret = dsdb_search_one(ldb,
+				      tmp_ctx,
+				      &principal_msg,
+				      principal->dn,
+				      LDB_SCOPE_BASE,
+				      ad_claim_attrs,
+				      0,
+				      NULL);
 		if (ret != LDB_SUCCESS) {
 			const char *dn = ldb_dn_get_linearized(principal->dn);
 			DBG_ERR("Failed to find principal %s to construct claims\n",
@@ -954,8 +957,6 @@ static int get_all_claims(struct ldb_context *ldb,
 			talloc_free(tmp_ctx);
 			return ret;
 		}
-
-		principal_msg = principal_res->msgs[0];
 
 		/*
 		 * Ensure that only the attrs we asked for end up in the results
@@ -969,7 +970,7 @@ static int get_all_claims(struct ldb_context *ldb,
 			uint32_t new_claims_array_count = claims_set.claims_array_count;
 
 			/* Get the value of the claim attribute for the principal. */
-			principal_attribute = ldb_msg_find_element(principal_res->msgs[0],
+			principal_attribute = ldb_msg_find_element(principal_msg,
 								   ad_claims[i].attribute);
 			if (principal_attribute == NULL) {
 				continue;
