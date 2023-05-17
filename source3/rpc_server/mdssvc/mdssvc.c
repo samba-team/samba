@@ -189,7 +189,7 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 				return false;
 			}
 		} else if (strcmp(attribute, "kMDItemFSContentChangeDate") == 0) {
-			sl_time.tv_sec = sp->st_ex_mtime.tv_sec;
+			sl_time = convert_timespec_to_timeval(sp->st_ex_mtime);
 			result = dalloc_add_copy(meta, &sl_time, sl_time_t);
 			if (result != 0) {
 				return false;
