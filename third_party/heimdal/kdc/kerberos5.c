@@ -505,6 +505,27 @@ _kdc_set_e_text(astgs_request_t r, const char *fmt, ...)
     kdc_log(r->context, r->config, 4, "%s", e_text);
 }
 
+/*
+ * Override the e-data field to be returned in an error reply. The data will be
+ * owned by the KDC and eventually will be freed with krb5_data_free().
+ */
+krb5_error_code
+kdc_set_e_data(astgs_request_t r, heim_octet_string e_data)
+{
+    if (r->e_data == NULL) {
+	ALLOC(r->e_data);
+	if (r->e_data == NULL) {
+	    return ENOMEM;
+	}
+    } else {
+	krb5_data_free(r->e_data);
+    }
+
+    *r->e_data = e_data;
+
+    return 0;
+}
+
 void
 _kdc_log_timestamp(astgs_request_t r, const char *type,
 		   KerberosTime authtime, KerberosTime *starttime,
@@ -2304,14 +2325,16 @@ _kdc_as_rep(astgs_request_t r)
 		    /*
 		     * If there is a client key, send ETYPE_INFO{,2}
 		     */
-		    ret2 = _kdc_find_etype(r, KFE_IS_PREAUTH|KFE_USE_CLIENT,
-					   b->etype.val, b->etype.len,
-					   NULL, &ckey, &default_salt);
-		    if (ret2 == 0) {
-			ret2 = get_pa_etype_info_both(r->context, config, &b->etype,
-						      r->rep.padata, ckey, !default_salt);
-			if (ret2 != 0)
-			    ret = ret2;
+		    if (!r->client->flags.locked_out) {
+			    ret2 = _kdc_find_etype(r, KFE_IS_PREAUTH|KFE_USE_CLIENT,
+						   b->etype.val, b->etype.len,
+						   NULL, &ckey, &default_salt);
+			    if (ret2 == 0) {
+				ret2 = get_pa_etype_info_both(r->context, config, &b->etype,
+				                              r->rep.padata, ckey, !default_salt);
+				if (ret2 != 0)
+				    ret = ret2;
+			    }
 		    }
 		    goto out;
 		}

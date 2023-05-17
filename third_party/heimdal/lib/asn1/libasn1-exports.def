@@ -450,6 +450,7 @@ EXPORTS
 	copy_KERB_CRED
 	copy_KerberosString
 	copy_KerberosTime
+	copy_KERB_ERROR_DATA
 	copy_KERB_TGS_REP_IN
 	copy_KERB_TGS_REP_OUT
 	copy_KERB_TGS_REQ_IN
@@ -815,6 +816,7 @@ EXPORTS
 	decode_KERB_CRED
 	decode_KerberosString
 	decode_KerberosTime
+	decode_KERB_ERROR_DATA
 	decode_KERB_TGS_REP_IN
 	decode_KERB_TGS_REP_OUT
 	decode_KERB_TGS_REQ_IN
@@ -1326,6 +1328,7 @@ EXPORTS
 	encode_KERB_CRED
 	encode_KerberosString
 	encode_KerberosTime
+	encode_KERB_ERROR_DATA
 	encode_KERB_TGS_REP_IN
 	encode_KERB_TGS_REP_OUT
 	encode_KERB_TGS_REQ_IN
@@ -1692,6 +1695,7 @@ EXPORTS
 	free_KERB_CRED
 	free_KerberosString
 	free_KerberosTime
+	free_KERB_ERROR_DATA
 	free_KERB_TGS_REP_IN
 	free_KERB_TGS_REP_OUT
 	free_KERB_TGS_REQ_IN
@@ -2077,6 +2081,7 @@ EXPORTS
 	length_KERB_CRED
 	length_KerberosString
 	length_KerberosTime
+	length_KERB_ERROR_DATA
 	length_KERB_TGS_REP_IN
 	length_KERB_TGS_REP_OUT
 	length_KERB_TGS_REQ_IN
@@ -2441,6 +2446,7 @@ EXPORTS
 	print_KERB_CRED
 	print_KerberosString
 	print_KerberosTime
+	print_KERB_ERROR_DATA
 	print_KERB_TGS_REP_IN
 	print_KERB_TGS_REP_OUT
 	print_KERB_TGS_REQ_IN

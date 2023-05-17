@@ -65,6 +65,7 @@ EXPORTS
 	kdc_request_set_reply_key
 	kdc_request_set_server_princ
 	kdc_request_set_sname
+	kdc_set_e_data
 	kdc_audit_addkv
 	kdc_audit_addkv_number
 	kdc_audit_addkv_object

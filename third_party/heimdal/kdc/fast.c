@@ -323,8 +323,8 @@ _kdc_fast_mk_response(krb5_context context,
 }
 
 
-krb5_error_code
-_kdc_fast_mk_error(astgs_request_t r,
+static krb5_error_code
+_kdc_fast_mk_e_data(astgs_request_t r,
 		   METHOD_DATA *error_method,
 		   krb5_crypto armor_crypto,
 		   const KDC_REQ_BODY *req_body,
@@ -332,15 +332,10 @@ _kdc_fast_mk_error(astgs_request_t r,
 		   krb5_principal error_client,
 		   krb5_principal error_server,
 		   time_t *csec, int *cusec,
-		   krb5_data *error_msg)
+		   krb5_data *e_data)
 {
-    krb5_error_code ret;
-    krb5_data e_data;
+    krb5_error_code ret = 0;
     size_t size;
-
-    krb5_data_zero(&e_data);
-
-    heim_assert(r != NULL, "invalid request in _kdc_fast_mk_error");
 
     /*
      * FX-COOKIE can be used outside of FAST, e.g. SRP or GSS.
@@ -375,7 +370,7 @@ _kdc_fast_mk_error(astgs_request_t r,
 			    error_server,
 			    NULL,
 			    NULL,
-			    &e_data);
+			    e_data);
 	if (ret) {
 	    kdc_log(r->context, r->config, 1,
 		    "Failed to make inner KRB-ERROR: %d", ret);
@@ -384,11 +379,11 @@ _kdc_fast_mk_error(astgs_request_t r,
 
 	ret = krb5_padata_add(r->context, error_method,
 			      KRB5_PADATA_FX_ERROR,
-			      e_data.data, e_data.length);
+			      e_data->data, e_data->length);
 	if (ret) {
 	    kdc_log(r->context, r->config, 1,
 		    "Failed to make add FAST PADATA to inner KRB-ERROR: %d", ret);
-	    krb5_data_free(&e_data);
+	    krb5_data_free(e_data);
 	    return ret;
 	}
 
@@ -402,7 +397,7 @@ _kdc_fast_mk_error(astgs_request_t r,
 
 	ret = _kdc_fast_mk_response(r->context, armor_crypto,
 				    error_method, NULL, NULL,
-				    req_body->nonce, &e_data);
+				    req_body->nonce, e_data);
 	free_METHOD_DATA(error_method);
 	if (ret) {
 	    kdc_log(r->context, r->config, 1,
@@ -412,7 +407,7 @@ _kdc_fast_mk_error(astgs_request_t r,
 
 	ret = krb5_padata_add(r->context, error_method,
 			      KRB5_PADATA_FX_FAST,
-			      e_data.data, e_data.length);
+			      e_data->data, e_data->length);
 	if (ret) {
 	    kdc_log(r->context, r->config, 1,
 		    "Failed to make add FAST PADATA to outer KRB-ERROR: %d", ret);
@@ -422,26 +417,70 @@ _kdc_fast_mk_error(astgs_request_t r,
         kdc_log(r->context, r->config, 5, "Making non-FAST KRB-ERROR");
 
     if (error_method && error_method->len) {
-	ASN1_MALLOC_ENCODE(METHOD_DATA, e_data.data, e_data.length,
+	ASN1_MALLOC_ENCODE(METHOD_DATA, e_data->data, e_data->length,
 			   error_method, &size, ret);
 	if (ret) {
 	    kdc_log(r->context, r->config, 1,
 		    "Failed to make encode METHOD-DATA: %d", ret);
 	    return ret;
         }
-	heim_assert(size == e_data.length, "internal asn.1 encoder error");
+	heim_assert(size == e_data->length, "internal asn.1 encoder error");
+    }
+
+    return ret;
+}
+
+
+krb5_error_code
+_kdc_fast_mk_error(astgs_request_t r,
+		   METHOD_DATA *error_method,
+		   krb5_crypto armor_crypto,
+		   const KDC_REQ_BODY *req_body,
+		   krb5_error_code outer_error,
+		   krb5_principal error_client,
+		   krb5_principal error_server,
+		   time_t *csec, int *cusec,
+		   krb5_data *error_msg)
+{
+    krb5_error_code ret;
+    krb5_data _e_data;
+    krb5_data *e_data = NULL;
+
+    krb5_data_zero(&_e_data);
+
+    heim_assert(r != NULL, "invalid request in _kdc_fast_mk_error");
+
+    if (r->e_data != NULL) {
+	e_data = r->e_data;
+    } else {
+	ret = _kdc_fast_mk_e_data(r,
+				  error_method,
+				  armor_crypto,
+				  req_body,
+				  outer_error,
+				  error_client,
+				  error_server,
+				  csec, cusec,
+				  &_e_data);
+	if (ret) {
+	    kdc_log(r->context, r->config, 1,
+		    "Failed to make FAST e-data: %d", ret);
+	    return ret;
+	}
+
+	e_data = &_e_data;
     }
 
     ret = krb5_mk_error(r->context,
 			outer_error,
 			r->e_text,
-			(e_data.length ? &e_data : NULL),
+			(e_data->length ? e_data : NULL),
 			error_client,
 			error_server,
 			csec,
 			cusec,
 			error_msg);
-    krb5_data_free(&e_data);
+    krb5_data_free(&_e_data);
 
     if (ret)
         kdc_log(r->context, r->config, 1,

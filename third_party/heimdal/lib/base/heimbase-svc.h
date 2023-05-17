@@ -68,6 +68,7 @@
     char *cname;                                                \
     char *sname;                                                \
     const char *e_text;                                         \
+    heim_octet_string *e_data;                                  \
     char *e_text_buf;                                           \
     heim_string_t reason;                                       \
     /* auditing key/value store */                              \

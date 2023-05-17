@@ -90,7 +90,8 @@ EXPORTS
 	KERB-CRED,
 	KERB-TGS-REQ-IN,
 	KERB-TGS-REQ-OUT,
-	KERB-ARMOR-SERVICE-REPLY
+	KERB-ARMOR-SERVICE-REPLY,
+	KERB-ERROR-DATA
 	;
 
 NAME-TYPE ::= INTEGER {
@@ -602,6 +603,18 @@ PA-ENC-TS-ENC ::= SEQUENCE {
 PA-PAC-REQUEST ::= SEQUENCE {
 	include-pac[0]		BOOLEAN -- Indicates whether a PAC
 					-- should be included or not
+}
+
+-- MS-KILE
+
+KERB-ERROR-DATA ::= SEQUENCE {
+        data-type [1] KerbErrorDataType,
+        data-value [2] OCTET STRING OPTIONAL
+}
+
+KerbErrorDataType ::= INTEGER {
+        kERB-AP-ERR-TYPE-SKEW-RECOVERY(2),
+        kERB-ERR-TYPE-EXTENDED(3)
 }
 
 -- MS-KILE/MS-SFU
