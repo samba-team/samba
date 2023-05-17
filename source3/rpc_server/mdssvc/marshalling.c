@@ -43,8 +43,8 @@
  * RPC data marshalling and unmarshalling
  ******************************************************************************/
 
-/* Spotlight epoch is UNIX epoch minus SPOTLIGHT_TIME_DELTA */
-#define SPOTLIGHT_TIME_DELTA 280878921600ULL
+/* Spotlight epoch is 1.1.2001 00:00 UTC */
+#define SPOTLIGHT_TIME_DELTA 978307200 /* Diff from UNIX epoch to Spotlight epoch */
 
 #define SQ_TYPE_NULL    0x0000
 #define SQ_TYPE_COMPLEX 0x0200
@@ -253,6 +253,10 @@ static ssize_t sl_pack_date(sl_time_t t, char *buf, ssize_t offset, size_t bufsi
 {
 	uint64_t data;
 	uint64_t tag;
+	union {
+		double d;
+		uint64_t w;
+	} ieee_fp_union;
 
 	tag = sl_pack_tag(SQ_TYPE_DATE, 2, 1);
 	offset = sl_push_uint64_val(buf, offset, bufsize, tag);
@@ -260,7 +264,10 @@ static ssize_t sl_pack_date(sl_time_t t, char *buf, ssize_t offset, size_t bufsi
 		return -1;
 	}
 
-	data = (t.tv_sec + SPOTLIGHT_TIME_DELTA) << 24;
+	ieee_fp_union.d = (double)(t.tv_sec - SPOTLIGHT_TIME_DELTA);
+	ieee_fp_union.d += (double)t.tv_usec / 1000000;
+
+	data = ieee_fp_union.w;
 	offset = sl_push_uint64_val(buf, offset, bufsize, data);
 	if (offset == -1) {
 		return -1;
@@ -723,6 +730,11 @@ static int sl_unpack_date(DALLOC_CTX *query,
 	int i, result;
 	struct sl_tag tag;
 	uint64_t query_data64;
+	union {
+		double d;
+		uint64_t w;
+	} ieee_fp_union;
+	double fraction;
 	sl_time_t t;
 
 	offset = sl_unpack_tag(buf, offset, bufsize, encoding, &tag);
@@ -735,9 +747,14 @@ static int sl_unpack_date(DALLOC_CTX *query,
 		if (offset == -1) {
 			return -1;
 		}
-		query_data64 = query_data64 >> 24;
-		t.tv_sec = query_data64 - SPOTLIGHT_TIME_DELTA;
-		t.tv_usec = 0;
+		ieee_fp_union.w = query_data64;
+		fraction = ieee_fp_union.d - (uint64_t)ieee_fp_union.d;
+
+		t = (sl_time_t) {
+			.tv_sec = ieee_fp_union.d + SPOTLIGHT_TIME_DELTA,
+			.tv_usec = fraction * 1000000
+		};
+
 		result = dalloc_add_copy(query, &t, sl_time_t);
 		if (result != 0) {
 			return -1;
