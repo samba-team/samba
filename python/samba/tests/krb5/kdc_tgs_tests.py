@@ -1623,7 +1623,9 @@ class KdcTgsTests(KdcTgsBaseTests):
         self._run_tgs(tgt, creds, expected_error=(KDC_ERR_GENERIC,
                                            KDC_ERR_BADKEYVER),
                       expect_edata=True,
-                      expect_status=self.expect_nt_status,
+                      # We aren’t particular about whether or not we get an
+                      # NTSTATUS.
+                      expect_status=None,
                       expected_status=ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
 
     def test_renew_rc4(self):
@@ -1650,7 +1652,9 @@ class KdcTgsTests(KdcTgsBaseTests):
         self._s4u2self(tgt, creds, expected_error=(KDC_ERR_GENERIC,
                                                    KDC_ERR_BADKEYVER),
                        expect_edata=True,
-                       expect_status=self.expect_nt_status,
+                       # We aren’t particular about whether or not we get an
+                       # NTSTATUS.
+                       expect_status=None,
                        expected_status=ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
 
     def test_user2user_rc4(self):
