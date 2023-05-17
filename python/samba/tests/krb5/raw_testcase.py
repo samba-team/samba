@@ -4975,7 +4975,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return pac
 
-    def modify_requester_sid_time(self, ticket, sid, lifetime):
+    def modify_requester_sid_time(self, ticket, lifetime, requester_sid=None):
         # Get the krbtgt key.
         krbtgt_creds = self.get_krbtgt_creds()
 
@@ -5021,10 +5021,11 @@ class RawKerberosTest(TestCaseInTempDir):
 
             return pac
 
-        # Add a requester SID to show that the KDC will then accept this
-        # kpasswd ticket as if it were a TGT.
         def modify_pac_fn(pac):
-            pac = self.add_requester_sid(pac, sid=sid)
+            if requester_sid is not None:
+                # Add a requester SID to show that the KDC will then accept
+                # this kpasswd ticket as if it were a TGT.
+                pac = self.add_requester_sid(pac, sid=requester_sid)
             pac = modify_pac_time(pac)
             return pac
 

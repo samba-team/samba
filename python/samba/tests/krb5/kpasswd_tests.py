@@ -645,8 +645,8 @@ class KpasswdTests(KDCBaseTest):
         # Modify the ticket to add a requester SID and give it two minutes to
         # live.
         ticket = self.modify_requester_sid_time(ticket,
-                                                sid=user_sid,
-                                                lifetime=2 * 60)
+                                                lifetime=2 * 60,
+                                                requester_sid=user_sid)
 
         # Try to use that ticket to get a service ticket.
         service_creds = self.get_service_creds()
@@ -679,8 +679,8 @@ class KpasswdTests(KDCBaseTest):
         # Modify the ticket to add a requester SID and give it two minutes and
         # ten seconds to live.
         ticket = self.modify_requester_sid_time(ticket,
-                                                sid=user_sid,
-                                                lifetime=2 * 60 + 10)
+                                                lifetime=2 * 60 + 10,
+                                                requester_sid=user_sid)
 
         # Try to use that ticket to get a service ticket.
         service_creds = self.get_service_creds()
