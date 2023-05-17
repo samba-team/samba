@@ -618,8 +618,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	default:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
-		struct samba_kdc_entry *p = talloc_get_type(entry->context,
-							    struct samba_kdc_entry);
+		struct samba_kdc_entry *p = talloc_get_type_abort(entry->context,
+								  struct samba_kdc_entry);
 		struct dom_sid *sid
 			= samdb_result_dom_sid(frame, p->msg, "objectSid");
 		const char *account_name
