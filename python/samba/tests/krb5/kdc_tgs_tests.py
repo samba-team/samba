@@ -47,6 +47,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_REQUIRED,
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
+    KDC_ERR_TKT_EXPIRED,
     KDC_ERR_TGT_REVOKED,
     KRB_ERR_TKT_NYV,
     KDC_ERR_WRONG_REALM,
@@ -1667,6 +1668,39 @@ class KdcTgsTests(KdcTgsBaseTests):
         tgt = self._get_tgt(creds, etype=kcrypto.Enctype.RC4)
         self._fast(tgt, creds, expected_error=KDC_ERR_GENERIC,
                    expect_edata=self.expect_padata_outer)
+
+    # Test with a TGT that has the lifetime of a kpasswd ticket (two minutes).
+    def test_tgs_kpasswd(self):
+        creds = self._get_creds()
+        tgt = self.modify_lifetime(self._get_tgt(creds), lifetime=2 * 60)
+        self._run_tgs(tgt, creds, expected_error=KDC_ERR_TKT_EXPIRED)
+
+    def test_renew_kpasswd(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, renewable=True)
+        tgt = self.modify_lifetime(tgt, lifetime=2 * 60)
+        self._renew_tgt(tgt, creds, expected_error=KDC_ERR_TKT_EXPIRED)
+
+    def test_validate_kpasswd(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True)
+        tgt = self.modify_lifetime(tgt, lifetime=2 * 60)
+        self._validate_tgt(tgt, creds, expected_error=KDC_ERR_TKT_EXPIRED)
+
+    def test_s4u2self_kpasswd(self):
+        creds = self._get_creds()
+        tgt = self.modify_lifetime(self._get_tgt(creds), lifetime=2 * 60)
+        self._s4u2self(tgt, creds, expected_error=KDC_ERR_TKT_EXPIRED)
+
+    def test_user2user_kpasswd(self):
+        creds = self._get_creds()
+        tgt = self.modify_lifetime(self._get_tgt(creds), lifetime=2 * 60)
+        self._user2user(tgt, creds, expected_error=KDC_ERR_TKT_EXPIRED)
+
+    def test_fast_kpasswd(self):
+        creds = self._get_creds()
+        tgt = self.modify_lifetime(self._get_tgt(creds), lifetime=2 * 60)
+        self._fast(tgt, creds, expected_error=KDC_ERR_TKT_EXPIRED)
 
     # Test user-to-user with incorrect service principal names.
     def test_user2user_matching_sname_host(self):
