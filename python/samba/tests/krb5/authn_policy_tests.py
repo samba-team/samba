@@ -3611,6 +3611,122 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       generate_fast_padata_fn=generate_s4u2self_padata,
                       armor_tgt=mach_tgt)
 
+    # Obtain a service ticket with S4U2Self and use it to perform constrained
+    # delegation while a policy is in place.
+    def test_authn_policy_allowed_to_user_deny_s4u2self_constrained_delegation(self):
+        samdb = self.get_samdb()
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+        client_username = client_creds.get_username()
+        client_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[client_username])
+        client_realm = client_creds.get_realm()
+        client_sid = client_creds.get_sid()
+
+        # Create a target account.
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 1},
+            use_cache=False)
+        target_spn = target_creds.get_spn()
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        service_policy_id = self.get_new_username()
+        service_policy = self.create_authn_policy(service_policy_id,
+                                                  enforced=True,
+                                                  computer_allowed_to=denied)
+
+        # Create a computer account with the assigned policy.
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'assigned_policy': str(service_policy),
+                # Allow delegation to the target service.
+                'delegation_to_spn': target_spn,
+                'trusted_to_auth_for_delegation': True,
+            })
+        service_sid = service_creds.get_sid()
+        service_tgt = self.get_tgt(service_creds)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly allows the service account to obtain a service ticket,
+        # while denying the user.
+        allowed = f'O:SYD:(A;;CR;;;{service_sid})(D;;CR;;;{client_sid})'
+        target_policy_id = self.get_new_username()
+        target_policy = self.create_authn_policy(target_policy_id,
+                                                 enforced=True,
+                                                 computer_allowed_to=allowed)
+
+        # Assign the policy to the target account.
+        self.add_attribute(samdb, str(target_creds.get_dn()),
+                           'msDS-AssignedAuthNPolicy', str(target_policy))
+
+        def generate_s4u2self_padata(_kdc_exchange_dict,
+                                     _callback_dict,
+                                     req_body):
+            padata = self.PA_S4U2Self_create(
+                name=client_cname,
+                realm=client_realm,
+                tgt_session_key=service_tgt.session_key,
+                ctype=None)
+
+            return [padata], req_body
+
+        # Make sure the ticket is forwardable, so it can be used with
+        # constrained delegation.
+        forwardable_flag = 'forwardable'
+        client_tkt_options = str(krb5_asn1.KDCOptions(forwardable_flag))
+        expected_flags = krb5_asn1.TicketFlags(forwardable_flag)
+
+        # Show that obtaining a service ticket with S4U2Self is allowed,
+        # despite the policy.
+        client_service_tkt = self._tgs_req(
+            service_tgt, 0, service_creds, service_creds,
+            kdc_options=client_tkt_options,
+            expected_flags=expected_flags,
+            expected_cname=client_cname,
+            generate_fast_padata_fn=generate_s4u2self_padata,
+            armor_tgt=mach_tgt)
+
+        # Now perform constrained delegation with this service ticket.
+
+        kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
+
+        target_decryption_key = self.TicketDecryptionKey_from_creds(
+            target_creds)
+        target_etypes = target_creds.tgs_supported_enctypes
+
+        service_name = service_creds.get_username()
+        if service_name[-1] == '$':
+            service_name = service_name[:-1]
+        expected_transited_services = [
+            f'host/{service_name}@{service_creds.get_realm()}'
+        ]
+
+        # Show that obtaining a service ticket with constrained delegation is
+        # allowed.
+        self._tgs_req(service_tgt, 0, service_creds, target_creds,
+                      armor_tgt=mach_tgt,
+                      kdc_options=kdc_options,
+                      expected_cname=client_cname,
+                      expected_account_name=client_username,
+                      additional_ticket=client_service_tkt,
+                      decryption_key=target_decryption_key,
+                      expected_sid=client_sid,
+                      expected_supported_etypes=target_etypes,
+                      expected_proxy_target=target_spn,
+                      expected_transited_services=expected_transited_services)
+
     def test_authn_policy_allowed_to_user_allow_constrained_delegation(self):
         samdb = self.get_samdb()
 
