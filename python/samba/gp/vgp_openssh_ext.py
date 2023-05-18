@@ -31,6 +31,16 @@ intro = b'''
 
 '''
 
+# For each key value pair in sshd_config, the first obtained value will be
+# used. We must insert config files in reverse, so that the last applied policy
+# takes precedence.
+def select_next_conf(directory):
+    configs = [re.match(r'(\d+)', f) for f in os.listdir(directory)]
+    conf_ids = [int(m.group(1)) for m in configs if m]
+    conf_ids.append(9000000000) # The starting node
+    conf_id = min(conf_ids)-1
+    return os.path.join(directory, '%010d_gp.conf' % conf_id)
+
 class vgp_openssh_ext(gp_xml_ext, gp_file_applier):
     def __str__(self):
         return 'VGP/Unix Settings/OpenSSH'
@@ -72,13 +82,11 @@ class vgp_openssh_ext(gp_xml_ext, gp_file_applier):
                     if not os.path.isdir(cfg_dir):
                         os.mkdir(cfg_dir, 0o640)
                     def applier_func(cfg_dir, raw):
-                        f = NamedTemporaryFile(prefix='gp_',
-                                               delete=False,
-                                               dir=cfg_dir)
+                        filename = select_next_conf(cfg_dir)
+                        f = open(filename, 'wb')
                         f.write(intro)
                         f.write(raw.getvalue())
-                        os.chmod(f.name, 0o640)
-                        filename = f.name
+                        os.chmod(filename, 0o640)
                         f.close()
                         return [filename]
                     self.apply(gpo.name, attribute, value_hash, applier_func,
