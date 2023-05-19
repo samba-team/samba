@@ -42,6 +42,8 @@ extern PyTypeObject imessaging_Type;
 
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {
+	Py_ssize_t tuple_size;
+
 	if (!PyTuple_Check(object)) {
 		if (!py_check_dcerpc_type(object, "samba.dcerpc.server_id", "server_id")) {
 
@@ -51,7 +53,9 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 		*server_id = *pytalloc_get_type(object, struct server_id);
 		return true;
 	}
-	if (PyTuple_Size(object) == 3) {
+
+	tuple_size = PyTuple_Size(object);
+	if (tuple_size == 3) {
 		unsigned long long pid;
 		int task_id, vnn;
 
@@ -62,20 +66,23 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 		server_id->task_id = task_id;
 		server_id->vnn = vnn;
 		return true;
-	} else if (PyTuple_Size(object) == 2) {
+	} else if (tuple_size == 2) {
 		unsigned long long pid;
 		int task_id;
 		if (!PyArg_ParseTuple(object, "Ki", &pid, &task_id))
 			return false;
 		*server_id = cluster_id(pid, task_id);
 		return true;
-	} else {
+	} else if (tuple_size == 1) {
 		unsigned long long pid = getpid();
 		int task_id;
 		if (!PyArg_ParseTuple(object, "i", &task_id))
 			return false;
 		*server_id = cluster_id(pid, task_id);
 		return true;
+	} else {
+		PyErr_SetString(PyExc_ValueError, "Expected tuple containing one, two, or three elements");
+		return false;
 	}
 }
 
