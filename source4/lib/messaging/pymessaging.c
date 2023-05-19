@@ -519,7 +519,7 @@ PyTypeObject imessaging_Type = {
 	.tp_dealloc = py_imessaging_dealloc,
 	.tp_methods = py_imessaging_methods,
 	.tp_getset = py_imessaging_getset,
-	.tp_doc = "Messaging(own_id=None)\n" \
+	.tp_doc = "Messaging(own_id=None, lp_ctx=None)\n" \
 		  "Create a new object that can be used to communicate with the peers in the specified messaging path.\n"
 };
 
