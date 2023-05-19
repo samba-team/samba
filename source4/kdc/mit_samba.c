@@ -602,10 +602,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				   upn_dns_info_blob,
 				   pac_attrs_blob,
 				   requester_sid_blob,
-				   NULL, /* deleg_blob */
+				   NULL /* deleg_blob */,
 				   client_claims_blob,
-				   NULL, /* device_info_blob */
-				   NULL, /* device_claims_blob */
+				   NULL /* device_info_blob */,
+				   NULL /* device_claims_blob */,
 				   *pac);
 
 	talloc_free(tmp_ctx);
@@ -693,8 +693,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    flags,
 				    client_skdc_entry,
 				    krbtgt_skdc_entry,
-				    NULL, /* device */
-				    NULL, /* device_pac */
+				    NULL /* device */,
+				    NULL /* device_pac */,
 				    *pac);
 	if (code != 0) {
 		goto done;
@@ -714,8 +714,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    server->princ,
 				    server_skdc_entry,
 				    delegated_proxy_principal,
-				    NULL, /* device */
-				    NULL, /* device_pac */
+				    NULL /* device */,
+				    NULL /* device_pac */,
 				    *pac,
 				    new_pac);
 	if (code != 0) {
@@ -813,8 +813,8 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    flags,
 				    client_skdc_entry,
 				    krbtgt_skdc_entry,
-				    NULL, /* device */
-				    NULL, /* device_pac */
+				    NULL /* device */,
+				    NULL /* device_pac */,
 				    old_pac);
 	if (code != 0) {
 		goto done;
@@ -827,9 +827,9 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    client_skdc_entry,
 				    server->princ,
 				    server_skdc_entry,
-				    NULL, /* delegated_proxy_principal */
-				    NULL, /* device */
-				    NULL, /* device_pac */
+				    NULL /* delegated_proxy_principal */,
+				    NULL /* device */,
+				    NULL /* device_pac */,
 				    old_pac,
 				    new_pac);
 	if (code != 0) {
