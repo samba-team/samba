@@ -94,7 +94,7 @@ static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObj
 	imessaging_Object *ret;
 	struct loadparm_context *lp_ctx;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO:connect", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO",
 		discard_const_p(char *, kwnames), &own_id, &py_lp_ctx)) {
 		return NULL;
 	}
@@ -107,7 +107,7 @@ static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObj
 
 	lp_ctx = lpcfg_from_py_object(ret->mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "imessaging_connect unable to interpret loadparm_context");
+		PyErr_SetString(PyExc_RuntimeError, "unable to interpret loadparm_context");
 		talloc_free(ret->mem_ctx);
 		return NULL;
 	}
@@ -131,7 +131,7 @@ static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObj
 	}
 
 	if (ret->msg_ctx == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "imessaging_connect unable to create a messaging context");
+		PyErr_SetString(PyExc_RuntimeError, "unable to create a messaging context");
 		talloc_free(ret->mem_ctx);
 		return NULL;
 	}
