@@ -1185,6 +1185,12 @@ struct json_object json_get_object(struct json_object *object, const char *name)
 	json_t *v = NULL;
 	int ret = 0;
 
+	if (json_is_invalid(&o)) {
+		DBG_ERR("Unable to get object [%s]\n", name);
+		json_free(&o);
+		return o;
+	}
+
 	if (json_is_invalid(object)) {
 		DBG_ERR("Invalid JSON object, unable to get object [%s]\n",
 			name);
