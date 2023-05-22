@@ -3959,6 +3959,10 @@ static NTSTATUS fruit_streaminfo_rsrc(vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	NTSTATUS status;
 
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		return NT_STATUS_OK;
+	}
+
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_INTERNAL_ERROR);
 
