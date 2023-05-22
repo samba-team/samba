@@ -131,6 +131,7 @@ struct fruit_config_data {
 	const char *model;
 	bool time_machine;
 	off_t time_machine_max_size;
+	bool convert_adouble;
 	bool wipe_intentionally_left_blank_rfork;
 	bool delete_empty_adfiles;
 
@@ -380,6 +381,10 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	if (tm_size_str != NULL) {
 		config->time_machine_max_size = conv_str_size(tm_size_str);
 	}
+
+	config->convert_adouble = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+		"convert_adouble", true);
 
 	config->wipe_intentionally_left_blank_rfork = lp_parm_bool(
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
@@ -4290,7 +4295,10 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	if (is_apple_stream(smb_fname->stream_name) && !internal_open) {
+	if (is_apple_stream(smb_fname->stream_name) &&
+	    !internal_open &&
+	    config->convert_adouble)
+	{
 		uint32_t conv_flags  = 0;
 
 		if (config->wipe_intentionally_left_blank_rfork) {
@@ -4404,20 +4412,22 @@ static NTSTATUS fruit_freaddir_attr(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("Path [%s]\n", fsp_str_dbg(fsp));
 
-	if (config->wipe_intentionally_left_blank_rfork) {
-		conv_flags |= AD_CONV_WIPE_BLANK;
-	}
-	if (config->delete_empty_adfiles) {
-		conv_flags |= AD_CONV_DELETE;
-	}
+	if (config->convert_adouble) {
+		if (config->wipe_intentionally_left_blank_rfork) {
+			conv_flags |= AD_CONV_WIPE_BLANK;
+		}
+		if (config->delete_empty_adfiles) {
+			conv_flags |= AD_CONV_DELETE;
+		}
 
-	ret = ad_convert(handle,
-			 fsp->fsp_name,
-			 macos_string_replace_map,
-			 conv_flags);
-	if (ret != 0) {
-		DBG_ERR("ad_convert(\"%s\") failed\n",
-			fsp_str_dbg(fsp));
+		ret = ad_convert(handle,
+				 fsp->fsp_name,
+				 macos_string_replace_map,
+				 conv_flags);
+		if (ret != 0) {
+			DBG_ERR("ad_convert(\"%s\") failed\n",
+				fsp_str_dbg(fsp));
+		}
 	}
 
 	*pattr_data = talloc_zero(mem_ctx, struct readdir_attr_data);
