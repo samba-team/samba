@@ -1288,8 +1288,8 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 						      krb5_context context,
 						      const krb5_const_pac pac,
-						      const krb5_principal server_principal,
-						      const krb5_principal proxy_principal,
+						      const krb5_const_principal server_principal,
+						      const krb5_const_principal proxy_principal,
 						      DATA_BLOB *new_blob)
 {
 	krb5_data old_data;
