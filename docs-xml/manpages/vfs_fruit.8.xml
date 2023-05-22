@@ -406,6 +406,19 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:convert_adouble = yes | no</term>
+	    <listitem>
+	      <para>Whether an attempt shall be made to convert ._ AppleDouble
+	      sidecar files to native streams (xattrs when using
+	      vfs_streams_xattr). The main use case for this conversion is
+	      transparent migration from a server config without streams support
+	      where the macOS client created those AppleDouble sidecar
+	      files.</para>
+	      <para>The default is <emphasis>yes</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 
