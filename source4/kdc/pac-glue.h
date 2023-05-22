@@ -90,28 +90,12 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 					 const struct ldb_message *msg,
 					 const struct auth_user_info_dc **user_info_dc);
 
-NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
-				   krb5_context context,
-				   struct ldb_context *samdb,
-				   enum auth_group_inclusion group_inclusion,
-				   enum samba_compounded_auth compounded_auth,
-				   const krb5_const_pac pac, DATA_BLOB *pac_blob,
-				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
-				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);
-
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct samba_kdc_entry *skdc_entry,
 				    enum samba_asserted_identity asserted_identity,
 				    enum samba_claims_valid claims_valid,
 				    enum samba_compounded_auth compounded_auth,
 				    struct auth_user_info_dc **user_info_dc_out);
-
-NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
-				krb5_context context,
-				krb5_const_pac pac,
-				krb5_principal server_principal,
-				krb5_principal proxy_principal,
-				DATA_BLOB *pac_blob);
 
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status);
 

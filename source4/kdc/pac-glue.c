@@ -1213,14 +1213,14 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
-				   krb5_context context,
-				   struct ldb_context *samdb,
-				   const enum auth_group_inclusion group_inclusion,
-				   const enum samba_compounded_auth compounded_auth,
-				   const krb5_const_pac pac, DATA_BLOB *pac_blob,
-				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
-				   struct PAC_SIGNATURE_DATA *pac_kdc_sig)
+static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
+					  krb5_context context,
+					  struct ldb_context *samdb,
+					  const enum auth_group_inclusion group_inclusion,
+					  const enum samba_compounded_auth compounded_auth,
+					  const krb5_const_pac pac, DATA_BLOB *pac_blob,
+					  struct PAC_SIGNATURE_DATA *pac_srv_sig,
+					  struct PAC_SIGNATURE_DATA *pac_kdc_sig)
 {
 	struct auth_user_info_dc *user_info_dc;
 	krb5_error_code ret;
@@ -1285,12 +1285,12 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
-				krb5_context context,
-				const krb5_const_pac pac,
-				const krb5_principal server_principal,
-				const krb5_principal proxy_principal,
-				DATA_BLOB *new_blob)
+static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
+						      krb5_context context,
+						      const krb5_const_pac pac,
+						      const krb5_principal server_principal,
+						      const krb5_principal proxy_principal,
+						      DATA_BLOB *new_blob)
 {
 	krb5_data old_data;
 	DATA_BLOB old_blob;
