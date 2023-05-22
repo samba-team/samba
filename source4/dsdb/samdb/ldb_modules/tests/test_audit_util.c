@@ -47,6 +47,7 @@ static void test_dsdb_audit_add_ldb_value(void **state)
 	json_free(&object);
 
 	array = json_new_array();
+	assert_false(json_is_invalid(&array));
 	/*
 	 * Test a data_blob_null, should encode as a JSON null value.
 	 */
