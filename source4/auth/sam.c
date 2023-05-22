@@ -787,7 +787,7 @@ NTSTATUS authsam_shallow_copy_user_info_dc(TALLOC_CTX *mem_ctx,
 		 * tries to call talloc_realloc() on the original or the copy
 		 * will fail when called for any referenced talloc context.
 		 */
-		user_info_dc->sids = talloc_memdup(mem_ctx,
+		user_info_dc->sids = talloc_memdup(user_info_dc,
 						   user_info_dc->sids,
 						   talloc_get_size(user_info_dc->sids));
 		if (user_info_dc->sids == NULL) {
