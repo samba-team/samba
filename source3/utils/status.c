@@ -1078,7 +1078,9 @@ int main(int argc, const char *argv[])
 
 #ifdef HAVE_JANSSON
 	state.root_json = json_new_object();
-	add_general_information_to_json(&state);
+	if (!json_is_invalid(&state.root_json)) {
+		add_general_information_to_json(&state);
+	}
 #else /* HAVE_JANSSON */
 	if (state.json_output) {
 		fprintf(stderr, "JSON support not available, please install lib Jansson\n");
