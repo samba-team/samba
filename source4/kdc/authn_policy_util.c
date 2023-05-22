@@ -508,14 +508,8 @@ int authn_policy_kerberos_client(struct ldb_context *samdb,
 			authn_attrs.policy->allowed_to_authenticate_from);
 
 		if (allowed_from != NULL && allowed_from->data != NULL) {
-			uint8_t *allowed_from_data = talloc_reference(client_policy, allowed_from->data);
-			if (allowed_from_data == NULL) {
-				ret = ENOMEM;
-				goto out;
-			}
-
 			client_policy->allowed_to_authenticate_from = data_blob_const(
-				allowed_from_data,
+				talloc_steal(client_policy, allowed_from->data),
 				allowed_from->length);
 		}
 	}
