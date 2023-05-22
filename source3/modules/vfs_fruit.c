@@ -4305,8 +4305,8 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 				 macos_string_replace_map,
 				 conv_flags);
 		if (ret != 0) {
-			DBG_ERR("ad_convert() failed\n");
-			return NT_STATUS_UNSUCCESSFUL;
+			DBG_ERR("ad_convert(\"%s\") failed\n",
+				smb_fname_str_dbg(smb_fname));
 		}
 	}
 
@@ -4416,8 +4416,8 @@ static NTSTATUS fruit_freaddir_attr(struct vfs_handle_struct *handle,
 			 macos_string_replace_map,
 			 conv_flags);
 	if (ret != 0) {
-		DBG_ERR("ad_convert() failed\n");
-		return NT_STATUS_UNSUCCESSFUL;
+		DBG_ERR("ad_convert(\"%s\") failed\n",
+			fsp_str_dbg(fsp));
 	}
 
 	*pattr_data = talloc_zero(mem_ctx, struct readdir_attr_data);
