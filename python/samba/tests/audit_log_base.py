@@ -176,7 +176,7 @@ class AuditLogTestBase(samba.tests.TestCase):
     # Discard any previously queued messages.
     def discardMessages(self):
         self.msg_ctx.loop_once(0.001)
-        while (len(self.context["messages"]) or
+        while (self.context["messages"] or
                self.context["txnMessage"] is not None):
 
             self.context["messages"] = []
