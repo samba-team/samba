@@ -34,6 +34,8 @@ class DnsserverTests(RpcInterfaceTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
+
         good_dns = ["SAMDOM.EXAMPLE.COM",
                     "1.EXAMPLE.COM",
                     "%sEXAMPLE.COM" % ("1." * 100),
