@@ -115,6 +115,7 @@ class LargeLDAPTest(samba.tests.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
         cls.base_dn = cls.ldb.domain_dn()
 
