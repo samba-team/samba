@@ -190,7 +190,7 @@ class AuditLogTestBase(samba.tests.TestCase):
     # Is the supplied GUID string correctly formatted
     #
     def is_guid(self, guid):
-        return self.GUID_RE.match(guid)
+        return self.GUID_RE.fullmatch(guid)
 
     def get_session(self):
         return self.auth_context["sessionId"]
