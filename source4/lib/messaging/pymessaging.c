@@ -194,6 +194,7 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg,
 {
 	PyObject *py_server_id, *callback_and_tuple = (PyObject *)private_data;
 	PyObject *callback, *py_private;
+	PyObject *result = NULL;
 
 	struct server_id *p_server_id = NULL;
 
@@ -218,11 +219,12 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg,
 	py_server_id = py_return_ndr_struct("samba.dcerpc.server_id", "server_id", p_server_id, p_server_id);
 	talloc_unlink(NULL, p_server_id);
 
-	PyObject_CallFunction(callback, discard_const_p(char, "OiOs#"),
-			      py_private,
-			      msg_type,
-			      py_server_id,
-			      data->data, data->length);
+	result = PyObject_CallFunction(callback, discard_const_p(char, "OiOs#"),
+				       py_private,
+				       msg_type,
+				       py_server_id,
+				       data->data, data->length);
+	Py_XDECREF(result);
 }
 
 static PyObject *py_imessaging_register(PyObject *self, PyObject *args, PyObject *kwargs)
