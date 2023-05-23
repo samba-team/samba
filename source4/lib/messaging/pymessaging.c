@@ -195,13 +195,14 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg,
 	PyObject *py_server_id, *callback_and_tuple = (PyObject *)private_data;
 	PyObject *callback, *py_private;
 
-	struct server_id *p_server_id = talloc(NULL, struct server_id);
+	struct server_id *p_server_id = NULL;
 
 	if (num_fds != 0) {
 		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
 		return;
 	}
 
+	p_server_id = talloc(NULL, struct server_id);
 	if (!p_server_id) {
 		PyErr_NoMemory();
 		return;
