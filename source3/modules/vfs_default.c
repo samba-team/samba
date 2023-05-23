@@ -603,7 +603,7 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	struct dirent *result;
 	bool fake_ctime = lp_fake_directory_create_times(SNUM(handle->conn));
 	int flags = AT_SYMLINK_NOFOLLOW;
-	SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st = {0};
 	int ret;
 
 	START_PROFILE(syscall_readdir);
