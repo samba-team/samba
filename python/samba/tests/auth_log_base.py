@@ -130,7 +130,7 @@ class AuthLogTestBase(samba.tests.TestCase):
     @classmethod
     def discardMessages(cls):
         cls.msg_ctx.loop_once(0.001)
-        while len(cls.context["messages"]):
+        while cls.context["messages"]:
             cls.context["messages"] = []
             cls.msg_ctx.loop_once(0.001)
 
