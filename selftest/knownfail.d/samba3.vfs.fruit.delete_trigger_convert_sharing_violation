@@ -1,4 +1,0 @@
-^samba3.vfs.fruit metadata_netatalk.delete_trigger_convert_sharing_violation\(nt4_dc\)
-^samba3.vfs.fruit metadata_stream.delete_trigger_convert_sharing_violation\(nt4_dc\)
-^samba3.vfs.fruit streams_depot.delete_trigger_convert_sharing_violation\(nt4_dc\)
-^samba3.vfs.fruit fruit_delete_empty_adfiles.delete_trigger_convert_sharing_violation\(nt4_dc\)
