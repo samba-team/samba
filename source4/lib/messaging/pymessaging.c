@@ -239,7 +239,7 @@ static PyObject *py_imessaging_register(PyObject *self, PyObject *args, PyObject
 	}
 	if (!PyTuple_Check(callback_and_context)
 	    || PyTuple_Size(callback_and_context) != 2) {
-		PyErr_SetString(PyExc_ValueError, "Expected of size 2 for callback_and_context");
+		PyErr_SetString(PyExc_ValueError, "Expected tuple of size 2 for callback_and_context");
 		return NULL;
 	}
 
