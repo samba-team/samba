@@ -75,7 +75,10 @@ struct tevent_req {
 	 * that is called when the tevent_req_cancel() function
 	 * was called.
 	 */
-	tevent_req_cancel_fn private_cancel;
+	struct {
+		tevent_req_cancel_fn fn;
+		const char *fn_name;
+	} private_cancel;
 
 	/**
 	 * @brief A function to cleanup the request

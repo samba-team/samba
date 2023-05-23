@@ -28,6 +28,7 @@
 #include "tevent_util.h"
 
 #undef tevent_req_set_callback
+#undef tevent_req_set_cancel_fn
 
 char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
@@ -306,7 +307,8 @@ void tevent_req_received(struct tevent_req *req)
 	talloc_set_destructor(req, NULL);
 
 	req->private_print = NULL;
-	req->private_cancel = NULL;
+	req->private_cancel.fn = NULL;
+	req->private_cancel.fn_name = NULL;
 
 	TALLOC_FREE(req->internal.trigger);
 	TALLOC_FREE(req->internal.timer);
@@ -413,16 +415,24 @@ void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn)
 
 void tevent_req_set_cancel_fn(struct tevent_req *req, tevent_req_cancel_fn fn)
 {
-	req->private_cancel = fn;
+	_tevent_req_set_cancel_fn(req, fn, NULL);
+}
+
+void _tevent_req_set_cancel_fn(struct tevent_req *req,
+			       tevent_req_cancel_fn fn,
+			       const char *fn_name)
+{
+	req->private_cancel.fn = fn;
+	req->private_cancel.fn_name = fn != NULL ? fn_name : NULL;
 }
 
 bool _tevent_req_cancel(struct tevent_req *req, const char *location)
 {
-	if (req->private_cancel == NULL) {
+	if (req->private_cancel.fn == NULL) {
 		return false;
 	}
 
-	return req->private_cancel(req);
+	return req->private_cancel.fn(req);
 }
 
 void tevent_req_set_cleanup_fn(struct tevent_req *req, tevent_req_cleanup_fn fn)

@@ -1182,6 +1182,11 @@ typedef bool (*tevent_req_cancel_fn)(struct tevent_req *req);
  * @param[in]  fn       A pointer to the cancel function.
  */
 void tevent_req_set_cancel_fn(struct tevent_req *req, tevent_req_cancel_fn fn);
+void _tevent_req_set_cancel_fn(struct tevent_req *req,
+			       tevent_req_cancel_fn fn,
+			       const char *fn_name);
+#define tevent_req_set_cancel_fn(req, fn) \
+	_tevent_req_set_cancel_fn(req, fn, #fn)
 
 #ifdef DOXYGEN
 /**
