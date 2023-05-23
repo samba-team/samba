@@ -32,6 +32,8 @@ class AuthLogTestBase(samba.tests.TestCase):
 
     @classmethod
     def setUpClass(self):
+        super().setUpClass()
+
         # connect to the server's messaging bus (we need to explicitly load a
         # different smb.conf here, because in all other respects this test
         # wants to act as a separate remote client)
