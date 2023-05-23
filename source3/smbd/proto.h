@@ -205,16 +205,6 @@ struct smb_Dir;
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
 files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,
 				       int dptr_num);
-bool get_dir_entry(TALLOC_CTX *ctx,
-		struct dptr_struct *dirptr,
-		const char *mask,
-		uint32_t dirtype,
-		char **pp_fname_out,
-		off_t *size,
-		uint32_t *mode,
-		struct timespec *date,
-		bool check_descend,
-		bool ask_sharemode);
 struct smb_Dir;
 bool is_visible_fsp(files_struct *fsp);
 NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,

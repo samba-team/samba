@@ -1123,6 +1123,153 @@ static void make_dir_struct(TALLOC_CTX *ctx,
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
+static bool mangle_mask_match(connection_struct *conn,
+			      const char *filename,
+			      const char *mask)
+{
+	char mname[13];
+
+	if (!name_to_8_3(filename, mname, False, conn->params)) {
+		return False;
+	}
+	return mask_match_search(mname, mask, False);
+}
+
+/****************************************************************************
+ Get an 8.3 directory entry.
+****************************************************************************/
+
+static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
+				     void *private_data,
+				     const char *dname,
+				     const char *mask,
+				     char **_fname)
+{
+	connection_struct *conn = (connection_struct *)private_data;
+
+	if ((strcmp(mask, "*.*") == 0) ||
+	    mask_match_search(dname, mask, false) ||
+	    mangle_mask_match(conn, dname, mask)) {
+		char mname[13];
+		const char *fname;
+		/*
+		 * Ensure we can push the original name as UCS2. If
+		 * not, then just don't return this name.
+		 */
+		NTSTATUS status;
+		size_t ret_len = 0;
+		size_t len = (strlen(dname) + 2) * 4; /* Allow enough space. */
+		uint8_t *tmp = talloc_array(talloc_tos(), uint8_t, len);
+
+		status = srvstr_push(NULL,
+				     FLAGS2_UNICODE_STRINGS,
+				     tmp,
+				     dname,
+				     len,
+				     STR_TERMINATE,
+				     &ret_len);
+
+		TALLOC_FREE(tmp);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+
+		if (!mangle_is_8_3(dname, false, conn->params)) {
+			bool ok =
+				name_to_8_3(dname, mname, false, conn->params);
+			if (!ok) {
+				return false;
+			}
+			fname = mname;
+		} else {
+			fname = dname;
+		}
+
+		*_fname = talloc_strdup(ctx, fname);
+		if (*_fname == NULL) {
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
+				    void *private_data,
+				    struct files_struct *dirfsp,
+				    struct smb_filename *atname,
+				    struct smb_filename *smb_fname,
+				    bool get_dosmode,
+				    uint32_t *_mode)
+{
+	connection_struct *conn = (connection_struct *)private_data;
+
+	if (!VALID_STAT(smb_fname->st)) {
+		if ((SMB_VFS_STAT(conn, smb_fname)) != 0) {
+			DEBUG(5,
+			      ("smbd_dirptr_8_3_mode_fn: "
+			       "Couldn't stat [%s]. Error "
+			       "= %s\n",
+			       smb_fname_str_dbg(smb_fname),
+			       strerror(errno)));
+			return false;
+		}
+	}
+
+	if (get_dosmode) {
+		*_mode = fdos_mode(smb_fname->fsp);
+		smb_fname->st = smb_fname->fsp->fsp_name->st;
+	}
+	return true;
+}
+
+static bool get_dir_entry(TALLOC_CTX *ctx,
+			  connection_struct *conn,
+			  struct dptr_struct *dirptr,
+			  const char *mask,
+			  uint32_t dirtype,
+			  char **_fname,
+			  off_t *_size,
+			  uint32_t *_mode,
+			  struct timespec *_date,
+			  bool check_descend,
+			  bool ask_sharemode)
+{
+	char *fname = NULL;
+	struct smb_filename *smb_fname = NULL;
+	uint32_t mode = 0;
+	long prev_offset;
+	bool ok;
+
+	ok = smbd_dirptr_get_entry(ctx,
+				   dirptr,
+				   mask,
+				   dirtype,
+				   check_descend,
+				   ask_sharemode,
+				   true,
+				   smbd_dirptr_8_3_match_fn,
+				   smbd_dirptr_8_3_mode_fn,
+				   conn,
+				   &fname,
+				   &smb_fname,
+				   &mode,
+				   &prev_offset);
+	if (!ok) {
+		return false;
+	}
+
+	*_fname = talloc_move(ctx, &fname);
+	*_size = smb_fname->st.st_ex_size;
+	*_mode = mode;
+	*_date = smb_fname->st.st_ex_mtime;
+	TALLOC_FREE(smb_fname);
+	return true;
+}
+
 /****************************************************************************
  Reply to a search.
  Can be called from SMBsearch, SMBffirst or SMBfunique.
@@ -1340,6 +1487,7 @@ void reply_search(struct smb_request *req)
 			while (dptr_filenum < resume_key_index) {
 				bool ok = get_dir_entry(
 					ctx,
+					conn,
 					fsp->dptr,
 					dptr_wcard(sconn, dptr_num),
 					dirtype,
@@ -1413,6 +1561,7 @@ void reply_search(struct smb_request *req)
 
 		for (i=numentries;(i<maxentries) && !finished;i++) {
 			finished = !get_dir_entry(ctx,
+						  conn,
 						  fsp->dptr,
 						  mask,
 						  dirtype,
