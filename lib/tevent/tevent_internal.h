@@ -89,6 +89,7 @@ struct tevent_req {
 	 */
 	struct {
 		tevent_req_cleanup_fn fn;
+		const char *fn_name;
 		enum tevent_req_state state;
 	} private_cleanup;
 

@@ -29,6 +29,7 @@
 
 #undef tevent_req_set_callback
 #undef tevent_req_set_cancel_fn
+#undef tevent_req_set_cleanup_fn
 
 char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
@@ -437,8 +438,16 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location)
 
 void tevent_req_set_cleanup_fn(struct tevent_req *req, tevent_req_cleanup_fn fn)
 {
+	_tevent_req_set_cleanup_fn(req, fn, NULL);
+}
+
+void _tevent_req_set_cleanup_fn(struct tevent_req *req,
+				tevent_req_cleanup_fn fn,
+				const char *fn_name)
+{
 	req->private_cleanup.state = req->internal.state;
 	req->private_cleanup.fn = fn;
+	req->private_cleanup.fn_name = fn != NULL ? fn_name : NULL;
 }
 
 static int tevent_req_profile_destructor(struct tevent_req_profile *p);
