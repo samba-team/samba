@@ -48,7 +48,7 @@ from samba.dcerpc.misc import (
 )
 
 import samba.tests
-from samba.tests import TestCaseInTempDir
+from samba.tests import TestCase
 
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
@@ -555,7 +555,7 @@ class KerberosTicketCreds:
         self.sname = sname
 
 
-class RawKerberosTest(TestCaseInTempDir):
+class RawKerberosTest(TestCase):
     """A raw Kerberos Test case."""
 
     class KpasswdMode(Enum):

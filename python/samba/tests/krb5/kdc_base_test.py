@@ -95,7 +95,7 @@ from samba.samdb import SamDB, dsdb_Dn
 rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
 aes256_sk_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
 
-from samba.tests import delete_force
+from samba.tests import TestCaseInTempDir, delete_force
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.raw_testcase import (
     KerberosCredentials,
@@ -144,7 +144,7 @@ class Principal:
         self.sid = sid
 
 
-class KDCBaseTest(RawKerberosTest):
+class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
     """ Base class for KDC tests.
     """
 
