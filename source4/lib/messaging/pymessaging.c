@@ -124,8 +124,10 @@ static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObj
 	if (own_id != Py_None) {
 		struct server_id server_id;
 
-		if (!server_id_from_py(own_id, &server_id)) 
+		if (!server_id_from_py(own_id, &server_id)) {
+			talloc_free(ret->mem_ctx);
 			return NULL;
+		}
 
 		ret->msg_ctx = imessaging_init(ret->mem_ctx,
 					       lp_ctx,
@@ -407,6 +409,7 @@ static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args)
 		PyObject *py_server_id;
 		struct server_id *p_server_id = talloc(NULL, struct server_id);
 		if (!p_server_id) {
+			TALLOC_FREE(mem_ctx);
 			PyErr_NoMemory();
 			return NULL;
 		}
@@ -414,6 +417,7 @@ static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args)
 
 		py_server_id = py_return_ndr_struct("samba.dcerpc.server_id", "server_id", p_server_id, p_server_id);
 		if (!py_server_id) {
+			TALLOC_FREE(mem_ctx);
 			return NULL;
 		}
 		PyList_SetItem(pylist, i, py_server_id);
@@ -438,6 +442,8 @@ static PyObject *py_irpc_all_servers(PyObject *self,
 
 	records = irpc_all_servers(iface->msg_ctx, mem_ctx);
 	if (records == NULL) {
+		TALLOC_FREE(mem_ctx);
+		PyErr_NoMemory();
 		return NULL;
 	}
 
@@ -454,6 +460,7 @@ static PyObject *py_irpc_all_servers(PyObject *self,
 					       records->names[i],
 					       records->names[i]);
 		if (!py_name_record) {
+			TALLOC_FREE(mem_ctx);
 			return NULL;
 		}
 		PyList_SetItem(pylist, i,
