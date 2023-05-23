@@ -316,19 +316,21 @@ NTSTATUS imessaging_register_tmp(struct imessaging_context *msg, void *private_d
 }
 
 /*
-  De-register the function for a particular message type.
+  De-register the function for a particular message type. Return the number of
+  functions deregistered.
 */
-void imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, void *private_data)
+size_t imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, void *private_data)
 {
 	struct dispatch_fn *d, *next;
+	size_t removed = 0;
 
 	if (msg_type >= msg->num_types) {
 		d = (struct dispatch_fn *)idr_find(msg->dispatch_tree,
 						   msg_type);
-		if (!d) return;
+		if (!d) return 0;
 		idr_remove(msg->dispatch_tree, msg_type);
 		talloc_free(d);
-		return;
+		return 1;
 	}
 
 	for (d = msg->dispatch[msg_type]; d; d = next) {
@@ -336,8 +338,11 @@ void imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, vo
 		if (d->private_data == private_data) {
 			DLIST_REMOVE(msg->dispatch[msg_type], d);
 			talloc_free(d);
+			++removed;
 		}
 	}
+
+	return removed;
 }
 
 /*

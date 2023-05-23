@@ -62,7 +62,7 @@ struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev);
 NTSTATUS imessaging_send_ptr(struct imessaging_context *msg, struct server_id server,
 			    uint32_t msg_type, void *ptr);
-void imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, void *private_data);
+size_t imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, void *private_data);
 struct server_id imessaging_get_server_id(struct imessaging_context *msg_ctx);
 NTSTATUS imessaging_process_cleanup(struct imessaging_context *msg_ctx,
 				    pid_t pid);
