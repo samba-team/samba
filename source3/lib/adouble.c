@@ -1236,7 +1236,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 			NULL,				/* dirfsp */
 			stream_name,			/* fname */
 			FILE_GENERIC_WRITE,		/* access_mask */
-			FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
+			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN_IF,			/* create_disposition */
 			0,				/* create_options */
 			0,				/* file_attributes */
