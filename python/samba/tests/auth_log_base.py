@@ -31,7 +31,7 @@ import re
 class AuthLogTestBase(samba.tests.TestCase):
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         super().setUpClass()
 
         # connect to the server's messaging bus (we need to explicitly load a
@@ -42,8 +42,8 @@ class AuthLogTestBase(samba.tests.TestCase):
             lp_ctx = LoadParm(filename_for_non_global_lp=server_conf)
         else:
             samba.tests.env_loadparm()
-        self.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
-        self.msg_ctx.irpc_add_name(AUTH_EVENT_NAME)
+        cls.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
+        cls.msg_ctx.irpc_add_name(AUTH_EVENT_NAME)
 
         # Now switch back to using the client-side smb.conf. The tests will
         # use the first interface in the client.conf (we need to strip off
@@ -54,7 +54,7 @@ class AuthLogTestBase(samba.tests.TestCase):
 
         # the messaging ctx is the server's view of the world, so our own
         # client IP will be the remoteAddress when connections are logged
-        self.remoteAddress = client_ip
+        cls.remoteAddress = client_ip
 
         def messageHandler(context, msgType, src, message):
             # This does not look like sub unit output and it
@@ -63,13 +63,13 @@ class AuthLogTestBase(samba.tests.TestCase):
             jsonMsg = json.loads(message)
             context["messages"].append(jsonMsg)
 
-        self.context = {"messages": []}
-        self.msg_handler_and_context = (messageHandler, self.context)
-        self.msg_ctx.register(self.msg_handler_and_context,
-                              msg_type=MSG_AUTH_LOG)
+        cls.context = {"messages": []}
+        cls.msg_handler_and_context = (messageHandler, cls.context)
+        cls.msg_ctx.register(cls.msg_handler_and_context,
+                             msg_type=MSG_AUTH_LOG)
 
-        self.server = os.environ["SERVER"]
-        self.connection = None
+        cls.server = os.environ["SERVER"]
+        cls.connection = None
 
     @classmethod
     def tearDownClass(self):
