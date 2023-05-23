@@ -255,6 +255,7 @@ static PyObject *py_imessaging_register(PyObject *self, PyObject *args, PyObject
 				    msg_type, py_msg_callback_wrapper);
 	}
 	if (NT_STATUS_IS_ERR(status)) {
+		Py_DECREF(callback_and_context);
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
@@ -268,13 +269,17 @@ static PyObject *py_imessaging_deregister(PyObject *self, PyObject *args, PyObje
 	int msg_type = -1;
 	PyObject *callback;
 	const char *kwnames[] = { "callback", "msg_type", NULL };
+	size_t removed;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:deregister",
 		discard_const_p(char *, kwnames), &callback, &msg_type)) {
 		return NULL;
 	}
 
-	imessaging_deregister(iface->msg_ctx, msg_type, callback);
+	removed = imessaging_deregister(iface->msg_ctx, msg_type, callback);
+	while (removed-- > 0) {
+		Py_DECREF(callback);
+	}
 
 	Py_RETURN_NONE;
 }
