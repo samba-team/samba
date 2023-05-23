@@ -147,10 +147,11 @@ class AuthLogTestBase(samba.tests.TestCase):
 
         return list(filter(is_not_netlogon, messages))
 
-    GUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    GUID_RE = re.compile(
+        "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
     #
     # Is the supplied GUID string correctly formatted
     #
     def is_guid(self, guid):
-        return re.match(self.GUID_RE, guid)
+        return self.GUID_RE.match(guid)
