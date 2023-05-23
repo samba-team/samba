@@ -185,6 +185,8 @@ class DomainTrustCommand(Command):
             nbt.NBT_SERVER_FULL_SECRET_DOMAIN_6: "FULL_SECRET_DOMAIN_6",
             nbt.NBT_SERVER_ADS_WEB_SERVICE: "ADS_WEB_SERVICE",
             nbt.NBT_SERVER_DS_8: "DS_8",
+            nbt.NBT_SERVER_DS_9: "DS_9",
+            nbt.NBT_SERVER_DS_10: "DS_10",
             nbt.NBT_SERVER_HAS_DNS_NAME: "HAS_DNS_NAME",
             nbt.NBT_SERVER_IS_DEFAULT_NC: "IS_DEFAULT_NC",
             nbt.NBT_SERVER_FOREST_ROOT: "FOREST_ROOT",
