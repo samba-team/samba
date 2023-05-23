@@ -22,7 +22,7 @@ import ldb
 
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.ndr import ndr_unpack, ndr_pack
+from samba.ndr import ndr_unpack
 from samba.dcerpc import dnsp, dnsserver, security
 from samba.tests import RpcInterfaceTestCase, env_get_var_value
 from samba.dnsserver import record_from_string, flag_from_string, ARecord
