@@ -483,7 +483,7 @@ static PyMethodDef py_imessaging_methods[] = {
 		METH_VARARGS|METH_KEYWORDS,
 		"S.deregister((callback, context), msg_type) -> None\nDeregister a message handler "
 	        "The callback and context must be supplied as the exact same two-element tuple "
-	        "as was used as registration time." },
+	        "as was used at registration time." },
 	{ "loop_once", PY_DISCARD_FUNC_SIG(PyCFunction,
 					   py_imessaging_loop_once),
 		METH_VARARGS|METH_KEYWORDS,
