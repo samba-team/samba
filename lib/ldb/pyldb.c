@@ -988,7 +988,9 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
 {
 	PyObject *fn = (PyObject *)context;
-	PyObject_CallFunction(fn, discard_const_p(char, "(i,O)"), level, PyUnicode_FromFormatV(fmt, ap));
+	PyObject *result = NULL;
+	result = PyObject_CallFunction(fn, discard_const_p(char, "(i,O)"), level, PyUnicode_FromFormatV(fmt, ap));
+	Py_XDECREF(result);
 }
 
 static PyObject *py_ldb_debug_func;
