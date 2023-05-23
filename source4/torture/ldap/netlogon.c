@@ -348,6 +348,10 @@ static bool test_ldap_netlogon_flags(struct torture_context *tctx,
 		printf("NBT_SERVER_ADS_WEB_SERVICE ");
 	if (server_type & NBT_SERVER_DS_8)
 		printf("NBT_SERVER_DS_8 ");
+	if (server_type & NBT_SERVER_DS_9)
+		printf("NBT_SERVER_DS_9 ");
+	if (server_type & NBT_SERVER_DS_10)
+		printf("NBT_SERVER_DS_10 ");
 	if (server_type & DS_DNS_CONTROLLER)
 		printf("DS_DNS_CONTROLLER ");
 	if (server_type & DS_DNS_DOMAIN)
