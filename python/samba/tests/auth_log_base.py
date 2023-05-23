@@ -83,6 +83,26 @@ class AuthLogTestBase(samba.tests.TestCase):
         super(AuthLogTestBase, self).setUp()
         type(self).discardMessages()
 
+    def isRemote(self, message):
+        if self.remoteAddress is None:
+            return True
+
+        supported_types = {
+            "Authentication",
+            "Authorization",
+        }
+        message_type = message["type"]
+        if message_type in supported_types:
+            remote = message[message_type]["remoteAddress"]
+        else:
+            return False
+
+        try:
+            addr = remote.split(":")
+            return addr[1] == self.remoteAddress
+        except IndexError:
+            return False
+
     def waitForMessages(self, isLastExpectedMessage, connection=None):
         """Wait for all the expected messages to arrive
         The connection is passed through to keep the connection alive
@@ -91,29 +111,9 @@ class AuthLogTestBase(samba.tests.TestCase):
 
         def completed(messages):
             for message in messages:
-                if isRemote(message) and isLastExpectedMessage(message):
+                if self.isRemote(message) and isLastExpectedMessage(message):
                     return True
             return False
-
-        def isRemote(message):
-            if self.remoteAddress is None:
-                return True
-
-            supported_types = {
-                "Authentication",
-                "Authorization",
-            }
-            message_type = message["type"]
-            if message_type in supported_types:
-                remote = message[message_type]["remoteAddress"]
-            else:
-                return False
-
-            try:
-                addr = remote.split(":")
-                return addr[1] == self.remoteAddress
-            except IndexError:
-                return False
 
         self.connection = connection
 
@@ -125,7 +125,7 @@ class AuthLogTestBase(samba.tests.TestCase):
                 return []
 
         self.connection = None
-        return list(filter(isRemote, self.context["messages"]))
+        return list(filter(self.isRemote, self.context["messages"]))
 
     # Discard any previously queued messages.
     @classmethod
