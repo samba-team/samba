@@ -4,7 +4,7 @@
   who contributed!
 */
 
-import "misc.idl", "lsa.idl", "samr.idl", "security.idl";
+import "misc.idl", "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 
 #include "idl_types.h"
 
@@ -1224,7 +1224,7 @@ interface netlogon
 		GUID domain_guid;
 		[string,charset(UTF16)] uint16 *domain_name;
 		[string,charset(UTF16)] uint16 *forest_name;
-		netr_DsR_DcFlags dc_flags;
+		nbt_server_type dc_flags;
 		[string,charset(UTF16)] uint16 *dc_site_name;
 		[string,charset(UTF16)] uint16 *client_site_name;
 	} netr_DsRGetDCNameInfo;
