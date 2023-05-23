@@ -210,15 +210,15 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg,
 	}
 	*p_server_id = server_id;
 
-	if (!PyArg_ParseTuple(callback_and_tuple, "OO",
-			      &callback,
-			      &py_private)) {
-		return;
-	}
-
 	py_server_id = py_return_ndr_struct("samba.dcerpc.server_id", "server_id", p_server_id, p_server_id);
 	talloc_unlink(NULL, p_server_id);
 	if (py_server_id == NULL) {
+		return;
+	}
+
+	if (!PyArg_ParseTuple(callback_and_tuple, "OO",
+			      &callback,
+			      &py_private)) {
 		return;
 	}
 
