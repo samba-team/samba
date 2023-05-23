@@ -98,11 +98,13 @@ class AuthLogTestBase(samba.tests.TestCase):
             if self.remoteAddress is None:
                 return True
 
-            remote = None
-            if message["type"] == "Authorization":
-                remote = message["Authorization"]["remoteAddress"]
-            elif message["type"] == "Authentication":
-                remote = message["Authentication"]["remoteAddress"]
+            supported_types = {
+                "Authentication",
+                "Authorization",
+            }
+            message_type = message["type"]
+            if message_type in supported_types:
+                remote = message[message_type]["remoteAddress"]
             else:
                 return False
 
