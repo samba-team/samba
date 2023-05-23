@@ -128,11 +128,11 @@ class AuthLogTestBase(samba.tests.TestCase):
 
     # Discard any previously queued messages.
     @classmethod
-    def discardMessages(self):
-        self.msg_ctx.loop_once(0.001)
-        while len(self.context["messages"]):
-            self.context["messages"] = []
-            self.msg_ctx.loop_once(0.001)
+    def discardMessages(cls):
+        cls.msg_ctx.loop_once(0.001)
+        while len(cls.context["messages"]):
+            cls.context["messages"] = []
+            cls.msg_ctx.loop_once(0.001)
 
     # Remove any NETLOGON authentication messages
     # NETLOGON is only performed once per session, so to avoid ordering
