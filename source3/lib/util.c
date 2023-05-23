@@ -119,11 +119,8 @@ uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf)
 bool check_same_dev_ino(const SMB_STRUCT_STAT *sbuf1,
                         const SMB_STRUCT_STAT *sbuf2)
 {
-	if (sbuf1->st_ex_dev != sbuf2->st_ex_dev ||
-			sbuf1->st_ex_ino != sbuf2->st_ex_ino) {
-		return false;
-	}
-	return true;
+	return ((sbuf1->st_ex_dev == sbuf2->st_ex_dev) &&
+		(sbuf1->st_ex_ino == sbuf2->st_ex_ino));
 }
 
 /****************************************************************************
@@ -131,14 +128,11 @@ bool check_same_dev_ino(const SMB_STRUCT_STAT *sbuf1,
 ****************************************************************************/
 
 bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
-			const SMB_STRUCT_STAT *sbuf2)
+		     const SMB_STRUCT_STAT *sbuf2)
 {
-	if (sbuf1->st_ex_uid != sbuf2->st_ex_uid ||
-			sbuf1->st_ex_gid != sbuf2->st_ex_gid ||
-			!check_same_dev_ino(sbuf1, sbuf2)) {
-		return false;
-	}
-	return true;
+	return ((sbuf1->st_ex_uid == sbuf2->st_ex_uid) &&
+		(sbuf1->st_ex_gid == sbuf2->st_ex_gid) &&
+		check_same_dev_ino(sbuf1, sbuf2));
 }
 
 /*******************************************************************
