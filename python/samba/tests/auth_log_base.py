@@ -66,7 +66,6 @@ class AuthLogTestBase(samba.tests.TestCase):
         self.msg_ctx.register(self.msg_handler_and_context,
                               msg_type=MSG_AUTH_LOG)
 
-        self.remoteAddress = None
         self.server = os.environ["SERVER"]
         self.connection = None
 
