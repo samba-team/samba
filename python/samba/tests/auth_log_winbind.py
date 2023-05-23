@@ -135,6 +135,8 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
             lp=self.lp)
         self.create_user_account()
 
+        self.remoteAddress = ''
+
     def tearDown(self):
         super(AuthLogTestsWinbind, self).tearDown()
         delete_force(self.ldb, self.user_dn)
