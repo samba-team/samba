@@ -218,6 +218,9 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg,
 
 	py_server_id = py_return_ndr_struct("samba.dcerpc.server_id", "server_id", p_server_id, p_server_id);
 	talloc_unlink(NULL, p_server_id);
+	if (py_server_id == NULL) {
+		return;
+	}
 
 	result = PyObject_CallFunction(callback, discard_const_p(char, "OiOs#"),
 				       py_private,
