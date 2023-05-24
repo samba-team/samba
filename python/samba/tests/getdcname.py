@@ -97,8 +97,7 @@ class GetDCNameEx(samba.tests.TestCase):
         b) The returned domain does not match our own domain
         c) The domain matches the format requested
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         response_trust = self._call_get_dc_name(domain=self.trust_realm,
                                                 ex2=True)
@@ -137,8 +136,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         Ex calls Ex2 anyways, from now on, just test Ex.
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         response_trust = self._call_get_dc_name(domain=self.trust_realm,
                                                 flags=netlogon.DS_RETURN_DNS_NAME)
@@ -179,8 +177,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         We assume that there is no Invalid-First-Site-Name site.
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         site = 'Invalid-First-Site-Name'
         try:
@@ -199,8 +196,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         We assume that there is no Invalid-First-Site-Name site.
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         site = 'Invalid-First-Site-Name'
         try:
@@ -219,8 +215,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         We assume that there is a Default-First-Site-Name site.
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         site = ''
         try:
@@ -243,8 +238,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
     def test_get_dc_over_winbind_netbios(self):
         """Supply a NETBIOS trust domain name."""
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         try:
             response_trust = self._call_get_dc_name(domain=self.trust_domain,
@@ -265,8 +259,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         Currently marked in flapping...
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         site = 'Default-First-Site-Name'
         try:
@@ -287,8 +280,7 @@ class GetDCNameEx(samba.tests.TestCase):
     def test_get_dc_over_winbind_domain_guid(self):
         """Ensure that we do not reject requests supplied with a NULL GUID"""
 
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         null_guid = GUID()
         try:
@@ -332,8 +324,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         We assume that there is no Invalid-First-Site-Name site.
         """
-        if self.realm is None:
-            return
+        self.assertIsNotNone(self.realm)
 
         site = 'Invalid-First-Site-Name'
         try:
