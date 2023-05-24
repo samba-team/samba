@@ -41,7 +41,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         if server_conf:
             lp_ctx = LoadParm(filename_for_non_global_lp=server_conf)
         else:
-            samba.tests.env_loadparm()
+            lp_ctx = samba.tests.env_loadparm()
         cls.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
         cls.msg_ctx.irpc_add_name(AUTH_EVENT_NAME)
 
