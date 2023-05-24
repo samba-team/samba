@@ -777,6 +777,10 @@ for env in ["fileserver"]:
                   [os.path.join(samba3srcdir, "script/tests/test_stream_dir_rename.sh"),
                   '$SERVER', '$USERNAME', '$PASSWORD', '$PREFIX', smbclient3])
 
+    plantestsuite("samba3.blackbox.test_symlink_dosmode", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_symlink_dosmode.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
+                  '$PREFIX', smbclient3])
     #
     # tar command tests
     #
