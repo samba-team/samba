@@ -301,12 +301,10 @@ done:
 #endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
-/*
-  samr_ChangePasswordUser3
-*/
-NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx,
-					 struct samr_ChangePasswordUser3 *r)
+static NTSTATUS dcesrv_samr_ChangePasswordUser_impl(struct dcesrv_call_state *dce_call,
+						    TALLOC_CTX *mem_ctx,
+						    struct samr_ChangePasswordUser3 *r,
+						    const char *function_name)
 {
 	struct imessaging_context *imsg_ctx =
 		dcesrv_imessaging_context(dce_call->conn);
@@ -498,7 +496,7 @@ failed:
 				  lp_ctx,
 				  dce_call->conn->remote_address,
 				  dce_call->conn->local_address,
-				  "samr_ChangePasswordUser3",
+				  function_name,
 				  "RC4/DES using NTLM-hash",
 				  r->in.account->string,
 				  user_samAccountName,
@@ -535,6 +533,17 @@ failed:
 }
 
 /*
+  samr_ChangePasswordUser3
+*/
+NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct samr_ChangePasswordUser3 *r)
+{
+	return dcesrv_samr_ChangePasswordUser_impl(dce_call, mem_ctx, r,
+						   "samr_ChangePasswordUser3");
+}
+
+/*
   samr_ChangePasswordUser2
 
   easy - just a subset of samr_ChangePasswordUser3
@@ -558,7 +567,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	r2.out.dominfo = &dominfo;
 	r2.out.reject = &reject;
 
-	return dcesrv_samr_ChangePasswordUser3(dce_call, mem_ctx, &r2);
+	return dcesrv_samr_ChangePasswordUser_impl(dce_call, mem_ctx, &r2,
+						   "samr_ChangePasswordUser2");
 }
 
 
