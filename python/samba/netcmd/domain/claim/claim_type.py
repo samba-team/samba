@@ -33,9 +33,9 @@ from samba.sd_utils import SDUtils
 
 from .base import ClaimCommand
 
-# LDAP Syntax to Claim Type DN lookup table.
+# LDAP Syntax to Claim Type CN lookup table.
 # These are the ones actively used by AD claim type attributes.
-SYNTAX_TO_CLAIM_TYPE_DN = {
+SYNTAX_TO_CLAIM_TYPE_CN = {
     "2.5.5.1": "MS-DS-Text",     # Object(DS-DN)
     "2.5.5.2": "MS-DS-Text",     # String(Object-Identifier)
     "2.5.5.8": "MS-DS-YesNo",    # Boolean
@@ -99,7 +99,7 @@ class cmd_domain_claim_claim_type_create(ClaimCommand):
         Uses the LDAP attribute syntax to find the matching claim value type.
         """
         attribute_syntax = str(attribute["attributeSyntax"])
-        claim_type_dn = SYNTAX_TO_CLAIM_TYPE_DN[attribute_syntax]
+        claim_type_dn = SYNTAX_TO_CLAIM_TYPE_CN[attribute_syntax]
         return self.claim_value_types[claim_type_dn]["msDS-ClaimValueType"]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
