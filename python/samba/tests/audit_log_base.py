@@ -175,13 +175,20 @@ class AuditLogTestBase(samba.tests.TestCase):
 
     # Discard any previously queued messages.
     def discardMessages(self):
-        self.msg_ctx.loop_once(0.001)
-        while (self.context["messages"] or
-               self.context["txnMessage"] is not None):
+        messages = self.context["messages"]
 
-            self.context["messages"] = []
+        while True:
+            messages.clear()
             self.context["txnMessage"] = None
-            self.msg_ctx.loop_once(0.001)
+
+            # tevent presumably has other tasks to run, so we might need two or
+            # three loops before a message comes through.
+            for _ in range(5):
+                self.msg_ctx.loop_once(0.001)
+
+            if not messages and self.context["txnMessage"] is None:
+                # No new messages. We’ve probably got them all.
+                break
 
     GUID_RE = re.compile(
         "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
