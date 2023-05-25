@@ -40,6 +40,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.domain = os.environ.get('DOMAIN')
         self.trust_realm = os.environ.get('TRUST_REALM')
         self.trust_domain = os.environ.get('TRUST_DOMAIN')
+        self.trust_server = os.environ.get('TRUST_SERVER')
 
     def _call_get_dc_name(self, domain=None, domain_guid=None,
                           site_name=None, ex2=False, flags=0):
@@ -441,6 +442,88 @@ class GetDCNameEx(samba.tests.TestCase):
 
         self.assertEqual(response.domain_name.lower(),
                          self.realm.lower())
+
+    def test_get_dc_winbind_need_2012r2(self):
+        """Test requring that we have a FL2012R2 DC as answer
+        """
+        self.assertIsNotNone(self.trust_realm)
+
+        try:
+            response_trust = self._call_get_dc_name(domain=self.trust_realm,
+                                                flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
+        except WERRORError as e:
+            enum, estr = e.args
+            self.fail(f"netr_DsRGetDCNameEx failed: {estr}")
+
+        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
+        self.assertTrue(response_trust.dc_address is not None)
+        self.assertTrue(response_trust.dc_address.startswith('\\\\'))
+
+        self.assertEqual(response_trust.domain_name.lower(),
+                         self.trust_realm.lower())
+
+    def test_get_dc_direct_need_2012r2_but_not_found(self):
+        """Test requring that we have a FL2012R2 DC as answer, aginst the FL2008R2 domain
+
+        This test requires that the DC in the FL2008R2 does not claim
+        to be 2012R2 capable (off by default in Samba)
+
+        """
+        self.assertIsNotNone(self.realm)
+
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
+
+            self.fail("Failed to detect requirement for 2012 that is not met")
+        except WERRORError as e:
+            enum, estr = e.args
+            if enum != werror.WERR_NO_SUCH_DOMAIN:
+                self.fail("Failed to detect requirement for 2012 that is not met")
+
+    def test_get_dc_direct_need_2012r2(self):
+        """Test requring that we have a FL2012R2 DC as answer
+        """
+        self.assertIsNotNone(self.trust_realm)
+
+        self.netlogon_conn = netlogon.netlogon(f"ncacn_ip_tcp:{self.trust_server}",
+                                               self.get_loadparm())
+
+        response_trust = self._call_get_dc_name(domain=self.trust_realm,
+                                                flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
+
+        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
+        self.assertTrue(response_trust.dc_address is not None)
+        self.assertTrue(response_trust.dc_address.startswith('\\\\'))
+
+        self.assertEqual(response_trust.domain_name.lower(),
+                         self.trust_realm.lower())
+
+    def test_get_dc_winbind_need_2012r2_but_not_found(self):
+        """Test requring that we have a FL2012R2 DC as answer, aginst the FL2008R2 domain
+
+        This test requires that the DC in the FL2008R2 does not claim
+        to be 2012R2 capable (off by default in Samba)
+
+        """
+        self.assertIsNotNone(self.realm)
+
+        self.netlogon_conn = netlogon.netlogon(f"ncacn_ip_tcp:{self.trust_server}",
+                                               self.get_loadparm())
+
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
+
+            self.fail("Failed to detect requirement for 2012 that is not met")
+        except WERRORError as e:
+            enum, estr = e.args
+            if enum != werror.WERR_NO_SUCH_DOMAIN:
+                self.fail("Failed to detect requirement for 2012 that is not met")
 
     # TODO Thorough tests of domain GUID
     #
