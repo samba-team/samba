@@ -129,10 +129,19 @@ class AuthLogTestBase(samba.tests.TestCase):
     # Discard any previously queued messages.
     @classmethod
     def discardMessages(cls):
-        cls.msg_ctx.loop_once(0.001)
-        while cls.context["messages"]:
-            cls.context["messages"] = []
-            cls.msg_ctx.loop_once(0.001)
+        messages = cls.context["messages"]
+
+        while True:
+            messages.clear()
+
+            # tevent presumably has other tasks to run, so we might need two or
+            # three loops before a message comes through.
+            for _ in range(5):
+                cls.msg_ctx.loop_once(0.001)
+
+            if not messages:
+                # No new messages. We’ve probably got them all.
+                break
 
     # Remove any NETLOGON authentication messages
     # NETLOGON is only performed once per session, so to avoid ordering

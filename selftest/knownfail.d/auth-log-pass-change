@@ -1,2 +1,0 @@
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_ldap_change_password_bad_user.ad_dc_ntvfs
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_ldap_change_password_bad_user.ad_dc_smb1
