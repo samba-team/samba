@@ -126,12 +126,10 @@ class AuditLogTestBase(samba.tests.TestCase):
         self.discardMessages()
         self.msg_ctx.irpc_remove_name(self.event_type)
         self.msg_ctx.irpc_remove_name(AUTH_EVENT_NAME)
-        if self.msg_handler_and_context:
-            self.msg_ctx.deregister(self.msg_handler_and_context,
-                                    msg_type=self.message_type)
-        if self.auth_handler_and_context:
-            self.msg_ctx.deregister(self.auth_handler_and_context,
-                                    msg_type=MSG_AUTH_LOG)
+        self.msg_ctx.deregister(self.msg_handler_and_context,
+                                msg_type=self.message_type)
+        self.msg_ctx.deregister(self.auth_handler_and_context,
+                                msg_type=MSG_AUTH_LOG)
 
     def haveExpected(self, expected, dn):
         if dn is None:
