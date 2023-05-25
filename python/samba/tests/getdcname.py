@@ -155,8 +155,7 @@ class GetDCNameEx(samba.tests.TestCase):
 
         We assume that there is a Default-First-Site-Name site.
         """
-        if self.trust_realm is None:
-            return
+        self.assertIsNotNone(self.trust_realm)
 
         site = 'Default-First-Site-Name'
         response_trust = self._call_get_dc_name(domain=self.trust_realm,
