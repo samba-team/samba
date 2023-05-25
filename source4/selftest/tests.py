@@ -1323,7 +1323,7 @@ if have_heimdal_support:
     planoldpythontestsuite("ad_dc", "samba.tests.group_audit",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planoldpythontestsuite("fl2008r2dc:local",
+planoldpythontestsuite("fl2008r2dc",
                        "samba.tests.getdcname",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 

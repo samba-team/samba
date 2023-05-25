@@ -44,7 +44,7 @@ class GetDCNameEx(samba.tests.TestCase):
     def _call_get_dc_name(self, domain=None, domain_guid=None,
                           site_name=None, ex2=False, flags=0):
         if self.netlogon_conn is None:
-            self.netlogon_conn = netlogon.netlogon("ncalrpc:[schannel]",
+            self.netlogon_conn = netlogon.netlogon(f"ncacn_ip_tcp:{self.server}",
                                                    self.get_loadparm())
 
         if ex2:
