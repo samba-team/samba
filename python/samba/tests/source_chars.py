@@ -276,6 +276,10 @@ class CharacterTests(TestCase):
 
 def check_file_text():
     """If called directly as a script, count the found characters."""
+    global ROOT
+    if not ROOT:
+        ROOT = _find_root()
+
     counts = Counter()
     for name in iter_source_files():
         fullname = os.path.join(ROOT, name)
