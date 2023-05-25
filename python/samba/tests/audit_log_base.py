@@ -131,6 +131,8 @@ class AuditLogTestBase(samba.tests.TestCase):
         self.msg_ctx.deregister(self.auth_handler_and_context,
                                 msg_type=MSG_AUTH_LOG)
 
+        super().tearDown()
+
     def haveExpected(self, expected, dn):
         if dn is None:
             return len(self.context["messages"]) >= expected
