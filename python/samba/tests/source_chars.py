@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Unix SMB/CIFS implementation.
 #
 # Copyright (C) Catalyst.Net Ltd. 2021
@@ -15,10 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import subprocess
 import os
 import sys
+
+sys.path.insert(0, 'bin/python')
+os.environ['PYTHONUNBUFFERED'] = '1'
+
+import subprocess
 from collections import Counter
 from samba.colour import c_RED, c_GREEN, c_DARK_YELLOW, switch_colour_off
 import re
