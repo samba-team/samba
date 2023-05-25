@@ -255,7 +255,10 @@ class PythonScriptUsageTests(TestCase):
                 self.assertIn('usage', out.lower() + err.lower(),
                               'stdout:\n%s\nstderr:\n%s' % (out, err))
 
-            setattr(cls, 'test_%s' % name, _f)
+            attr = 'test_%s' % name
+            if hasattr(cls, attr):
+                raise RuntimeError(f'Usage test ‘{attr}’ already exists!')
+            setattr(cls, attr, _f)
 
 
 class HelpTestSuper(TestCase):
@@ -344,7 +347,10 @@ class HelpTestSuper(TestCase):
                     if self.check_multiline:
                         self.assertIn('\n', out, 'expected multi-line output')
 
-            setattr(cls, 'test_%s' % name, _f)
+            attr = 'test_%s' % name
+            if hasattr(cls, attr):
+                raise RuntimeError(f'Usage test ‘{attr}’ already exists!')
+            setattr(cls, attr, _f)
 
 
 class PythonScriptHelpTests(HelpTestSuper):
