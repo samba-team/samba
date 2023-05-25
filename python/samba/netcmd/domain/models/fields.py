@@ -379,7 +379,7 @@ class PossibleClaimValuesField(Field):
             return values
 
     def to_db_value(self, value, flags):
-        """Convert list of dicts back fo XML as a MessageElement."""
+        """Convert list of dicts back to XML as a MessageElement."""
         if value is None:
             return
 
