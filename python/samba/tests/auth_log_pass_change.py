@@ -71,7 +71,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         })
 
         # discard any auth log messages for the password setup
-        self.discardMessages()
+        type(self).discardMessages()
         gnutls_pbkdf2_support = samba.tests.env_get_var_value(
             'GNUTLS_PBKDF2_SUPPORT',
             allow_missing=True)

@@ -80,7 +80,7 @@ class AuthLogTestBase(samba.tests.TestCase):
 
     def setUp(self):
         super(AuthLogTestBase, self).setUp()
-        self.discardMessages()
+        type(self).discardMessages()
 
     def waitForMessages(self, isLastExpectedMessage, connection=None):
         """Wait for all the expected messages to arrive
