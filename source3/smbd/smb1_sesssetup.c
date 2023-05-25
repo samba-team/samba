@@ -655,7 +655,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	smb_bufsize = SVAL(req->vwv+2, 0);
 
-	if (get_Protocol() < PROTOCOL_NT1) {
+	if (xconn->protocol < PROTOCOL_NT1) {
 		uint16_t passlen1 = SVAL(req->vwv+7, 0);
 
 		/* Never do NT status codes with protocols before NT1 as we
@@ -959,7 +959,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
-	if (get_Protocol() >= PROTOCOL_NT1) {
+	if (xconn->protocol >= PROTOCOL_NT1) {
 		push_signature(&req->outbuf);
 		/* perhaps grab OS version here?? */
 	}

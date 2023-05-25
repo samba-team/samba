@@ -470,7 +470,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	else
 		server_devicetype = "A:";
 
-	if (get_Protocol() < PROTOCOL_NT1) {
+	if (xconn->protocol < PROTOCOL_NT1) {
 		reply_smb1_outbuf(req, 2, 0);
 		if (message_push_string(&req->outbuf, server_devicetype,
 					STR_TERMINATE|STR_ASCII) == -1) {
@@ -768,6 +768,7 @@ void reply_checkpath(struct smb_request *req)
 
 void reply_getatr(struct smb_request *req)
 {
+	struct smbXsrv_connection *xconn = req->xconn;
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
@@ -869,7 +870,7 @@ void reply_getatr(struct smb_request *req)
 	}
 	SIVAL(req->outbuf,smb_vwv3,(uint32_t)size);
 
-	if (get_Protocol() >= PROTOCOL_NT1) {
+	if (xconn->protocol >= PROTOCOL_NT1) {
 		SSVAL(req->outbuf, smb_flg2,
 		      SVAL(req->outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
 	}
@@ -1007,6 +1008,7 @@ void reply_setatr(struct smb_request *req)
 
 void reply_dskattr(struct smb_request *req)
 {
+	struct smbXsrv_connection *xconn = req->xconn;
 	connection_struct *conn = req->conn;
 	uint64_t ret;
 	uint64_t dfree,dsize,bsize;
@@ -1049,7 +1051,7 @@ void reply_dskattr(struct smb_request *req)
 
 	reply_smb1_outbuf(req, 5, 0);
 
-	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+	if (xconn->protocol <= PROTOCOL_LANMAN2) {
 		double total_space, free_space;
 		/* we need to scale this to a number that DOS6 can handle. We
 		   use floating point so we can handle large drives on systems
@@ -2834,12 +2836,14 @@ static void reply_readbraw_error(struct smbXsrv_connection *xconn)
  Ensure we don't use sendfile if server smb signing is active.
 ********************************************************************/
 
-static bool lp_use_sendfile(int snum, struct smb1_signing_state *signing_state)
+static bool lp_use_sendfile(struct smbXsrv_connection *xconn,
+			    int snum,
+			    struct smb1_signing_state *signing_state)
 {
 	bool sign_active = false;
 
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
-	if (get_Protocol() < PROTOCOL_NT1) {
+	if (xconn->protocol < PROTOCOL_NT1) {
 		return false;
 	}
 	if (signing_state) {
@@ -2874,7 +2878,7 @@ static void send_file_readbraw(connection_struct *conn,
 	if ( !req_is_in_chain(req) &&
 	     (nread > 0) &&
 	     !fsp_is_alternate_stream(fsp) &&
-	     lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
+	     lp_use_sendfile(xconn, SNUM(conn), xconn->smb1.signing_state) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
 		DATA_BLOB header_blob;
@@ -3458,7 +3462,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	if (!req_is_in_chain(req) &&
 	    !req->encrypted &&
 	    !fsp_is_alternate_stream(fsp) &&
-	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
+	    lp_use_sendfile(xconn, SNUM(conn), xconn->smb1.signing_state) ) {
 		uint8_t headerbuf[smb_size + 12 * 2 + 1 /* padding byte */];
 		DATA_BLOB header;
 
@@ -3941,7 +3945,7 @@ void reply_writebraw(struct smb_request *req)
 	/* We have to deal with slightly different formats depending
 		on whether we are using the core+ or lanman1.0 protocol */
 
-	if(get_Protocol() <= PROTOCOL_COREPLUS) {
+	if(xconn->protocol <= PROTOCOL_COREPLUS) {
 		numtowrite = SVAL(smb_buf_const(req->inbuf),-2);
 		data = smb_buf_const(req->inbuf);
 	} else {
@@ -4006,7 +4010,7 @@ void reply_writebraw(struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	srv_smb1_set_message(buf,get_Protocol()>PROTOCOL_COREPLUS?1:0,0,True);
+	srv_smb1_set_message(buf,xconn->protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);

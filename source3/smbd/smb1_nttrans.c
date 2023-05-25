@@ -2282,7 +2282,9 @@ static void handle_nttrans(connection_struct *conn,
 			   struct trans_state *state,
 			   struct smb_request *req)
 {
-	if (get_Protocol() >= PROTOCOL_NT1) {
+	struct smbXsrv_connection *xconn = req->xconn;
+
+	if (xconn->protocol >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(discard_const_p(uint8_t, req->inbuf),smb_flg2,req->flags2);
 	}

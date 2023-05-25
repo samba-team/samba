@@ -847,6 +847,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode;
+	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
@@ -1194,7 +1195,7 @@ static void call_trans2findfirst(connection_struct *conn,
 		if (fsp != NULL) {
 			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		}
-		if (get_Protocol() < PROTOCOL_NT1) {
+		if (xconn->protocol < PROTOCOL_NT1) {
 			reply_force_doserror(req, ERRDOS, ERRnofiles);
 			goto out;
 		} else {
@@ -5218,7 +5219,9 @@ static void call_trans2ioctl(connection_struct *conn,
 static void handle_trans2(connection_struct *conn, struct smb_request *req,
 			  struct trans_state *state)
 {
-	if (get_Protocol() >= PROTOCOL_NT1) {
+	struct smbXsrv_connection *xconn = req->xconn;
+
+	if (xconn->protocol >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL((discard_const_p(uint8_t, req->inbuf)),smb_flg2,req->flags2);
 	}
