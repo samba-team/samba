@@ -73,10 +73,9 @@ class AuthLogTestBase(samba.tests.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls.msg_handler_and_context:
-            cls.msg_ctx.deregister(cls.msg_handler_and_context,
-                                   msg_type=MSG_AUTH_LOG)
-            cls.msg_ctx.irpc_remove_name(AUTH_EVENT_NAME)
+        cls.msg_ctx.deregister(cls.msg_handler_and_context,
+                               msg_type=MSG_AUTH_LOG)
+        cls.msg_ctx.irpc_remove_name(AUTH_EVENT_NAME)
 
     def setUp(self):
         super(AuthLogTestBase, self).setUp()
