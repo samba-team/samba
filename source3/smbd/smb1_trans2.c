@@ -1079,7 +1079,7 @@ static void call_trans2findfirst(connection_struct *conn,
 		/*
 		 * Use NULL here for the first parameter (req)
 		 * as this is not a client visible handle so
-		 * can'tbe part of an SMB1 chain.
+		 * can't be part of an SMB1 chain.
 		 */
 		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		reply_nterror(req, ntstatus);
