@@ -77,6 +77,8 @@ class AuthLogTestBase(samba.tests.TestCase):
                                msg_type=MSG_AUTH_LOG)
         cls.msg_ctx.irpc_remove_name(AUTH_EVENT_NAME)
 
+        super().tearDownClass()
+
     def setUp(self):
         super(AuthLogTestBase, self).setUp()
         type(self).discardMessages()
