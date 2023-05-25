@@ -15,10 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import sys
 import subprocess
 from samba.tests import TestCase, check_help_consistency
-from unittest import TestSuite
 import re
 import stat
 
