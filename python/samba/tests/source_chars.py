@@ -311,9 +311,9 @@ def check_file_text():
         elif c[0] == 'C':
             others.append(x)
 
-    print("normal control characters {controls}")
-    print("format characters {formats}")
-    print("other control characters {others}")
+    print(f"normal control characters {controls}")
+    print(f"format characters {formats}")
+    print(f"other control characters {others}")
 
 
 if __name__ == '__main__':
