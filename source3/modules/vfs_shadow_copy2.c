@@ -24,7 +24,7 @@
  */
 
 /*
- * This is a second implemetation of a shadow copy module for exposing
+ * This is a second implementation of a shadow copy module for exposing
  * file system snapshots to windows clients as shadow copies.
  *
  * See the manual page for documentation.
