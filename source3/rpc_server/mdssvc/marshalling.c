@@ -1119,7 +1119,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			sl_nil_t nil = 0;
 
 			subcount = tag.count;
-			if (subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			for (i = 0; i < subcount; i++) {
@@ -1147,7 +1147,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_INT64:
 			subcount = sl_unpack_ints(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1156,7 +1156,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_UUID:
 			subcount = sl_unpack_uuid(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1165,7 +1165,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_FLOAT:
 			subcount = sl_unpack_floats(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1174,7 +1174,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_DATE:
 			subcount = sl_unpack_date(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
