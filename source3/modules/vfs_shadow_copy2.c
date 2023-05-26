@@ -3304,7 +3304,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	if (config->snapdir[0] == '/') {
 		config->snapdir_absolute = true;
 
-		if (config->snapdirseverywhere == true) {
+		if (config->snapdirseverywhere) {
 			DBG_WARNING("Warning: An absolute snapdir is "
 				    "incompatible with 'snapdirseverywhere', "
 				    "setting 'snapdirseverywhere' to "
@@ -3312,7 +3312,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 			config->snapdirseverywhere = false;
 		}
 
-		if (config->crossmountpoints == true) {
+		if (config->crossmountpoints) {
 			DBG_WARNING("Warning: 'crossmountpoints' is not "
 				    "supported with an absolute snapdir. "
 				    "Disabling it.\n");
