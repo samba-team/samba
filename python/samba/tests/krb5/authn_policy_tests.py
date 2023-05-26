@@ -130,8 +130,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             members += (member_of,)
         if assigned_policy is not None:
             opts['assigned_policy'] = str(assigned_policy)
+            cached = False   # Policies are rarely reused between accounts.
         if assigned_silo is not None:
             opts['assigned_silo'] = str(assigned_silo)
+            cached = False   # Silos are rarely reused between accounts.
         if allowed_rodc:
             opts['allowed_replication_mock'] = True
             opts['revealed_to_mock_rodc'] = True
