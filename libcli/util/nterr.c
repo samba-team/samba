@@ -45,7 +45,6 @@ typedef struct
  * same table as the other ones. */
 static const nt_err_code_struct special_errs[] =
 {
-        { "NT_STATUS_OK", NT_STATUS_OK },
         { "STATUS_NO_MORE_FILES", STATUS_NO_MORE_FILES },
         { "STATUS_INVALID_EA_NAME", STATUS_INVALID_EA_NAME },
         { "STATUS_BUFFER_OVERFLOW", STATUS_BUFFER_OVERFLOW },

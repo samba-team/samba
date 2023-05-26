@@ -22,7 +22,7 @@
 #
 
 import sys, io
-from gen_error_common import parseErrorDescriptions
+from gen_error_common import ErrorDef, parseErrorDescriptions
 
 def generateHeaderFile(out_file, errors):
     out_file.write("/*\n")
@@ -128,6 +128,15 @@ def main ():
     # read in the data
     with io.open(input_file, "rt", encoding='utf8') as file_contents:
         errors = parseErrorDescriptions(file_contents, False, transformErrorName)
+
+    # NT_STATUS_OK is a synonym of NT_STATUS_SUCCESS, and is very widely used
+    # throughout Samba. It must go first in the list to ensure that to ensure
+    # that code that previously found this error code in ‘special_errs’
+    # maintains the same behaviour by falling back to ‘nt_errs’.
+    ok_status = ErrorDef()
+    ok_status.err_code = 0
+    ok_status.err_define = 'NT_STATUS_OK'
+    errors.insert(0, ok_status)
 
     print("writing new header file: %s" % gen_headerfile_name)
     out_file = io.open(gen_headerfile_name, "wt", encoding='utf8')
