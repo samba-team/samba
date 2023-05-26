@@ -885,7 +885,8 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 
 	querystring = dalloc_value_for_key(query, "DALLOC_CTX", 0,
 					   "DALLOC_CTX", 1,
-					   "kMDQueryString");
+					   "kMDQueryString",
+					   "char *");
 	if (querystring == NULL) {
 		DEBUG(1, ("missing kMDQueryString\n"));
 		goto error;
@@ -925,8 +926,11 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	slq->ctx2 = *uint64p;
 
 	path_scope = dalloc_value_for_key(query, "DALLOC_CTX", 0,
-					  "DALLOC_CTX", 1, "kMDScopeArray");
+					  "DALLOC_CTX", 1,
+					  "kMDScopeArray",
+					  "sl_array_t");
 	if (path_scope == NULL) {
+		DBG_ERR("missing kMDScopeArray\n");
 		goto error;
 	}
 
@@ -947,8 +951,11 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	}
 
 	reqinfo = dalloc_value_for_key(query, "DALLOC_CTX", 0,
-				       "DALLOC_CTX", 1, "kMDAttributeArray");
+				       "DALLOC_CTX", 1,
+				       "kMDAttributeArray",
+				       "sl_array_t");
 	if (reqinfo == NULL) {
+		DBG_ERR("missing kMDAttributeArray\n");
 		goto error;
 	}
 
@@ -956,7 +963,9 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	DEBUG(10, ("requested attributes: %s", dalloc_dump(reqinfo, 0)));
 
 	cnids = dalloc_value_for_key(query, "DALLOC_CTX", 0,
-				     "DALLOC_CTX", 1, "kMDQueryItemArray");
+				     "DALLOC_CTX", 1,
+				     "kMDQueryItemArray",
+				     "sl_array_t");
 	if (cnids) {
 		ok = sort_cnids(slq, cnids->ca_cnids);
 		if (!ok) {
