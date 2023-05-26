@@ -237,14 +237,12 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                         "Did not receive the expected message")
 
     #
-    # Currently this does not get logged, so we expect to only see the log
-    # entries for the underlying ldap bind.
+    # Currently this does not get logged, so we expect to see no messages.
     #
     def test_ldap_change_password_bad_user(self):
         def isLastExpectedMessage(msg):
-            return (msg["type"] == "Authorization" and
-                    msg["Authorization"]["serviceDescription"] == "LDAP" and
-                    msg["Authorization"]["authType"] == "krb5")
+            # Accept any message we receive.
+            return True
 
         new_password = samba.generate_random_password(32, 32)
         try:
@@ -260,8 +258,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             (num, msg) = e.args
             pass
 
-        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
-                        "Did not receive the expected message")
+        self.assertFalse(self.waitForMessages(isLastExpectedMessage),
+                         "Received unexpected messages")
 
     def test_ldap_change_password_bad_original_password(self):
         def isLastExpectedMessage(msg):
