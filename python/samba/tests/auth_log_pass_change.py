@@ -51,11 +51,6 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                          credentials=self.get_credentials(),
                          lp=self.get_loadparm())
 
-        print("ldb %s" % type(self.ldb))
-        # Gets back the basedn
-        base_dn = self.ldb.domain_dn()
-        print("base_dn %s" % base_dn)
-
         # permit password changes during this test
         PasswordCommon.allow_password_changes(self, self.ldb)
 
