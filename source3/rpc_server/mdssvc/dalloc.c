@@ -159,7 +159,7 @@ void *dalloc_value_for_key(const DALLOC_CTX *d, ...)
 	int result = 0;
 	void *p = NULL;
 	va_list args;
-	const char *type;
+	const char *type = NULL;
 	int elem;
 	size_t array_len;
 
@@ -170,15 +170,12 @@ void *dalloc_value_for_key(const DALLOC_CTX *d, ...)
 		array_len = talloc_array_length(d->dd_talloc_array);
 		elem = va_arg(args, int);
 		if (elem >= array_len) {
-			va_end(args);
 			result = -1;
 			goto done;
 		}
 		d = d->dd_talloc_array[elem];
 		type = va_arg(args, const char *);
 	}
-
-	va_end(args);
 
 	array_len = talloc_array_length(d->dd_talloc_array);
 
@@ -192,8 +189,17 @@ void *dalloc_value_for_key(const DALLOC_CTX *d, ...)
 			break;
 		}
 	}
+	if (p == NULL) {
+		goto done;
+	}
+
+	type = va_arg(args, const char *);
+	if (strcmp(talloc_get_name(p), type) != 0) {
+		p = NULL;
+	}
 
 done:
+	va_end(args);
 	if (result != 0) {
 		p = NULL;
 	}
