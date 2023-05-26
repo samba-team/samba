@@ -368,7 +368,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					 config->snapdir, snaptime_string);
 	}
 	if (result == NULL) {
-		DEBUG(1, (__location__ " talloc_asprintf failed\n"));
+		DBG_WARNING("talloc_asprintf failed\n");
 	}
 
 	return result;
@@ -405,7 +405,7 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
 	result = talloc_asprintf(mem_ctx, "%s/%s",
 				 priv->config->snapshot_basepath, snaptime_string);
 	if (result == NULL) {
-		DEBUG(1, (__location__ " talloc_asprintf failed\n"));
+		DBG_WARNING("talloc_asprintf failed\n");
 	}
 
 	return result;
@@ -3056,9 +3056,9 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	const char *snapsharepath = NULL;
 	const char *mount_point;
 
-	DEBUG(10, (__location__ ": cnum[%u], connectpath[%s]\n",
-		   (unsigned)handle->conn->cnum,
-		   handle->conn->connectpath));
+	DBG_DEBUG("cnum[%" PRIu32 "], connectpath[%s]\n",
+		  handle->conn->cnum,
+		  handle->conn->connectpath);
 
 	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	if (ret < 0) {
@@ -3186,10 +3186,10 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 					   "shadow", "mountpoint", NULL);
 	if (mount_point != NULL) {
 		if (mount_point[0] != '/') {
-			DEBUG(1, (__location__ " Warning: 'mountpoint' is "
-				  "relative ('%s'), but it has to be an "
-				  "absolute path. Ignoring provided value.\n",
-				  mount_point));
+			DBG_WARNING("Warning: 'mountpoint' is relative "
+				    "('%s'), but it has to be an absolute "
+				    "path. Ignoring provided value.\n",
+				    mount_point);
 			mount_point = NULL;
 		} else {
 			char *p;
@@ -3209,7 +3209,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	if (mount_point != NULL) {
 		config->mount_point = talloc_strdup(config, mount_point);
 		if (config->mount_point == NULL) {
-			DEBUG(0, (__location__ " talloc_strdup() failed\n"));
+			DBG_ERR("talloc_strdup() failed\n");
 			return -1;
 		}
 	} else {
@@ -3228,10 +3228,10 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
-			DEBUG(1, (__location__ " Warning: 'basedir' is "
-				  "relative ('%s'), but it has to be an "
-				  "absolute path. Disabling basedir.\n",
-				  basedir));
+			DBG_WARNING("Warning: 'basedir' is "
+				    "relative ('%s'), but it has to be an "
+				    "absolute path. Disabling basedir.\n",
+				    basedir);
 			basedir = NULL;
 		} else {
 			char *p;
@@ -3248,8 +3248,8 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	}
 
 	if (config->snapdirseverywhere && basedir != NULL) {
-		DEBUG(1, (__location__ " Warning: 'basedir' is incompatible "
-			  "with 'snapdirseverywhere'. Disabling basedir.\n"));
+		DBG_WARNING("Warning: 'basedir' is incompatible "
+			    "with 'snapdirseverywhere'. Disabling basedir.\n");
 		basedir = NULL;
 	}
 
@@ -3305,16 +3305,17 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		config->snapdir_absolute = true;
 
 		if (config->snapdirseverywhere == true) {
-			DEBUG(1, (__location__ " Warning: An absolute snapdir "
-				  "is incompatible with 'snapdirseverywhere', "
-				  "setting 'snapdirseverywhere' to false.\n"));
+			DBG_WARNING("Warning: An absolute snapdir is "
+				    "incompatible with 'snapdirseverywhere', "
+				    "setting 'snapdirseverywhere' to "
+				    "false.\n");
 			config->snapdirseverywhere = false;
 		}
 
 		if (config->crossmountpoints == true) {
-			DEBUG(1, (__location__ " Warning: 'crossmountpoints' "
-				  "is not supported with an absolute snapdir. "
-				  "Disabling it.\n"));
+			DBG_WARNING("Warning: 'crossmountpoints' is not "
+				    "supported with an absolute snapdir. "
+				    "Disabling it.\n");
 			config->crossmountpoints = false;
 		}
 
