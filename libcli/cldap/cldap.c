@@ -513,7 +513,9 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 		goto nomem;
 	}
 
-	memcpy(state->blob.data, blob1.data, blob1.length);
+	if (blob1.data != NULL) {
+		memcpy(state->blob.data, blob1.data, blob1.length);
+	}
 	memcpy(state->blob.data+blob1.length, blob2.data, blob2.length);
 	data_blob_free(&blob1);
 	data_blob_free(&blob2);
