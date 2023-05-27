@@ -844,7 +844,7 @@ static bool exact_match(bool has_wild,
 			const char *str,
 			const char *mask)
 {
-	if (mask[0] == '.' && mask[1] == 0) {
+	if (ISDOT(mask)) {
 		return false;
 	}
 
