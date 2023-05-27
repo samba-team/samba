@@ -588,15 +588,19 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 			 * entry.
 			 */
 			return false;
-		} else if (state->num > 0) {
+		}
+
+		if (state->num > 0) {
 			goto last_entry_done;
-		} else if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		}
+
+		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 			tevent_req_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
 			return true;
-		} else {
-			tevent_req_nterror(req, state->empty_status);
-			return true;
 		}
+
+		tevent_req_nterror(req, state->empty_status);
+		return true;
 	}
 
 	if (state->async_ask_sharemode &&
