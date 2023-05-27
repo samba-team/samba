@@ -183,6 +183,10 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   struct smb_filename **_smb_fname,
 			   uint32_t *_mode,
 			   long *_prev_offset);
+void smbd_dirptr_push_overflow(struct dptr_struct *dirptr,
+			       char **_fname,
+			       struct smb_filename **_smb_fname,
+			       uint32_t mode);
 
 NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       connection_struct *conn,

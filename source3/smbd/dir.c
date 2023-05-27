@@ -70,6 +70,12 @@ struct dptr_struct {
 	bool did_stat; /* Optimisation for non-wcard searches. */
 	bool priv;     /* Directory handle opened with privilege. */
 	uint32_t counter;
+
+	struct {
+		char *fname;
+		struct smb_filename *smb_fname;
+		uint32_t mode;
+	} overflow;
 };
 
 static NTSTATUS OpenDir_fsp(
@@ -361,12 +367,16 @@ void dptr_RewindDir(struct dptr_struct *dptr)
 	long offset;
 	RewindDir(dptr->dir_hnd, &offset);
 	dptr->did_stat = false;
+	TALLOC_FREE(dptr->overflow.fname);
+	TALLOC_FREE(dptr->overflow.smb_fname);
 }
 
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
 {
 	SeekDir(dptr->dir_hnd, offset);
 	dptr->did_stat = false;
+	TALLOC_FREE(dptr->overflow.fname);
+	TALLOC_FREE(dptr->overflow.smb_fname);
 }
 
 long dptr_TellDir(struct dptr_struct *dptr)
@@ -574,6 +584,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 	*_smb_fname = NULL;
 	*_mode = 0;
+
+	if (dirptr->overflow.smb_fname != NULL) {
+		*_fname = talloc_move(ctx, &dirptr->overflow.fname);
+		*_smb_fname = talloc_move(ctx, &dirptr->overflow.smb_fname);
+		*_mode = dirptr->overflow.mode;
+		return true;
+	}
 
 	pathlen = strlen(dpath);
 	slashlen = ( dpath[pathlen-1] != '/') ? 1 : 0;
@@ -885,6 +902,19 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	}
 
 	return false;
+}
+
+void smbd_dirptr_push_overflow(struct dptr_struct *dirptr,
+			       char **_fname,
+			       struct smb_filename **_smb_fname,
+			       uint32_t mode)
+{
+	SMB_ASSERT(dirptr->overflow.fname == NULL);
+	SMB_ASSERT(dirptr->overflow.smb_fname == NULL);
+
+	dirptr->overflow.fname = talloc_move(dirptr, _fname);
+	dirptr->overflow.smb_fname = talloc_move(dirptr, _smb_fname);
+	dirptr->overflow.mode = mode;
 }
 
 /*******************************************************************
