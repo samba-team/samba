@@ -91,6 +91,8 @@ static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
 
 static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset);
+static void SeekDir(struct smb_Dir *dirp, long offset);
+static long TellDir(struct smb_Dir *dirp);
 
 #define INVALID_DPTR_KEY (-3)
 
@@ -1685,7 +1687,7 @@ void RewindDir(struct smb_Dir *dir_hnd, long *poffset)
  Seek a dir.
 ********************************************************************/
 
-void SeekDir(struct smb_Dir *dirp, long offset)
+static void SeekDir(struct smb_Dir *dirp, long offset)
 {
 	if (offset == dirp->offset) {
 		/*
@@ -1723,7 +1725,7 @@ void SeekDir(struct smb_Dir *dirp, long offset)
  Tell a dir position.
 ********************************************************************/
 
-long TellDir(struct smb_Dir *dir_hnd)
+static long TellDir(struct smb_Dir *dir_hnd)
 {
 	return(dir_hnd->offset);
 }
