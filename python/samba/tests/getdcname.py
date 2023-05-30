@@ -71,9 +71,9 @@ class GetDCNameEx(samba.tests.TestCase):
         """
         response = self._call_get_dc_name(ex2=True)
 
-        self.assertTrue(response.dc_unc is not None)
+        self.assertIsNotNone(response.dc_unc)
         self.assertTrue(response.dc_unc.startswith('\\\\'))
-        self.assertTrue(response.dc_address is not None)
+        self.assertIsNotNone(response.dc_address)
         self.assertTrue(response.dc_address.startswith('\\\\'))
 
         self.assertTrue(response.domain_name.lower() ==
@@ -105,9 +105,9 @@ class GetDCNameEx(samba.tests.TestCase):
         response = self._call_get_dc_name(domain=self.realm,
                                           ex2=True)
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertNotEqual(response_trust.dc_unc,
@@ -142,9 +142,9 @@ class GetDCNameEx(samba.tests.TestCase):
         response_trust = self._call_get_dc_name(domain=self.trust_realm,
                                                 flags=netlogon.DS_RETURN_DNS_NAME)
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertEqual(response_trust.domain_name.lower(),
@@ -163,9 +163,9 @@ class GetDCNameEx(samba.tests.TestCase):
                                                 site_name=site,
                                                 flags=netlogon.DS_RETURN_DNS_NAME)
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertEqual(response_trust.domain_name.lower(),
@@ -226,15 +226,15 @@ class GetDCNameEx(samba.tests.TestCase):
         except WERRORError as e:
             self.fail("Unable to get empty string site result: " + str(e))
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertEqual(response_trust.domain_name.lower(),
                          self.trust_realm.lower())
 
-        self.assertTrue(response_trust.dc_site_name is not None)
+        self.assertIsNotNone(response_trust.dc_site_name)
         self.assertNotEqual('', response_trust.dc_site_name)
 
     def test_get_dc_over_winbind_netbios(self):
@@ -248,7 +248,7 @@ class GetDCNameEx(samba.tests.TestCase):
         except WERRORError as e:
             self.fail("Failed to succeed over winbind: " + str(e))
 
-        self.assertTrue(response_trust is not None)
+        self.assertIsNotNone(response_trust)
         self.assertEqual(response_trust.domain_name.lower(),
                          self.trust_realm.lower())
 
@@ -272,7 +272,7 @@ class GetDCNameEx(samba.tests.TestCase):
             self.fail("get_dc_name (domain=%s,site=%s) over winbind failed: %s"
                       % (self.trust_domain, site, e))
 
-        self.assertTrue(response_trust is not None)
+        self.assertIsNotNone(response_trust)
         self.assertEqual(response_trust.domain_name.lower(),
                          self.trust_realm.lower())
 
@@ -291,9 +291,9 @@ class GetDCNameEx(samba.tests.TestCase):
         except WERRORError as e:
             self.fail("Unable to get NULL domain GUID result: " + str(e))
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertEqual(response_trust.domain_name.lower(),
@@ -310,9 +310,9 @@ class GetDCNameEx(samba.tests.TestCase):
                                           site_name=site,
                                           flags=netlogon.DS_RETURN_DNS_NAME)
 
-        self.assertTrue(response.dc_unc is not None)
+        self.assertIsNotNone(response.dc_unc)
         self.assertTrue(response.dc_unc.startswith('\\\\'))
-        self.assertTrue(response.dc_address is not None)
+        self.assertIsNotNone(response.dc_address)
         self.assertTrue(response.dc_address.startswith('\\\\'))
 
         self.assertEqual(response.domain_name.lower(),
@@ -371,15 +371,15 @@ class GetDCNameEx(samba.tests.TestCase):
         except WERRORError as e:
             self.fail("Unable to get empty string site result: " + str(e))
 
-        self.assertTrue(response.dc_unc is not None)
+        self.assertIsNotNone(response.dc_unc)
         self.assertTrue(response.dc_unc.startswith('\\\\'))
-        self.assertTrue(response.dc_address is not None)
+        self.assertIsNotNone(response.dc_address)
         self.assertTrue(response.dc_address.startswith('\\\\'))
 
         self.assertEqual(response.domain_name.lower(),
                          self.realm.lower())
 
-        self.assertTrue(response.dc_site_name is not None)
+        self.assertIsNotNone(response.dc_site_name)
         self.assertNotEqual('', response.dc_site_name)
 
     def test_get_dc_netbios(self):
@@ -392,7 +392,7 @@ class GetDCNameEx(samba.tests.TestCase):
         except WERRORError as e:
             self.fail("Failed to succeed over winbind: " + str(e))
 
-        self.assertTrue(response is not None)
+        self.assertIsNotNone(response)
         self.assertEqual(response.domain_name.lower(),
                          self.realm.lower())
 
@@ -408,7 +408,7 @@ class GetDCNameEx(samba.tests.TestCase):
         except WERRORError as e:
             self.fail("Failed to succeed over winbind: " + str(e))
 
-        self.assertTrue(response is not None)
+        self.assertIsNotNone(response)
         self.assertEqual(response.domain_name.lower(),
                          self.realm.lower())
 
@@ -422,9 +422,9 @@ class GetDCNameEx(samba.tests.TestCase):
                                           domain_guid=null_guid,
                                           flags=netlogon.DS_RETURN_DNS_NAME)
 
-        self.assertTrue(response.dc_unc is not None)
+        self.assertIsNotNone(response.dc_unc)
         self.assertTrue(response.dc_unc.startswith('\\\\'))
-        self.assertTrue(response.dc_address is not None)
+        self.assertIsNotNone(response.dc_address)
         self.assertTrue(response.dc_address.startswith('\\\\'))
 
         self.assertEqual(response.domain_name.lower(),
@@ -435,9 +435,9 @@ class GetDCNameEx(samba.tests.TestCase):
         response = self._call_get_dc_name(domain='',
                                           flags=netlogon.DS_RETURN_DNS_NAME)
 
-        self.assertTrue(response.dc_unc is not None)
+        self.assertIsNotNone(response.dc_unc)
         self.assertTrue(response.dc_unc.startswith('\\\\'))
-        self.assertTrue(response.dc_address is not None)
+        self.assertIsNotNone(response.dc_address)
         self.assertTrue(response.dc_address.startswith('\\\\'))
 
         self.assertEqual(response.domain_name.lower(),
@@ -455,9 +455,9 @@ class GetDCNameEx(samba.tests.TestCase):
             enum, estr = e.args
             self.fail(f"netr_DsRGetDCNameEx failed: {estr}")
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertEqual(response_trust.domain_name.lower(),
@@ -494,9 +494,9 @@ class GetDCNameEx(samba.tests.TestCase):
         response_trust = self._call_get_dc_name(domain=self.trust_realm,
                                                 flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
 
-        self.assertTrue(response_trust.dc_unc is not None)
+        self.assertIsNotNone(response_trust.dc_unc)
         self.assertTrue(response_trust.dc_unc.startswith('\\\\'))
-        self.assertTrue(response_trust.dc_address is not None)
+        self.assertIsNotNone(response_trust.dc_address)
         self.assertTrue(response_trust.dc_address.startswith('\\\\'))
 
         self.assertEqual(response_trust.domain_name.lower(),
