@@ -1174,13 +1174,9 @@ interface netlogon
 					 DS_TRY_NEXTCLOSEST_SITE |
 					 DS_DIRECTORY_SERVICE_6_REQUIRED |
 					 DS_WEB_SERVICE_REQUIRED |
-					 /*
-					  * For now we skip these until
-					  * we have test for them:
-					  * DS_DIRECTORY_SERVICE_8_REQUIRED |
-					  * DS_DIRECTORY_SERVICE_9_REQUIRED |
-					  * DS_DIRECTORY_SERVICE_10_REQUIRED |
-					  */
+					 DS_DIRECTORY_SERVICE_8_REQUIRED |
+					 DS_DIRECTORY_SERVICE_9_REQUIRED |
+					 DS_DIRECTORY_SERVICE_10_REQUIRED |
 					 DS_RETURN_FLAT_NAME |
 					 DS_RETURN_DNS_NAME);
 
