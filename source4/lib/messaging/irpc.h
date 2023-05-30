@@ -23,6 +23,7 @@
 #define IRPC_H
 
 #include "lib/messaging/messaging.h"
+#include "libcli/util/werror.h"
 #include "librpc/gen_ndr/irpc.h"
 
 /*

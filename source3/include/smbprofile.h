@@ -21,6 +21,9 @@
 
 */
 
+#include "replace.h"
+#include "lib/util/time.h"
+
 struct tevent_context;
 
 #ifdef WITH_PROFILE

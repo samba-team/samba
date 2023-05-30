@@ -22,8 +22,10 @@
 #define _SOURCE4_LIB_MESSAGING_MESSAGES_H_
 
 #include "librpc/gen_ndr/server_id.h"
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/messaging.h"
 
+struct loadparm_context;
 struct imessaging_context;
 
 /* taskid for messaging of parent process */

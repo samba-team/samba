@@ -19,6 +19,8 @@
 
 /* key and data in the connections database - used in smbstatus and smbd */
 
+#include "source3/include/includes.h"
+
 struct connections_data {
 	struct server_id pid;
 	int cnum;

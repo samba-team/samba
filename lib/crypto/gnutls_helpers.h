@@ -22,6 +22,7 @@
 
 #include "libcli/util/ntstatus.h"
 #include "libcli/util/werror.h"
+#include "lib/util/data_blob.h"
 
 /* Those macros are only available in GnuTLS >= 3.6.4 */
 #ifndef GNUTLS_FIPS140_SET_LAX_MODE
