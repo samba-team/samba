@@ -477,11 +477,11 @@ class GetDCNameEx(samba.tests.TestCase):
             response = self._call_get_dc_name(domain=self.realm,
                                               flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
 
-            self.fail("Failed to detect requirement for 2012 that is not met")
+            self.fail("Failed to detect that requirement for 2012R2 was not met")
         except WERRORError as e:
             enum, estr = e.args
             if enum != werror.WERR_NO_SUCH_DOMAIN:
-                self.fail("Failed to detect requirement for 2012 that is not met")
+                self.fail(f"Incorrect error {estr} from GetDcNameEx looking for 2012R2 DC that was not available")
 
     def test_get_dc_direct_need_2012r2(self):
         """Test requring that we have a FL2012R2 DC as answer
@@ -519,11 +519,11 @@ class GetDCNameEx(samba.tests.TestCase):
             response = self._call_get_dc_name(domain=self.realm,
                                               flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
 
-            self.fail("Failed to detect requirement for 2012 that is not met")
+            self.fail("Failed to detect requirement for 2012R2 that is not met")
         except WERRORError as e:
             enum, estr = e.args
             if enum != werror.WERR_NO_SUCH_DOMAIN:
-                self.fail("Failed to detect requirement for 2012 that is not met")
+                self.fail("Failed to detect requirement for 2012R2 that is not met")
 
     # TODO Thorough tests of domain GUID
     #
