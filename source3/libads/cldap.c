@@ -79,6 +79,9 @@ bool check_cldap_reply_required_flags(uint32_t ret_flags,
 	if (req_flags & DS_TIMESERV_REQUIRED)
 		RETURN_ON_FALSE(ret_flags & NBT_SERVER_TIMESERV);
 
+	if (req_flags & DS_WEB_SERVICE_REQUIRED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_ADS_WEB_SERVICE);
+
 	if (req_flags & DS_WRITABLE_REQUIRED)
 		RETURN_ON_FALSE(ret_flags & NBT_SERVER_WRITABLE);
 
