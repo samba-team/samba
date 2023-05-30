@@ -24,9 +24,9 @@ from samba import WERRORError, werror
 import samba.tests
 import os
 from samba.credentials import Credentials
-from samba.dcerpc import netlogon
+from samba.dcerpc import netlogon, nbt
 from samba.dcerpc.misc import GUID
-
+from samba.net import Net
 
 class GetDCNameEx(samba.tests.TestCase):
 
@@ -463,6 +463,15 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertEqual(response_trust.domain_name.lower(),
                          self.trust_realm.lower())
 
+        # Now check the CLDAP netlogon response matches the above
+        dc_ip = response_trust.dc_address[2:]
+
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.trust_realm, address=dc_ip,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_DS_9)
+
     def test_get_dc_direct_need_2012r2_but_not_found(self):
         """Test requring that we have a FL2012R2 DC as answer, aginst the FL2008R2 domain
 
@@ -483,6 +492,72 @@ class GetDCNameEx(samba.tests.TestCase):
             if enum != werror.WERR_NO_SUCH_DOMAIN:
                 self.fail(f"Incorrect error {estr} from GetDcNameEx looking for 2012R2 DC that was not available")
 
+    def test_get_dc_direct_need_web_but_not_found(self):
+        """Test requring that we (do not) have a AD Web Services on the DC
+
+        This test requires that the DC does not advertise AD Web Services
+
+        This is used as a test that is easy for a modern windows
+        version to fail, as (say) Windows 2022 will succeed for all
+        the DS_DIRECTORY_SERVICE_* flags.  Disable AD Web services in
+        services.mmc to run this test successfully.
+
+        """
+        self.assertIsNotNone(self.realm)
+
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_WEB_SERVICE_REQUIRED)
+
+            self.fail("Failed to detect that requirement for Web Services was not")
+        except WERRORError as e:
+            enum, estr = e.args
+            if enum != werror.WERR_NO_SUCH_DOMAIN:
+                self.fail(f"Incorrect error {estr} from GetDcNameEx looking for AD Web Services enabled DC that should not be available")
+
+        # Now check the CLDAP netlogon response matches the above - that the bit was not set
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.realm,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        # We can assert this, even without looking for a particular
+        # DC, as if any DC has WEB_SERVICE we would have got it above.
+        self.assertFalse(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_ADS_WEB_SERVICE)
+
+    def test_get_dc_winbind_need_web_but_not_found(self):
+        """Test requring that we (do not) have a AD Web Services on the trusted DC
+
+        This test requires that the DC does not advertise AD Web Services
+
+        This is used as a test that is easy for a modern windows
+        version to fail, as (say) Windows 2022 will succeed for all
+        the DS_DIRECTORY_SERVICE_* flags.  Disable AD Web services in
+        services.mmc to run this test successfully.
+
+        """
+        self.assertIsNotNone(self.trust_realm)
+
+
+        try:
+            response = self._call_get_dc_name(domain=self.trust_realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_WEB_SERVICE_REQUIRED)
+
+            self.fail("Failed to detect that requirement for Web Services was not")
+        except WERRORError as e:
+            enum, estr = e.args
+            if enum != werror.WERR_NO_SUCH_DOMAIN:
+                self.fail(f"Incorrect error {estr} from GetDcNameEx looking for AD Web Services enabled DC that should not be available")
+
+        # Now check the CLDAP netlogon response matches the above - that the bit was not set
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.trust_realm,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        # We can assert this, even without looking for a particular
+        # DC, as if any DC has WEB_SERVICE we would have got it above.
+        self.assertFalse(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_ADS_WEB_SERVICE)
+
     def test_get_dc_direct_need_2012r2(self):
         """Test requring that we have a FL2012R2 DC as answer
         """
@@ -501,6 +576,15 @@ class GetDCNameEx(samba.tests.TestCase):
 
         self.assertEqual(response_trust.domain_name.lower(),
                          self.trust_realm.lower())
+
+        # Now check the CLDAP netlogon response matches the above
+        dc_ip = response_trust.dc_address[2:]
+
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.trust_realm, address=dc_ip,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_DS_9)
 
     def test_get_dc_winbind_need_2012r2_but_not_found(self):
         """Test requring that we have a FL2012R2 DC as answer, aginst the FL2008R2 domain
@@ -524,6 +608,93 @@ class GetDCNameEx(samba.tests.TestCase):
             enum, estr = e.args
             if enum != werror.WERR_NO_SUCH_DOMAIN:
                 self.fail("Failed to detect requirement for 2012R2 that is not met")
+
+        # Now check the CLDAP netlogon response matches the above - that the DS_9 bit was not set
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.realm,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        self.assertFalse(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_DS_9)
+
+    def test_get_dc_winbind_need_2012r2_but_not_found_fallback(self):
+        """Test requring that we have a FL2012R2 DC as answer, aginst the
+        FL2008R2 domain, then trying for just FL2008R2 (to show caching bugs)
+
+        This test requires that the DC in the FL2008R2 does not claim
+        to be 2012R2 capable (off by default in Samba)
+
+        """
+        self.assertIsNotNone(self.realm)
+
+        self.netlogon_conn = netlogon.netlogon(f"ncacn_ip_tcp:{self.trust_server}",
+                                               self.get_loadparm())
+
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
+
+            self.fail("Failed to detect requirement for 2012R2 that is not met")
+        except WERRORError as e:
+            enum, estr = e.args
+            if enum != werror.WERR_NO_SUCH_DOMAIN:
+                self.fail("Failed to detect requirement for 2012R2 that is not met")
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_6_REQUIRED)
+
+        except WERRORError as e:
+            enum, estr = e.args
+            self.fail("Unexpectedly failed to find 2008 DC")
+
+        dc_ip = response.dc_address[2:]
+
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.realm, address=dc_ip,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_FULL_SECRET_DOMAIN_6)
+
+    def test_get_dc_direct_need_2012r2_but_not_found_fallback(self):
+        """Test requring that we have a FL2012R2 DC as answer, aginst the
+        FL2008R2 domain, then trying for just FL2008R2 (to show caching bugs)
+
+        This test requires that the DC in the FL2008R2 does not claim
+        to be 2012R2 capable (off by default in Samba)
+
+        """
+        self.assertIsNotNone(self.realm)
+
+        self.netlogon_conn = netlogon.netlogon(f"ncacn_ip_tcp:{self.server}",
+                                               self.get_loadparm())
+
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_9_REQUIRED)
+
+            self.fail("Failed to detect requirement for 2012R2 that is not met")
+        except WERRORError as e:
+            enum, estr = e.args
+            if enum != werror.WERR_NO_SUCH_DOMAIN:
+                self.fail("Failed to detect requirement for 2012R2 that is not met")
+
+        try:
+            response = self._call_get_dc_name(domain=self.realm,
+                                              flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_DIRECTORY_SERVICE_6_REQUIRED)
+
+        except WERRORError as e:
+            enum, estr = e.args
+            self.fail("Unexpectedly failed to find 2008 DC")
+
+        dc_ip = response.dc_address[2:]
+
+        net = Net(creds=self.creds, lp=self.lp)
+        cldap_netlogon_reply = net.finddc(domain=self.realm, address=dc_ip,
+                                          flags=(nbt.NBT_SERVER_LDAP |
+                                                 nbt.NBT_SERVER_DS))
+        self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_FULL_SECRET_DOMAIN_6)
 
     # TODO Thorough tests of domain GUID
     #
