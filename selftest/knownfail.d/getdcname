@@ -1,3 +1,0 @@
-^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_direct_need_2012r2_but_not_found\(fl2008r2dc\)
-^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_direct_need_2012r2_but_not_found_fallback
-^samba.tests.getdcname.samba.tests.getdcname.GetDCNameEx.test_get_dc_direct_need_web_but_not_found
