@@ -21,10 +21,21 @@
 #include "system/filesys.h"
 #include "close_low_fd.h"
 
+#ifdef HAVE_VALGRIND_VALGRIND_H
+#include <valgrind/valgrind.h>
+#elif defined(HAVE_VALGRIND_H)
+#include <valgrind.h>
+#else
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 _PUBLIC_ int close_low_fd(int fd)
 {
-#ifndef VALGRIND
 	int ret, dev_null;
+
+	if (RUNNING_ON_VALGRIND) {
+		return 0;
+	}
 
 	dev_null = open("/dev/null", O_RDWR, 0);
 
@@ -60,6 +71,5 @@ _PUBLIC_ int close_low_fd(int fd)
 		return err;
 	}
 	close(dev_null);
-#endif
 	return 0;
 }
