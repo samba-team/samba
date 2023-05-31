@@ -22,6 +22,7 @@
 */
 
 #include "replace.h"
+#include <tdb.h>
 #include "lib/util/time.h"
 
 struct tevent_context;
@@ -517,6 +518,10 @@ void smbprofile_dump(void);
 void smbprofile_cleanup(pid_t pid, pid_t dst);
 void smbprofile_stats_accumulate(struct profile_stats *acc,
 				 const struct profile_stats *add);
+int smbprofile_magic(const struct profile_stats *stats, uint64_t *_magic);
+void smbprofile_collect_tdb(struct tdb_context *tdb,
+			    uint64_t magic,
+			    struct profile_stats *stats);
 void smbprofile_collect(struct profile_stats *stats);
 
 static inline uint64_t profile_timestamp(void)

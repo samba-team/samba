@@ -773,11 +773,14 @@ bld.SAMBA3_SUBSYSTEM('LEASES_UTIL',
                     deps='NDR_OPEN_FILES')
 
 if bld.CONFIG_GET("WITH_PROFILE"):
+    bld.SAMBA_SUBSYSTEM('PROFILE_READ',
+                        source='profile/profile_read.c',
+                        deps='gnutls talloc tdb')
     bld.SAMBA3_SUBSYSTEM('PROFILE',
                          source='profile/profile.c',
                          deps='''
                               samba-util
-                              gnutls
+                              PROFILE_READ
                               ''')
 else:
     bld.SAMBA3_SUBSYSTEM('PROFILE',

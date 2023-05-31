@@ -32,10 +32,6 @@
 #include <sys/resource.h>
 #endif
 
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
-#include "lib/crypto/gnutls_helpers.h"
-
 struct profile_stats *profile_p;
 struct smbprofile_global_state smbprofile_state;
 
@@ -124,8 +120,6 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
   ******************************************************************/
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 {
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_DIG_SHA1)];
-	gnutls_hash_hd_t hash_hnd = NULL;
 	char *db_name;
 	bool ok = false;
 	int rc;
@@ -154,78 +148,15 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 				   reqprofile_message);
 	}
 
-	GNUTLS_FIPS140_SET_LAX_MODE();
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA1);
-	if (rc < 0) {
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd,
-			 &smbprofile_state.stats.global,
-			 sizeof(smbprofile_state.stats.global));
-
-#define __UPDATE(str) do { \
-	rc |= gnutls_hash(hash_hnd, str, strlen(str)); \
-} while(0)
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display) do { \
-	__UPDATE(#name "+" #display); \
-} while(0);
-#define SMBPROFILE_STATS_COUNT(name) do { \
-	__UPDATE(#name "+count"); \
-} while(0);
-#define SMBPROFILE_STATS_TIME(name) do { \
-	__UPDATE(#name "+time"); \
-} while(0);
-#define SMBPROFILE_STATS_BASIC(name) do { \
-	__UPDATE(#name "+count"); \
-	__UPDATE(#name "+time"); \
-} while(0);
-#define SMBPROFILE_STATS_BYTES(name) do { \
-	__UPDATE(#name "+count"); \
-	__UPDATE(#name "+time"); \
-	__UPDATE(#name "+idle"); \
-	__UPDATE(#name "+bytes"); \
-} while(0);
-#define SMBPROFILE_STATS_IOBYTES(name) do { \
-	__UPDATE(#name "+count"); \
-	__UPDATE(#name "+time"); \
-	__UPDATE(#name "+idle"); \
-	__UPDATE(#name "+inbytes"); \
-	__UPDATE(#name "+outbytes"); \
-} while(0);
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef __UPDATE
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
-	if (rc != 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-
-	gnutls_hash_deinit(hash_hnd, digest);
-
-	GNUTLS_FIPS140_SET_STRICT_MODE();
-
 	profile_p = &smbprofile_state.stats.global;
 
-	profile_p->magic = BVAL(digest, 0);
-	if (profile_p->magic == 0) {
-		profile_p->magic = BVAL(digest, 8);
+	rc = smbprofile_magic(profile_p, &profile_p->magic);
+	if (rc != 0) {
+		goto out;
 	}
 
 	ok = true;
 out:
-	GNUTLS_FIPS140_SET_STRICT_MODE();
 
 	return ok;
 }
@@ -389,77 +320,12 @@ void smbprofile_cleanup(pid_t pid, pid_t dst)
 	tdb_chainunlock(smbprofile_state.internal.db->tdb, key);
 }
 
-void smbprofile_stats_accumulate(struct profile_stats *acc,
-				 const struct profile_stats *add)
-{
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display)
-#define SMBPROFILE_STATS_COUNT(name) do { \
-	acc->values.name##_stats.count += add->values.name##_stats.count; \
-} while(0);
-#define SMBPROFILE_STATS_TIME(name) do { \
-	acc->values.name##_stats.time += add->values.name##_stats.time; \
-} while(0);
-#define SMBPROFILE_STATS_BASIC(name) do { \
-	acc->values.name##_stats.count += add->values.name##_stats.count; \
-	acc->values.name##_stats.time += add->values.name##_stats.time; \
-} while(0);
-#define SMBPROFILE_STATS_BYTES(name) do { \
-	acc->values.name##_stats.count += add->values.name##_stats.count; \
-	acc->values.name##_stats.time += add->values.name##_stats.time; \
-	acc->values.name##_stats.idle += add->values.name##_stats.idle; \
-	acc->values.name##_stats.bytes += add->values.name##_stats.bytes; \
-} while(0);
-#define SMBPROFILE_STATS_IOBYTES(name) do { \
-	acc->values.name##_stats.count += add->values.name##_stats.count; \
-	acc->values.name##_stats.time += add->values.name##_stats.time; \
-	acc->values.name##_stats.idle += add->values.name##_stats.idle; \
-	acc->values.name##_stats.inbytes += add->values.name##_stats.inbytes; \
-	acc->values.name##_stats.outbytes += add->values.name##_stats.outbytes; \
-} while(0);
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
-}
-
-static int smbprofile_collect_fn(struct tdb_context *tdb,
-				 TDB_DATA key, TDB_DATA value,
-				 void *private_data)
-{
-	struct profile_stats *acc = (struct profile_stats *)private_data;
-	const struct profile_stats *v;
-
-	if (value.dsize != sizeof(struct profile_stats)) {
-		return 0;
-	}
-
-	v = (const struct profile_stats *)value.dptr;
-
-	if (v->magic != profile_p->magic) {
-		return 0;
-	}
-
-	smbprofile_stats_accumulate(acc, v);
-	return 0;
-}
-
 void smbprofile_collect(struct profile_stats *stats)
 {
-	*stats = (struct profile_stats) {};
-
 	if (smbprofile_state.internal.db == NULL) {
 		return;
 	}
-
-	tdb_traverse_read(smbprofile_state.internal.db->tdb,
-			  smbprofile_collect_fn, stats);
+	smbprofile_collect_tdb(smbprofile_state.internal.db->tdb,
+			       profile_p->magic,
+			       stats);
 }
