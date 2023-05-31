@@ -677,6 +677,136 @@ done:
 	return ok;
 }
 
+static bool test_sl_dict_type_safety(struct torture_context *tctx,
+				     void *data)
+{
+	struct torture_mdsscv_state *state = talloc_get_type_abort(
+		data, struct torture_mdsscv_state);
+	struct dcerpc_binding_handle *b = state->p->binding_handle;
+	struct mdssvc_blob request_blob;
+	struct mdssvc_blob response_blob;
+	uint64_t ctx1 = 0xdeadbeef;
+	uint64_t ctx2 = 0xcafebabe;
+	uint32_t device_id;
+	uint32_t unkn2;
+	uint32_t unkn9;
+	uint32_t fragment;
+	uint32_t flags;
+	DALLOC_CTX *d = NULL;
+	sl_array_t *array1 = NULL, *array2 = NULL;
+	sl_dict_t *arg = NULL;
+	int result;
+	NTSTATUS status;
+	bool ok = true;
+
+	device_id = UINT32_C(0x2f000045);
+	unkn2 = 23;
+	unkn9 = 0;
+	fragment = 0;
+	flags = UINT32_C(0x6b000001);
+
+	d = dalloc_new(tctx);
+	torture_assert_not_null_goto(tctx, d,
+				     ok, done, "dalloc_new failed\n");
+
+	array1 = dalloc_zero(d, sl_array_t);
+	torture_assert_not_null_goto(tctx, array1,
+				     ok, done, "dalloc_zero failed\n");
+
+	array2 = dalloc_zero(d, sl_array_t);
+	torture_assert_not_null_goto(tctx, array2,
+				     ok, done, "dalloc_new failed\n");
+
+	result = dalloc_stradd(array2, "openQueryWithParams:forContext:");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_add_copy(array2, &ctx1, uint64_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_add_copy(array2, &ctx2, uint64_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	arg = dalloc_zero(array1, sl_dict_t);
+	torture_assert_not_null_goto(tctx, d,
+				     ok, done, "dalloc_zero failed\n");
+
+	result = dalloc_stradd(arg, "kMDQueryString");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_stradd(arg, "*");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_stradd(arg, "kMDScopeArray");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_stradd(arg, "AAAABBBB");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_add(array1, array2, sl_array_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_add failed\n");
+
+	result = dalloc_add(array1, arg, sl_dict_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_add failed\n");
+
+	result = dalloc_add(d, array1, sl_array_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_add failed\n");
+
+	torture_comment(tctx, "%s", dalloc_dump(d, 0));
+
+	request_blob.spotlight_blob = talloc_array(tctx,
+						   uint8_t,
+						   64 * 1024);
+	torture_assert_not_null_goto(tctx, request_blob.spotlight_blob,
+				     ok, done, "dalloc_new failed\n");
+	request_blob.size = 64 * 1024;
+
+	request_blob.length = sl_pack(d,
+				      (char *)request_blob.spotlight_blob,
+				      request_blob.size);
+	torture_assert_goto(tctx, request_blob.length > 0,
+			    ok, done, "sl_pack failed\n");
+
+	response_blob.spotlight_blob = talloc_array(state, uint8_t, 0);
+	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
+				     ok, done, "dalloc_zero failed\n");
+	response_blob.size = 0;
+
+	status = dcerpc_mdssvc_cmd(b,
+				   state,
+				   &state->ph,
+				   0,
+				   device_id,
+				   unkn2,
+				   0,
+				   flags,
+				   request_blob,
+				   0,
+				   64 * 1024,
+				   1,
+				   64 * 1024,
+				   0,
+				   0,
+				   &fragment,
+				   &response_blob,
+				   &unkn9);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, done,
+		"dcerpc_mdssvc_cmd failed\n");
+
+done:
+	return ok;
+}
+
 static bool test_mdssvc_invalid_ph_close(struct torture_context *tctx,
 					 void *data)
 {
@@ -955,6 +1085,10 @@ struct torture_suite *torture_rpc_mdssvc(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase,
 				      "mdssvc_sl_unpack_loop",
 				      test_mdssvc_sl_unpack_loop);
+
+	torture_tcase_add_simple_test(tcase,
+				      "sl_dict_type_safety",
+				      test_sl_dict_type_safety);
 
 	return suite;
 }
