@@ -1426,6 +1426,38 @@ static PyObject *py_dsdb_user_account_control_flag_bit_to_string(PyObject *self,
 	return PyUnicode_FromString(str);
 }
 
+static PyObject *py_dsdb_check_and_update_fl(PyObject *self, PyObject *args)
+{
+	TALLOC_CTX *frame = NULL;
+
+	PyObject *py_ldb = NULL, *py_lp = NULL;
+	struct ldb_context *ldb = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_lp)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	frame = talloc_stackframe();
+
+	lp_ctx = lpcfg_from_py_object(frame, py_lp);
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	ret = dsdb_check_and_update_fl(ldb, lp_ctx);
+	TALLOC_FREE(frame);
+
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
@@ -1512,6 +1544,12 @@ static PyMethodDef py_dsdb_methods[] = {
 	        METH_VARARGS,
 	        "user_account_control_flag_bit_to_string(bit)"
                 " -> string name" },
+	{ "check_and_update_fl",
+	        (PyCFunction)py_dsdb_check_and_update_fl,
+	        METH_VARARGS,
+	        "check_and_update_fl(ldb, lp) -> None\n"
+	  "Hook to run in testing the code run on samba server startup "
+	  "to validate and update DC functional levels"},
 	{0}
 };
 

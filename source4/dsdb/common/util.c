@@ -3994,6 +3994,123 @@ int dsdb_dc_functional_level(struct ldb_context *ldb)
 	return *dcFunctionality;
 }
 
+int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_context *lp_ctx)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret;
+
+	int db_dc_functional_level;
+	int db_domain_functional_level;
+	int db_forest_functional_level;
+	int lp_dc_functional_level = lpcfg_ad_dc_functional_level(lp_ctx);
+	bool am_rodc;
+	struct ldb_message *msg = NULL;
+	struct ldb_dn *dc_ntds_settings_dn = NULL;
+
+
+	db_dc_functional_level = dsdb_dc_functional_level(ldb_ctx);
+	db_domain_functional_level = dsdb_functional_level(ldb_ctx);
+	db_forest_functional_level = dsdb_forest_functional_level(ldb_ctx);
+
+	if (lp_dc_functional_level < db_domain_functional_level) {
+		DBG_ERR("Refusing to start as smb.conf 'ad dc functional level' maps to %d, "
+			"which is less than the domain functional level of %d\n",
+			lp_dc_functional_level, db_domain_functional_level);
+		TALLOC_FREE(frame);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (lp_dc_functional_level < db_forest_functional_level) {
+		DBG_ERR("Refusing to start as smb.conf 'ad dc functional level' maps to %d, "
+			"which is less than the forest functional level of %d\n",
+			lp_dc_functional_level, db_forest_functional_level);
+		TALLOC_FREE(frame);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* Check if we need to update the DB */
+	if (db_dc_functional_level == lp_dc_functional_level) {
+		TALLOC_FREE(frame);
+		return LDB_SUCCESS;
+	}
+
+	/* Confirm we are not an RODC before we try a modify */
+	ret = samdb_rodc(ldb_ctx, &am_rodc);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to determine if this server is an RODC\n");
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	if (am_rodc) {
+		DBG_WARNING("Unable to update DC's msDS-Behavior-Version "
+			    "to correct value (%d from %d) as we are an RODC\n",
+			    db_forest_functional_level, lp_dc_functional_level);
+		TALLOC_FREE(frame);
+		return LDB_SUCCESS;
+	}
+
+	dc_ntds_settings_dn = samdb_ntds_settings_dn(ldb_ctx, frame);
+
+	if (dc_ntds_settings_dn == NULL) {
+		DBG_ERR("Failed to find own NTDS Settings DN\n");
+		TALLOC_FREE(frame);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	/* Now update our msDS-Behavior-Version */
+
+	msg = ldb_msg_new(frame);
+	if (msg == NULL) {
+		DBG_ERR("Failed to allocate message to update msDS-Behavior-Version\n");
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = dc_ntds_settings_dn;
+
+	ret = samdb_msg_add_int(ldb_ctx, frame, msg, "msDS-Behavior-Version", lp_dc_functional_level);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to set new msDS-Behavior-Version on message\n");
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_replace(ldb_ctx, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to update DB with new msDS-Behavior-Version on %s: %s\n",
+			ldb_dn_get_linearized(dc_ntds_settings_dn),
+			ldb_errstring(ldb_ctx));
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	/*
+	 * We have to update the opaque because this particular ldb_context
+	 * will not re-read the DB
+	 */
+	{
+		int *val = talloc(ldb_ctx, int);
+		if (!val) {
+			TALLOC_FREE(frame);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		*val = lp_dc_functional_level;
+		ret = ldb_set_opaque(ldb_ctx,
+				     "domainControllerFunctionality", val);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("Failed to re-set domainControllerFunctionality opaque\n");
+			TALLOC_FREE(val);
+			TALLOC_FREE(frame);
+			return ret;
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return LDB_SUCCESS;
+}
+
+
 /*
   set a GUID in an extended DN structure
  */
