@@ -1,4 +1,66 @@
                    ==============================
+                   Release Notes for Samba 4.18.3
+                            May 31, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.18 release series.
+
+
+Changes since 4.18.2
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15375: Symlinks to files can have random DOS mode information in a
+     directory listing.
+   * BUG 15378: vfs_fruit might cause a failing open for delete.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15361: winbind recurses into itself via rpcd_lsad.
+   * BUG 15366: wbinfo -u fails on ad dc with >1000 users.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15338: DS ACEs might be inherited to unrelated object classes.
+   * BUG 15362: a lot of messages: get_static_share_mode_data:
+     get_static_share_mode_data_fn failed: NT_STATUS_NOT_FOUND.
+   * BUG 15374: aes256 smb3 encryption algorithms are not allowed in
+     smb3_sid_parse().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15360: Setting veto files = /.*/ break listing directories.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15363: "samba-tool domain provision" does not run interactive mode if
+     no arguments are given.
+
+o  Nathaniel W. Turner <nturner@exagrid.com>
+   * BUG 15325: dsgetdcname: assumes local system uses IPv4.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.18.2
                            April 19, 2023
                    ==============================
@@ -70,8 +132,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.1
                            March 29, 2023
