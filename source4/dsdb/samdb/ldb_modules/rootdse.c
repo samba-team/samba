@@ -1078,8 +1078,14 @@ static int rootdse_init(struct ldb_module *module)
 		}
 	}
 
-	/* For now, our own server's location in the DB is recorded in
-	 * the @ROOTDSE record */
+
+	/*
+	 * For now, our own server's location in the DB is recorded in
+	 * the @ROOTDSE record
+	 *
+	 * We can't call samdb_ntds_settings_dn() in the rootdse, as
+	 * that routine used the rootdse result!
+	 */
 	ret = dsdb_module_search(module, mem_ctx, &res,
 				 ldb_dn_new(mem_ctx, ldb, "@ROOTDSE"),
 				 LDB_SCOPE_BASE, ds_attrs,
