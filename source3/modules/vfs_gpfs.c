@@ -2043,6 +2043,12 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 
 	gpfswrap_lib_init(0);
 
+	ret = gpfswrap_register_cifs_export();
+	if (ret < 0) {
+		DBG_ERR("Failed to register with GPFS: %s\n", strerror(errno));
+		return ret;
+	}
+
 	config = talloc_zero(handle->conn, struct gpfs_config_data);
 	if (!config) {
 		DEBUG(0, ("talloc_zero() failed\n"));
