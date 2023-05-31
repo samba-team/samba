@@ -251,8 +251,13 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
  * This function handles migrating an older samba DB to a new Samba release.
  * Note that we have to maintain DB compatibility between *all* older versions
  * of Samba, not just the ones still under maintenance support.
+ *
+ * Finally, while the transaction is open, check if we support the set
+ * domain functional level, if the DC functional level on our object
+ * is correct and if not to update it (except on the RODC)
  */
-static int handle_inplace_db_upgrade(struct ldb_context *ldb_ctx)
+static int handle_inplace_db_upgrade_check_and_update_fl(struct ldb_context *ldb_ctx,
+							 struct loadparm_context *lp_ctx)
 {
 	int ret;
 
@@ -268,6 +273,12 @@ static int handle_inplace_db_upgrade(struct ldb_context *ldb_ctx)
 	 */
 	ret = ldb_transaction_start(ldb_ctx);
 	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_check_and_update_fl(ldb_ctx, lp_ctx);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(ldb_ctx);
 		return ret;
 	}
 
@@ -312,7 +323,8 @@ static int prime_ldb_databases(struct tevent_context *event_ctx, bool *am_backup
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = handle_inplace_db_upgrade(ldb_ctx);
+	ret = handle_inplace_db_upgrade_check_and_update_fl(ldb_ctx,
+							    lp_ctx);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(db_context);
 		return ret;
