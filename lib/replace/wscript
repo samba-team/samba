@@ -114,7 +114,7 @@ def configure(conf):
     conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h')
 
     conf.CHECK_HEADERS('valgrind.h valgrind/valgrind.h')
-    conf.CHECK_HEADERS('valgrind/memcheck.h valgrind/helgrind.h')
+    conf.CHECK_HEADERS('valgrind/memcheck.h valgrind/helgrind.h valgrind/callgrind.h')
     conf.CHECK_HEADERS('nss_common.h nsswitch.h ns_api.h')
     conf.CHECK_HEADERS('sys/extattr.h sys/ea.h sys/proplist.h sys/cdefs.h')
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h')
