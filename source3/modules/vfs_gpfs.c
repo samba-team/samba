@@ -2041,7 +2041,12 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 		return 0;
 	}
 
-	gpfswrap_lib_init(0);
+	ret = gpfswrap_lib_init(0);
+	if (ret < 0) {
+		DBG_ERR("Could not open GPFS device file: %s\n",
+			strerror(errno));
+		return ret;
+	}
 
 	ret = gpfswrap_register_cifs_export();
 	if (ret < 0) {
