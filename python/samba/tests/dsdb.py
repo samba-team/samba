@@ -31,10 +31,10 @@ import samba
 import uuid
 
 
-class DsdbTests(TestCase):
+class DsdbAccountTests(TestCase):
 
     def setUp(self):
-        super(DsdbTests, self).setUp()
+        super().setUp()
         self.lp = samba.tests.env_loadparm()
         self.creds = Credentials()
         self.creds.guess(self.lp)
@@ -359,10 +359,6 @@ class DsdbTests(TestCase):
         finally:
             self.samdb.transaction_cancel()
 
-    def test_get_oid_from_attrid(self):
-        oid = self.samdb.get_oid_from_attid(591614)
-        self.assertEqual(oid, "1.2.840.113556.1.4.1790")
-
     def test_error_replpropertymetadata(self):
         res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
                                 base=self.account_dn,
@@ -445,12 +441,6 @@ class DsdbTests(TestCase):
         msg["replPropertyMetaData"] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, "replPropertyMetaData")
         self.samdb.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
-    def test_ok_get_attribute_from_attid(self):
-        self.assertEqual(self.samdb.get_attribute_from_attid(13), "description")
-
-    def test_ko_get_attribute_from_attid(self):
-        self.assertEqual(self.samdb.get_attribute_from_attid(11979), None)
-
     def test_get_attribute_replmetadata_version(self):
         res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
                                 base=self.account_dn,
@@ -492,6 +482,17 @@ class DsdbTests(TestCase):
                 self.fail("Got %s should have got ERR_UNSUPPORTED_CRITICAL_EXTENSION"
                           % e[1])
 
+class DsdbTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.lp = samba.tests.env_loadparm()
+        self.creds = Credentials()
+        self.creds.guess(self.lp)
+        self.session = system_session()
+        self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
+
     # Allocate a unique RID for use in the objectSID tests.
     #
     def allocate_rid(self):
@@ -503,6 +504,16 @@ class DsdbTests(TestCase):
             raise
         self.samdb.transaction_commit()
         return str(rid)
+
+    def test_get_oid_from_attrid(self):
+        oid = self.samdb.get_oid_from_attid(591614)
+        self.assertEqual(oid, "1.2.840.113556.1.4.1790")
+
+    def test_ok_get_attribute_from_attid(self):
+        self.assertEqual(self.samdb.get_attribute_from_attid(13), "description")
+
+    def test_ko_get_attribute_from_attid(self):
+        self.assertEqual(self.samdb.get_attribute_from_attid(11979), None)
 
     # Ensure that duplicate objectSID's are permitted for foreign security
     # principals.
