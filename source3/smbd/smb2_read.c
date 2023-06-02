@@ -353,7 +353,6 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	 * Signing is active OR
 	 * This is a compound SMB2 operation OR
 	 * fsp is a STREAM file OR
-	 * We're using a write cache OR
 	 * It's not a regular file OR
 	 * Requested offset is greater than file size OR
 	 * there's not enough data in the file.
