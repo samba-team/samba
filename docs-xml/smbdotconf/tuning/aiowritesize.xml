@@ -6,7 +6,7 @@
   <para>If this integer parameter is set to a non-zero value,
     Samba will write to files asynchronously when the request size is bigger
     than this value. Note that it happens only for non-chained and non-chaining
-    reads and when not using write cache.</para>
+    writes.</para>
   <para>The only reasonable values for this parameter are 0 (no async I/O) and
     1 (always do async I/O).</para>
   <para>Compared to <smbconfoption name="aio read size"/> this parameter has

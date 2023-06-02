@@ -6,7 +6,7 @@
   <para>If this integer parameter is set to a non-zero value,
     Samba will read from files asynchronously when the request size is bigger
     than this value. Note that it happens only for non-chained and non-chaining
-    reads and when not using write cache.</para>
+    reads.</para>
   <para>The only reasonable values for this parameter are 0 (no async I/O) and
     1 (always do async I/O).</para>
   <related>aio write size</related>

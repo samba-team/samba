@@ -326,8 +326,7 @@ Example: 4194304</string>
  DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA OPLOCK CODE.</string>
       <string id="POL_B49FAE41_B4C1_5AFA_870E_9E1C35F9A96F">smb2 leases</string>
       <string id="POL_B49FAE41_B4C1_5AFA_870E_9E1C35F9A96F_Help">This boolean option tells smbd whether to globally negotiate SMB2 leases on file open requests. Leasing is an SMB2-only feature which allows clients to aggressively cache files locally above and beyond the caching allowed by SMB1 oplocks.
- This is only available with yes and no.
- Note that the write cache won't be used for file handles with a smb2 write lease.</string>
+ This is only available with yes and no.</string>
       <string id="POL_1E9B5BE6_8C81_5141_88CD_B5AC0E8D964B">debug class</string>
       <string id="POL_1E9B5BE6_8C81_5141_88CD_B5AC0E8D964B_Help">With this boolean parameter enabled, the debug class (DBGC_CLASS)
  will be displayed in the debug header.
