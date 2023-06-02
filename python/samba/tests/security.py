@@ -58,27 +58,30 @@ class SecurityDescriptorTests(samba.tests.TestCase):
         self.descriptor = security.descriptor()
 
     def test_from_sddl(self):
-        desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)", security.dom_sid("S-2-0-0"))
-        self.assertEqual(desc.group_sid, security.dom_sid('S-2-0-0-512'))
+        desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)",
+                                             security.dom_sid("S-1-2-3"))
+        self.assertEqual(desc.group_sid, security.dom_sid('S-1-2-3-512'))
         self.assertEqual(desc.owner_sid, security.dom_sid('S-1-5-32-548'))
         self.assertEqual(desc.revision, 1)
         self.assertEqual(desc.sacl, None)
         self.assertEqual(desc.type, 0x8004)
 
     def test_from_sddl_invalidsddl(self):
-        self.assertRaises(ValueError, security.descriptor.from_sddl, "foo", security.dom_sid("S-2-0-0"))
+        self.assertRaises(ValueError, security.descriptor.from_sddl, "foo",
+                          security.dom_sid("S-1-2-3"))
 
     def test_from_sddl_invalidtype1(self):
-        self.assertRaises(TypeError, security.descriptor.from_sddl, security.dom_sid('S-2-0-0-512'), security.dom_sid("S-2-0-0"))
+        self.assertRaises(TypeError, security.descriptor.from_sddl, security.dom_sid('S-1-2-3-512'),
+                          security.dom_sid("S-1-2-3"))
 
     def test_from_sddl_invalidtype2(self):
         sddl = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
         self.assertRaises(TypeError, security.descriptor.from_sddl, sddl,
-                          "S-2-0-0")
+                          "S-1-2-3")
 
     def test_as_sddl(self):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
-        dom = security.dom_sid("S-2-0-0")
+        dom = security.dom_sid("S-1-2-3")
         desc1 = security.descriptor.from_sddl(text, dom)
         desc2 = security.descriptor.from_sddl(desc1.as_sddl(dom), dom)
         self.assertEqual(desc1.group_sid, desc2.group_sid)
@@ -88,12 +91,12 @@ class SecurityDescriptorTests(samba.tests.TestCase):
 
     def test_as_sddl_invalid(self):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
-        dom = security.dom_sid("S-2-0-0")
+        dom = security.dom_sid("S-1-2-3")
         desc1 = security.descriptor.from_sddl(text, dom)
         self.assertRaises(TypeError, desc1.as_sddl, text)
 
     def test_as_sddl_no_domainsid(self):
-        dom = security.dom_sid("S-2-0-0")
+        dom = security.dom_sid("S-1-2-3")
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
         desc1 = security.descriptor.from_sddl(text, dom)
         desc2 = security.descriptor.from_sddl(desc1.as_sddl(), dom)
@@ -103,14 +106,14 @@ class SecurityDescriptorTests(samba.tests.TestCase):
         self.assertEqual(desc1.type, desc2.type)
 
     def test_domsid_nodomsid_as_sddl(self):
-        dom = security.dom_sid("S-2-0-0")
+        dom = security.dom_sid("S-1-2-3")
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
         desc1 = security.descriptor.from_sddl(text, dom)
         self.assertNotEqual(desc1.as_sddl(), desc1.as_sddl(dom))
 
     def test_split(self):
-        dom = security.dom_sid("S-2-0-7")
-        self.assertEqual((security.dom_sid("S-2-0"), 7), dom.split())
+        dom = security.dom_sid("S-1-0-7")
+        self.assertEqual((security.dom_sid("S-1-0"), 7), dom.split())
 
 
 class DomSidTests(samba.tests.TestCase):
@@ -148,7 +151,8 @@ class PrivilegeTests(samba.tests.TestCase):
 class CheckAccessTests(samba.tests.TestCase):
 
     def test_check_access(self):
-        desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)", security.dom_sid("S-2-0-0"))
+        desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)",
+                                             security.dom_sid("S-1-2-3"))
         token = security.token()
 
         self.assertEqual(access_check(desc, token, 0), 0)
@@ -180,7 +184,7 @@ class SecurityAceTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SecurityAceTests, self).setUp()
-        self.dom = security.dom_sid("S-2-0-0")
+        self.dom = security.dom_sid("S-1-2-3")
 
     def test_equality(self):
         ace = security.descriptor.from_sddl("D:" + self.sddl, self.dom).dacl.aces[0]
