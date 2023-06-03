@@ -35,7 +35,16 @@ bool sec_ace_object(uint8_t type)
 	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
 	    type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
 	    type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
-	    type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+	    type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT ||
+	    type == SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT ||
+	    type == SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT ||
+	    type == SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK_OBJECT) {
+		/*
+		 * MS-DTYP has a reserved value for
+		 * SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK_OBJECT, but we
+		 * don't assume that it will be an object ACE just
+		 * because it sounds like one.
+		 */
 		return true;
 	}
 	return false;
