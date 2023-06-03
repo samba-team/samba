@@ -33,9 +33,9 @@
 bool sec_ace_object(uint8_t type)
 {
 	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
-            type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
-            type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
-            type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+	    type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
+	    type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
+	    type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
 		return true;
 	}
 	return false;
