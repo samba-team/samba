@@ -1899,8 +1899,9 @@ int main(void) {
 
     if Options.options.developer:
         default_static_modules.extend(['charset_weird'])
-        default_shared_modules.extend(['perfcount_test',
-                                       'vfs_skel_opaque', 'vfs_skel_transparent', 'vfs_shadow_copy_test',
+        default_shared_modules.extend(['vfs_skel_opaque',
+                                       'vfs_skel_transparent',
+                                       'vfs_shadow_copy_test',
                                        'pdb_test',
                                        'vfs_fake_dfq',
                                        'gpext_security', 'gpext_registry', 'gpext_scripts'])
@@ -2048,7 +2049,7 @@ int main(void) {
     static_list = {}
     shared_list = {}
 
-    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
+    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext']
     conf.env['MODULE_PREFIXES'] = prefixes
     for p in prefixes:
         for m in final_static_modules:

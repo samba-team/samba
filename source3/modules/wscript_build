@@ -529,13 +529,6 @@ bld.SAMBA3_SUBSYSTEM('perfcount',
                     source='',
                      deps='smbd_base')
 
-bld.SAMBA3_MODULE('perfcount_test',
-                 subsystem='perfcount',
-                 source='perfcount_test.c',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('perfcount_test'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('perfcount_test'))
-
 bld.SAMBA3_MODULE('vfs_ceph',
                  subsystem='vfs',
                  source='vfs_ceph.c',
