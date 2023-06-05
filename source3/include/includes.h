@@ -264,7 +264,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/charset/charset.h"
 #include "dynconfig/dynconfig.h"
 #include "locking.h"
-#include "smb_perfcount.h"
 #include "smb.h"
 #include "../lib/util/byteorder.h"
 

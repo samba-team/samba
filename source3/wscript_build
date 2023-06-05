@@ -645,7 +645,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/sec_ctx.c
                           smbd/srvstr.c
                           smbd/vfs.c
-                          smbd/perfcount.c
                           smbd/seal.c
                           smbd/posix_acls.c
                           lib/sysacls.c

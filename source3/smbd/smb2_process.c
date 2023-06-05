@@ -1904,8 +1904,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 		smb_load_all_modules_absoute_path(lp_preload_modules());
 	}
 
-	smb_perfcount_init();
-
 	if (!init_account_policy()) {
 		exit_server("Could not open account policy tdb.\n");
 	}
