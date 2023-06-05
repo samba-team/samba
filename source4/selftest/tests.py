@@ -156,6 +156,11 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
     plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
                   env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
 
+envraw = "fl2008r2dc"
+env = "%s:local" % envraw
+plantestsuite("samba4.ldap_tls_reload(%s)" % (env), env,
+              "%s/test_ldap_tls_reload.sh $PREFIX_ABS $PREFIX_ABS/%s/private/tls $SERVER.$REALM" % (bbdir, envraw))
+
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldapi with options %s(ad_dc_ntvfs:local)" % options, "ad_dc_ntvfs:local",
                   "%s/test_ldb.sh ldapi $PREFIX_ABS/ad_dc_ntvfs/private/ldapi %s" % (bbdir, options))
