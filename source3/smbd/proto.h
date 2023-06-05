@@ -864,10 +864,6 @@ NTSTATUS make_default_filesystem_acl(
 
 /* The following definitions come from smbd/smb2_process.c  */
 
-bool smb2_srv_send(struct smbXsrv_connection *xconn, char *buffer,
-		   bool no_signing, uint32_t seqnum,
-		   bool do_encrypt,
-		   struct smb_perfcount_data *pcd);
 #if !defined(WITH_SMB1SERVER)
 bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_signing, uint32_t seqnum,
