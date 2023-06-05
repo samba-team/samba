@@ -1504,9 +1504,11 @@ error:
 ****************************************************************************/
 
 void process_smb1(struct smbXsrv_connection *xconn,
-		  uint8_t *inbuf, size_t nread, size_t unread_bytes,
-		  uint32_t seqnum, bool encrypted,
-		  struct smb_perfcount_data *deferred_pcd)
+		  uint8_t *inbuf,
+		  size_t nread,
+		  size_t unread_bytes,
+		  uint32_t seqnum,
+		  bool encrypted)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 

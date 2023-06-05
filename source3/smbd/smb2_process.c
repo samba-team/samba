@@ -602,8 +602,7 @@ void process_smb(struct smbXsrv_connection *xconn,
 			sconn->using_smb2 = false;
 		}
 	}
-	process_smb1(xconn, inbuf, nread, unread_bytes, seqnum, encrypted,
-		     deferred_pcd);
+	process_smb1(xconn, inbuf, nread, unread_bytes, seqnum, encrypted);
 #endif
 
 done:
