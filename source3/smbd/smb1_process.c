@@ -2080,8 +2080,7 @@ void smbd_smb1_server_connection_read_handler(struct smbXsrv_connection *xconn,
 	}
 
 process:
-	process_smb(xconn, inbuf, inbuf_len, unread_bytes,
-		    seqnum, encrypted, NULL);
+	process_smb(xconn, inbuf, inbuf_len, unread_bytes, seqnum, encrypted);
 }
 
 static void smbd_server_echo_handler(struct tevent_context *ev,

@@ -268,9 +268,12 @@ static void smbd_deferred_open_timer(struct tevent_context *ev,
 	 * re-processed in error. */
 	msg->processed = true;
 
-	process_smb(xconn, inbuf,
-		    msg->buf.length, 0,
-		    msg->seqnum, msg->encrypted, &msg->pcd);
+	process_smb(xconn,
+		    inbuf,
+		    msg->buf.length,
+		    0,
+		    msg->seqnum,
+		    msg->encrypted);
 
 	/* If it's still there and was processed, remove it. */
 	msg = get_deferred_open_message_smb(sconn, mid);
@@ -558,9 +561,11 @@ static void process_smb2(struct smbXsrv_connection *xconn,
 }
 
 void process_smb(struct smbXsrv_connection *xconn,
-		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
-		 uint32_t seqnum, bool encrypted,
-		 struct smb_perfcount_data *deferred_pcd)
+		 uint8_t *inbuf,
+		 size_t nread,
+		 size_t unread_bytes,
+		 uint32_t seqnum,
+		 bool encrypted)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	int msg_type = CVAL(inbuf,0);
