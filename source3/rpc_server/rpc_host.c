@@ -2902,10 +2902,10 @@ int main(int argc, const char *argv[])
 
 	reopen_logs();
 
-	DEBUG(0, ("%s version %s started.\n",
+	DBG_STARTUP_NOTICE("%s version %s started.\n"
+			COPYRIGHT_STARTUP_MESSAGE "\n",
 		  progname,
-		  samba_version_string()));
-	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
+		  samba_version_string());
 
 	(void)winbind_off();
 	ok = init_guest_session_info(frame);

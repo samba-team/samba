@@ -1152,10 +1152,10 @@ int rpc_worker_main(
 
 	reopen_logs();
 
-	DEBUG(0, ("%s version %s started.\n",
-		  progname,
-		  samba_version_string()));
-	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
+	DBG_STARTUP_NOTICE("%s version %s started.\n"
+			COPYRIGHT_STARTUP_MESSAGE "\n",
+		progname,
+		samba_version_string());
 
 	msg_ctx = global_messaging_context();
 	if (msg_ctx == NULL) {
