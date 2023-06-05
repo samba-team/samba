@@ -67,10 +67,11 @@ static struct pending_message_list *get_deferred_open_message_smb(
 	struct smbd_server_connection *sconn, uint64_t mid);
 
 #if !defined(WITH_SMB1SERVER)
-bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
-		   bool do_signing, uint32_t seqnum,
-		   bool do_encrypt,
-		   struct smb_perfcount_data *pcd)
+bool smb1_srv_send(struct smbXsrv_connection *xconn,
+		   char *buffer,
+		   bool do_signing,
+		   uint32_t seqnum,
+		   bool do_encrypt)
 {
 	size_t len = 0;
 	ssize_t ret;
@@ -806,9 +807,10 @@ static void construct_reply_smb1negprot(struct smbXsrv_connection *xconn,
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!smb1_srv_send(req->xconn,
 				   (char *)req->outbuf,
-				   true, req->seqnum+1,
-				   IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
-				   &req->pcd)) {
+				   true,
+				   req->seqnum + 1,
+				   IS_CONN_ENCRYPTED(req->conn) ||
+					   req->encrypted)) {
 			exit_server_cleanly("construct_reply_smb1negprot: "
 					    "smb1_srv_send failed.");
 		}
@@ -1816,8 +1818,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		 * name"
 		 */
 		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-		(void)smb1_srv_send(xconn,(char *)buf, false,
-				    0, false, NULL);
+		(void)smb1_srv_send(xconn, (char *)buf, false, 0, false);
 		exit_server_cleanly("connection denied");
 	} else if (!NT_STATUS_IS_OK(status)) {
 		exit_server_cleanly(nt_errstr(status));

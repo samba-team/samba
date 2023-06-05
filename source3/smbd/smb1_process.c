@@ -208,10 +208,11 @@ void smbd_unlock_socket(struct smbXsrv_connection *xconn)
  Send an smb to a fd.
 ****************************************************************************/
 
-bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
-		   bool do_signing, uint32_t seqnum,
-		   bool do_encrypt,
-		   struct smb_perfcount_data *pcd)
+bool smb1_srv_send(struct smbXsrv_connection *xconn,
+		   char *buffer,
+		   bool do_signing,
+		   uint32_t seqnum,
+		   bool do_encrypt)
 {
 	size_t len = 0;
 	ssize_t ret;
@@ -1349,8 +1350,7 @@ static void construct_reply_chain(struct smbXsrv_connection *xconn,
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, NT_STATUS_INVALID_PARAMETER,
 			     __LINE__, __FILE__);
-		if (!smb1_srv_send(xconn, errbuf, true, seqnum, encrypted,
-				  NULL)) {
+		if (!smb1_srv_send(xconn, errbuf, true, seqnum, encrypted)) {
 			exit_server_cleanly("construct_reply_chain: "
 					    "smb1_srv_send failed.");
 		}
@@ -1472,10 +1472,11 @@ void smb_request_done(struct smb_request *req)
 
 shipit:
 	if (!smb1_srv_send(first_req->xconn,
-			  (char *)first_req->outbuf,
-			  true, first_req->seqnum+1,
-			  IS_CONN_ENCRYPTED(req->conn)||first_req->encrypted,
-			  &first_req->pcd)) {
+			   (char *)first_req->outbuf,
+			   true,
+			   first_req->seqnum + 1,
+			   IS_CONN_ENCRYPTED(req->conn) ||
+				   first_req->encrypted)) {
 		exit_server_cleanly("construct_reply_chain: smb1_srv_send "
 				    "failed.");
 	}
@@ -1487,9 +1488,11 @@ error:
 	{
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, status, __LINE__, __FILE__);
-		if (!smb1_srv_send(req->xconn, errbuf, true,
-				  req->seqnum+1, req->encrypted,
-				  NULL)) {
+		if (!smb1_srv_send(req->xconn,
+				   errbuf,
+				   true,
+				   req->seqnum + 1,
+				   req->encrypted)) {
 			exit_server_cleanly("construct_reply_chain: "
 					    "smb1_srv_send failed.");
 		}
@@ -2421,10 +2424,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		memcpy(smb_buf(req.outbuf), req.buf, req.buflen);
 	}
 
-	ok = smb1_srv_send(req.xconn,
-			  (char *)outbuf,
-			  true, seqnum+1,
-			  false, &req.pcd);
+	ok = smb1_srv_send(req.xconn, (char *)outbuf, true, seqnum + 1, false);
 	TALLOC_FREE(outbuf);
 	if (!ok) {
 		exit(1);

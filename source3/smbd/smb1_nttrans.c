@@ -84,10 +84,10 @@ static void send_nt_replies(connection_struct *conn,
 		}
 		show_msg((char *)req->outbuf);
 		if (!smb1_srv_send(xconn,
-				(char *)req->outbuf,
-				true, req->seqnum+1,
-				IS_CONN_ENCRYPTED(conn),
-				&req->pcd)) {
+				   (char *)req->outbuf,
+				   true,
+				   req->seqnum + 1,
+				   IS_CONN_ENCRYPTED(conn))) {
 			exit_server_cleanly("send_nt_replies: smb1_srv_send failed.");
 		}
 		TALLOC_FREE(req->outbuf);
@@ -248,10 +248,10 @@ static void send_nt_replies(connection_struct *conn,
 		/* Send the packet */
 		show_msg((char *)req->outbuf);
 		if (!smb1_srv_send(xconn,
-				(char *)req->outbuf,
-				true, req->seqnum+1,
-				IS_CONN_ENCRYPTED(conn),
-				&req->pcd)) {
+				   (char *)req->outbuf,
+				   true,
+				   req->seqnum + 1,
+				   IS_CONN_ENCRYPTED(conn))) {
 			exit_server_cleanly("send_nt_replies: smb1_srv_send failed.");
 		}
 

@@ -141,9 +141,11 @@ void send_trans_reply(connection_struct *conn,
 	}
 
 	show_msg((char *)req->outbuf);
-	if (!smb1_srv_send(xconn, (char *)req->outbuf,
-			  true, req->seqnum+1,
-			  IS_CONN_ENCRYPTED(conn), &req->pcd)) {
+	if (!smb1_srv_send(xconn,
+			   (char *)req->outbuf,
+			   true,
+			   req->seqnum + 1,
+			   IS_CONN_ENCRYPTED(conn))) {
 		exit_server_cleanly("send_trans_reply: smb1_srv_send failed.");
 	}
 
@@ -201,11 +203,14 @@ void send_trans_reply(connection_struct *conn,
 		}
 
 		show_msg((char *)req->outbuf);
-		if (!smb1_srv_send(xconn, (char *)req->outbuf,
-				  true, req->seqnum+1,
-				  IS_CONN_ENCRYPTED(conn), &req->pcd))
+		if (!smb1_srv_send(xconn,
+				   (char *)req->outbuf,
+				   true,
+				   req->seqnum + 1,
+				   IS_CONN_ENCRYPTED(conn))) {
 			exit_server_cleanly("send_trans_reply: smb1_srv_send "
 					    "failed.");
+		}
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -330,14 +335,14 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 	return;
 
  send:
-	if (!smb1_srv_send(
-		    req->xconn, (char *)req->outbuf,
-		    true, req->seqnum+1,
-		    IS_CONN_ENCRYPTED(req->conn) || req->encrypted,
-		    &req->pcd)) {
-		exit_server_cleanly("api_dcerpc_cmd_write_done: "
-				    "smb1_srv_send failed.");
-	}
+	 if (!smb1_srv_send(req->xconn,
+			    (char *)req->outbuf,
+			    true,
+			    req->seqnum + 1,
+			    IS_CONN_ENCRYPTED(req->conn) || req->encrypted)) {
+		 exit_server_cleanly("api_dcerpc_cmd_write_done: "
+				     "smb1_srv_send failed.");
+	 }
 	TALLOC_FREE(req);
 }
 
@@ -364,10 +369,12 @@ static void api_dcerpc_cmd_read_done(struct tevent_req *subreq)
 			   NT_STATUS_EQUAL(old, status)?"":nt_errstr(status)));
 		reply_nterror(req, status);
 
-		if (!smb1_srv_send(req->xconn, (char *)req->outbuf,
-				  true, req->seqnum+1,
-				  IS_CONN_ENCRYPTED(req->conn)
-				  ||req->encrypted, &req->pcd)) {
+		if (!smb1_srv_send(req->xconn,
+				   (char *)req->outbuf,
+				   true,
+				   req->seqnum + 1,
+				   IS_CONN_ENCRYPTED(req->conn) ||
+					   req->encrypted)) {
 			exit_server_cleanly("api_dcerpc_cmd_read_done: "
 					    "smb1_srv_send failed.");
 		}

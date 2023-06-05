@@ -446,11 +446,12 @@ static void pipe_write_done(struct tevent_req *subreq)
 	DEBUG(3,("write-IPC nwritten=%d\n", (int)nwritten));
 
  send:
-	if (!smb1_srv_send(req->xconn, (char *)req->outbuf,
-			  true, req->seqnum+1,
-			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
-			  &req->pcd)) {
-		exit_server_cleanly("construct_reply: smb1_srv_send failed.");
-	}
+	 if (!smb1_srv_send(req->xconn,
+			    (char *)req->outbuf,
+			    true,
+			    req->seqnum + 1,
+			    IS_CONN_ENCRYPTED(req->conn) || req->encrypted)) {
+		 exit_server_cleanly("construct_reply: smb1_srv_send failed.");
+	 }
 	TALLOC_FREE(req);
 }

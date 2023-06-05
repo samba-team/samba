@@ -3097,11 +3097,10 @@ static void reply_lockread_locked(struct tevent_req *subreq)
 
 send:
 	ok = smb1_srv_send(req->xconn,
-			  (char *)req->outbuf,
-			  true,
-			  req->seqnum+1,
-			  IS_CONN_ENCRYPTED(req->conn),
-			  NULL);
+			   (char *)req->outbuf,
+			   true,
+			   req->seqnum + 1,
+			   IS_CONN_ENCRYPTED(req->conn));
 	if (!ok) {
 		exit_server_cleanly("reply_lock_done: smb1_srv_send failed.");
 	}
@@ -3826,10 +3825,10 @@ void reply_writebraw(struct smb_request *req)
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
 	if (!smb1_srv_send(req->xconn,
-			  buf,
-			  false, 0, /* no signing */
-			  IS_CONN_ENCRYPTED(conn),
-			  &req->pcd)) {
+			   buf,
+			   false,
+			   0, /* no signing */
+			   IS_CONN_ENCRYPTED(conn))) {
 		exit_server_cleanly("reply_writebraw: smb1_srv_send "
 			"failed.");
 	}
@@ -5281,11 +5280,10 @@ static void reply_lock_done(struct tevent_req *subreq)
 	}
 
 	ok = smb1_srv_send(req->xconn,
-			  (char *)req->outbuf,
-			  true,
-			  req->seqnum+1,
-			  IS_CONN_ENCRYPTED(req->conn),
-			  NULL);
+			   (char *)req->outbuf,
+			   true,
+			   req->seqnum + 1,
+			   IS_CONN_ENCRYPTED(req->conn));
 	if (!ok) {
 		exit_server_cleanly("reply_lock_done: smb1_srv_send failed.");
 	}
@@ -5571,14 +5569,10 @@ static void reply_tdis_done(struct tevent_req *req)
 void reply_echo(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	struct smb_perfcount_data local_pcd;
-	struct smb_perfcount_data *cur_pcd;
 	int smb_reverb;
 	int seq_num;
 
 	START_PROFILE(SMBecho);
-
-	smb_init_perfcount_data(&local_pcd);
 
 	if (req->wct < 1) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -5602,21 +5596,14 @@ void reply_echo(struct smb_request *req)
 
 	for (seq_num = 1 ; seq_num <= smb_reverb ; seq_num++) {
 
-		/* this makes sure we catch the request pcd */
-		if (seq_num == smb_reverb) {
-			cur_pcd = &req->pcd;
-		} else {
-			cur_pcd = &local_pcd;
-		}
-
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
 		if (!smb1_srv_send(req->xconn,
-				(char *)req->outbuf,
-				true, req->seqnum+1,
-				IS_CONN_ENCRYPTED(conn)||req->encrypted,
-				cur_pcd))
+				   (char *)req->outbuf,
+				   true,
+				   req->seqnum + 1,
+				   IS_CONN_ENCRYPTED(conn) || req->encrypted))
 			exit_server_cleanly("reply_echo: smb1_srv_send failed.");
 	}
 
@@ -6690,11 +6677,10 @@ static void reply_lockingx_done(struct tevent_req *subreq)
 	}
 
 	ok = smb1_srv_send(req->xconn,
-			  (char *)req->outbuf,
-			  true,
-			  req->seqnum+1,
-			  IS_CONN_ENCRYPTED(req->conn),
-			  NULL);
+			   (char *)req->outbuf,
+			   true,
+			   req->seqnum + 1,
+			   IS_CONN_ENCRYPTED(req->conn));
 	if (!ok) {
 		exit_server_cleanly("reply_lock_done: smb1_srv_send failed.");
 	}

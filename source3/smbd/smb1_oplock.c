@@ -62,9 +62,10 @@ void send_break_message_smb1(files_struct *fsp, int level)
 
 	show_msg(break_msg);
 	if (!smb1_srv_send(xconn,
-			break_msg, false, 0,
-			IS_CONN_ENCRYPTED(fsp->conn),
-			NULL)) {
+			   break_msg,
+			   false,
+			   0,
+			   IS_CONN_ENCRYPTED(fsp->conn))) {
 		exit_server_cleanly("send_break_message_smb1: "
 			"smb1_srv_send failed.");
 	}

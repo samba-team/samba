@@ -1180,8 +1180,7 @@ NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 		reply_smb1_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, NO_PROTOCOL_CHOSEN);
 
-		ok = smb1_srv_send(xconn, (char *)req->outbuf,
-				  false, 0, false, NULL);
+		ok = smb1_srv_send(xconn, (char *)req->outbuf, false, 0, false);
 		if (!ok) {
 			DBG_NOTICE("smb1_srv_send failed\n");
 		}
