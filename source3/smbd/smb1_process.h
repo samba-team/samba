@@ -60,9 +60,11 @@ void process_smb1(struct smbXsrv_connection *xconn,
 		  struct smb_perfcount_data *deferred_pcd);
 void smbd_echo_init(struct smbXsrv_connection *xconn);
 void construct_reply(struct smbXsrv_connection *xconn,
-		     char *inbuf, int size, size_t unread_bytes,
-		     uint32_t seqnum, bool encrypted,
-		     struct smb_perfcount_data *deferred_pcd);
+		     char *inbuf,
+		     int size,
+		     size_t unread_bytes,
+		     uint32_t seqnum,
+		     bool encrypted);
 void smbd_smb1_server_connection_read_handler(struct smbXsrv_connection *xconn,
 					      int fd);
 bool keepalive_fn(const struct timeval *now, void *private_data);

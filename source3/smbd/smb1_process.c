@@ -1296,9 +1296,11 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 ****************************************************************************/
 
 void construct_reply(struct smbXsrv_connection *xconn,
-		     char *inbuf, int size, size_t unread_bytes,
-		     uint32_t seqnum, bool encrypted,
-		     struct smb_perfcount_data *deferred_pcd)
+		     char *inbuf,
+		     int size,
+		     size_t unread_bytes,
+		     uint32_t seqnum,
+		     bool encrypted)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smb_request *req;
@@ -1536,8 +1538,12 @@ void process_smb1(struct smbXsrv_connection *xconn,
 				      seqnum,
 				      encrypted);
 	} else {
-		construct_reply(xconn, (char *)inbuf, nread, unread_bytes,
-				seqnum,	encrypted, deferred_pcd);
+		construct_reply(xconn,
+				(char *)inbuf,
+				nread,
+				unread_bytes,
+				seqnum,
+				encrypted);
 	}
 
 	sconn->trans_num++;
