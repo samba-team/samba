@@ -1335,9 +1335,10 @@ void construct_reply(struct smbXsrv_connection *xconn,
 }
 
 static void construct_reply_chain(struct smbXsrv_connection *xconn,
-				  char *inbuf, int size, uint32_t seqnum,
-				  bool encrypted,
-				  struct smb_perfcount_data *deferred_pcd)
+				  char *inbuf,
+				  int size,
+				  uint32_t seqnum,
+				  bool encrypted)
 {
 	struct smb_request **reqs = NULL;
 	struct smb_request *req;
@@ -1534,8 +1535,11 @@ void process_smb1(struct smbXsrv_connection *xconn,
 	show_msg((char *)inbuf);
 
 	if ((unread_bytes == 0) && smb1_is_chain(inbuf)) {
-		construct_reply_chain(xconn, (char *)inbuf, nread,
-				      seqnum, encrypted, deferred_pcd);
+		construct_reply_chain(xconn,
+				      (char *)inbuf,
+				      nread,
+				      seqnum,
+				      encrypted);
 	} else {
 		construct_reply(xconn, (char *)inbuf, nread, unread_bytes,
 				seqnum,	encrypted, deferred_pcd);
