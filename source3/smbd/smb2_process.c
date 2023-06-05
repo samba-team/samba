@@ -543,9 +543,11 @@ bool valid_smb1_header(const uint8_t *inbuf)
 ****************************************************************************/
 
 static void process_smb2(struct smbXsrv_connection *xconn,
-			 uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			 uint32_t seqnum, bool encrypted,
-			 struct smb_perfcount_data *deferred_pcd)
+			 uint8_t *inbuf,
+			 size_t nread,
+			 size_t unread_bytes,
+			 uint32_t seqnum,
+			 bool encrypted)
 {
 	const uint8_t *inpdu = inbuf + NBT_HDR_SIZE;
 	size_t pdulen = nread - NBT_HDR_SIZE;
@@ -584,8 +586,12 @@ void process_smb(struct smbXsrv_connection *xconn,
 		 * we make the decision here.. */
 		if (smbd_is_smb2_header(inbuf, nread)) {
 #endif
-			process_smb2(xconn, inbuf, nread, unread_bytes, seqnum,
-				     encrypted, deferred_pcd);
+			process_smb2(xconn,
+				     inbuf,
+				     nread,
+				     unread_bytes,
+				     seqnum,
+				     encrypted);
 			return;
 #if defined(WITH_SMB1SERVER)
 		}
