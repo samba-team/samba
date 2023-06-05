@@ -5172,8 +5172,6 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 		}
 	}
 
-	SMB_PERFCOUNT_SET_SUBOP(&req->pcd, state->call);
-
 	/* Now we must call the relevant TRANS2 function */
 	switch(state->call)  {
 	case TRANSACT2_OPEN:

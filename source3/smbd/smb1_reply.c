@@ -3381,8 +3381,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			}
 		}
 		/* No outbuf here means successful sendfile. */
-		SMB_PERFCOUNT_SET_MSGLEN_OUT(&req->pcd, nread);
-		SMB_PERFCOUNT_END(&req->pcd);
 		goto out;
 	}
 
@@ -5608,7 +5606,6 @@ void reply_echo(struct smb_request *req)
 		if (seq_num == smb_reverb) {
 			cur_pcd = &req->pcd;
 		} else {
-			SMB_PERFCOUNT_COPY_CONTEXT(&req->pcd, &local_pcd);
 			cur_pcd = &local_pcd;
 		}
 

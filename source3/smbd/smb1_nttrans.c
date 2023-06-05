@@ -2025,8 +2025,6 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		return;
 	}
 
-	SMB_PERFCOUNT_SET_IOCTL(&req->pcd, function);
-
 	/*
 	 * out_data might be allocated by the VFS module, but talloc should be
 	 * used, and should be cleaned up when the request ends.
@@ -2289,8 +2287,6 @@ static void handle_nttrans(connection_struct *conn,
 		SSVAL(discard_const_p(uint8_t, req->inbuf),smb_flg2,req->flags2);
 	}
 
-
-	SMB_PERFCOUNT_SET_SUBOP(&req->pcd, state->call);
 
 	/* Now we must call the relevant NT_TRANS function */
 	switch(state->call) {

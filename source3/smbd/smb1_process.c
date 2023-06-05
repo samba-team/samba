@@ -271,11 +271,8 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		goto out;
 	}
 
-	SMB_PERFCOUNT_SET_MSGLEN_OUT(pcd, len);
 	srv_free_enc_buffer(xconn, buf_out);
 out:
-	SMB_PERFCOUNT_END(pcd);
-
 	smbd_unlock_socket(xconn);
 	return (ret > 0);
 }
@@ -566,7 +563,6 @@ static bool push_queued_message(struct smb_request *req,
 	msg->seqnum = req->seqnum;
 	msg->encrypted = req->encrypted;
 	msg->processed = false;
-	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &msg->pcd);
 
 	if (open_rec) {
 		msg->open_rec = talloc_move(msg, &open_rec);
@@ -1318,12 +1314,8 @@ void construct_reply(struct smbXsrv_connection *xconn,
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
 
 	/* we popped this message off the queue - keep original perf data */
-	if (deferred_pcd)
+	if (deferred_pcd) {
 		req->pcd = *deferred_pcd;
-	else {
-		SMB_PERFCOUNT_START(&req->pcd);
-		SMB_PERFCOUNT_SET_OP(&req->pcd, req->cmd);
-		SMB_PERFCOUNT_SET_MSGLEN_IN(&req->pcd, size);
 	}
 
 	req->conn = switch_message(req->cmd, req);
