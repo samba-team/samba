@@ -757,7 +757,6 @@ bool init_smb1_request(struct smb_request *req,
 	req->smb2req = NULL;
 	req->chain = NULL;
 	req->posix_pathnames = lp_posix_pathnames();
-	smb_init_perfcount_data(&req->pcd);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {

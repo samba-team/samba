@@ -814,8 +814,6 @@ struct smb_request {
 	 */
 	struct smbXsrv_session *session;
 
-	struct smb_perfcount_data pcd;
-
 	/*
 	 * Chained request handling
 	 */

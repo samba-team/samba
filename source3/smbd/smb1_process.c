@@ -1314,11 +1314,6 @@ void construct_reply(struct smbXsrv_connection *xconn,
 
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
 
-	/* we popped this message off the queue - keep original perf data */
-	if (deferred_pcd) {
-		req->pcd = *deferred_pcd;
-	}
-
 	req->conn = switch_message(req->cmd, req);
 
 	if (req->outbuf == NULL) {
