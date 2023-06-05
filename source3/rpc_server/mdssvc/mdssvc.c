@@ -520,10 +520,13 @@ static bool inode_map_add(struct sl_query *slq,
 bool mds_add_result(struct sl_query *slq, const char *path)
 {
 	struct smb_filename *smb_fname = NULL;
+	const char *relative = NULL;
+	char *fake_path = NULL;
 	struct stat_ex sb;
 	uint64_t ino64;
 	int result;
 	NTSTATUS status;
+	bool sub;
 	bool ok;
 
 	/*
@@ -598,6 +601,17 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		}
 	}
 
+	sub = subdir_of(slq->mds_ctx->spath,
+			slq->mds_ctx->spath_len,
+			path,
+			&relative);
+	if (!sub) {
+		DBG_ERR("[%s] is not inside [%s]\n",
+			path, slq->mds_ctx->spath);
+		slq->state = SLQ_STATE_ERROR;
+		return false;
+	}
+
 	/*
 	 * Add inode number and filemeta to result set, this is what
 	 * we return as part of the result set of a query
@@ -610,18 +624,30 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		slq->state = SLQ_STATE_ERROR;
 		return false;
 	}
-	ok = add_filemeta(slq->mds_ctx,
-			  slq->reqinfo,
-			  slq->query_results->fm_array,
-			  path,
-			  &sb);
-	if (!ok) {
-		DBG_ERR("add_filemeta error\n");
+
+	fake_path = talloc_asprintf(slq,
+				    "/%s/%s",
+				    slq->mds_ctx->sharename,
+				    relative);
+	if (fake_path == NULL) {
 		slq->state = SLQ_STATE_ERROR;
 		return false;
 	}
 
-	ok = inode_map_add(slq, ino64, path, &sb);
+	ok = add_filemeta(slq->mds_ctx,
+			  slq->reqinfo,
+			  slq->query_results->fm_array,
+			  fake_path,
+			  &sb);
+	if (!ok) {
+		DBG_ERR("add_filemeta error\n");
+		TALLOC_FREE(fake_path);
+		slq->state = SLQ_STATE_ERROR;
+		return false;
+	}
+
+	ok = inode_map_add(slq, ino64, fake_path, &sb);
+	TALLOC_FREE(fake_path);
 	if (!ok) {
 		DEBUG(1, ("inode_map_add error\n"));
 		slq->state = SLQ_STATE_ERROR;
@@ -829,6 +855,32 @@ static void slq_close_timer(struct tevent_context *ev,
 }
 
 /**
+ * Translate a fake scope from the client like /sharename/dir
+ * to the real server-side path, replacing the "/sharename" part
+ * with the absolute server-side path of the share.
+ **/
+static bool mdssvc_real_scope(struct sl_query *slq, const char *fake_scope)
+{
+	size_t sname_len = strlen(slq->mds_ctx->sharename);
+	size_t fake_scope_len = strlen(fake_scope);
+
+	if (fake_scope_len < sname_len + 1) {
+		DBG_ERR("Short scope [%s] for share [%s]\n",
+			fake_scope, slq->mds_ctx->sharename);
+		return false;
+	}
+
+	slq->path_scope = talloc_asprintf(slq,
+					  "%s%s",
+					  slq->mds_ctx->spath,
+					  fake_scope + sname_len + 1);
+	if (slq->path_scope == NULL) {
+		return false;
+	}
+	return true;
+}
+
+/**
  * Begin a search query
  **/
 static bool slrpc_open_query(struct mds_ctx *mds_ctx,
@@ -940,8 +992,8 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 
-	slq->path_scope = talloc_strdup(slq, scope);
-	if (slq->path_scope == NULL) {
+	ok = mdssvc_real_scope(slq, scope);
+	if (!ok) {
 		goto error;
 	}
 
@@ -1662,6 +1714,7 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
+	mds_ctx->spath_len = strlen(path);
 
 	mds_ctx->snum = snum;
 	mds_ctx->pipe_session_info = session_info;
