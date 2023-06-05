@@ -55,7 +55,6 @@ struct pending_message_list {
 	struct smbd_server_connection *sconn;
 	struct smbXsrv_connection *xconn;
 	struct tevent_timer *te;
-	struct smb_perfcount_data pcd;
 	uint32_t seqnum;
 	bool encrypted;
 	bool processed;
