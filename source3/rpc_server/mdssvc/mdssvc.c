@@ -446,7 +446,10 @@ static int ino_path_map_destr_cb(struct sl_inode_path_map *entry)
  * entries by calling talloc_free() on the query slq handles.
  **/
 
-static bool inode_map_add(struct sl_query *slq, uint64_t ino, const char *path)
+static bool inode_map_add(struct sl_query *slq,
+			  uint64_t ino,
+			  const char *path,
+			  struct stat_ex *st)
 {
 	NTSTATUS status;
 	struct sl_inode_path_map *entry;
@@ -493,6 +496,7 @@ static bool inode_map_add(struct sl_query *slq, uint64_t ino, const char *path)
 
 	entry->ino = ino;
 	entry->mds_ctx = slq->mds_ctx;
+	entry->st = *st;
 	entry->path = talloc_strdup(entry, path);
 	if (entry->path == NULL) {
 		DEBUG(1, ("talloc failed\n"));
@@ -630,7 +634,7 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		return false;
 	}
 
-	ok = inode_map_add(slq, ino64, path);
+	ok = inode_map_add(slq, ino64, path, &sb);
 	if (!ok) {
 		DEBUG(1, ("inode_map_add error\n"));
 		slq->state = SLQ_STATE_ERROR;
@@ -1353,29 +1357,7 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		elem = talloc_get_type_abort(p, struct sl_inode_path_map);
 		path = elem->path;
 
-		status = synthetic_pathref(talloc_tos(),
-					   mds_ctx->conn->cwd_fsp,
-					   path,
-					   NULL,
-					   NULL,
-					   0,
-					   0,
-					   &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			/* This is not an error, the user may lack permissions */
-			DBG_DEBUG("synthetic_pathref [%s]: %s\n",
-				  smb_fname_str_dbg(smb_fname),
-				  nt_errstr(status));
-			return true;
-		}
-
-		status = vfs_stat_fsp(smb_fname->fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(smb_fname);
-			return true;
-		}
-
-		sp = &smb_fname->fsp->fsp_name->st;
+		sp = &elem->st;
 	}
 
 	ok = add_filemeta(mds_ctx, reqinfo, fm_array, path, sp);
