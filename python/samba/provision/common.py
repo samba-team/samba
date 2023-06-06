@@ -38,7 +38,7 @@ FILL_DRS = "DRS"
 
 
 def setup_path(file):
-    """Return an absolute path to the provision tempate file specified by file"""
+    """Return an absolute path to the provision template file specified by file"""
     return os.path.join(setup_dir(), file)
 
 
@@ -47,7 +47,7 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None, controls=None):
 
     :param ldb: LDB file to import data into
     :param ldif_path: Path of the LDIF file to load
-    :param subst_vars: Optional variables to subsitute in LDIF.
+    :param subst_vars: Optional variables to substitute in LDIF.
     :param nocontrols: Optional list of controls, can be None for no controls
     """
     if controls is None:

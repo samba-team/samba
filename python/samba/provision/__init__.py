@@ -1257,7 +1257,7 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     :param sysvolpath: Physical path for the sysvol folder
     :param dnsdomain: DNS domain name of the AD domain
     :param policyguid: GUID of the default domain policy
-    :param policyguid_dc: GUID of the default domain controler policy
+    :param policyguid_dc: GUID of the default domain controller policy
     """
     policy_path = getpolicypath(sysvolpath, dnsdomain, policyguid)
     create_gpo_struct(policy_path)
@@ -1657,7 +1657,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     :param netlogon: Physical path for the netlogon folder
     :param sysvol: Physical path for the sysvol folder
     :param uid: The UID of the "Administrator" user
-    :param gid: The GID of the "Domain adminstrators" group
+    :param gid: The GID of the "Domain administrators" group
     :param domainsid: The SID of the domain
     :param dnsdomain: The DNS name of the domain
     :param domaindn: The DN of the domain (ie. DC=...)
@@ -1702,7 +1702,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
         # marked in secrets.tdb
         s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
 
-        # now ensure everything matches correctly, to avoid wierd issues
+        # now ensure everything matches correctly, to avoid weird issues
         if passdb.get_global_sam_sid() != domainsid:
             raise ProvisioningError('SID as seen by smbd [%s] does not match SID as seen by the provision script [%s]!' % (passdb.get_global_sam_sid(), domainsid))
 
@@ -1841,7 +1841,7 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
     :param netlogon: Physical path for the netlogon folder
     :param sysvol: Physical path for the sysvol folder
     :param uid: The UID of the "Administrator" user
-    :param gid: The GID of the "Domain adminstrators" group
+    :param gid: The GID of the "Domain administrators" group
     :param domainsid: The SID of the domain
     :param dnsdomain: The DNS name of the domain
     :param domaindn: The DN of the domain (ie. DC=...)
@@ -1855,7 +1855,7 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
     # ensure that we init the samba_dsdb backend, so the domain sid is marked in secrets.tdb
     s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
 
-    # now ensure everything matches correctly, to avoid wierd issues
+    # now ensure everything matches correctly, to avoid weird issues
     if passdb.get_global_sam_sid() != domainsid:
         raise ProvisioningError('SID as seen by smbd [%s] does not match SID as seen by the provision script [%s]!' % (passdb.get_global_sam_sid(), domainsid))
 

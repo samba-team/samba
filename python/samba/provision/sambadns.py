@@ -77,7 +77,7 @@ def get_dnsadmins_sid(samdb, domaindn):
     return dnsadmins_sid
 
 
-# Note: these classses are not quite the same as similar looking ones
+# Note: these classes are not quite the same as similar looking ones
 # in ../dnsserver.py -- those ones are based on
 # dnsserver.DNS_RPC_RECORD ([MS-DNSP]2.2.2.2.5 "DNS_RPC_RECORD"),
 # these are based on dnsp.DnssrvRpcRecord ([MS-DNSP] 2.3.2.2
@@ -684,7 +684,7 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, binddns_dir, realm,
         key_version_number = 1
 
     # This will create the dns.keytab file in the private_dir when it is
-    # commited!
+    # committed!
     setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), {
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
@@ -984,7 +984,7 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
     """
 
     # TODO: This really should have been done as a top level import.
-    # It is done here to avoid a depencency loop.  That is, we move
+    # It is done here to avoid a dependency loop.  That is, we move
     # ProvisioningError to another file, and have all the provision
     # scripts import it from there.
 
