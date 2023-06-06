@@ -134,7 +134,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v2(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->nonce, r->nonce_len));
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->sid));
 		/* We articially increment the offset of 20 bytes (size of hash
-		 * comming after the pad) so that ndr_align can determine easily
+		 * coming after the pad) so that ndr_align can determine easily
 		 * the correct pad size to make the whole struct 8 bytes aligned
 		 */
 		ofs = ndr->offset + 20;
@@ -185,7 +185,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v3(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->nonce, r->nonce_len));
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->sid));
 		/* We articially increment the offset of 64 bytes (size of hash
-		 * comming after the pad) so that ndr_align can determine easily
+		 * coming after the pad) so that ndr_align can determine easily
 		 * the correct pad size to make the whole struct 16 bytes aligned
 		 */
 		ofs = ndr->offset + 64;

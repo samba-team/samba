@@ -362,7 +362,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 	z->total_out	= 0;
 
 	if (!z->opaque) {
-		/* the first time we need to intialize completely */
+		/* the first time we need to initialize completely */
 		z->zalloc	= ndr_zlib_alloc;
 		z->zfree	= ndr_zlib_free;
 		z->opaque	= ndrpull;
@@ -376,7 +376,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 		}
 	}
 
-	/* call inflate untill we get Z_STREAM_END or an error */
+	/* call inflate until we get Z_STREAM_END or an error */
 	while (true) {
 		z_ret = inflate(z, Z_BLOCK);
 		if (z_ret != Z_OK) break;
@@ -475,7 +475,7 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 	z->total_out	= 0;
 
 	if (!z->opaque) {
-		/* the first time we need to intialize completely */
+		/* the first time we need to initialize completely */
 		z->zalloc	= ndr_zlib_alloc;
 		z->zfree	= ndr_zlib_free;
 		z->opaque	= ndrpull;
@@ -495,14 +495,14 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 		}
 	}
 
-	/* call deflate untill we get Z_STREAM_END or an error */
+	/* call deflate until we get Z_STREAM_END or an error */
 	while (true) {
 		z_ret = deflate(z, Z_FINISH);
 		if (z_ret != Z_OK) break;
 	}
 	if (z_ret != Z_STREAM_END) {
 		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
-				      "Bad delate(Z_BLOCK) error %s(%d) (PUSH)",
+				      "Bad deflate(Z_BLOCK) error %s(%d) (PUSH)",
 				      zError(z_ret), z_ret);
 	}
 

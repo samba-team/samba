@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    routines for marshalling/unmarshalling string types
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -120,7 +120,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	case LIBNDR_FLAG_STR_NULLTERM:
 		/*
 		 * We ensure that conv_str_len cannot return 0 by
-		 * requring that there be enough bytes for at least
+		 * requiring that there be enough bytes for at least
 		 * the NULL terminator
 		 */
 		if (byte_mul == 1) {
@@ -209,7 +209,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 	if (NDR_BE(ndr)) {
 		chset = CH_UTF16BE;
 	}
-	
+
 	s_len = s?strlen(s):0;
 
 	if (flags & LIBNDR_FLAG_STR_ASCII) {
@@ -245,7 +245,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
 				   (void **)(void *)&dest, &d_len))
 	{
-		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
+		return ndr_push_error(ndr, NDR_ERR_CHARCNV,
 				      "Bad character push conversion with flags 0x%x", flags);
 	}
 
@@ -290,7 +290,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 	default:
 		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
 			NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
-			break;		
+			break;
 		}
 
 		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
@@ -348,7 +348,7 @@ _PUBLIC_ void ndr_print_string(struct ndr_print *ndr, const char *name, const ch
 	}
 }
 
-_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags) 
+_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags)
 {
 	/* FIXME: Is this correct for all strings ? */
 	if(!(*string)) return ret;
@@ -458,7 +458,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		 * but separated by a null terminator
 		 *
 		 * which means the same as:
-		 * Every string is null terminated exept the last
+		 * Every string is null terminated except the last
 		 * string is terminated by the end of the buffer
 		 *
 		 * as LIBNDR_FLAG_STR_NULLTERM also end at the end
@@ -547,7 +547,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_f
 		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
-	
+
 	ndr->flags = saved_flags;
 	return NDR_ERR_SUCCESS;
 }
@@ -601,7 +601,7 @@ _PUBLIC_ size_t ndr_size_string_array(const char **a, uint32_t count, int flags)
 }
 
 /**
- * Return number of elements in a string including the last (zeroed) element 
+ * Return number of elements in a string including the last (zeroed) element
  */
 _PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 {
@@ -700,7 +700,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 				   discard_const_p(void *, var),
 				   &converted_size))
 	{
-		return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+		return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
 				      "Bad character conversion");
 	}
 	NDR_CHECK(ndr_pull_advance(ndr, length*byte_mul));
@@ -755,7 +755,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 		return ndr_push_error(ndr, NDR_ERR_LENGTH, "length overflow");
 	}
 	required = byte_mul * length;
-	
+
 	NDR_PUSH_NEED_BYTES(ndr, required);
 
 	if (required) {
@@ -768,7 +768,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 		if (!convert_string(CH_UNIX, chset,
 			     var, strlen(var),
 			     ndr->data+ndr->offset, required, &size)) {
-			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
+			return ndr_push_error(ndr, NDR_ERR_CHARCNV,
 				      "Bad character conversion");
 		}
 

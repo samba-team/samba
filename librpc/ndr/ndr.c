@@ -43,7 +43,7 @@
  * malicious packet.
  *
  * In an ideal world this would be controlled by range() restrictions
- * on array sizes and careful IDL construction to avoid arbitary
+ * on array sizes and careful IDL construction to avoid arbitrary
  * linked lists, but this is a backstop for now.
  */
 #define NDR_TOKEN_MAX_LIST_SIZE 65535
@@ -169,7 +169,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr)
 
 	/*
 	 * we need to keep up to 7 bytes
-	 * in order to get the aligment right.
+	 * in order to get the alignment right.
 	 */
 	skip = ndr->offset & 0xFFFFFFF8;
 

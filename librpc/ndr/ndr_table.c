@@ -38,7 +38,7 @@ NTSTATUS ndr_table_register(const struct ndr_interface_table *table)
 	for (l = ndr_interfaces; l; l = l->next) {
 		/*
 		 * If no GUID is supplied, use the name to determine
-		 * uniquness.
+		 * uniqueness.
 		 */
 		if (GUID_all_zero(&table->syntax_id.uuid)) {
 			if (strcmp(table->name,
@@ -61,7 +61,7 @@ NTSTATUS ndr_table_register(const struct ndr_interface_table *table)
 	}
 
 	/*
-	 * This is a singleton instance guarenteed
+	 * This is a singleton instance guaranteed
 	 * by the above check to be only added once
 	 * into the list so we can allocate off the NULL
 	 * context. We never want this to be freed
