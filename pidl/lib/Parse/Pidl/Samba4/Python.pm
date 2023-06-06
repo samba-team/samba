@@ -470,14 +470,14 @@ sub PythonFunctionStruct($$$$)
 	$self->indent;
 
 	# This creates a new, zeroed C structure and python object.
-	# Thse may not be valid or sensible values, but this is as
+	# These may not be valid or sensible values, but this is as
 	# well as we can do.
 
 	$self->pidl("PyObject *self = pytalloc_new($cname, type);");
 
 	# If there are any children that are ref pointers, we need to
 	# allocate something for them to point to just as the pull
-	# routine will when parsing the stucture from NDR.
+	# routine will when parsing the structure from NDR.
 	#
 	# We then make those pointers point to zeroed memory
 	#
