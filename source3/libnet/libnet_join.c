@@ -2369,6 +2369,14 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		r->in.admin_account = admin_account;
 	}
 
+	if (r->in.provision_computer_account_only) {
+		/*
+		 * When in the "provision_computer_account_only" path we do not
+		 * need to have access to secrets.tdb at all - gd
+		 */
+		return WERR_OK;
+	}
+
 	if (!secrets_init()) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"Unable to open secrets database");
