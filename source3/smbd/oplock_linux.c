@@ -35,7 +35,7 @@
 int linux_set_lease_sighandler(int fd)
 {
         if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
-                DEBUG(3,("Failed to set signal handler for kernel lease\n"));
+                DBG_NOTICE("Failed to set signal handler for kernel lease\n");
                 return -1;
         }
 
@@ -103,7 +103,7 @@ static void linux_oplock_signal_handler(struct tevent_context *ev_ctx,
 
 	fsp = file_find_fd(sconn, fd);
 	if (fsp == NULL) {
-		DEBUG(0,("linux_oplock_signal_handler: failed to find fsp for file fd=%d (file was closed ?)\n", fd ));
+		DBG_ERR("linux_oplock_signal_handler: failed to find fsp for file fd=%d (file was closed ?)\n", fd );
 		return;
 	}
 	break_kernel_oplock(sconn->msg_ctx, fsp);
@@ -146,7 +146,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 {
 	struct file_id_buf idbuf;
 
-	if (DEBUGLVL(10)) {
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		/*
 		 * Check and print out the current kernel
 		 * oplock state of this file.
@@ -165,7 +165,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 	 * Remove the kernel oplock on this file.
 	 */
 	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_UNLCK) == -1) {
-		if (DEBUGLVL(0)) {
+		if (DEBUGLVL(DBGLVL_ERR)) {
 			dbgtext("linux_release_kernel_oplock: Error when "
 				"removing kernel oplock on file " );
 			dbgtext("%s, file_id = %s, gen_id = %"PRIu64". "
@@ -208,13 +208,13 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 	struct tevent_signal *se;
 
 	if (!linux_oplocks_available()) {
-		DEBUG(3,("Linux kernel oplocks not available\n"));
+		DBG_NOTICE("Linux kernel oplocks not available\n");
 		return NULL;
 	}
 
 	ctx = talloc_zero(sconn, struct kernel_oplocks);
 	if (!ctx) {
-		DEBUG(0,("Linux Kernel oplocks talloc_Zero failed\n"));
+		DBG_ERR("Linux Kernel oplocks talloc_Zero failed\n");
 		return NULL;
 	}
 
@@ -227,12 +227,12 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 			       linux_oplock_signal_handler,
 			       ctx);
 	if (!se) {
-		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler"));
+		DBG_ERR("Failed to setup RT_SIGNAL_LEASE handler");
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
 
-	DEBUG(3,("Linux kernel oplocks enabled\n"));
+	DBG_NOTICE("Linux kernel oplocks enabled\n");
 
 	return ctx;
 }
