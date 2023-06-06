@@ -50,14 +50,14 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 *		the whole data blob, so auth_data_only must be set to false
 *		as the blob contains data+pad+auth and no just pad+auth.
 *
-* @param pkt		- The ncacn_packet strcuture
+* @param pkt		- The ncacn_packet structure
 * @param mem_ctx	- The mem_ctx used to allocate dcerpc_auth elements
 * @param pkt_trailer	- The packet trailer data, usually the trailing
 *			  auth_info blob, but in the request/response case
 *			  this is the stub_and_verifier blob.
 * @param auth		- A preallocated dcerpc_auth *empty* structure
 * @param auth_length	- The length of the auth trail, sum of auth header
-*			  lenght and pkt->auth_length
+*			  length and pkt->auth_length
 * @param auth_data_only	- Whether the pkt_trailer includes only the auth_blob
 *			  (+ padding) or also other data.
 *

@@ -306,7 +306,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register_b(struct dcesrv_context *dce_ctx,
 		 * listen on distinct ports, if they have one forced
 		 * in the code above with eg 'rpc server port:drsuapi = 1027'
 		 *
-		 * If we have mulitiple endpoints on port 0, they each
+		 * If we have multiple endpoints on port 0, they each
 		 * get an epemeral port (currently by walking up from
 		 * 1024).
 		 *
