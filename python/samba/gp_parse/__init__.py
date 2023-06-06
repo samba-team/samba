@@ -89,7 +89,7 @@ class GPParser(object):
         if type_str is None:
             raise GPGeneralizeException("No such entity type")
 
-        # For formattting reasons, align the length of the entities
+        # For formatting reasons, align the length of the entities
         longest = entity_type_to_string(ENTITY_NETWORK_PATH)
         type_str = type_str.center(len(longest), '_')
 

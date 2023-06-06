@@ -172,7 +172,7 @@ class GptTmplInfParser(GPParser):
                     findex = line.find('"')
                     parameters[current_arg] = line[:findex]
                     line = line[findex + 1:]
-                # Skip past delimeter
+                # Skip past delimiter
                 elif line[:1] == ',':
                     line = line[1:]
                     current_arg += 1
