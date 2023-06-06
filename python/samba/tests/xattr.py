@@ -54,7 +54,8 @@ class XattrTests(TestCase):
             samba.xattr_native.wrap_setxattr(tempf, "user.unittests",
                                              ndr_pack(ntacl))
         except IOError:
-            raise SkipTest("the filesystem where the tests are runned do not support XATTR")
+            raise SkipTest("the filesystem where the tests are run does not "
+                           "support XATTR")
         os.unlink(tempf)
 
     def test_set_and_get_native(self):
@@ -68,7 +69,8 @@ class XattrTests(TestCase):
             text = samba.xattr_native.wrap_getxattr(tempf, "user.unittests")
             self.assertEqual(text, reftxt)
         except IOError:
-            raise SkipTest("the filesystem where the tests are runned do not support XATTR")
+            raise SkipTest("the filesystem where the tests are run does not "
+                           "support XATTR")
         os.unlink(tempf)
 
     def test_set_xattr_tdb(self):

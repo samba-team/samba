@@ -64,11 +64,11 @@ class LdapReferralTest(samba.tests.TestCase):
             scope=ldb.SCOPE_SUBTREE,
             attrs=["objectGUID", "samAccountName"])
 
-        referals = res.referals
-        for referal in referals:
+        referrals = res.referals
+        for referral in referrals:
             self.assertTrue(
-                referal.startswith("ldap://"),
-                "{0} does not start with ldap://".format(referal))
+                referral.startswith("ldap://"),
+                "{0} does not start with ldap://".format(referral))
 
     # The referral entries for an ldaps request should have the ldaps scheme
     # i.e. then should all start with "ldaps://"
@@ -83,8 +83,8 @@ class LdapReferralTest(samba.tests.TestCase):
             scope=ldb.SCOPE_SUBTREE,
             attrs=["objectGUID", "samAccountName"])
 
-        referals = res.referals
-        for referal in referals:
+        referrals = res.referals
+        for referral in referrals:
             self.assertTrue(
-                referal.startswith("ldaps://"),
-                "{0} does not start with ldaps://".format(referal))
+                referral.startswith("ldaps://"),
+                "{0} does not start with ldaps://".format(referral))

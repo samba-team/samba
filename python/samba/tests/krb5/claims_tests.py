@@ -334,7 +334,7 @@ class ClaimsTests(KDCBaseTest):
             expected_client_claims=(expected_claims
                                     if not remove_claims else None))
 
-    # Perform a test similar to that preceeding. This time, create both a user
+    # Perform a test similar to that preceding. This time, create both a user
     # and a computer account, each having an applicable claim. After obtaining
     # tickets, from which the claims are optionally removed, change the claim
     # attribute of each account to a different value. Then perform constrained

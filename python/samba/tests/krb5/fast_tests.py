@@ -2010,7 +2010,7 @@ class FAST_Tests(KDCBaseTest):
 
         checksum_keys = self.get_krbtgt_checksum_key()
 
-        # Use our modifed TGT to replace the one in the request.
+        # Use our modified TGT to replace the one in the request.
         return self.modified_ticket(user_tgt,
                                     modify_fn=modify_fn,
                                     checksum_keys=checksum_keys)

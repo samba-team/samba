@@ -504,7 +504,7 @@ class KpasswdTests(KDCBaseTest):
                               target_realm=creds.get_realm())
 
     # Test setting a password, specifying both principal and realm of the
-    # target user, whem the user has control access on their account.
+    # target user, when the user has control access on their account.
     def test_kpasswd_set_target_princ_and_realm_access(self):
         # Create an account for testing.
         creds = self._get_creds()

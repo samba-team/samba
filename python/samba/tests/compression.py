@@ -30,7 +30,7 @@ class BaseCompressionTest(TestCase):
         """Compress, decompress, assert equality with original.
 
         If size_delta is None, no size is given to decompress. This
-        should fail with the Huffman varient and succeed with plain.
+        should fail with the Huffman variant and succeed with plain.
         Otherwise size_delta is added to the gven size; if negative,
         we'd expect a failure, with plain compression a positive delta
         will succeed.
@@ -91,7 +91,7 @@ class LzxpressPlainCompressionTest(BaseCompressionTest):
 
     def test_round_trip_aaa_long(self):
         s = b'a' * 150000
-        # this *wont* fail because although the data will run out
+        # this *won't* fail because although the data will run out
         # before the buffer is full, LZXpress plain does not care
         # about that.
         try:
@@ -194,7 +194,7 @@ class LzxpressHuffmanCompressionTest(BaseCompressionTest):
 
         # For the Huffman algorithm, the length is really an essential
         # part of the compression data, and the bindings will reject a
-        # call with out it. This happens at the arument parsing stage,
+        # call with out it. This happens at the argument parsing stage,
         # so is a TypeError (i.e. wrong type of function), not a
         # CompressionError.
         self.assertRaises(TypeError,

@@ -369,7 +369,7 @@ class SMBNotifyTests(TestCase):
         # trigger notification for both
         self.smb_conn.rmdir(private_path)
 
-        # check that both get thte notification
+        # check that both get the notification
         changes = notify_unpriv.get_changes(wait=True)
         self.assertIsNotNone(changes)
         self.assertEqual(changes[0]['name'], private_rel)

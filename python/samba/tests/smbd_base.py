@@ -42,7 +42,7 @@ class SmbdBaseTests(TestCaseInTempDir):
         self.assertEqual(self.get_umask(), TEST_UMASK,
                          "umask unexpectedly overridden by test")
 
-        # restore the original umask value (before we interferred with it)
+        # restore the original umask value (before we interfered with it)
         os.umask(self.orig_umask)
 
         super(SmbdBaseTests, self).tearDown()

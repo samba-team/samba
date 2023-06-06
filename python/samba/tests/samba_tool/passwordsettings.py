@@ -255,7 +255,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "pso", "delete"), pso_name,
                                                  "-H", self.server,
                                                  self.user_auth)
-        self.assertCmdFail(result, "Deleteing a non-existent PSO should fail")
+        self.assertCmdFail(result, "Deleting a non-existent PSO should fail")
         self.assertIn("Unable to find PSO", err)
 
     def check_pso_applied(self, user, pso):

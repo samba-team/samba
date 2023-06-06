@@ -1920,7 +1920,7 @@ class TestDNSAging(DNSTest):
         self.assertEqual(rec.dwTimeStamp, 0)     # timestamp stays zero
 
         if failures:
-            self.fail(f"failed {failures}/{total} defered assertions")
+            self.fail(f"failed {failures}/{total} deferred assertions")
 
     def test_static_record_dynamic_update(self):
         """Add a static record, then a dynamic record.

@@ -415,7 +415,7 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
         self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
 
         # As the number of rounds did not match, should have returned the
-        # first hash of the coresponding scheme
+        # first hash of the corresponding scheme
         out = self._get_password("virtualCryptSHA256," +
                                  "virtualCryptSHA512")
         self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))

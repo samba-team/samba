@@ -1136,7 +1136,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 (
                     # snizle has 2 A, 2 AAAA, 10 fancy, and 2 TXT records, in
                     # that order.
-                    # the A, AAAA, and TXT recrods should be dynamic
+                    # the A, AAAA, and TXT records should be dynamic
                     ['--mark-records-dynamic-regex=sniz'],
                     {'snizle': [('R', 'nowish'),
                                 ('R', 'nowish'),
@@ -1198,7 +1198,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 (
                     # This regex should catch snizle, frobitz, and
                     # ts-multi. Note that the 1e7 ts-multi record is
-                    # alreay dynamic and doesn't change.
+                    # already dynamic and doesn't change.
                     ['--mark-records-dynamic-regex=[i]'],
                     {'ts-multi': [('R', 'nowish'),
                                   ('R', 'nowish'),

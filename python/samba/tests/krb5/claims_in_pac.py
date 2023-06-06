@@ -307,7 +307,7 @@ class PacClaimsTests(TestCase):
         client_claims_bytes1 = ndr_pack(client_claims)
         client_claims2 = ndr_unpack(claims.CLAIMS_SET_METADATA_NDR, client_claims_bytes1)
 
-        # Confirm that despite no lenghts being set, the data is compressed correctly
+        # Confirm that despite no lengths being set, the data is compressed correctly
         self.assertEqual(client_claims2.claims.metadata.uncompressed_claims_set_size,
                          8232)
         self.assertEqual(client_claims2.claims.metadata.claims_set_size,

@@ -48,7 +48,7 @@ class SubstituteVarTestCase(TestCase):
     def test_check_all_substituted(self):
         samba.check_all_substituted("nothing to see here")
         self.assertRaises(Exception, samba.check_all_substituted,
-                          "Not subsituted: ${FOOBAR}")
+                          "Not substituted: ${FOOBAR}")
 
 
 class ArcfourTestCase(TestCase):

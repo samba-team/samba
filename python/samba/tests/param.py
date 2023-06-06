@@ -74,7 +74,7 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
 
     def test_dump(self):
         samba_lp = param.LoadParm()
-        # Just test successfull method execution (outputs to stdout)
+        # Just test successful method execution (outputs to stdout)
         self.assertEqual(None, samba_lp.dump())
 
     def test_dump_to_file(self):
@@ -87,7 +87,7 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
     def test_dump_a_parameter(self):
         samba_lp = param.LoadParm()
         samba_lp.load_default()
-        # Just test successfull method execution
+        # Just test successful method execution
         self.assertEqual(None, samba_lp.dump_a_parameter('interfaces'))
 
     def test_dump_a_parameter_to_file(self):

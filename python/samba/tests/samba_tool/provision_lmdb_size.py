@@ -50,7 +50,7 @@ class ProvisionLmdbSizeTestCase(SambaToolCmdTest):
     # Get the lmdb map size for the specified command
     #
     # While there is a python lmdb package available we use the lmdb command
-    # line utilities to avoid introducing a dependancy.
+    # line utilities to avoid introducing a dependency.
     #
     def get_lmdb_environment_size(self, path):
         (result, out, err) = self.run_command("mdb_stat -ne %s" % path)

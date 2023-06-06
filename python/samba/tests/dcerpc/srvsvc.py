@@ -55,7 +55,7 @@ class SrvsvcTests(RpcInterfaceTestCase):
         parm_error = 0x00000000
         self.conn.NetShareAdd(self.server_unc, 502, share, parm_error)
         name = share.name
-        share.comment = "now sucessfully modified "
+        share.comment = "now successfully modified "
         parm_error = self.pipe.NetShareSetInfo(self.server_unc, name,
                                                502, share, parm_error)
 

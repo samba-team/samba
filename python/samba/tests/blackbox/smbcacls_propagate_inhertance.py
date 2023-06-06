@@ -237,7 +237,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
         try:
             # add flags on oi_dir
 
-            # This is somwhat artificial, we need to add a new acl to the directory
+            # This is somewhat artificial, we need to add a new acl to the directory
             # so that the following modify operation doesn't fail. Previously
             # '--modify' was used in place of '--add' but that resulted in failure
             # to access the directory ( or even modify the acl ).
@@ -462,7 +462,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
         delete_ace_str = "ACL:%s:ALLOWED/0x0/RWD" % self.user
 
         try:
-            # This is somwhat artificial, we need to add a new acl to the
+            # This is somewhat artificial, we need to add a new acl to the
             # directory so that the following modify operation doesn't fail.
             # Previously '--modify' was used in place of '--add' but that
             # resulted in failure to access the directory ( or even modify
@@ -688,7 +688,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
         try:
             # add flags on oi_dir
 
-            # This is somwhat artificial, we need to add a new acl to the
+            # This is somewhat artificial, we need to add a new acl to the
             # directory so that the following modify operation doesn't fail.
             # Previously '--modify' was used in place of '--add' but that
             # resulted in failure to access the directory ( or even modify

@@ -364,7 +364,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         # there should be no A record, and one TOMBSTONE record.
         self.assert_num_records(self.custom_zone, "testrecord", 'A', 0)
         # we can't make assertions about the tombstone count based on
-        # RPC calls, as ther are no tombstones in RPCs (there is
+        # RPC calls, as there are no tombstones in RPCs (there is
         # "DNS_TYPE_ZERO" instead). Nor do tombstones show up if we
         # use DNS_TYPE_ALL.
         self.assert_num_records(self.custom_zone, "testrecord", 'ALL', 0)

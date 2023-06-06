@@ -394,7 +394,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             expires = nttime2unix(int("%s" % found.get("accountExpires")))
             self.assertWithin(expires, twodays, 5, "Ensure account expires is within 5 seconds of the expected time")
 
-        # TODO: renable this after the filter case is sorted out
+        # TODO: re-enable this after the filter case is sorted out
         if "filters are broken, bail now":
             return
 

@@ -267,7 +267,7 @@ class LdapUpnSamTest(LdapUpnSamTestBase):
         #
         # * If a dictionary, it is a mapping of some of ['sam', 'upn']
         #   to strings (in this way, you can add two attributes in one
-        #   mesage, or attempt a samaccountname with '@').
+        #   message, or attempt a samaccountname with '@').
         #
         # expected can be «ok», «bad» (mapped to True and False,
         # respectively), or a specific LDB error code, if that exact

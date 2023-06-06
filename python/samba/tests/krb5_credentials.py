@@ -31,7 +31,7 @@ from samba.samdb import SamDB
 
 """KRB5 Integration tests for pycredentials.
 
-Seperated from py_credentials so as to allow running against just one
+Separated from py_credentials so as to allow running against just one
 environment so we know the server that we add the user on will be our
 KDC
 

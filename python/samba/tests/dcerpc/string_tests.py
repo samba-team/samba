@@ -116,7 +116,7 @@ class StringTests(samba.tests.TestCase):
 class StringTestsWithoutLeakCheck(samba.tests.TestCase):
     """We know that the ndr unpacking test leaves stuff in the
     autofree_context, and we don't want to worry about that. So for
-    this test we don't make meory leak assertions."""
+    this test we don't make memory leak assertions."""
 
     def test_string_from_ndr(self):
         info = drsblobs.repsFromTo2OtherInfo()

@@ -443,7 +443,7 @@ class GetDCNameEx(samba.tests.TestCase):
                          self.realm.lower())
 
     def test_get_dc_winbind_need_2012r2(self):
-        """Test requring that we have a FL2012R2 DC as answer
+        """Test requiring that we have a FL2012R2 DC as answer
         """
         self.assertIsNotNone(self.trust_realm)
 
@@ -472,7 +472,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_DS_9)
 
     def test_get_dc_direct_need_2012r2_but_not_found(self):
-        """Test requring that we have a FL2012R2 DC as answer, aginst the FL2008R2 domain
+        """Test requiring that we have a FL2012R2 DC as answer, against the FL2008R2 domain
 
         This test requires that the DC in the FL2008R2 does not claim
         to be 2012R2 capable (off by default in Samba)
@@ -492,7 +492,7 @@ class GetDCNameEx(samba.tests.TestCase):
                 self.fail(f"Incorrect error {estr} from GetDcNameEx looking for 2012R2 DC that was not available")
 
     def test_get_dc_direct_need_web_but_not_found(self):
-        """Test requring that we (do not) have a AD Web Services on the DC
+        """Test requiring that we (do not) have a AD Web Services on the DC
 
         This test requires that the DC does not advertise AD Web Services
 
@@ -525,7 +525,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertFalse(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_ADS_WEB_SERVICE)
 
     def test_get_dc_winbind_need_web_but_not_found(self):
-        """Test requring that we (do not) have a AD Web Services on the trusted DC
+        """Test requiring that we (do not) have a AD Web Services on the trusted DC
 
         This test requires that the DC does not advertise AD Web Services
 
@@ -558,7 +558,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertFalse(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_ADS_WEB_SERVICE)
 
     def test_get_dc_direct_need_2012r2(self):
-        """Test requring that we have a FL2012R2 DC as answer
+        """Test requiring that we have a FL2012R2 DC as answer
         """
         self.assertIsNotNone(self.trust_realm)
 
@@ -586,7 +586,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_DS_9)
 
     def test_get_dc_winbind_need_2012r2_but_not_found(self):
-        """Test requring that we have a FL2012R2 DC as answer, aginst the FL2008R2 domain
+        """Test requiring that we have a FL2012R2 DC as answer, against the FL2008R2 domain
 
         This test requires that the DC in the FL2008R2 does not claim
         to be 2012R2 capable (off by default in Samba)
@@ -616,7 +616,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertFalse(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_DS_9)
 
     def test_get_dc_winbind_need_2012r2_but_not_found_fallback(self):
-        """Test requring that we have a FL2012R2 DC as answer, aginst the
+        """Test requiring that we have a FL2012R2 DC as answer, against the
         FL2008R2 domain, then trying for just FL2008R2 (to show caching bugs)
 
         This test requires that the DC in the FL2008R2 does not claim
@@ -656,7 +656,7 @@ class GetDCNameEx(samba.tests.TestCase):
         self.assertTrue(cldap_netlogon_reply.server_type & nbt.NBT_SERVER_FULL_SECRET_DOMAIN_6)
 
     def test_get_dc_direct_need_2012r2_but_not_found_fallback(self):
-        """Test requring that we have a FL2012R2 DC as answer, aginst the
+        """Test requiring that we have a FL2012R2 DC as answer, against the
         FL2008R2 domain, then trying for just FL2008R2 (to show caching bugs)
 
         This test requires that the DC in the FL2008R2 does not claim

@@ -87,7 +87,7 @@ class DsdbAccountTests(TestCase):
 
     def test_ridalloc_next_free_rid(self):
         # Test RID allocation. We assume that RID
-        # pools allocated to us are continguous.
+        # pools allocated to us are contiguous.
         self.samdb.transaction_start()
         try:
             orig_rid_set = self.get_rid_set(self.rid_set_dn)

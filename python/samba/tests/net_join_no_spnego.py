@@ -64,7 +64,7 @@ class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
                 return
             else:
                 raise
-        self.fail("Shoud have rejected NTLMv2 without SPNEGO")
+        self.fail("Should have rejected NTLMv2 without SPNEGO")
 
     def test_net_join_no_spnego_ntlmv1(self):
         self.lp.set("client ipc max protocol", "NT1")

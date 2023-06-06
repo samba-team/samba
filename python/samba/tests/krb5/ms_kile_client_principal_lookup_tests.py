@@ -42,7 +42,7 @@ global_hexdump = False
 class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
     ''' Tests for MS-KILE client principal look-up
         See [MS-KILE]: Kerberos Protocol Extensions
-            secion 3.3.5.6.1 Client Principal Lookup
+            section 3.3.5.6.1 Client Principal Lookup
     '''
 
     def setUp(self):

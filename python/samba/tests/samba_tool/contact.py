@@ -295,7 +295,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
             self.assertEqual("%s" % found.get("cn"), expected_cn)
 
             # remove given name, initials and surname
-            # (must forece new cn, because en empty new CN throws an error)
+            # (must force new cn, because en empty new CN throws an error)
             (result, out, err) = self.runsubcmd("contact", "rename", expected_cn,
                                                 "--force-new-cn=%s" % expected_cn,
                                                 "--surname=",

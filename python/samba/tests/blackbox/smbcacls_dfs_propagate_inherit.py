@@ -25,7 +25,7 @@ class DfsInheritanceSmbCaclsTests(InheritanceSmbCaclsTests):
     def setUp(self):
         # This is some intentional trickery to ensure we skip
         # InheritanceSmbCaclsTests.setUp so we can create a new
-        # test directory & file hierachy (including a nested dfs link)
+        # test directory & file hierarchy (including a nested dfs link)
         SmbCaclsBlockboxTestBase.setUp(self)
         smbclient_args = self.build_test_cmd("smbclient", ["//%s/%s" % (self.server, self.share), "-c", "mkdir %s" % os.getenv("TESTDIR", "smbcacls")])
         self.check_output(smbclient_args)
