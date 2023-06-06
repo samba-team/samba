@@ -234,16 +234,16 @@ Example: searching</string>
 
 Example: off</string>
       <string id="POL_E31CD0A8_5A4A_5657_8ACA_123A200C6E06">ldap group suffix</string>
-      <string id="POL_E31CD0A8_5A4A_5657_8ACA_123A200C6E06_Help">This parameter specifies the suffix that is used for groups when these are added to the LDAP directory. If this parameter is unset, the value of will be used instead. The suffix string is pre-pended to the
+      <string id="POL_E31CD0A8_5A4A_5657_8ACA_123A200C6E06_Help">This parameter specifies the suffix that is used for groups when these are added to the LDAP directory. If this parameter is unset, the value of will be used instead. The suffix string is prepended to the
  string so use a partial DN.
 
 Example: ou=Groups</string>
       <string id="POL_FC4495FC_4C6E_50C8_9B37_08D9955A883B">ldap idmap suffix</string>
-      <string id="POL_FC4495FC_4C6E_50C8_9B37_08D9955A883B_Help">This parameters specifies the suffix that is used when storing idmap mappings. If this parameter is unset, the value of will be used instead. The suffix string is pre-pended to the string so use a partial DN.
+      <string id="POL_FC4495FC_4C6E_50C8_9B37_08D9955A883B_Help">This parameters specifies the suffix that is used when storing idmap mappings. If this parameter is unset, the value of will be used instead. The suffix string is prepended to the string so use a partial DN.
 
 Example: ou=Idmap</string>
       <string id="POL_2ED1402F_4CF6_5CED_BE40_9B112E1238DC">ldap machine suffix</string>
-      <string id="POL_2ED1402F_4CF6_5CED_BE40_9B112E1238DC_Help">It specifies where machines should be added to the ldap tree. If this parameter is unset, the value of will be used instead. The suffix string is pre-pended to the string so use a partial DN.
+      <string id="POL_2ED1402F_4CF6_5CED_BE40_9B112E1238DC_Help">It specifies where machines should be added to the ldap tree. If this parameter is unset, the value of will be used instead. The suffix string is prepended to the string so use a partial DN.
 
 Example: ou=Computers</string>
       <string id="POL_12C5B04D_D734_576A_99F1_7475BC9E90D7">ldap page size</string>
@@ -301,7 +301,7 @@ Example: dc=samba,dc=org</string>
       <string id="POL_40F4D046_B9E1_53B0_9DC9_1AE4DE9B1976">ldap timeout</string>
       <string id="POL_40F4D046_B9E1_53B0_9DC9_1AE4DE9B1976_Help">This parameter defines the number of seconds that Samba should use as timeout for LDAP operations.</string>
       <string id="POL_26984E46_7C64_57A4_B4BF_C2C2B13C330E">ldap user suffix</string>
-      <string id="POL_26984E46_7C64_57A4_B4BF_C2C2B13C330E_Help">This parameter specifies where users are added to the tree. If this parameter is unset, the value of will be used instead. The suffix string is pre-pended to the string so use a partial DN.
+      <string id="POL_26984E46_7C64_57A4_B4BF_C2C2B13C330E_Help">This parameter specifies where users are added to the tree. If this parameter is unset, the value of will be used instead. The suffix string is prepended to the string so use a partial DN.
 
 Example: ou=people</string>
       <string id="POL_AB95F2C5_BFBC_5955_8062_8B446AF7E84C">ldap max anonymous request size</string>
@@ -602,7 +602,7 @@ Example: \\remote_smb_server\%U</string>
  The share and the path must be readable by the user for the preferences and directories to be loaded onto the Windows NT client. The share must be writeable when the user logs in for the first time, in order that the Windows NT client can create the NTuser.dat and other directories. Thereafter, the directories and any of the contents can, if required, be made read-only. It is not advisable that the NTuser.dat file be made read-only - rename it to NTuser.man to achieve the desired effect (a MANdatory profile).
  Windows clients can sometimes maintain a connection to the [homes] share, even though there is no user logged in. Therefore, it is vital that the logon path does not include a reference to the homes share (i.e. setting this parameter to \\%N\homes\profile_path will cause problems).
  This option takes the standard substitutions, allowing you to have separate logon scripts for each user or machine.
- Do not quote the value. Setting this as \\%N\profile\%U will break profile handling. Where the tdbsam or ldapsam passdb backend is used, at the time the user account is created the value configured for this parameter is written to the passdb backend and that value will over-ride the parameter value present in the smb.conf file. Any error present in the passdb backend account record must be editted using the appropriate tool (pdbedit on the command-line, or any other locally provided system tool).
+ Do not quote the value. Setting this as \\%N\profile\%U will break profile handling. Where the tdbsam or ldapsam passdb backend is used, at the time the user account is created the value configured for this parameter is written to the passdb backend and that value will over-ride the parameter value present in the smb.conf file. Any error present in the passdb backend account record must be edited using the appropriate tool (pdbedit on the command-line, or any other locally provided system tool).
  Note that this option is only useful if Samba is set up as a domain controller.
  Disable the use of roaming profiles by setting the value of this parameter to the empty string. For example, &quot;&quot;. Take note that even if the default setting in the smb.conf file is the empty string, any value specified in the user account settings in the passdb backend will over-ride the effect of setting this parameter to null. Disabling of all roaming profile use requires that the user account settings must also be blank.
  An example of use is:
@@ -1222,7 +1222,7 @@ Example: LANMAN1</string>
 Example: NT1</string>
       <string id="POL_89A40B64_721B_55DF_841D_C3481F32C2FF">client use spnego</string>
       <string id="POL_89A40B64_721B_55DF_841D_C3481F32C2FF_Help">This variable controls whether Samba clients will try
- to use Simple and Protected NEGOciation (as specified by rfc2478) with
+ to use Simple and Protected NEGOtiation (as specified by rfc2478) with
  supporting servers (including WindowsXP, Windows2000 and Samba
  3.0) to agree upon an authentication
  mechanism. This enables Kerberos authentication in particular.
@@ -2446,7 +2446,7 @@ Example: DOMAIN</string>
  controller, providing domain logon services to Windows and Samba
  clients of an NT4-like domain. Clients must be joined to the domain to
  create a secure, trusted path across the network. There must be
- only one PDC per NetBIOS scope (typcially a broadcast network or
+ only one PDC per NetBIOS scope (typically a broadcast network or
  clients served by a single WINS server).
 
  SERVER ROLE = CLASSIC BACKUP DOMAIN CONTROLLER
@@ -2836,7 +2836,7 @@ Example: IPTOS_LOWDELAY</string>
  depend on mmap working correctly on the running system. Samba requires a coherent
  mmap/read-write system memory cache. Currently only OpenBSD and HPUX do not have such a
  coherent cache, and on those platforms this parameter is overridden internally
- to be effeceively no. On all systems this parameter should be left alone. This
+ to be effectively no. On all systems this parameter should be left alone. This
  parameter is provided to help the Samba developers track down problems with
  the tdb internal code.</string>
       <string id="POL_77FC1090_5D4B_587E_BD3B_DAE9F7A9682F">get quota command</string>
@@ -3158,7 +3158,7 @@ General rule structure:
     "priority": "priority"
   },
   "source [not] address | mac | ipset": "address[/mask] | mac-address | ipset",
-  "destination [not] adress": "address[/mask]",
+  "destination [not] address": "address[/mask]",
   "service name": "service name",
   "port": {
     "port": "port value",
