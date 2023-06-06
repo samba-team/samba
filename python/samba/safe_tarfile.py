@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import tarfile
 from tarfile import ExtractError, TarInfo, TarFile as UnsafeTarFile
 
 
@@ -24,20 +25,27 @@ class TarFile(UnsafeTarFile):
     using '../../'.
     """
 
-    def extract(self, member, path="", set_attrs=True, *, numeric_owner=False):
-        if isinstance(member, TarInfo):
-            name = member.name
-        else:
-            name = member
+    try:
+        # New in version 3.11.4 (also has been backported)
+        # https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extraction_filter
+        # https://peps.python.org/pep-0706/
+        extraction_filter = staticmethod(tarfile.data_filter)
+    except AttributeError:
+        def extract(self, member, path="", set_attrs=True, *,
+                    numeric_owner=False):
+            if isinstance(member, TarInfo):
+                name = member.name
+            else:
+                name = member
 
-        if '../' in name:
-            raise ExtractError(f"'../' is not allowed in path '{name}'")
+            if '../' in name:
+                raise ExtractError(f"'../' is not allowed in path '{name}'")
 
-        if name.startswith('/'):
-            raise ExtractError(f"path '{name}' should not start with '/'")
+            if name.startswith('/'):
+                raise ExtractError(f"path '{name}' should not start with '/'")
 
-        super().extract(member, path, set_attrs=set_attrs,
-                        numeric_owner=numeric_owner)
+            super().extract(member, path, set_attrs=set_attrs,
+                            numeric_owner=numeric_owner)
 
 
 open = TarFile.open
