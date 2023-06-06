@@ -163,7 +163,7 @@ class IdmapDatabase(DbDatabase):
                 yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip(b"\0"))
 
     def get_sid(self, xid, id_type):
-        """Retrive SID associated with a particular id and type.
+        """Retrieve SID associated with a particular id and type.
 
         :param xid: UID or GID to retrieve SID for.
         :param id_type: Type of id specified - 'UID' or 'GID'
