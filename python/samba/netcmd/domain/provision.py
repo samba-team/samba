@@ -128,7 +128,7 @@ class cmd_domain_provision(Command):
                metavar="[yes|no|auto]",
                help="Define if we should use the native fs capabilities or a tdb file for "
                "storing attributes likes ntacl when --use-ntvfs is set. "
-               "auto tries to make an inteligent guess based on the user rights and system capabilities",
+               "auto tries to make an intelligent guess based on the user rights and system capabilities",
                default="auto")
     ]
 
@@ -266,7 +266,7 @@ class cmd_domain_provision(Command):
 
         if adprep_level is None:
             # Select the adprep_level default based
-            # on what the base schema premits
+            # on what the base schema permits
             if base_schema in ["2008_R2", "2008_R2_old"]:
                 # without explicit --adprep-level=2008_R2
                 # we will skip the adprep step on

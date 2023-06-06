@@ -2508,7 +2508,7 @@ samba-tool user syncpasswords --terminate \\
         def update_pid(pid):
             if self.lockfd != -1:
                 got_exclusive = False
-                # Try 5 times to get the exclusiv lock.
+                # Try 5 times to get the exclusive lock.
                 for i in range(0, 5):
                     try:
                         fcntl.lockf(self.lockfd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -2665,7 +2665,7 @@ samba-tool user syncpasswords --terminate \\
 
             for msg in notify_handle:
                 if not isinstance(msg, ldb.Message):
-                    self.outf.write("referal: %s\n" % msg)
+                    self.outf.write("referral: %s\n" % msg)
                     continue
                 created = msg.get("uSNCreated")[0]
                 changed = msg.get("uSNChanged")[0]
@@ -2726,11 +2726,11 @@ samba-tool user syncpasswords --terminate \\
                 log_msg("No process running.\n")
                 return
             if not conflict:
-                log_msg("Proccess %d is not running anymore.\n" % (
+                log_msg("Process %d is not running anymore.\n" % (
                         self.current_pid))
                 update_pid(None)
                 return
-            log_msg("Sending SIGTERM to proccess %d.\n" % (
+            log_msg("Sending SIGTERM to process %d.\n" % (
                     self.current_pid))
             os.kill(self.current_pid, signal.SIGTERM)
             return

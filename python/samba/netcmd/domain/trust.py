@@ -1314,7 +1314,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
             if remote_lsa_info.sid != local_tdo_info.sid or \
                remote_lsa_info.name.string != local_tdo_info.netbios_name.string or \
                remote_lsa_info.dns_domain.string != local_tdo_info.domain_name.string:
-                raise CommandError("LocalTDO inconsistend: Netbios[%s] DNS[%s] SID[%s]" % (
+                raise CommandError("LocalTDO inconsistent: Netbios[%s] DNS[%s] SID[%s]" % (
                                    local_tdo_info.netbios_name.string,
                                    local_tdo_info.domain_name.string,
                                    local_tdo_info.sid))
@@ -1334,7 +1334,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 if local_lsa_info.sid != remote_tdo_info.sid or \
                    local_lsa_info.name.string != remote_tdo_info.netbios_name.string or \
                    local_lsa_info.dns_domain.string != remote_tdo_info.domain_name.string:
-                    raise CommandError("RemoteTDO inconsistend: Netbios[%s] DNS[%s] SID[%s]" % (
+                    raise CommandError("RemoteTDO inconsistent: Netbios[%s] DNS[%s] SID[%s]" % (
                                        remote_tdo_info.netbios_name.string,
                                        remote_tdo_info.domain_name.string,
                                        remote_tdo_info.sid))

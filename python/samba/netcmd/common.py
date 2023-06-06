@@ -97,7 +97,7 @@ def netcmd_get_domain_infos_via_cldap(lp, creds, address=None):
 def is_printable_attr_val(val):
     import unicodedata
 
-    # The value must be convertable to a string value.
+    # The value must be convertible to a string value.
     try:
         str_val = str(val)
     except:

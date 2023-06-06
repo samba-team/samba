@@ -205,9 +205,9 @@ class Command(object):
             self.apply_colour_choice(kwargs.pop('color', 'auto'))
 
         # Check for a min a max number of allowed arguments, whenever possible
-        # The suffix "?" means zero or one occurence
-        # The suffix "+" means at least one occurence
-        # The suffix "*" means zero or more occurences
+        # The suffix "?" means zero or one occurrence
+        # The suffix "+" means at least one occurrence
+        # The suffix "*" means zero or more occurrences
         min_args = 0
         max_args = 0
         undetermined_max_args = False

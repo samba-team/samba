@@ -57,7 +57,7 @@ class cmd_schema_attribute_modify(Command):
           substring queries.
     fSUBTREEATTINDEX: create a browsing index for this attribute. VLV searches
           require this.
-    fCONFIDENTIAL: indicate that the attribute is confidental and requires
+    fCONFIDENTIAL: indicate that the attribute is confidential and requires
           special access checks.
     fNEVERVALUEAUDIT: indicate that changes to this value should NOT be audited.
     fRODCFILTEREDATTRIBUTE: indicate that this value should not be replicated to

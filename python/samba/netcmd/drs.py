@@ -106,11 +106,11 @@ class cmd_drs_showrepl(Command):
                                   "from this server"),
                dest='format', action='store_const', const='summary'),
         Option("--pull-summary", help=("Have we successfully replicated "
-                                       "from all relevent servers?"),
+                                       "from all relevant servers?"),
                dest='format', action='store_const', const='pull_summary'),
         Option("--notify-summary", action='store_const',
                const='notify_summary', dest='format',
-               help=("Have we successfully notified all relevent servers of "
+               help=("Have we successfully notified all relevant servers of "
                      "local changes, and did they say they successfully "
                      "replicated?")),
         Option("--classic", help="print local replication details",

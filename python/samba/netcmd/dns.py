@@ -68,7 +68,7 @@ class DnsConnWrapper:
 
         dns_conn = DnsConnWrapper(server, lp, creds)
 
-    then various common errors (for example, mispelled zones) on
+    then various common errors (for example, misspelled zones) on
     common operations will raise CommandErrors that turn into
     relatively nice messages (when compared to tracebacks).
 

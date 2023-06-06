@@ -2815,7 +2815,8 @@ samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/so
 class cmd_remove_symlink(GPOCommand):
     """Removes a VGP Symbolic Link Group Policy from the sysvol
 
-This command removes a symlink setting from the sysvol from appling to winbind clients.
+This command removes a symlink setting from the sysvol from applying to winbind
+clients.
 
 Example:
 samba-tool gpo manage symlink remove {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/source /tmp/target

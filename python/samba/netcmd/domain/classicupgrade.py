@@ -89,7 +89,7 @@ class cmd_domain_classicupgrade(Command):
                metavar="[yes|no|auto]",
                help="Define if we should use the native fs capabilities or a tdb file for "
                "storing attributes likes ntacl when --use-ntvfs is set. "
-               "auto tries to make an inteligent guess based on the user rights and system capabilities",
+               "auto tries to make an intelligent guess based on the user rights and system capabilities",
                default="auto")
     ]
     if samba.is_ntvfs_fileserver_built():

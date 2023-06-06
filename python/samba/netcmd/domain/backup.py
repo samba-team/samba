@@ -783,7 +783,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
     # Updates the CN=<domain>,CN=Partitions,CN=Configuration,... object to
     # reflect the domain rename
     def rename_domain_partition(self, logger, samdb, new_netbios_name):
-        '''Renames the domain parition object and updates its nETBIOSName'''
+        '''Renames the domain partition object and updates its nETBIOSName'''
 
         # lookup the crossRef object that holds the nETBIOSName (nCName has
         # already been updated by this point, but the netBIOS hasn't)

@@ -151,7 +151,7 @@ class GraphCommand(Command):
 
     def calc_distance_color_scheme(self, color_scheme, output):
         """Heuristics to work out the colour scheme for distance matrices.
-        Returning None means no colour, otherwise it sould be a colour
+        Returning None means no colour, otherwise it should be a colour
         from graph.COLOUR_SETS"""
         if color_scheme is not None:
             # --color-scheme implies --color=yes for *this* purpose.

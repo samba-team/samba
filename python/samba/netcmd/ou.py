@@ -254,21 +254,21 @@ class cmd_listobjects(Command):
         except Exception as e:
             raise CommandError('Invalid ou_dn "%s": %s' % (ou_dn, e))
 
-        minchilds = 0
+        minchildren = 0
         scope = ldb.SCOPE_ONELEVEL
         if recursive:
-            minchilds = 1
+            minchildren = 1
             scope = ldb.SCOPE_SUBTREE
 
         try:
-            childs = samdb.search(base=full_ou_dn,
-                                  expression="(objectclass=*)",
-                                  scope=scope, attrs=[])
-            if len(childs) <= minchilds:
+            children = samdb.search(base=full_ou_dn,
+                                    expression="(objectclass=*)",
+                                    scope=scope, attrs=[])
+            if len(children) <= minchildren:
                 self.outf.write('ou "%s" is empty\n' % ou_dn)
                 return
 
-            for child in sorted(childs, key=attrgetter('dn')):
+            for child in sorted(children, key=attrgetter('dn')):
                 if child.dn == full_ou_dn:
                     continue
                 if not full_dn:
