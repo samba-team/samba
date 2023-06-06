@@ -48,7 +48,7 @@ class RemotedTestCase(unittest.TestCase):
             return False
 
     def __init__(self, description):
-        """Create a psuedo test case with description description."""
+        """Create a pseudo test case with description description."""
         self.__description = description
 
     def error(self, label):

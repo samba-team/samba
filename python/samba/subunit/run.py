@@ -237,7 +237,7 @@ else:
 #    discovery on an old version and doesn't have discover installed.
 #  - If --catch is given check that installHandler is available, as
 #    it won't be on old python versions.
-#  - print calls have been been made single-source python3 compatibile.
+#  - print calls have been been made single-source python3 compatible.
 #  - exception handling likewise.
 #  - The default help has been changed to USAGE_AS_MAIN and USAGE_FROM_MODULE
 #    removed.
