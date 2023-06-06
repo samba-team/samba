@@ -417,7 +417,7 @@ struct wbcLogonUserInfo {
 #define WBC_ACB_SVRTRUST			0x00000100 /* 1 Server trust account */
 #define WBC_ACB_PWNOEXP				0x00000200 /* 1 User password does not expire */
 #define WBC_ACB_AUTOLOCK			0x00000400 /* 1 Account auto locked */
-#define WBC_ACB_ENC_TXT_PWD_ALLOWED		0x00000800 /* 1 Encryped text password is allowed */
+#define WBC_ACB_ENC_TXT_PWD_ALLOWED		0x00000800 /* 1 Encrypted text password is allowed */
 #define WBC_ACB_SMARTCARD_REQUIRED		0x00001000 /* 1 Smart Card required */
 #define WBC_ACB_TRUSTED_FOR_DELEGATION		0x00002000 /* 1 Trusted for Delegation */
 #define WBC_ACB_NOT_DELEGATED			0x00004000 /* 1 Not delegated */
@@ -1097,7 +1097,7 @@ wbcErr wbcAllocateGid(gid_t *pgid);
  *
  * @return #wbcErr
  *
- * @deprecated      This method is not impemented any more and should
+ * @deprecated      This method is not implemented any more and should
  *                  be removed in the next major version change.
  **/
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
@@ -1110,7 +1110,7 @@ wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
  *
  * @return #wbcErr
  *
- * @deprecated      This method is not impemented any more and should
+ * @deprecated      This method is not implemented any more and should
  *                  be removed in the next major version change.
  **/
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid);
@@ -1123,7 +1123,7 @@ wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid);
  *
  * @return #wbcErr
  *
- * @deprecated      This method is not impemented any more and should
+ * @deprecated      This method is not implemented any more and should
  *                  be removed in the next major version change.
  **/
 wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
@@ -1136,7 +1136,7 @@ wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
  *
  * @return #wbcErr
  *
- * @deprecated      This method is not impemented any more and should
+ * @deprecated      This method is not implemented any more and should
  *                  be removed in the next major version change.
  **/
 wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
@@ -1148,7 +1148,7 @@ wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
  *
  * @return #wbcErr
  *
- * @deprecated      This method is not impemented any more and should
+ * @deprecated      This method is not implemented any more and should
  *                  be removed in the next major version change.
  **/
 wbcErr wbcSetUidHwm(uid_t uid_hwm);
@@ -1160,7 +1160,7 @@ wbcErr wbcSetUidHwm(uid_t uid_hwm);
  *
  * @return #wbcErr
  *
- * @deprecated      This method is not impemented any more and should
+ * @deprecated      This method is not implemented any more and should
  *                  be removed in the next major version change.
  **/
 wbcErr wbcSetGidHwm(gid_t gid_hwm);

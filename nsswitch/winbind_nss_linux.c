@@ -299,7 +299,7 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	/* this next value is a pointer to a pointer so let's align it */
 
-	/* Calculate number of extra bytes needed to align on pointer size boundry */
+	/* Calculate number of extra bytes needed to align on pointer size boundary */
 	if ((i = (unsigned long)(*buffer) % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
 

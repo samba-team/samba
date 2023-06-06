@@ -58,7 +58,7 @@
 #ifdef HPUX
 
 /*
- * HP-UX 11 has no definiton of the nss_groupsbymem structure.   This
+ * HP-UX 11 has no definition of the nss_groupsbymem structure.   This
  * definition is taken from the nss_ldap project at:
  *  http://www.padl.com/OSS/nss_ldap.html
  */

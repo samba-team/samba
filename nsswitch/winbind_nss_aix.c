@@ -385,7 +385,7 @@ static char *wb_aix_getgrset(char *user)
 	num_gids = response.data.num_entries;
 	gid_list = (gid_t *)response.extra_data.data;
 
-	/* allocate a space large enough to contruct the string */
+	/* allocate a space large enough to construct the string */
 	tmpbuf = malloc(num_gids*12);
 	if (!tmpbuf) {
 		return NULL;
