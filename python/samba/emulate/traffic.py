@@ -117,7 +117,7 @@ def debug(level, msg, *args):
 
 
 def debug_lineno(*args):
-    """ Print an unformatted log message to stderr, contaning the line number
+    """ Print an unformatted log message to stderr, containing the line number
     """
     tb = traceback.extract_stack(limit=2)
     print((" %s:" "\033[01;33m"
@@ -436,7 +436,7 @@ class ReplayContext(object):
             for i in range(5):
                 p += ',DC'
                 if p != k and p in dn_map:
-                    print('dn_map collison %s %s' % (k, p),
+                    print('dn_map collision %s %s' % (k, p),
                           file=sys.stderr)
                     continue
                 dn_map[p] = dn_map[k]
@@ -997,7 +997,7 @@ class Conversation(object):
         if self.client_balance < 0:
             return (a, b)
 
-        # in the absense of a clue, we will fall through to assuming
+        # in the absence of a clue, we will fall through to assuming
         # the lowest number is the server (which is usually true).
 
         if self.client_balance == 0 and server_clue == b:
@@ -1006,7 +1006,7 @@ class Conversation(object):
         return (b, a)
 
     def forget_packets_outside_window(self, s, e):
-        """Prune any packets outside the timne window we're interested in
+        """Prune any packets outside the time window we're interested in
 
         :param s: start of the window
         :param e: end of the window
@@ -1924,7 +1924,7 @@ def user_name(instance_id, i):
 
 
 def search_objectclass(ldb, objectclass='user', attr='sAMAccountName'):
-    """Seach objectclass, return attr in a set"""
+    """Search objectclass, return attr in a set"""
     objs = ldb.search(
         expression="(objectClass={})".format(objectclass),
         attrs=[attr]
