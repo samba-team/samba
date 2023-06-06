@@ -118,6 +118,23 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         self.assertIn("Computer Policy", str(silo["msDS-ComputerAuthNPolicy"]))
         self.assertEqual(str(silo["msDS-AuthNPolicySiloEnforced"]), "TRUE")
 
+    def test_authentication_silo_create_policy_dn(self):
+        """Test creating a new authentication silo when policy is a dn."""
+        policy = self.get_authentication_policy("Single Policy")
+
+        result, out, err = self.runcmd("domain", "auth", "silo", "create",
+                                       "--name", "singlePolicyDN",
+                                       "--policy", policy["dn"])
+        self.assertIsNone(result, msg=err)
+
+        # Check silo that was created
+        silo = self.get_authentication_silo("singlePolicyDN")
+        self.assertEqual(str(silo["cn"]), "singlePolicyDN")
+        self.assertIn(str(policy["name"]), str(silo["msDS-UserAuthNPolicy"]))
+        self.assertIn(str(policy["name"]), str(silo["msDS-ServiceAuthNPolicy"]))
+        self.assertIn(str(policy["name"]), str(silo["msDS-ComputerAuthNPolicy"]))
+        self.assertEqual(str(silo["msDS-AuthNPolicySiloEnforced"]), "TRUE")
+
     def test_authentication_silo_create_already_exists(self):
         """Test creating a new authentication silo that already exists."""
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
