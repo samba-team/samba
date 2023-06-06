@@ -608,12 +608,19 @@ static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self,
 	struct ldb_dn *dn = pyldb_Dn_AS_DN((PyObject *)self);
 	struct ldb_dn *parent;
 	PyLdbDnObject *py_ret;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	TALLOC_CTX *mem_ctx = NULL;
+
+	if (ldb_dn_get_comp_num(dn) < 1) {
+		Py_RETURN_NONE;
+	}
+
+	mem_ctx = talloc_new(NULL);
 
 	parent = ldb_dn_get_parent(mem_ctx, dn);
 	if (parent == NULL) {
+		PyErr_NoMemory();
 		talloc_free(mem_ctx);
-		Py_RETURN_NONE;
+		return NULL;
 	}
 
 	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
