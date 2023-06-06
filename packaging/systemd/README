@@ -1,7 +1,7 @@
 With systemd the /run or /var/run are tmpfs filesystems. This means
-the direcories required by samba need to be created during startup.
+the directories required by samba need to be created during startup.
 This can be done with a config file for tmpfiles, see samba.conf.tmp.
-You need to copy this file to the directoy systemd-tmpfiles is looking
+You need to copy this file to the directory systemd-tmpfiles is looking
 for its config files e.g.:
 
 install -d -m 0755 /etc/tmpfiles.d/
