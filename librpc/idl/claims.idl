@@ -8,7 +8,7 @@
    For ease of implementation, the full IDL for the data types used for
    claims is provided
 
-  The below was intially obtained from MS-ADTS which is
+  The below was initially obtained from MS-ADTS which is
   Copyright © 2022 Microsoft Corporation as permitted
   by the Open Specifications terms reproduced in IDL_LICENCE.txt
 */

@@ -420,7 +420,7 @@ interface drsblobs {
 	 * Password hashes stored in a scheme compatible with
 	 * OpenLDAP's userPassword attribute. The Package is named
 	 * Primary:userPassword each calculated hash,
-	 * which is typically caclulated via crypt(), the scheme is stored.
+	 * which is typically calculated via crypt(), the scheme is stored.
 	 * The scheme name and the {scheme} format is re-used from OpenLDAP's
 	 * use for userPassword to aid interopability when exported.
 	 *

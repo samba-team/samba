@@ -31,7 +31,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		ACB_SVRTRUST			= 0x00000100,  /* 1 = Server trust account */
 		ACB_PWNOEXP			= 0x00000200,  /* 1 = User password does not expire */
 		ACB_AUTOLOCK			= 0x00000400,  /* 1 = Account auto locked */
-		ACB_ENC_TXT_PWD_ALLOWED		= 0x00000800,  /* 1 = Encryped text password is allowed */
+		ACB_ENC_TXT_PWD_ALLOWED		= 0x00000800,  /* 1 = Encrypted text password is allowed */
 		ACB_SMARTCARD_REQUIRED		= 0x00001000,  /* 1 = Smart Card required */
 		ACB_TRUSTED_FOR_DELEGATION	= 0x00002000,  /* 1 = Trusted for Delegation */
 		ACB_NOT_DELEGATED		= 0x00004000,  /* 1 = Not delegated */
@@ -1081,7 +1081,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x26     */
 	/*
 	  this is a password change interface that doesn't give
-	  the server the plaintext password. Depricated.
+	  the server the plaintext password. Deprecated.
 	*/
 	NTSTATUS samr_ChangePasswordUser(
 		[in,ref]    policy_handle *user_handle,

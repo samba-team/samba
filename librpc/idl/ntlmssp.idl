@@ -277,7 +277,7 @@ interface ntlmssp
 		NEGOTIATE NegotiateFlags;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 		/* MIC (Message Integrity) is only included when the client has
-		 * sent a timestap Av struct in the CHALLENGE_MESSAGE AvPair */
+		 * sent a timestamp Av struct in the CHALLENGE_MESSAGE AvPair */
 		/* [flag(NDR_REMAINING)] ntlmssp_MIC mic; */
 	} AUTHENTICATE_MESSAGE;
 

@@ -28,7 +28,7 @@
                 Sixteenth       =       0x00008000,
                 Seventeenth     =       0x00010000,
                 Eighteenth      =       0x00020000,
-                Ninteenth       =       0x00040000,
+                Nineteenth      =       0x00040000,
                 Twentyth        =       0x00080000,
                 Twentyfirst     =       0x00100000,
                 Twentysecond    =       0x00200000,
@@ -60,7 +60,7 @@
 		DAYSOFWEEK_SATURDAY  = 0x20,
 		DAYSOFWEEK_SUNDAY    = 0x40
 	} atsvc_DaysOfWeek;
-	
+
 	typedef struct {
 		uint32 job_time;
 		atsvc_DaysOfMonth days_of_month;

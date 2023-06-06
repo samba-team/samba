@@ -273,7 +273,7 @@ import "misc.idl", "security.idl";
 		 STANDARD_RIGHTS_READ_ACCESS); /* 0x0002000C */
 
 
-	/* notice the screwup with the system_name - thats why MS created
+	/* notice the screwup with the system_name - that's why MS created
 	   OpenPolicy2 */
 	[public] NTSTATUS lsa_OpenPolicy (
 		[in,unique]       uint16 *system_name,

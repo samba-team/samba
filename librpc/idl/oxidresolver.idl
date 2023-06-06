@@ -58,7 +58,7 @@ interface IOXIDResolver
 		[in, size_is(cAddToSet)] OID AddToSet[],
 		/*remove these OIDs from the set */
 		[in, size_is(cDelFromSet)] OID DelFromSet[],
-		[out,ref] uint16 *PingBackoffFactor/* 2^factor = multipler */
+		[out,ref] uint16 *PingBackoffFactor/* 2^factor = multiplier */
 		 );
 
 	/* In some cases the client maybe unsure that a particular */

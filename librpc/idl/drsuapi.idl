@@ -175,7 +175,7 @@ interface drsuapi
 		[case(48)][subcontext(0), subcontext_size(48)] drsuapi_DsBindInfo48 info48;
 		[case(52)][subcontext(0), subcontext_size(52)] drsuapi_DsBindInfo52 info52;
 		/*
-		 * The size for the defaut case is a bit arbitrary it in fact the value
+		 * The size for the default case is a bit arbitrary it in fact the value
 		 * of the switch but we can't reference it.
 		 * As we hand(un-)marshall this structure it has 0 impact and makes
 		 * pidl happy for wireshark too
@@ -200,7 +200,7 @@ interface drsuapi
 		[size_is(cb)] BYTE rgb[];
 	} DRS_EXTENSIONS;
 
-	But we use a subcontext which has a slighly different signification on how
+	But we use a subcontext which has a slightly different signification on how
 	data are laid out.
 	With the MS-DRSR definition we will have
 		size_is_cb cv rgb_array
@@ -356,7 +356,7 @@ interface drsuapi
 	 * the following table shows the mapping used between the two representations
 	 * e.g. - objectClass 'nTDSDSA' has governsID: 1.2.840.113556.1.5.7000.47
 	 *        and a UINT32-ID of '0x0017002F'.
-	 *      - so the OID 1.2.840.113556.1.5.7000.47 is splitted into a
+	 *      - so the OID 1.2.840.113556.1.5.7000.47 is split into a
 	 *        OID-prefix: 1.2.840.113556.1.5.7000
 	 *	  and a value: 47 => 0x2F
 	 *      - the mapping table gives a UINT32-prefix: 0x00170000

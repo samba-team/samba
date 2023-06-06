@@ -19,7 +19,7 @@ interface backupkey
 
 	/*
 	 * The magic values are really what they are there is no name it's just remarkable values
-	 * that are here to check that what is transmited or decoded is really what the client or
+	 * that are here to check that what is transmitted or decoded is really what the client or
 	 * the server expect.
 	 */
 	[public] typedef struct {
@@ -80,7 +80,7 @@ interface backupkey
 		uint8 payload_key[48];
 	} bkrp_encrypted_secret_v3;
 
-	/* Due to alignement constraint we can generate the structure only via pidl*/
+	/* Due to alignment constraint we can generate the structure only via pidl*/
 	[public, nopush, nopull] typedef struct {
 		[value(0x00000001)] uint32 magic;
 		uint32 nonce_len;
@@ -89,7 +89,7 @@ interface backupkey
 		uint8 hash[20];
 	} bkrp_access_check_v2;
 
-	/* Due to alignement constraint we can generate the structure only via pidl*/
+	/* Due to alignment constraint we can generate the structure only via pidl*/
 	[public,nopush,nopull] typedef struct {
 		[value(0x00000001)] uint32 magic;
 		uint32 nonce_len;

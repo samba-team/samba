@@ -84,7 +84,7 @@ interface auth
 	 * the type of the ticket; TGT, or non-TGT (i.e. service ticket). If
 	 * unset, the type is unknown. This indicator is useful for the KDC and
 	 * the kpasswd service, which share the same account and keys. By
-	 * ensuring it is provided with the appopriate ticket type, each service
+	 * ensuring it is provided with the appropriate ticket type, each service
 	 * avoids accepting a ticket meant for the other.
 	 *
 	 * The heuristic used to determine the type is the presence or absence

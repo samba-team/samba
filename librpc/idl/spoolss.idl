@@ -1676,7 +1676,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		nstring directory_name;
 	} spoolss_DriverDirectoryInfo1;
 
-	/* NOTE: it's seems that w2k3 completly ignores the level
+	/* NOTE: It seems that w2k3 completely ignores the level
 	         in its server code
 	 */
 	typedef [nodiscriminant,relative_base,public,gensize,flag(NDR_RELATIVE_REVERSE)] union {

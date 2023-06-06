@@ -23,7 +23,7 @@
  * Allow the smb_acl interface to be pushed into an NDR blob and
  * read/written in python.
  *
- * The exact layout of these stuctures is CRITICAL, as a SHA-256 hash is
+ * The exact layout of these structures is CRITICAL, as a SHA-256 hash is
  * taken over these after they are pushed as NDR blobs, and stored in an
  * xattr for ACL verification.
  */

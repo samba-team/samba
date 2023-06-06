@@ -11,7 +11,7 @@ import "misc.idl";
    just a dom sid, but with the sub_auths represented as a conformant
    array. As with all in-structure conformant arrays, the array length
    is placed before the start of the structure. That's what gives rise
-   to the extra num_auths elemenent. We don't want the Samba code to
+   to the extra num_auths element. We don't want the Samba code to
    have to bother with such esoteric NDR details, so its easier to just
    define it as a dom_sid and use pidl magic to make it all work. It
    just means you need to mark a sid as a "dom_sid2" in the IDL when you
@@ -480,8 +480,8 @@ interface security
 
 
 	/* Bitmap of privilege values for internal use only.  We need
-	 * our own bitmap here as privilages.tdb records these values
-	 * as a bitmap (privilages.ldb uses the string forms).
+	 * our own bitmap here as privileges.tdb records these values
+	 * as a bitmap (privileges.ldb uses the string forms).
 	 */
 	typedef [bitmap64bit] bitmap {
 		SEC_PRIV_MACHINE_ACCOUNT_BIT		= 0x00000010,
@@ -495,7 +495,7 @@ interface security
 		SEC_PRIV_BACKUP_BIT			= 0x00000200,
 		SEC_PRIV_RESTORE_BIT			= 0x00000400,
 		SEC_PRIV_TAKE_OWNERSHIP_BIT		= 0x00000800,
-		/* End of privilages implemented before merge to common code */
+		/* End of privileges implemented before merge to common code */
 
 		SEC_PRIV_INCREASE_QUOTA_BIT               = 0x00001000,
 		SEC_PRIV_SECURITY_BIT                     = 0x00002000,

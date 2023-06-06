@@ -31,7 +31,7 @@ interface xattr
 	 * it's used to pass the information from
 	 * the old hex string attrib information
 	 * we have a handwritten parser which converts
-	 * the hex string to the xattr_DosInfoFFFFCompat strucure
+	 * the hex string to the xattr_DosInfoFFFFCompat structure
 	 */
 
 	typedef struct {

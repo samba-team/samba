@@ -1726,7 +1726,7 @@ interface netlogon
 	/****************/
 	/* Function 0x2d */
 
-	/* this is the ADS varient. I don't yet know what the "flags" are for */
+	/* this is the ADS variant. I don't yet know what the "flags" are for */
 	NTSTATUS netr_LogonSamLogonWithFlags(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
