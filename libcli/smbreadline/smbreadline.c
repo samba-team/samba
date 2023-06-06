@@ -124,7 +124,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 
 #ifdef HAVE_LIBREADLINE
 
-	/* Aargh!  Readline does bizzare things with the terminal width
+	/* Aargh!  Readline does bizarre things with the terminal width
 	that mucks up expect(1).  Set CLI_NO_READLINE in the environment
 	to force readline not to be used. */
 
