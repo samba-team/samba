@@ -56,7 +56,7 @@ struct tevent_context *nmbd_event_context(void)
 
 static void terminate(struct messaging_context *msg)
 {
-	DEBUG(0,("Got SIGTERM: going down...\n"));
+	DBG_WARNING("Got SIGTERM: going down...\n");
 
 	/* Write out wins.dat file if samba is a WINS server */
 	wins_write_database(0,False);
@@ -101,7 +101,7 @@ static void nmbd_stdin_handler(struct tevent_context *ev,
 		struct messaging_context *msg = talloc_get_type_abort(
 			private_data, struct messaging_context);
 		
-		DEBUG(0,("EOF on stdin\n"));
+		DBG_WARNING("EOF on stdin\n");
 		terminate(msg);
 	}
 }
@@ -116,7 +116,7 @@ static bool nmbd_setup_sig_term_handler(struct messaging_context *msg)
 			       nmbd_sig_term_handler,
 			       msg);
 	if (!se) {
-		DEBUG(0,("failed to setup SIGTERM handler"));
+		DBG_ERR("failed to setup SIGTERM handler");
 		return false;
 	}
 
@@ -164,7 +164,7 @@ static void nmbd_sig_hup_handler(struct tevent_context *ev,
 	struct messaging_context *msg = talloc_get_type_abort(
 		private_data, struct messaging_context);
 
-	DEBUG(0,("Got SIGHUP dumping debug info.\n"));
+	DBG_WARNING("Got SIGHUP dumping debug info.\n");
 	msg_reload_nmbd_services(msg, NULL, MSG_SMB_CONF_UPDATED,
 				 messaging_server_id(msg), NULL);
 }
@@ -179,7 +179,7 @@ static bool nmbd_setup_sig_hup_handler(struct messaging_context *msg)
 			       nmbd_sig_hup_handler,
 			       msg);
 	if (!se) {
-		DEBUG(0,("failed to setup SIGHUP handler"));
+		DBG_ERR("failed to setup SIGHUP handler");
 		return false;
 	}
 
@@ -267,14 +267,14 @@ static void reload_interfaces(time_t t)
 		struct in_addr ip, nmask;
 
 		if (!iface) {
-			DEBUG(2,("reload_interfaces: failed to get interface %d\n", n));
+			DBG_WARNING("reload_interfaces: failed to get interface %d\n", n);
 			continue;
 		}
 
 		/* Ensure we're only dealing with IPv4 here. */
 		if (iface->ip.ss_family != AF_INET) {
-			DEBUG(2,("reload_interfaces: "
-				"ignoring non IPv4 interface.\n"));
+			DBG_NOTICE("reload_interfaces: "
+				"ignoring non IPv4 interface.\n");
 			continue;
 		}
 
@@ -289,9 +289,9 @@ static void reload_interfaces(time_t t)
 		 */
 
 		if (is_loopback_addr((const struct sockaddr *)(const void *)&iface->ip)) {
-			DEBUG(2,("reload_interfaces: Ignoring loopback "
+			DBG_NOTICE("reload_interfaces: Ignoring loopback "
 				"interface %s\n",
-				print_sockaddr(str, sizeof(str), &iface->ip) ));
+				print_sockaddr(str, sizeof(str), &iface->ip) );
 			continue;
 		}
 
@@ -304,9 +304,9 @@ static void reload_interfaces(time_t t)
 
 		if (!subrec) {
 			/* it wasn't found! add it */
-			DEBUG(2,("Found new interface %s\n",
+			DBG_NOTICE("Found new interface %s\n",
 				 print_sockaddr(str,
-					 sizeof(str), &iface->ip) ));
+					 sizeof(str), &iface->ip) );
 			subrec = make_normal_subnet(iface);
 			if (subrec)
 				register_my_workgroup_one_subnet(subrec);
@@ -323,8 +323,8 @@ static void reload_interfaces(time_t t)
 			}
 			/* Ensure we're only dealing with IPv4 here. */
 			if (iface->ip.ss_family != AF_INET) {
-				DEBUG(2,("reload_interfaces: "
-					"ignoring non IPv4 interface.\n"));
+				DBG_NOTICE("reload_interfaces: "
+					"ignoring non IPv4 interface.\n");
 				continue;
 			}
 			ip = ((struct sockaddr_in *)(void *)
@@ -343,8 +343,8 @@ static void reload_interfaces(time_t t)
 			 instead we just wear the memory leak and
 			 remove it from the list of interfaces without
 			 freeing it */
-			DEBUG(2,("Deleting dead interface %s\n",
-				 inet_ntoa(subrec->myip)));
+			DBG_NOTICE("Deleting dead interface %s\n",
+				 inet_ntoa(subrec->myip));
 			close_subnet(subrec);
 		}
 	}
@@ -356,8 +356,8 @@ static void reload_interfaces(time_t t)
 		void (*saved_handler)(int);
 
 		if (print_waiting_msg) {
-			DEBUG(0,("reload_interfaces: "
-				"No subnets to listen to. Waiting..\n"));
+			DBG_WARNING("reload_interfaces: "
+				"No subnets to listen to. Waiting..\n");
 			print_waiting_msg = false;
 		}
 
@@ -411,7 +411,7 @@ static bool reload_nmbd_services(bool test)
 
 	/* perhaps the config filename is now set */
 	if ( !test ) {
-		DEBUG( 3, ( "services not loaded\n" ) );
+		DBG_NOTICE( "services not loaded\n" );
 		reload_nmbd_services( True );
 	}
 
@@ -450,18 +450,18 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 	const struct sockaddr_storage *pss;
 	const struct in_addr *local_ip;
 
-	DEBUG(10, ("Received send_packet from %u\n", (unsigned int)procid_to_pid(&src)));
+	DBG_DEBUG("Received send_packet from %u\n", (unsigned int)procid_to_pid(&src));
 
 	if (data->length != sizeof(struct packet_struct)) {
-		DEBUG(2, ("Discarding invalid packet length from %u\n",
-			  (unsigned int)procid_to_pid(&src)));
+		DBG_WARNING("Discarding invalid packet length from %u\n",
+			  (unsigned int)procid_to_pid(&src));
 		return;
 	}
 
 	if ((p->packet_type != NMB_PACKET) &&
 	    (p->packet_type != DGRAM_PACKET)) {
-		DEBUG(2, ("Discarding invalid packet type from %u: %d\n",
-			  (unsigned int)procid_to_pid(&src), p->packet_type));
+		DBG_WARNING("Discarding invalid packet type from %u: %d\n",
+			  (unsigned int)procid_to_pid(&src), p->packet_type);
 		return;
 	}
 
@@ -469,8 +469,8 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 	pss = iface_ip((struct sockaddr *)(void *)&ss);
 
 	if (pss == NULL) {
-		DEBUG(2, ("Could not find ip for packet from %u\n",
-			  (unsigned int)procid_to_pid(&src)));
+		DBG_WARNING("Could not find ip for packet from %u\n",
+			  (unsigned int)procid_to_pid(&src));
 		return;
 	}
 
@@ -720,14 +720,14 @@ static bool open_sockets(bool isdaemon, int port)
 
 	if (!interpret_string_addr(&ss, sock_addr,
 				AI_NUMERICHOST|AI_PASSIVE)) {
-		DEBUG(0,("open_sockets: unable to get socket address "
-			"from string %s", sock_addr));
+		DBG_ERR("open_sockets: unable to get socket address "
+			"from string %s", sock_addr);
 		return false;
 	}
 	if (ss.ss_family != AF_INET) {
-		DEBUG(0,("open_sockets: unable to use IPv6 socket"
+		DBG_ERR("open_sockets: unable to use IPv6 socket"
 			"%s in nmbd\n",
-			sock_addr));
+			sock_addr);
 		return false;
 	}
 
@@ -760,7 +760,7 @@ static bool open_sockets(bool isdaemon, int port)
 	set_blocking( ClientNMB, False);
 	set_blocking( ClientDGRAM, False);
 
-	DEBUG( 3, ( "open_sockets: Broadcast sockets opened.\n" ) );
+	DBG_INFO( "open_sockets: Broadcast sockets opened.\n" );
 	return( True );
 }
 
@@ -892,22 +892,21 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	if ( log_stdout && cmdline_daemon_cfg->fork ) {
-		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
+		DBG_ERR("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n");
 		exit(1);
 	}
 
 	reopen_logs();
 
-	DEBUG(0,("nmbd version %s started.\n", samba_version_string()));
-	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
+	DBG_ERR("nmbd version %s started.\n%s\n", samba_version_string(), COPYRIGHT_STARTUP_MESSAGE);
 
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
 	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
 		/* TODO: when we have a merged set of defaults for
 		 * loadparm, we could possibly check if the internal
 		 * nbt server is in the list, and allow a startup if disabled */
-		DEBUG(0, ("server role = 'active directory domain controller' not compatible with running nmbd standalone. \n"));
-		DEBUGADD(0, ("You should start 'samba' instead, and it will control starting the internal nbt server\n"));
+		DBG_ERR("server role = 'active directory domain controller' not compatible with running nmbd standalone.\n"
+		        "You should start 'samba' instead, and it will control starting the internal nbt server\n");
 		exit(1);
 	}
 
@@ -931,19 +930,19 @@ static bool open_sockets(bool isdaemon, int port)
 	reload_nmbd_services( True );
 
 	if (strequal(lp_workgroup(),"*")) {
-		DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+		DBG_ERR("ERROR: a workgroup name of * is no longer supported\n");
 		exit(1);
 	}
 
 	set_samba_nb_type();
 
 	if (!cmdline_daemon_cfg->daemon && !is_a_socket(0)) {
-		DEBUG(3, ("standard input is not a socket, assuming -D option\n"));
+		DBG_NOTICE("standard input is not a socket, assuming -D option\n");
 		cmdline_daemon_cfg->daemon = true;
 	}
 
 	if (cmdline_daemon_cfg->daemon && !cmdline_daemon_cfg->interactive) {
-		DEBUG(3, ("Becoming a daemon.\n"));
+		DBG_NOTICE("Becoming a daemon.\n");
 		become_daemon(cmdline_daemon_cfg->fork,
 			      cmdline_daemon_cfg->no_process_group,
 			      log_stdout);
@@ -1026,7 +1025,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	TimeInit();
 
-	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
+	DBG_NOTICE("Opening sockets %d\n", global_nmb_port);
 
 	if ( !open_sockets( cmdline_daemon_cfg->daemon, global_nmb_port ) ) {
 		kill_async_dns_child();
@@ -1047,7 +1046,7 @@ static bool open_sockets(bool isdaemon, int port)
 		set_dyn_LMHOSTSFILE(p_lmhosts);
 	}
 	load_lmhosts_file(get_dyn_LMHOSTSFILE());
-	DEBUG(3,("Loaded hosts file %s\n", get_dyn_LMHOSTSFILE()));
+	DBG_NOTICE("Loaded hosts file %s\n", get_dyn_LMHOSTSFILE());
 
 	/* If we are acting as a WINS server, initialise data structures. */
 	if( !initialise_wins() ) {
