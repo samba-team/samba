@@ -21,6 +21,7 @@
 #
 
 import json
+from collections import defaultdict
 from unittest.mock import patch
 
 from ldb import LdbError
@@ -435,3 +436,132 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
             # When using --force we don't get the hint.
             self.assertNotIn("Try --force", err)
+
+
+class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
+
+    def setUp(self):
+        super().setUp()
+        self.members = defaultdict(list)
+
+        # Create an organisational unit to test in.
+        self.ou = self.samdb.get_default_basedn()
+        self.ou.add_child("OU=Domain Auth Tests")
+        self.samdb.create_ou(self.ou)
+
+        # Assign members to silos
+        self.add_silo_member("Developers", "bob")
+        self.add_silo_member("Developers", "jane")
+        self.add_silo_member("Managers", "alice")
+
+    def tearDown(self):
+        # Remove organisational unit.
+        self.samdb.delete(self.ou, ["tree_delete:1"])
+
+        # Remove members from silos before deleting them in super.
+        for silo, members in self.members.items():
+            for member in members:
+                self.remove_silo_member(silo, member)
+
+        super().tearDown()
+
+    def create_computer(self, name):
+        """Create a Computer and return the dn."""
+        dn = f"CN={name},{self.ou}"
+        self.samdb.newcomputer(name, self.ou)
+        return dn
+
+    def add_silo_member(self, silo, member):
+        """Add a member to an authentication silo."""
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "add",
+                                       "--name", silo, "--member", member)
+
+        self.assertIsNone(result, msg=err)
+        self.assertIn(f"User '{member}' added to the {silo} silo.", out)
+
+        # Ensure that tearDown cleans up the silo members.
+        self.members[silo].append(member)
+
+    def remove_silo_member(self, silo, member):
+        """Remove a member to an authentication silo."""
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "remove",
+                                       "--name", silo, "--member", member)
+
+        self.assertIsNone(result, msg=err)
+
+    def test_authentication_silo_member_list(self):
+        """Test listing authentication policy members in list format."""
+        alice = self.get_user("alice")
+        jane = self.get_user("jane")
+        bob = self.get_user("bob")
+
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "list",
+                                       "--name", "Developers")
+
+        self.assertIsNone(result, msg=err)
+        self.assertIn(str(bob.dn), out)
+        self.assertIn(str(jane.dn), out)
+        self.assertNotIn(str(alice.dn), out)
+
+    def test_authentication_silo_member_list_json(self):
+        """Test listing authentication policy members list in json format."""
+        alice = self.get_user("alice")
+        jane = self.get_user("jane")
+        bob = self.get_user("bob")
+
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "list",
+                                       "--name", "Developers", "--json")
+
+        self.assertIsNone(result, msg=err)
+        members = json.loads(out)
+        members_dn = [member["dn"] for member in members]
+        self.assertIn(str(bob.dn), members_dn)
+        self.assertIn(str(jane.dn), members_dn)
+        self.assertNotIn(str(alice.dn), members_dn)
+
+    def test_authentication_silo_member_list_name_missing(self):
+        """Test list authentication policy members without the name argument."""
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "list")
+
+        self.assertIsNotNone(result)
+        self.assertIn("Argument --name is required.", err)
+
+    def test_authentication_silo_member_add_user(self):
+        """Test adding a user to an authentication silo."""
+        self.add_silo_member("Developers", "joe")
+
+        # Check if member is in silo
+        user = self.get_user("joe")
+        silo = self.get_authentication_silo("Developers")
+        members = [str(member) for member in silo["msDS-AuthNPolicySiloMembers"]]
+        self.assertIn(str(user.dn), members)
+
+    def test_authentication_silo_member_add_computer(self):
+        """Test adding a computer to an authentication silo"""
+        name = "AUTH_SILO_CMP"
+        computer = self.create_computer(name)
+        silo = "Developers"
+
+        # Don't use self.add_silo_member as it will try to clean up the user.
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "add",
+                                       "--name", silo,
+                                       "--member", computer)
+
+        self.assertIsNone(result, msg=err)
+        self.assertIn(f"User '{name}' added to the {silo} silo.", out)
+
+    def test_authentication_silo_member_add_unknown_user(self):
+        """Test adding an unknown user to an authentication silo."""
+        result, out, err = self.runcmd("domain", "auth", "silo",
+                                       "member", "add",
+                                       "--name", "Developers",
+                                       "--member", "does_not_exist")
+
+        self.assertIsNotNone(result)
+        self.assertIn("User 'does_not_exist' not found.", err)

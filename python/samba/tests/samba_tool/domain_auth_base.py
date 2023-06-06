@@ -88,6 +88,23 @@ class BaseAuthCmdTest(SambaToolCmdTest):
         authn_policies_dn.add_child("CN=AuthN Policies")
         return authn_policies_dn
 
+    def get_users_dn(self):
+        """Returns Users DN."""
+        users_dn = self.samdb.get_root_basedn()
+        users_dn.add_child("CN=Users")
+        return users_dn
+
+    def get_user(self, username):
+        """Get a user by username."""
+        users_dn = self.get_users_dn()
+
+        result = self.samdb.search(base=users_dn,
+                                   scope=SCOPE_ONELEVEL,
+                                   expression=f"(sAMAccountName={username})")
+
+        if len(result) == 1:
+            return result[0]
+
     def _run(self, *argv):
         """Override _run, so we don't always have to pass host and creds."""
         args = list(argv)
