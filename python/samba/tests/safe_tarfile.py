@@ -43,9 +43,16 @@ class SafeTarFileTestCase(TestCaseInTempDir):
 
         stf = safe_tarfile.open(tarname)
 
-        self.assertRaises(tarfile.ExtractError,
-                          stf.extractall,
-                          tarname)
+        # We we have data_filter, we have a patched python to address
+        # CVE-2007-4559.
+        if hasattr(tarfile, "data_filter"):
+            self.assertRaises(tarfile.OutsideDestinationError,
+                              stf.extractall,
+                              tarname)
+        else:
+            self.assertRaises(tarfile.ExtractError,
+                              stf.extractall,
+                              tarname)
         self.rm_files('x', 'tar.tar')
 
     def test_slash(self):
@@ -60,8 +67,16 @@ class SafeTarFileTestCase(TestCaseInTempDir):
         tf.close()
 
         stf = safe_tarfile.open(tarname)
-        self.assertRaises(tarfile.ExtractError,
-                          stf.extractall,
-                          tarname)
+
+        # We we have data_filter, we have a patched python to address
+        # CVE-2007-4559.
+        if hasattr(tarfile, "data_filter"):
+            self.assertRaises(NotADirectoryError,
+                              stf.extractall,
+                              tarname)
+        else:
+            self.assertRaises(tarfile.ExtractError,
+                              stf.extractall,
+                              tarname)
 
         self.rm_files('x', 'tar.tar')
