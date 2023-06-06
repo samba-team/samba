@@ -394,8 +394,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 	bool needs_add = false;
 	bool name_is_static;
 
-	DEBUG(2, ("Looking at record: \n"));
-	if (DEBUGLVL(2)) {
+	DBG_NOTICE("Looking at record: \n");
+	if (DEBUGLVL(DBGLVL_NOTICE)) {
 		NDR_PRINT_DEBUG(dns_res_rec, discard_const(update));
 	}
 
@@ -439,7 +439,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 		if (rcount != 1) {
 			DBG_WARNING("Tombstoned dnsNode has %u records, "
 				    "expected 1\n", rcount);
-			if (DEBUGLVL(1)) {
+			if (DEBUGLVL(DBGLVL_WARNING)) {
 				NDR_PRINT_DEBUG(dns_res_rec, discard_const(update));
 			}
 		}
@@ -538,7 +538,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 					continue;
 				}
 				DBG_ERR("Duplicate SOA records found.\n");
-				if (DEBUGLVL(0)) {
+				if (DEBUGLVL(DBGLVL_ERR)) {
 					NDR_PRINT_DEBUG(dns_res_rec,
 							discard_const(update));
 				}
