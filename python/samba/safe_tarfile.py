@@ -35,17 +35,7 @@ class TarFile(UnsafeTarFile):
     except AttributeError:
         def extract(self, member, path="", set_attrs=True, *,
                     numeric_owner=False):
-            if isinstance(member, TarInfo):
-                name = member.name
-            else:
-                name = member
-
-            if '../' in name:
-                raise ExtractError(f"'../' is not allowed in path '{name}'")
-
-            if name.startswith('/'):
-                raise ExtractError(f"path '{name}' should not start with '/'")
-
+            self._safetarfile_check()
             super().extract(member, path, set_attrs=set_attrs,
                             numeric_owner=numeric_owner)
 
