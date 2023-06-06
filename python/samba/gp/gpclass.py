@@ -445,7 +445,7 @@ class gp_applier(object):
 
         The importance here is the digest of the data makes the attribute
         reproducible and uniquely identifies it. Hashing the name with
-        the data ensures we don't falsly identify a match which is the same
+        the data ensures we don't falsely identify a match which is the same
         text in a different file. Using this attribute generator is optional.
         '''
         data = b''.join([get_bytes(arg) for arg in [*args]])
