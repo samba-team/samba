@@ -29,9 +29,6 @@
 #include "libcli/smb/smb_common.h"
 #include "libds/common/roles.h"
 
-/* logged when starting the various Samba daemons */
-#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2023"
-
 #define LARGE_WRITEX_HDR_SIZE 65
 #define LARGE_WRITEX_BUFFER_SIZE (128*1024)
 
