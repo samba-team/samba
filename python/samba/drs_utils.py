@@ -449,7 +449,7 @@ class drs_ReplicateRenamer(drs_Replicate):
             ctr.naming_context.dn = self.rename_dn(ctr.naming_context.dn)
 
         # rename the first object in each partition. This will cause every
-        # subsequent object in the partiton to be renamed as a side-effect
+        # subsequent object in the partition to be renamed as a side-effect
         if first_chunk and ctr.object_count != 0:
             self.rename_top_level_object(ctr.first_object.object)
 

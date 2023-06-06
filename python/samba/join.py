@@ -1055,7 +1055,7 @@ class DCJoinContext(object):
             print("Done with always replicated NC (base, config, schema)")
 
             # At this point we should already have an entry in the ForestDNS
-            # and DomainDNS NC (those under CN=Partions,DC=...) in order to
+            # and DomainDNS NC (those under CN=Partitions,DC=...) in order to
             # indicate that we hold a replica for this NC.
             for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
                 if nc in ctx.nc_list:
@@ -1340,7 +1340,7 @@ class DCJoinContext(object):
             # Note: as RODC the invocationId is only stored
             # on the RODC itself, the other DCs never see it.
             #
-            # Thats is why we fix up the replPropertyMetaData stamp
+            # That's is why we fix up the replPropertyMetaData stamp
             # for the 'invocationId' attribute, we need to change
             # the 'version' to '0', this is what windows 2008r2 does as RODC
             #

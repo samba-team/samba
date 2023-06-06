@@ -210,7 +210,7 @@ def innertext(tag):
 
 def read_ms_markdown(in_file, out_folder=None, out_dict=None):
     """
-    Read Github documentation to produce forest wide udpates
+    Read Github documentation to produce forest wide updates
     :param in_file: Forest-Wide-Updates.md
     :param out_folder: output folder
     :param out_dict: output dictionary

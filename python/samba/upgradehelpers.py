@@ -132,8 +132,8 @@ def get_ldbs(paths, creds, session, lp):
     """Return LDB object mapped on most important databases
 
     :param paths: An object holding the different importants paths for provision object
-    :param creds: Credential used for openning LDB files
-    :param session: Session to use for openning LDB files
+    :param creds: Credential used for opening LDB files
+    :param session: Session to use for opening LDB files
     :param lp: A loadparam object
     :return: A ProvisionLDB object that contains LDB object for the different LDB files of the provision"""
 
@@ -240,7 +240,7 @@ def newprovision(names, session, smbconf, provdir, logger, base_schema=None, adp
     since the latest upgrade in the current provision
 
     :param names: List of provision parameters
-    :param creds: Credentials for the authentification
+    :param creds: Credentials for the authentication
     :param session: Session object
     :param smbconf: Path to the smb.conf file
     :param provdir: Directory where the provision will be stored
@@ -504,8 +504,8 @@ def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
 
     :param refsampath: Path to the samdb in the reference provision
     :param sampath: Path to the samdb in the upgraded provision
-    :param creds: Credential used for openning LDB files
-    :param session: Session to use for openning LDB files
+    :param creds: Credential used for opening LDB files
+    :param session: Session to use for opening LDB files
     :param lp: A loadparam object
     :return: A msg_diff object with the difference between the @ATTRIBUTES
              of the current provision and the reference provision
@@ -765,7 +765,7 @@ def findprovisionrange(samdb, basedn):
 
 
 def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
-    """ print the differents ranges passed as parameter
+    """ print the different ranges passed as parameter
 
         :param dic: A dictionary as returned by findprovisionrange
         :param limit_print: minimum number of object in a range in order to print it

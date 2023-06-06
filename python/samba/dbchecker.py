@@ -2477,7 +2477,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if attrname.lower() == 'objectclass':
                 normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, obj[attrname])
                 # Do not consider the attribute incorrect if:
-                #  - The sorted (alphabetically) list is the same, inclding case
+                #  - The sorted (alphabetically) list is the same, including case
                 #  - The first and last elements are the same
                 #
                 # This avoids triggering an error due to

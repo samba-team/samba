@@ -130,7 +130,7 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
     # default.  This is by default all the partitions of type
     # domainDNS.  By finding the canocial name of all the partitions,
     # we find the likely candidates.  We only remove the record if it
-    # maches the IP that was used by the dnsHostName.  This avoids us
+    # matches the IP that was used by the dnsHostName.  This avoids us
     # needing to look a the dns_update_list file from in the demote
     # script.
 
@@ -428,7 +428,7 @@ def remove_dc(samdb, logger, dc_name):
                 "Failure checking if %s is an NTDS DSA in %s: %s" %
                 (ntds_dn, samdb.domain_dns_name(), estr))
 
-    # If the NTDS Settings child DN wasn't found or wasnt an ntdsDSA
+    # If the NTDS Settings child DN wasn't found or wasn't an ntdsDSA
     # object, just remove the server object located above
     if (len(ntds_msgs) == 0):
         if server_dn is None:

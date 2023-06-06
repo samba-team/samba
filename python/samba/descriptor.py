@@ -630,7 +630,7 @@ def get_diff_sds(refsd, cursd, domainsid, checkSacl=True):
     """Get the difference between 2 sd
 
     This function split the textual representation of ACL into smaller
-    chunck in order to not to report a simple permutation as a difference
+    chunk in order to not to report a simple permutation as a difference
 
     :param refsddl: First sddl to compare
     :param cursddl: Second sddl to compare

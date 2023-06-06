@@ -211,7 +211,7 @@ class RegistryGroupPolicies(object):
             ext_name_guid = GUID(ext_name)
         except samba.NTSTATUSError as e:
             if e.args[0] == NT_STATUS_INVALID_PARAMETER:
-                raise SyntaxError('Extension name not formated correctly')
+                raise SyntaxError('Extension name not formatted correctly')
             raise
         if ext_attr not in ['gPCMachineExtensionNames',
                             'gPCUserExtensionNames']:

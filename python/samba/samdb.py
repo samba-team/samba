@@ -491,7 +491,7 @@ member: %s
             if attr_value is None and attr_name in old_attrs:
                 attrs[attr_name] = str(old_attrs[attr_name])
 
-        # add '.' to initials if initals are not None and not "" and if the initials
+        # add '.' to initials if initials are not None and not "" and if the initials
         # don't have already a '.' at the end
         if attrs["initials"] and not attrs["initials"].endswith('.'):
             attrs["initials"] += '.'
@@ -1335,7 +1335,7 @@ schemaUpdateNow: 1
         """Creates an organizationalUnit object
         :param ou_dn: dn of the new object
         :param description: description attribute
-        :param name: name atttribute
+        :param name: name attribute
         :param sd: security descriptor of the object, can be
         an SDDL string or security.descriptor type
         """

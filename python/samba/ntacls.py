@@ -497,9 +497,9 @@ def backup_online(smb_conn, dest_tarfile_path, dom_sid):
 
     1. Create a temp dir as container dir
     2. Backup all files with dir structure into container dir
-    3. Generate file.NTACL files for each file and dir in contianer dir
+    3. Generate file.NTACL files for each file and dir in container dir
     4. Create a tar file from container dir(without top level folder)
-    5. Delete contianer dir
+    5. Delete container dir
     """
 
     logger = get_samba_logger()

@@ -314,7 +314,7 @@ def dns_name_equal(n1, n2):
 
 
 def ipv6_normalise(addr):
-    """Convert an AAAA adresss into a canonical form."""
+    """Convert an AAAA address into a canonical form."""
     packed = socket.inet_pton(socket.AF_INET6, addr)
     return socket.inet_ntop(socket.AF_INET6, packed)
 

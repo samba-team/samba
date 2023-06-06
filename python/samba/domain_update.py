@@ -51,7 +51,7 @@ update_map = {
     # No updates
     # Windows Server 2016 - version 15
     82: "83c53da7-427e-47a4-a07a-a324598b88f7",
-    # from the documentation and a fresh installtion
+    # from the documentation and a fresh installation
     # 83 is this:
     # c81fc9cc-0130-4fd1-b272-634d74818133
     # adprep will use this on the wire:
