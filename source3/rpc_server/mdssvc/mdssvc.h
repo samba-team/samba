@@ -105,6 +105,7 @@ struct sl_inode_path_map {
 	struct mds_ctx    *mds_ctx;
 	uint64_t           ino;
 	char              *path;
+	struct stat_ex     st;
 };
 
 /* Per process state */
