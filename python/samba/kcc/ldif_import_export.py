@@ -37,11 +37,11 @@ def write_search_result(samdb, f, res):
 
 
 def ldif_to_samdb(dburl, lp, ldif_file, forced_local_dsa=None):
-    """Routine to import all objects and attributes that are relevent
+    """Routine to import all objects and attributes that are relevant
     to the KCC algorithms from a previously exported LDIF file.
 
     The point of this function is to allow a programmer/debugger to
-    import an LDIF file with non-security relevent information that
+    import an LDIF file with non-security relevant information that
     was previously extracted from a DC database.  The LDIF file is used
     to create a temporary abbreviated database.  The KCC algorithm can
     then run against this abbreviated database for debug or test
@@ -90,11 +90,11 @@ dsServiceName: CN=NTDS Settings,%s
 
 
 def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
-    """Routine to extract all objects and attributes that are relevent
+    """Routine to extract all objects and attributes that are relevant
     to the KCC algorithms from a DC database.
 
     The point of this function is to allow a programmer/debugger to
-    extract an LDIF file with non-security relevent information from
+    extract an LDIF file with non-security relevant information from
     a DC database.  The LDIF file can then be used to "import" via
     the import_ldif() function this file into a temporary abbreviated
     database.  The KCC algorithm can then run against this abbreviated
@@ -231,7 +231,7 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
                     if k in ncattrs:
                         for value in res_msg[k]:
                             # Some of these have binary DNs so
-                            # use dsdb_Dn to split out relevent parts
+                            # use dsdb_Dn to split out relevant parts
                             dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                             dnstr = str(dsdn.dn)
                             if dnstr not in nclist:

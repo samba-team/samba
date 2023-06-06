@@ -241,7 +241,7 @@ class NCReplica(NamingContext):
         # the same for all nTDSDSAs in the forest.  That
         # leaves the default domain NC remaining which
         # may be different for each nTDSDSAs (and thus
-        # we don't compare agains this samdb's default
+        # we don't compare against this samdb's default
         # basedn
         elif attr == "hasMasterNCs":
             self.rep_present_criteria_one = True
@@ -733,7 +733,7 @@ class DirectoryServiceAgent(object):
             # Our response will contain a number of elements including
             # the dn of the dsa as well as elements for each
             # attribute (e.g. hasMasterNCs).  Each of these elements
-            # is a dictonary list which we retrieve the keys for and
+            # is a dictionary list which we retrieve the keys for and
             # then iterate over them
             for k in res[0].keys():
                 if k == "dn":
@@ -811,7 +811,7 @@ class DirectoryServiceAgent(object):
         deleted
 
         :param samdb: database to commit DSA connection list to
-        :param ro: if (true) then peform internal operations but
+        :param ro: if (true) then perform internal operations but
             do not write to the database (readonly)
         """
         delconn = []
@@ -884,8 +884,8 @@ class DirectoryServiceAgent(object):
         if sched is not None:
             connect.schedule = sched
         else:
-            # Create schedule.  Attribute valuse set according to MS-TECH
-            # intrasite connection creation document
+            # Create schedule.  Attribute value set according to MS-TECH
+            # intra-site connection creation document
             connect.schedule = new_connection_schedule()
 
         self.add_connection(dnstr, connect)
@@ -1062,7 +1062,7 @@ class NTDSConnection(object):
             return
 
         # First verify we don't have this entry to ensure nothing
-        # is programatically amiss
+        # is programmatically amiss
         found = False
         try:
             msg = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE)
@@ -1133,7 +1133,7 @@ class NTDSConnection(object):
             return
 
         # First verify we have this entry to ensure nothing
-        # is programatically amiss
+        # is programmatically amiss
         try:
             # we don't use the search result, but it tests the status
             # of self.dnstr in the database.
@@ -1597,7 +1597,7 @@ class Site(object):
         #       so it appears we have to turn f into the same interval
         #
         #       interSiteTopologyFailover (if set) appears to be in minutes
-        #       so we'll need to convert to senconds and then 100 nanosecond
+        #       so we'll need to convert to seconds and then 100 nanosecond
         #       intervals
         #       XXX [MS-ADTS] 6.2.2.3.1 says it is seconds, not minutes.
         #

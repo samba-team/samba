@@ -581,7 +581,7 @@ class KCC(object):
                 if connect.to_be_modified:
                     logger.info("TO BE MODIFIED:\n%s" % connect)
 
-            # Peform deletion from our tables but perform
+            # Perform deletion from our tables but perform
             # no database modification
             dsa.commit_connections(self.samdb, ro=True)
         else:
@@ -764,7 +764,7 @@ class KCC(object):
         #     IF (same-site) OR (no-value) OR (type-ip)
         #
         # because IP should be the primary transport mechanism
-        # (even in inter-site) and the absense of the transportType
+        # (even in inter-site) and the absence of the transportType
         # attribute should always imply IP no matter if its multi-site
         #
         # NOTE MS-TECH INCORRECT:
@@ -1032,7 +1032,7 @@ class KCC(object):
                 if text:
                     logger.info("TO BE MODIFIED:\n%s" % text)
 
-                # Peform deletion from our tables but perform
+                # Perform deletion from our tables but perform
                 # no database modification
                 n_rep.commit_repsFrom(self.samdb, ro=True)
             else:
@@ -1097,7 +1097,7 @@ class KCC(object):
                     if rt.to_be_deleted:
                         logger.info("REMOVING REPS-TO: %s" % rt)
 
-                # Peform deletion from our tables but perform
+                # Perform deletion from our tables but perform
                 # no database modification
                 n_rep.commit_repsTo(self.samdb, ro=True)
             else:
@@ -2130,7 +2130,7 @@ class KCC(object):
         # XXX This loop and the previous one differ only in whether
         # the replica is partial or not. here we only accept partial
         # (because we're partial); before we only accepted full. Order
-        # doen't matter (the list is sorted a few lines down) so these
+        # doesn't matter (the list is sorted a few lines down) so these
         # loops could easily be merged. Or this could be a helper
         # function.
 
@@ -2707,7 +2707,7 @@ class KCC(object):
         """Import relevant objects and attributes from an LDIF file.
 
         The point of this function is to allow a programmer/debugger to
-        import an LDIF file with non-security relevent information that
+        import an LDIF file with non-security relevant information that
         was previously extracted from a DC database.  The LDIF file is used
         to create a temporary abbreviated database.  The KCC algorithm can
         then run against this abbreviated database for debug or test
@@ -2732,7 +2732,7 @@ class KCC(object):
         """Save KCC relevant details to an ldif file
 
         The point of this function is to allow a programmer/debugger to
-        extract an LDIF file with non-security relevent information from
+        extract an LDIF file with non-security relevant information from
         a DC database.  The LDIF file can then be used to "import" via
         the import_ldif() function this file into a temporary abbreviated
         database.  The KCC algorithm can then run against this abbreviated

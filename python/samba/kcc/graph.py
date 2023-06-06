@@ -49,7 +49,7 @@ class ReplInfo(object):
     def set_repltimes_from_schedule(self, schedule):
         """Convert the schedule and calculate duration
 
-        :param schdule: the schedule to convert
+        :param schedule: the schedule to convert
         """
         self.schedule = convert_schedule_to_repltimes(schedule)
         self.duration = total_schedule(self.schedule)
