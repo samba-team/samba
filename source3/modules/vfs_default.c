@@ -200,12 +200,12 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		*p_ts_res = TIMESTAMP_SET_SECONDS;
 #endif
 
-		DEBUG(10,("vfswrap_fs_capabilities: timestamp "
+		DBG_DEBUG("vfswrap_fs_capabilities: timestamp "
 			"resolution of %s "
 			"available on share %s, directory %s\n",
 			*p_ts_res == TIMESTAMP_SET_MSEC ? "msec" : "sec",
 			lp_servicename(talloc_tos(), lp_sub, conn->params->service),
-			conn->connectpath ));
+			conn->connectpath );
 	}
 	TALLOC_FREE(smb_fname_cpath);
 	return caps;
@@ -223,7 +223,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	size_t i;
 	uint16_t max_referral_level = r->in.req.max_referral_level;
 
-	if (DEBUGLVL(10)) {
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		NDR_PRINT_IN_DEBUG(dfs_GetDFSReferral, r);
 	}
 
@@ -276,7 +276,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	if (!self_referral) {
 		pathnamep[consumedcnt] = '\0';
 
-		if (DEBUGLVL(3)) {
+		if (DEBUGLVL(DBGLVL_INFO)) {
 			dbgtext("Path %s to alternate path(s):",
 				pathnamep);
 			for (i=0; i < junction->referral_count; i++) {
@@ -383,12 +383,12 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 		}
 		break;
 	default:
-		DEBUG(0,("Invalid dfs referral version: %d\n",
-			max_referral_level));
+		DBG_ERR("Invalid dfs referral version: %d\n",
+			max_referral_level);
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	if (DEBUGLVL(10)) {
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		NDR_PRINT_OUT_DEBUG(dfs_GetDFSReferral, r);
 	}
 
@@ -1507,8 +1507,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 * I think I'll make this be the inode+dev. JRA.
 		 */
 
-		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on %s\n",
-			  fsp_fnum_dbg(fsp)));
+		DBG_DEBUG("FSCTL_CREATE_OR_GET_OBJECT_ID: called on %s\n",
+			  fsp_fnum_dbg(fsp));
 
 		*out_len = MIN(max_out_len, 64);
 
@@ -1565,8 +1565,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		char *cur_pdata = NULL;
 
 		if (max_out_len < 16) {
-			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) < 16 is invalid!\n",
-				max_out_len));
+			DBG_ERR("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) < 16 is invalid!\n",
+				max_out_len);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -1576,7 +1576,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 
 		shadow_data = talloc_zero(ctx, struct shadow_copy_data);
 		if (shadow_data == NULL) {
-			DEBUG(0,("TALLOC_ZERO() failed!\n"));
+			DBG_ERR("TALLOC_ZERO() failed!\n");
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -1584,7 +1584,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 * Call the VFS routine to actually do the work.
 		 */
 		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
-			int log_lev = 0;
+			int log_lev = DBGLVL_ERR;
 			if (errno == 0) {
 				/* broken module didn't set errno on error */
 				status = NT_STATUS_UNSUCCESSFUL;
@@ -1592,7 +1592,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 				status = map_nt_error_from_unix(errno);
 				if (NT_STATUS_EQUAL(status,
 						    NT_STATUS_NOT_SUPPORTED)) {
-					log_lev = 5;
+					log_lev = DBGLVL_INFO;
 				}
 			}
 			DEBUG(log_lev, ("FSCTL_GET_SHADOW_COPY_DATA: "
@@ -1613,8 +1613,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		}
 
 		if (max_out_len < *out_len) {
-			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
-				max_out_len, *out_len));
+			DBG_ERR("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
+				max_out_len, *out_len);
 			TALLOC_FREE(shadow_data);
 			return NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -1640,8 +1640,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 
 		cur_pdata += 12;
 
-		DEBUG(10,("FSCTL_GET_SHADOW_COPY_DATA: %u volumes for path[%s].\n",
-			  shadow_data->num_volumes, fsp_str_dbg(fsp)));
+		DBG_DEBUG("FSCTL_GET_SHADOW_COPY_DATA: %u volumes for path[%s].\n",
+			  shadow_data->num_volumes, fsp_str_dbg(fsp));
 		if (labels && shadow_data->labels) {
 			for (i=0; i<shadow_data->num_volumes; i++) {
 				size_t len = 0;
@@ -1655,7 +1655,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 					return status;
 				}
 				cur_pdata += 2 * sizeof(SHADOW_COPY_LABEL);
-				DEBUGADD(10,("Label[%u]: '%s'\n",i,shadow_data->labels[i]));
+				DEBUGADD(DBGLVL_DEBUG,("Label[%u]: '%s'\n",i,shadow_data->labels[i]));
 			}
 		}
 
@@ -1678,8 +1678,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		uid_t uid;
 		size_t sid_len;
 
-		DEBUG(10, ("FSCTL_FIND_FILES_BY_SID: called on %s\n",
-			   fsp_fnum_dbg(fsp)));
+		DBG_DEBUG("FSCTL_FIND_FILES_BY_SID: called on %s\n",
+			   fsp_fnum_dbg(fsp));
 
 		if (in_len < 8) {
 			/* NT_STATUS_BUFFER_TOO_SMALL maybe? */
@@ -1695,13 +1695,13 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		if (ret == -1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		DEBUGADD(10, ("for SID: %s\n",
+		DEBUGADD(DBGLVL_DEBUG, ("for SID: %s\n",
 			      dom_sid_str_buf(&sid, &buf)));
 
 		if (!sid_to_uid(&sid, &uid)) {
-			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
+			DBG_ERR("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
 				 dom_sid_str_buf(&sid, &buf),
-				 (unsigned long)sid_len));
+				 (unsigned long)sid_len);
 			uid = (-1);
 		}
 
@@ -1742,14 +1742,14 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		char *out_data_tmp = NULL;
 
 		if (in_len != 16) {
-			DEBUG(0,("FSCTL_QUERY_ALLOCATED_RANGES: data_count(%u) != 16 is invalid!\n",
-				in_len));
+			DBG_ERR("FSCTL_QUERY_ALLOCATED_RANGES: data_count(%u) != 16 is invalid!\n",
+				in_len);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		if (max_out_len < 16) {
-			DEBUG(0,("FSCTL_QUERY_ALLOCATED_RANGES: max_out_len (%u) < 16 is invalid!\n",
-				max_out_len));
+			DBG_ERR("FSCTL_QUERY_ALLOCATED_RANGES: max_out_len (%u) < 16 is invalid!\n",
+				max_out_len);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -1770,7 +1770,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		*out_len = 16;
 		out_data_tmp = talloc_array(ctx, char, *out_len);
 		if (out_data_tmp == NULL) {
-			DEBUG(10, ("unable to allocate memory for response\n"));
+			DBG_DEBUG("unable to allocate memory for response\n");
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -1792,8 +1792,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 
 	case FSCTL_IS_VOLUME_DIRTY:
 	{
-		DEBUG(10,("FSCTL_IS_VOLUME_DIRTY: called on %s "
-			  "(but remotely not supported)\n", fsp_fnum_dbg(fsp)));
+		DBG_DEBUG("FSCTL_IS_VOLUME_DIRTY: called on %s "
+			  "(but remotely not supported)\n", fsp_fnum_dbg(fsp));
 		/*
 		 * http://msdn.microsoft.com/en-us/library/cc232128%28PROT.10%29.aspx
 		 * says we have to respond with NT_STATUS_INVALID_PARAMETER
@@ -1808,8 +1808,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 */
 		if (!vfswrap_logged_ioctl_message) {
 			vfswrap_logged_ioctl_message = true;
-			DEBUG(2, ("%s (0x%x): Currently not implemented.\n",
-			__func__, function));
+			DBG_NOTICE("%s (0x%x): Currently not implemented.\n",
+			__func__, function);
 		}
 	}
 
@@ -2969,8 +2969,8 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (ret == 0) {
 		return 0;
 	}
-	DEBUG(10,("strict_allocate_ftruncate: SMB_VFS_FALLOCATE failed with "
-		"error %d. Falling back to slow manual allocation\n", errno));
+	DBG_DEBUG("strict_allocate_ftruncate: SMB_VFS_FALLOCATE failed with "
+		"error %d. Falling back to slow manual allocation\n", errno);
 
 	/* available disk space is enough or not? */
 	space_avail =
