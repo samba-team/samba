@@ -36,6 +36,15 @@ an implementation written in python. The new function can be imported via
 `import samba.gp`. The python implementation connects to Active Directory
 using the SamDB module, instead of ADS (which is what libgpo uses).
 
+Improved winbind logging and a new tool for parsing the winbind logs
+--------------------------------------------------------------------
+
+Winbind logs (if smb.conf 'winbind debug traceid = yes' is set) contain new
+trace header fields 'traceid' and 'depth'.  Field 'traceid' allows to track the
+trace records belonging to the same request.  Field 'depth' allows to track the
+request nesting level. A new tool samba-log-parser is added for better log
+parsing.
+
 REMOVED FEATURES
 ================
 
@@ -45,6 +54,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  winbind debug traceid                   Add traceid     No
 
 
 KNOWN ISSUES
