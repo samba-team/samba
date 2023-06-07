@@ -20,7 +20,7 @@
 import ldb
 import samba
 import time
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
@@ -29,7 +29,11 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 from samba.samdb import dsdb_Dn
 from samba.dcerpc import security
-from samba.descriptor import get_wellknown_sds, get_diff_sds
+from samba.descriptor import (
+        get_wellknown_sds,
+        get_deletedobjects_descriptor,
+        get_diff_sds
+)
 from samba.auth import system_session, admin_session
 from samba.netcmd import CommandError
 from samba.netcmd.fsmo import get_fsmo_roleowner
@@ -351,6 +355,12 @@ class dbcheck(object):
                 listwko.append('%s:%s' % (wko_prefix, dn))
                 guid_suffix = ""
 
+
+            domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+            sec_desc = get_deletedobjects_descriptor(domain_sid,
+                                                     name_map=self.name_map)
+            sec_desc_b64 = b64encode(sec_desc).decode('utf8')
+
             # Insert a brand new Deleted Objects container
             self.samdb.add_ldif("""dn: %s
 objectClass: top
@@ -359,7 +369,8 @@ description: Container for deleted objects
 isDeleted: TRUE
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: TRUE
-systemFlags: -1946157056%s""" % (dn, guid_suffix),
+nTSecurityDescriptor:: %s
+systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
                                 controls=["relax:0", "provision:0"])
 
             delta = ldb.Message()
