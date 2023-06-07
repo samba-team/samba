@@ -1087,7 +1087,7 @@ void reply_dskattr(struct smb_request *req)
  Make a dir struct.
 ****************************************************************************/
 
-static bool make_dir_struct(TALLOC_CTX *ctx,
+static void make_dir_struct(TALLOC_CTX *ctx,
 			    char *buf,
 			    const char *mask,
 			    const char *fname,
@@ -1097,24 +1097,19 @@ static bool make_dir_struct(TALLOC_CTX *ctx,
 			    bool uc)
 {
 	char *p;
-	char *mask2 = talloc_strdup(ctx, mask);
-
-	if (!mask2) {
-		return False;
-	}
 
 	if ((mode & FILE_ATTRIBUTE_DIRECTORY) != 0) {
 		size = 0;
 	}
 
 	memset(buf+1,' ',11);
-	if ((p = strchr_m(mask2,'.')) != NULL) {
-		*p = 0;
-		push_ascii(buf+1,mask2,8, 0);
+	if ((p = strchr_m(mask, '.')) != NULL) {
+		char name[p - mask + 1];
+		strlcpy(name, mask, sizeof(name));
+		push_ascii(buf + 1, name, 8, 0);
 		push_ascii(buf+9,p+1,3, 0);
-		*p = '.';
 	} else {
-		push_ascii(buf+1,mask2,11, 0);
+		push_ascii(buf + 1, mask, 11, 0);
 	}
 
 	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
@@ -1126,7 +1121,6 @@ static bool make_dir_struct(TALLOC_CTX *ctx,
 	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
 	push_ascii(buf+30,fname,12, uc ? STR_UPPER : 0);
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
-	return True;
 }
 
 /****************************************************************************
@@ -1338,11 +1332,14 @@ void reply_search(struct smb_request *req)
 	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
-		if (!make_dir_struct(ctx,buf,"???????????",volume_label(ctx, SNUM(conn)),
-				0,FILE_ATTRIBUTE_VOLUME,0,!allow_long_path_components)) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
+		make_dir_struct(ctx,
+				buf,
+				"???????????",
+				volume_label(ctx, SNUM(conn)),
+				0,
+				FILE_ATTRIBUTE_VOLUME,
+				0,
+				!allow_long_path_components);
 		dptr_fill(sconn, buf+12,dptr_num);
 		if (dptr_zero(buf+12) && (status_len==0)) {
 			numentries = 1;
@@ -1385,17 +1382,15 @@ void reply_search(struct smb_request *req)
 			if (!finished) {
 				char buf[DIR_STRUCT_SIZE];
 				memcpy(buf,status,21);
-				if (!make_dir_struct(ctx,
-						buf,
-						mask,
-						fname,
-						size,
-						mode,
-						convert_timespec_to_time_t(date),
-						!allow_long_path_components)) {
-					reply_nterror(req, NT_STATUS_NO_MEMORY);
-					goto out;
-				}
+				make_dir_struct(
+					ctx,
+					buf,
+					mask,
+					fname,
+					size,
+					mode,
+					convert_timespec_to_time_t(date),
+					!allow_long_path_components);
 				if (!dptr_fill(sconn, buf+12,dptr_num)) {
 					break;
 				}
