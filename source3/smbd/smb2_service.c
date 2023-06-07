@@ -184,7 +184,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *local_address,
 	}
 
 	if (!strupper_m(dev)) {
-		DEBUG(2,("strupper_m %s failed\n", dev));
+		DBG_WARNING("strupper_m %s failed\n", dev);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -232,7 +232,7 @@ static NTSTATUS find_forced_group(bool force_user,
 
 	groupname = lp_force_group(talloc_tos(), lp_sub, snum);
 	if (groupname == NULL) {
-		DEBUG(1, ("talloc_strdup failed\n"));
+		DBG_WARNING("talloc_strdup failed\n");
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -245,7 +245,7 @@ static NTSTATUS find_forced_group(bool force_user,
 	groupname = talloc_string_sub(talloc_tos(), groupname,
 				      "%S", lp_const_servicename(snum));
 	if (groupname == NULL) {
-		DEBUG(1, ("talloc_string_sub failed\n"));
+		DBG_WARNING("talloc_string_sub failed\n");
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -253,22 +253,22 @@ static NTSTATUS find_forced_group(bool force_user,
 	if (!lookup_name_smbconf(talloc_tos(), groupname,
 			 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
 			 NULL, NULL, &group_sid, &type)) {
-		DEBUG(10, ("lookup_name_smbconf(%s) failed\n",
-			   groupname));
+		DBG_DEBUG("lookup_name_smbconf(%s) failed\n",
+			   groupname);
 		goto done;
 	}
 
 	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
 	    (type != SID_NAME_WKN_GRP)) {
-		DEBUG(10, ("%s is a %s, not a group\n", groupname,
-			   sid_type_lookup(type)));
+		DBG_DEBUG("%s is a %s, not a group\n", groupname,
+			   sid_type_lookup(type));
 		goto done;
 	}
 
 	if (!sid_to_gid(&group_sid, &gid)) {
 		struct dom_sid_buf buf;
-		DEBUG(10, ("sid_to_gid(%s) for %s failed\n",
-			   dom_sid_str_buf(&group_sid, &buf), groupname));
+		DBG_DEBUG("sid_to_gid(%s) for %s failed\n",
+			   dom_sid_str_buf(&group_sid, &buf), groupname);
 		goto done;
 	}
 
@@ -283,19 +283,19 @@ static NTSTATUS find_forced_group(bool force_user,
 		if (user_in_group_sid(username, &group_sid)) {
 			sid_copy(pgroup_sid, &group_sid);
 			*pgid = gid;
-			DEBUG(3,("Forced group %s for member %s\n",
-				 groupname, username));
+			DBG_INFO("Forced group %s for member %s\n",
+				 groupname, username);
 		} else {
-			DEBUG(0,("find_forced_group: forced user %s is not a member "
+			DBG_ERR("find_forced_group: forced user %s is not a member "
 				"of forced group %s. Disallowing access.\n",
-				username, groupname ));
+				username, groupname );
 			result = NT_STATUS_MEMBER_NOT_IN_GROUP;
 			goto done;
 		}
 	} else {
 		sid_copy(pgroup_sid, &group_sid);
 		*pgid = gid;
-		DEBUG(3,("Forced group %s\n", groupname));
+		DBG_INFO("Forced group %s\n", groupname);
 	}
 
 	result = NT_STATUS_OK;
@@ -405,7 +405,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		conn->session_info = forced_serverinfo;
 
 		conn->force_user = true;
-		DEBUG(3,("Forced user %s\n", fuser));
+		DBG_INFO("Forced user %s\n", fuser);
 	}
 
 	/*
@@ -516,8 +516,8 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		&conn->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("create_connection_session_info failed: %s\n",
-			  nt_errstr(status)));
+		DBG_WARNING("create_connection_session_info failed: %s\n",
+			  nt_errstr(status));
 		goto err_root_exit;
 	}
 
@@ -672,12 +672,12 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
 					lp_root_preexec(talloc_tos(), lp_sub, snum));
-		DEBUG(5,("cmd=%s\n",cmd));
+		DBG_INFO("cmd=%s\n",cmd);
 		ret = smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_root_preexec_close(snum)) {
-			DEBUG(1,("root preexec gave %d - failing "
-				 "connection\n", ret));
+			DBG_WARNING("root preexec gave %d - failing "
+				 "connection\n", ret);
 			status = NT_STATUS_ACCESS_DENIED;
 			goto err_root_exit;
 		}
@@ -686,7 +686,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 /* USER Activites: */
 	if (!change_to_user_and_service(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
-		DEBUG(0,("Can't become connected user!\n"));
+		DBG_ERR("Can't become connected user!\n");
 		status = NT_STATUS_LOGON_FAILURE;
 		goto err_root_exit;
 	}
@@ -713,8 +713,8 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		ret = smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_preexec_close(snum)) {
-			DEBUG(1,("preexec gave %d - failing connection\n",
-				 ret));
+			DBG_WARNING("preexec gave %d - failing connection\n",
+				 ret);
 			status = NT_STATUS_ACCESS_DENIED;
 			goto err_root_exit;
 		}
@@ -811,7 +811,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 * (at least initially).
 	 */
 
-	if( DEBUGLVL( IS_IPC(conn) ? 3 : 2 ) ) {
+	if( DEBUGLVL( IS_IPC(conn) ?  DBGLVL_INFO : DBGLVL_NOTICE ) ) {
 		bool signing_active;
 
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
@@ -867,7 +867,7 @@ connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 	struct smbd_server_connection *sconn = req->sconn;
 	connection_struct *conn = conn_new(sconn);
 	if (!conn) {
-		DEBUG(0,("make_connection_smb2: Couldn't find free connection.\n"));
+		DBG_ERR("make_connection_smb2: Couldn't find free connection.\n");
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
@@ -904,7 +904,7 @@ void close_cnum(connection_struct *conn,
 
 	change_to_root_user();
 
-	DEBUG(IS_IPC(conn)?3:2, ("%s (%s) closed connection to service %s\n",
+	DEBUG(IS_IPC(conn)?DBGLVL_INFO:DBGLVL_NOTICE, ("%s (%s) closed connection to service %s\n",
 				 get_remote_machine_name(),
 				 tsocket_address_string(conn->sconn->remote_address,
 							talloc_tos()),
