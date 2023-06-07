@@ -372,6 +372,11 @@ long dptr_TellDir(struct dptr_struct *dptr)
 	return TellDir(dptr->dir_hnd);
 }
 
+unsigned int dptr_FileNumber(struct dptr_struct *dptr)
+{
+	return dptr->dir_hnd->file_number;
+}
+
 bool dptr_has_wild(struct dptr_struct *dptr)
 {
 	return dptr->has_wild;
