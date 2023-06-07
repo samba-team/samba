@@ -38,8 +38,8 @@
 #define DBGC_CLASS            DBGC_DRS_REPL
 
 #define DRSUAPI_UNSUPPORTED(fname) do { \
-	DEBUG(1,(__location__ ": Unsupported DRS call %s\n", #fname)); \
-	if (DEBUGLVL(2)) NDR_PRINT_IN_DEBUG(fname, r); \
+	DBG_WARNING(__location__ ": Unsupported DRS call %s\n", #fname); \
+	if (DEBUGLVL(DBGLVL_NOTICE)) NDR_PRINT_IN_DEBUG(fname, r); \
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR); \
 } while (0)
 
@@ -326,7 +326,7 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 	}
 
 	if (r->in.level != 1) {
-		DEBUG(0,("DsReplicaSync called with unsupported level %d\n", r->in.level));
+		DBG_ERR("DsReplicaSync called with unsupported level %d\n", r->in.level);
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
@@ -493,8 +493,8 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 			case DRSUAPI_DS_NAME_FORMAT_LIST_SITES:
 			case DRSUAPI_DS_NAME_FORMAT_UPN_AND_ALTSECID:
 			case DRSUAPI_DS_NAME_FORMAT_UPN_FOR_LOGON:
-				DEBUG(0, ("DsCrackNames: Unsupported operation requested: %X",
-					  r->in.req->req1.format_offered));
+				DBG_ERR("DsCrackNames: Unsupported operation requested: %X",
+					  r->in.req->req1.format_offered);
 				return WERR_OK;
 			case DRSUAPI_DS_NAME_FORMAT_LIST_INFO_FOR_SERVER:
 				return dcesrv_drsuapi_ListInfoServer(b_state->sam_ctx, mem_ctx, &r->in.req->req1, &r->out.ctr->ctr1);
@@ -653,8 +653,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				 "(&(objectClass=server)(serverReference=*))");
 	
 	if (ret) {
-		DEBUG(1, ("searching for servers in sites DN %s failed: %s\n", 
-			  ldb_dn_get_linearized(sites_dn), ldb_errstring(b_state->sam_ctx)));
+		DBG_WARNING("searching for servers in sites DN %s failed: %s\n", 
+			  ldb_dn_get_linearized(sites_dn), ldb_errstring(b_state->sam_ctx));
 		return WERR_GEN_FAILURE;
 	}
 
@@ -711,8 +711,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				}
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for computer DN %s failed: %s\n", 
-					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for computer DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			/* Look at server DN and extract site component */
@@ -762,8 +762,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				ctr2->array[i].ntds_dn = ldb_dn_get_linearized(res_ntds->msgs[0]->dn);
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for NTDS DN %s failed: %s\n", 
-					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for NTDS DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_site, site_dn,
@@ -774,8 +774,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				ctr2->array[i].site_dn = ldb_dn_get_linearized(res_site->msgs[0]->dn);
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for site DN %s failed: %s\n", 
-					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for site DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
@@ -803,14 +803,14 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 						ctr2->array[i].is_pdc = true;
 					}
 					if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-						DEBUG(5, ("warning: searching for domain DN %s failed: %s\n", 
-							  ldb_dn_get_linearized(domain_dn), ldb_errstring(b_state->sam_ctx)));
+						DBG_INFO("warning: searching for domain DN %s failed: %s\n", 
+							  ldb_dn_get_linearized(domain_dn), ldb_errstring(b_state->sam_ctx));
 					}
 				}
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for computer account DN %s failed: %s\n", 
-					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for computer account DN %s failed: %s\n", 
+					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			/* Look at server DN and extract site component */
@@ -862,8 +862,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				ctr3->array[i].ntds_dn = ldb_dn_get_linearized(res_ntds->msgs[0]->dn);
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for NTDS DN %s failed: %s\n",
-					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for NTDS DN %s failed: %s\n",
+					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_site, site_dn,
@@ -874,8 +874,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 				ctr3->array[i].site_dn = ldb_dn_get_linearized(res_site->msgs[0]->dn);
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for site DN %s failed: %s\n",
-					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for site DN %s failed: %s\n",
+					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
@@ -903,14 +903,14 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 						ctr3->array[i].is_pdc = true;
 					}
 					if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-						DEBUG(5, ("warning: searching for domain DN %s failed: %s\n",
-							  ldb_dn_get_linearized(domain_dn), ldb_errstring(b_state->sam_ctx)));
+						DBG_INFO("warning: searching for domain DN %s failed: %s\n",
+							  ldb_dn_get_linearized(domain_dn), ldb_errstring(b_state->sam_ctx));
 					}
 				}
 			}
 			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
-				DEBUG(5, ("warning: searching for computer account DN %s failed: %s\n",
-					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx)));
+				DBG_INFO("warning: searching for computer account DN %s failed: %s\n",
+					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx));
 			}
 
 			/* Look at server DN and extract site component */
@@ -984,7 +984,7 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSEXECUTEKCC,
 				     &ndr_table_drsuapi, "kccsrv", "DsExecuteKCC",
 				     timeout);
-	DEBUG(10, ("Forwarded the call to execute the KCC\n"));
+	DBG_DEBUG("Forwarded the call to execute the KCC\n");
 	return WERR_OK;
 }
 
@@ -1003,7 +1003,7 @@ static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call
 			 "drs", "disable_sec_check", false)) {
 		level = security_session_user_level(session_info, NULL);
 		if (level < SECURITY_DOMAIN_CONTROLLER) {
-			DEBUG(1,(__location__ ": Administrator access required for DsReplicaGetInfo\n"));
+			DBG_WARNING(__location__ ": Administrator access required for DsReplicaGetInfo\n");
 			security_token_debug(DBGC_DRS_REPL, 2,
 					     session_info->security_token);
 			return WERR_DS_DRA_ACCESS_DENIED;
