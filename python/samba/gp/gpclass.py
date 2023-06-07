@@ -982,7 +982,7 @@ def apply_gp(lp, creds, store, gp_extensions, username, target, force=False):
             if target == 'Computer':
                 ext.process_group_policy(del_gpos, changed_gpos)
             else:
-                drop_privileges(creds.get_principal(), ext.process_group_policy,
+                drop_privileges(username, ext.process_group_policy,
                                 del_gpos, changed_gpos)
         except Exception as e:
             log.error('Failed to apply extension  %s' % str(ext))
