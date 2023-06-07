@@ -76,6 +76,7 @@ int dsdb_get_sd_from_ldb_message(struct ldb_context *ldb,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(*sd);
 		return ldb_operr(ldb);
 	}
 
@@ -106,6 +107,8 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 	if (guid) {
 		if (!insert_in_object_tree(mem_ctx, guid, access_mask, NULL,
 					   &root)) {
+			TALLOC_FREE(sd);
+			TALLOC_FREE(sid);
 			return ldb_operr(ldb);
 		}
 	}
@@ -123,6 +126,8 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 		ldb_asprintf_errstring(ldb,
 				       "dsdb_access: Access check failed on %s",
 				       ldb_dn_get_linearized(dn));
+		TALLOC_FREE(sd);
+		TALLOC_FREE(sid);
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 	return LDB_SUCCESS;
