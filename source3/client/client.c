@@ -626,6 +626,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 				display_sec_desc(sd);
 			}
 			TALLOC_FREE(sd);
+			cli_close(targetcli, fnum);
 		}
 		TALLOC_FREE(afname);
 	}
