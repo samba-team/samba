@@ -27,7 +27,6 @@ from samba.netcmd import (
     SuperCommand,
 )
 from samba.samdb import SamDB
-from samba import dsdb
 from operator import attrgetter
 
 
