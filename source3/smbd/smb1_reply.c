@@ -1402,6 +1402,7 @@ void reply_search(struct smb_request *req)
 				}
 				numentries++;
 			}
+			TALLOC_FREE(fname);
 		}
 	}
 
