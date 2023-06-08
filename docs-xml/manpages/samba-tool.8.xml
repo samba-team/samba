@@ -600,6 +600,631 @@
 </refsect3>
 
 <refsect3>
+	<title>domain auth policy list</title>
+	<para>List authentication policies on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				View authentication policies as JSON instead of a list.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy view</title>
+	<para>View an authentication policy on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of the authentication policy to view (required).
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy create</title>
+	<para>Create authentication policies on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of the authentication policy (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--description</term>
+			<listitem><para>
+				Optional description for the authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--protect</term>
+			<listitem>
+				<para>
+					Protect authentication policy from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --unprotect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--unprotect</term>
+			<listitem>
+				<para>
+					Unprotect authentication policy from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --protect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--audit</term>
+			<listitem>
+				<para>
+					Only audit authentication policy.
+				</para>
+				<para>
+					Cannot be used together with --enforce.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--enforce</term>
+			<listitem>
+				<para>
+					Enforce authentication policy.
+				</para>
+				<para>
+					Cannot be used together with --audit.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--strong-ntlm-policy</term>
+			<listitem>
+				<para>
+					Strong NTLM Policy (Disabled, Optional, Required).
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-tgt-lifetime</term>
+			<listitem>
+				<para>
+					Ticket-Granting-Ticket lifetime for user accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-allow-ntlm-auth</term>
+			<listitem>
+				<para>
+					Allow NTLM network authentication when user
+					is restricted to selected devices.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-tgt-lifetime</term>
+			<listitem>
+				<para>
+					Ticket-Granting-Ticket lifetime for service accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-allow-ntlm-auth</term>
+			<listitem>
+				<para>
+					Allow NTLM network authentication when service
+					is restricted to selected devices.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--computer-tgt-lifetime</term>
+			<listitem>
+				<para>
+					Ticket-Granting-Ticket lifetime for computer accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy modify</title>
+	<para>Modify authentication policies on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of the authentication policy (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--description</term>
+			<listitem><para>
+				Optional description for the authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--protect</term>
+			<listitem>
+				<para>
+					Protect authentication policy from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --unprotect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--unprotect</term>
+			<listitem>
+				<para>
+					Unprotect authentication policy from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --protect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--audit</term>
+			<listitem>
+				<para>
+					Only audit authentication policy.
+				</para>
+				<para>
+					Cannot be used together with --enforce.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--enforce</term>
+			<listitem>
+				<para>
+					Enforce authentication policy.
+				</para>
+				<para>
+					Cannot be used together with --audit.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--strong-ntlm-policy</term>
+			<listitem>
+				<para>
+					Strong NTLM Policy (Disabled, Optional, Required).
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-tgt-lifetime</term>
+			<listitem>
+				<para>
+					Ticket-Granting-Ticket lifetime for user accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-allow-ntlm-auth</term>
+			<listitem>
+				<para>
+					Allow NTLM network authentication when user
+					is restricted to selected devices.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-tgt-lifetime</term>
+			<listitem>
+				<para>
+					Ticket-Granting-Ticket lifetime for service accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-allow-ntlm-auth</term>
+			<listitem>
+				<para>
+					Allow NTLM network authentication when service
+					is restricted to selected devices.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--computer-tgt-lifetime</term>
+			<listitem>
+				<para>
+					Ticket-Granting-Ticket lifetime for computer accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy delete</title>
+	<para>Delete authentication policies on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication policy to delete (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--force</term>
+			<listitem><para>
+				Force authentication policy delete even if it is protected.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo list</title>
+	<para>List authentication silos on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				View authentication silos as JSON instead of a list.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo view</title>
+	<para>View an authentication silo on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of the authentication silo to view (required).
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo create</title>
+	<para>Create authentication silos on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of the authentication silo (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--description</term>
+			<listitem><para>
+				Optional description for the authentication silo.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--policy</term>
+			<listitem><para>
+				Use single policy for all principals in this silo.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-policy</term>
+			<listitem><para>
+				User account policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-policy</term>
+			<listitem><para>
+				Managed Service Account policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--computer-policy</term>
+			<listitem><para>
+				Computer Account policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--protect</term>
+			<listitem>
+				<para>
+					Protect authentication silo from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --unprotect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--unprotect</term>
+			<listitem>
+				<para>
+					Unprotect authentication silo from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --protect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--audit</term>
+			<listitem>
+				<para>
+					Only audit silo policies.
+				</para>
+				<para>
+					Cannot be used together with --enforce.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--enforce</term>
+			<listitem>
+				<para>
+					Enforce silo policies.
+				</para>
+				<para>
+					Cannot be used together with --audit.
+				</para>
+			</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo modify</title>
+	<para>Modify authentication silos on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of the authentication silo (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--description</term>
+			<listitem><para>
+				Optional description for the authentication silo.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--policy</term>
+			<listitem><para>
+				Use single policy for all principals in this silo.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-policy</term>
+			<listitem><para>
+				User account policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-policy</term>
+			<listitem><para>
+				Managed Service Account policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--computer-policy</term>
+			<listitem><para>
+				Computer Account policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--protect</term>
+			<listitem>
+				<para>
+					Protect authentication silo from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --unprotect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--unprotect</term>
+			<listitem>
+				<para>
+					Unprotect authentication silo from accidental deletion.
+				</para>
+				<para>
+					Cannot be used together with --protect.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--audit</term>
+			<listitem>
+				<para>
+					Only audit silo policies.
+				</para>
+				<para>
+					Cannot be used together with --enforce.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--enforce</term>
+			<listitem>
+				<para>
+					Enforce silo policies.
+				</para>
+				<para>
+					Cannot be used together with --audit.
+				</para>
+			</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo delete</title>
+	<para>Delete authentication silos on the domain.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication silo to delete (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--force</term>
+			<listitem><para>
+				Force authentication silo delete even if it is protected.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo member add</title>
+	<para>Add a member to an authentication silo.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication silo (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--member</term>
+			<listitem><para>
+				Member to add to the silo (DN or account name).
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo member list</title>
+	<para>List members in an authentication silo.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication silo (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				View members as JSON instead of a list.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth silo member remove</title>
+	<para>Remove a member from an authentication silo.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication silo (required).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--member</term>
+			<listitem><para>
+				Member to remove from the silo (DN or account name).
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
 	<title>domain claim claim-type list</title>
 	<para>List claim types on the domain.</para>
 	<variablelist>
