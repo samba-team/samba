@@ -1097,7 +1097,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 		return undef;
 	}
 
-	# Create to users alice and bob!
+	# Create two users alice and bob!
 	my $user_account_array = ["alice", "bob", "jane", "joe"];
 
 	foreach my $user_account (@{$user_account_array}) {
