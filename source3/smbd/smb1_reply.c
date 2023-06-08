@@ -1295,6 +1295,8 @@ void reply_search(struct smb_request *req)
 	} else {
 		int status_dirtype;
 		const char *dirpath;
+		unsigned int dptr_filenum;
+		uint32_t resume_key_index;
 
 		if (smbreq_bufrem(req, p) < 21) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -1307,10 +1309,55 @@ void reply_search(struct smb_request *req)
 			dirtype = status_dirtype;
 		}
 
-		fsp = dptr_fetch_fsp(sconn, status+12,&dptr_num);
+		dptr_num = CVAL(status, 12);
+		fsp = dptr_fetch_lanman2_fsp(sconn, dptr_num);
 		if (fsp == NULL) {
 			goto SearchEmpty;
 		}
+
+		resume_key_index = PULL_LE_U32(status, 13);
+		dptr_filenum = dptr_FileNumber(fsp->dptr);
+
+		if (resume_key_index > dptr_filenum) {
+			/*
+			 * Haven't seen this resume key yet. Just stop
+			 * the search.
+			 */
+			goto SearchEmpty;
+		}
+
+		if (resume_key_index < dptr_filenum) {
+			/*
+			 * The resume key was not the last one we
+			 * sent, rewind and skip to what the client
+			 * sent.
+			 */
+			dptr_RewindDir(fsp->dptr);
+
+			dptr_filenum = dptr_FileNumber(fsp->dptr);
+			SMB_ASSERT(dptr_filenum == 0);
+
+			while (dptr_filenum < resume_key_index) {
+				bool ok = get_dir_entry(
+					ctx,
+					fsp->dptr,
+					dptr_wcard(sconn, dptr_num),
+					dirtype,
+					&fname,
+					&size,
+					&mode,
+					&date,
+					check_descend,
+					false);
+				TALLOC_FREE(fname);
+				if (!ok) {
+					goto SearchEmpty;
+				}
+
+				dptr_filenum = dptr_FileNumber(fsp->dptr);
+			}
+		}
+
 		dirpath = dptr_path(sconn, dptr_num);
 		directory = talloc_strdup(ctx, dirpath);
 		if (!directory) {
@@ -1340,12 +1387,8 @@ void reply_search(struct smb_request *req)
 				FILE_ATTRIBUTE_VOLUME,
 				0,
 				!allow_long_path_components);
-		dptr_fill(sconn, buf+12,dptr_num);
-		if (dptr_zero(buf+12) && (status_len==0)) {
-			numentries = 1;
-		} else {
-			numentries = 0;
-		}
+		SCVAL(buf, 12, dptr_num);
+		numentries = 1;
 		if (message_push_blob(&req->outbuf,
 				      data_blob_const(buf, sizeof(buf)))
 		    == -1) {
@@ -1391,9 +1434,10 @@ void reply_search(struct smb_request *req)
 					mode,
 					convert_timespec_to_time_t(date),
 					!allow_long_path_components);
-				if (!dptr_fill(sconn, buf+12,dptr_num)) {
-					break;
-				}
+				SCVAL(buf, 12, dptr_num);
+				PUSH_LE_U32(buf,
+					    13,
+					    dptr_FileNumber(fsp->dptr));
 				if (message_push_blob(&req->outbuf,
 						      data_blob_const(buf, sizeof(buf)))
 				    == -1) {
@@ -1479,7 +1523,6 @@ void reply_search(struct smb_request *req)
 void reply_fclose(struct smb_request *req)
 {
 	int status_len;
-	char status[21];
 	int dptr_num= -2;
 	const char *p;
 	char *path = NULL;
@@ -1527,9 +1570,9 @@ void reply_fclose(struct smb_request *req)
 		return;
 	}
 
-	memcpy(status,p,21);
+	dptr_num = CVAL(p, 12);
 
-	fsp = dptr_fetch_fsp(sconn, status+12,&dptr_num);
+	fsp = dptr_fetch_lanman2_fsp(sconn, dptr_num);
 	if(fsp != NULL) {
 		/*  Close the file - we know it's gone */
 		close_file_free(NULL, &fsp, NORMAL_CLOSE);
