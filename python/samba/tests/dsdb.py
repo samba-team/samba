@@ -24,7 +24,8 @@ from samba.tests import TestCase
 from samba.tests import delete_force
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, security, misc
-from samba import dsdb
+from samba.param import LoadParm
+from samba import dsdb, functional_level
 from samba import werror
 import ldb
 import samba
@@ -1181,3 +1182,42 @@ class DsdbFullScanTests(TestCase):
         except ldb.LdbError as err:
             estr = err.args[1]
             self.fail("sam.ldb required a full scan to start up")
+
+class DsdbStartUpTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        lp = samba.tests.env_loadparm()
+        path = lp.configfile
+
+        # This is to avoid a tatoo of the global state
+        self.lp = LoadParm(filename_for_non_global_lp=path)
+        self.creds = Credentials()
+        self.creds.guess(self.lp)
+        self.session = system_session()
+        self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
+
+    def test_correct_fl(self):
+        res = self.samdb.search(base="",
+                                 scope=ldb.SCOPE_BASE,
+                                 attrs=["domainFunctionality"])
+        # This confirms the domain is in FL 2016 by default, this is
+        # important to verify the original state
+        self.assertEqual(int(res[0]["domainFunctionality"][0]),
+                         dsdb.DS_DOMAIN_FUNCTION_2016)
+        self.assertEqual(functional_level.dc_level_from_lp(self.lp),
+                         dsdb.DS_DOMAIN_FUNCTION_2016)
+        dsdb.check_and_update_fl(self.samdb, self.lp)
+
+    def test_lower_smb_conf_fl(self):
+        old_lp_fl = self.lp.get("ad dc functional level")
+        self.lp.set("ad dc functional level",
+                    "2008_R2")
+        self.addCleanup(self.lp.set, "ad dc functional level", old_lp_fl)
+        try:
+            dsdb.check_and_update_fl(self.samdb, self.lp)
+            self.fail("Should have failed to start DC with 2008 R2 FL in 2016 domain")
+        except ldb.LdbError as err:
+            (errno, estr) = err.args
+            self.assertEqual(errno, ldb.ERR_CONSTRAINT_VIOLATION)
