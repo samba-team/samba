@@ -2030,6 +2030,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 				     struct smb_filename **_smb_fname)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname_new = talloc_move(fsp, _smb_fname);
 	const char *name_str = NULL;
 	uint32_t name_hash = 0;
@@ -2037,12 +2038,15 @@ static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 
 	name_str = smb_fname_str_dbg(smb_fname_new);
 	if (name_str == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = file_name_hash(fsp->conn,
 				name_str,
 				&name_hash);
+	TALLOC_FREE(frame);
+	name_str = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
