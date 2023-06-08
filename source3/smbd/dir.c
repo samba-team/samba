@@ -362,6 +362,12 @@ void dptr_CloseDir(files_struct *fsp)
 	TALLOC_FREE(fsp->dptr);
 }
 
+void dptr_RewindDir(struct dptr_struct *dptr)
+{
+	long offset;
+	RewindDir(dptr->dir_hnd, &offset);
+}
+
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
 {
 	SeekDir(dptr->dir_hnd, offset);

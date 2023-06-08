@@ -192,6 +192,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 		struct dptr_struct **dptr_ret);
 void dptr_CloseDir(files_struct *fsp);
 void dptr_SeekDir(struct dptr_struct *dptr, long offset);
+void dptr_RewindDir(struct dptr_struct *dptr);
 long dptr_TellDir(struct dptr_struct *dptr);
 unsigned int dptr_FileNumber(struct dptr_struct *dptr);
 bool dptr_has_wild(struct dptr_struct *dptr);
