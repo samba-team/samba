@@ -1546,7 +1546,7 @@
 	<varlistentry>
 	<term>--force-subtree-delete</term>
 	<listitem><para>
-	Delete organizational unit and all children reclusively.
+	Delete organizational unit and all children recursively.
 	</para></listitem>
 	</varlistentry>
 	</variablelist>

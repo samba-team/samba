@@ -361,7 +361,7 @@ class cmd_delete(Command):
                type=str, metavar="URL", dest="H"),
         Option("--force-subtree-delete", dest="force_subtree_delete",
                default=False, action='store_true',
-               help="Delete organizational unit and all children reclusively"),
+               help="Delete organizational unit and all children recursively"),
     ]
 
     takes_args = ["ou_dn"]
