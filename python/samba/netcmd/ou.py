@@ -66,7 +66,6 @@ class cmd_rename(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
-        domain_dn = ldb.Dn(samdb, samdb.domain_dn())
 
         try:
             full_old_ou_dn = samdb.normalize_dn_in_domain(old_ou_dn)
@@ -132,7 +131,6 @@ class cmd_move(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        domain_dn = ldb.Dn(samdb, samdb.domain_dn())
         try:
             full_old_ou_dn = samdb.normalize_dn_in_domain(old_ou_dn)
         except Exception as e:
@@ -376,7 +374,6 @@ class cmd_delete(Command):
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
-        domain_dn = ldb.Dn(samdb, samdb.domain_dn())
 
         try:
             full_ou_dn = samdb.normalize_dn_in_domain(ou_dn)
