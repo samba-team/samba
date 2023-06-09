@@ -531,15 +531,15 @@ ret:
  Search for a file by name.
 ****************************************************************************/
 
-bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset)
+bool dptr_SearchDir(struct dptr_struct *dptr, const char *name)
 {
+	long offset;
 	if (!dptr->has_wild && (dptr->dir_hnd->offset == END_OF_DIRECTORY_OFFSET)) {
 		/* This is a singleton directory and we're already at the end. */
-		*poffset = END_OF_DIRECTORY_OFFSET;
 		return False;
 	}
 
-	return SearchDir(dptr->dir_hnd, name, poffset);
+	return SearchDir(dptr->dir_hnd, name, &offset);
 }
 
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd)

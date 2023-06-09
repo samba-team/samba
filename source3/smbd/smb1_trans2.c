@@ -1510,7 +1510,6 @@ static void call_trans2findnext(connection_struct *conn,
 	if(!continue_bit && resume_name && *resume_name) {
 		bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 
-		long current_pos = 0;
 		/*
 		 * Remember, name_to_8_3 is called by
 		 * get_lanman2_dir_entry(), so the resume name
@@ -1538,8 +1537,7 @@ static void call_trans2findnext(connection_struct *conn,
 		 * should already be at the correct place.
 		 */
 
-		finished =
-			!dptr_SearchDir(fsp->dptr, resume_name, &current_pos);
+		finished = !dptr_SearchDir(fsp->dptr, resume_name);
 	} /* end if resume_name && !continue_bit */
 
 	ask_sharemode = fsp_search_ask_sharemode(fsp);
