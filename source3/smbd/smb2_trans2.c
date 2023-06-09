@@ -2003,9 +2003,11 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		*file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	}
 
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
-	{
+	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		dptr_SeekDir(dirptr, prev_dirpos);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(smb_fname);
 		TALLOC_FREE(fname);
 		return status;
@@ -2034,11 +2036,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		TALLOC_FREE(smb_fname);
 	}
 	TALLOC_FREE(fname);
-
-	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		dptr_SeekDir(dirptr, prev_dirpos);
-		return status;
-	}
 
 	*_last_entry_off = last_entry_off;
 	return NT_STATUS_OK;
