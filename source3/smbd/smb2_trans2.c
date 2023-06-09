@@ -2004,7 +2004,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	}
 
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		dptr_SeekDir(dirptr, prev_dirpos);
+		smbd_dirptr_push_overflow(dirptr, &fname, &smb_fname, mode);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
