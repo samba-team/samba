@@ -285,6 +285,7 @@ $ENV{SAMBA_DEPRECATED_SUPPRESS} = 1;
 # see also bootstrap/config.py
 $ENV{TZ} = "UTC";
 $ENV{LC_ALL} = $ENV{LANG} = "en_US.utf8";
+$ENV{LANGUAGE} = "en_US";
 
 my $bindir_abs = abs_path($bindir);
 
