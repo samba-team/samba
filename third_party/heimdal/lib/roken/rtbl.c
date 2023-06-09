@@ -473,7 +473,7 @@ rtbl_format_json(rtbl_t table)
 
 	    if (c->num_rows > j) {
 		char *header = c->header;
-		while (isspace((int)header[0])) /* trim off prefixed whitespace */
+		while (isspace((unsigned char)header[0])) /* trim off prefixed whitespace */
 		    header++;
 		p = rk_strpoolprintf(p, "%s\"%s\" : \"%s\"",
 				     comma ? "," : "", header,

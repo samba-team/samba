@@ -498,7 +498,7 @@ command = {
 		long = "krb5-config-file"
 		short = "C"
 		type = "string"
-		help = "filename to save the principal's krb5.confg in"
+		help = "filename to save the principal's krb5.conf in"
 	}
 	option = {
 		long = "upto"

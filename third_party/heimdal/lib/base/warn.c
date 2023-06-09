@@ -64,7 +64,7 @@ _warnerr(heim_context context, int do_errtext,
 	    return ENOMEM;
 	*arg++ = msg;
     }
-    if (context && do_errtext) {
+    if (do_errtext) {
 	strlcat(xfmt, "%s", sizeof(xfmt));
 
 	err_str = heim_get_error_message(context, code);

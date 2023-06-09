@@ -142,25 +142,28 @@ main(int argc, char **argv)
 {
     FILE *f;
     char buf[1024];
-    char filename[256] = "NormalizationTest.txt";
+    const char *fn = "NormalizationTest.txt";
     unsigned failures = 0;
     unsigned lineno = 0;
 
     if (argc > 2)
 	errx(1, "usage: %s [file]", argv[0]);
     else if (argc == 2)
-	strlcpy(filename, argv[1], sizeof(filename));
+        fn = argv[1];
 
-    f = fopen(filename, "r");
+    f = fopen(fn, "r");
     if (f == NULL) {
 	const char *srcdir = getenv("srcdir");
 	if (srcdir != NULL) {
-	    char longname[256];
-	    snprintf(longname, sizeof(longname), "%s/%s", srcdir, filename);
-	    f = fopen(longname, "r");
+            char *long_fn = NULL;
+            if (asprintf(&long_fn, "%s/%s", srcdir, fn) == -1 ||
+                long_fn == NULL)
+                errx(1, "Out of memory");
+	    f = fopen(long_fn, "r");
+            free(long_fn);
 	}
 	if (f == NULL)
-	    err(1, "open %s", filename);
+	    err(1, "open %s", fn);
     }
     while (fgets(buf, sizeof(buf), f) != NULL) {
 	lineno++;

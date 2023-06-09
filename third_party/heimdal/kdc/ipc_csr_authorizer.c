@@ -120,7 +120,7 @@ string_encode_sz(const char *in)
         case '/':
             continue;
         default:
-            if (isalnum(c))
+            if (isalnum((unsigned char)c))
                 continue;
             sz += 2;
         }

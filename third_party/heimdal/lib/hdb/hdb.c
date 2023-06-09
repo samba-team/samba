@@ -517,7 +517,7 @@ is_pathish(const char *s)
         strncmp(s, "../", sizeof("../") - 1) == 0)
         return 1;
 #ifdef WIN32
-    if (s[0] == '\\' || (isalpha(s[0]) && s[0] == ':') ||
+    if (s[0] == '\\' || (isalpha((unsigned char)s[0]) && s[0] == ':') ||
         strncmp(s, ".\\", sizeof(".\\") - 1) == 0 ||
         strncmp(s, "\\\\", sizeof("\\\\") - 1) == 0)
         return 1;

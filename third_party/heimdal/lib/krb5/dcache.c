@@ -377,7 +377,7 @@ dcc_resolve_2(krb5_context context,
          *
          */
 
-        if (*res == '\0' || (res[0] == ':' && res[1] == '\0')) {
+        if (res == NULL || *res == '\0' || (res[0] == ':' && res[1] == '\0')) {
             /* XXX Why not? */
             krb5_set_error_message(context, KRB5_CC_FORMAT,
                                    N_("\"DIR:\" is not a valid ccache name", ""));

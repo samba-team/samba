@@ -594,7 +594,7 @@ generate_constant (const Symbol *s)
 	gen_upper = strdup(s->gen_name);
 	len = strlen(gen_upper);
 	for (i = 0; i < len; i++)
-	    gen_upper[i] = toupper((int)s->gen_name[i]);
+	    gen_upper[i] = toupper((unsigned char)s->gen_name[i]);
 
 	fprintf (headerfile, "} */\n");
 	fprintf (headerfile,

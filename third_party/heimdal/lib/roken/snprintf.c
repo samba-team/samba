@@ -309,7 +309,7 @@ append_char(struct snprintf_state *state,
 	(*state->append_char) (state, ' ');
 	++len;
     }
-    return 0;
+    return len;
 }
 
 /*
@@ -437,8 +437,7 @@ xyzprintf (struct snprintf_state *state, const char *char_format, va_list ap)
 
 	    switch (c) {
 	    case 'c' :
-		append_char(state, va_arg(ap, int), width, flags);
-		++len;
+		len += append_char(state, va_arg(ap, int), width, flags);
 		break;
 	    case 's' :
 		len += append_string(state,

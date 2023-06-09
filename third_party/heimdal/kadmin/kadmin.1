@@ -114,6 +114,7 @@ Commands include:
 .Op Fl Fl expiration-time= Ns Ar time
 .Op Fl Fl pw-expiration-time= Ns Ar time
 .Op Fl Fl policy= Ns Ar policy-name
+.Op Fl Fl use-defaults
 .Ar principal...
 .Bd -ragged -offset indent
 Adds a new principal to the database. The options not passed on the
@@ -138,6 +139,13 @@ The
 behavior is the default if none of these are given.
 The only policy supported by Heimdal servers is
 .Ql default .
+.Pp
+If some parameters are not given then they will be prompted for
+unless the
+.Fl Fl use-defaults
+option is given, in which case defaults will be taken from the
+principal named
+.Dq default .
 .Pp
 This command has the following aliases:
 .Nm ank ,
@@ -305,10 +313,12 @@ enctypes.
 .Ed
 .Pp
 .Nm prune
-.Ar principal [kvno]
+.Oo Fl Fl kvno= Ns Ar number
+.Oc
+.Ar principal
 .Bd -ragged -offset indent
 Deletes the named principal's keys of the given kvno.  If a kvno is
-not given then this deletes all the named principals keys that are
+not given then this deletes all the named principal's keys that are
 too old to be needed for decrypting tickets issued using those keys
 (i.e., any such tickets are necessarily expired).  The determination
 of "too old" is made using the max-ticket-life attribute of the
@@ -319,6 +329,7 @@ principals, those are not consulted here.
 .Pp
 .Nm ext_keytab
 .Oo Fl k Ar keytab \*(Ba Xo
+.Op Fl Fl random-key
 .Op Fl Fl keepold | Fl Fl keepallold | Fl Fl pruneall
 .Op Fl Fl enctypes= Ns Ar string
 .Fl Fl keytab= Ns Ar string
@@ -329,6 +340,12 @@ principals, those are not consulted here.
 Creates a keytab with the keys of the specified principals.  Requires
 get-keys rights, otherwise the principal's keys are changed and saved in
 the keytab.
+.Pp
+If the
+.Fl Fl random-key
+option is given then new randomly-generated keys will be set on
+the principal.
+.Pp
 If enctypes to use are not given, then the
 .Ar [libdefaults] supported_enctypes
 configuration parameter will be used on the client side to select
@@ -355,11 +372,17 @@ behavior is the default if none of these are given.
 .Op Fl t | Fl Fl terse
 .Op Fl o Ar string | Fl Fl column-info= Ns Ar string
 .Op Fl C Ar path | Fl Fl krb5-config-file= Ns Ar path
+.Op Fl Fl upto= Ns Ar number
 .Ar principal...
 .Bd -ragged -offset indent
 Lists the matching principals, short prints the result as a table,
-while long format produces a more verbose output. Which columns to
-print can be selected with the
+while long format produces a more verbose output.
+If the
+.Fl Fl upto= Ns Ar number
+option is given, then only up to that many principals will be
+listed.
+.Pp
+Which columns to print can be selected with the
 .Fl o
 option. The argument is a comma separated list of column names
 optionally appended with an equal sign
@@ -413,6 +436,9 @@ and
 .Op Fl Fl kvno= Ns Ar number
 .Op Fl Fl policy= Ns Ar policy-name
 .Op Fl Fl alias= Ns Ar alias-name
+.Op Fl Fl constrained-delegation= Ns Ar principal-name
+.Op Fl Fl pkinit-acl= Ns Ar subject-name
+.Op Fl Fl service-enctypes= Ns Ar enctype
 .Op Fl C Ar path | Fl Fl krb5-config-file= Ns Ar path
 .Ar principal...
 .Bd -ragged -offset indent
@@ -470,6 +496,30 @@ Possible attributes are:
 Attributes may be negated with a "-", e.g.,
 .Pp
 kadmin -l modify -a -disallow-proxiable user
+.Pp
+The
+.Fl Fl constrained-delegation= Ns Ar principal-name
+option is not currently implemented.
+.Pp
+The
+.Fl Fl pkinit-acl= Ns Ar subject-name
+option authorizes clients with certificates with the given
+subject distinguished name to get tickets for the principal using
+PKINIT.
+This option can be given multiple times.
+The PKINIT ACLs set with this option will replace the existing
+ones.
+.Pp
+The
+.Fl Fl service-enctypes= Ns Ar enctype
+option indicates that the service supports the given enctype
+regardless of whether the service has long-term keys of that
+enctype.
+This option can be given multiple times and will replace the
+existing set of enctypes supported by the service.
+If a service principal does not have any supported enctypes then
+the KDC will assume that it supports only the enctypes of all of
+its long-term keys.
 .Pp
 This command has the following alias:
 .Nm mod .
@@ -588,10 +638,17 @@ Heimdal format.
 .Nm init
 .Op Fl Fl realm-max-ticket-life= Ns Ar string
 .Op Fl Fl realm-max-renewable-life= Ns Ar string
+.Op Fl Fl bare
 .Ar realm
 .Bd -ragged -offset indent
-Initializes the Kerberos database with entries for a new realm. It's
-possible to have more than one realm served by one server.
+Initializes the Kerberos database with entries for a new realm.
+It's possible to have more than one realm served by one server
+with the same database.
+.Pp
+If the
+.Fl Fl bare
+option is given, then only the root krbtgt principal for that
+realm will be created.
 .Ed
 .Pp
 .Nm load
@@ -620,8 +677,20 @@ but just modifies the database with the entries in the dump file.
 .Oc
 .Op Fl Fl convert-file
 .Op Fl Fl master-key-fd= Ns Ar fd
+.Op Fl Fl random-password
 .Bd -ragged -offset indent
 Writes the Kerberos master key to a file used by the KDC.
+.Pp
+If the
+.Fl Fl convert-file
+option is given then convert an existing file to the new format.
+If the
+.Fl Fl master-key-fd= Ns Ar fd
+option is given the the password will be read from the given file
+descriptor.
+If the
+.Fl Fl random-password
+option is given then a password will be generated randomly.
 .Pp
 This command has the following alias:
 .Nm kstash .

@@ -239,7 +239,7 @@ hx509_pem_read(hx509_context context,
 	    p = strchr(buf, ':');
 	    if (p) {
 		*p++ = '\0';
-		while (isspace((int)*p))
+		while (isspace((unsigned char)*p))
 		    p++;
 		ret = hx509_pem_add_header(&headers, buf, p);
 		if (ret)

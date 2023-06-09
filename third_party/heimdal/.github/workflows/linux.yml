@@ -57,11 +57,11 @@ jobs:
                 name: [linux-clang, linux-gcc]
                 include:
                     - name: linux-clang
-                      os: ubuntu-18.04
+                      os: ubuntu-22.04
                       compiler: clang
                       cflags: ''
                     - name: linux-gcc
-                      os: ubuntu-18.04
+                      os: ubuntu-22.04
                       compiler: gcc
                       cflags: '-Wnonnull'
         steps:
@@ -74,7 +74,7 @@ jobs:
                 sudo apt-get install -y bison comerr-dev flex doxygen
                 sudo apt-get install -y libcap-ng-dev libdb-dev libedit-dev libjson-perl
                 sudo apt-get install -y libldap2-dev libncurses5-dev libperl4-corelibs-perl
-                sudo apt-get install -y libsqlite3-dev libkeyutils-dev pkg-config python
+                sudo apt-get install -y libsqlite3-dev libkeyutils-dev pkg-config python3
                 sudo apt-get install -y ss-dev texinfo unzip netbase keyutils ldap-utils
                 sudo apt-get install -y gdb apport curl libmicrohttpd-dev jq valgrind
                 # Temporary workaround for:

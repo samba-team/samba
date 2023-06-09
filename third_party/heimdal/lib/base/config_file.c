@@ -358,7 +358,7 @@ is_absolute_path(const char *path)
 
     /* A drive letter path might be absolute */
     if (len > 3
-         && isalpha(path[0])
+         && isalpha((unsigned char)path[0])
          && path[1] == ':'
          && ISPATHSEP(path[2]))
         return 1;
@@ -414,9 +414,9 @@ heim_config_parse_debug(struct fileptr *f,
             *err_message = "unmatched }";
             return 2048;
         } else if (strncmp(p, "include", sizeof("include") - 1) == 0 &&
-            isspace(p[sizeof("include") - 1])) {
+            isspace((unsigned char)p[sizeof("include") - 1])) {
             p += sizeof("include");
-            while (isspace(*p))
+            while (isspace((unsigned char)*p))
                 p++;
             if (!is_absolute_path(p)) {
                 heim_set_error_message(f->context, HEIM_ERR_CONFIG_BADFORMAT,
@@ -428,9 +428,9 @@ heim_config_parse_debug(struct fileptr *f,
             if (ret)
                 return ret;
         } else if (strncmp(p, "includedir", sizeof("includedir") - 1) == 0 &&
-            isspace(p[sizeof("includedir") - 1])) {
+            isspace((unsigned char)p[sizeof("includedir") - 1])) {
             p += sizeof("includedir");
-            while (isspace(*p))
+            while (isspace((unsigned char)*p))
                 p++;
             if (!is_absolute_path(p)) {
                 heim_set_error_message(f->context, HEIM_ERR_CONFIG_BADFORMAT,
@@ -508,7 +508,7 @@ heim_config_parse_dir_multi(heim_context context,
              * so we're safe.  Anyone changing this if condition here should
              * be aware.
              */
-            if (!isalnum(*p) && *p != '_' && *p != '-' &&
+            if (!isalnum((unsigned char)*p) && *p != '_' && *p != '-' &&
                 strcmp(p, ".conf") != 0) {
                 is_valid = 0;
                 break;
@@ -535,6 +535,22 @@ heim_config_parse_dir_multi(heim_context context,
     return 0;
 }
 
+static int
+is_devnull(struct stat *st)
+{
+#ifdef WIN32
+    return 0;
+#else
+    struct stat devnullst;
+
+    if (stat("/dev/null", &devnullst) == -1)
+        return 0;
+    return st->st_dev == devnullst.st_dev && st->st_ino == devnullst.st_ino;
+#endif
+}
+
+HEIMDAL_THREAD_LOCAL int config_include_depth = 0;
+
 /**
  * Parse a configuration file and add the result into res. This
  * interface can be used to parse several configuration files into one
@@ -547,8 +563,6 @@ heim_config_parse_dir_multi(heim_context context,
  *
  * @ingroup heim_support
  */
-
-HEIMDAL_THREAD_LOCAL int config_include_depth = 0;
 
 heim_error_code
 heim_config_parse_file_multi(heim_context context,
@@ -630,7 +644,7 @@ heim_config_parse_file_multi(heim_context context,
             goto out;
         }
 
-        if (!S_ISREG(st.st_mode)) {
+        if (!S_ISREG(st.st_mode) && !is_devnull(&st)) {
             (void) fclose(f.f);
             heim_set_error_message(context, EISDIR, "not a regular file %s: %s",
                                    fname, strerror(EISDIR));

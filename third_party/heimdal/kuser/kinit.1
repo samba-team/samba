@@ -273,6 +273,170 @@ is given,
 will set up new credentials caches, and AFS PAG, and then run the given
 command.
 When it finishes the credentials will be removed.
+.Sh CREDENTIALS CACHE TYPES
+Heimdal supports a number of credentials cache types:
+.Bl -tag -width Ds
+.It FILE
+Uses a file per-cache with a binary format common to other Kerberos
+implementations.
+.It DIR
+Uses a directory with multiple files, one per-cache in a collection.
+.It SCC
+Uses a SQLite3 database with multiple caches in the database.
+.It KEYRING
+Uses a Linux keyring.
+.It KCM
+Uses a inter-process communications (IPC) to talk to a daemon typically named
+.Nm kcm .
+.It API
+Uses KCM or else a shared object that implements the "CCAPI".
+.It MEMORY
+Uses in-process memory (which disappears on process exit, so this if of little
+use in this program,
+.Nm
+).
+.El
+.Sh CREDENTIALS CACHE COLLECTIONS
+Every credentials cache's name consists of its cache type (e.g.,
+FILE), a possibly-optional collection name, and a possibly
+optional "subsidiary" name naming a single cache in the
+collection.
+.Pp
+The convention in Heimdal is that a cache's subsidiary cache name
+is the name of the client principal whose credentials are
+expected to be stored and found in that cache, with the following
+characters replaced with a hyphen: slash, backslash, colon, and
+plus.
+.Pp
+The caches in a credentials cache collection can be listed by the
+.Xr klist 1
+command.
+The
+.Sq FILE
+credentials cache type supports listing of caches in the
+collection only when the
+.Ql enable_file_cache_iteration
+is set to
+.Ql yes
+in the
+.Ql [libdefaults]
+section of
+.Xr krb5.conf 5 .
+.Sh CREDENTIALS CACHE NAMES
+The general syntax for credentials cache names is
+.Dl TYPE:[collection-name][:subsidiary]
+except that for the FILE type it is
+.Dl FILE:collection-name[+subsidiary]
+and for the KEYRING type it is:
+.Dl KEYRING:[anchor:][collection[:subsidiary]]
+where the collection name is free-form and the anchor is one of
+.Sq process ,
+.Sq thread ,
+or
+.Sq legacy .
+.Pp
+The collection name is always absent for the
+.Ql MEMORY
+credentials cache type.
+.Pp
+When the collection name is absent then the default collection
+for the given credentials cache type is used, which are:
+.Bl -tag -compact
+.It Ql /tmp/krb5cc_{UID}
+for FILE caches, where {UID} is a numeric user ID
+.It Ql /tmp/krb5cc_{UID}_dir
+for DIR caches, where {UID} is a numeric user ID
+.It Ql /tmp/krb5scc_{UID}
+for SCC caches, where {UID} is a numeric user ID, and where the
+named file is a SQLite3 database file
+.It Ql {UID}
+for KCM caches, where {UID} is the user's numeric user ID
+.It <implementation-specific>
+for API (CCAPI) credentials caches
+.El
+.Pp
+The collection name is only optional for:
+.Ql DIR ,
+.Ql SCC ,
+.Ql KCM ,
+.Ql KEYRING
+and
+.Ql API
+credentials cache types.
+.Sh EXAMPLE CREDENTIALS CACHE NAMES
+.Bl -tag -width Ds
+.It Ql FILE:/tmp/cc
+this is a FILE cache in a file named
+.Ql /tmp/cc
+(the default would be
+.Ql /tmp/krb5cc_{UID} )
+.It Ql FILE:/tmp/cc+jane@TEST.H5L.SE
+.It Ql DIR:/tmp/ccdir
+this is a FILE cache named by
+.Ql /tmp/krb5cc_{UID}_dir/primary
+which will be of the form
+.Ql /tmp/ccdir/tkt.XXXXXX 
+.It Ql DIR:/tmp/ccdir:jane@TEST.H5L.SE
+this is a FILE ccache named
+.Ql /tmp/ccdir/tkt.jane@TEST.H5L.SE 
+.It Ql DIR::jane@TEST.H5L.SE
+this is a FILE ccache named
+.Ql /tmp/krb5cc_{UID}_dir/tkt.jane@TEST.H5L.SE
+where {UID} is the user's numeric identifier
+.It Ql SCC:
+this is the current primary cache in the SQLite3 database named
+.Ql /tmp/krb5scc_{UID}
+.It Ql SCC:/tmp/ccdb
+this is the current primary cache in the SQLite3 database named
+.Ql /tmp/ccdb
+.It Ql SCC:/tmp/ccdb:jane@TEST.H5L.SE
+this is the cache
+.Dq named jane@TEST.H5L.SE
+in the SQLite3 database
+named
+.Ql /tmp/ccdb
+.It Ql SCC::jane@TEST.H5L.SE
+this is the cache named
+.Dq jane@TEST.H5L.SE
+in the SQLite3 database named
+.Ql /tmp/krb5scc_{UID}
+.It Ql KEYRING:
+this is the primary cache in the default KEYRING collection for
+the running user
+.It Ql KEYRING:foo
+this is the primary cache in the KEYRING collection named
+.Dq foo
+.It Ql KEYRING:foo:jane@TEST.H5L.SE
+this is the cache named
+.Dq jane@TEST.H5L.SE
+in the KEYRING collection named
+.Dq foo
+.It Ql KCM:
+this is the primary cache in the default KCM collection for the
+running user
+.It Ql KCM:12345
+this is the primary cache in the default KCM collection for the
+user whose numeric identifier is 12345
+.It Ql KCM:jane@TEST.H5L.SE
+this is the cache named
+.Dq jane@TEST.H5L.SE
+in the default KCM collection for the running user
+.It Ql KCM:12345:jane@TEST.H5L.SE
+this is the cache named
+.Dq jane@TEST.H5L.SE
+in the default KCM collection for the given user
+.It Ql API:
+this is the primary cache in the default API collection for the
+running user
+.It Ql API:foo
+this is the primary cache in the API collection named
+.Dq foo
+.It Ql API:foo:jane@TEST.H5L.SE
+this is the cache named
+.Dq jane@TEST.H5L.SE
+in the KEYRING collection named
+.Dq foo
+.El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev KRB5CCNAME
@@ -290,6 +454,7 @@ the default being
 .Xr kdestroy 1 ,
 .Xr klist 1 ,
 .Xr kswitch 1 ,
+.Xr kcm 8 ,
 .Xr krb5_appdefault 3 ,
 .Xr krb5.conf 5
 .\".Sh STANDARDS

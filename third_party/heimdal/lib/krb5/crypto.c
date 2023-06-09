@@ -51,7 +51,7 @@ static void free_key_schedule(krb5_context,
 			      struct _krb5_key_data *,
 			      struct _krb5_encryption_type *);
 
-/* 
+/*
  * Converts etype to a user readable string and sets as a side effect
  * the krb5_error_message containing this string. Returns
  * KRB5_PROG_ETYPE_NOSUPP in not the conversion of the etype failed in
@@ -859,7 +859,7 @@ krb5_enctype_to_keytype(krb5_context context,
     if(e == NULL) {
         return unsupported_enctype (context, etype);
     }
-    *keytype = e->keytype->type; /* XXX */
+    *keytype = (krb5_keytype)e->keytype->type;
     return 0;
 }
 
@@ -1275,11 +1275,7 @@ decrypt_internal_derived(krb5_context context,
     }
     l = len - et->confoundersize;
     memmove(p, p + et->confoundersize, l);
-    result->data = realloc(p, l);
-    if(result->data == NULL && l != 0) {
-	free(p);
-	return krb5_enomem(context);
-    }
+    result->data = p;
     result->length = l;
     return 0;
 }
@@ -1360,11 +1356,7 @@ decrypt_internal_enc_then_cksum(krb5_context context,
 
     l = len - et->confoundersize;
     memmove(p, p + et->blocksize + et->confoundersize, l);
-    result->data = realloc(p, l);
-    if(result->data == NULL && l != 0) {
-	free(p);
-	return krb5_enomem(context);
-    }
+    result->data = p;
     result->length = l;
     return 0;
 }
@@ -1426,11 +1418,7 @@ decrypt_internal(krb5_context context,
     }
     l = len - et->confoundersize - checksum_sz;
     memmove(p, p + et->confoundersize + checksum_sz, l);
-    result->data = realloc(p, l);
-    if(result->data == NULL && l != 0) {
-	free(p);
-	return krb5_enomem(context);
-    }
+    result->data = p;
     result->length = l;
     return 0;
 }
@@ -1473,11 +1461,7 @@ decrypt_internal_special(krb5_context context,
     }
 
     memmove (p, p + cksum_sz + et->confoundersize, sz);
-    result->data = realloc(p, sz);
-    if(result->data == NULL && sz != 0) {
-	free(p);
-	return krb5_enomem(context);
-    }
+    result->data = p;
     result->length = sz;
     return 0;
 }

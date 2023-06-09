@@ -1169,7 +1169,7 @@ princ_fs_encode(const char *in)
             s[k++] = c;
             break;
         default:
-            if (isalnum(c)) {
+            if (isalnum((unsigned char)c)) {
                 s[k++] = c;
             } else  {
                 s[k++] = '%';

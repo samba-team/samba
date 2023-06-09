@@ -523,7 +523,7 @@ string_encode_sz(const char *in)
                 sz += 2;
             break;
         default:
-            if (!isalnum(c))
+            if (!isalnum((unsigned char)c))
                 sz += 2;
         }
         first = 0;

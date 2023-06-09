@@ -305,7 +305,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		s = str.data;
 		printf("\"");
 		for (n = 0; n < str.length; n++) {
-		    if (isprint((int)s[n]))
+		    if (isprint(s[n]))
 			printf ("%c", s[n]);
 		    else
 			printf ("#%02x", s[n]);

@@ -1463,8 +1463,8 @@ krb5_sname_to_principal(krb5_context context,
 
 	/* Lower-case the hostname, because that's the convention */
 	for (cp = remote_host; *cp; cp++)
-	    if (isupper((int) (*cp)))
-		*cp = tolower((int) (*cp));
+	    if (isupper((unsigned char) (*cp)))
+		*cp = tolower((unsigned char) (*cp));
 
         /*
          * If there is only one name canon rule and it says to
@@ -1530,7 +1530,7 @@ static void
 tolower_str(char *s)
 {
     for (; *s != '\0'; s++) {
-        if (isupper(*s))
+        if (isupper((unsigned char)*s))
             *s = tolower_ascii(*s);
     }
 }

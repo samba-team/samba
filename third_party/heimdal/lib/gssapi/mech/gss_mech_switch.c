@@ -542,7 +542,8 @@ gss_name_to_oid(const char *name)
 	gss_OID oid = GSS_C_NO_OID;
 	size_t namelen = strlen(name);
 
-	if (isdigit(name[0]) && _gss_string_to_oid(name, &oid) == 0)
+	if (isdigit((unsigned char)name[0]) &&
+	    _gss_string_to_oid(name, &oid) == 0)
 		return oid;
 
 	_gss_load_mech();

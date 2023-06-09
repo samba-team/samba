@@ -16,7 +16,7 @@ jobs:
                 name: [linux-clang]
                 include:
                     - name: linux-clang
-                      os: ubuntu-18.04
+                      os: ubuntu-22.04
                       compiler: clang
         steps:
             - name: Clone repository
@@ -25,7 +25,7 @@ jobs:
               if: startsWith(matrix.os, 'ubuntu')
               run: |
                 sudo apt-get update -qq
-                sudo apt-get install -y bison comerr-dev flex libcap-ng-dev libdb-dev libedit-dev libjson-perl libldap2-dev libncurses5-dev libperl4-corelibs-perl libsqlite3-dev libkeyutils-dev pkg-config python ss-dev texinfo unzip netbase keyutils ldap-utils gdb apport curl libmicrohttpd-dev clang-tools clang-format jq valgrind
+                sudo apt-get install -y bison comerr-dev flex libcap-ng-dev libdb-dev libedit-dev libjson-perl libldap2-dev libncurses5-dev libperl4-corelibs-perl libsqlite3-dev libkeyutils-dev pkg-config python3 ss-dev texinfo unzip netbase keyutils ldap-utils gdb apport curl libmicrohttpd-dev clang-tools clang-format jq valgrind
                 # Temporary workaround for:
                 # https://github.com/actions/virtual-environments/issues/3185
                 sudo hostname localhost

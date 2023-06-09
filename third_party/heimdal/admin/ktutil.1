@@ -174,5 +174,56 @@ command has a
 .Nm prune
 command that can do this on the KDC side.
 .El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev KRB5_KTNAME
+Specifies the default keytab.
+.It Ev KRB5_CONFIG
+The file name of
+.Pa krb5.conf ,
+the default being
+.Pa /etc/krb5.conf .
+.El
+.Sh KEYTAB NAMING
+The syntax for the value of the
+.Ql KRB5_KTNAME
+environment variable and
+.Oo Fl k Ar keytab \*(Ba Xo
+.Fl Fl keytab= Ns Ar keytab
+.Xc
+.Oc
+options is
+.Ql TYPE:name
+where the TYPE is one of
+.Ql FILE ,
+.Ql HDBGET ,
+.Ql HDB ,
+or
+.Ql ANY ,
+and the name syntax is specific to the keytab type.
+.Pp
+For the FILE keytab type the name is the path to a file whose
+format is the well-known keytab file format used by MIT Kerberos,
+Heimdal, Java, and others.
+.Pp
+For the HDB and HDBGET keytab types the name syntax is
+.Ql [<path>][:mkey=<path>]
+where the first path is the path to the HDB and the second path
+is the path to the master key file.
+Note that to use the HDB and HDBGET keytab types in a program
+linked with Heimdal libraries one first load the
+.Ql libhdb
+library and then register their keytab methods using
+.Xr krb5_kt_register 3 .
+Note also that
+.Nm ktutil
+does not load and register the HDB and HDBGET keytab types at
+this time.
+.Pp
+The ANY keytab type name syntax is a sequence of other keytab
+names (including their TYPE: prefix) separated by commas.
+Note that there is no escape sequence for commas in keytab names.
 .Sh SEE ALSO
 .Xr kadmin 1
+.Xr kinit 1
+.Xr krb5_kt_register 3

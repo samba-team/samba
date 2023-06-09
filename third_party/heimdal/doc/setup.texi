@@ -127,6 +127,23 @@ alternative configuration.
 env KRB5_CONFIG=$HOME/etc/krb5.conf kinit user@@REALM
 @end example
 
+@cindex KRB5CCNAME
+The Heimdal libraries and commands (and the MIT ones too), support the
+use of the environment variable @samp{KRB5CCNAME} for specifying a
+credentials cache to use.  See the @manpage{kinit,1} for details.
+
+@cindex KRB5_KTNAME
+The Heimdal libraries and commands (and the MIT ones too), support the
+use of the environment variable @samp{KRB5_KTNAME} for specifying a
+keytab file to use for server operations.  See the @manpage{kinit,1} for
+details.
+
+@cindex KRB5_CLIENT_KTNAME
+The Heimdal libraries and commands (and the MIT ones too), support the
+use of the environment variable @samp{KRB5_CLIENT_KTNAME} for specifying
+a keytab file to use for client operations.  See the @manpage{kinit,1}
+for details.
+
 @cindex GSS_MECH_CONFIG
 The GSS-API mechanism configuration file can also be changed from the
 default with the enviornment variable @samp{GSS_MECH_CONFIG}. Note that

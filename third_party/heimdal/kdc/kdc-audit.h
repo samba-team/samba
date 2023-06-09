@@ -51,6 +51,7 @@
 #define KDC_AUTH_EVENT_CLIENT_NAME_UNAUTHORIZED	7   /* couldn't map GSS/PKINIT name to principal */
 #define KDC_AUTH_EVENT_PREAUTH_FAILED		8   /* generic PA failure */
 #define KDC_AUTH_EVENT_PREAUTH_SUCCEEDED	9   /* generic (non-long term key) PA success */
+#define KDC_AUTH_EVENT_HISTORIC_LONG_TERM_KEY	10  /* PA failed to validate current long term key, but historic */
 
 /*
  * Audit keys to be queried using kdc_audit_getkv(). There are other keys
@@ -61,7 +62,10 @@
 #define KDC_REQUEST_KV_AUTH_EVENT		"#auth_event"		/* heim_number_t */
 #define KDC_REQUEST_KV_PA_NAME			"pa"			/* heim_string_t */
 #define KDC_REQUEST_KV_PA_ETYPE			"pa-etype"		/* heim_number_t */
+#define KDC_REQUEST_KV_PA_SUCCEEDED_KVNO	"pa-succeeded-kvno"	/* heim_number_t */
+#define KDC_REQUEST_KV_PA_FAILED_KVNO		"pa-failed-kvno"	/* heim_number_t */
 #define KDC_REQUEST_KV_GSS_INITIATOR		"gss_initiator"		/* heim_string_t */
 #define KDC_REQUEST_KV_PKINIT_CLIENT_CERT	"pkinit_client_cert"	/* heim_string_t */
+#define KDC_REQUEST_KV_PA_HISTORIC_KVNO		"pa-historic-kvno"	/* heim_number_t */
 
 #endif /* HEIMDAL_KDC_KDC_AUDIT_H */

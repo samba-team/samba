@@ -71,8 +71,8 @@ OM_uint32 _netlogon_import_name
 
     /* normalise name to uppercase XXX UTF-8 OK? */
     for (i = 0; i < len; i++) {
-        ((char *)name->NetbiosName.value)[i] =
-            toupper(((char *)name->NetbiosName.value)[i]);
+        ((unsigned char *)name->NetbiosName.value)[i] =
+            toupper(((unsigned char *)name->NetbiosName.value)[i]);
     }
 
     if (dnsName != NULL && dnsName[0] != '\0') {

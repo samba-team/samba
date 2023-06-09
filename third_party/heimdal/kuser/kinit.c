@@ -1640,9 +1640,13 @@ main(int argc, char **argv)
 
     ret = krb5_init_context(&context);
     if (ret == KRB5_CONFIG_BADFORMAT)
-	errx(1, "krb5_init_context failed to parse configuration file");
+	krb5_err(context, 1, ret, "Failed to parse configuration file");
+    else if (ret == EISDIR)
+        /* We use EISDIR to mean "not a regular file" */
+	krb5_errx(context, 1,
+                  "Failed to read configuration file: not a regular file");
     else if (ret)
-	errx(1, "krb5_init_context failed: %d", ret);
+	krb5_err(context, 1, ret, "Failed to read configuration file");
 
     if (getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);

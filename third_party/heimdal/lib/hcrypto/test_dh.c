@@ -260,9 +260,9 @@ str2val(const char *str, int base, size_t *len)
 
     i = 0;
     for (p = str; *p != '\0'; p++) {
-	if (isxdigit((int)*p))
+	if (isxdigit((unsigned char)*p))
 	    i++;
-	else if (isspace((int)*p))
+	else if (isspace((unsigned char)*p))
 	    ;
 	else
 	    return NULL;
@@ -277,7 +277,7 @@ str2val(const char *str, int base, size_t *len)
     i = 0;
     f = 0;
     for (rp = dst, p = str; *p != '\0'; p++) {
-	if (isxdigit((int)*p)) {
+	if (isxdigit((unsigned char)*p)) {
 	    if (!f) {
 		b[0] = *p;
 		f = 1;

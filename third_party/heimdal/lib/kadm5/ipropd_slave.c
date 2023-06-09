@@ -948,8 +948,8 @@ main(int argc, char **argv)
 	if (auth_context) {
 	    krb5_auth_con_free(context, auth_context);
 	    auth_context = NULL;
-	    get_creds(context, &ccache, master);
 	}
+        get_creds(context, &ccache, master);
         if (verbose)
             krb5_warnx(context, "authenticating to master");
 	ret = krb5_sendauth (context, &auth_context, &master_fd,

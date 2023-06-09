@@ -572,7 +572,7 @@ eval_recipe1(krb5_storage *sp, const char *typ, const char *val)
             return EINVAL;
         if (consumed < 1)
             return EINVAL;
-        while (isspace(val[consumed]))
+        while (isspace((unsigned char)val[consumed]))
             consumed++;
         if (val[consumed] != '\0')
             return EINVAL;
@@ -592,7 +592,7 @@ eval_recipe1(krb5_storage *sp, const char *typ, const char *val)
         }
         if (consumed < 1)
             return EINVAL;
-        while (isspace(val[consumed]))
+        while (isspace((unsigned char)val[consumed]))
             consumed++;
         if (val[consumed] != '\0')
             return EINVAL;
@@ -697,7 +697,7 @@ eval_recipe(char *r, int spflags)
             }
         } while (nxt);
 
-        while (isspace(*p))
+        while (isspace((unsigned char)*p))
             p++;
         if (*p == '#') {
             p = nxt;
@@ -709,7 +709,7 @@ eval_recipe(char *r, int spflags)
         val = strpbrk(p, " \t");
         if (val) {
             *(val++) = '\0';
-            while (isspace(*val))
+            while (isspace((unsigned char)*val))
                 val++;
         }
         ret = eval_recipe1(sp, typ, val);
