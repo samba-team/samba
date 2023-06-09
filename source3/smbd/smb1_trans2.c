@@ -1249,6 +1249,21 @@ static void call_trans2findfirst(connection_struct *conn,
 	return;
 }
 
+static bool smbd_dptr_name_equal(struct dptr_struct *dptr,
+				 const char *name1,
+				 const char *name2)
+{
+	bool equal;
+
+	if (dptr_case_sensitive(dptr)) {
+		equal = (strcmp(name1, name2) == 0);
+	} else {
+		equal = strequal(name1, name2);
+	}
+
+	return equal;
+}
+
 /****************************************************************************
  Reply to a TRANS2_FINDNEXT.
 ****************************************************************************/
@@ -1511,6 +1526,8 @@ static void call_trans2findnext(connection_struct *conn,
 
 	if(!continue_bit && resume_name && *resume_name) {
 		bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
+		char *last_name_sent = NULL;
+		bool sequential;
 
 		/*
 		 * Remember, name_to_8_3 is called by
@@ -1539,7 +1556,42 @@ static void call_trans2findnext(connection_struct *conn,
 		 * should already be at the correct place.
 		 */
 
-		finished = !dptr_SearchDir(fsp->dptr, resume_name);
+		last_name_sent = smbd_dirptr_get_last_name_sent(fsp->dptr);
+		sequential = smbd_dptr_name_equal(fsp->dptr,
+						  resume_name,
+						  last_name_sent);
+		if (!sequential) {
+			long offset = 0;
+			struct stat_ex st;
+			char *name = NULL;
+			bool found = false;
+
+			dptr_RewindDir(fsp->dptr);
+
+			while ((name = dptr_ReadDirName(talloc_tos(),
+							fsp->dptr,
+							&offset,
+							&st)) != NULL) {
+				found = smbd_dptr_name_equal(fsp->dptr,
+							     resume_name,
+							     name);
+				TALLOC_FREE(name);
+				if (found) {
+					break;
+				}
+			}
+
+			if (!found) {
+				/*
+				 * We got a name that used to exist
+				 * but does not anymore. Just start
+				 * from the beginning. Shown by the
+				 * "raw.search.os2 delete" smbtorture
+				 * test.
+				 */
+				dptr_RewindDir(fsp->dptr);
+			}
+		}
 	} /* end if resume_name && !continue_bit */
 
 	ask_sharemode = fsp_search_ask_sharemode(fsp);
