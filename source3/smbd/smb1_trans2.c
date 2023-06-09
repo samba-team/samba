@@ -985,8 +985,10 @@ static void call_trans2findfirst(connection_struct *conn,
 
 		ea_size = IVAL(pdata,0);
 		if (ea_size != total_data) {
-			DEBUG(4,("call_trans2findfirst: Rejecting EA request with incorrect \
-total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
+			DBG_NOTICE("Rejecting EA request with incorrect "
+				   "total_data=%d (should be %" PRIu32 ")\n",
+				   total_data,
+				   ea_size);
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			goto out;
 		}
@@ -1347,12 +1349,20 @@ static void call_trans2findnext(connection_struct *conn,
 		}
 	}
 
-	DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
-close_after_request=%d, close_if_end = %d requires_resume_key = %d \
-resume_key = %d resume name = %s continue=%d level = %d\n",
-		dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end,
-		requires_resume_key, resume_key,
-		resume_name ? resume_name : "(NULL)", continue_bit, info_level));
+	DBG_NOTICE("dirhandle = %d, max_data_bytes = %u, maxentries = %d, "
+		   "close_after_request=%d, close_if_end = %d "
+		   "requires_resume_key = %d resume_key = %d "
+		   "resume name = %s continue=%d level = %d\n",
+		   dptr_num,
+		   max_data_bytes,
+		   maxentries,
+		   close_after_request,
+		   close_if_end,
+		   requires_resume_key,
+		   resume_key,
+		   resume_name ? resume_name : "(NULL)",
+		   continue_bit,
+		   info_level);
 
 	if (!maxentries) {
 		/* W2K3 seems to treat zero as 1. */
@@ -1396,8 +1406,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
 		ea_size = IVAL(pdata,0);
 		if (ea_size != total_data) {
-			DEBUG(4,("call_trans2findnext: Rejecting EA request with incorrect \
-total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
+			DBG_NOTICE("Rejecting EA request with incorrect "
+				   "total_data=%d (should be %" PRIu32 ")\n",
+				   total_data,
+				   ea_size);
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
@@ -1589,7 +1601,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	/* Check if we can close the fsp->dptr */
 	if(close_after_request || (finished && close_if_end)) {
-		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
+		DBG_INFO("closing dptr_num = %d\n", dptr_num);
 		dptr_num = -1;
 		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
