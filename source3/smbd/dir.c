@@ -412,10 +412,10 @@ bool dptr_case_sensitive(struct dptr_struct *dptr)
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-static char *dptr_ReadDirName(TALLOC_CTX *ctx,
-			      struct dptr_struct *dptr,
-			      long *poffset,
-			      SMB_STRUCT_STAT *pst)
+char *dptr_ReadDirName(TALLOC_CTX *ctx,
+		       struct dptr_struct *dptr,
+		       long *poffset,
+		       SMB_STRUCT_STAT *pst)
 {
 	struct smb_Dir *dir_hnd = dptr->dir_hnd;
 	struct files_struct *dir_fsp = dir_hnd->fsp;
