@@ -84,7 +84,7 @@ static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
 
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
 
-static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset);
+static bool SearchDir(struct smb_Dir *dir_hnd, const char *name);
 static void SeekDir(struct smb_Dir *dirp, long offset);
 static long TellDir(struct smb_Dir *dirp);
 
@@ -533,13 +533,12 @@ ret:
 
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name)
 {
-	long offset;
 	if (!dptr->has_wild && (dptr->dir_hnd->offset == END_OF_DIRECTORY_OFFSET)) {
 		/* This is a singleton directory and we're already at the end. */
 		return False;
 	}
 
-	return SearchDir(dptr->dir_hnd, name, &offset);
+	return SearchDir(dptr->dir_hnd, name);
 }
 
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd)
@@ -1604,19 +1603,19 @@ static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset)
  Don't check for veto or invisible files.
 ********************************************************************/
 
-static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
+static bool SearchDir(struct smb_Dir *dir_hnd, const char *name)
 {
 	int i;
 	const char *entry = NULL;
 	char *talloced = NULL;
 	connection_struct *conn = dir_hnd->conn;
+	long offset = 0;
 
 	/* Search back in the name cache. */
 	if (dir_hnd->name_cache_size && dir_hnd->name_cache) {
 		for (i = dir_hnd->name_cache_index; i >= 0; i--) {
 			struct name_cache_entry *e = &dir_hnd->name_cache[i];
 			if (e->name && (dir_hnd->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
-				*poffset = e->offset;
 				SeekDir(dir_hnd, e->offset);
 				return True;
 			}
@@ -1625,7 +1624,6 @@ static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 				i > dir_hnd->name_cache_index; i--) {
 			struct name_cache_entry *e = &dir_hnd->name_cache[i];
 			if (e->name && (dir_hnd->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
-				*poffset = e->offset;
 				SeekDir(dir_hnd, e->offset);
 				return True;
 			}
@@ -1635,8 +1633,7 @@ static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 	/* Not found in the name cache. Rewind directory and start from scratch. */
 	SMB_VFS_REWINDDIR(conn, dir_hnd->dir);
 	dir_hnd->file_number = 0;
-	*poffset = START_OF_DIRECTORY_OFFSET;
-	while ((entry = ReadDirName(dir_hnd, poffset, NULL, &talloced))) {
+	while ((entry = ReadDirName(dir_hnd, &offset, NULL, &talloced))) {
 		if (dir_hnd->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
 			TALLOC_FREE(talloced);
 			return True;
