@@ -36,6 +36,7 @@ zypper --non-interactive install \
     glib2-devel \
     glibc-locale \
     glusterfs-devel \
+    gnutls \
     gnutls-devel \
     gpgme-devel \
     gzip \

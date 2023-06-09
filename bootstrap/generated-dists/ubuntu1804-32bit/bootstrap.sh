@@ -31,6 +31,7 @@ apt-get -y install \
     gdb \
     git \
     glusterfs-common \
+    gnutls-bin \
     gzip \
     heimdal-multidev \
     hostname \

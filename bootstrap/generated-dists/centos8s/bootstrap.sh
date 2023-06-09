@@ -45,6 +45,7 @@ yum install -y \
     glusterfs-api-devel \
     glusterfs-devel \
     gnutls-devel \
+    gnutls-utils \
     gpgme-devel \
     gzip \
     hostname \
