@@ -17,10 +17,8 @@
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_hide_client_names.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_armor_enc_pa_rep.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_enc_pa_rep.ad_dc
-^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fx_cookie_fast.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fx_cookie_no_fast.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_enc_pa_rep.ad_dc
-^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_unsolicited_fx_cookie_preauth.ad_dc
 #
 # S4U tests
 #

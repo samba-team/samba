@@ -52,8 +52,6 @@ struct samba_kdc_db_context {
 	unsigned int my_krbtgt_number;
 	struct ldb_dn *krbtgt_dn;
 	struct samba_kdc_policy policy;
-	struct ldb_dn *fx_cookie_dn;
-	struct ldb_context *secrets_db;
 };
 
 struct samba_kdc_entry {

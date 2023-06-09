@@ -425,6 +425,35 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	 */
 	kdc_config->enable_fast = lpcfg_kdc_enable_fast(task->lp_ctx);
 
+	{
+		static const char *dummy_string = "Microsoft";
+
+		/*
+		 * The FAST cookie is not cryptographically required,
+		 * provided that the non-AD gss-preauth authentication
+		 * method is removed (as this is the only multi-step
+		 * authentication method).
+		 *
+		 * gss-preauth has been disabled both by not being
+		 * configured and by being made dependent
+		 * configuration for a "real" fast cookie.
+		 *
+		 * The hide_client_names feature in Heimdal is the
+		 * only other state that is persisted in the cookie,
+		 * and this does not need to be in the cookie for
+		 * single-shot authentication protocols such as ENC-TS
+		 * and ENC-CHAL, the standard password protocols in
+		 * AD.
+		 *
+		 * Furthermore, the Heimdal KDC does not fail if the
+		 * client does not supply a FAST cookie, showing that
+		 * the presence of the cookie is not required.
+		 */
+		kdc_config->enable_fast_cookie = false;
+		kdc_config->dummy_fast_cookie = smb_krb5_make_data(discard_const_p(char, dummy_string),
+								   strlen(dummy_string));
+	}
+
 	/*
 	 * Match Windows and RFC6113 and Windows but break older
 	 * Heimdal clients.

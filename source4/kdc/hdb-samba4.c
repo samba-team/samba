@@ -119,125 +119,12 @@ static void hdb_samba4_free_entry_context(krb5_context context, struct HDB *db, 
 	}
 }
 
-static int hdb_samba4_fill_fast_cookie(krb5_context context,
-				       struct samba_kdc_db_context *kdc_db_ctx)
-{
-	struct ldb_message *msg = ldb_msg_new(kdc_db_ctx);
-	int ldb_ret;
-
-	uint8_t secretbuffer[32];
-	struct ldb_val val = data_blob_const(secretbuffer,
-					     sizeof(secretbuffer));
-
-	if (msg == NULL) {
-		DBG_ERR("Failed to allocate msg for new fast cookie\n");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* Fill in all the keys with the same secret */
-	generate_secret_buffer(secretbuffer,
-			       sizeof(secretbuffer));
-
-	msg->dn = kdc_db_ctx->fx_cookie_dn;
-
-	ldb_ret = ldb_msg_add_value(msg, "secret", &val, NULL);
-
-	if (ldb_ret != LDB_SUCCESS) {
-		return ldb_ret;
-	}
-
-	ldb_ret = ldb_add(kdc_db_ctx->secrets_db,
-			  msg);
-	if (ldb_ret != LDB_SUCCESS) {
-		DBG_ERR("Failed to add fast cookie to ldb: %s\n",
-			ldb_errstring(kdc_db_ctx->secrets_db));
-	}
-	return ldb_ret;
-}
-
 static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
 						    hdb_entry *entry)
 {
-	krb5_error_code ret = SDB_ERR_NOENTRY;
-	TALLOC_CTX *mem_ctx;
-	struct ldb_result *res;
-	int ldb_ret;
-	struct sdb_entry sentry = {};
-	const char *attrs[] = {
-		"secret",
-		NULL
-	};
-	const struct ldb_val *val;
-
-	mem_ctx = talloc_named(kdc_db_ctx, 0, "hdb_samba4_fetch_fast_cookie context");
-	if (!mem_ctx) {
-		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "hdb_samba4_fetch_fast_cookie: talloc_named() failed!");
-		return ret;
-	}
-
-	/* search for CN=FX-COOKIE */
-	ldb_ret = ldb_search(kdc_db_ctx->secrets_db,
-			     mem_ctx,
-			     &res,
-			     kdc_db_ctx->fx_cookie_dn,
-			     LDB_SCOPE_BASE,
-			     attrs, NULL);
-
-	if (ldb_ret == LDB_ERR_NO_SUCH_OBJECT || res->count == 0) {
-
-		ldb_ret = hdb_samba4_fill_fast_cookie(context,
-						      kdc_db_ctx);
-
-		if (ldb_ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
-			return HDB_ERR_NO_WRITE_SUPPORT;
-		}
-
-		/* search for CN=FX-COOKIE */
-		ldb_ret = ldb_search(kdc_db_ctx->secrets_db,
-				     mem_ctx,
-				     &res,
-				     kdc_db_ctx->fx_cookie_dn,
-				     LDB_SCOPE_BASE,
-				     attrs, NULL);
-
-		if (ldb_ret != LDB_SUCCESS || res->count != 1) {
-			TALLOC_FREE(mem_ctx);
-			return HDB_ERR_NOENTRY;
-		}
-	}
-
-	val = ldb_msg_find_ldb_val(res->msgs[0],
-				   "secret");
-	if (val == NULL || val->length != 32) {
-		TALLOC_FREE(mem_ctx);
-		return HDB_ERR_NOENTRY;
-	}
-
-
-	ret = krb5_make_principal(context,
-				  &sentry.principal,
-				  KRB5_WELLKNOWN_ORG_H5L_REALM,
-				  KRB5_WELLKNOWN_NAME, "org.h5l.fast-cookie",
-				  NULL);
-	if (ret) {
-		TALLOC_FREE(mem_ctx);
-		return ret;
-	}
-
-	ret = samba_kdc_set_fixed_keys(context, val, ENC_ALL_TYPES,
-				       &sentry.keys);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ret = sdb_entry_to_hdb_entry(context, &sentry, entry);
-	sdb_entry_free(&sentry);
-	TALLOC_FREE(mem_ctx);
-
-	return ret;
+	DBG_ERR("Looked up HDB entry for unsupported FX-COOKIE.\n");
+	return HDB_ERR_NOENTRY;
 }
 
 static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,

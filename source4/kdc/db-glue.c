@@ -3536,25 +3536,6 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	/* Setup the link to secrets.ldb */
-
-	kdc_db_ctx->secrets_db = secrets_db_connect(kdc_db_ctx,
-						    base_ctx->lp_ctx);
-	if (kdc_db_ctx->secrets_db == NULL) {
-		DEBUG(1, ("samba_kdc_setup_db_ctx: "
-			  "Cannot open secrets.ldb for KDC backend!"));
-		talloc_free(kdc_db_ctx);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	kdc_db_ctx->fx_cookie_dn = ldb_dn_new(kdc_db_ctx,
-					      kdc_db_ctx->secrets_db,
-					      "CN=FX Cookie");
-	if (kdc_db_ctx->fx_cookie_dn == NULL) {
-		talloc_free(kdc_db_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Setup the link to LDB */
 	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx,
 					  base_ctx->ev_ctx,
