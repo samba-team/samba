@@ -371,14 +371,6 @@ void dptr_RewindDir(struct dptr_struct *dptr)
 	TALLOC_FREE(dptr->overflow.smb_fname);
 }
 
-void dptr_SeekDir(struct dptr_struct *dptr, long offset)
-{
-	SeekDir(dptr->dir_hnd, offset);
-	dptr->did_stat = false;
-	TALLOC_FREE(dptr->overflow.fname);
-	TALLOC_FREE(dptr->overflow.smb_fname);
-}
-
 long dptr_TellDir(struct dptr_struct *dptr)
 {
 	return TellDir(dptr->dir_hnd);
