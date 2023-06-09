@@ -1147,8 +1147,9 @@ static void call_trans2findfirst(connection_struct *conn,
 			}
 		}
 
-		if (!finished && !out_of_space)
+		if (!finished && !out_of_space) {
 			numentries++;
+		}
 
 		/*
 		 * As an optimisation if we know we aren't looking
@@ -1157,8 +1158,9 @@ static void call_trans2findfirst(connection_struct *conn,
 		 * This speeds up large directory searches. JRA.
 		 */
 
-		if(got_exact_match)
-			finished = True;
+		if (got_exact_match) {
+			finished = true;
+		}
 
 		/* Ensure space_remaining never goes -ve. */
 		if (PTR_DIFF(p,pdata) > max_data_bytes) {
@@ -1577,8 +1579,9 @@ static void call_trans2findnext(connection_struct *conn,
 			}
 		}
 
-		if (!finished && !out_of_space)
+		if (!finished && !out_of_space) {
 			numentries++;
+		}
 
 		/*
 		 * As an optimisation if we know we aren't looking
@@ -1587,8 +1590,9 @@ static void call_trans2findnext(connection_struct *conn,
 		 * This speeds up large directory searches. JRA.
 		 */
 
-		if(got_exact_match)
-			finished = True;
+		if (got_exact_match) {
+			finished = true;
+		}
 
 		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
 	}
