@@ -601,9 +601,10 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   long *_prev_offset)
 {
 	connection_struct *conn = dirptr->conn;
+	struct smb_Dir *dir_hnd = dirptr->dir_hnd;
 	size_t slashlen;
 	size_t pathlen;
-	const char *dpath = dirptr->dir_hnd->dir_smb_fname->base_name;
+	const char *dpath = dir_hnd->dir_smb_fname->base_name;
 	bool dirptr_path_is_dot = ISDOT(dpath);
 	NTSTATUS status;
 	int ret;
@@ -633,10 +634,12 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		prev_offset = cur_offset;
 		dname = dptr_ReadDirName(ctx, dirptr, &cur_offset, &sbuf);
 
-		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%ld] => dname [%s]\n",
-			  smb_fname_str_dbg(dirptr->dir_hnd->dir_smb_fname),
+		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%ld] => "
+			  "dname [%s]\n",
+			  smb_fname_str_dbg(dir_hnd->dir_smb_fname),
 			  (long)dirptr,
-			  cur_offset, dname ? dname : "(finished)");
+			  cur_offset,
+			  dname ? dname : "(finished)");
 
 		if (dname == NULL) {
 			return false;
@@ -695,13 +698,12 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		/* Create smb_fname with NULL stream_name. */
-		smb_fname = synthetic_smb_fname(
-			talloc_tos(),
-			pathreal,
-			NULL,
-			&sbuf,
-			dirptr->dir_hnd->dir_smb_fname->twrp,
-			dirptr->dir_hnd->dir_smb_fname->flags);
+		smb_fname = synthetic_smb_fname(talloc_tos(),
+						pathreal,
+						NULL,
+						&sbuf,
+						dir_hnd->dir_smb_fname->twrp,
+						dir_hnd->dir_smb_fname->flags);
 		TALLOC_FREE(pathreal);
 		if (smb_fname == NULL) {
 			TALLOC_FREE(dname);
@@ -726,13 +728,12 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		/* Create smb_fname with NULL stream_name. */
-		atname = synthetic_smb_fname(
-			talloc_tos(),
-			dname,
-			NULL,
-			&smb_fname->st,
-			dirptr->dir_hnd->dir_smb_fname->twrp,
-			dirptr->dir_hnd->dir_smb_fname->flags);
+		atname = synthetic_smb_fname(talloc_tos(),
+					     dname,
+					     NULL,
+					     &smb_fname->st,
+					     dir_hnd->dir_smb_fname->twrp,
+					     dir_hnd->dir_smb_fname->flags);
 		if (atname == NULL) {
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
@@ -751,7 +752,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		 * when hitting a symlink and ensures we always return directory
 		 * entries that are symlinks in POSIX context.
 		 */
-		status = openat_pathref_fsp(dirptr->dir_hnd->fsp, atname);
+		status = openat_pathref_fsp(dir_hnd->fsp, atname);
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
 		{
@@ -823,7 +824,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		ok = mode_fn(ctx,
 			     private_data,
-			     dirptr->dir_hnd->fsp,
+			     dir_hnd->fsp,
 			     atname,
 			     smb_fname,
 			     get_dosmode,
@@ -904,7 +905,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			 * continues from the next position (unless it's told to
 			 * restart or close-and-reopen the listing).
 			 */
-			DirCacheAdd(dirptr->dir_hnd, dname, cur_offset);
+			DirCacheAdd(dir_hnd, dname, cur_offset);
 		}
 
 		TALLOC_FREE(dname);
