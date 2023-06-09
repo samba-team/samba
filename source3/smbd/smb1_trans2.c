@@ -1508,7 +1508,6 @@ static void call_trans2findnext(connection_struct *conn,
 	 */
 
 	if(!continue_bit && resume_name && *resume_name) {
-		SMB_STRUCT_STAT st;
 		bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 
 		long current_pos = 0;
@@ -1539,7 +1538,8 @@ static void call_trans2findnext(connection_struct *conn,
 		 * should already be at the correct place.
 		 */
 
-		finished = !dptr_SearchDir(fsp->dptr, resume_name, &current_pos, &st);
+		finished =
+			!dptr_SearchDir(fsp->dptr, resume_name, &current_pos);
 	} /* end if resume_name && !continue_bit */
 
 	ask_sharemode = fsp_search_ask_sharemode(fsp);

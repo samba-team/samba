@@ -200,7 +200,7 @@ int dptr_dnum(struct dptr_struct *dptr);
 bool dptr_get_priv(struct dptr_struct *dptr);
 void dptr_set_priv(struct dptr_struct *dptr);
 bool dptr_case_sensitive(struct dptr_struct *dptr);
-bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
+bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset);
 struct smb_Dir;
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
 files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,

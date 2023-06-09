@@ -531,10 +531,8 @@ ret:
  Search for a file by name.
 ****************************************************************************/
 
-bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
+bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset)
 {
-	SET_STAT_INVALID(*pst);
-
 	if (!dptr->has_wild && (dptr->dir_hnd->offset == END_OF_DIRECTORY_OFFSET)) {
 		/* This is a singleton directory and we're already at the end. */
 		*poffset = END_OF_DIRECTORY_OFFSET;
