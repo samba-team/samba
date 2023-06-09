@@ -712,23 +712,6 @@ err:
 	return NULL;
 }
 
-static void um_seekdir(vfs_handle_struct *handle,
-		       DIR *dirp,
-		       long offset)
-{
-	DEBUG(10, ("Entering and leaving um_seekdir\n"));
-	SMB_VFS_NEXT_SEEKDIR(handle,
-			     ((um_dirinfo_struct*)dirp)->dirstream, offset);
-}
-
-static long um_telldir(vfs_handle_struct *handle,
-		       DIR *dirp)
-{
-	DEBUG(10, ("Entering and leaving um_telldir\n"));
-	return SMB_VFS_NEXT_TELLDIR(handle,
-				    ((um_dirinfo_struct*)dirp)->dirstream);
-}
-
 static void um_rewinddir(vfs_handle_struct *handle,
 			 DIR *dirp)
 {
@@ -1516,8 +1499,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 
 	.fdopendir_fn = um_fdopendir,
 	.readdir_fn = um_readdir,
-	.seekdir_fn = um_seekdir,
-	.telldir_fn = um_telldir,
 	.rewind_dir_fn = um_rewinddir,
 	.mkdirat_fn = um_mkdirat,
 	.closedir_fn = um_closedir,

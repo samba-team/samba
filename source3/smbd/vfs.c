@@ -1498,20 +1498,6 @@ struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 	return handle->fns->readdir_fn(handle, dirfsp, dirp, sbuf);
 }
 
-void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
-			  DIR *dirp, long offset)
-{
-	VFS_FIND(seekdir);
-	handle->fns->seekdir_fn(handle, dirp, offset);
-}
-
-long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
-			  DIR *dirp)
-{
-	VFS_FIND(telldir);
-	return handle->fns->telldir_fn(handle, dirp);
-}
-
 void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 			     DIR *dirp)
 {

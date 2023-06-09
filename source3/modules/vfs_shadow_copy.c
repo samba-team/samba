@@ -139,21 +139,6 @@ static struct dirent *shadow_copy_readdir(vfs_handle_struct *handle,
 	return NULL;
 }
 
-static void shadow_copy_seekdir(struct vfs_handle_struct *handle, DIR *_dirp, long offset)
-{
-	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
-
-	if (offset < dirp->num) {
-		dirp->pos = offset ;
-	}
-}
-
-static long shadow_copy_telldir(struct vfs_handle_struct *handle, DIR *_dirp)
-{
-	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
-	return( dirp->pos ) ;
-}
-
 static void shadow_copy_rewinddir(struct vfs_handle_struct *handle, DIR *_dirp)
 {
 	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
@@ -261,8 +246,6 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 static struct vfs_fn_pointers vfs_shadow_copy_fns = {
 	.fdopendir_fn = shadow_copy_fdopendir,
 	.readdir_fn = shadow_copy_readdir,
-	.seekdir_fn = shadow_copy_seekdir,
-	.telldir_fn = shadow_copy_telldir,
 	.rewind_dir_fn = shadow_copy_rewinddir,
 	.closedir_fn = shadow_copy_closedir,
 	.get_shadow_copy_data_fn = shadow_copy_get_shadow_copy_data,

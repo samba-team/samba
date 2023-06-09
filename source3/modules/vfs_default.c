@@ -657,22 +657,6 @@ static NTSTATUS vfswrap_freaddir_attr(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-static void vfswrap_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
-{
-	START_PROFILE(syscall_seekdir);
-	seekdir(dirp, offset);
-	END_PROFILE(syscall_seekdir);
-}
-
-static long vfswrap_telldir(vfs_handle_struct *handle, DIR *dirp)
-{
-	long result;
-	START_PROFILE(syscall_telldir);
-	result = telldir(dirp);
-	END_PROFILE(syscall_telldir);
-	return result;
-}
-
 static void vfswrap_rewinddir(vfs_handle_struct *handle, DIR *dirp)
 {
 	START_PROFILE(syscall_rewinddir);
@@ -4066,8 +4050,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fdopendir_fn = vfswrap_fdopendir,
 	.readdir_fn = vfswrap_readdir,
 	.freaddir_attr_fn = vfswrap_freaddir_attr,
-	.seekdir_fn = vfswrap_seekdir,
-	.telldir_fn = vfswrap_telldir,
 	.rewind_dir_fn = vfswrap_rewinddir,
 	.mkdirat_fn = vfswrap_mkdirat,
 	.closedir_fn = vfswrap_closedir,

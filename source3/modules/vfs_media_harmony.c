@@ -952,31 +952,6 @@ out:
  * Success: no success result defined.
  * Failure: no failure result defined.
  */
-static void mh_seekdir(vfs_handle_struct *handle,
-		DIR *dirp,
-		long offset)
-{
-	DEBUG(MH_INFO_DEBUG, ("Entering and leaving mh_seekdir\n"));
-	SMB_VFS_NEXT_SEEKDIR(handle,
-			((mh_dirinfo_struct*)dirp)->dirstream, offset);
-}
-
-/*
- * Success: return long
- * Failure: no failure result defined.
- */
-static long mh_telldir(vfs_handle_struct *handle,
-		DIR *dirp)
-{
-	DEBUG(MH_INFO_DEBUG, ("Entering and leaving mh_telldir\n"));
-	return SMB_VFS_NEXT_TELLDIR(handle,
-			((mh_dirinfo_struct*)dirp)->dirstream);
-}
-
-/*
- * Success: no success result defined.
- * Failure: no failure result defined.
- */
 static void mh_rewinddir(vfs_handle_struct *handle,
 		DIR *dirp)
 {
@@ -1845,8 +1820,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 
 	.fdopendir_fn = mh_fdopendir,
 	.readdir_fn = mh_readdir,
-	.seekdir_fn = mh_seekdir,
-	.telldir_fn = mh_telldir,
 	.rewind_dir_fn = mh_rewinddir,
 	.mkdirat_fn = mh_mkdirat,
 	.closedir_fn = mh_closedir,

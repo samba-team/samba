@@ -467,21 +467,6 @@ static struct dirent *cephwrap_readdir(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static void cephwrap_seekdir(struct vfs_handle_struct *handle, DIR *dirp, long offset)
-{
-	DBG_DEBUG("[CEPH] seekdir(%p, %p, %ld)\n", handle, dirp, offset);
-	ceph_seekdir(handle->data, (struct ceph_dir_result *) dirp, offset);
-}
-
-static long cephwrap_telldir(struct vfs_handle_struct *handle, DIR *dirp)
-{
-	long ret;
-	DBG_DEBUG("[CEPH] telldir(%p, %p)\n", handle, dirp);
-	ret = ceph_telldir(handle->data, (struct ceph_dir_result *) dirp);
-	DBG_DEBUG("[CEPH] telldir(...) = %ld\n", ret);
-	WRAP_RETURN(ret);
-}
-
 static void cephwrap_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	DBG_DEBUG("[CEPH] rewinddir(%p, %p)\n", handle, dirp);
@@ -1725,8 +1710,6 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	.fdopendir_fn = cephwrap_fdopendir,
 	.readdir_fn = cephwrap_readdir,
-	.seekdir_fn = cephwrap_seekdir,
-	.telldir_fn = cephwrap_telldir,
 	.rewind_dir_fn = cephwrap_rewinddir,
 	.mkdirat_fn = cephwrap_mkdirat,
 	.closedir_fn = cephwrap_closedir,

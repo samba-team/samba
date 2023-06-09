@@ -163,16 +163,6 @@ static struct dirent *skel_readdir(vfs_handle_struct *handle,
 	return NULL;
 }
 
-static void skel_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
-{
-	;
-}
-
-static long skel_telldir(vfs_handle_struct *handle, DIR *dirp)
-{
-	return (long)-1;
-}
-
 static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 {
 	;
@@ -993,8 +983,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 
 	.fdopendir_fn = skel_fdopendir,
 	.readdir_fn = skel_readdir,
-	.seekdir_fn = skel_seekdir,
-	.telldir_fn = skel_telldir,
 	.rewind_dir_fn = skel_rewind_dir,
 	.mkdirat_fn = skel_mkdirat,
 	.closedir_fn = skel_closedir,

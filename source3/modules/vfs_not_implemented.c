@@ -176,19 +176,6 @@ struct dirent *vfs_not_implemented_readdir(vfs_handle_struct *handle,
 }
 
 _PUBLIC_
-void vfs_not_implemented_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
-{
-	;
-}
-
-_PUBLIC_
-long vfs_not_implemented_telldir(vfs_handle_struct *handle, DIR *dirp)
-{
-	errno = ENOSYS;
-	return (long)-1;
-}
-
-_PUBLIC_
 void vfs_not_implemented_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 {
 	;
@@ -1092,8 +1079,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 
 	.fdopendir_fn = vfs_not_implemented_fdopendir,
 	.readdir_fn = vfs_not_implemented_readdir,
-	.seekdir_fn = vfs_not_implemented_seekdir,
-	.telldir_fn = vfs_not_implemented_telldir,
 	.rewind_dir_fn = vfs_not_implemented_rewind_dir,
 	.mkdirat_fn = vfs_not_implemented_mkdirat,
 	.closedir_fn = vfs_not_implemented_closedir,

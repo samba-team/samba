@@ -508,42 +508,6 @@ static struct dirent *smb_time_audit_readdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static void smb_time_audit_seekdir(vfs_handle_struct *handle,
-				   DIR *dirp, long offset)
-{
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log("seekdir", timediff);
-	}
-
-}
-
-static long smb_time_audit_telldir(vfs_handle_struct *handle,
-				   DIR *dirp)
-{
-	long result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_TELLDIR(handle, dirp);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log("telldir", timediff);
-	}
-
-	return result;
-}
-
 static void smb_time_audit_rewinddir(vfs_handle_struct *handle,
 				     DIR *dirp)
 {
@@ -2749,8 +2713,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.read_dfs_pathat_fn = smb_time_audit_read_dfs_pathat,
 	.fdopendir_fn = smb_time_audit_fdopendir,
 	.readdir_fn = smb_time_audit_readdir,
-	.seekdir_fn = smb_time_audit_seekdir,
-	.telldir_fn = smb_time_audit_telldir,
 	.rewind_dir_fn = smb_time_audit_rewinddir,
 	.mkdirat_fn = smb_time_audit_mkdirat,
 	.closedir_fn = smb_time_audit_closedir,

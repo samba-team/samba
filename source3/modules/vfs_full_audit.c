@@ -110,8 +110,6 @@ typedef enum _vfs_op_type {
 
 	SMB_VFS_OP_FDOPENDIR,
 	SMB_VFS_OP_READDIR,
-	SMB_VFS_OP_SEEKDIR,
-	SMB_VFS_OP_TELLDIR,
 	SMB_VFS_OP_REWINDDIR,
 	SMB_VFS_OP_MKDIRAT,
 	SMB_VFS_OP_CLOSEDIR,
@@ -250,8 +248,6 @@ static struct {
 	{ SMB_VFS_OP_READ_DFS_PATHAT,	"read_dfs_pathat" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
-	{ SMB_VFS_OP_SEEKDIR,   "seekdir" },
-	{ SMB_VFS_OP_TELLDIR,   "telldir" },
 	{ SMB_VFS_OP_REWINDDIR, "rewinddir" },
 	{ SMB_VFS_OP_MKDIRAT,	"mkdirat" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
@@ -1030,26 +1026,6 @@ static struct dirent *smb_full_audit_readdir(vfs_handle_struct *handle,
 	 * (End of dir is also failure), so always succeed.
 	 */
 	do_log(SMB_VFS_OP_READDIR, True, handle, "");
-
-	return result;
-}
-
-static void smb_full_audit_seekdir(vfs_handle_struct *handle,
-			DIR *dirp, long offset)
-{
-	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
-
-	do_log(SMB_VFS_OP_SEEKDIR, True, handle, "");
-}
-
-static long smb_full_audit_telldir(vfs_handle_struct *handle,
-			DIR *dirp)
-{
-	long result;
-
-	result = SMB_VFS_NEXT_TELLDIR(handle, dirp);
-
-	do_log(SMB_VFS_OP_TELLDIR, True, handle, "");
 
 	return result;
 }
@@ -2946,8 +2922,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.read_dfs_pathat_fn = smb_full_audit_read_dfs_pathat,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,
-	.seekdir_fn = smb_full_audit_seekdir,
-	.telldir_fn = smb_full_audit_telldir,
 	.rewind_dir_fn = smb_full_audit_rewinddir,
 	.mkdirat_fn = smb_full_audit_mkdirat,
 	.closedir_fn = smb_full_audit_closedir,

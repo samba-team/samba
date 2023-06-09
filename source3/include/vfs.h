@@ -378,9 +378,11 @@
  * Change to Version 48 - will ship with 4.18
  * Version 48 - Add cached_dos_attributes to struct stat_ex
  * Version 48 - Add dirfsp to connectpath_fn()
+ * Change to Version 49 - will ship with 4.19
+ * Version 49 - remove seekdir and telldir
  */
 
-#define SMB_VFS_INTERFACE_VERSION 48
+#define SMB_VFS_INTERFACE_VERSION 49
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -967,8 +969,6 @@ struct vfs_fn_pointers {
 				     struct files_struct *dirfsp,
 				     DIR *dirp,
 				     SMB_STRUCT_STAT *sbuf);
-	void (*seekdir_fn)(struct vfs_handle_struct *handle, DIR *dirp, long offset);
-	long (*telldir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	void (*rewind_dir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	int (*mkdirat_fn)(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
@@ -1464,10 +1464,6 @@ struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 				    struct files_struct *dirfsp,
 				    DIR *dirp,
 				    SMB_STRUCT_STAT *sbuf);
-void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
-			  DIR *dirp, long offset);
-long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
-			  DIR *dirp);
 void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 			     DIR *dirp);
 int smb_vfs_call_mkdirat(struct vfs_handle_struct *handle,
@@ -1910,8 +1906,6 @@ struct dirent *vfs_not_implemented_readdir(vfs_handle_struct *handle,
 					   struct files_struct *dirfsp,
 					   DIR *dirp,
 					   SMB_STRUCT_STAT *sbuf);
-void vfs_not_implemented_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset);
-long vfs_not_implemented_telldir(vfs_handle_struct *handle, DIR *dirp);
 void vfs_not_implemented_rewind_dir(vfs_handle_struct *handle, DIR *dirp);
 int vfs_not_implemented_mkdirat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,

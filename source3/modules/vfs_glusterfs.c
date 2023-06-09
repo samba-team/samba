@@ -681,25 +681,6 @@ static struct dirent *vfs_gluster_readdir(struct vfs_handle_struct *handle,
 	return dirent;
 }
 
-static long vfs_gluster_telldir(struct vfs_handle_struct *handle, DIR *dirp)
-{
-	long ret;
-
-	START_PROFILE(syscall_telldir);
-	ret = glfs_telldir((void *)dirp);
-	END_PROFILE(syscall_telldir);
-
-	return ret;
-}
-
-static void vfs_gluster_seekdir(struct vfs_handle_struct *handle, DIR *dirp,
-				long offset)
-{
-	START_PROFILE(syscall_seekdir);
-	glfs_seekdir((void *)dirp, offset);
-	END_PROFILE(syscall_seekdir);
-}
-
 static void vfs_gluster_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	START_PROFILE(syscall_rewinddir);
@@ -2608,8 +2589,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	.fdopendir_fn = vfs_gluster_fdopendir,
 	.readdir_fn = vfs_gluster_readdir,
-	.seekdir_fn = vfs_gluster_seekdir,
-	.telldir_fn = vfs_gluster_telldir,
 	.rewind_dir_fn = vfs_gluster_rewinddir,
 	.mkdirat_fn = vfs_gluster_mkdirat,
 	.closedir_fn = vfs_gluster_closedir,

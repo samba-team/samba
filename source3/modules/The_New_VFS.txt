@@ -347,7 +347,6 @@ Table of Contents
    SMB_VFS_REMOVEXATTR()              [Path]      -
    SMB_VFS_RENAMEAT()                 [Path]      -
    SMB_VFS_REWINDDIR()                [fsp]       -
-   SMB_VFS_SEEKDIR()                  [fsp]       -
    SMB_VFS_SENDFILE()                 [fsp]       -
    SMB_VFS_SET_COMPRESSION()          [fsp]       -
    SMB_VFS_SET_DOS_ATTRIBUTES()       [Path]      -
@@ -367,7 +366,6 @@ Table of Contents
    SMB_VFS_SYS_ACL_GET_FD()           [xpathref]  -
    SMB_VFS_SYS_ACL_GET_FILE()         [Path]      -
    SMB_VFS_SYS_ACL_SET_FD()           [xpathref]  -
-   SMB_VFS_TELLDIR()                  [fsp]       -
    SMB_VFS_TRANSLATE_NAME()           [P2px]      -
    SMB_VFS_UNLINKAT()                 [NsC]       -
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -469,11 +467,9 @@ Table of Contents
   • SMB_VFS_READDIR()
   • SMB_VFS_RECVFILE()
   • SMB_VFS_REWINDDIR()
-  • SMB_VFS_SEEKDIR()
   • SMB_VFS_SENDFILE()
   • SMB_VFS_SET_COMPRESSION()
   • SMB_VFS_STRICT_LOCK_CHECK()
-  • SMB_VFS_TELLDIR()
 
   If an fsp is provided by the SMB layer we use that, otherwise we use the
   pathref fsp `smb_fname->fsp' provided by `filename_convert()'.

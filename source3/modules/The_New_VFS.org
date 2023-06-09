@@ -260,7 +260,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_LSTAT()                   | [[Path][Path]]     | Todo   |
 | SMB_VFS_MKDIRAT()                 | [[NsC][NsC]]      | -      |
 | SMB_VFS_MKNODAT()                 | [[NsC][NsC]]      | -      |
-| SMB_VFS_NTIMES()                  | [[Path][Path]]    | -      |
+| SMB_VFS_NTIMES()                  | [[Path][Path]]     | -      |
 | SMB_VFS_OFFLOAD_READ_RECV()       | [[fsp][fsp]]      | -      |
 | SMB_VFS_OFFLOAD_READ_SEND()       | [[fsp][fsp]]      | -      |
 | SMB_VFS_OFFLOAD_WRITE_RECV()      | [[fsp][fsp]]      | -      |
@@ -272,14 +272,13 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_PWRITE_SEND()             | [[fsp][fsp]]      | -      |
 | SMB_VFS_READ_DFS_PATHAT()         | [[Symlink][Symlink]]  | -      |
 | SMB_VFS_READDIR()                 | [[fsp][fsp]]      | -      |
-| SMB_VFS_READDIR_ATTR()            | [[Path][Path]]    | -      |
+| SMB_VFS_READDIR_ATTR()            | [[Path][Path]]     | -      |
 | SMB_VFS_READLINKAT()              | [[Symlink][Symlink]]  | -      |
 | SMB_VFS_REALPATH()                | [[P2px][P2px]]     | -      |
 | SMB_VFS_RECVFILE()                | [[fsp][fsp]]      | -      |
 | SMB_VFS_REMOVEXATTR()             | [[Path][Path]]     | -      |
 | SMB_VFS_RENAMEAT()                | [[Path][Path]]     | ----   |
 | SMB_VFS_REWINDDIR()               | [[fsp][fsp]]      | -      |
-| SMB_VFS_SEEKDIR()                 | [[fsp][fsp]]      | -      |
 | SMB_VFS_SENDFILE()                | [[fsp][fsp]]      | -      |
 | SMB_VFS_SET_COMPRESSION()         | [[fsp][fsp]]      | -      |
 | SMB_VFS_SET_DOS_ATTRIBUTES()      | [[Path][Path]]     | -      |
@@ -299,7 +298,6 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_SYS_ACL_GET_FD()          | [[xpathref][xpathref]] | -      |
 | SMB_VFS_SYS_ACL_GET_FILE()        | [[Path][Path]]     | -      |
 | SMB_VFS_SYS_ACL_SET_FD()          | [[xpathref][xpathref]] | -      |
-| SMB_VFS_TELLDIR()                 | [[fsp][fsp]]      | -      |
 | SMB_VFS_TRANSLATE_NAME()          | [[P2px][P2px]]     | -      |
 | SMB_VFS_UNLINKAT()                | [[NsC][NsC]]      | -      |
 |-----------------------------------+----------+--------|
@@ -363,11 +361,9 @@ whenever VFS access is done in a piecemeal fashion.
  - SMB_VFS_READDIR()
  - SMB_VFS_RECVFILE()
  - SMB_VFS_REWINDDIR()
- - SMB_VFS_SEEKDIR()
  - SMB_VFS_SENDFILE()
  - SMB_VFS_SET_COMPRESSION()
  - SMB_VFS_STRICT_LOCK_CHECK()
- - SMB_VFS_TELLDIR()
 
  If an fsp is provided by the SMB layer we use that, otherwise we use the
  pathref fsp =smb_fname->fsp= provided by =filename_convert()=.

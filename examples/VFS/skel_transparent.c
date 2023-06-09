@@ -171,16 +171,6 @@ static struct dirent *skel_readdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf);
 }
 
-static void skel_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
-{
-	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
-}
-
-static long skel_telldir(vfs_handle_struct *handle, DIR *dirp)
-{
-	return SMB_VFS_NEXT_TELLDIR(handle, dirp);
-}
-
 static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 {
 	SMB_VFS_NEXT_REWINDDIR(handle, dirp);
@@ -1304,8 +1294,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 
 	.fdopendir_fn = skel_fdopendir,
 	.readdir_fn = skel_readdir,
-	.seekdir_fn = skel_seekdir,
-	.telldir_fn = skel_telldir,
 	.rewind_dir_fn = skel_rewind_dir,
 	.mkdirat_fn = skel_mkdirat,
 	.closedir_fn = skel_closedir,

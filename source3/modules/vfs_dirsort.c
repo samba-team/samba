@@ -218,74 +218,6 @@ static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
 	return &data->directory_list[data->pos++];
 }
 
-static void dirsort_seekdir(vfs_handle_struct *handle, DIR *dirp,
-			    long offset)
-{
-	struct timespec current_mtime;
-	struct dirsort_privates *data = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates, return);
-
-	/* Find the entry holding dirp. */
-	while(data && (data->source_directory != dirp)) {
-		data = data->next;
-	}
-	if (data == NULL) {
-		return;
-	}
-	if (offset >= data->number_of_entries) {
-		return;
-	}
-	data->pos = offset;
-
-	if (get_sorted_dir_mtime(handle, data, &current_mtime) == false) {
-		return;
-	}
-
-	if (timespec_compare(&current_mtime, &data->mtime)) {
-		/* Directory changed. We must re-read the
-		   cache and search for the name that was
-		   previously stored at the offset being
-		   requested, otherwise after the re-sort
-		   we will point to the wrong entry. The
-		   OS/2 incremental delete code relies on
-		   this. */
-		unsigned int i;
-		char *wanted_name = talloc_strdup(handle->conn,
-					data->directory_list[offset].d_name);
-		if (wanted_name == NULL) {
-			return;
-		}
-		SMB_VFS_NEXT_REWINDDIR(handle, data->source_directory);
-		open_and_sort_dir(handle, data);
-		/* Now search for where we were. */
-		data->pos = 0;
-		for (i = 0; i < data->number_of_entries; i++) {
-			if(strcmp(wanted_name, data->directory_list[i].d_name) == 0) {
-				data->pos = i;
-				break;
-			}
-		}
-		TALLOC_FREE(wanted_name);
-	}
-}
-
-static long dirsort_telldir(vfs_handle_struct *handle, DIR *dirp)
-{
-	struct dirsort_privates *data = NULL;
-	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
-				return -1);
-
-	/* Find the entry holding dirp. */
-	while(data && (data->source_directory != dirp)) {
-		data = data->next;
-	}
-	if (data == NULL) {
-		return -1;
-	}
-	return data->pos;
-}
-
 static void dirsort_rewinddir(vfs_handle_struct *handle, DIR *dirp)
 {
 	struct dirsort_privates *data = NULL;
@@ -328,8 +260,6 @@ static int dirsort_closedir(vfs_handle_struct *handle, DIR *dirp)
 static struct vfs_fn_pointers vfs_dirsort_fns = {
 	.fdopendir_fn = dirsort_fdopendir,
 	.readdir_fn = dirsort_readdir,
-	.seekdir_fn = dirsort_seekdir,
-	.telldir_fn = dirsort_telldir,
 	.rewind_dir_fn = dirsort_rewinddir,
 	.closedir_fn = dirsort_closedir,
 };
