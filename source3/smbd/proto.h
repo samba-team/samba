@@ -203,7 +203,6 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		       struct dptr_struct *dptr,
 		       long *poffset,
 		       SMB_STRUCT_STAT *pst);
-bool dptr_SearchDir(struct dptr_struct *dptr, const char *name);
 struct smb_Dir;
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
 files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,

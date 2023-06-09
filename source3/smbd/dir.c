@@ -40,19 +40,11 @@
 
 /* Make directory handle internals available. */
 
-struct name_cache_entry {
-	char *name;
-	long offset;
-};
-
 struct smb_Dir {
 	connection_struct *conn;
 	DIR *dir;
 	long offset;
 	struct smb_filename *dir_smb_fname;
-	size_t name_cache_size;
-	struct name_cache_entry *name_cache;
-	unsigned int name_cache_index;
 	unsigned int file_number;
 	bool case_sensitive;
 	files_struct *fsp; /* Back pointer to containing fsp, only
@@ -88,11 +80,8 @@ static NTSTATUS OpenDir_fsp(
 	uint32_t attr,
 	struct smb_Dir **_dir_hnd);
 
-static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
-
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
 
-static bool SearchDir(struct smb_Dir *dir_hnd, const char *name);
 static void SeekDir(struct smb_Dir *dirp, long offset);
 static long TellDir(struct smb_Dir *dirp);
 
@@ -506,20 +495,6 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	return NULL;
 }
 
-/****************************************************************************
- Search for a file by name.
-****************************************************************************/
-
-bool dptr_SearchDir(struct dptr_struct *dptr, const char *name)
-{
-	if (!dptr->has_wild && (dptr->dir_hnd->offset == END_OF_DIRECTORY_OFFSET)) {
-		/* This is a singleton directory and we're already at the end. */
-		return False;
-	}
-
-	return SearchDir(dptr->dir_hnd, name);
-}
-
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd)
 {
 	return dir_hnd->fsp;
@@ -868,16 +843,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			"fname=%s (%s)\n",
 			mask, smb_fname_str_dbg(smb_fname),
 			dname, fname));
-
-		if (!conn->sconn->using_smb2) {
-			/*
-			 * The dircache is only needed for SMB1 because SMB1
-			 * uses a name for the resume wheras SMB2 always
-			 * continues from the next position (unless it's told to
-			 * restart or close-and-reopen the listing).
-			 */
-			DirCacheAdd(dir_hnd, dname, cur_offset);
-		}
 
 		TALLOC_FREE(dname);
 
@@ -1275,17 +1240,6 @@ static NTSTATUS OpenDir_fsp(
 
 	dir_hnd->conn = conn;
 
-	if (!conn->sconn->using_smb2) {
-		/*
-		 * The dircache is only needed for SMB1 because SMB1 uses a name
-		 * for the resume wheras SMB2 always continues from the next
-		 * position (unless it's told to restart or close-and-reopen the
-		 * listing).
-		 */
-		dir_hnd->name_cache_size =
-			lp_directory_name_cache_size(SNUM(conn));
-	}
-
 	dir_hnd->dir_smb_fname = cp_smb_filename(dir_hnd, fsp->fsp_name);
 	if (!dir_hnd->dir_smb_fname) {
 		status = NT_STATUS_NO_MEMORY;
@@ -1426,81 +1380,6 @@ static void SeekDir(struct smb_Dir *dirp, long offset)
 static long TellDir(struct smb_Dir *dir_hnd)
 {
 	return(dir_hnd->offset);
-}
-
-/*******************************************************************
- Add an entry into the dcache.
-********************************************************************/
-
-static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset)
-{
-	struct name_cache_entry *e;
-
-	if (dir_hnd->name_cache_size == 0) {
-		return;
-	}
-
-	if (dir_hnd->name_cache == NULL) {
-		dir_hnd->name_cache = talloc_zero_array(dir_hnd,
-						struct name_cache_entry,
-						dir_hnd->name_cache_size);
-
-		if (dir_hnd->name_cache == NULL) {
-			return;
-		}
-	}
-
-	dir_hnd->name_cache_index = (dir_hnd->name_cache_index+1) %
-					dir_hnd->name_cache_size;
-	e = &dir_hnd->name_cache[dir_hnd->name_cache_index];
-	TALLOC_FREE(e->name);
-	e->name = talloc_strdup(dir_hnd, name);
-	e->offset = offset;
-}
-
-/*******************************************************************
- Find an entry by name. Leave us at the offset after it.
- Don't check for veto or invisible files.
-********************************************************************/
-
-static bool SearchDir(struct smb_Dir *dir_hnd, const char *name)
-{
-	int i;
-	const char *entry = NULL;
-	char *talloced = NULL;
-	connection_struct *conn = dir_hnd->conn;
-	long offset = 0;
-
-	/* Search back in the name cache. */
-	if (dir_hnd->name_cache_size && dir_hnd->name_cache) {
-		for (i = dir_hnd->name_cache_index; i >= 0; i--) {
-			struct name_cache_entry *e = &dir_hnd->name_cache[i];
-			if (e->name && (dir_hnd->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
-				SeekDir(dir_hnd, e->offset);
-				return True;
-			}
-		}
-		for (i = dir_hnd->name_cache_size - 1;
-				i > dir_hnd->name_cache_index; i--) {
-			struct name_cache_entry *e = &dir_hnd->name_cache[i];
-			if (e->name && (dir_hnd->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
-				SeekDir(dir_hnd, e->offset);
-				return True;
-			}
-		}
-	}
-
-	/* Not found in the name cache. Rewind directory and start from scratch. */
-	SMB_VFS_REWINDDIR(conn, dir_hnd->dir);
-	dir_hnd->file_number = 0;
-	while ((entry = ReadDirName(dir_hnd, &offset, NULL, &talloced))) {
-		if (dir_hnd->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
-			TALLOC_FREE(talloced);
-			return True;
-		}
-		TALLOC_FREE(talloced);
-	}
-	return False;
 }
 
 struct files_below_forall_state {
