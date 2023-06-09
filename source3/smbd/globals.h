@@ -186,6 +186,9 @@ void smbd_dirptr_push_overflow(struct dptr_struct *dirptr,
 			       char **_fname,
 			       struct smb_filename **_smb_fname,
 			       uint32_t mode);
+void smbd_dirptr_set_last_name_sent(struct dptr_struct *dirptr,
+				    char **_fname);
+char *smbd_dirptr_get_last_name_sent(struct dptr_struct *dirptr);
 
 NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       connection_struct *conn,

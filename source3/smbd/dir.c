@@ -71,6 +71,8 @@ struct dptr_struct {
 	bool priv;     /* Directory handle opened with privilege. */
 	uint32_t counter;
 
+	char *last_name_sent;	/* for name-based trans2 resume */
+
 	struct {
 		char *fname;
 		struct smb_filename *smb_fname;
@@ -903,6 +905,18 @@ void smbd_dirptr_push_overflow(struct dptr_struct *dirptr,
 	dirptr->overflow.fname = talloc_move(dirptr, _fname);
 	dirptr->overflow.smb_fname = talloc_move(dirptr, _smb_fname);
 	dirptr->overflow.mode = mode;
+}
+
+void smbd_dirptr_set_last_name_sent(struct dptr_struct *dirptr,
+				    char **_fname)
+{
+	TALLOC_FREE(dirptr->last_name_sent);
+	dirptr->last_name_sent = talloc_move(dirptr, _fname);
+}
+
+char *smbd_dirptr_get_last_name_sent(struct dptr_struct *dirptr)
+{
+	return dirptr->last_name_sent;
 }
 
 /*******************************************************************

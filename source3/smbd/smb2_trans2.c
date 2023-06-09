@@ -2011,6 +2011,8 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		return status;
 	}
 
+	smbd_dirptr_set_last_name_sent(dirptr, &smb_fname->base_name);
+
 	if (_smb_fname != NULL) {
 		/*
 		 * smb_fname is already talloc'ed off ctx.
@@ -2021,7 +2023,11 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		 * for asynchronous handle lookups.
 		 */
 		TALLOC_FREE(smb_fname->stream_name);
-		TALLOC_FREE(smb_fname->base_name);
+
+		/*
+		 * smbd_dirptr_set_last_name_sent() above consumed
+		 * base_name
+		 */
 		smb_fname->base_name = talloc_strdup(smb_fname, fname);
 
 		if (smb_fname->base_name == NULL) {
