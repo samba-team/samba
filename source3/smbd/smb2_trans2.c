@@ -1919,7 +1919,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 {
 	const char *p;
 	const char *mask = NULL;
-	long prev_dirpos = 0;
 	uint32_t mode = 0;
 	char *fname = NULL;
 	struct smb_filename *smb_fname = NULL;
@@ -1967,8 +1966,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				   &state,
 				   &fname,
 				   &smb_fname,
-				   &mode,
-				   &prev_dirpos);
+				   &mode);
 	if (!ok) {
 		return NT_STATUS_END_OF_FILE;
 	}

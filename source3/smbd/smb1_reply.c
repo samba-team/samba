@@ -1241,7 +1241,6 @@ static bool get_dir_entry(TALLOC_CTX *ctx,
 	char *fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 	uint32_t mode = 0;
-	long prev_offset;
 	bool ok;
 
 	ok = smbd_dirptr_get_entry(ctx,
@@ -1256,8 +1255,7 @@ static bool get_dir_entry(TALLOC_CTX *ctx,
 				   conn,
 				   &fname,
 				   &smb_fname,
-				   &mode,
-				   &prev_offset);
+				   &mode);
 	if (!ok) {
 		return false;
 	}

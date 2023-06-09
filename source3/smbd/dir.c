@@ -562,8 +562,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   void *private_data,
 			   char **_fname,
 			   struct smb_filename **_smb_fname,
-			   uint32_t *_mode,
-			   long *_prev_offset)
+			   uint32_t *_mode)
 {
 	connection_struct *conn = dirptr->conn;
 	struct smb_Dir *dir_hnd = dirptr->dir_hnd;
@@ -589,7 +588,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 	while (true) {
 		long cur_offset;
-		long prev_offset;
 		SMB_STRUCT_STAT sbuf = { 0 };
 		char *dname = NULL;
 		bool isdots;
@@ -603,7 +601,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		bool ok;
 
 		cur_offset = dptr_TellDir(dirptr);
-		prev_offset = cur_offset;
 		dname = dptr_ReadDirName(ctx, dirptr, &cur_offset, &sbuf);
 
 		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%ld] => "
@@ -888,7 +885,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 		*_fname = fname;
 		*_mode = mode;
-		*_prev_offset = prev_offset;
 
 		return true;
 	}

@@ -181,8 +181,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   void *private_data,
 			   char **_fname,
 			   struct smb_filename **_smb_fname,
-			   uint32_t *_mode,
-			   long *_prev_offset);
+			   uint32_t *_mode);
 void smbd_dirptr_push_overflow(struct dptr_struct *dirptr,
 			       char **_fname,
 			       struct smb_filename **_smb_fname,
