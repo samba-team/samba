@@ -5188,7 +5188,6 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	long offset = 0;
 	size_t nbands;
 	NTSTATUS status;
 
@@ -5225,7 +5224,7 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 
 	nbands = 0;
 
-        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
 	       != NULL)
 	{
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
@@ -5336,7 +5335,6 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	long offset = 0;
 	uint64_t dfree;
 	uint64_t dsize;
 	bool ok;
@@ -5367,7 +5365,7 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 		return UINT64_MAX;
 	}
 
-        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
 	       != NULL)
 	{
 		ok = fruit_tmsize_do_dirent(handle, &state, dname);

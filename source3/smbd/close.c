@@ -949,7 +949,6 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 {
 	const char *dname = NULL;
 	char *talloced = NULL;
-	long offset = 0;
 	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
 	int retval;
@@ -969,7 +968,7 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 
 	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
 
-	while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))) {
+	while ((dname = ReadDirName(dir_hnd, NULL, &talloced))) {
 		struct smb_filename *atname = NULL;
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
@@ -1072,7 +1071,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	struct smb_filename *at_fname = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	long dirpos = 0;
 	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
 	int unlink_flags = 0;
@@ -1172,7 +1170,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
 
 	while ((dname = ReadDirName(
-			dir_hnd, &dirpos, NULL, &talloced)) != NULL) {
+			dir_hnd, NULL, &talloced)) != NULL) {
 		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
 		char *fullname = NULL;
@@ -1318,10 +1316,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
 	/* Do a recursive delete. */
-	RewindDir(dir_hnd,&dirpos);
+	RewindDir(dir_hnd);
 
 	while ((dname = ReadDirName(
-			dir_hnd, &dirpos, NULL, &talloced)) != NULL) {
+			dir_hnd, NULL, &talloced)) != NULL) {
 		struct smb_filename *direntry_fname = NULL;
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;

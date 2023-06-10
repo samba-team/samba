@@ -178,7 +178,6 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	long offset = 0;
 	NTSTATUS status;
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
 						fsp->conn->connectpath,
@@ -211,7 +210,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 		SHADOW_COPY_LABEL *tlabels;
 		int ret;
 
-		dname = ReadDirName(dir_hnd, &offset, NULL, &talloced);
+		dname = ReadDirName(dir_hnd, NULL, &talloced);
 		if (dname == NULL) {
 			break;
 		}

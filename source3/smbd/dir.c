@@ -43,7 +43,6 @@
 struct smb_Dir {
 	connection_struct *conn;
 	DIR *dir;
-	long offset;
 	struct smb_filename *dir_smb_fname;
 	unsigned int file_number;
 	bool case_sensitive;
@@ -81,9 +80,6 @@ static NTSTATUS OpenDir_fsp(
 	struct smb_Dir **_dir_hnd);
 
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
-
-static void SeekDir(struct smb_Dir *dirp, long offset);
-static long TellDir(struct smb_Dir *dirp);
 
 #define INVALID_DPTR_KEY (-3)
 
@@ -355,16 +351,10 @@ void dptr_CloseDir(files_struct *fsp)
 
 void dptr_RewindDir(struct dptr_struct *dptr)
 {
-	long offset;
-	RewindDir(dptr->dir_hnd, &offset);
+	RewindDir(dptr->dir_hnd);
 	dptr->did_stat = false;
 	TALLOC_FREE(dptr->overflow.fname);
 	TALLOC_FREE(dptr->overflow.smb_fname);
-}
-
-long dptr_TellDir(struct dptr_struct *dptr)
-{
-	return TellDir(dptr->dir_hnd);
 }
 
 unsigned int dptr_FileNumber(struct dptr_struct *dptr)
@@ -403,7 +393,6 @@ bool dptr_case_sensitive(struct dptr_struct *dptr)
 
 char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		       struct dptr_struct *dptr,
-		       long *poffset,
 		       SMB_STRUCT_STAT *pst)
 {
 	struct smb_Dir *dir_hnd = dptr->dir_hnd;
@@ -419,8 +408,7 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	if (dptr->has_wild) {
 		const char *name_temp = NULL;
 		char *talloced = NULL;
-
-		name_temp = ReadDirName(dir_hnd, poffset, pst, &talloced);
+		name_temp = ReadDirName(dir_hnd, pst, &talloced);
 		if (name_temp == NULL) {
 			return NULL;
 		}
@@ -564,7 +552,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	slashlen = ( dpath[pathlen-1] != '/') ? 1 : 0;
 
 	while (true) {
-		long cur_offset;
 		SMB_STRUCT_STAT sbuf = { 0 };
 		char *dname = NULL;
 		bool isdots;
@@ -577,14 +564,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		bool get_dosmode = get_dosmode_in;
 		bool ok;
 
-		cur_offset = dptr_TellDir(dirptr);
-		dname = dptr_ReadDirName(ctx, dirptr, &cur_offset, &sbuf);
+		dname = dptr_ReadDirName(ctx, dirptr, &sbuf);
 
-		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%ld] => "
+		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%u] => "
 			  "dname [%s]\n",
 			  smb_fname_str_dbg(dir_hnd->dir_smb_fname),
 			  (long)dirptr,
-			  cur_offset,
+			  dirptr->dir_hnd->file_number,
 			  dname ? dname : "(finished)");
 
 		if (dname == NULL) {
@@ -1275,37 +1261,23 @@ static NTSTATUS OpenDir_fsp(
  Don't check for veto or invisible files.
 ********************************************************************/
 
-const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
+const char *ReadDirName(struct smb_Dir *dir_hnd,
 			SMB_STRUCT_STAT *sbuf, char **ptalloced)
 {
 	const char *n;
 	char *talloced = NULL;
 	connection_struct *conn = dir_hnd->conn;
 
-	/* Cheat to allow . and .. to be the first entries returned. */
-	if (((*poffset == START_OF_DIRECTORY_OFFSET) ||
-	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) &&
-	    (dir_hnd->file_number < 2))
-	{
+	if (dir_hnd->file_number < 2) {
 		if (dir_hnd->file_number == 0) {
 			n = ".";
-			*poffset = dir_hnd->offset = START_OF_DIRECTORY_OFFSET;
 		} else {
 			n = "..";
-			*poffset = dir_hnd->offset = DOT_DOT_DIRECTORY_OFFSET;
 		}
 		dir_hnd->file_number++;
 		*ptalloced = NULL;
 		return n;
 	}
-
-	if (*poffset == END_OF_DIRECTORY_OFFSET) {
-		*poffset = dir_hnd->offset = END_OF_DIRECTORY_OFFSET;
-		return NULL;
-	}
-
-	/* A real offset, seek to it. */
-	SeekDir(dir_hnd, *poffset);
 
 	while ((n = vfs_readdirname(conn, dir_hnd->fsp, dir_hnd->dir, sbuf, &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
@@ -1313,12 +1285,10 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 			TALLOC_FREE(talloced);
 			continue;
 		}
-		*poffset = dir_hnd->offset = SMB_VFS_TELLDIR(conn, dir_hnd->dir);
 		*ptalloced = talloced;
 		dir_hnd->file_number++;
 		return n;
 	}
-	*poffset = dir_hnd->offset = END_OF_DIRECTORY_OFFSET;
 	*ptalloced = NULL;
 	return NULL;
 }
@@ -1327,59 +1297,10 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
  Rewind to the start.
 ********************************************************************/
 
-void RewindDir(struct smb_Dir *dir_hnd, long *poffset)
+void RewindDir(struct smb_Dir *dir_hnd)
 {
 	SMB_VFS_REWINDDIR(dir_hnd->conn, dir_hnd->dir);
 	dir_hnd->file_number = 0;
-	dir_hnd->offset = START_OF_DIRECTORY_OFFSET;
-	*poffset = START_OF_DIRECTORY_OFFSET;
-}
-
-/*******************************************************************
- Seek a dir.
-********************************************************************/
-
-static void SeekDir(struct smb_Dir *dirp, long offset)
-{
-	if (offset == dirp->offset) {
-		/*
-		 * Nothing to do
-		 */
-		return;
-	}
-
-	if (offset == START_OF_DIRECTORY_OFFSET) {
-		RewindDir(dirp, &offset);
-		/*
-		 * Ok we should really set the file number here
-		 * to 1 to enable ".." to be returned next. Trouble
-		 * is I'm worried about callers using SeekDir(dirp,0)
-		 * as equivalent to RewindDir(). So leave this alone
-		 * for now.
-		 */
-	} else if  (offset == DOT_DOT_DIRECTORY_OFFSET) {
-		RewindDir(dirp, &offset);
-		/*
-		 * Set the file number to 2 - we want to get the first
-		 * real file entry (the one we return after "..")
-		 * on the next ReadDir.
-		 */
-		dirp->file_number = 2;
-	} else if (offset == END_OF_DIRECTORY_OFFSET) {
-		; /* Don't seek in this case. */
-	} else {
-		SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
-	}
-	dirp->offset = offset;
-}
-
-/*******************************************************************
- Tell a dir position.
-********************************************************************/
-
-static long TellDir(struct smb_Dir *dir_hnd)
-{
-	return(dir_hnd->offset);
 }
 
 struct files_below_forall_state {
@@ -1505,7 +1426,6 @@ bool have_file_open_below(connection_struct *conn,
 NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	long dirpos = 0;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	struct connection_struct *conn = fsp->conn;
@@ -1517,7 +1437,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		return status;
 	}
 
-	while ((dname = ReadDirName(dir_hnd, &dirpos, NULL, &talloced))) {
+	while ((dname = ReadDirName(dir_hnd, NULL, &talloced))) {
 		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
 		char *fullname = NULL;

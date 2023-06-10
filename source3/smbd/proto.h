@@ -192,7 +192,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		struct dptr_struct **dptr_ret);
 void dptr_CloseDir(files_struct *fsp);
 void dptr_RewindDir(struct dptr_struct *dptr);
-long dptr_TellDir(struct dptr_struct *dptr);
 unsigned int dptr_FileNumber(struct dptr_struct *dptr);
 bool dptr_has_wild(struct dptr_struct *dptr);
 int dptr_dnum(struct dptr_struct *dptr);
@@ -201,7 +200,6 @@ void dptr_set_priv(struct dptr_struct *dptr);
 bool dptr_case_sensitive(struct dptr_struct *dptr);
 char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		       struct dptr_struct *dptr,
-		       long *poffset,
 		       SMB_STRUCT_STAT *pst);
 struct smb_Dir;
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
@@ -220,9 +218,9 @@ NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
 			      const char *mask,
 			      uint32_t attr,
 			      struct smb_Dir **_dir_hnd);
-const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
+const char *ReadDirName(struct smb_Dir *dir_hnd,
 			SMB_STRUCT_STAT *sbuf, char **talloced);
-void RewindDir(struct smb_Dir *dir_hnd, long *poffset);
+void RewindDir(struct smb_Dir *dir_hnd);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
 bool have_file_open_below(connection_struct *conn,

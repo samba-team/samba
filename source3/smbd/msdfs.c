@@ -1485,7 +1485,6 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	NTSTATUS status;
 	struct smb_filename *smb_fname = NULL;
 	struct smb_Dir *dir_hnd = NULL;
-	long offset = 0;
 
 	if(*connect_path == '\0') {
 		TALLOC_FREE(frame);
@@ -1539,7 +1538,7 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
 	       != NULL)
 	{
 		struct smb_filename *smb_dname =
@@ -1591,7 +1590,6 @@ static int form_junctions(TALLOC_CTX *ctx,
 	struct referral *ref = NULL;
 	struct smb_filename *smb_fname = NULL;
 	struct smb_Dir *dir_hnd = NULL;
-	long offset = 0;
 	NTSTATUS status;
 
 	if (jn_remain == 0) {
@@ -1682,7 +1680,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
 	       != NULL)
 	{
 		struct smb_filename *smb_dname = NULL;

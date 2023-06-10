@@ -1494,11 +1494,10 @@ static void call_trans2findnext(connection_struct *conn,
 
 	backup_priv = dptr_get_priv(fsp->dptr);
 
-	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld) "
+	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX) "
 		"backup_priv = %d\n",
 		dptr_num, mask, dirtype,
 		(long)fsp->dptr,
-		dptr_TellDir(fsp->dptr),
 		(int)backup_priv));
 
 	/* We don't need to check for VOL here as this is returned by
@@ -1561,7 +1560,6 @@ static void call_trans2findnext(connection_struct *conn,
 						  resume_name,
 						  last_name_sent);
 		if (!sequential) {
-			long offset = 0;
 			struct stat_ex st;
 			char *name = NULL;
 			bool found = false;
@@ -1570,7 +1568,6 @@ static void call_trans2findnext(connection_struct *conn,
 
 			while ((name = dptr_ReadDirName(talloc_tos(),
 							fsp->dptr,
-							&offset,
 							&st)) != NULL) {
 				found = smbd_dptr_name_equal(fsp->dptr,
 							     resume_name,

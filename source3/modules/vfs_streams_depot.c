@@ -508,7 +508,6 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	struct smb_filename *dir_smb_fname = NULL;
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname = NULL;
-	long offset = 0;
 	char *talloced = NULL;
 	NTSTATUS status;
 
@@ -564,7 +563,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		return status;
 	}
 
-        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
 	       != NULL)
 	{
 		if (ISDOT(dname) || ISDOTDOT(dname)) {

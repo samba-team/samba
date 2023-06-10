@@ -277,7 +277,6 @@ NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
 	const char *dname = NULL;
 	char *talloced = NULL;
 	char *unmangled_name = NULL;
-	long curpos;
 	NTSTATUS status;
 
 	/* If we have a case-sensitive filesystem, it doesn't do us any
@@ -324,8 +323,7 @@ NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
 	}
 
 	/* now scan for matching names */
-	curpos = 0;
-	while ((dname = ReadDirName(cur_dir, &curpos, NULL, &talloced))) {
+	while ((dname = ReadDirName(cur_dir, NULL, &talloced))) {
 
 		/* Is it dot or dot dot. */
 		if (ISDOT(dname) || ISDOTDOT(dname)) {

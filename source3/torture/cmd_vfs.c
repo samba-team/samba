@@ -180,8 +180,6 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	vfs->currentdir_offset = 0;
-
 	TALLOC_FREE(smb_fname);
 	printf("opendir: ok\n");
 	return NT_STATUS_OK;
@@ -205,7 +203,6 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	}
 
         dname = ReadDirName(vfs->currentdir,
-			    &vfs->currentdir_offset,
 			    NULL,
 			    &talloced);
 	if (dname == NULL) {
@@ -304,7 +301,6 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	}
 
 	TALLOC_FREE(vfs->currentdir);
-	vfs->currentdir_offset = 0;
 
 	printf("closedir: ok\n");
 	return NT_STATUS_OK;
@@ -2155,12 +2151,10 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		errno = err;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	vfs->currentdir_offset = 0;
 
 	while (true) {
 		/* ReadDirName() returns Windows "encoding" */
 		dname = ReadDirName(vfs->currentdir,
-				    &vfs->currentdir_offset,
 				    NULL,
 				    &dname_talloced);
 		if (dname == NULL) {
@@ -2208,7 +2202,6 @@ cleanup:
 	TALLOC_FREE(translated);
 	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(vfs->currentdir);
-	vfs->currentdir_offset = 0;
 	return status;
 }
 
