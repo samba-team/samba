@@ -40,8 +40,8 @@ void send_browser_reset(int reset_type, const char *to_name, int to_type, struct
 	char outbuf[1024];
 	char *p;
 
-	DEBUG(3,("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
-		reset_type, to_name, to_type, inet_ntoa(to_ip) ));
+	DBG_NOTICE("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
+		reset_type, to_name, to_type, inet_ntoa(to_ip) );
 
 	memset(outbuf,'\0',sizeof(outbuf));
 	p = outbuf;
@@ -67,8 +67,8 @@ void broadcast_announce_request(struct subnet_record *subrec, struct work_record
 
 	work->needannounce = True;
 
-	DEBUG(3,("broadcast_announce_request: sending announce request for workgroup %s \
-to subnet %s\n", work->work_group, subrec->subnet_name));
+	DBG_NOTICE("broadcast_announce_request: sending announce request for workgroup %s \
+to subnet %s\n", work->work_group, subrec->subnet_name);
 
 	memset(outbuf,'\0',sizeof(outbuf));
 	p = outbuf;
@@ -108,7 +108,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 
 	strlcpy(upper_server_name, server_name ? server_name : "", sizeof(upper_server_name));
 	if (!strupper_m(upper_server_name)) {
-		DEBUG(2,("strupper_m %s failed\n", upper_server_name));
+		DBG_WARNING("strupper_m %s failed\n", upper_server_name);
 		return;
 	}
 	push_string_check(p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
@@ -167,8 +167,8 @@ static void send_local_master_announcement(struct subnet_record *subrec, struct 
 	/* Ensure we don't have the prohibited bit set. */
 	uint32_t type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-	DEBUG(3,("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
-		type, lp_netbios_name(), subrec->subnet_name, work->work_group));
+	DBG_NOTICE("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
+		type, lp_netbios_name(), subrec->subnet_name, work->work_group);
 
 	send_announcement(subrec, ANN_LocalMasterAnnouncement,
 			lp_netbios_name(),                 /* From nbt name. */
@@ -186,8 +186,8 @@ static void send_local_master_announcement(struct subnet_record *subrec, struct 
 
 static void send_workgroup_announcement(struct subnet_record *subrec, struct work_record *work)
 {
-	DEBUG(3,("send_workgroup_announcement: on subnet %s for workgroup %s\n",
-		subrec->subnet_name, work->work_group));
+	DBG_NOTICE("send_workgroup_announcement: on subnet %s for workgroup %s\n",
+		subrec->subnet_name, work->work_group);
 
 	send_announcement(subrec, ANN_DomainAnnouncement,
 			lp_netbios_name(),                 /* From nbt name. */
@@ -209,8 +209,8 @@ static void send_host_announcement(struct subnet_record *subrec, struct work_rec
 	/* Ensure we don't have the prohibited bits set. */
 	uint32_t type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-	DEBUG(3,("send_host_announcement: type %x for host %s on subnet %s for workgroup %s\n",
-		type, servrec->serv.name, subrec->subnet_name, work->work_group));
+	DBG_NOTICE("send_host_announcement: type %x for host %s on subnet %s for workgroup %s\n",
+		type, servrec->serv.name, subrec->subnet_name, work->work_group);
 
 	send_announcement(subrec, ANN_HostAnnouncement,
 			servrec->serv.name,              /* From nbt name. */
@@ -232,8 +232,8 @@ static void send_lm_host_announcement(struct subnet_record *subrec, struct work_
 	/* Ensure we don't have the prohibited bits set. */
 	uint32_t type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-	DEBUG(3,("send_lm_host_announcement: type %x for host %s on subnet %s for workgroup %s, ttl: %d\n",
-		type, servrec->serv.name, subrec->subnet_name, work->work_group, lm_interval));
+	DBG_NOTICE("send_lm_host_announcement: type %x for host %s on subnet %s for workgroup %s, ttl: %d\n",
+		type, servrec->serv.name, subrec->subnet_name, work->work_group, lm_interval);
 
 	send_lm_announcement(subrec, ANN_HostAnnouncement,
 			servrec->serv.name,              /* From nbt name. */
@@ -376,7 +376,7 @@ void announce_myself_to_domain_master_browser(time_t t)
 	struct work_record *work;
 
 	if(!we_are_a_wins_client()) {
-		DEBUG(10,("announce_myself_to_domain_master_browser: no unicast subnet, ignoring.\n"));
+		DBG_DEBUG("announce_myself_to_domain_master_browser: no unicast subnet, ignoring.\n");
 		return;
 	}
 
@@ -384,9 +384,9 @@ void announce_myself_to_domain_master_browser(time_t t)
 		announce_timer_last = t;
 
 	if ((t-announce_timer_last) < (CHECK_TIME_MST_ANNOUNCE * 60)) {
-		DEBUG(10,("announce_myself_to_domain_master_browser: t (%d) - last(%d) < %d\n",
+		DBG_DEBUG("announce_myself_to_domain_master_browser: t (%d) - last(%d) < %d\n",
 			(int)t, (int)announce_timer_last, 
-			CHECK_TIME_MST_ANNOUNCE * 60 ));
+			CHECK_TIME_MST_ANNOUNCE * 60 );
 		return;
 	}
 
@@ -398,8 +398,8 @@ void announce_myself_to_domain_master_browser(time_t t)
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		for (work = subrec->workgrouplist; work; work = work->next) {
 			if (AM_LOCAL_MASTER_BROWSER(work)) {
-				DEBUG(4,( "announce_myself_to_domain_master_browser: I am a local master browser for \
-workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
+				DBG_NOTICE( "announce_myself_to_domain_master_browser: I am a local master browser for \
+workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name);
 
 				/* Look in nmbd_browsersync.c for the rest of this code. */
 				announce_and_sync_with_domain_master_browser(subrec, work);
@@ -510,8 +510,8 @@ void announce_remote(time_t t)
 		for(i=0; my_netbios_names(i); i++) {
 			const char *name = my_netbios_names(i);
 
-			DEBUG(5,("announce_remote: Doing remote announce for server %s to IP %s.\n",
-				name, inet_ntoa(addr) ));
+			DBG_INFO("announce_remote: Doing remote announce for server %s to IP %s.\n",
+				name, inet_ntoa(addr) );
 
 			send_announcement(FIRST_SUBNET, ANN_HostAnnouncement,
 						name,                      /* From nbt name. */
@@ -561,14 +561,14 @@ void browse_sync_remote(time_t t)
 	 */
 
 	if((work = find_workgroup_on_subnet(FIRST_SUBNET, lp_workgroup())) == NULL) {   
-		DEBUG(0,("browse_sync_remote: Cannot find workgroup %s on subnet %s\n",
-			lp_workgroup(), FIRST_SUBNET->subnet_name ));
+		DBG_WARNING("browse_sync_remote: Cannot find workgroup %s on subnet %s\n",
+			lp_workgroup(), FIRST_SUBNET->subnet_name );
 		return;
 	}
 
 	if(!AM_LOCAL_MASTER_BROWSER(work)) {
-		DEBUG(5,("browse_sync_remote: We can only do this if we are a local master browser \
-for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
+		DBG_NOTICE("browse_sync_remote: We can only do this if we are a local master browser \
+for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name );
 		return;
 	}
 
@@ -579,7 +579,7 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 
 	unstrcpy(myname, lp_netbios_name());
 	if (!strupper_m(myname)) {
-		DEBUG(2,("strupper_m %s failed\n", myname));
+		DBG_WARNING("strupper_m %s failed\n", myname);
 		return;
 	}
 	myname[15]='\0';
@@ -592,8 +592,8 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 		/* The entries are of the form a.b.c.d */
 		addr = interpret_addr2(s2);
 
-		DEBUG(5,("announce_remote: Doing remote browse sync announce for server %s to IP %s.\n",
-			lp_netbios_name(), inet_ntoa(addr) ));
+		DBG_INFO("announce_remote: Doing remote browse sync announce for server %s to IP %s.\n",
+			lp_netbios_name(), inet_ntoa(addr) );
 
 		send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
 			lp_netbios_name(), 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
