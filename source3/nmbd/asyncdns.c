@@ -34,14 +34,14 @@ static struct name_record *add_dns_result(struct nmb_name *question, struct in_a
 
 	if (!addr.s_addr) {
 		/* add the fail to WINS cache of names. give it 1 hour in the cache */
-		DEBUG(3,("add_dns_result: Negative DNS answer for %s\n", qname));
+		DBG_INFO("add_dns_result: Negative DNS answer for %s\n", qname);
 		add_name_to_subnet( wins_server_subnet, qname, name_type,
 				NB_ACTIVE, 60*60, DNSFAIL_NAME, 1, &addr );
 		return NULL;
 	}
 
 	/* add it to our WINS cache of names. give it 2 hours in the cache */
-	DEBUG(3,("add_dns_result: DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
+	DBG_INFO("add_dns_result: DNS gave answer for %s of %s\n", qname, inet_ntoa(addr));
 
 	add_name_to_subnet( wins_server_subnet, qname, name_type,
                               NB_ACTIVE, 2*60*60, DNS_NAME, 1, &addr);
@@ -144,7 +144,7 @@ void start_async_dns(struct messaging_context *msg)
 	CatchChild();
 
 	if (pipe(fd1) || pipe(fd2)) {
-		DEBUG(0,("can't create asyncdns pipes\n"));
+		DBG_ERR("can't create asyncdns pipes\n");
 		return;
 	}
 
@@ -155,7 +155,7 @@ void start_async_dns(struct messaging_context *msg)
 		fd_out = fd2[1];
 		close(fd1[1]);
 		close(fd2[0]);
-		DEBUG(0,("started asyncdns process %d\n", (int)child_pid));
+		DBG_NOTICE("started asyncdns process %d\n", (int)child_pid);
 		return;
 	}
 
@@ -170,7 +170,7 @@ void start_async_dns(struct messaging_context *msg)
 	status = reinit_after_fork(msg, nmbd_event_context(), true);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
+		DBG_ERR("reinit_after_fork() failed\n");
 		smb_panic("reinit_after_fork() failed");
 	}
 
@@ -223,7 +223,7 @@ void run_dns_queue(struct messaging_context *msg)
 	status = read_data_ntstatus(fd_in, (char *)&r, sizeof(r));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("read from child failed: %s\n", nt_errstr(status)));
+		DBG_ERR("read from child failed: %s\n", nt_errstr(status));
 		fd_in = -1;
 		return;
 	}
@@ -232,7 +232,7 @@ void run_dns_queue(struct messaging_context *msg)
 
 	if (dns_current) {
 		if (query_current(&r)) {
-			DEBUG(3,("DNS calling send_wins_name_query_response\n"));
+			DBG_INFO("DNS calling send_wins_name_query_response\n");
 			in_dns = 1;
 			if(namerec == NULL)
 				send_wins_name_query_response(NAM_ERR, dns_current, NULL);
@@ -253,7 +253,7 @@ void run_dns_queue(struct messaging_context *msg)
 		struct nmb_name *question = &nmb->question.question_name;
 
 		if (nmb_name_equal(question, &r.name)) {
-			DEBUG(3,("DNS calling send_wins_name_query_response\n"));
+			DBG_INFO("DNS calling send_wins_name_query_response\n");
 			in_dns = 1;
 			if(namerec == NULL)
 				send_wins_name_query_response(NAM_ERR, p, NULL);
@@ -276,7 +276,7 @@ void run_dns_queue(struct messaging_context *msg)
 		DLIST_REMOVE(dns_queue, dns_queue);
 
 		if (!write_child(dns_current)) {
-			DEBUG(3,("failed to send DNS query to child!\n"));
+			DBG_NOTICE("failed to send DNS query to child!\n");
 			return;
 		}
 	}
@@ -293,7 +293,7 @@ bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 
 	if (!dns_current) {
 		if (!write_child(p)) {
-			DEBUG(3,("failed to send DNS query to child!\n"));
+			DBG_NOTICE("failed to send DNS query to child!\n");
 			return False;
 		}
 		dns_current = p;
@@ -303,7 +303,7 @@ bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 		DLIST_ADD(dns_queue, p);
 	}
 
-	DEBUG(3,("added DNS query for %s\n", nmb_namestr(question)));
+	DBG_NOTICE("added DNS query for %s\n", nmb_namestr(question));
 	return True;
 }
 
@@ -322,7 +322,7 @@ bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 
 	pull_ascii_nstring(qname, sizeof(qname), question->name);
 
-	DEBUG(3,("DNS search for %s - ", nmb_namestr(question)));
+	DBG_NOTICE("DNS search for %s - ", nmb_namestr(question));
 
 	dns_ip.s_addr = interpret_addr(qname);
 
