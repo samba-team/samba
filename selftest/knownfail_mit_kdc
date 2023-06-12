@@ -262,10 +262,13 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_enc_pa_rep.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_no_sname.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_rodc_issued_armor.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fx_cookie_fast.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fx_cookie_no_fast.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_no_auth_data.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_no_sname.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_enc_pa_rep.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_no_sname.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_unsolicited_fx_cookie_preauth.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_inner_no_sname.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_inner_no_sname.ad_dc
 #

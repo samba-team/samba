@@ -1418,6 +1418,86 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fx_cookie_fast(self):
+        """Test that the FAST cookie is present and that its value is as
+        expected when FAST is used."""
+        kdc_exchange_dict = self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt
+            },
+        ])
+
+        cookie = kdc_exchange_dict.get('fast_cookie')
+        self.assertEqual(b'Microsoft', cookie)
+
+    def test_fx_cookie_no_fast(self):
+        """Test that the FAST cookie is present and that its value is as
+        expected when FAST is not used."""
+        kdc_exchange_dict = self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False
+            },
+        ])
+
+        cookie = kdc_exchange_dict.get('fast_cookie')
+        self.assertEqual(b'Microsof\x00', cookie)
+
+    def test_unsolicited_fx_cookie_preauth(self):
+        """Test sending an unsolicited FX-COOKIE in an AS-REQ without
+        pre-authentication data."""
+
+        # Include a FAST cookie.
+        fast_cookie = self.create_fast_cookie('Samba-Test')
+
+        kdc_exchange_dict = self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'fast_cookie': fast_cookie,
+            },
+        ])
+
+        got_cookie = kdc_exchange_dict.get('fast_cookie')
+        self.assertEqual(b'Microsoft', got_cookie)
+
+    def test_unsolicited_fx_cookie_fast(self):
+        """Test sending an unsolicited FX-COOKIE in an AS-REQ with
+        pre-authentication data."""
+
+        # Include a FAST cookie.
+        fast_cookie = self.create_fast_cookie('Samba-Test')
+
+        kdc_exchange_dict = self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_padata_fn': self.generate_enc_challenge_padata,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'fast_cookie': fast_cookie,
+            }
+        ])
+
+        got_cookie = kdc_exchange_dict.get('fast_cookie')
+        self.assertIsNone(got_cookie)
+
     def generate_enc_timestamp_padata(self,
                                       kdc_exchange_dict,
                                       callback_dict,
@@ -1697,6 +1777,11 @@ class FAST_Tests(KDCBaseTest):
                 preauth_key = None
 
             if use_fast:
+                try:
+                    fast_cookie = kdc_dict.pop('fast_cookie')
+                except KeyError:
+                    pass
+
                 generate_fast_padata_fn = gen_padata_fn
                 generate_padata_fn = (functools.partial(_generate_padata_copy,
                                                          padata=[fast_cookie])
@@ -1868,6 +1953,8 @@ class FAST_Tests(KDCBaseTest):
 
             # Ensure we used all the parameters given to us.
             self.assertEqual({}, kdc_dict)
+
+        return kdc_exchange_dict
 
     def generate_enc_pa_rep_padata(self,
                                    kdc_exchange_dict,
