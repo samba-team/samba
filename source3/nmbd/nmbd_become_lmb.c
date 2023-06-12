@@ -81,15 +81,15 @@ static void reset_workgroup_state( struct subnet_record *subrec, const char *wor
 	struct nmb_name nmbname;
 
 	if((work = find_workgroup_on_subnet( subrec, workgroup_name)) == NULL) {
-		DEBUG(0,("reset_workgroup_state: Error - cannot find workgroup %s on \
-subnet %s.\n", workgroup_name, subrec->subnet_name ));
+		DBG_ERR("reset_workgroup_state: Error - cannot find workgroup %s on \
+subnet %s.\n", workgroup_name, subrec->subnet_name );
 		return;
 	}
 
 	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
-		DEBUG(0,("reset_workgroup_state: Error - cannot find server %s \
+		DBG_ERR("reset_workgroup_state: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			lp_netbios_name(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name);
 		work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
 		return;
 	}
@@ -141,20 +141,17 @@ static void unbecome_local_master_success(struct subnet_record *subrec,
 
 	memcpy((char *)&force_new_election, userdata->data, sizeof(bool));
 
-	DEBUG(3,("unbecome_local_master_success: released name %s.\n",
-		nmb_namestr(released_name)));
+	DBG_NOTICE("unbecome_local_master_success: released name %s.\n",
+		nmb_namestr(released_name));
 
 	/* Now reset the workgroup and server state. */
 	pull_ascii_nstring(relname, sizeof(relname), released_name->name);
 	reset_workgroup_state( subrec, relname, force_new_election );
 
-	if( DEBUGLVL( 0 ) ) {
-		dbgtext( "*****\n\n" );
-		dbgtext( "Samba name server %s ", lp_netbios_name() );
-		dbgtext( "has stopped being a local master browser " );
-		dbgtext( "for workgroup %s ", relname );
-		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
-	}
+	DBG_WARNING("*****\n\n"
+		"Samba name server %s has stopped being a local master browser " 
+		"for workgroup %s on subnet %s\n\n*****\n",
+		lp_netbios_name(), relname, subrec->subnet_name );
 
 }
 
@@ -172,8 +169,8 @@ static void unbecome_local_master_fail(struct subnet_record *subrec, struct resp
 
 	memcpy((char *)&force_new_election, userdata->data, sizeof(bool));
 
-	DEBUG(0,("unbecome_local_master_fail: failed to release name %s. \
-Removing from namelist anyway.\n", nmb_namestr(fail_name)));
+	DBG_WARNING("unbecome_local_master_fail: failed to release name %s. "
+		"Removing from namelist anyway.\n", nmb_namestr(fail_name));
 
 	/* Do it anyway. */
 	namerec = find_name_on_subnet(subrec, fail_name, FIND_SELF_NAME);
@@ -184,13 +181,10 @@ Removing from namelist anyway.\n", nmb_namestr(fail_name)));
 	pull_ascii_nstring(failname, sizeof(failname), fail_name->name);
 	reset_workgroup_state( subrec, failname, force_new_election );
 
-	if( DEBUGLVL( 0 ) ) {
-		dbgtext( "*****\n\n" );
-		dbgtext( "Samba name server %s ", lp_netbios_name() );
-		dbgtext( "has stopped being a local master browser " );
-		dbgtext( "for workgroup %s ", failname );
-		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
-	}
+	DBG_WARNING("*****\n\n"
+		"Samba name server %s has stopped being a local master browser "
+		"for workgroup %s on subnet %s\n\n*****\n",
+		lp_netbios_name(), failname, subrec->subnet_name);
 }
 
 /*******************************************************************
@@ -209,7 +203,7 @@ static void release_1d_name( struct subnet_record *subrec, const char *workgroup
 		size_t size = sizeof(struct userdata_struct) + sizeof(bool);
 
 		if((userdata = (struct userdata_struct *)SMB_MALLOC(size)) == NULL) {
-			DEBUG(0,("release_1d_name: malloc fail.\n"));
+			DBG_ERR("release_1d_name: malloc fail.\n");
 			return;
 		}
 
@@ -236,8 +230,8 @@ static void release_msbrowse_name_success(struct subnet_record *subrec,
                       struct nmb_name *released_name,
                       struct in_addr released_ip)
 {
-	DEBUG(4,("release_msbrowse_name_success: Released name %s on subnet %s\n.",
-		nmb_namestr(released_name), subrec->subnet_name ));
+	DBG_INFO("release_msbrowse_name_success: Released name %s on subnet %s\n.",
+		nmb_namestr(released_name), subrec->subnet_name );
 
 	/* Remove the permanent MSBROWSE name added into the unicast subnet. */
 	remove_permanent_name_from_unicast( subrec, released_name);
@@ -253,8 +247,8 @@ static void release_msbrowse_name_fail( struct subnet_record *subrec,
 {
 	struct name_record *namerec;
 
-	DEBUG(4,("release_msbrowse_name_fail: Failed to release name %s on subnet %s\n.",
-		nmb_namestr(fail_name), subrec->subnet_name ));
+	DBG_INFO("release_msbrowse_name_fail: Failed to release name %s on subnet %s\n.",
+		nmb_namestr(fail_name), subrec->subnet_name );
 
 	/* Release the name anyway. */
 	namerec = find_name_on_subnet(subrec, fail_name, FIND_SELF_NAME);
@@ -278,13 +272,13 @@ void unbecome_local_master_browser(struct subnet_record *subrec, struct work_rec
 
   /* Sanity check. */
 
-	DEBUG(2,("unbecome_local_master_browser: unbecoming local master for workgroup %s \
-on subnet %s\n",work->work_group, subrec->subnet_name));
+	DBG_NOTICE("unbecome_local_master_browser: unbecoming local master for workgroup %s \
+on subnet %s\n",work->work_group, subrec->subnet_name);
   
 	if(find_server_in_workgroup( work, lp_netbios_name()) == NULL) {
-		DEBUG(0,("unbecome_local_master_browser: Error - cannot find server %s \
+		DBG_WARNING("unbecome_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			lp_netbios_name(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name);
 			work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
 		return;
 	}
@@ -338,21 +332,21 @@ static void become_local_master_stage2(struct subnet_record *subrec,
 	work = find_workgroup_on_subnet( subrec, regname);
 
 	if(!work) {
-		DEBUG(0,("become_local_master_stage2: Error - cannot find \
-workgroup %s on subnet %s\n", regname, subrec->subnet_name));
+		DBG_WARNING("become_local_master_stage2: Error - cannot find \
+workgroup %s on subnet %s\n", regname, subrec->subnet_name);
 		return;
 	}
 
 	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
-		DEBUG(0,("become_local_master_stage2: Error - cannot find server %s \
+		DBG_WARNING("become_local_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			lp_netbios_name(), regname, subrec->subnet_name));
+			lp_netbios_name(), regname, subrec->subnet_name);
 			work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
 		return;
 	}
   
-	DEBUG(3,("become_local_master_stage2: registered as master browser for workgroup %s \
-on subnet %s\n", work->work_group, subrec->subnet_name));
+	DBG_NOTICE("become_local_master_stage2: registered as master browser for workgroup %s \
+on subnet %s\n", work->work_group, subrec->subnet_name);
 
 	work->mst_state = MST_BROWSER; /* registering WORKGROUP(1d) succeeded */
 
@@ -395,13 +389,10 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
 		master browser as soon as possible that we are a local master browser. */
 	reset_announce_timer();
 
-	if( DEBUGLVL( 0 ) ) {
-		dbgtext( "*****\n\n" );
-		dbgtext( "Samba name server %s ", lp_netbios_name() );
-		dbgtext( "is now a local master browser " );
-		dbgtext( "for workgroup %s ", work->work_group );
-		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
-	}
+	DBG_WARNING( "*****\n\n"
+		"Samba name server %s is now a local master browser "
+		"for workgroup %s on subnet %s\n\n*****\n",
+		lp_netbios_name(), work->work_group, subrec->subnet_name );
 }
 
 /****************************************************************************
@@ -415,15 +406,15 @@ static void become_local_master_fail2(struct subnet_record *subrec,
 	unstring failname;
 	struct work_record *work;
 
-	DEBUG(0,("become_local_master_fail2: failed to register name %s on subnet %s. \
-Failed to become a local master browser.\n", nmb_namestr(fail_name), subrec->subnet_name));
+	DBG_WARNING("become_local_master_fail2: failed to register name %s on subnet %s. \
+Failed to become a local master browser.\n", nmb_namestr(fail_name), subrec->subnet_name);
 
 	pull_ascii_nstring(failname, sizeof(failname), fail_name->name);
 	work = find_workgroup_on_subnet( subrec, failname);
 
 	if(!work) {
-		DEBUG(0,("become_local_master_fail2: Error - cannot find \
-workgroup %s on subnet %s\n", failname, subrec->subnet_name));
+		DBG_WARNING("become_local_master_fail2: Error - cannot find \
+workgroup %s on subnet %s\n", failname, subrec->subnet_name);
 		return;
 	}
 
@@ -445,13 +436,13 @@ static void become_local_master_stage1(struct subnet_record *subrec,
 	struct work_record *work = find_workgroup_on_subnet( subrec, work_name);
 
 	if(!work) {
-		DEBUG(0,("become_local_master_stage1: Error - cannot find \
-			%s on subnet %s\n", work_name, subrec->subnet_name));
+		DBG_WARNING("become_local_master_stage1: Error - cannot find \
+			%s on subnet %s\n", work_name, subrec->subnet_name);
 		return;
 	}
 
-	DEBUG(3,("become_local_master_stage1: go to stage 2: register the %s<1d> name.\n",
-		work->work_group));
+	DBG_NOTICE("become_local_master_stage1: go to stage 2: register the %s<1d> name.\n",
+		work->work_group);
 
 	work->mst_state = MST_MSB; /* Registering MSBROWSE was successful. */
 
@@ -483,23 +474,23 @@ static void become_local_master_fail1(struct subnet_record *subrec,
 	struct work_record *work = find_workgroup_on_subnet(subrec, work_name);
 
 	if(!work) {
-		DEBUG(0,("become_local_master_fail1: Error - cannot find \
-workgroup %s on subnet %s\n", work_name, subrec->subnet_name));
+		DBG_WARNING("become_local_master_fail1: Error - cannot find \
+workgroup %s on subnet %s\n", work_name, subrec->subnet_name);
 		return;
 	}
 
 	if(find_server_in_workgroup(work, lp_netbios_name()) == NULL) {
-		DEBUG(0,("become_local_master_fail1: Error - cannot find server %s \
+		DBG_WARNING("become_local_master_fail1: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			lp_netbios_name(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name);
 		return;
 	}
 
 	reset_workgroup_state( subrec, work->work_group, False );
 
-	DEBUG(0,("become_local_master_fail1: Failed to become a local master browser for \
+	DBG_WARNING("become_local_master_fail1: Failed to become a local master browser for \
 workgroup %s on subnet %s. Couldn't register name %s.\n",
-		work->work_group, subrec->subnet_name, nmb_namestr(fail_name)));
+		work->work_group, subrec->subnet_name, nmb_namestr(fail_name));
 }
 
 /******************************************************************
@@ -518,27 +509,27 @@ void become_local_master_browser(struct subnet_record *subrec, struct work_recor
 
 	/* Sanity check. */
 	if (!lp_local_master()) { 
-		DEBUG(0,("become_local_master_browser: Samba not configured as a local master browser.\n"));
+		DBG_WARNING("become_local_master_browser: Samba not configured as a local master browser.\n");
 		return;
 	}
 
 	if(!AM_POTENTIAL_MASTER_BROWSER(work)) {
-		DEBUG(2,("become_local_master_browser: Awaiting potential browser state. Current state is %d\n",
-			work->mst_state ));
+		DBG_NOTICE("become_local_master_browser: Awaiting potential browser state. Current state is %d\n",
+			work->mst_state );
 		return;
 	}
 
 	if(find_server_in_workgroup( work, lp_netbios_name()) == NULL) {
-		DEBUG(0,("become_local_master_browser: Error - cannot find server %s \
+		DBG_WARNING("become_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			lp_netbios_name(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name);
 		return;
 	}
 
-	DEBUG(2,("become_local_master_browser: Starting to become a master browser for workgroup \
-%s on subnet %s\n", work->work_group, subrec->subnet_name));
+	DBG_NOTICE("become_local_master_browser: Starting to become a master browser for workgroup \
+%s on subnet %s\n", work->work_group, subrec->subnet_name);
   
-	DEBUG(3,("become_local_master_browser: first stage - attempt to register ^1^2__MSBROWSE__^2^1\n"));
+	DBG_NOTICE("become_local_master_browser: first stage - attempt to register ^1^2__MSBROWSE__^2^1\n");
 	work->mst_state = MST_BACKUP; /* an election win was successful */
 
 	work->ElectionCriterion |= 0x5;
@@ -548,7 +539,7 @@ in workgroup %s on subnet %s\n",
 
 	/* Setup the userdata_struct. */
 	if((userdata = (struct userdata_struct *)SMB_MALLOC(size)) == NULL) {
-		DEBUG(0,("become_local_master_browser: malloc fail.\n"));
+		DBG_ERR("become_local_master_browser: malloc fail.\n");
 		return;
 	}
 
@@ -575,8 +566,8 @@ in workgroup %s on subnet %s\n",
 
 void set_workgroup_local_master_browser_name( struct work_record *work, const char *newname)
 {
-	DEBUG(5,("set_workgroup_local_master_browser_name: setting local master name to '%s' \
-for workgroup %s.\n", newname, work->work_group ));
+	DBG_INFO("set_workgroup_local_master_browser_name: setting local master name to '%s' \
+for workgroup %s.\n", newname, work->work_group );
 
 #if 0
   /*
