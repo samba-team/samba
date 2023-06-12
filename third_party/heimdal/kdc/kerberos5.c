@@ -1282,6 +1282,7 @@ struct kdc_patypes {
 #define PA_SYNTHETIC_OK	4
 #define PA_REPLACE_REPLY_KEY	8   /* PA mech replaces reply key */
 #define PA_USES_LONG_TERM_KEY	16  /* PA mech uses client's long-term key */
+#define PA_USES_FAST_COOKIE	32  /* Multi-step PA mech maintains state in PA-FX-COOKIE */
     krb5_error_code (*validate)(astgs_request_t, const PA_DATA *pa);
     krb5_error_code (*finalize_pac)(astgs_request_t r);
     void (*cleanup)(astgs_request_t r);
@@ -1324,7 +1325,7 @@ static const struct kdc_patypes pat[] = {
     { KRB5_PADATA_FX_COOKIE, "FX-COOKIE", 0, NULL, NULL, NULL },
     {
 	KRB5_PADATA_GSS , "GSS",
-	PA_ANNOUNCE | PA_SYNTHETIC_OK | PA_REPLACE_REPLY_KEY,
+	PA_ANNOUNCE | PA_SYNTHETIC_OK | PA_REPLACE_REPLY_KEY | PA_USES_FAST_COOKIE,
 	pa_gss_validate, pa_gss_finalize_pac, NULL
     },
 };
@@ -2531,6 +2532,8 @@ _kdc_as_rep(astgs_request_t r)
 		continue;
 	    if (r->armor_crypto == NULL && (pat[n].flags & PA_REQ_FAST))
 		continue;
+	    if (!r->config->enable_fast_cookie && (pat[n].flags & PA_USES_FAST_COOKIE))
+		continue;
 
 	    kdc_log(r->context, config, 5,
 		    "Looking for %s pa-data -- %s", pat[n].name, r->cname);
@@ -2613,6 +2616,8 @@ _kdc_as_rep(astgs_request_t r)
 	    if (pat[n].type == KRB5_PADATA_FX_FAST && !r->config->enable_fast)
 		continue;
 	    if (pat[n].type == KRB5_PADATA_GSS && !r->config->enable_gss_preauth)
+		continue;
+	    if (!r->config->enable_fast_cookie && (pat[n].flags & PA_USES_FAST_COOKIE))
 		continue;
 
 	    ret = krb5_padata_add(r->context, r->rep.padata,

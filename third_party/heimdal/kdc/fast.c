@@ -266,6 +266,33 @@ fast_add_cookie(astgs_request_t r,
     return ret;
 }
 
+static krb5_error_code
+fast_add_dummy_cookie(astgs_request_t r,
+		      METHOD_DATA *method_data)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    const krb5_data *dummy_fast_cookie = &r->config->dummy_fast_cookie;
+
+    if (dummy_fast_cookie->data == NULL)
+	return 0;
+
+    ret = krb5_data_copy(&data,
+			 dummy_fast_cookie->data,
+			 dummy_fast_cookie->length);
+    if (ret)
+	return ret;
+
+    ret = krb5_padata_add(r->context, method_data,
+			  KRB5_PADATA_FX_COOKIE,
+			  data.data, data.length);
+    if (ret) {
+	krb5_data_free(&data);
+    }
+
+    return ret;
+}
+
 krb5_error_code
 _kdc_fast_mk_response(krb5_context context,
 		      krb5_crypto armor_crypto,
@@ -341,13 +368,24 @@ _kdc_fast_mk_e_data(astgs_request_t r,
      * FX-COOKIE can be used outside of FAST, e.g. SRP or GSS.
      */
     if (armor_crypto || r->fast.fast_state.len) {
-        kdc_log(r->context, r->config, 5, "Adding FAST cookie for KRB-ERROR");
-	ret = fast_add_cookie(r, error_client, error_method);
-	if (ret) {
-	    kdc_log(r->context, r->config, 1,
-		    "Failed to add FAST cookie: %d", ret);
-	    free_METHOD_DATA(error_method);
-	    return ret;
+	if (r->config->enable_fast_cookie) {
+	    kdc_log(r->context, r->config, 5, "Adding FAST cookie for KRB-ERROR");
+	    ret = fast_add_cookie(r, error_client, error_method);
+	    if (ret) {
+		kdc_log(r->context, r->config, 1,
+			"Failed to add FAST cookie: %d", ret);
+		free_METHOD_DATA(error_method);
+		return ret;
+	    }
+	} else {
+	    kdc_log(r->context, r->config, 5, "Adding dummy FAST cookie for KRB-ERROR");
+	    ret = fast_add_dummy_cookie(r, error_method);
+	    if (ret) {
+		kdc_log(r->context, r->config, 1,
+			"Failed to add dummy FAST cookie: %d", ret);
+		free_METHOD_DATA(error_method);
+		return ret;
+	    }
 	}
     }
 
@@ -803,17 +841,19 @@ _kdc_fast_unwrap_request(astgs_request_t r,
     if (ret)
 	return ret;
 
-    /*
-     * FX-COOKIE can be used outside of FAST, e.g. SRP or GSS.
-     */
-    pa = _kdc_find_padata(&r->req, &i, KRB5_PADATA_FX_COOKIE);
-    if (pa) {
-	krb5_const_principal ticket_client = NULL;
+    if (r->config->enable_fast_cookie) {
+	/*
+	 * FX-COOKIE can be used outside of FAST, e.g. SRP or GSS.
+	 */
+	pa = _kdc_find_padata(&r->req, &i, KRB5_PADATA_FX_COOKIE);
+	if (pa) {
+	    krb5_const_principal ticket_client = NULL;
 
-	if (tgs_ticket)
-	    ticket_client = tgs_ticket->client;
+	    if (tgs_ticket)
+		ticket_client = tgs_ticket->client;
 
-	ret = fast_parse_cookie(r, ticket_client, pa);
+	    ret = fast_parse_cookie(r, ticket_client, pa);
+	}
     }
 
     return ret;

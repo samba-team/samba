@@ -92,6 +92,12 @@ struct krb5_kdc_service {
     size_t num_db;						\
     const char *app;						\
 								\
+    /*
+     * If non-null, contains static dummy data to include in
+     * place of the FAST cookie when it is disabled.
+     */								\
+    krb5_data dummy_fast_cookie;				\
+								\
     /*								\
      * Windows 2019 (and earlier versions) always sends the salt\
      * and Samba has testsuites that check this behaviour, so a \
@@ -107,6 +113,7 @@ struct krb5_kdc_service {
 								\
     unsigned int require_pac : 1;				\
     unsigned int enable_fast : 1;				\
+    unsigned int enable_fast_cookie : 1;			\
     unsigned int enable_armored_pa_enc_timestamp : 1
 
 #ifndef __KDC_LOCL_H__
