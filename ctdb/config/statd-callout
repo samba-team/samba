@@ -5,16 +5,18 @@
 
 # statd must be configured to use this script as its high availability call-out.
 #
-# In most Linux versions this can be done using something like the following...
+# Modern NFS utils versions use /etc/nfs.conf:
+#
+#   [statd]
+#     name = mycluster
+#     ha-callout = /etc/ctdb/statd-callout
+#
+# Older Linux versions may use something like the following...
 #
 # /etc/sysconfig/nfs (Red Hat) or /etc/default/nfs-common (Debian):
-#   NFS_HOSTNAME=myhostname
+#   NFS_HOSTNAME=mycluster
 #   STATD_HOSTNAME="${NFS_HOSTNAME} -H /etc/ctdb/statd-callout"
 #
-# Newer Red Hat Linux variants instead use /etc/nfs.conf:
-#   [statd]
-#     name = myhostname
-#     ha-callout = /etc/ctdb/statd-callout
 
 [ -n "$CTDB_BASE" ] ||
 	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && echo "$PWD")
