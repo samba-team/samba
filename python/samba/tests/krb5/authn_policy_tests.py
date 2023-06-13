@@ -1565,6 +1565,44 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expect_status=True,
                       expected_status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
+    def test_authn_policy_allowed_from_no_fast_negative_lifetime(self):
+        # Create an authentication policy that restricts
+        # authentication. Include some negative TGT lifetimes for testing what
+        # gets logged.
+        allowed_from = 'O:SY'
+        policy_id = self.get_new_username()
+        policy = self.create_authn_policy(policy_id,
+                                          enforced=True,
+                                          user_allowed_from=allowed_from,
+                                          user_tgt_lifetime=-115,
+                                          computer_tgt_lifetime=-235,
+                                          service_tgt_lifetime=-355)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy)
+
+        # Show that we cannot authenticate without using an armor ticket.
+        self._get_tgt(client_creds, expected_error=KDC_ERR_POLICY,
+                      expect_status=True,
+                      expected_status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+    def test_authn_policy_allowed_from_no_fast_unenforced(self):
+        # Create an unenforced authentication policy that restricts
+        # authentication.
+        allowed_from = 'O:SY'
+        policy_id = self.get_new_username()
+        policy = self.create_authn_policy(policy_id,
+                                          enforced=False,
+                                          user_allowed_from=allowed_from)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy)
+
+        # Show that we don’t get an error when the policy is unenforced.
+        self._get_tgt(client_creds)
+
     def test_authn_policy_allowed_from_user_allow_group_not_a_member(self):
         samdb = self.get_samdb()
 

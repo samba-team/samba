@@ -67,3 +67,7 @@
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_primary_domain_local_no_compression_as_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_primary_universal_as_req_to_service.ad_dc
 ^samba.tests.krb5.group_tests.samba.tests.krb5.group_tests.GroupTests.test_group_universal_as_req_to_service.ad_dc
+#
+# Authentication policy tests
+#
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_fast_negative_lifetime.ad_dc

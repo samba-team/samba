@@ -77,6 +77,7 @@
 # Authentication policy tests
 #
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_fast.ad_dc
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_fast_negative_lifetime.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_owner.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_service_deny.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_service_deny_from_rodc.ad_dc
