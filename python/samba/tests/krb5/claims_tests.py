@@ -716,10 +716,6 @@ class ClaimsTests(KDCBaseTest):
                                          etypes=etypes)
         self.check_reply(rep, KRB_TGS_REP)
 
-    @staticmethod
-    def freeze(m):
-        return frozenset((k, v) for k, v in m.items())
-
     @classmethod
     def setUpDynamicTestCases(cls):
         FILTER = env_get_var_value('FILTER', allow_missing=True)
