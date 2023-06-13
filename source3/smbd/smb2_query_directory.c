@@ -440,7 +440,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (in_flags & SMB2_CONTINUE_FLAG_RESTART) {
-		dptr_SeekDir(fsp->dptr, 0);
+		dptr_RewindDir(fsp->dptr);
 	}
 
 	if (in_flags & SMB2_CONTINUE_FLAG_SINGLE) {
