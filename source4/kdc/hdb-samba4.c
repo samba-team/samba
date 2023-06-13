@@ -809,7 +809,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				rwdc_fallback = kdc_db_ctx->rodc;
 			} else {
 				if (r->error_code == KRB5KDC_ERR_NEVER_VALID) {
-					edata_status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
+					edata_status = status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
+				} else {
+					status = krb5_to_nt_status(r->error_code);
 				}
 
 				if (kdc_db_ctx->rodc && send_to_sam != NULL) {
