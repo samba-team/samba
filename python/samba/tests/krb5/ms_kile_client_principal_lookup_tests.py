@@ -50,7 +50,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
-    def check_pac(self, samdb, auth_data, dn, uc, name, upn=None):
+    def check_pac(self, samdb, auth_data, uc, name, upn=None):
 
         pac_data = self.get_pac_data(auth_data)
         if upn is None:
@@ -134,7 +134,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         # Check the contents of the pac, and the ticket
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
-        self.check_pac(samdb, enc_part['authorization-data'], dn, uc, user_name)
+        self.check_pac(samdb, enc_part['authorization-data'], uc, user_name)
         # check the crealm and cname
         cname = enc_part['cname']
         self.assertEqual(NT_PRINCIPAL, cname['name-type'])
@@ -192,7 +192,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         # Check the contents of the pac, and the ticket
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
-        self.check_pac(samdb, enc_part['authorization-data'], dn, mc, mach_name + '$')
+        self.check_pac(samdb, enc_part['authorization-data'], mc, mach_name + '$')
         # check the crealm and cname
         cname = enc_part['cname']
         self.assertEqual(NT_PRINCIPAL, cname['name-type'])
@@ -256,7 +256,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         # Check the contents of the service ticket
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
-        self.check_pac(samdb, enc_part['authorization-data'], dn, uc, upn_name)
+        self.check_pac(samdb, enc_part['authorization-data'], uc, upn_name)
         # check the crealm and cname
         cname = enc_part['cname']
         self.assertEqual(NT_PRINCIPAL, cname['name-type'])
@@ -388,7 +388,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
         self.check_pac(samdb,
-                       enc_part['authorization-data'], dn, uc, user_name)
+                       enc_part['authorization-data'], uc, user_name)
         # check the crealm and cname
         cname = enc_part['cname']
         self.assertEqual(NT_PRINCIPAL, cname['name-type'])
@@ -493,7 +493,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
         self.check_pac(
-            samdb, enc_part['authorization-data'], dn, uc, upn, upn=upn)
+            samdb, enc_part['authorization-data'], uc, upn, upn=upn)
         # check the crealm and cname
         cname = enc_part['cname']
         crealm = enc_part['crealm']
@@ -558,7 +558,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
         self.check_pac(
-            samdb, enc_part['authorization-data'], dn, uc, ename, upn=ename)
+            samdb, enc_part['authorization-data'], uc, ename, upn=ename)
         # check the crealm and cname
         cname = enc_part['cname']
         crealm = enc_part['crealm']
@@ -624,7 +624,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
         self.check_pac(
-            samdb, enc_part['authorization-data'], dn, mc, ename, upn=uname)
+            samdb, enc_part['authorization-data'], mc, ename, upn=uname)
         # check the crealm and cname
         cname = enc_part['cname']
         crealm = enc_part['crealm']
@@ -760,7 +760,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ticket = rep['ticket']
         enc_part = self.decode_service_ticket(mc, ticket)
         self.check_pac(
-            samdb, enc_part['authorization-data'], dn, uc, uname, upn=uname)
+            samdb, enc_part['authorization-data'], uc, uname, upn=uname)
         # check the crealm and cname
         cname = enc_part['cname']
         self.assertEqual(NT_ENTERPRISE_PRINCIPAL, cname['name-type'])
