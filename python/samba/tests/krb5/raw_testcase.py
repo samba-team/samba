@@ -396,6 +396,7 @@ class KerberosCredentials(Credentials):
         self.dn = None
         self.upn = None
         self.spn = None
+        self.account_type = None
 
     def set_as_supported_enctypes(self, value):
         self.as_supported_enctypes = int(value)
@@ -527,6 +528,12 @@ class KerberosCredentials(Credentials):
 
     def get_upn(self):
         return self.upn
+
+    def set_type(self, account_type):
+        self.account_type = account_type
+
+    def get_type(self):
+        return self.account_type
 
     def update_password(self, password):
         self.set_password(password)

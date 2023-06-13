@@ -879,6 +879,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         creds.set_dn(ldb.Dn(samdb, dn))
         creds.set_upn(upn)
         creds.set_spn(spn)
+        creds.set_type(account_type)
 
         self.creds_set_enctypes(creds)
 
