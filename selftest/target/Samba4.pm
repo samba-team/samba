@@ -3278,6 +3278,11 @@ sub prepare_dc_testenv
 
 	$ctx->{smb_conf_extra_options} = "
 	$conf_options
+
+	# Some of the DCs based on this will be in FL 2016 domains, so
+	# claim FL 2016 DC capability
+	ad dc functional level = 2016
+
 	max xmit = 32K
 	server max protocol = SMB2
 	samba kcc command = /bin/true
