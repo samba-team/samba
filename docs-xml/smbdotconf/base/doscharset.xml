@@ -6,7 +6,7 @@
 <description>
         <para>DOS SMB clients assume the server has 
 	the same charset as they do. This option specifies which 
-	charset Samba should talk to DOS clients.
+	charset Samba should use to talk to DOS clients.
 	</para>
 
 	<para>The default depends on which charsets you have installed. 
