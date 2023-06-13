@@ -1349,14 +1349,18 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly allows the machine
-        # account for a user.
+        # account for a user. Include some different TGT lifetimes for testing
+        # what gets logged.
         allowed = f'O:SYD:(A;;CR;;;{mach_sid})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
                                           user_allowed_from=allowed,
-                                          service_allowed_from=denied)
+                                          user_tgt_lifetime=120,
+                                          computer_tgt_lifetime=240,
+                                          service_allowed_from=denied,
+                                          service_tgt_lifetime=360)
 
         # Create a user account with the assigned policy.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
@@ -1375,14 +1379,18 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly denies the machine
-        # account for a user.
+        # account for a user. Include some different TGT lifetimes for testing
+        # what gets logged.
         allowed = 'O:SYD:(A;;CR;;;WD)'
         denied = f'O:SYD:(D;;CR;;;{mach_sid})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
                                           user_allowed_from=denied,
-                                          service_allowed_from=allowed)
+                                          user_tgt_lifetime=120,
+                                          computer_tgt_lifetime=240,
+                                          service_allowed_from=allowed,
+                                          service_tgt_lifetime=360)
 
         # Create a user account with the assigned policy.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
@@ -1538,11 +1546,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
     def test_authn_policy_allowed_from_no_fast(self):
         # Create an authentication policy that restricts authentication.
+        # Include some different TGT lifetimes for testing what gets logged.
         allowed_from = 'O:SY'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
-                                          user_allowed_from=allowed_from)
+                                          user_allowed_from=allowed_from,
+                                          user_tgt_lifetime=115,
+                                          computer_tgt_lifetime=235,
+                                          service_tgt_lifetime=355)
 
         # Create a user account with the assigned policy.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
