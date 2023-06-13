@@ -446,11 +446,6 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	dptr->did_stat = true;
 
-	if (VALID_STAT(*pst)) {
-		name = talloc_strdup(ctx, dptr->wcard);
-		goto ret;
-	}
-
 	pathreal = talloc_asprintf(ctx,
 				"%s/%s",
 				dptr->dir_hnd->dir_smb_fname->base_name,
