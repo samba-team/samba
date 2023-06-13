@@ -28,6 +28,16 @@ interface windows_events
 		EVT_ID_USER_REMOVED_FROM_UNIVERSAL_GROUP		= 4762
 	} event_id_type;
 
+	/* See https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/authentication-policies-and-authentication-policy-silos#BKMK_ErrorandEvents */
+	typedef [v1_enum,public] enum {
+		AUTH_EVT_ID_NONE					=    0,
+		AUTH_EVT_ID_NTLM_DEVICE_RESTRICTION			=  101,
+		AUTH_EVT_ID_KERBEROS_DEVICE_RESTRICTION			=  105,
+		AUTH_EVT_ID_KERBEROS_DEVICE_RESTRICTION_AUDIT		=  305,
+		AUTH_EVT_ID_KERBEROS_SERVER_RESTRICTION			=  106,
+		AUTH_EVT_ID_KERBEROS_SERVER_RESTRICTION_AUDIT		=  306
+	} auth_event_id_type;
+
 	typedef [v1_enum,public] enum {
 		EVT_LOGON_INTERACTIVE		=  2,
 		EVT_LOGON_NETWORK		=  3,
