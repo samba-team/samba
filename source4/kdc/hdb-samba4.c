@@ -800,12 +800,10 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
 				edata_status = status;
 
-				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
-				r->error_code = final_ret;
+				r->error_code = final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 				rwdc_fallback = kdc_db_ctx->rodc;
 			} else if (!NT_STATUS_IS_OK(status)) {
-				final_ret = KRB5KRB_ERR_GENERIC;
-				r->error_code = final_ret;
+				r->error_code = final_ret = KRB5KRB_ERR_GENERIC;
 				rwdc_fallback = kdc_db_ctx->rodc;
 			} else {
 				if (r->error_code == KRB5KDC_ERR_NEVER_VALID) {
@@ -831,8 +829,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				DBG_ERR("ERROR: VALIDATED_LONG_TERM_KEY "
 					"with error=0 => INTERNAL_ERROR\n");
 				status = NT_STATUS_INTERNAL_ERROR;
-				final_ret = KRB5KRB_ERR_GENERIC;
-				r->error_code = final_ret;
+				r->error_code = final_ret = KRB5KRB_ERR_GENERIC;
 			} else if (!NT_STATUS_IS_OK(p->reject_status)) {
 				status = p->reject_status;
 			} else {
@@ -849,8 +846,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				DBG_ERR("ERROR: PREAUTH_SUCCEEDED "
 					"with error=0 => INTERNAL_ERROR\n");
 				status = NT_STATUS_INTERNAL_ERROR;
-				final_ret = KRB5KRB_ERR_GENERIC;
-				r->error_code = final_ret;
+				r->error_code = final_ret = KRB5KRB_ERR_GENERIC;
 			} else if (!NT_STATUS_IS_OK(p->reject_status)) {
 				status = p->reject_status;
 			} else {
@@ -863,8 +859,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
 				edata_status = status;
 
-				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
-				r->error_code = final_ret;
+				r->error_code = final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 			} else {
 				status = NT_STATUS_WRONG_PASSWORD;
 			}
@@ -890,8 +885,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			DBG_ERR("Unhandled hdb_auth_status=%d => INTERNAL_ERROR\n",
 				hdb_auth_status);
 			status = NT_STATUS_INTERNAL_ERROR;
-			final_ret = KRB5KRB_ERR_GENERIC;
-			r->error_code = final_ret;
+			r->error_code = final_ret = KRB5KRB_ERR_GENERIC;
 		}
 
 		if (!NT_STATUS_IS_OK(edata_status)) {
