@@ -2145,8 +2145,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create a user account.
-        client_creds = self.get_cached_creds(account_type=self.AccountType.USER,
-                                             use_cache=False)
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
         client_dn = client_creds.get_dn()
         client_sid = self.get_objectSid(samdb, client_dn)
 
@@ -2596,7 +2597,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, KDC_ERR_POLICY, client_creds, target_creds,
                       armor_tgt=mach_tgt,
                       expect_edata=self.expect_padata_outer,
-                      # We aren’t particular about whether or not we get an NTSTATUS.
+                      # We aren’t particular about whether or not we get an
+                      # NTSTATUS.
                       expect_status=None,
                       expected_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
                       check_patypes=False)
