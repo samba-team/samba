@@ -360,11 +360,13 @@ void dptr_RewindDir(struct dptr_struct *dptr)
 {
 	long offset;
 	RewindDir(dptr->dir_hnd, &offset);
+	dptr->did_stat = false;
 }
 
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
 {
 	SeekDir(dptr->dir_hnd, offset);
+	dptr->did_stat = false;
 }
 
 long dptr_TellDir(struct dptr_struct *dptr)
@@ -411,19 +413,21 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			      long *poffset,
 			      SMB_STRUCT_STAT *pst)
 {
+	struct smb_Dir *dir_hnd = dptr->dir_hnd;
+	struct files_struct *dir_fsp = dir_hnd->fsp;
+	struct smb_filename *dir_name = dir_fsp->fsp_name;
 	struct smb_filename smb_fname_base;
-	char *name = NULL;
-	const char *name_temp = NULL;
-	char *talloced = NULL;
-	char *pathreal = NULL;
-	char *found_name = NULL;
-	NTSTATUS status;
+	bool retry_scanning = false;
+	int ret;
+	int flags = 0;
 
 	SET_STAT_INVALID(*pst);
 
-	if (dptr->has_wild || dptr->did_stat) {
-		name_temp = ReadDirName(dptr->dir_hnd, poffset, pst,
-						    &talloced);
+	if (dptr->has_wild) {
+		const char *name_temp = NULL;
+		char *talloced = NULL;
+
+		name_temp = ReadDirName(dir_hnd, poffset, pst, &talloced);
 		if (name_temp == NULL) {
 			return NULL;
 		}
@@ -433,93 +437,69 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		return talloc_strdup(ctx, name_temp);
 	}
 
-	/* If poffset is -1 then we know we returned this name before and we
-	 * have no wildcards. We're at the end of the directory. */
-	if (*poffset == END_OF_DIRECTORY_OFFSET) {
+	if (dptr->did_stat) {
+		/*
+		 * No wildcard, this is not a real directory traverse
+		 * but a "stat" call behind a query_directory. We've
+		 * been here, nothing else to look at.
+		 */
 		return NULL;
 	}
-
-	/* We know the stored wcard contains no wildcard characters.
-	 * See if we can match with a stat call. If we can't, then set
-	 * did_stat to true to ensure we only do this once and keep
-	 * searching. */
-
 	dptr->did_stat = true;
 
-	pathreal = talloc_asprintf(ctx,
-				"%s/%s",
-				dptr->dir_hnd->dir_smb_fname->base_name,
-				dptr->wcard);
-	if (!pathreal)
-		return NULL;
-
 	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = (struct smb_filename) {
-		.base_name = pathreal,
-		.flags = dptr->dir_hnd->fsp->fsp_name->flags,
-		.twrp = dptr->dir_hnd->fsp->fsp_name->twrp,
+	smb_fname_base = (struct smb_filename){
+		.base_name = dptr->wcard,
+		.flags = dir_name->flags,
+		.twrp = dir_name->twrp,
 	};
 
-	if (vfs_stat(dptr->conn, &smb_fname_base) == 0) {
-		*pst = smb_fname_base.st;
-		name = talloc_strdup(ctx, dptr->wcard);
-		goto clean;
-	} else {
-		/* If we get any other error than ENOENT or ENOTDIR
-		   then the file exists we just can't stat it. */
-		if (errno != ENOENT && errno != ENOTDIR) {
-			name = talloc_strdup(ctx, dptr->wcard);
-			goto clean;
-		}
+	if (dir_name->flags & SMB_FILENAME_POSIX_PATH) {
+		flags |= AT_SYMLINK_NOFOLLOW;
 	}
 
-	/* Stat failed. We know this is authoritative if we are
-	 * providing case sensitive semantics or the underlying
-	 * filesystem is case sensitive.
-	 */
-	if (dptr->dir_hnd->case_sensitive ||
-	    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH))
-	{
-		goto clean;
+	ret = SMB_VFS_FSTATAT(dptr->conn, dir_fsp, &smb_fname_base, pst, flags);
+	if (ret == 0) {
+		return talloc_strdup(ctx, dptr->wcard);
 	}
 
 	/*
-	 * Try case-insensitive stat if the fs has the ability. This avoids
-	 * scanning the whole directory.
+	 * If we get any other error than ENOENT or ENOTDIR
+	 * then the file exists, we just can't stat it.
 	 */
-	status = SMB_VFS_GET_REAL_FILENAME_AT(dptr->conn,
-					      dptr->dir_hnd->fsp,
+	if (errno != ENOENT && errno != ENOTDIR) {
+		return talloc_strdup(ctx, dptr->wcard);
+	}
+
+	/*
+	 * A scan will find the long version of a mangled name as
+	 * wildcard.
+	 */
+	retry_scanning |= mangle_is_mangled(dptr->wcard, dptr->conn->params);
+
+	/*
+	 * Also retry scanning if the client requested case
+	 * insensitive semantics and the file system does not provide
+	 * it.
+	 */
+	retry_scanning |=
+		(!dir_hnd->case_sensitive &&
+		 (dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH));
+
+	if (retry_scanning) {
+		char *found_name = NULL;
+		NTSTATUS status;
+
+		status = get_real_filename_at(dir_fsp,
 					      dptr->wcard,
 					      ctx,
 					      &found_name);
-	if (NT_STATUS_IS_OK(status)) {
-		name = found_name;
-		goto clean;
-	}
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		/* The case-insensitive lookup was authoritative. */
-		goto clean;
+		if (NT_STATUS_IS_OK(status)) {
+			return found_name;
+		}
 	}
 
-	TALLOC_FREE(pathreal);
-
-	name_temp = ReadDirName(dptr->dir_hnd, poffset, pst, &talloced);
-	if (name_temp == NULL) {
-		return NULL;
-	}
-	if (talloced != NULL) {
-		return talloc_move(ctx, &talloced);
-	}
-	return talloc_strdup(ctx, name_temp);
-
-clean:
-	TALLOC_FREE(pathreal);
-ret:
-	/* We need to set the underlying dir_hnd offset to -1
-	 * also as this function is usually called with the
-	 * output from TellDir. */
-	dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-	return name;
+	return NULL;
 }
 
 /****************************************************************************
