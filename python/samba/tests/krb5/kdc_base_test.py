@@ -911,11 +911,18 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         res = samdb.search(base=dn,
                            scope=ldb.SCOPE_BASE,
-                           attrs=['msDS-KeyVersionNumber'])
+                           attrs=['msDS-KeyVersionNumber',
+                                  'objectSid'])
+
         kvno = res[0].get('msDS-KeyVersionNumber', idx=0)
         if kvno is not None:
             self.assertEqual(int(kvno), expected_kvno)
         creds.set_kvno(expected_kvno)
+
+        sid = res[0].get('objectSid', idx=0)
+        sid = samdb.schema_format_value('objectSID', sid)
+        sid = sid.decode('utf-8')
+        creds.set_sid(sid)
 
         return (creds, dn)
 
