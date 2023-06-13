@@ -246,10 +246,6 @@ class S4UKerberosTests(KDCBaseTest):
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                  names=[client_name])
 
-        samdb = self.get_samdb()
-        client_dn = client_creds.get_dn()
-        sid = self.get_objectSid(samdb, client_dn)
-
         service_name = kdc_dict.pop('service_name', None)
         if service_name is None:
             service_name = service_creds.get_username()[:-1]
@@ -313,7 +309,7 @@ class S4UKerberosTests(KDCBaseTest):
             expected_account_name=client_name,
             expected_groups=expected_groups,
             unexpected_groups=unexpected_groups,
-            expected_sid=sid,
+            expected_sid=client_creds.get_sid(),
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
             ticket_decryption_key=service_decryption_key,
@@ -568,9 +564,7 @@ class S4UKerberosTests(KDCBaseTest):
             account_type=self.AccountType.USER,
             opts=client_opts)
 
-        samdb = self.get_samdb()
-        client_dn = client_creds.get_dn()
-        sid = self.get_objectSid(samdb, client_dn)
+        sid = client_creds.get_sid()
 
         service1_opts = kdc_dict.pop('service1_opts', {})
         service2_opts = kdc_dict.pop('service2_opts', {})

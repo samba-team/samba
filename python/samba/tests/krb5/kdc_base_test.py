@@ -3203,7 +3203,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                           attrs=['tokenGroups'])
         self.assertEqual(1, len(res))
 
-        sid = self.get_objectSid(samdb, dn)
+        sid = creds.get_sid()
 
         token_groups = res[0].get('tokenGroups', idx=0)
         token_sid = ndr_unpack(security.dom_sid, token_groups)

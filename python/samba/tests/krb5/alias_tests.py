@@ -94,7 +94,7 @@ class AliasTests(KDCBaseTest):
             samdb, mach_name, account_type=self.AccountType.COMPUTER)
         self.addCleanup(delete_force, samdb, mach_dn)
 
-        mach_sid = self.get_objectSid(samdb, mach_dn)
+        mach_sid = mach_creds.get_sid()
         realm = mach_creds.get_realm()
 
         # The account salt doesn't change when the account is renamed.

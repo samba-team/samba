@@ -437,7 +437,7 @@ class ClaimsTests(KDCBaseTest):
         user_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                names=[user_name])
 
-        user_sid = self.get_objectSid(samdb, user_dn)
+        user_sid = user_creds.get_sid()
 
         mach_realm = mach_creds.get_realm()
 
@@ -1616,7 +1616,7 @@ class ClaimsTests(KDCBaseTest):
         user_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
         user_dn = user_creds.get_dn()
-        user_sid = self.get_objectSid(samdb, user_dn)
+        user_sid = user_creds.get_sid()
 
         mach_name = self.get_new_username()
         mach_creds, mach_dn_str = self.create_account(
@@ -1625,7 +1625,7 @@ class ClaimsTests(KDCBaseTest):
             account_type=self.AccountType.COMPUTER,
             additional_details=details)
         mach_dn = ldb.Dn(samdb, mach_dn_str)
-        mach_sid = self.get_objectSid(samdb, mach_dn)
+        mach_sid = mach_creds.get_sid()
 
         user_principal = Principal(user_dn, user_sid)
         mach_principal = Principal(mach_dn, mach_sid)

@@ -1340,18 +1340,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_from_user_allow(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly allows the machine
         # account for a user. Include some different TGT lifetimes for testing
         # what gets logged.
-        allowed = f'O:SYD:(A;;CR;;;{mach_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -1370,19 +1367,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_from_user_deny(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly denies the machine
         # account for a user. Include some different TGT lifetimes for testing
         # what gets logged.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        denied = f'O:SYD:(D;;CR;;;{mach_sid})'
+        denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -1401,17 +1395,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_error=KDC_ERR_POLICY)
 
     def test_authn_policy_allowed_from_service_allow(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly allows the machine
         # account for a service.
-        allowed = f'O:SYD:(A;;CR;;;{mach_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -1428,18 +1419,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_from_service_deny(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly denies the machine
         # account for a service.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        denied = f'O:SYD:(D;;CR;;;{mach_sid})'
+        denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -1500,17 +1488,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_from_owner_self(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly allows the machine
         # account for a user. Set the owner to the machine account.
-        allowed = f'O:{mach_sid}D:(A;;CR;;;WD)'
+        allowed = f'O:{mach_creds.get_sid()}D:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -1808,18 +1793,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_error=KDC_ERR_POLICY)
 
     def test_authn_policy_allowed_from_user_allow_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
                                      allowed_rodc=True)
         # Modify the TGT to be issued by an RODC.
         mach_tgt = self.issued_by_rodc(self.get_tgt(mach_creds))
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly allows the machine
         # account for a user.
-        allowed = f'O:SYD:(A;;CR;;;{mach_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -1835,19 +1817,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_from_user_deny_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
                                      allowed_rodc=True)
         # Modify the TGT to be issued by an RODC.
         mach_tgt = self.issued_by_rodc(self.get_tgt(mach_creds))
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly denies the machine
         # account for a user.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        denied = f'O:SYD:(D;;CR;;;{mach_sid})'
+        denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -1863,18 +1842,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_error=KDC_ERR_POLICY)
 
     def test_authn_policy_allowed_from_service_allow_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
                                      allowed_rodc=True)
         # Modify the TGT to be issued by an RODC.
         mach_tgt = self.issued_by_rodc(self.get_tgt(mach_creds))
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly allows the machine
         # account for a service.
-        allowed = f'O:SYD:(A;;CR;;;{mach_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -1891,19 +1867,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_from_service_deny_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
                                      allowed_rodc=True)
         # Modify the TGT to be issued by an RODC.
         mach_tgt = self.issued_by_rodc(self.get_tgt(mach_creds))
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create an authentication policy that explicitly denies the machine
         # account for a service.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        denied = f'O:SYD:(D;;CR;;;{mach_sid})'
+        denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -2142,14 +2115,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
+        mach_sid = mach_creds.get_sid()
 
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
             use_cache=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         # Create an authentication policy that explicitly allows the machine
         # account for a user, while denying the user account itself.
@@ -2196,8 +2169,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_computer_allow(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2206,12 +2177,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2229,8 +2199,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_computer_deny(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2239,12 +2207,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2268,18 +2235,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             check_patypes=False)
 
     def test_authn_policy_allowed_to_computer_allow_but_deny_mach(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
+        mach_sid = mach_creds.get_sid()
 
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
+        client_sid = client_creds.get_sid()
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -2304,13 +2269,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_computer_allow_mach(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
-        mach_sid = self.get_objectSid(samdb, mach_creds.get_dn())
 
         # Create a user account.
         client_creds = self.get_cached_creds(
@@ -2319,7 +2281,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the machine account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{mach_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2343,17 +2305,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             check_patypes=False)
 
     def test_authn_policy_allowed_no_fast(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2370,17 +2329,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds)
 
     def test_authn_policy_denied_no_fast(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly disallows the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2567,8 +2523,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             check_patypes=False)
 
     def test_authn_policy_allowed_to_no_owner(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2577,13 +2531,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket. Omit
         # the owner (O:SY) from the SDDL.
-        allowed = f'D:(A;;CR;;;{client_sid})'
+        allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -2604,8 +2557,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       check_patypes=False)
 
     def test_authn_policy_allowed_to_no_owner_unenforced(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2614,13 +2565,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an unenforced authentication policy that applies to a computer
         # and explicitly allows the user account to obtain a service
         # ticket. Omit the owner (O:SY) from the SDDL.
-        allowed = f'D:(A;;CR;;;{client_sid})'
+        allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=False,
@@ -2635,8 +2585,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_owner_self(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2645,7 +2593,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
+        client_sid = client_creds.get_sid()
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -2666,8 +2614,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_owner_anon(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2676,13 +2622,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket. Set
         # the owner to be anonymous.
-        allowed = f'O:AND:(A;;CR;;;{client_sid})'
+        allowed = f'O:AND:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -2697,8 +2642,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_user_allow(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2707,12 +2650,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a user and explicitly
         # allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2731,8 +2673,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_user_deny(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2741,12 +2681,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a user and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2771,8 +2710,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             check_patypes=False)
 
     def test_authn_policy_allowed_to_service_allow(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2781,12 +2718,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a managed service and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2805,8 +2741,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_service_deny(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2815,12 +2749,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a managed service and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2845,8 +2778,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             check_patypes=False)
 
     def test_authn_policy_allowed_to_user_allow_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2855,13 +2786,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        allowed_rodc=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         # Modify the TGT to be issued by an RODC.
         tgt = self.issued_by_rodc(self.get_tgt(client_creds))
 
         # Create an authentication policy that applies to a user and explicitly
         # allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2880,8 +2810,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_user_deny_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2890,13 +2818,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        allowed_rodc=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         # Modify the TGT to be issued by an RODC.
         tgt = self.issued_by_rodc(self.get_tgt(client_creds))
 
         # Create an authentication policy that applies to a user and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2920,8 +2847,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
     def test_authn_policy_allowed_to_computer_allow_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2930,13 +2855,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        allowed_rodc=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         # Modify the TGT to be issued by an RODC.
         tgt = self.issued_by_rodc(self.get_tgt(client_creds))
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2954,8 +2878,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_computer_deny_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -2964,13 +2886,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        allowed_rodc=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         # Modify the TGT to be issued by an RODC.
         tgt = self.issued_by_rodc(self.get_tgt(client_creds))
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -2993,8 +2914,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,)
 
     def test_authn_policy_allowed_to_service_allow_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -3003,13 +2922,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        allowed_rodc=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         # Modify the TGT to be issued by an RODC.
         tgt = self.issued_by_rodc(self.get_tgt(client_creds))
 
         # Create an authentication policy that applies to a managed service and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -3028,8 +2946,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_service_deny_from_rodc(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -3038,13 +2954,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        allowed_rodc=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         # Modify the TGT to be issued by an RODC.
         tgt = self.issued_by_rodc(self.get_tgt(client_creds))
 
         # Create an authentication policy that applies to a managed service and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -3490,12 +3405,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={'id': 1},
             use_cache=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -3526,12 +3440,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={'id': 1},
             use_cache=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -3557,12 +3470,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.COMPUTER,
             use_cache=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -3588,12 +3500,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.COMPUTER,
             use_cache=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -3612,8 +3523,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=tgt)
 
     def test_authn_policy_allowed_to_user_allow_s4u2self(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -3626,11 +3535,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             name_type=NT_PRINCIPAL,
             names=[client_creds.get_username()])
         client_realm = client_creds.get_realm()
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -3659,8 +3567,6 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt)
 
     def test_authn_policy_allowed_to_user_deny_s4u2self(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
@@ -3673,11 +3579,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             name_type=NT_PRINCIPAL,
             names=[client_creds.get_username()])
         client_realm = client_creds.get_realm()
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -3711,8 +3616,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_username = client_creds.get_username()
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
@@ -3742,7 +3646,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={
                 'delegation_to_spn': target_spn,
             })
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -3796,8 +3700,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_tkt_options = 'forwardable'
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
@@ -3823,7 +3726,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={
                 'delegation_to_spn': target_spn,
             })
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -3926,8 +3829,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_username = client_creds.get_username()
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
@@ -3948,7 +3850,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'id': 1})
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -4010,8 +3912,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_tkt_options = 'forwardable'
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
@@ -4028,7 +3929,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={'id': 1})
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -4135,8 +4036,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_username = client_creds.get_username()
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
@@ -4161,7 +4061,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
         service_spn = service_creds.get_spn()
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Allow delegation to ourselves.
@@ -4219,8 +4119,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_username = client_creds.get_username()
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
@@ -4245,7 +4144,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
         service_spn = service_creds.get_spn()
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Allow delegation to ourselves.
@@ -4303,8 +4202,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_tkt_options = 'forwardable'
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
@@ -4324,7 +4222,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={'id': 1},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Don’t set msDS-AllowedToDelegateTo.
@@ -4373,8 +4271,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_username = client_creds.get_username()
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
@@ -4404,7 +4301,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={'delegation_from_dn': ndr_pack(security_descriptor)},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Create an authentication policy that applies to a computer and
@@ -4463,8 +4360,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_username = client_creds.get_username()
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
@@ -4494,7 +4390,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={'delegation_from_dn': ndr_pack(security_descriptor)},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         client_service_tkt = self.get_service_ticket(
@@ -4553,8 +4449,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
+        client_sid = client_creds.get_sid()
 
         client_tkt_options = 'forwardable'
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
@@ -4574,7 +4469,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             opts={'id': 1},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
-        service_sid = self.get_objectSid(samdb, service_creds.get_dn())
+        service_sid = service_creds.get_sid()
         service_tgt = self.get_tgt(service_creds)
 
         # Don’t set msDS-AllowedToActOnBehalfOfOtherIdentity.
@@ -4616,20 +4511,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       check_patypes=False)
 
     def test_authn_policy_allowed_to_computer_allow_user2user(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
 
         client_creds = self.get_mach_creds()
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         client_tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -4649,20 +4541,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       additional_ticket=target_tgt)
 
     def test_authn_policy_allowed_to_computer_deny_user2user(self):
-        samdb = self.get_samdb()
-
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER)
         mach_tgt = self.get_tgt(mach_creds)
 
         client_creds = self.get_mach_creds()
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         client_tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -4699,12 +4588,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a user and explicitly
         # allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -4758,12 +4646,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -4817,12 +4704,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
         tgt = self.get_tgt(client_creds)
 
         # Create an authentication policy that applies to a managed service and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -5697,16 +5583,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             logon_type=netlogon.NetlogonNetworkInformation)
 
     def test_samlogon_allowed_to_computer_allow(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -5730,16 +5613,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             logon_type=netlogon.NetlogonInteractiveInformation)
 
     def test_samlogon_allowed_to_computer_deny(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -5767,17 +5647,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
     def test_samlogon_allowed_to_computer_deny_protected(self):
-        samdb = self.get_samdb()
-
         # Create a protected user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        protected=True,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -5975,17 +5852,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
     def test_samlogon_allowed_to_no_owner(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket. Omit
         # the owner (O:SY) from the SDDL.
-        allowed = f'D:(A;;CR;;;{client_sid})'
+        allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=True,
@@ -6010,17 +5884,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_error=ntstatus.NT_STATUS_INVALID_PARAMETER)
 
     def test_samlogon_allowed_to_no_owner_unenforced(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an unenforced authentication policy that applies to a computer
         # and explicitly allows the user account to obtain a service
         # ticket. Omit the owner (O:SY) from the SDDL.
-        allowed = f'D:(A;;CR;;;{client_sid})'
+        allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
                                           enforced=False,
@@ -6041,16 +5912,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             logon_type=netlogon.NetlogonInteractiveInformation)
 
     def test_samlogon_allowed_to_service_allow(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a managed service and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6075,16 +5943,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             logon_type=netlogon.NetlogonInteractiveInformation)
 
     def test_samlogon_allowed_to_service_deny(self):
-        samdb = self.get_samdb()
-
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a managed service and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6235,11 +6100,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                                        ntlm=True,
                                        cached=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6265,11 +6129,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                                        ntlm=True,
                                        cached=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
 
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6299,11 +6162,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             ntlm=True,
             cached=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
 
         # Create an authentication policy that applies to a managed service and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6330,11 +6192,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             ntlm=True,
             cached=False)
         client_dn = client_creds.get_dn()
-        client_sid = self.get_objectSid(samdb, client_dn)
 
         # Create an authentication policy that applies to a managed service and
         # explicitly denies the user account to obtain a service ticket.
-        denied = f'O:SYD:(D;;CR;;;{client_sid})'
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6361,11 +6222,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,
@@ -6420,11 +6280,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create a user account.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        ntlm=True)
-        client_sid = self.get_objectSid(samdb, client_creds.get_dn())
 
         # Create an authentication policy that applies to a managed service and
         # explicitly allows the user account to obtain a service ticket.
-        allowed = f'O:SYD:(A;;CR;;;{client_sid})'
+        allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
         policy_id = self.get_new_username()
         policy = self.create_authn_policy(policy_id,

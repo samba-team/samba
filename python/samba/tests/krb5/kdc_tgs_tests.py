@@ -471,7 +471,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         enc_part = self.decode_service_ticket(mc, ticket)
 
         pac_data = self.get_pac_data(enc_part['authorization-data'])
-        sid = self.get_objectSid(samdb, dn)
+        sid = uc.get_sid()
         upn = "%s@%s" % (uc.get_username(), realm)
         self.assertEqual(
             uc.get_username(),
@@ -896,7 +896,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         if upn_name is None:
             realm = client_creds.get_realm().lower()
             upn_name = f'{account_name}@{realm}'
-        sid = self.get_objectSid(samdb, dn)
+        sid = client_creds.get_sid()
 
         tgt = self.get_tgt(client_creds,
                            expected_account_name=account_name,
@@ -2147,7 +2147,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         self.get_tgt(creds, pac_request=None,
                      expect_pac=True,
@@ -2158,7 +2158,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2172,7 +2172,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2191,7 +2191,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                                 revealed_to_rodc=True)
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2208,7 +2208,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2224,7 +2224,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                                 revealed_to_rodc=True)
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2239,7 +2239,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2258,7 +2258,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                                 revealed_to_rodc=True)
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2275,7 +2275,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2291,7 +2291,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                                 revealed_to_rodc=True)
 
         samdb = self.get_samdb()
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
                            expect_pac=True,
@@ -2949,11 +2949,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                 'id': 1
             })
 
-        samdb = self.get_samdb()
-
-        other_dn = other_creds.get_dn()
-        other_sid = self.get_objectSid(samdb, other_dn)
-
+        other_sid = other_creds.get_sid()
         other_rid = int(other_sid.rsplit('-', 1)[1])
 
         return other_rid

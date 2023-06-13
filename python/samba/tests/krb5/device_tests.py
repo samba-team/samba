@@ -1915,7 +1915,7 @@ class DeviceTests(KDCBaseTest):
             account_type=self.AccountType.USER,
             use_cache=user_use_cache)
         user_dn = user_creds.get_dn()
-        user_sid = self.get_objectSid(samdb, user_dn)
+        user_sid = user_creds.get_sid()
         user_name = user_creds.get_username()
 
         trust_user_rid = random.randint(2000, 0xfffffffe)
@@ -1942,7 +1942,7 @@ class DeviceTests(KDCBaseTest):
             use_cache=mach_use_cache)
         mach_dn = mach_creds.get_dn()
         mach_dn_str = str(mach_dn)
-        mach_sid = self.get_objectSid(samdb, mach_dn)
+        mach_sid = mach_creds.get_sid()
 
         user_principal = Principal(user_dn, user_sid)
         mach_principal = Principal(mach_dn, mach_sid)

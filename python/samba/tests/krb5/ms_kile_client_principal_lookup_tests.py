@@ -53,7 +53,6 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
     def check_pac(self, samdb, auth_data, dn, uc, name, upn=None):
 
         pac_data = self.get_pac_data(auth_data)
-        sid = self.get_objectSid(samdb, dn)
         if upn is None:
             upn = "%s@%s" % (name, uc.get_realm().lower())
         if name.endswith('$'):
@@ -76,7 +75,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             pac_data.upn,
             "pac_data = {%s}" % str(pac_data))
         self.assertEqual(
-            sid,
+            uc.get_sid(),
             pac_data.account_sid,
             "pac_data = {%s}" % str(pac_data))
 

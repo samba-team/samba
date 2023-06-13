@@ -518,7 +518,7 @@ class KpasswdTests(KDCBaseTest):
         sd_utils = SDUtils(samdb)
 
         user_dn = creds.get_dn()
-        user_sid = self.get_objectSid(samdb, user_dn)
+        user_sid = creds.get_sid()
 
         # Give the user control access on their account.
         ace = f'(A;;CR;;;{user_sid})'
@@ -636,17 +636,11 @@ class KpasswdTests(KDCBaseTest):
                                                  names=['krbtgt', realm])
         ticket.set_sname(krbtgt_sname)
 
-        # Get the user's SID.
-        samdb = self.get_samdb()
-
-        user_dn = creds.get_dn()
-        user_sid = self.get_objectSid(samdb, user_dn)
-
         # Modify the ticket to add a requester SID and give it two minutes to
         # live.
         ticket = self.modify_lifetime(ticket,
                                       lifetime=2 * 60,
-                                      requester_sid=user_sid)
+                                      requester_sid=creds.get_sid())
 
         # Try to use that ticket to get a service ticket.
         service_creds = self.get_service_creds()
@@ -670,17 +664,11 @@ class KpasswdTests(KDCBaseTest):
                                                  names=['krbtgt', realm])
         ticket.set_sname(krbtgt_sname)
 
-        # Get the user's SID.
-        samdb = self.get_samdb()
-
-        user_dn = creds.get_dn()
-        user_sid = self.get_objectSid(samdb, user_dn)
-
         # Modify the ticket to add a requester SID and give it two minutes and
         # ten seconds to live.
         ticket = self.modify_lifetime(ticket,
                                       lifetime=2 * 60 + 10,
-                                      requester_sid=user_sid)
+                                      requester_sid=creds.get_sid())
 
         # Try to use that ticket to get a service ticket.
         service_creds = self.get_service_creds()

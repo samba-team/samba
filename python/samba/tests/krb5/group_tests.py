@@ -221,7 +221,7 @@ class GroupTests(KDCBaseTest):
             })
 
         # Get the SID and RID of the user account.
-        user_sid = self.get_objectSid(samdb, creds.get_dn())
+        user_sid = creds.get_sid()
         user_rid = int(user_sid.rsplit('-', 1)[1])
 
         # Get the SID and RID of the universal group.
@@ -288,7 +288,7 @@ class GroupTests(KDCBaseTest):
             })
 
         # Get the SID and RID of the user account.
-        user_sid = self.get_objectSid(samdb, creds.get_dn())
+        user_sid = creds.get_sid()
         user_rid = int(user_sid.rsplit('-', 1)[1])
 
         # Get the SID and RID of the universal group.
@@ -365,7 +365,7 @@ class GroupTests(KDCBaseTest):
             })
 
         # Get the SID and RID of the user account.
-        user_sid = self.get_objectSid(samdb, creds.get_dn())
+        user_sid = creds.get_sid()
         user_rid = int(user_sid.rsplit('-', 1)[1])
 
         # Get the SID and RID of the universal group.
@@ -1809,7 +1809,7 @@ class GroupTests(KDCBaseTest):
             account_type=self.AccountType.USER,
             use_cache=False)
         user_dn = user_creds.get_dn()
-        user_sid = self.get_objectSid(samdb, user_dn)
+        user_sid = user_creds.get_sid()
         user_name = user_creds.get_username()
         salt = user_creds.get_salt()
 
