@@ -2215,6 +2215,7 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_derived_class_allow.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_not_allowed_constrained_delegation_to_self.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_not_allowed_rbcd_to_self.ad_dc
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_bad_pwd_allowed_from_user_deny.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_denied_no_fast.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_ntlm_deny_service.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_ntlm_deny_user.ad_dc
@@ -2241,3 +2242,5 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_allowed_to_no_owner.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_allowed_to_service_deny.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_allowed_to_service_deny_to_self.ad_dc
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_bad_pwd_client_and_server_policy.ad_dc
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_samlogon_bad_pwd_client_policy.ad_dc

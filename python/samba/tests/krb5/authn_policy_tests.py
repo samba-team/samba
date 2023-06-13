@@ -1394,6 +1394,35 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
 
+    def test_authn_policy_bad_pwd_allowed_from_user_deny(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that explicitly denies the machine
+        # account for a user.
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
+        policy_id = self.get_new_username()
+        policy = self.create_authn_policy(policy_id,
+                                          enforced=True,
+                                          user_allowed_from=denied,
+                                          service_allowed_from=allowed)
+
+        # Create a user account with the assigned policy. Use a non-cached
+        # account so that it is not locked out for other tests.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy,
+                                       cached=False)
+
+        # Set a wrong password.
+        client_creds.set_password('wrong password')
+
+        # Show that we get a policy error when trying to authenticate.
+        self._get_tgt(client_creds, armor_tgt=mach_tgt,
+                      expected_error=KDC_ERR_POLICY)
+
     def test_authn_policy_allowed_from_service_allow(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -6445,6 +6474,122 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+    def test_samlogon_bad_pwd_client_policy(self):
+        # Create an authentication policy with device restrictions for users.
+        allowed = 'O:SY'
+        policy_id = self.get_new_username()
+        policy = self.create_authn_policy(policy_id,
+                                          enforced=True,
+                                          user_allowed_from=allowed)
+
+        # Create a user account with the assigned policy. Use a non-cached
+        # account so that it is not locked out for other tests.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy,
+                                       ntlm=True,
+                                       cached=False)
+
+        # Set a wrong password.
+        client_creds.set_password('wrong password')
+
+        # Show that a network SamLogon fails.
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        # Show that an interactive SamLogon fails.
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+    def test_samlogon_bad_pwd_server_policy(self):
+        # Create a user account. Use a non-cached account so that it is not
+        # locked out for other tests.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       ntlm=True,
+                                       cached=False)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        policy_id = self.get_new_username()
+        policy = self.create_authn_policy(policy_id,
+                                          enforced=True,
+                                          user_allowed_to=allowed,
+                                          computer_allowed_to=denied,
+                                          service_allowed_to=allowed)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # Set a wrong password.
+        client_creds.set_password('wrong password')
+
+        # Show that a network SamLogon fails.
+        self._test_samlogon(
+            creds=client_creds,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
+
+        # Show that an interactive SamLogon fails.
+        self._test_samlogon(
+            creds=client_creds,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
+
+    def test_samlogon_bad_pwd_client_and_server_policy(self):
+        # Create an authentication policy with device restrictions for users.
+        allowed = 'O:SY'
+        policy_id = self.get_new_username()
+        policy = self.create_authn_policy(policy_id,
+                                          enforced=True,
+                                          user_allowed_from=allowed)
+
+        # Create a user account with the assigned policy. Use a non-cached
+        # account so that it is not locked out for other tests.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy,
+                                       ntlm=True,
+                                       cached=False)
+
+        # Create an authentication policy that applies to a computer and
+        # explicitly denies the user account to obtain a service ticket.
+        denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
+        allowed = 'O:SYD:(A;;CR;;;WD)'
+        server_policy_id = self.get_new_username()
+        server_policy = self.create_authn_policy(server_policy_id,
+                                                 enforced=True,
+                                                 user_allowed_to=allowed,
+                                                 computer_allowed_to=denied,
+                                                 service_allowed_to=allowed)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=server_policy)
+
+        # Set a wrong password.
+        client_creds.set_password('wrong password')
+
+        # Show that a network SamLogon fails.
+        self._test_samlogon(
+            creds=client_creds,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        # Show that an interactive SamLogon fails.
+        self._test_samlogon(
+            creds=client_creds,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
     def check_ticket_times(self,
                            ticket_creds,
