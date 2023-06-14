@@ -90,6 +90,7 @@ from samba.dcerpc.misc import (
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import net
+from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 from samba.samdb import SamDB, dsdb_Dn
 
 rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
@@ -516,14 +517,15 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return res[0]
 
-    def create_authn_silo(self,
-                          silo_id,
+    def create_authn_silo(self, *,
                           members=None,
                           user_policy=None,
                           computer_policy=None,
                           service_policy=None,
                           enforced=None):
         samdb = self.get_samdb()
+
+        silo_id = self.get_new_username()
 
         authn_silo_dn = self.get_authn_silos_dn()
         authn_silo_dn.add_child(f'CN={silo_id}')
@@ -541,11 +543,11 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         if members is not None:
             details['msDS-AuthNPolicySiloMembers'] = members
         if user_policy is not None:
-            details['msDS-UserAuthNPolicy'] = user_policy
+            details['msDS-UserAuthNPolicy'] = str(user_policy.dn)
         if computer_policy is not None:
-            details['msDS-ComputerAuthNPolicy'] = computer_policy
+            details['msDS-ComputerAuthNPolicy'] = str(computer_policy.dn)
         if service_policy is not None:
-            details['msDS-ServiceAuthNPolicy'] = service_policy
+            details['msDS-ServiceAuthNPolicy'] = str(service_policy.dn)
         if enforced is not None:
             details['msDS-AuthNPolicySiloEnforced'] = enforced
 
@@ -558,7 +560,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         samdb.add(details)
 
-        return authn_silo_dn
+        return AuthenticationSilo.get(samdb, dn=authn_silo_dn)
 
     def create_authn_silo_claim_id(self):
         claim_id = 'ad://ext/AuthenticationSilo'
@@ -582,29 +584,24 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return claim_id
 
-    def create_authn_policy(self, *args,
+    def create_authn_policy(self, *,
                             use_cache=True,
                             **kwargs):
 
         if use_cache:
-            cache_key = self.freeze({
-                args: None,
-                **kwargs,
-            })
+            cache_key = self.freeze(kwargs)
 
             authn_policy = self.policy_cache.get(cache_key)
             if authn_policy is not None:
                 return authn_policy
 
-        authn_policy = self.create_authn_policy_opts(*args, **kwargs)
+        authn_policy = self.create_authn_policy_opts(**kwargs)
         if use_cache:
             self.policy_cache[cache_key] = authn_policy
 
         return authn_policy
 
-    def create_authn_policy_opts(self,
-                                 policy_id,
-                                 *,
+    def create_authn_policy_opts(self, *,
                                  enforced=None,
                                  strong_ntlm_policy=None,
                                  user_allowed_from=None,
@@ -618,6 +615,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                  service_allowed_to=None,
                                  service_tgt_lifetime=None):
         samdb = self.get_samdb()
+
+        policy_id = self.get_new_username()
 
         policy_dn = self.get_authn_policies_dn()
         policy_dn.add_child(f'CN={policy_id}')
@@ -703,7 +702,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         samdb.add(details)
 
-        return policy_dn
+        return AuthenticationPolicy.get(samdb, dn=policy_dn)
 
     def create_claim(self,
                      claim_id,

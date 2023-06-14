@@ -30,6 +30,7 @@ import ldb
 from samba import dsdb, ntstatus
 from samba.dcerpc import netlogon, security
 from samba.ndr import ndr_pack
+from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import GroupType
@@ -129,10 +130,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         if member_of is not None:
             members += (member_of,)
         if assigned_policy is not None:
-            opts['assigned_policy'] = str(assigned_policy)
+            opts['assigned_policy'] = str(assigned_policy.dn)
             cached = False   # Policies are rarely reused between accounts.
         if assigned_silo is not None:
-            opts['assigned_silo'] = str(assigned_silo)
+            opts['assigned_silo'] = str(assigned_silo.dn)
             cached = False   # Silos are rarely reused between accounts.
         if allowed_rodc:
             opts['allowed_replication_mock'] = True
@@ -150,9 +151,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
@@ -172,9 +171,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
@@ -195,9 +192,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
@@ -220,28 +215,22 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
 
         # Create a second policy with different lifetimes, so we can verify the
         # correct policy is enforced.
-        wrong_policy_id = self.get_new_username()
-        wrong_policy = self.create_authn_policy(wrong_policy_id,
-                                                enforced=True,
+        wrong_policy = self.create_authn_policy(enforced=True,
                                                 user_tgt_lifetime=444,
                                                 computer_tgt_lifetime=555,
                                                 service_tgt_lifetime=666)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
-                                      computer_policy=str(wrong_policy),
-                                      service_policy=str(wrong_policy),
+        silo = self.create_authn_silo(user_policy=policy,
+                                      computer_policy=wrong_policy,
+                                      service_policy=wrong_policy,
                                       enforced=True)
 
         # Create a user account assigned to the silo.
@@ -250,7 +239,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -265,26 +255,20 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
 
-        wrong_policy_id = self.get_new_username()
-        wrong_policy = self.create_authn_policy(wrong_policy_id,
-                                                enforced=True,
+        wrong_policy = self.create_authn_policy(enforced=True,
                                                 user_tgt_lifetime=444,
                                                 computer_tgt_lifetime=555,
                                                 service_tgt_lifetime=666)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(wrong_policy),
-                                      computer_policy=str(policy),
-                                      service_policy=str(wrong_policy),
+        silo = self.create_authn_silo(user_policy=wrong_policy,
+                                      computer_policy=policy,
+                                      service_policy=wrong_policy,
                                       enforced=True)
 
         # Create a computer account assigned to the silo.
@@ -293,7 +277,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the computer to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -308,26 +293,20 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
 
-        wrong_policy_id = self.get_new_username()
-        wrong_policy = self.create_authn_policy(wrong_policy_id,
-                                                enforced=True,
+        wrong_policy = self.create_authn_policy(enforced=True,
                                                 user_tgt_lifetime=444,
                                                 computer_tgt_lifetime=555,
                                                 service_tgt_lifetime=666)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(wrong_policy),
-                                      computer_policy=str(wrong_policy),
-                                      service_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=wrong_policy,
+                                      computer_policy=wrong_policy,
+                                      service_policy=policy,
                                       enforced=True)
 
         # Create a managed service account assigned to the silo.
@@ -337,7 +316,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the managed service account to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -355,28 +335,22 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
 
         # Create a second policy with different lifetimes, so we can verify the
         # correct policy is enforced.
-        wrong_policy_id = self.get_new_username()
-        wrong_policy = self.create_authn_policy(wrong_policy_id,
-                                                enforced=True,
+        wrong_policy = self.create_authn_policy(enforced=True,
                                                 user_tgt_lifetime=444,
                                                 computer_tgt_lifetime=555,
                                                 service_tgt_lifetime=666)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
-                                      computer_policy=str(wrong_policy),
-                                      service_policy=str(wrong_policy),
+        silo = self.create_authn_silo(user_policy=policy,
+                                      computer_policy=wrong_policy,
+                                      service_policy=wrong_policy,
                                       enforced=True)
 
         # Create a user account assigned to the silo, and also to a policy.
@@ -386,7 +360,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -401,26 +376,20 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
 
-        wrong_policy_id = self.get_new_username()
-        wrong_policy = self.create_authn_policy(wrong_policy_id,
-                                                enforced=True,
+        wrong_policy = self.create_authn_policy(enforced=True,
                                                 user_tgt_lifetime=444,
                                                 computer_tgt_lifetime=555,
                                                 service_tgt_lifetime=666)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(wrong_policy),
-                                      computer_policy=str(policy),
-                                      service_policy=str(wrong_policy),
+        silo = self.create_authn_silo(user_policy=wrong_policy,
+                                      computer_policy=policy,
+                                      service_policy=wrong_policy,
                                       enforced=True)
 
         # Create a computer account assigned to the silo, and also to a policy.
@@ -430,7 +399,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the computer to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -445,26 +415,20 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         user_life = 111
         computer_life = 222
         service_life = 333
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life,
                                           computer_tgt_lifetime=computer_life,
                                           service_tgt_lifetime=service_life)
 
-        wrong_policy_id = self.get_new_username()
-        wrong_policy = self.create_authn_policy(wrong_policy_id,
-                                                enforced=True,
+        wrong_policy = self.create_authn_policy(enforced=True,
                                                 user_tgt_lifetime=444,
                                                 computer_tgt_lifetime=555,
                                                 service_tgt_lifetime=666)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(wrong_policy),
-                                      computer_policy=str(wrong_policy),
-                                      service_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=wrong_policy,
+                                      computer_policy=wrong_policy,
+                                      service_policy=policy,
                                       enforced=True)
 
         # Create a managed service account assigned to the silo, and also to a
@@ -476,7 +440,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the managed service account to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -492,9 +457,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # lifetime set.
         INT64_MAX = 0x7fff_ffff_ffff_ffff
         max_lifetime = INT64_MAX // 10_000_000
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=max_lifetime)
 
         # Create a user account with the assigned policy.
@@ -515,9 +478,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # lifetime set.
         INT64_MIN = -0x8000_0000_0000_0000
         min_lifetime = round(INT64_MIN / 10_000_000)
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=min_lifetime)
 
         # Create a user account with the assigned policy.
@@ -535,9 +496,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_tgt_lifetime_zero(self):
         # Create an authentication policy with the TGT lifetime set to zero.
         lifetime = 0
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy.
@@ -558,9 +517,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set to one
         # second.
         lifetime = 1
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy.
@@ -579,9 +536,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set to two
         # minutes (the lifetime of a kpasswd ticket).
         lifetime = 2 * 60
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy.
@@ -599,9 +554,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_tgt_lifetime_short_protected(self):
         # Create an authentication policy with a short TGT lifetime set.
         lifetime = 111
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy, belonging to the
@@ -621,9 +574,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with a long TGT lifetime set. This
         # exceeds the lifetime of four hours enforced by Protected Users.
         lifetime = 6 * 60 * 60  # 6 hours
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy, belonging to the
@@ -642,9 +593,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
     def test_authn_policy_tgt_lifetime_zero_protected(self):
         # Create an authentication policy with the TGT lifetime set to zero.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=0)
 
         # Create a user account with the assigned policy, belonging to the
@@ -663,9 +612,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
     def test_authn_policy_tgt_lifetime_none_protected(self):
         # Create an authentication policy with no TGT lifetime set.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True)
+        policy = self.create_authn_policy(enforced=True)
 
         # Create a user account with the assigned policy, belonging to the
         # Protected Users group.
@@ -684,9 +631,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_tgt_lifetime_unenforced_protected(self):
         # Create an unenforced authentication policy with a TGT lifetime set.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy, belonging to the
@@ -707,9 +652,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is not enforced.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          user_tgt_lifetime=lifetime)
+        policy = self.create_authn_policy(user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
@@ -729,9 +672,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is set to be unenforced.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account with the assigned policy.
@@ -751,16 +692,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_not_enforced(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policy. The silo is
         # not enforced.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy))
+        silo = self.create_authn_silo(user_policy=policy)
 
         # Create a user account assigned to the silo.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
@@ -768,7 +705,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -784,16 +722,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_unenforced(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policy. The silo is
         # set to be unenforced.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=policy,
                                       enforced=False)
 
         # Create a user account assigned to the silo.
@@ -802,7 +736,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -819,14 +754,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is not enforced.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          user_tgt_lifetime=lifetime)
+        policy = self.create_authn_policy(user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=policy,
                                       enforced=True)
 
         # Create a user account assigned to the silo.
@@ -835,7 +766,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours. Despite the
@@ -850,15 +782,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is set to be unenforced.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=policy,
                                       enforced=True)
 
         # Create a user account assigned to the silo.
@@ -867,7 +795,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours. Despite the
@@ -881,23 +810,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_not_enforced_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
         silo_lifetime = 123
-        silo_policy_id = self.get_new_username()
-        silo_policy = self.create_authn_policy(silo_policy_id,
-                                               enforced=True,
+        silo_policy = self.create_authn_policy(enforced=True,
                                                user_tgt_lifetime=silo_lifetime)
 
         # Create an authentication silo with our existing policy. The silo is
         # not enforced.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(silo_policy))
+        silo = self.create_authn_silo(user_policy=silo_policy)
 
         # Create a second policy with a different lifetime, so we can verify
         # the correct policy is enforced.
         lifetime = 456
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account assigned to the silo, and also to the policy.
@@ -907,7 +830,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -924,24 +848,18 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_unenforced_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
         silo_lifetime = 123
-        silo_policy_id = self.get_new_username()
-        silo_policy = self.create_authn_policy(silo_policy_id,
-                                               enforced=True,
+        silo_policy = self.create_authn_policy(enforced=True,
                                                user_tgt_lifetime=silo_lifetime)
 
         # Create an authentication silo with our existing policy. The silo is
         # set to be unenforced.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(silo_policy),
+        silo = self.create_authn_silo(user_policy=silo_policy,
                                       enforced=False)
 
         # Create a second policy with a different lifetime, so we can verify
         # the correct policy is enforced.
         lifetime = 456
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account assigned to the silo, and also to the policy.
@@ -951,7 +869,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -969,22 +888,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is not enforced.
         silo_lifetime = 123
-        silo_policy_id = self.get_new_username()
-        silo_policy = self.create_authn_policy(silo_policy_id,
-                                               user_tgt_lifetime=silo_lifetime)
+        silo_policy = self.create_authn_policy(user_tgt_lifetime=silo_lifetime)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(silo_policy),
+        silo = self.create_authn_silo(user_policy=silo_policy,
                                       enforced=True)
 
         # Create a second policy with a different lifetime, so we can verify
         # the correct policy is enforced.
         lifetime = 456
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account assigned to the silo, and also to the policy.
@@ -994,7 +907,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours. Despite the
@@ -1010,23 +924,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is set to be unenforced.
         silo_lifetime = 123
-        silo_policy_id = self.get_new_username()
-        silo_policy = self.create_authn_policy(silo_policy_id,
-                                               enforced=False,
+        silo_policy = self.create_authn_policy(enforced=False,
                                                user_tgt_lifetime=silo_lifetime)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(silo_policy),
+        silo = self.create_authn_silo(user_policy=silo_policy,
                                       enforced=True)
 
         # Create a second policy with a different lifetime, so we can verify
         # the correct policy is enforced.
         lifetime = 456
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account assigned to the silo, and also to the policy.
@@ -1036,7 +944,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours. Despite the
@@ -1051,15 +960,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_not_a_member(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=policy,
                                       enforced=True)
 
         # Create a user account assigned to the silo.
@@ -1081,23 +986,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_not_a_member_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
         silo_lifetime = 123
-        silo_policy_id = self.get_new_username()
-        silo_policy = self.create_authn_policy(silo_policy_id,
-                                               enforced=True,
+        silo_policy = self.create_authn_policy(enforced=True,
                                                user_tgt_lifetime=silo_lifetime)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(silo_policy),
+        silo = self.create_authn_silo(user_policy=silo_policy,
                                       enforced=True)
 
         # Create a second policy with a different lifetime, so we can verify
         # the correct policy is enforced.
         lifetime = 456
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account assigned to the silo, and also to the policy.
@@ -1118,15 +1017,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_not_assigned(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=policy,
                                       enforced=True)
 
         # Create a user account, but don’t assign it to the silo.
@@ -1135,7 +1030,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -1151,23 +1047,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_not_assigned_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create an authentication silo with our existing policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(policy),
+        silo = self.create_authn_silo(user_policy=policy,
                                       enforced=True)
 
         # Create a second policy with a different lifetime, so we can verify
         # the correct policy is enforced.
         lifetime = 456
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=lifetime)
 
         # Create a user account assigned to the policy, but not to the silo.
@@ -1176,7 +1066,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -1190,15 +1081,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_silo_no_applicable_policy(self):
         # Create an authentication policy with the TGT lifetime set.
         user_life = 111
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life)
 
         # Create an authentication silo containing no policies.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      enforced=True)
+        silo = self.create_authn_silo(enforced=True)
 
         # Create a user account assigned to the silo, and also to a policy.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
@@ -1207,7 +1094,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -1222,21 +1110,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
     def test_authn_silo_no_tgt_lifetime(self):
         # Create an authentication policy with no TGT lifetime set.
-        silo_policy_id = self.get_new_username()
-        silo_policy = self.create_authn_policy(silo_policy_id,
-                                               enforced=True)
+        silo_policy = self.create_authn_policy(enforced=True)
 
         # Create a second policy with a lifetime set, so we can verify the
         # correct policy is enforced.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=456)
 
         # Create an authentication silo with our existing policy.
-        silo_id = self.get_new_username()
-        silo = self.create_authn_silo(silo_id,
-                                      user_policy=str(silo_policy),
+        silo = self.create_authn_silo(user_policy=silo_policy,
                                       enforced=True)
 
         # Create a user account assigned to the silo, and also to a policy.
@@ -1246,7 +1128,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         client_dn_str = str(client_creds.get_dn())
 
         # Add the user to the silo as a member.
-        self.add_to_group(client_dn_str, silo, 'msDS-AuthNPolicySiloMembers',
+        self.add_to_group(client_dn_str, silo.dn,
+                          'msDS-AuthNPolicySiloMembers',
                           expect_attr=False)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
@@ -1260,12 +1143,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                                 expected_renew_life=expected_renew_life)
 
     def test_not_a_policy(self):
+        samdb = self.get_samdb()
+
+        not_a_policy = AuthenticationPolicy()
+        not_a_policy.dn = samdb.get_default_basedn()
+
         # Create a user account with the assigned policy set to something that
         # isn’t a policy.
-        samdb = self.get_samdb()
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
-            assigned_policy=samdb.get_default_basedn())
+            assigned_policy=not_a_policy)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
         # future, and assert that the actual lifetime is the maximum
@@ -1278,11 +1165,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                                 expected_renew_life=expected_renew_life)
 
     def test_not_a_silo(self):
-        # Create a user account assigned to a silo that isn’t a silo.
         samdb = self.get_samdb()
+
+        not_a_silo = AuthenticationSilo()
+        not_a_silo.dn = samdb.get_default_basedn()
+
+        # Create a user account assigned to a silo that isn’t a silo.
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
-            assigned_silo=samdb.get_default_basedn())
+            assigned_silo=not_a_silo)
 
         # Request a Kerberos ticket with a ‘till’ time far in the
         # future, and assert that the actual lifetime is the maximum
@@ -1295,19 +1186,21 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                                 expected_renew_life=expected_renew_life)
 
     def test_not_a_silo_and_policy(self):
+        samdb = self.get_samdb()
+
+        not_a_silo = AuthenticationSilo()
+        not_a_silo.dn = samdb.get_default_basedn()
+
         # Create an authentication policy with the TGT lifetime set.
         user_life = 123
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_tgt_lifetime=user_life)
 
         # Create a user account assigned to a silo that isn’t a silo, and also
         # to a policy.
-        samdb = self.get_samdb()
         client_creds = self._get_creds(
             account_type=self.AccountType.USER,
-            assigned_silo=samdb.get_default_basedn(),
+            assigned_silo=not_a_silo,
             assigned_policy=policy)
 
         # Request a Kerberos ticket with a lifetime of two hours, and assert
@@ -1327,9 +1220,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with no DACL in the security
         # descriptor.
         allowed_from = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed_from)
 
         # Create a user account with the assigned policy.
@@ -1350,9 +1241,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # what gets logged.
         allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed,
                                           user_tgt_lifetime=120,
                                           computer_tgt_lifetime=240,
@@ -1377,9 +1266,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # what gets logged.
         allowed = 'O:SYD:(A;;CR;;;WD)'
         denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied,
                                           user_tgt_lifetime=120,
                                           computer_tgt_lifetime=240,
@@ -1404,9 +1291,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a user.
         allowed = 'O:SYD:(A;;CR;;;WD)'
         denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied,
                                           service_allowed_from=allowed)
 
@@ -1433,9 +1318,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a service.
         allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied,
                                           service_allowed_from=allowed)
 
@@ -1457,9 +1340,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a service.
         allowed = 'O:SYD:(A;;CR;;;WD)'
         denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed,
                                           service_allowed_from=denied)
 
@@ -1481,9 +1362,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that explicitly allows the machine
         # account for a user. Omit the owner (O:SY) from the SDDL.
         allowed = 'D:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1504,9 +1383,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an unenforced authentication policy that explicitly allows the
         # machine account for a user. Omit the owner (O:SY) from the SDDL.
         allowed = 'D:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1525,9 +1402,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that explicitly allows the machine
         # account for a user. Set the owner to the machine account.
         allowed = f'O:{mach_creds.get_sid()}D:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1546,9 +1421,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that explicitly allows the machine
         # account for a user. Set the owner to be anonymous.
         allowed = 'O:AND:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1562,9 +1435,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that restricts authentication.
         # Include some different TGT lifetimes for testing what gets logged.
         allowed_from = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed_from,
                                           user_tgt_lifetime=115,
                                           computer_tgt_lifetime=235,
@@ -1584,9 +1455,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # authentication. Include some negative TGT lifetimes for testing what
         # gets logged.
         allowed_from = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed_from,
                                           user_tgt_lifetime=-115,
                                           computer_tgt_lifetime=-235,
@@ -1605,9 +1474,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an unenforced authentication policy that restricts
         # authentication.
         allowed_from = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           user_allowed_from=allowed_from)
 
         # Create a user account with the assigned policy.
@@ -1634,9 +1501,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1666,9 +1531,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1698,9 +1561,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1723,9 +1584,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'O:SYD:(A;;CR;;;'
             f'{security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY})'
         )
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1744,9 +1603,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the
         # Claims Valid SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_CLAIMS_VALID})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1765,9 +1622,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the
         # Compounded Authentication SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_COMPOUNDED_AUTHENTICATION})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1787,9 +1642,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the
         # Authenticated Users SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_AUTHENTICATED_USERS})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1808,9 +1661,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the NTLM
         # Authentication SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_NTLM_AUTHENTICATION})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1832,9 +1683,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a user.
         allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed,
                                           service_allowed_from=denied)
 
@@ -1856,9 +1705,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a user.
         allowed = 'O:SYD:(A;;CR;;;WD)'
         denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied,
                                           service_allowed_from=allowed)
 
@@ -1881,9 +1728,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a service.
         allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied,
                                           service_allowed_from=allowed)
 
@@ -1906,9 +1751,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a service.
         allowed = 'O:SYD:(A;;CR;;;WD)'
         denied = f'O:SYD:(D;;CR;;;{mach_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed,
                                           service_allowed_from=denied)
 
@@ -1939,9 +1782,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -1974,9 +1815,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2009,9 +1848,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2035,9 +1872,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'O:SYD:(A;;CR;;;'
             f'{security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY})'
         )
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2057,9 +1892,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the
         # Claims Valid SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_CLAIMS_VALID})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2079,9 +1912,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the
         # Compounded Authentication SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_COMPOUNDED_AUTHENTICATION})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2102,9 +1933,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the
         # Authenticated Users SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_AUTHENTICATED_USERS})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2124,9 +1953,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts with the NTLM
         # Authentication SID.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_NTLM_AUTHENTICATION})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -2157,15 +1984,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # account for a user, while denying the user account itself.
         allowed = f'O:SYD:(A;;CR;;;{mach_sid})(D;;CR;;;{client_sid})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed,
                                           service_allowed_from=denied)
 
         # Assign the policy to the user account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
@@ -2184,9 +2009,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy with no DACL in the security
         # descriptor.
         allowed_to = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed_to)
 
         # Create a computer account with the assigned policy.
@@ -2212,9 +2035,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2242,9 +2063,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -2281,9 +2100,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denying the machine account.
         allowed = f'O:SYD:(A;;CR;;;{client_sid})(D;;CR;;;{mach_sid})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2312,9 +2129,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the machine account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{mach_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2343,9 +2158,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2367,9 +2180,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly disallows the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -2404,9 +2215,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'{security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY})'
         )
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2434,9 +2243,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Valid SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_CLAIMS_VALID})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2464,9 +2271,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Compounded Authentication SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_COMPOUNDED_AUTHENTICATION})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2500,9 +2305,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Authenticated Users SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_AUTHENTICATED_USERS})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2530,9 +2333,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Authentication SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_NTLM_AUTHENTICATION})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2566,9 +2367,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket. Omit
         # the owner (O:SY) from the SDDL.
         allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -2600,9 +2399,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # and explicitly allows the user account to obtain a service
         # ticket. Omit the owner (O:SY) from the SDDL.
         allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -2629,9 +2426,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket. Set
         # the owner to the user account.
         allowed = f'O:{client_sid}D:(A;;CR;;;{client_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -2657,9 +2452,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket. Set
         # the owner to be anonymous.
         allowed = f'O:AND:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -2685,9 +2478,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=denied)
@@ -2716,9 +2507,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=allowed)
@@ -2753,9 +2542,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -2784,9 +2571,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2822,9 +2607,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=denied)
@@ -2854,9 +2637,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=allowed)
@@ -2891,9 +2672,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -2922,9 +2701,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -2958,9 +2735,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -2990,9 +2765,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -3032,9 +2805,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed)
 
         # Create a user account with the assigned policy.
@@ -3075,9 +2846,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed)
 
         # Create a user account with the assigned policy.
@@ -3113,9 +2882,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed)
 
         # Create a user account with the assigned policy.
@@ -3148,9 +2915,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'{security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY})'
         )
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -3179,9 +2944,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Valid SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_CLAIMS_VALID})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -3210,9 +2973,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Compounded Authentication SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_COMPOUNDED_AUTHENTICATION})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -3246,9 +3007,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Authenticated Users SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_AUTHENTICATED_USERS})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -3277,9 +3036,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Authentication SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_NTLM_AUTHENTICATION})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -3319,9 +3076,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed)
 
         # Create a user account with the assigned policy.
@@ -3364,9 +3119,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed)
 
         # Create a user account with the assigned policy.
@@ -3405,9 +3158,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed)
 
         # Create a user account with the assigned policy.
@@ -3440,16 +3191,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that obtaining a service ticket to ourselves is allowed.
         self._tgs_req(tgt, 0, client_creds, client_creds,
@@ -3475,16 +3224,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that obtaining a service ticket to ourselves is allowed, despite
         # the policy disallowing it.
@@ -3505,16 +3252,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that obtaining a service ticket to ourselves armored with our
         # own TGT is allowed.
@@ -3535,16 +3280,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that obtaining a service ticket to ourselves armored with our
         # own TGT is allowed, despite the policy’s disallowing it.
@@ -3568,9 +3311,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -3612,9 +3353,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=denied)
 
         # Create a computer account with the assigned policy.
@@ -3670,16 +3409,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
-        service_policy_id = self.get_new_username()
-        service_policy = self.create_authn_policy(service_policy_id,
-                                                  enforced=True,
+        service_policy = self.create_authn_policy(enforced=True,
                                                   computer_allowed_to=denied)
 
         # Create a computer account with the assigned policy.
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={
-                'assigned_policy': str(service_policy),
+                'assigned_policy': str(service_policy.dn),
                 # Allow delegation to the target service.
                 'delegation_to_spn': target_spn,
                 'trusted_to_auth_for_delegation': True,
@@ -3691,14 +3428,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the service account to obtain a service ticket,
         # while denying the user.
         allowed = f'O:SYD:(A;;CR;;;{service_sid})(D;;CR;;;{client_sid})'
-        target_policy_id = self.get_new_username()
-        target_policy = self.create_authn_policy(target_policy_id,
-                                                 enforced=True,
+        target_policy = self.create_authn_policy(enforced=True,
                                                  computer_allowed_to=allowed)
 
         # Assign the policy to the target account.
         self.add_attribute(samdb, str(target_creds.get_dn()),
-                           'msDS-AssignedAuthNPolicy', str(target_policy))
+                           'msDS-AssignedAuthNPolicy', str(target_policy.dn))
 
         def generate_s4u2self_padata(_kdc_exchange_dict,
                                      _callback_dict,
@@ -3798,14 +3533,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the service account to obtain a service ticket,
         # while denying the user.
         allowed = f'O:SYD:(A;;CR;;;{service_sid})(D;;CR;;;{client_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the target account.
         self.add_attribute(samdb, str(target_creds.get_dn()),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         client_service_tkt = self.get_service_ticket(
             client_tgt,
@@ -3878,14 +3611,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the service account to obtain a service ticket,
         # while allowing the user.
         denied = f'O:SYD:(D;;CR;;;{service_sid})(A;;CR;;;{client_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=denied)
 
         # Assign the policy to the target account.
         self.add_attribute(samdb, str(target_creds.get_dn()),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         client_service_tkt = self.get_service_ticket(
             client_tgt,
@@ -4002,16 +3733,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the service account to obtain a service ticket,
         # while denying the user.
         allowed = f'O:SYD:(A;;CR;;;{service_sid})(D;;CR;;;{client_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a target account with the assigned policy.
         target_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={
-                'assigned_policy': str(policy),
+                'assigned_policy': str(policy.dn),
                 'delegation_from_dn': str(service_creds.get_dn()),
             })
 
@@ -4081,16 +3810,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the service account to obtain a service ticket,
         # while allowing the user.
         denied = f'O:SYD:(D;;CR;;;{service_sid})(A;;CR;;;{client_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=denied)
 
         # Create a target account with the assigned policy.
         target_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={
-                'assigned_policy': str(policy),
+                'assigned_policy': str(policy.dn),
                 'delegation_from_dn': str(service_creds.get_dn()),
             })
 
@@ -4217,14 +3944,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the client account to obtain a service ticket,
         # while denying the service.
         allowed = f'O:SYD:(A;;CR;;;{client_sid})(D;;CR;;;{service_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the service account.
         self.add_attribute(samdb, service_dn_str,
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         client_service_tkt = self.get_service_ticket(
             client_tgt,
@@ -4306,14 +4031,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the client account to obtain a service ticket,
         # while allowing the service.
         allowed = f'O:SYD:(D;;CR;;;{client_sid})(A;;CR;;;{service_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the service account.
         self.add_attribute(samdb, service_dn_str,
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
 
@@ -4376,14 +4099,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the client account to obtain a service ticket,
         # while denying the service.
         allowed = f'O:SYD:(A;;CR;;;{client_sid})(D;;CR;;;{service_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the service account.
         self.add_attribute(samdb, service_dn_str,
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         client_service_tkt = self.get_service_ticket(
             client_tgt,
@@ -4453,14 +4174,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the client account to obtain a service ticket,
         # while denying the service.
         allowed = f'O:SYD:(A;;CR;;;{client_sid})(D;;CR;;;{service_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the service account.
         self.add_attribute(samdb, service_dn_str,
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         client_service_tkt = self.get_service_ticket(
             client_tgt,
@@ -4548,14 +4267,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the client account to obtain a service ticket,
         # while allowing the service.
         allowed = f'O:SYD:(D;;CR;;;{client_sid})(A;;CR;;;{service_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the service account.
         self.add_attribute(samdb, service_dn_str,
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
 
@@ -4623,14 +4340,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the client account to obtain a service ticket,
         # while denying the service.
         allowed = f'O:SYD:(A;;CR;;;{client_sid})(D;;CR;;;{service_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Assign the policy to the service account.
         self.add_attribute(samdb, service_dn_str,
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         client_service_tkt = self.get_service_ticket(
             client_tgt,
@@ -4667,9 +4382,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that applies to a computer and
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -4697,9 +4410,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that applies to a computer and
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=denied)
 
         # Create a computer account with the assigned policy.
@@ -4739,9 +4450,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=denied)
@@ -4769,7 +4478,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.USER,
             spn='host/{account}',
             additional_details={
-                'msDS-AssignedAuthNPolicy': str(policy),
+                'msDS-AssignedAuthNPolicy': str(policy.dn),
                 'objectClass': user_class,
             })
 
@@ -4797,9 +4506,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -4827,7 +4534,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.COMPUTER,
             spn=f'host/{target_name}',
             additional_details={
-                'msDS-AssignedAuthNPolicy': str(policy),
+                'msDS-AssignedAuthNPolicy': str(policy.dn),
                 'objectClass': computer_class,
             })
 
@@ -4855,9 +4562,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -4886,7 +4591,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.MANAGED_SERVICE,
             spn=f'host/{target_name}',
             additional_details={
-                'msDS-AssignedAuthNPolicy': str(policy),
+                'msDS-AssignedAuthNPolicy': str(policy.dn),
                 'objectClass': service_class,
             })
 
@@ -4898,9 +4603,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=False,
@@ -4918,9 +4621,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy denying NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=True,
@@ -4938,9 +4639,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_ntlm_computer(self):
         # Create an authentication policy denying NTLM authentication.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=denied,
                                           service_allowed_ntlm=False,
@@ -4958,9 +4657,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # services.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=True,
@@ -4979,9 +4676,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy denying NTLM authentication for
         # services.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=False,
@@ -5000,9 +4695,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_ntlm_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           service_allowed_ntlm=True)
 
@@ -5019,9 +4712,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=False,
@@ -5039,9 +4730,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy denying NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=True,
@@ -5059,9 +4748,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_simple_bind_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           service_allowed_ntlm=True)
 
@@ -5078,9 +4765,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # managed service accounts.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True,
                                           service_allowed_from=allowed)
 
@@ -5097,9 +4782,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # managed service accounts.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True,
                                           service_allowed_from=denied)
 
@@ -5115,9 +4798,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samr_pwd_change_allow_service_no_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # managed service accounts.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True)
 
         # Create a managed service account with the assigned policy.
@@ -5133,9 +4814,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy denying NTLM authentication for
         # managed service accounts.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False,
                                           service_allowed_from=allowed)
 
@@ -5154,9 +4833,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy denying NTLM authentication for
         # managed service accounts.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False,
                                           service_allowed_from=denied)
 
@@ -5174,9 +4851,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samr_pwd_change_deny_service_no_allowed_from(self):
         # Create an authentication policy denying NTLM authentication for
         # managed service accounts.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False)
 
         # Create a managed service account with the assigned policy.
@@ -5192,9 +4867,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=False,
@@ -5219,9 +4892,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy denying NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=allowed,
                                           service_allowed_ntlm=True,
@@ -5247,9 +4918,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_network_computer(self):
         # Create an authentication policy denying NTLM authentication.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=denied,
                                           service_allowed_ntlm=False,
@@ -5269,9 +4938,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True,
                                           user_allowed_from=allowed)
 
@@ -5291,9 +4958,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # users.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True,
                                           user_allowed_from=denied)
 
@@ -5312,9 +4977,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_interactive_allow_user_no_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # users.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=True)
 
         # Create a user account with the assigned policy.
@@ -5331,9 +4994,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy disallowing NTLM authentication for
         # users.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=allowed)
 
@@ -5353,9 +5014,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy disallowing NTLM authentication for
         # users.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           user_allowed_from=denied)
 
@@ -5374,9 +5033,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_interactive_deny_user_no_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
         # users.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False)
 
         # Create a user account with the assigned policy.
@@ -5393,9 +5050,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy not specifying whether NTLM
         # authentication is allowed or not.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -5414,9 +5069,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy not specifying whether NTLM
         # authentication is allowed or not.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy.
@@ -5435,9 +5088,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # services.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True,
                                           service_allowed_from=allowed)
 
@@ -5456,9 +5107,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # services.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True,
                                           service_allowed_from=denied)
 
@@ -5476,9 +5125,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_network_allow_service_no_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # services.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True)
 
         # Create a managed service account with the assigned policy.
@@ -5496,9 +5143,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False,
                                           service_allowed_from=allowed)
 
@@ -5519,9 +5164,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False,
                                           service_allowed_from=denied)
 
@@ -5541,9 +5184,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_network_deny_service_no_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False)
 
         # Create a managed service account with the assigned policy.
@@ -5561,9 +5202,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # services.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True,
                                           service_allowed_from=allowed)
 
@@ -5583,9 +5222,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy allowing NTLM authentication for
         # services.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True,
                                           service_allowed_from=denied)
 
@@ -5604,9 +5241,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_network_allow_service_no_allowed_from_to_self(self):
         # Create an authentication policy allowing NTLM authentication for
         # services.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=True)
 
         # Create a managed service account with the assigned policy.
@@ -5625,9 +5260,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False,
                                           service_allowed_from=allowed)
 
@@ -5649,9 +5282,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False,
                                           service_allowed_from=denied)
 
@@ -5672,9 +5303,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_network_deny_service_no_allowed_from_to_self(self):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           service_allowed_ntlm=False)
 
         # Create a managed service account with the assigned policy.
@@ -5692,9 +5321,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_interactive_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           service_allowed_ntlm=True)
 
@@ -5711,9 +5338,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_authn_policy_samlogon_network_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_ntlm=False,
                                           service_allowed_ntlm=True)
 
@@ -5736,9 +5361,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -5766,9 +5389,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -5801,9 +5422,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -5839,9 +5458,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'{security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY})'
         )
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -5873,9 +5490,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Valid SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_CLAIMS_VALID})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -5907,9 +5522,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Compounded Authentication SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_COMPOUNDED_AUTHENTICATION})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -5941,9 +5554,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Authenticated Users SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_AUTHENTICATED_USERS})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -5971,9 +5582,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Authentication SID to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{security.SID_NT_NTLM_AUTHENTICATION})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -6005,9 +5614,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket. Omit
         # the owner (O:SY) from the SDDL.
         allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -6037,9 +5644,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # and explicitly allows the user account to obtain a service
         # ticket. Omit the owner (O:SY) from the SDDL.
         allowed = f'D:(A;;CR;;;{client_creds.get_sid()})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=False,
+        policy = self.create_authn_policy(enforced=False,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -6065,9 +5670,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -6096,9 +5699,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -6137,9 +5738,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -6178,9 +5777,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -6216,9 +5813,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Create an authentication policy that allows accounts belonging to the
         # group.
         allowed = f'O:SYD:(A;;CR;;;{group_sid})'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           computer_allowed_to=allowed)
 
         # Create a computer account with the assigned policy.
@@ -6250,16 +5845,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that a network SamLogon to ourselves succeeds.
         self._test_samlogon(creds=client_creds,
@@ -6279,16 +5872,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that a network SamLogon to ourselves fails, despite
         # authentication being allowed in the Kerberos case.
@@ -6312,16 +5903,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that a network SamLogon to ourselves succeeds.
         self._test_samlogon(creds=client_creds,
@@ -6342,16 +5931,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
 
         # Assign the policy to the account.
         self.add_attribute(samdb, str(client_dn),
-                           'msDS-AssignedAuthNPolicy', str(policy))
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
 
         # Show that a network SamLogon to ourselves fails, despite
         # authentication being allowed in the Kerberos case.
@@ -6372,9 +5959,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=allowed,
                                           service_allowed_to=denied)
@@ -6402,7 +5987,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.COMPUTER,
             spn=f'host/{target_name}',
             additional_details={
-                'msDS-AssignedAuthNPolicy': str(policy),
+                'msDS-AssignedAuthNPolicy': str(policy.dn),
                 'objectClass': computer_class,
             })
 
@@ -6430,9 +6015,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly allows the user account to obtain a service ticket.
         allowed = f'O:SYD:(A;;CR;;;{client_creds.get_sid()})'
         denied = 'O:SYD:(D;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=denied,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -6461,7 +6044,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             account_type=self.AccountType.MANAGED_SERVICE,
             spn=f'host/{target_name}',
             additional_details={
-                'msDS-AssignedAuthNPolicy': str(policy),
+                'msDS-AssignedAuthNPolicy': str(policy.dn),
                 'objectClass': service_class,
             })
 
@@ -6478,9 +6061,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_samlogon_bad_pwd_client_policy(self):
         # Create an authentication policy with device restrictions for users.
         allowed = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy. Use a non-cached
@@ -6516,9 +6097,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_to=allowed,
                                           computer_allowed_to=denied,
                                           service_allowed_to=allowed)
@@ -6547,9 +6126,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
     def test_samlogon_bad_pwd_client_and_server_policy(self):
         # Create an authentication policy with device restrictions for users.
         allowed = 'O:SY'
-        policy_id = self.get_new_username()
-        policy = self.create_authn_policy(policy_id,
-                                          enforced=True,
+        policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=allowed)
 
         # Create a user account with the assigned policy. Use a non-cached
@@ -6563,9 +6140,7 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # explicitly denies the user account to obtain a service ticket.
         denied = f'O:SYD:(D;;CR;;;{client_creds.get_sid()})'
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        server_policy_id = self.get_new_username()
-        server_policy = self.create_authn_policy(server_policy_id,
-                                                 enforced=True,
+        server_policy = self.create_authn_policy(enforced=True,
                                                  user_allowed_to=allowed,
                                                  computer_allowed_to=denied,
                                                  service_allowed_to=allowed)

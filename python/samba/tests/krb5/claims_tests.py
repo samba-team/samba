@@ -1988,13 +1988,12 @@ class ClaimsTests(KDCBaseTest):
                                  assigned=True,
                                  expect_claim=True):
         # Create a new authentication silo.
-        silo_id = self.get_new_username()
-        silo_dn = self.create_authn_silo(silo_id, enforced=enforced)
+        silo = self.create_authn_silo(enforced=enforced)
 
         account_options = None
         if assigned is not False:
             if assigned is True:
-                assigned = silo_dn
+                assigned = silo.dn
 
             account_options = {
                 'additional_details': self.freeze({
@@ -2012,7 +2011,7 @@ class ClaimsTests(KDCBaseTest):
         if add_to_silo:
             # Add the account to the silo.
             self.add_to_group(str(creds.get_dn()),
-                              silo_dn,
+                              silo.dn,
                               'msDS-AuthNPolicySiloMembers',
                               expect_attr=False)
 
@@ -2024,7 +2023,7 @@ class ClaimsTests(KDCBaseTest):
                     'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
                     'type': claims.CLAIM_TYPE_STRING,
                     # Expect a claim containing the name of the silo.
-                    'values': (silo_id,),
+                    'values': (silo.name,),
                 },
             }
             unexpected_claims = None
