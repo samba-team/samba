@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Unix SMB/CIFS implementation.
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2017
 #
@@ -17,6 +18,11 @@
 
 """Tests for the Auth and AuthZ logging.
 """
+
+import sys
+
+sys.path.insert(0, 'bin/python')
+
 import samba.tests
 from samba.dcerpc import srvsvc, dnsserver
 import os
@@ -1475,3 +1481,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEqual("schannel", msg["Authorization"]["authType"])
         self.assertEqual("SEAL", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
+
+
+if __name__ == '__main__':
+    import unittest
+    unittest.main()
