@@ -113,23 +113,16 @@ class AuthLogTestBase(samba.tests.TestCase):
         until all the logging messages have been received.
         """
 
-        def completed(messages):
-            for message in messages:
-                if self.isRemote(message) and isLastExpectedMessage(message):
-                    return True
-            return False
-
-        self.connection = connection
-
-        start_time = time.time()
-        while not completed(self.context["messages"]):
-            self.msg_ctx.loop_once(0.1)
-            if time.time() - start_time > 1:
-                self.connection = None
+        messages = []
+        while True:
+            try:
+                msg = self.nextMessage()
+            except NoMessageException:
                 return []
 
-        self.connection = None
-        return list(filter(self.isRemote, self.context["messages"]))
+            messages.append(msg)
+            if isLastExpectedMessage(msg):
+                return messages
 
     def nextMessage(self, msgFilter=None):
         """Return the next relevant message, or throw a NoMessageException."""
