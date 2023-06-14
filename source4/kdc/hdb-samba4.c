@@ -47,6 +47,7 @@
 #include "lib/messaging/irpc.h"
 #include "hdb.h"
 #include <kdc-audit.h>
+#include <kdc-plugin.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
@@ -660,6 +661,96 @@ static NTSTATUS hdb_samba4_get_ntstatus(hdb_request_t r)
 	return status_obj->status;
 }
 
+static krb5_error_code hdb_samba4_tgs_audit(const struct samba_kdc_db_context *kdc_db_ctx,
+					    const hdb_entry *entry,
+					    hdb_request_t r)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tsocket_address *remote_host = NULL;
+	struct samba_kdc_entry *client_entry = NULL;
+	struct dom_sid sid_buf = {};
+	const char *account_name = NULL;
+	const char *domain_name = NULL;
+	const struct dom_sid *sid = NULL;
+	size_t sa_socklen = 0;
+	NTSTATUS auth_status = NT_STATUS_OK;
+	krb5_error_code ret = 0;
+	krb5_error_code final_ret = 0;
+
+	/* Have we got a status code indicating an error? */
+	auth_status = hdb_samba4_get_ntstatus(r);
+	if (!NT_STATUS_IS_OK(auth_status)) {
+		/*
+		 * Include this status code in the ‘e-data’ field of the reply.
+		 */
+		ret = hdb_samba4_set_edata_from_ntstatus(r, auth_status);
+		if (ret) {
+			final_ret = ret;
+		}
+	} else if (entry == NULL) {
+		auth_status = NT_STATUS_NO_SUCH_USER;
+	} else if (r->error_code) {
+		/*
+		 * Don’t include a status code in the reply. Just log the
+		 * request as being unsuccessful.
+		 */
+		auth_status = NT_STATUS_UNSUCCESSFUL;
+	}
+
+	switch (r->addr->sa_family) {
+	case AF_INET:
+		sa_socklen = sizeof(struct sockaddr_in);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		sa_socklen = sizeof(struct sockaddr_in6);
+		break;
+#endif
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(frame, r->addr,
+						sa_socklen,
+						&remote_host);
+	if (ret != 0) {
+		remote_host = NULL;
+		/* Ignore the error. */
+	}
+
+	if (entry != NULL) {
+		client_entry = talloc_get_type_abort(entry->context,
+						     struct samba_kdc_entry);
+
+		ret = samdb_result_dom_sid_buf(client_entry->msg, "objectSid", &sid_buf);
+		if (ret) {
+			/* Ignore the error. */
+		} else {
+			sid = &sid_buf;
+		}
+
+		account_name = ldb_msg_find_attr_as_string(client_entry->msg, "sAMAccountName", NULL);
+		domain_name = lpcfg_sam_name(kdc_db_ctx->lp_ctx);
+	}
+
+	log_authz_event(kdc_db_ctx->msg_ctx,
+			kdc_db_ctx->lp_ctx,
+			remote_host,
+			NULL /* local */,
+			r->sname,
+			"TGS-REQ with Ticket-Granting Ticket",
+			domain_name,
+			account_name,
+			sid,
+			lpcfg_netbios_name(kdc_db_ctx->lp_ctx),
+			krb5_kdc_get_time(),
+			auth_status);
+
+	talloc_free(frame);
+	if (final_ret) {
+		r->error_code = final_ret;
+	}
+	return final_ret;
+}
+
 static krb5_error_code hdb_samba4_audit(krb5_context context,
 					HDB *db,
 					hdb_entry *entry,
@@ -668,7 +759,6 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	struct samba_kdc_db_context *kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 									struct samba_kdc_db_context);
 	struct ldb_dn *domain_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
-	uint64_t logon_id = generate_random_u64();
 	heim_object_t auth_details_obj = NULL;
 	const char *auth_details = NULL;
 	char *etype_str = NULL;
@@ -678,8 +768,13 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	const char *pa_type = NULL;
 	struct auth_usersupplied_info ui;
 	size_t sa_socklen = 0;
+	const KDC_REQ *req = kdc_request_get_req((astgs_request_t)r);
 	krb5_error_code final_ret = 0;
 	NTSTATUS edata_status;
+
+	if (req->msg_type == krb_tgs_req) {
+		return hdb_samba4_tgs_audit(kdc_db_ctx, entry, r);
+	}
 
 	edata_status = hdb_samba4_get_ntstatus(r);
 
@@ -732,7 +827,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		.service_description = "Kerberos KDC",
 		.auth_description = "Unknown Auth Description",
 		.password_type = auth_details,
-		.logon_id = logon_id
+		.logon_id = generate_random_u64(),
 	};
 
 	switch (r->addr->sa_family) {
