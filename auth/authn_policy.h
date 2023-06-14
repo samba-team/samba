@@ -29,8 +29,8 @@
 
 struct authn_kerberos_client_policy;
 
-/* Get the TGT lifetime enforced by an authentication policy. */
-int64_t authn_policy_enforced_tgt_lifetime(const struct authn_kerberos_client_policy *policy);
+/* Get the raw TGT lifetime enforced by an authentication policy. */
+int64_t authn_policy_enforced_tgt_lifetime_raw(const struct authn_kerberos_client_policy *policy);
 
 /* Authentication policies for NTLM clients. */
 

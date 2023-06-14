@@ -1092,7 +1092,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	const struct authn_kerberos_client_policy *authn_client_policy = NULL;
 	const struct authn_server_policy *authn_server_policy = NULL;
-	int64_t enforced_tgt_lifetime;
+	int64_t enforced_tgt_lifetime_raw;
 
 	ZERO_STRUCTP(entry);
 
@@ -1425,9 +1425,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 	}
 
-	enforced_tgt_lifetime = authn_policy_enforced_tgt_lifetime(authn_client_policy);
-	if (enforced_tgt_lifetime != 0) {
-		int64_t lifetime = enforced_tgt_lifetime;
+	enforced_tgt_lifetime_raw = authn_policy_enforced_tgt_lifetime_raw(authn_client_policy);
+	if (enforced_tgt_lifetime_raw != 0) {
+		int64_t lifetime = enforced_tgt_lifetime_raw;
 
 		lifetime /= INT64_C(1000) * 1000 * 10;
 		lifetime = MIN(lifetime, INT_MAX);
@@ -1474,7 +1474,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		protected_user = result;
 
-		if (protected_user && enforced_tgt_lifetime == 0)
+		if (protected_user && enforced_tgt_lifetime_raw == 0)
 		{
 			/*
 			 * If a TGT lifetime hasn’t been set, Protected Users

@@ -38,7 +38,7 @@ bool authn_policy_is_enforced(const struct authn_policy *policy);
 struct authn_kerberos_client_policy {
 	struct authn_policy policy;
 	DATA_BLOB allowed_to_authenticate_from;
-	int64_t tgt_lifetime;
+	int64_t tgt_lifetime_raw;
 };
 
 struct authn_ntlm_client_policy {

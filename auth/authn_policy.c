@@ -29,8 +29,8 @@ bool authn_policy_is_enforced(const struct authn_policy *policy)
 
 /* Authentication policies for Kerberos clients. */
 
-/* Get the TGT lifetime enforced by an authentication policy. */
-int64_t authn_policy_enforced_tgt_lifetime(const struct authn_kerberos_client_policy *policy)
+/* Get the raw TGT lifetime enforced by an authentication policy. */
+int64_t authn_policy_enforced_tgt_lifetime_raw(const struct authn_kerberos_client_policy *policy)
 {
 	if (policy == NULL) {
 		return 0;
@@ -40,7 +40,7 @@ int64_t authn_policy_enforced_tgt_lifetime(const struct authn_kerberos_client_po
 		return 0;
 	}
 
-	return policy->tgt_lifetime;
+	return policy->tgt_lifetime_raw;
 }
 
 /* Authentication policies for NTLM clients. */

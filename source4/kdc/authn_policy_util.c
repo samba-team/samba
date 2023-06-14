@@ -515,7 +515,7 @@ int authn_policy_kerberos_client(struct ldb_context *samdb,
 	}
 
 	if (authn_attrs.policy->tgt_lifetime != NULL) {
-		client_policy->tgt_lifetime = ldb_msg_find_attr_as_int64(
+		client_policy->tgt_lifetime_raw = ldb_msg_find_attr_as_int64(
 			authn_policy_msg,
 			authn_attrs.policy->tgt_lifetime,
 			0);
