@@ -535,6 +535,146 @@ static NTSTATUS _authn_policy_audit_info(TALLOC_CTX *mem_ctx,
 		__location__, \
 		audit_info_out)
 
+/*
+ * Perform an access check against the security descriptor set in an
+ * authentication policy. ‘client_info’ must be talloc-allocated so that we can
+ * make a reference to it.
+ */
+static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
+					   struct ldb_context *samdb,
+					   struct loadparm_context* lp_ctx,
+					   const struct auth_user_info_dc *client_info,
+					   const struct authn_policy *policy,
+					   const struct authn_int64_optional tgt_lifetime_raw,
+					   const enum authn_audit_event restriction_event,
+					   const DATA_BLOB *descriptor_blob,
+					   const char *location,
+					   struct authn_audit_info **audit_info_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status2;
+	enum ndr_err_code ndr_err;
+	struct security_descriptor *descriptor = NULL;
+	struct security_token *security_token = NULL;
+	uint32_t session_info_flags =
+		AUTH_SESSION_INFO_DEFAULT_GROUPS |
+		AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	const uint32_t access_desired = SEC_ADS_CONTROL_ACCESS;
+	uint32_t access_granted;
+	enum authn_audit_event event = restriction_event;
+	enum authn_audit_reason reason = AUTHN_AUDIT_REASON_NONE;
+
+	if (audit_info_out != NULL) {
+		*audit_info_out = NULL;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	if (!(client_info->info->user_flags & NETLOGON_GUEST)) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	descriptor = talloc(tmp_ctx, struct security_descriptor);
+	if (descriptor == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	ndr_err = ndr_pull_struct_blob(descriptor_blob,
+				       tmp_ctx,
+				       descriptor,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_ERR("Failed to unmarshall "
+			"security descriptor for authentication policy: %s\n",
+			nt_errstr(status));
+		reason = AUTHN_AUDIT_REASON_DESCRIPTOR_INVALID;
+		goto out;
+	}
+
+	/* Require that the security descriptor has an owner set. */
+	if (descriptor->owner_sid == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		reason = AUTHN_AUDIT_REASON_DESCRIPTOR_NO_OWNER;
+		goto out;
+	}
+
+	status = auth_generate_security_token(tmp_ctx,
+					       lp_ctx,
+					       samdb,
+					       client_info,
+					       session_info_flags,
+					       &security_token);
+	if (!NT_STATUS_IS_OK(status)) {
+		reason = AUTHN_AUDIT_REASON_SECURITY_TOKEN_FAILURE;
+		goto out;
+	}
+
+	status = sec_access_check_ds(descriptor, security_token,
+					access_desired, &access_granted,
+					NULL, NULL);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		status = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+		reason = AUTHN_AUDIT_REASON_ACCESS_DENIED;
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	event = AUTHN_AUDIT_EVENT_OK;
+out:
+	/*
+	 * Create the structure with auditing information here while we have all
+	 * the relevant information to hand. It will contain references to
+	 * information regarding the client and the policy, to be consulted
+	 * after the referents have possibly been freed.
+	 */
+	status2 = _authn_policy_audit_info(mem_ctx,
+					   policy,
+					   tgt_lifetime_raw,
+					   client_info,
+					   event,
+					   reason,
+					   status,
+					   location,
+					   audit_info_out);
+	if (!NT_STATUS_IS_OK(status2)) {
+		status = status2;
+	} else if (!authn_policy_is_enforced(policy)) {
+		status = NT_STATUS_OK;
+	}
+
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+#define authn_policy_access_check(mem_ctx, \
+	samdb, \
+	lp_ctx, \
+	client_info, \
+	policy, \
+	tgt_lifetime_raw, \
+	restriction_event, \
+	descriptor_blob, \
+	audit_info_out) \
+	_authn_policy_access_check(mem_ctx, \
+		samdb, \
+		lp_ctx, \
+		client_info, \
+		policy, \
+		tgt_lifetime_raw, \
+		restriction_event, \
+		descriptor_blob, \
+		__location__, \
+		audit_info_out)
+
 /* Return an authentication policy moved onto a talloc context. */
 static struct authn_policy authn_policy_move(TALLOC_CTX *mem_ctx,
 					     struct authn_policy *policy)
@@ -667,6 +807,39 @@ static const DATA_BLOB *authn_policy_kerberos_device_restrictions(const struct a
 bool authn_policy_device_restrictions_present(const struct authn_kerberos_client_policy *policy)
 {
 	return authn_policy_kerberos_device_restrictions(policy) != NULL;
+}
+
+/*
+ * Perform an access check for the device with which the client is
+ * authenticating. ‘device_info’ must be talloc-allocated so that we can make a
+ * reference to it.
+ */
+NTSTATUS authn_policy_authenticate_from_device(TALLOC_CTX *mem_ctx,
+					       struct ldb_context *samdb,
+					       struct loadparm_context* lp_ctx,
+					       const struct auth_user_info_dc *device_info,
+					       const struct authn_kerberos_client_policy *client_policy,
+					       struct authn_audit_info **client_audit_info_out)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	const DATA_BLOB *restrictions = NULL;
+
+	restrictions = authn_policy_kerberos_device_restrictions(client_policy);
+	if (restrictions == NULL) {
+		goto out;
+	}
+
+	status = authn_policy_access_check(mem_ctx,
+					   samdb,
+					   lp_ctx,
+					   device_info,
+					   &client_policy->policy,
+					   authn_int64_some(client_policy->tgt_lifetime_raw),
+					   AUTHN_AUDIT_EVENT_KERBEROS_DEVICE_RESTRICTION,
+					   restrictions,
+					   client_audit_info_out);
+out:
+	return status;
 }
 
 /* Authentication policies for NTLM clients. */

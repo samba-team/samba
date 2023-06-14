@@ -59,6 +59,18 @@ int authn_policy_kerberos_client(struct ldb_context *samdb,
 				 const struct ldb_message *msg,
 				 const struct authn_kerberos_client_policy **policy_out);
 
+/*
+ * Perform an access check for the device with which the client is
+ * authenticating. ‘device_info’ must be talloc-allocated so that we can make a
+ * reference to it.
+ */
+NTSTATUS authn_policy_authenticate_from_device(TALLOC_CTX *mem_ctx,
+					       struct ldb_context *samdb,
+					       struct loadparm_context* lp_ctx,
+					       const struct auth_user_info_dc *device_info,
+					       const struct authn_kerberos_client_policy *client_policy,
+					       struct authn_audit_info **client_audit_info_out);
+
 /* Return whether an authentication policy enforces device restrictions. */
 bool authn_policy_device_restrictions_present(const struct authn_kerberos_client_policy *policy);
 
