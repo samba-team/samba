@@ -52,4 +52,16 @@ struct authn_server_policy {
 	DATA_BLOB allowed_to_authenticate_to;
 };
 
+/* Auditing information. */
+
+struct authn_audit_info {
+	struct authn_policy *policy;
+	const struct auth_user_info_dc *client_info;
+	enum authn_audit_event event;
+	enum authn_audit_reason reason;
+	NTSTATUS policy_status;
+	const char *location;
+	struct authn_int64_optional tgt_lifetime_raw;
+};
+
 #endif
