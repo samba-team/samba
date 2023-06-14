@@ -28,6 +28,10 @@ import os
 import re
 
 
+class NoMessageException(Exception):
+    pass
+
+
 class AuthLogTestBase(samba.tests.TestCase):
 
     @classmethod
@@ -126,6 +130,40 @@ class AuthLogTestBase(samba.tests.TestCase):
 
         self.connection = None
         return list(filter(self.isRemote, self.context["messages"]))
+
+    def nextMessage(self, msgFilter=None):
+        """Return the next relevant message, or throw a NoMessageException."""
+        def is_relevant(msg):
+            if not self.isRemote(msg):
+                return False
+
+            if msgFilter is None:
+                return True
+
+            return msgFilter(msg)
+
+        messages = self.context['messages']
+
+        while True:
+            timeout = 2
+            until = time.time() + timeout
+
+            while not messages:
+                # Fetch a new message from the messaging bus.
+
+                current = time.time()
+                if until < current:
+                    break
+
+                self.msg_ctx.loop_once(until - current)
+
+            if not messages:
+                raise NoMessageException('timed out looking for a message')
+
+            # Grab the next message from the queue.
+            msg = messages.pop(0)
+            if is_relevant(msg):
+                return msg
 
     # Discard any previously queued messages.
     @classmethod
