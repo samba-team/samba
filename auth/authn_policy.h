@@ -35,15 +35,6 @@ bool authn_kerberos_client_policy_is_enforced(const struct authn_kerberos_client
 /* Get the raw TGT lifetime enforced by an authentication policy. */
 int64_t authn_policy_enforced_tgt_lifetime_raw(const struct authn_kerberos_client_policy *policy);
 
-/* Authentication policies for NTLM clients. */
-
-struct authn_ntlm_client_policy;
-
-/* Check whether the client is allowed to authenticate using NTLM. */
-NTSTATUS authn_policy_ntlm_apply_device_restriction(const char *client_account_name,
-						    const char *device_account_name,
-						    const struct authn_ntlm_client_policy *client_policy);
-
 /* Auditing information. */
 
 struct authn_audit_info;

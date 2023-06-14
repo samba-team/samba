@@ -49,47 +49,6 @@ int64_t authn_policy_enforced_tgt_lifetime_raw(const struct authn_kerberos_clien
 	return policy->tgt_lifetime_raw;
 }
 
-/* Authentication policies for NTLM clients. */
-
-/* Return whether an authentication policy enforces device restrictions. */
-static bool authn_policy_ntlm_device_restrictions_present(const struct authn_ntlm_client_policy *policy)
-{
-	if (policy == NULL) {
-		return false;
-	}
-
-	return policy->allowed_to_authenticate_from.data != NULL;
-}
-
-/* Check whether the client is allowed to authenticate using NTLM. */
-NTSTATUS authn_policy_ntlm_apply_device_restriction(const char *client_account_name,
-						    const char *device_account_name,
-						    const struct authn_ntlm_client_policy *client_policy)
-{
-	/*
-	 * If NTLM authentication is disallowed and the policy enforces a device
-	 * restriction, deny the authentication.
-	 */
-
-	if (!authn_policy_ntlm_device_restrictions_present(client_policy)) {
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * Although MS-APDS doesn’t state it, AllowedNTLMNetworkAuthentication
-	 * applies to interactive logons too.
-	 */
-	if (client_policy->allowed_ntlm_network_auth) {
-		return NT_STATUS_OK;
-	}
-
-	if (authn_policy_is_enforced(&client_policy->policy)) {
-		return NT_STATUS_ACCOUNT_RESTRICTION;
-	} else {
-		return NT_STATUS_OK;
-	}
-}
-
 /* Auditing information. */
 
 enum auth_event_id_type authn_audit_info_event_id(const struct authn_audit_info *audit_info)

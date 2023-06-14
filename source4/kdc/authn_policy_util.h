@@ -76,6 +76,8 @@ bool authn_policy_device_restrictions_present(const struct authn_kerberos_client
 
 /* Authentication policies for NTLM clients. */
 
+struct authn_ntlm_client_policy;
+
 /*
  * Get the applicable authentication policy for an account acting as an NTLM
  * client.
@@ -84,6 +86,11 @@ int authn_policy_ntlm_client(struct ldb_context *samdb,
 			     TALLOC_CTX *mem_ctx,
 			     const struct ldb_message *msg,
 			     const struct authn_ntlm_client_policy **policy_out);
+
+/* Check whether the client is allowed to authenticate using NTLM. */
+NTSTATUS authn_policy_ntlm_apply_device_restriction(const char *client_account_name,
+						    const char *device_account_name,
+						    const struct authn_ntlm_client_policy *client_policy);
 
 /* Authentication policies for servers. */
 
