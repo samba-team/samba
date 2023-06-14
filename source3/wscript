@@ -1660,11 +1660,6 @@ int main(void) {
         conf.env.with_ctdb = True
         conf.DEFINE('CLUSTER_SUPPORT', 1)
 
-    conf.CHECK_CODE('void seekdir(DIR *d, long loc) { return; }',
-                    'SEEKDIR_RETURNS_VOID',
-                    headers='sys/types.h dirent.h',
-                    msg='Checking whether seekdir returns void')
-
     if Options.options.with_profiling_data:
         conf.DEFINE('WITH_PROFILE', 1);
         conf.CHECK_FUNCS('getrusage', headers="sys/time.h sys/resource.h")
