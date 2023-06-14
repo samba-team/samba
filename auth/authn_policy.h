@@ -29,6 +29,9 @@
 
 struct authn_kerberos_client_policy;
 
+/* Is an authentication policy enforced? */
+bool authn_kerberos_client_policy_is_enforced(const struct authn_kerberos_client_policy *policy);
+
 /* Get the raw TGT lifetime enforced by an authentication policy. */
 int64_t authn_policy_enforced_tgt_lifetime_raw(const struct authn_kerberos_client_policy *policy);
 
@@ -41,8 +44,11 @@ NTSTATUS authn_policy_ntlm_apply_device_restriction(const char *client_account_n
 						    const char *device_account_name,
 						    const struct authn_ntlm_client_policy *client_policy);
 
+/* Auditing information. */
+
 struct authn_audit_info;
 
+/* This enum should be kept in sync with authn_audit_info_event(). */
 enum authn_audit_event {
 	AUTHN_AUDIT_EVENT_OK = 0,
 	AUTHN_AUDIT_EVENT_KERBEROS_DEVICE_RESTRICTION,
@@ -52,6 +58,7 @@ enum authn_audit_event {
 	AUTHN_AUDIT_EVENT_OTHER_ERROR,
 };
 
+/* This enum should be kept in sync with authn_audit_info_reason(). */
 enum authn_audit_reason {
 	AUTHN_AUDIT_REASON_NONE = 0,
 	AUTHN_AUDIT_REASON_DESCRIPTOR_INVALID,
@@ -61,9 +68,29 @@ enum authn_audit_reason {
 	AUTHN_AUDIT_REASON_FAST_REQUIRED,
 };
 
+enum auth_event_id_type authn_audit_info_event_id(const struct authn_audit_info *audit_info);
+
+const char *authn_audit_info_silo_name(const struct authn_audit_info *audit_info);
+
+const char *authn_audit_info_policy_name(const struct authn_audit_info *audit_info);
+
+const bool *authn_audit_info_policy_enforced(const struct authn_audit_info *audit_info);
+
+const struct auth_user_info_dc *authn_audit_info_client_info(const struct authn_audit_info *audit_info);
+
+const char *authn_audit_info_event(const struct authn_audit_info *audit_info);
+
+const char *authn_audit_info_reason(const struct authn_audit_info *audit_info);
+
+NTSTATUS authn_audit_info_policy_status(const struct authn_audit_info *audit_info);
+
+const char *authn_audit_info_location(const struct authn_audit_info *audit_info);
+
 struct authn_int64_optional {
 	bool is_present;
 	int64_t val;
 };
+
+struct authn_int64_optional authn_audit_info_policy_tgt_lifetime_mins(const struct authn_audit_info *audit_info);
 
 #endif
