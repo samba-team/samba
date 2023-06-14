@@ -615,6 +615,10 @@ static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self,
 	}
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	parent = ldb_dn_get_parent(mem_ctx, dn);
 	if (parent == NULL) {
