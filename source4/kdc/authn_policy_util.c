@@ -955,32 +955,70 @@ static bool authn_policy_ntlm_device_restrictions_present(const struct authn_ntl
 }
 
 /* Check whether the client is allowed to authenticate using NTLM. */
-NTSTATUS authn_policy_ntlm_apply_device_restriction(const char *client_account_name,
-						    const char *device_account_name,
-						    const struct authn_ntlm_client_policy *client_policy)
+NTSTATUS authn_policy_ntlm_apply_device_restriction(TALLOC_CTX *mem_ctx,
+						    const struct authn_ntlm_client_policy *client_policy,
+						    struct authn_audit_info **client_audit_info_out)
 {
+	NTSTATUS status;
+	NTSTATUS status2;
+
+	if (client_audit_info_out != NULL) {
+		*client_audit_info_out = NULL;
+	}
+
+	if (client_policy == NULL) {
+		return NT_STATUS_OK;
+	}
+
 	/*
+	 * Access control restrictions cannot be applied to NTLM.
+	 *
 	 * If NTLM authentication is disallowed and the policy enforces a device
 	 * restriction, deny the authentication.
 	 */
 
 	if (!authn_policy_ntlm_device_restrictions_present(client_policy)) {
-		return NT_STATUS_OK;
+		return authn_policy_audit_info(mem_ctx,
+					       &client_policy->policy,
+					       authn_int64_none() /* tgt_lifetime_raw */,
+					       NULL /* client_info */,
+					       AUTHN_AUDIT_EVENT_OK,
+					       AUTHN_AUDIT_REASON_NONE,
+					       NT_STATUS_OK,
+					       client_audit_info_out);
 	}
 
 	/*
-	 * Although MS-APDS doesn’t state it, AllowedNTLMNetworkAuthentication
-	 * applies to interactive logons too.
+	 * (Although MS-APDS doesn’t state it, AllowedNTLMNetworkAuthentication
+	 * applies to interactive logons too.)
 	 */
 	if (client_policy->allowed_ntlm_network_auth) {
-		return NT_STATUS_OK;
+		return authn_policy_audit_info(mem_ctx,
+					       &client_policy->policy,
+					       authn_int64_none() /* tgt_lifetime_raw */,
+					       NULL /* client_info */,
+					       AUTHN_AUDIT_EVENT_OK,
+					       AUTHN_AUDIT_REASON_NONE,
+					       NT_STATUS_OK,
+					       client_audit_info_out);
 	}
 
-	if (authn_policy_is_enforced(&client_policy->policy)) {
-		return NT_STATUS_ACCOUNT_RESTRICTION;
-	} else {
-		return NT_STATUS_OK;
+	status = NT_STATUS_ACCOUNT_RESTRICTION;
+	status2 = authn_policy_audit_info(mem_ctx,
+					  &client_policy->policy,
+					  authn_int64_none() /* tgt_lifetime_raw */,
+					  NULL /* client_info */,
+					  AUTHN_AUDIT_EVENT_NTLM_DEVICE_RESTRICTION,
+					  AUTHN_AUDIT_REASON_NONE,
+					  status,
+					  client_audit_info_out);
+	if (!NT_STATUS_IS_OK(status2)) {
+		status = status2;
+	} else if (!authn_policy_is_enforced(&client_policy->policy)) {
+		status = NT_STATUS_OK;
 	}
+
+	return status;
 }
 
 /* Authentication policies for servers. */
