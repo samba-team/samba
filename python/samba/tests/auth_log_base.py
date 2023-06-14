@@ -94,6 +94,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         supported_types = {
             "Authentication",
             "Authorization",
+            "KDC Authorization",
         }
         message_type = message["type"]
         if message_type in supported_types:
