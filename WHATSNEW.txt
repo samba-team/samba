@@ -45,6 +45,19 @@ trace records belonging to the same request.  Field 'depth' allows to track the
 request nesting level. A new tool samba-log-parser is added for better log
 parsing.
 
+AD database prepared to FL 2016 standards for new domains
+---------------------------------------------------------
+
+While Samba still provides only Functional Level 2008R2 by default,
+Samba as an AD DC will now, in provision ensure that the blank
+database is already prepared for Functional Level 2016, with AD Schema
+2019.
+
+This preparation is of the default objects in the database, adding
+containers for Authentication Policies, Authentication Silos and AD
+claims in particular.  These DB objects must be updated to allow
+operation of the new features found in higher functional levels.
+
 Kerberos Claims, Authentication Silos and NTLM authentication policies
 ----------------------------------------------------------------------
 
