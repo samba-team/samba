@@ -25,6 +25,8 @@
 #define AUTH_FAILURE_LEVEL 2
 #define AUTH_SUCCESS_LEVEL 3
 #define AUTHZ_SUCCESS_LEVEL 4
+#define KDC_AUTHZ_FAILURE_LEVEL 2
+#define KDC_AUTHZ_SUCCESS_LEVEL 3
 
 /* 5 is used for both authentication and authorization */
 #define AUTH_ANONYMOUS_LEVEL 5
@@ -32,6 +34,7 @@
 
 #define AUTHZ_JSON_TYPE "Authorization"
 #define AUTH_JSON_TYPE  "Authentication"
+#define KDC_AUTHZ_JSON_TYPE "KDC Authorization"
 
 /*
  * JSON message version numbers
@@ -44,6 +47,8 @@
 #define AUTH_MINOR 2
 #define AUTHZ_MAJOR 1
 #define AUTHZ_MINOR 1
+#define KDC_AUTHZ_MAJOR 1
+#define KDC_AUTHZ_MINOR 0
 
 #include "includes.h"
 #include "../lib/tsocket/tsocket.h"
@@ -461,6 +466,128 @@ failure:
 	DBG_ERR("Unable to log Authentication event JSON audit message\n");
 }
 
+/*
+ * Log details of an authorization to a service, in a machine parsable json
+ * format
+ *
+ * IF removing or changing the format/meaning of a field please update the
+ *    major version number KDC_AUTHZ_MAJOR
+ *
+ * IF adding a new field please update the minor version number KDC_AUTHZ_MINOR
+ *
+ *  To process the resulting log lines from the command line use jq to
+ *  parse the json.
+ *
+ *  grep "^  {" log_file |\
+ *  jq -rc '"\(.timestamp)\t
+ *           \(."KDC Authorization".domain)\t
+ *           \(."KDC Authorization".account)\t
+ *           \(."KDC Authorization".remoteAddress)"'
+ *
+ */
+static void log_authz_event_json(
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *domain_name,
+	const char *account_name,
+	const struct dom_sid *sid,
+	const char *logon_server,
+	const struct timeval authtime,
+	NTSTATUS status,
+	int debug_level)
+{
+	struct json_object wrapper = json_empty_object;
+	struct json_object authorization = json_empty_object;
+	int rc = 0;
+
+	authorization = json_new_object();
+	if (json_is_invalid(&authorization)) {
+		goto failure;
+	}
+	rc = json_add_version(&authorization, KDC_AUTHZ_MAJOR, KDC_AUTHZ_MINOR);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authorization, "status", nt_errstr(status));
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&authorization, "localAddress", local);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_address(&authorization, "remoteAddress", remote);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(
+	    &authorization, "serviceDescription", service_description);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authorization, "authType", auth_type);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authorization, "domain", domain_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authorization, "account", account_name);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_sid(&authorization, "sid", sid);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&authorization, "logonServer", logon_server);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_time(&authorization, "authTime", authtime);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	wrapper = json_new_object();
+	if (json_is_invalid(&wrapper)) {
+		goto failure;
+	}
+	rc = json_add_timestamp(&wrapper);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_string(&wrapper, "type", KDC_AUTHZ_JSON_TYPE);
+	if (rc != 0) {
+		goto failure;
+	}
+	rc = json_add_object(&wrapper, KDC_AUTHZ_JSON_TYPE, &authorization);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	log_json(msg_ctx,
+		 lp_ctx,
+		 &wrapper,
+		 DBGC_AUTH_AUDIT_JSON,
+		 debug_level);
+	json_free(&wrapper);
+	return;
+failure:
+	/*
+	 * On a failure authorization will not have been added to wrapper so it
+	 * needs to be freed to avoid a leak.
+	 */
+	json_free(&authorization);
+	json_free(&wrapper);
+	DBG_ERR("Unable to log KDC Authorization event JSON audit message\n");
+}
+
 #else
 
 static void log_no_json(struct imessaging_context *msg_ctx,
@@ -507,6 +634,24 @@ static void log_successful_authz_event_json(
 	const char *auth_type,
 	const char *transport_protection,
 	struct auth_session_info *session_info,
+	int debug_level)
+{
+	log_no_json(msg_ctx, lp_ctx);
+}
+
+static void log_authz_event_json(
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *domain_name,
+	const char *account_name,
+	const struct dom_sid *sid,
+	const char *logon_server,
+	const struct timeval authtime,
+	NTSTATUS status,
 	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
@@ -800,5 +945,49 @@ void log_successful_authz_event(
 						transport_protection,
 						session_info,
 						debug_level);
+	}
+}
+
+/*
+ * Log details of an authorization to a service.
+ *
+ * NOTE: msg_ctx and lp_ctx are optional, but when supplied, allow streaming the
+ * authorization events over the message bus.
+ */
+void log_authz_event(
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *domain_name,
+	const char *account_name,
+	const struct dom_sid *sid,
+	const char *logon_server,
+	const struct timeval authtime,
+	NTSTATUS status)
+{
+	/* set the log level */
+	int debug_level = KDC_AUTHZ_FAILURE_LEVEL;
+
+	if (NT_STATUS_IS_OK(status)) {
+		debug_level = KDC_AUTHZ_SUCCESS_LEVEL;
+	}
+
+	if (CHECK_DEBUGLVLC(DBGC_AUTH_AUDIT_JSON, debug_level) ||
+	    (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx))) {
+		log_authz_event_json(msg_ctx, lp_ctx,
+				     remote,
+				     local,
+				     service_description,
+				     auth_type,
+				     domain_name,
+				     account_name,
+				     sid,
+				     logon_server,
+				     authtime,
+				     status,
+				     debug_level);
 	}
 }

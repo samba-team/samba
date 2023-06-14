@@ -207,4 +207,25 @@ void log_successful_authz_event(struct imessaging_context *msg_ctx,
 				const char *auth_type,
 				const char *transport_protection,
 				struct auth_session_info *session_info);
+
+/*
+ * Log details of an authorization to a service.
+ *
+ * NOTE: msg_ctx and lp_ctx are optional, but when supplied, allow streaming the
+ * authorization events over the message bus.
+ */
+void log_authz_event(
+	struct imessaging_context *msg_ctx,
+	struct loadparm_context *lp_ctx,
+	const struct tsocket_address *remote,
+	const struct tsocket_address *local,
+	const char *service_description,
+	const char *auth_type,
+	const char *domain_name,
+	const char *account_name,
+	const struct dom_sid *sid,
+	const char *logon_server,
+	const struct timeval authtime,
+	NTSTATUS status);
+
 #endif
