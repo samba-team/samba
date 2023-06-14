@@ -64,4 +64,19 @@ struct authn_audit_info {
 	struct authn_int64_optional tgt_lifetime_raw;
 };
 
+static inline struct authn_int64_optional authn_int64_some(const int64_t val)
+{
+	return (struct authn_int64_optional) {
+		.is_present = true,
+		.val = val,
+	};
+}
+
+static inline struct authn_int64_optional authn_int64_none(void)
+{
+	return (struct authn_int64_optional) {
+		.is_present = false,
+	};
+}
+
 #endif
