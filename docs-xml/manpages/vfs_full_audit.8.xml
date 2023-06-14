@@ -126,7 +126,6 @@
 	<member>removexattr</member>
 	<member>renameat</member>
 	<member>rewinddir</member>
-	<member>seekdir</member>
 	<member>sendfile</member>
 	<member>set_compression</member>
 	<member>set_offline</member>
@@ -142,7 +141,6 @@
 	<member>sys_acl_delete_def_fd</member>
 	<member>sys_acl_get_fd</member>
 	<member>sys_acl_set_fd</member>
-	<member>telldir</member>
 	<member>translate_name</member>
 	<member>unlinkat</member>
 	<member>write</member>
