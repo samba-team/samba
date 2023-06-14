@@ -55,6 +55,7 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   winbind debug traceid                   Add traceid     No
+  directory name cache size               Removed
 
 
 KNOWN ISSUES
