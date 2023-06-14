@@ -108,6 +108,24 @@ int authn_policy_server(struct ldb_context *samdb,
 /* Return whether an authentication policy enforces restrictions. */
 bool authn_policy_restrictions_present(const struct authn_server_policy *policy);
 
+enum authn_policy_auth_type {
+	AUTHN_POLICY_AUTH_TYPE_KERBEROS,
+	AUTHN_POLICY_AUTH_TYPE_NTLM,
+};
+
+/*
+ * Perform an access check for the client attempting to authenticate to the
+ * server. ‘user_info’ must be talloc-allocated so that we can make a reference
+ * to it.
+ */
+NTSTATUS authn_policy_authenticate_to_service(TALLOC_CTX *mem_ctx,
+					      struct ldb_context *samdb,
+					      struct loadparm_context* lp_ctx,
+					      enum authn_policy_auth_type auth_type,
+					      const struct auth_user_info_dc *user_info,
+					      const struct authn_server_policy *server_policy,
+					      struct authn_audit_info **server_audit_info_out);
+
 /* Create a structure containing auditing information. */
 NTSTATUS _authn_kerberos_client_policy_audit_info(
 	TALLOC_CTX *mem_ctx,

@@ -1135,6 +1135,57 @@ bool authn_policy_restrictions_present(const struct authn_server_policy *policy)
 	return authn_policy_restrictions(policy) != NULL;
 }
 
+/*
+ * Perform an access check for the client attempting to authenticate to the
+ * server. ‘user_info’ must be talloc-allocated so that we can make a reference
+ * to it.
+ */
+NTSTATUS authn_policy_authenticate_to_service(TALLOC_CTX *mem_ctx,
+					      struct ldb_context *samdb,
+					      struct loadparm_context* lp_ctx,
+					      const enum authn_policy_auth_type auth_type,
+					      const struct auth_user_info_dc *user_info,
+					      const struct authn_server_policy *server_policy,
+					      struct authn_audit_info **server_audit_info_out)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	const DATA_BLOB *restrictions = NULL;
+	enum authn_audit_event event;
+
+	restrictions = authn_policy_restrictions(server_policy);
+	if (restrictions == NULL) {
+		return authn_server_policy_audit_info(mem_ctx,
+						      server_policy,
+						      user_info,
+						      AUTHN_AUDIT_EVENT_OK,
+						      AUTHN_AUDIT_REASON_NONE,
+						      NT_STATUS_OK,
+						      server_audit_info_out);
+	}
+
+	switch (auth_type) {
+	case AUTHN_POLICY_AUTH_TYPE_KERBEROS:
+		event = AUTHN_AUDIT_EVENT_KERBEROS_SERVER_RESTRICTION;
+		break;
+	case AUTHN_POLICY_AUTH_TYPE_NTLM:
+		event = AUTHN_AUDIT_EVENT_NTLM_SERVER_RESTRICTION;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER_4;
+	}
+
+	status = authn_policy_access_check(mem_ctx,
+					   samdb,
+					   lp_ctx,
+					   user_info,
+					   &server_policy->policy,
+					   authn_int64_none() /* tgt_lifetime_raw */,
+					   event,
+					   restrictions,
+					   server_audit_info_out);
+	return status;
+}
+
 /* Create a structure containing auditing information. */
 NTSTATUS _authn_kerberos_client_policy_audit_info(
 	TALLOC_CTX *mem_ctx,
