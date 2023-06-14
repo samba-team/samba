@@ -417,6 +417,124 @@ out:
 	return ret;
 }
 
+/*
+ * Reference an existing authentication policy onto a talloc context, returning
+ * ‘true’ on success.
+ */
+static bool authn_policy_ref(TALLOC_CTX *mem_ctx,
+			     struct authn_policy *policy_out,
+			     const struct authn_policy *policy)
+{
+	const char *silo_name = NULL;
+	const char *policy_name = NULL;
+
+	if (policy->silo_name != NULL) {
+		silo_name = talloc_strdup(mem_ctx, policy->silo_name);
+		if (silo_name == NULL) {
+			return false;
+		}
+	}
+
+	if (policy->policy_name != NULL) {
+		policy_name = talloc_strdup(mem_ctx, policy->policy_name);
+		if (policy_name == NULL) {
+			/*
+			 * We can’t free ‘silo_name’ here, as it is declared
+			 * const. It will be freed with the parent context.
+			 */
+			return false;
+		}
+	}
+
+	*policy_out = (struct authn_policy) {
+		.silo_name = silo_name,
+		.policy_name = policy_name,
+		.enforced = policy->enforced,
+	};
+
+	return true;
+}
+
+/* Create a structure containing auditing information. */
+static NTSTATUS _authn_policy_audit_info(TALLOC_CTX *mem_ctx,
+					 const struct authn_policy *policy,
+					 const struct authn_int64_optional tgt_lifetime_raw,
+					 const struct auth_user_info_dc *client_info,
+					 const enum authn_audit_event event,
+					 const enum authn_audit_reason reason,
+					 const NTSTATUS policy_status,
+					 const char *location,
+					 struct authn_audit_info **audit_info_out)
+{
+	struct authn_audit_info *audit_info = NULL;
+	bool ok;
+
+	if (audit_info_out == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	audit_info = talloc_zero(mem_ctx, struct authn_audit_info);
+	if (audit_info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (client_info != NULL) {
+		/*
+		 * Keep a reference to the client’s user information so that it
+		 * is available to be logged later.
+		 */
+		audit_info->client_info = talloc_reference(audit_info, client_info);
+		if (audit_info->client_info == NULL) {
+			talloc_free(audit_info);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (policy != NULL) {
+		audit_info->policy = talloc_zero(audit_info, struct authn_policy);
+		if (audit_info->policy == NULL) {
+			talloc_free(audit_info);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ok = authn_policy_ref(audit_info, audit_info->policy, policy);
+		if (!ok) {
+			talloc_free(audit_info);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	audit_info->event = event;
+	audit_info->reason = reason;
+	audit_info->policy_status = policy_status;
+	audit_info->location = location;
+	audit_info->tgt_lifetime_raw = tgt_lifetime_raw;
+
+	*audit_info_out = audit_info;
+	return NT_STATUS_OK;
+}
+
+/* Create a structure containing auditing information. */
+#define authn_policy_audit_info( \
+	mem_ctx, \
+	policy, \
+	tgt_lifetime_raw, \
+	client_info, \
+	event, \
+	reason, \
+	policy_status, \
+	audit_info_out) \
+	_authn_policy_audit_info( \
+		mem_ctx, \
+		policy, \
+		tgt_lifetime_raw, \
+		client_info, \
+		event, \
+		reason, \
+		policy_status, \
+		__location__, \
+		audit_info_out)
+
 /* Return an authentication policy moved onto a talloc context. */
 static struct authn_policy authn_policy_move(TALLOC_CTX *mem_ctx,
 					     struct authn_policy *policy)
@@ -765,4 +883,90 @@ static const DATA_BLOB *authn_policy_restrictions(const struct authn_server_poli
 bool authn_policy_restrictions_present(const struct authn_server_policy *policy)
 {
 	return authn_policy_restrictions(policy) != NULL;
+}
+
+/* Create a structure containing auditing information. */
+NTSTATUS _authn_kerberos_client_policy_audit_info(
+	TALLOC_CTX *mem_ctx,
+	const struct authn_kerberos_client_policy *client_policy,
+	const struct auth_user_info_dc *client_info,
+	const enum authn_audit_event event,
+	const enum authn_audit_reason reason,
+	const NTSTATUS policy_status,
+	const char *location,
+	struct authn_audit_info **audit_info_out)
+{
+	const struct authn_policy *policy = NULL;
+	struct authn_int64_optional tgt_lifetime_raw = authn_int64_none();
+
+	if (client_policy != NULL) {
+		policy = &client_policy->policy;
+		tgt_lifetime_raw = authn_int64_some(client_policy->tgt_lifetime_raw);
+	}
+
+	return _authn_policy_audit_info(mem_ctx,
+					policy,
+					tgt_lifetime_raw,
+					client_info,
+					event,
+					reason,
+					policy_status,
+					location,
+					audit_info_out);
+}
+
+/* Create a structure containing auditing information. */
+NTSTATUS _authn_ntlm_client_policy_audit_info(
+	TALLOC_CTX *mem_ctx,
+	const struct authn_ntlm_client_policy *client_policy,
+	const struct auth_user_info_dc *client_info,
+	const enum authn_audit_event event,
+	const enum authn_audit_reason reason,
+	const NTSTATUS policy_status,
+	const char *location,
+	struct authn_audit_info **audit_info_out)
+{
+	const struct authn_policy *policy = NULL;
+
+	if (client_policy != NULL) {
+		policy = &client_policy->policy;
+	}
+
+	return _authn_policy_audit_info(mem_ctx,
+					policy,
+					authn_int64_none() /* tgt_lifetime_raw */,
+					client_info,
+					event,
+					reason,
+					policy_status,
+					location,
+					audit_info_out);
+}
+
+/* Create a structure containing auditing information. */
+NTSTATUS _authn_server_policy_audit_info(
+	TALLOC_CTX *mem_ctx,
+	const struct authn_server_policy *server_policy,
+	const struct auth_user_info_dc *client_info,
+	const enum authn_audit_event event,
+	const enum authn_audit_reason reason,
+	const NTSTATUS policy_status,
+	const char *location,
+	struct authn_audit_info **audit_info_out)
+{
+	const struct authn_policy *policy = NULL;
+
+	if (server_policy != NULL) {
+		policy = &server_policy->policy;
+	}
+
+	return _authn_policy_audit_info(mem_ctx,
+					policy,
+					authn_int64_none() /* tgt_lifetime_raw */,
+					client_info,
+					event,
+					reason,
+					policy_status,
+					location,
+					audit_info_out);
 }

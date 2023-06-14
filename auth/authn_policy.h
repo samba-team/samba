@@ -41,6 +41,8 @@ NTSTATUS authn_policy_ntlm_apply_device_restriction(const char *client_account_n
 						    const char *device_account_name,
 						    const struct authn_ntlm_client_policy *client_policy);
 
+struct authn_audit_info;
+
 enum authn_audit_event {
 	AUTHN_AUDIT_EVENT_OK = 0,
 	AUTHN_AUDIT_EVENT_KERBEROS_DEVICE_RESTRICTION,

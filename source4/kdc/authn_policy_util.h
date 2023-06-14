@@ -46,6 +46,8 @@ int authn_policy_get_assigned_silo(struct ldb_context *samdb,
 				   const struct ldb_message **silo_msg_out,
 				   bool *is_enforced);
 
+struct auth_user_info_dc;
+
 /* Authentication policies for Kerberos clients. */
 
 /*
@@ -86,5 +88,95 @@ int authn_policy_server(struct ldb_context *samdb,
 
 /* Return whether an authentication policy enforces restrictions. */
 bool authn_policy_restrictions_present(const struct authn_server_policy *policy);
+
+/* Create a structure containing auditing information. */
+NTSTATUS _authn_kerberos_client_policy_audit_info(
+	TALLOC_CTX *mem_ctx,
+	const struct authn_kerberos_client_policy *client_policy,
+	const struct auth_user_info_dc *client_info,
+	enum authn_audit_event event,
+	enum authn_audit_reason reason,
+	NTSTATUS policy_status,
+	const char *location,
+	struct authn_audit_info **audit_info_out);
+
+/* Create a structure containing auditing information. */
+#define authn_kerberos_client_policy_audit_info( \
+	mem_ctx, \
+	policy, \
+	client_info, \
+	event, \
+	reason, \
+	policy_status, \
+	audit_info_out) \
+	_authn_kerberos_client_policy_audit_info( \
+		mem_ctx, \
+		policy, \
+		client_info, \
+		event, \
+		reason, \
+		policy_status, \
+		__location__, \
+		audit_info_out)
+
+/* Create a structure containing auditing information. */
+NTSTATUS _authn_ntlm_client_policy_audit_info(
+	TALLOC_CTX *mem_ctx,
+	const struct authn_ntlm_client_policy *policy,
+	const struct auth_user_info_dc *client_info,
+	enum authn_audit_event event,
+	enum authn_audit_reason reason,
+	NTSTATUS policy_status,
+	const char *location,
+	struct authn_audit_info **audit_info_out);
+
+/* Create a structure containing auditing information. */
+#define authn_ntlm_client_policy_audit_info( \
+	mem_ctx, \
+	policy, \
+	client_info, \
+	event, \
+	reason, \
+	policy_status, \
+	audit_info_out) \
+	_authn_ntlm_client_policy_audit_info( \
+		mem_ctx, \
+		policy, \
+		client_info, \
+		event, \
+		reason, \
+		policy_status, \
+		__location__, \
+		audit_info_out)
+
+/* Create a structure containing auditing information. */
+NTSTATUS _authn_server_policy_audit_info(
+	TALLOC_CTX *mem_ctx,
+	const struct authn_server_policy *policy,
+	const struct auth_user_info_dc *client_info,
+	enum authn_audit_event event,
+	enum authn_audit_reason reason,
+	NTSTATUS policy_status,
+	const char *location,
+	struct authn_audit_info **audit_info_out);
+
+/* Create a structure containing auditing information. */
+#define authn_server_policy_audit_info( \
+	mem_ctx, \
+	policy, \
+	client_info, \
+	event, \
+	reason, \
+	policy_status, \
+	audit_info_out) \
+	_authn_server_policy_audit_info( \
+		mem_ctx, \
+		policy, \
+		client_info, \
+		event, \
+		reason, \
+		policy_status, \
+		__location__, \
+		audit_info_out)
 
 #endif
