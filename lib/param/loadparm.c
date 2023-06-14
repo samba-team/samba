@@ -3048,8 +3048,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "lock spin time", "200");
 
-	lpcfg_do_global_parameter(lp_ctx, "directory name cache size", "100");
-
 	lpcfg_do_global_parameter(lp_ctx, "nmbd bind explicit broadcast", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "init logon delay", "100");
