@@ -817,7 +817,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				}
 			}
 
-			/* This is the final sucess */
+			/* This is the final success */
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
 			/*
 			 * This was only a pre-authentication success,
