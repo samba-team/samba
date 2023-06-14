@@ -5,7 +5,8 @@ bld.SAMBA_SUBSYSTEM(
     deps='''MESSAGING_SEND
             jansson
             samba-debug
-            LIBTSOCKET''',
+            LIBTSOCKET
+            authn_policy''',
     source='audit_logging.c'
 )
 
@@ -20,6 +21,7 @@ if bld.AD_DC_BUILD_IS_ENABLED():
              talloc
              samba-util
              LIBTSOCKET
+             authn_policy
         ''',
         for_selftest=True
     )
@@ -35,6 +37,7 @@ if bld.AD_DC_BUILD_IS_ENABLED():
              talloc
              samba-util
              LIBTSOCKET
+             authn_policy
         ''',
         for_selftest=True,
         ldflags='''

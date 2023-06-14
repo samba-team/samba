@@ -27,9 +27,11 @@
 #include "librpc/ndr/libndr.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/security/dom_sid.h"
+#include "libcli/security/security_token.h"
 #include "lib/messaging/messaging.h"
 #include "auth/common_auth.h"
 #include "audit_logging.h"
+#include "auth/authn_policy.h"
 
 /*
  * @brief Get a human readable timestamp.
@@ -1210,4 +1212,134 @@ struct json_object json_get_object(struct json_object *object, const char *name)
 	}
 	return o;
 }
+
+/*
+ * @brief Create a JSON object from a structure containing audit information.
+ *
+ * @param audit_info the audit information from which to create a JSON object.
+ *
+ * @return the JSON object (which may be valid or not)
+ *
+ *
+ */
+struct json_object json_from_audit_info(const struct authn_audit_info *audit_info)
+{
+	struct json_object object = json_new_object();
+	enum auth_event_id_type auth_event_id;
+	const struct auth_user_info_dc *client_info = NULL;
+	const char *policy_name = NULL;
+	const char *silo_name = NULL;
+	const bool *policy_enforced = NULL;
+	NTSTATUS policy_status;
+	struct authn_int64_optional tgt_lifetime_mins;
+	const char *location = NULL;
+	const char *audit_event = NULL;
+	const char *audit_reason = NULL;
+	int rc = 0;
+
+	if (json_is_invalid(&object)) {
+		goto failure;
+	}
+
+	auth_event_id = authn_audit_info_event_id(audit_info);
+	rc = json_add_int(&object, "eventId", auth_event_id);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	policy_name = authn_audit_info_policy_name(audit_info);
+	rc = json_add_string(&object, "policyName", policy_name);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	silo_name = authn_audit_info_silo_name(audit_info);
+	rc = json_add_string(&object, "siloName", silo_name);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	policy_enforced = authn_audit_info_policy_enforced(audit_info);
+	rc = json_add_optional_bool(&object, "policyEnforced", policy_enforced);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	policy_status = authn_audit_info_policy_status(audit_info);
+	rc = json_add_string(&object, "status", nt_errstr(policy_status));
+	if (rc != 0) {
+		goto failure;
+	}
+
+	tgt_lifetime_mins = authn_audit_info_policy_tgt_lifetime_mins(audit_info);
+	if (tgt_lifetime_mins.is_present) {
+		rc = json_add_int(&object, "tgtLifetime", tgt_lifetime_mins.val);
+		if (rc != 0) {
+			goto failure;
+		}
+	}
+
+	location = authn_audit_info_location(audit_info);
+	rc = json_add_string(&object, "location", location);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	audit_event = authn_audit_info_event(audit_info);
+	rc = json_add_string(&object, "auditEvent", audit_event);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	audit_reason = authn_audit_info_reason(audit_info);
+	rc = json_add_string(&object, "reason", audit_reason);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	client_info = authn_audit_info_client_info(audit_info);
+	if (client_info != NULL) {
+		const struct auth_user_info *client_user_info = NULL;
+
+		client_user_info = client_info->info;
+		if (client_user_info != NULL) {
+			rc = json_add_string(&object, "checkedDomain", client_user_info->domain_name);
+			if (rc != 0) {
+				goto failure;
+			}
+
+			rc = json_add_string(&object, "checkedAccount", client_user_info->account_name);
+			if (rc != 0) {
+				goto failure;
+			}
+
+			rc = json_add_string(&object, "checkedLogonServer", client_user_info->logon_server);
+			if (rc != 0) {
+				goto failure;
+			}
+
+			rc = json_add_flags32(&object, "checkedAccountFlags", client_user_info->acct_flags);
+			if (rc != 0) {
+				goto failure;
+			}
+		}
+
+		if (client_info->num_sids) {
+			const struct dom_sid *policy_checked_sid = NULL;
+
+			policy_checked_sid = &client_info->sids[PRIMARY_USER_SID_INDEX].sid;
+			rc = json_add_sid(&object, "checkedSid", policy_checked_sid);
+			if (rc != 0) {
+				goto failure;
+			}
+		}
+	}
+
+	return object;
+
+failure:
+	json_free(&object);
+	return object;
+}
+
 #endif
