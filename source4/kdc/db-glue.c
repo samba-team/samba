@@ -1427,20 +1427,20 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	enforced_tgt_lifetime_raw = authn_policy_enforced_tgt_lifetime_raw(authn_client_policy);
 	if (enforced_tgt_lifetime_raw != 0) {
-		int64_t lifetime = enforced_tgt_lifetime_raw;
+		int64_t lifetime_secs = enforced_tgt_lifetime_raw;
 
-		lifetime /= INT64_C(1000) * 1000 * 10;
-		lifetime = MIN(lifetime, INT_MAX);
-		lifetime = MAX(lifetime, INT_MIN);
+		lifetime_secs /= INT64_C(1000) * 1000 * 10;
+		lifetime_secs = MIN(lifetime_secs, INT_MAX);
+		lifetime_secs = MAX(lifetime_secs, INT_MIN);
 
 		/*
 		 * Set both lifetime and renewal time based only on the
 		 * configured maximum lifetime — not on the configured renewal
 		 * time. Yes, this is what Windows does.
 		 */
-		lifetime = MIN(*entry->max_life, lifetime);
-		*entry->max_life = lifetime;
-		*entry->max_renew = lifetime;
+		lifetime_secs = MIN(*entry->max_life, lifetime_secs);
+		*entry->max_life = lifetime_secs;
+		*entry->max_renew = lifetime_secs;
 	}
 
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
