@@ -1212,6 +1212,8 @@ extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_padata = int('SAMBA4_USES_HEIMDAL' in config_hash)
 expect_nt_status = int('SAMBA4_USES_HEIMDAL' in config_hash)
+as_req_logging_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
+tgs_req_logging_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 krb5_environ = {
     'SERVICE_USERNAME': '$SERVER',
     'ADMIN_USERNAME': '$DC_USERNAME',
@@ -1231,6 +1233,8 @@ krb5_environ = {
     'CHECK_PADATA': check_padata,
     'KADMIN_IS_TGS': kadmin_is_tgs,
     'EXPECT_NT_STATUS': expect_nt_status,
+    'AS_REQ_LOGGING_SUPPORT': as_req_logging_support,
+    'TGS_REQ_LOGGING_SUPPORT': tgs_req_logging_support,
 }
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("none", "samba.tests.krb5.claims_in_pac")

@@ -23,18 +23,24 @@ import os
 sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
+from datetime import datetime
+from enum import Enum
 import random
+import re
 
 import ldb
 
 from samba import dsdb, ntstatus
 from samba.dcerpc import netlogon, security
+from samba.dcerpc import windows_event_ids as win_event
 from samba.ndr import ndr_pack
 from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 
+import samba.tests
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import GroupType
 from samba.tests.krb5.kdc_tgs_tests import KdcTgsBaseTests
+from samba.tests.auth_log_base import AuthLogTestBase, NoMessageException
 from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_BADOPTION,
@@ -53,10 +59,121 @@ HRES_SEC_E_INVALID_TOKEN = 0x80090308
 HRES_SEC_E_LOGON_DENIED = 0x8009030C
 
 
-class AuthnPolicyTests(KdcTgsBaseTests):
+AUTHN_VERSION = {'major': 1, 'minor': 2}
+AUTHZ_VERSION = {'major': 1, 'minor': 1}
+KDC_AUTHZ_VERSION = {'major': 1, 'minor': 0}
+
+
+class AuditType(Enum):
+    AUTHN = 'Authentication'
+    AUTHZ = 'Authorization'
+    KDC_AUTHZ = 'KDC Authorization'
+
+
+class AuditEvent(Enum):
+    OK = 'OK'
+    KERBEROS_DEVICE_RESTRICTION = 'KERBEROS_DEVICE_RESTRICTION'
+    KERBEROS_SERVER_RESTRICTION = 'KERBEROS_SERVER_RESTRICTION'
+    NTLM_DEVICE_RESTRICTION = 'NTLM_DEVICE_RESTRICTION'
+    NTLM_SERVER_RESTRICTION = 'NTLM_SERVER_RESTRICTION'
+    OTHER_ERROR = 'OTHER_ERROR'
+
+
+class AuditReason(Enum):
+    NONE = None
+    DESCRIPTOR_INVALID = 'DESCRIPTOR_INVALID'
+    DESCRIPTOR_NO_OWNER = 'DESCRIPTOR_NO_OWNER'
+    SECURITY_TOKEN_FAILURE = 'SECURITY_TOKEN_FAILURE'
+    ACCESS_DENIED = 'ACCESS_DENIED'
+    FAST_REQUIRED = 'FAST_REQUIRED'
+
+
+# This decorator helps reduce boilerplate code in log-checking methods.
+def policy_check_fn(fn):
+    def wrapper_fn(self, client_creds, *,
+                   client_policy=None,
+                   client_policy_status=None,
+                   server_policy=None,
+                   server_policy_status=None,
+                   status=None,
+                   event=AuditEvent.OK,
+                   reason=AuditReason.NONE,
+                   **kwargs):
+        if client_policy_status is not None:
+            self.assertIsNotNone(client_policy,
+                                 'specified client policy status without '
+                                 'client policy')
+
+            self.assertIsNone(
+                server_policy_status,
+                'don’t specify both client policy status and server policy '
+                'status (at most one of which can appear in the logs)')
+        elif server_policy_status is not None:
+            self.assertIsNotNone(server_policy,
+                                 'specified server policy status without '
+                                 'server policy')
+        elif client_policy is not None and server_policy is not None:
+            self.assertIsNone(status,
+                              'ambiguous: specify a client policy status or a '
+                              'server policy status')
+
+        overall_status = status
+        if overall_status is None:
+            overall_status = ntstatus.NT_STATUS_OK
+
+        if client_policy_status is None:
+            client_policy_status = ntstatus.NT_STATUS_OK
+        elif status is None and client_policy.enforced:
+            overall_status = client_policy_status
+
+        if server_policy_status is None:
+            server_policy_status = ntstatus.NT_STATUS_OK
+        elif status is None and server_policy.enforced:
+            overall_status = server_policy_status
+
+        if client_policy_status:
+            client_policy_event = event
+            client_policy_reason = reason
+        else:
+            client_policy_event = AuditEvent.OK
+            client_policy_reason = AuditReason.NONE
+
+        if server_policy_status:
+            server_policy_event = event
+            server_policy_reason = reason
+        else:
+            server_policy_event = AuditEvent.OK
+            server_policy_reason = AuditReason.NONE
+
+        return fn(self, client_creds,
+                  client_policy=client_policy,
+                  client_policy_status=client_policy_status,
+                  client_policy_event=client_policy_event,
+                  client_policy_reason=client_policy_reason,
+                  server_policy=server_policy,
+                  server_policy_status=server_policy_status,
+                  server_policy_event=server_policy_event,
+                  server_policy_reason=server_policy_reason,
+                  overall_status=overall_status,
+                  **kwargs)
+
+    return wrapper_fn
+
+
+class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        as_req_logging_support = samba.tests.env_get_var_value(
+            'AS_REQ_LOGGING_SUPPORT',
+            allow_missing=False)
+        cls.as_req_logging_support = bool(int(as_req_logging_support))
+
+        tgs_req_logging_support = samba.tests.env_get_var_value(
+            'TGS_REQ_LOGGING_SUPPORT',
+            allow_missing=False)
+        cls.tgs_req_logging_support = bool(int(tgs_req_logging_support))
 
         cls._max_ticket_life = None
         cls._max_renew_life = None
@@ -65,6 +182,36 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
+
+    def take(self, n, iterable, *, take_all=True):
+        """Yield n items from an iterable."""
+        i = -1
+        for i in range(n):
+            try:
+                yield next(iterable)
+            except StopIteration:
+                self.fail(f'expected to find element{i}')
+
+        if take_all:
+            with self.assertRaises(
+                    StopIteration,
+                    msg=f'got unexpected element after {i+1} elements'):
+                next(iterable)
+
+    def take_pairs(self, n, iterable, *, take_all=True):
+        """Yield n pairs of items from an iterable."""
+        i = -1
+        for i in range(n):
+            try:
+                yield next(iterable), next(iterable)
+            except StopIteration:
+                self.fail(f'expected to find pair of elements {i}')
+
+        if take_all:
+            with self.assertRaises(
+                    StopIteration,
+                    msg=f'got unexpected element after {i+1} pairs'):
+                next(iterable)
 
     def get_max_ticket_life(self):
         if self._max_ticket_life is None:
@@ -146,6 +293,670 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                                      opts=opts,
                                      use_cache=cached)
 
+    @staticmethod
+    def audit_type(msg):
+        return AuditType(msg['type'])
+
+    @staticmethod
+    def auth_type(msg):
+        audit_type = __class__.audit_type(msg)
+        key = {
+            AuditType.AUTHN: 'authDescription',
+            AuditType.AUTHZ: 'authType',
+            AuditType.KDC_AUTHZ: 'authType',
+        }[audit_type]
+
+        return msg[audit_type.value][key]
+
+    @staticmethod
+    def service_description(msg):
+        audit_type = __class__.audit_type(msg)
+        return msg[audit_type.value]['serviceDescription']
+
+    @staticmethod
+    def client_account(msg):
+        audit_type = __class__.audit_type(msg)
+
+        key = {
+            AuditType.AUTHN: 'clientAccount',
+            AuditType.AUTHZ: 'account',
+            AuditType.KDC_AUTHZ: 'account',
+        }[audit_type]
+
+        return msg[audit_type.value][key]
+
+    def filter_msg(self, audit_type, client_name, *,
+                   auth_type=None,
+                   service_description=None):
+        def _filter_msg(msg):
+            if audit_type is not self.audit_type(msg):
+                return False
+
+            if auth_type is not None:
+                if isinstance(auth_type, re.Pattern):
+                    # Check whether the pattern matches.
+                    if not auth_type.fullmatch(self.auth_type(msg)):
+                        return False
+                else:
+                    # Just do a standard equality check.
+                    if auth_type != self.auth_type(msg):
+                        return False
+
+            if service_description is not None:
+                if service_description != self.service_description(msg):
+                    return False
+
+            return client_name == self.client_account(msg)
+
+        return _filter_msg
+
+    PRE_AUTH_RE = re.compile('.* Pre-authentication')
+
+    def as_req_filter(self, client_creds):
+        username = client_creds.get_username()
+        realm = client_creds.get_realm()
+        client_name = f'{username}@{realm}'
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              client_name,
+                              auth_type=self.PRE_AUTH_RE,
+                              service_description='Kerberos KDC')
+
+    def tgs_req_filter(self, client_creds, target_creds):
+        target_name = target_creds.get_username()
+        if target_name[-1] == '$':
+            target_name = target_name[:-1]
+        target_realm = target_creds.get_realm()
+
+        target_spn = f'host/{target_name}@{target_realm}'
+
+        yield self.filter_msg(AuditType.KDC_AUTHZ,
+                              client_creds.get_username(),
+                              auth_type='TGS-REQ with Ticket-Granting Ticket',
+                              service_description=target_spn)
+
+    def samlogon_filter(self, client_creds, *, logon_type=None):
+        if logon_type is None:
+            auth_type = None
+        elif logon_type == netlogon.NetlogonNetworkInformation:
+            auth_type = 'network'
+        elif logon_type == netlogon.NetlogonInteractiveInformation:
+            auth_type = 'interactive'
+        else:
+            self.fail(f'unknown logon type ‘{logon_type}’')
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              client_creds.get_username(),
+                              auth_type=auth_type,
+                              service_description='SamLogon')
+
+    def ntlm_filter(self, client_creds):
+        username = client_creds.get_username()
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              username,
+                              auth_type='NTLMSSP',
+                              service_description='LDAP')
+
+        yield self.filter_msg(AuditType.AUTHZ,
+                              username,
+                              auth_type='NTLMSSP',
+                              service_description='LDAP')
+
+    def simple_bind_filter(self, client_creds):
+        yield self.filter_msg(AuditType.AUTHN,
+                              str(client_creds.get_dn()),
+                              auth_type='simple bind/TLS',
+                              service_description='LDAP')
+
+        yield self.filter_msg(AuditType.AUTHZ,
+                              client_creds.get_username(),
+                              auth_type='simple bind',
+                              service_description='LDAP')
+
+    def samr_pwd_change_filter(self, client_creds):
+        username = client_creds.get_username()
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              username,
+                              auth_type='NTLMSSP',
+                              service_description='SMB2')
+
+        yield self.filter_msg(AuditType.AUTHZ,
+                              username,
+                              auth_type='NTLMSSP',
+                              service_description='SMB2')
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              username,
+                              auth_type='NTLMSSP',
+                              service_description='DCE/RPC')
+
+        yield self.filter_msg(AuditType.AUTHZ,
+                              username,
+                              auth_type='NTLMSSP',
+                              service_description='DCE/RPC')
+
+        # Password changes are attempted twice, with two different methods.
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              username,
+                              auth_type='samr_ChangePasswordUser2',
+                              service_description='SAMR Password Change')
+
+        yield self.filter_msg(AuditType.AUTHN,
+                              username,
+                              auth_type='samr_ChangePasswordUser3',
+                              service_description='SAMR Password Change')
+
+    def nextMessage(self, *args, **kwargs):
+        """Return the next relevant message, or throw a NoMessageException."""
+        msg = super().nextMessage(*args, **kwargs)
+        self.assert_is_timestamp(msg.pop('timestamp'))
+
+        msg_type = msg.pop('type')
+        inner = msg.pop(msg_type)
+        self.assertFalse(msg, 'unexpected items in outer message')
+
+        return inner
+
+    def assert_is_timestamp(self, ts):
+        try:
+            datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f%z')
+        except (TypeError, ValueError):
+            self.fail(f'‘{ts}’ is not a timestamp')
+
+    def assert_is_guid(self, guid):
+        guid_re = (
+            '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+        self.assertRegex(guid, guid_re)
+
+    def assert_tgt_lifetime(self, checked_creds, policy, expected_policy):
+        if checked_creds is None:
+            self.assertNotIn('tgtLifetime', policy)
+            return
+
+        account_type = checked_creds.get_type()
+        if account_type is self.AccountType.USER:
+            expected = expected_policy.user_tgt_lifetime
+        elif account_type is self.AccountType.COMPUTER:
+            expected = expected_policy.computer_tgt_lifetime
+        elif account_type is self.AccountType.MANAGED_SERVICE:
+            expected = expected_policy.service_tgt_lifetime
+        else:
+            self.fail(f'unknown account type {account_type}')
+
+        if expected is not None:
+            expected /= 60 * 10_000_000
+            expected = int(expected)
+        else:
+            expected = 0
+
+        self.assertEqual(policy.pop('tgtLifetime'), expected)
+
+    def assert_event_id(self, audit_event, policy, expected_policy):
+        event_map = {
+            AuditEvent.KERBEROS_DEVICE_RESTRICTION: (
+                # unenforced
+                win_event.AUTH_EVT_ID_KERBEROS_DEVICE_RESTRICTION_AUDIT,
+                # enforced
+                win_event.AUTH_EVT_ID_KERBEROS_DEVICE_RESTRICTION,
+            ),
+            AuditEvent.KERBEROS_SERVER_RESTRICTION: (
+                # unenforced
+                win_event.AUTH_EVT_ID_KERBEROS_SERVER_RESTRICTION_AUDIT,
+                # enforced
+                win_event.AUTH_EVT_ID_KERBEROS_SERVER_RESTRICTION,
+            ),
+            AuditEvent.NTLM_DEVICE_RESTRICTION: (
+                win_event.AUTH_EVT_ID_NONE,  # unenforced
+                win_event.AUTH_EVT_ID_NTLM_DEVICE_RESTRICTION,  # enforced
+            ),
+        }
+
+        event_ids = event_map.get(audit_event)
+        if event_ids is not None:
+            expected_id = event_ids[expected_policy.enforced]
+        else:
+            expected_id = win_event.AUTH_EVT_ID_NONE
+
+        self.assertEqual(expected_id, policy.pop('eventId'))
+
+    def check_policy(self, checked_creds, policy, expected_policy, *,
+                     client_creds=None,
+                     expected_silo=None,
+                     policy_status=ntstatus.NT_STATUS_OK,
+                     audit_event=AuditEvent.OK,
+                     reason=AuditReason.NONE):
+        if expected_policy is None:
+            self.assertIsNone(policy, 'got unexpected policy')
+            self.assertIs(ntstatus.NT_STATUS_OK, policy_status)
+            self.assertIs(AuditEvent.OK, audit_event)
+            self.assertIs(AuditReason.NONE, reason)
+            return
+
+        self.assertIsNotNone(policy, 'expected to get a policy')
+
+        policy.pop('location')  # A location in the source code, for debugging.
+
+        if checked_creds is not None:
+            checked_account = checked_creds.get_username()
+            checked_domain = checked_creds.get_domain()
+            checked_sid = checked_creds.get_sid()
+
+            self.assertEqual(checked_account, policy.pop('checkedAccount'))
+            self.assertRegex(policy.pop('checkedAccountFlags'), '^0x[0-9a-f]{8}$')
+            self.assertEqual(checked_domain, policy.pop('checkedDomain'))
+            self.assertEqual(checked_sid, policy.pop('checkedSid'))
+
+            logon_server = os.environ['DC_NETBIOSNAME']
+            self.assertEqual(logon_server, policy.pop('checkedLogonServer'))
+        else:
+            self.assertNotIn('checkedAccount', policy)
+            self.assertNotIn('checkedAccountFlags', policy)
+            self.assertNotIn('checkedDomain', policy)
+            self.assertNotIn('checkedSid', policy)
+            self.assertNotIn('checkedLogonServer', policy)
+
+        self.assertEqual(expected_policy.enforced,
+                         policy.pop('policyEnforced'))
+        self.assertEqual(expected_policy.name, policy.pop('policyName'))
+
+        self.assert_tgt_lifetime(client_creds, policy, expected_policy)
+
+        silo_name = expected_silo.name if expected_silo is not None else None
+        self.assertEqual(silo_name, policy.pop('siloName'))
+
+        got_status = getattr(ntstatus, policy.pop('status'))
+        self.assertEqual(policy_status, got_status)
+
+        got_audit_event = policy.pop('auditEvent')
+        try:
+            got_audit_event = AuditEvent(got_audit_event)
+        except ValueError:
+            self.fail('got unrecognized audit event')
+        self.assertEqual(audit_event, got_audit_event)
+        self.assert_event_id(audit_event, policy, expected_policy)
+
+        got_reason = policy.pop('reason')
+        try:
+            got_reason = AuditReason(got_reason)
+        except ValueError:
+            self.fail('got unrecognized audit reason')
+        self.assertEqual(reason, got_reason)
+
+        self.assertFalse(policy, 'unexpected items remain in policy')
+
+    @policy_check_fn
+    def check_as_log(self, client_creds, *,
+                     client_policy,
+                     client_policy_status,
+                     client_policy_event,
+                     client_policy_reason,
+                     server_policy,
+                     server_policy_status,
+                     server_policy_event,
+                     server_policy_reason,
+                     overall_status,
+                     armor_creds=None):
+        if not self.as_req_logging_support:
+            return
+
+        as_req_filter = self.as_req_filter(client_creds)
+        for msg_filter in self.take(1, as_req_filter):
+            try:
+                msg = self.nextMessage(msg_filter)
+            except NoMessageException:
+                self.fail('expected to receive authentication message')
+
+            self.assertEqual(AUTHN_VERSION, msg.pop('version'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(overall_status, got_status)
+
+            got_client_policy = msg.pop('clientPolicyAccessCheck', None)
+            self.check_policy(armor_creds, got_client_policy, client_policy,
+                              client_creds=client_creds,
+                              policy_status=client_policy_status,
+                              audit_event=client_policy_event,
+                              reason=client_policy_reason)
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+    def check_tgs_log(self, client_creds, target_creds, *,
+                      policy=None,
+                      policy_status=None,
+                      status=None,
+                      checked_creds=None,
+                      event=AuditEvent.OK,
+                      reason=AuditReason.NONE):
+        if not self.tgs_req_logging_support:
+            return
+
+        if checked_creds is None:
+            checked_creds = client_creds
+
+        overall_status = status if status is not None else ntstatus.NT_STATUS_OK
+
+        if policy_status is None:
+            policy_status = ntstatus.NT_STATUS_OK
+
+            if policy is not None:
+                policy_status = overall_status
+        elif status is None and policy.enforced:
+            overall_status = status
+
+        client_domain = client_creds.get_domain()
+
+        logon_server = os.environ['DC_NETBIOSNAME']
+
+        # An example of a typical KDC Authorization log message:
+
+        # {
+        #     "KDC Authorization": {
+        #         "account": "alice",
+        #         "authTime": "2023-06-15T23:45:13.183564+0000",
+        #         "authType": "TGS-REQ with Ticket-Granting Ticket",
+        #         "domain": "ADDOMAIN",
+        #         "localAddress": null,
+        #         "logonServer": "ADDC",
+        #         "remoteAddress": "ipv4:10.53.57.11:28004",
+        #         "serverPolicyAccessCheck": {
+        #             "auditEvent": "KERBEROS_SERVER_RESTRICTION",
+        #             "checkedAccount": "alice",
+        #             "checkedAccountFlags": "0x00000010",
+        #             "checkedDomain": "ADDOMAIN",
+        #             "checkedLogonServer": "ADDC",
+        #             "checkedSid": "S-1-5-21-3907522332-2561495341-3138977981-1159",
+        #             "eventId": 106,
+        #             "location": "../../source4/kdc/authn_policy_util.c:1181",
+        #             "policyEnforced": true,
+        #             "policyName": "Example Policy",
+        #             "reason": "ACCESS_DENIED",
+        #             "siloName": null,
+        #             "status": "NT_STATUS_AUTHENTICATION_FIREWALL_FAILED"
+        #         },
+        #         "serviceDescription": "host/target@ADDOM.SAMBA.EXAMPLE.COM",
+        #         "sid": "S-1-5-21-3907522332-2561495341-3138977981-1159",
+        #         "status": "NT_STATUS_AUTHENTICATION_FIREWALL_FAILED",
+        #         "version": {
+        #             "major": 1,
+        #             "minor": 0
+        #         }
+        #     },
+        #     "timestamp": "2023-06-15T23:45:13.202312+0000",
+        #     "type": "KDC Authorization"
+        # }
+
+        tgs_req_filter = self.tgs_req_filter(client_creds, target_creds)
+        for msg_filter in self.take(1, tgs_req_filter):
+            try:
+                msg = self.nextMessage(msg_filter)
+            except NoMessageException:
+                self.fail('expected to receive KDC authorization message')
+
+            # These parameters have already been checked.
+            msg.pop('account')
+            msg.pop('authType')
+            msg.pop('remoteAddress')
+            msg.pop('serviceDescription')
+
+            self.assertEqual(KDC_AUTHZ_VERSION, msg.pop('version'))
+
+            self.assert_is_timestamp(msg.pop('authTime'))
+            self.assertEqual(client_domain, msg.pop('domain'))
+            self.assertIsNone(msg.pop('localAddress'))
+            self.assertEqual(logon_server, msg.pop('logonServer'))
+            self.assertEqual(client_creds.get_sid(), msg.pop('sid'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(overall_status, got_status)
+
+            server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(checked_creds, server_policy, policy,
+                              policy_status=policy_status,
+                              audit_event=event,
+                              reason=reason)
+
+            self.assertFalse(msg, 'unexpected items remain in message')
+
+    @policy_check_fn
+    def check_samlogon_log(self, client_creds, *,
+                           client_policy,
+                           client_policy_status,
+                           client_policy_event,
+                           client_policy_reason,
+                           server_policy,
+                           server_policy_status,
+                           server_policy_event,
+                           server_policy_reason,
+                           overall_status,
+                           logon_type=None):
+        samlogon_filter = self.samlogon_filter(client_creds,
+                                               logon_type=logon_type)
+        for msg_filter in self.take(1, samlogon_filter):
+            try:
+                msg = self.nextMessage(msg_filter)
+            except NoMessageException:
+                self.fail('expected to receive authentication message')
+
+            self.assertEqual(AUTHN_VERSION, msg.pop('version'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(overall_status, got_status)
+
+            got_client_policy = msg.pop('clientPolicyAccessCheck', None)
+            self.check_policy(None, got_client_policy, client_policy,
+                              policy_status=client_policy_status,
+                              audit_event=client_policy_event,
+                              reason=client_policy_reason)
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+    def check_samlogon_network_log(self, client_creds, **kwargs):
+        return self.check_samlogon_log(
+            client_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            **kwargs)
+
+    def check_samlogon_interactive_log(self, client_creds, **kwargs):
+        return self.check_samlogon_log(
+            client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            **kwargs)
+
+    @policy_check_fn
+    def check_ntlm_log(self, client_creds, *,
+                       client_policy,
+                       client_policy_status,
+                       client_policy_event,
+                       client_policy_reason,
+                       server_policy,
+                       server_policy_status,
+                       server_policy_event,
+                       server_policy_reason,
+                       overall_status):
+        ntlm_filter = self.ntlm_filter(client_creds)
+
+        for authn_filter, authz_filter in self.take_pairs(1, ntlm_filter):
+            try:
+                msg = self.nextMessage(authn_filter)
+            except NoMessageException:
+                self.fail('expected to receive authentication message')
+
+            self.assertEqual(AUTHN_VERSION, msg.pop('version'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(overall_status, got_status)
+
+            got_client_policy = msg.pop('clientPolicyAccessCheck', None)
+            self.check_policy(None, got_client_policy, client_policy,
+                              policy_status=client_policy_status,
+                              audit_event=client_policy_event,
+                              reason=client_policy_reason)
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+            if overall_status:
+                # Authentication can proceed no further.
+                return
+
+            try:
+                msg = self.nextMessage(authz_filter)
+            except NoMessageException:
+                self.fail('expected to receive authorization message')
+
+            self.assertEqual(AUTHZ_VERSION, msg.pop('version'))
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy)
+
+    @policy_check_fn
+    def check_simple_bind_log(self, client_creds, *,
+                              client_policy,
+                              client_policy_status,
+                              client_policy_event,
+                              client_policy_reason,
+                              server_policy,
+                              server_policy_status,
+                              server_policy_event,
+                              server_policy_reason,
+                              overall_status):
+        simple_bind_filter = self.simple_bind_filter(client_creds)
+
+        for authn_filter, authz_filter in self.take_pairs(1,
+                                                          simple_bind_filter):
+            try:
+                msg = self.nextMessage(authn_filter)
+            except NoMessageException:
+                self.fail('expected to receive authentication message')
+
+            self.assertEqual(AUTHN_VERSION, msg.pop('version'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(overall_status, got_status)
+
+            got_client_policy = msg.pop('clientPolicyAccessCheck', None)
+            self.check_policy(None, got_client_policy, client_policy,
+                              policy_status=client_policy_status,
+                              audit_event=client_policy_event,
+                              reason=client_policy_reason)
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+            if overall_status:
+                # Authentication can proceed no further.
+                return
+
+            try:
+                msg = self.nextMessage(authz_filter)
+            except NoMessageException:
+                self.fail('expected to receive authorization message')
+
+            self.assertEqual(AUTHZ_VERSION, msg.pop('version'))
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+    @policy_check_fn
+    def check_samr_pwd_change_log(self, client_creds, *,
+                                  client_policy,
+                                  client_policy_status,
+                                  client_policy_event,
+                                  client_policy_reason,
+                                  server_policy,
+                                  server_policy_status,
+                                  server_policy_event,
+                                  server_policy_reason,
+                                  overall_status):
+        pwd_change_filter = self.samr_pwd_change_filter(client_creds)
+
+        # There will be two authorization attempts.
+        for authn_filter, authz_filter in self.take_pairs(2,
+                                                          pwd_change_filter,
+                                                          take_all=False):
+            try:
+                msg = self.nextMessage(authn_filter)
+            except NoMessageException:
+                self.fail('expected to receive authentication message')
+
+            self.assertEqual(AUTHN_VERSION, msg.pop('version'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(overall_status, got_status)
+
+            got_client_policy = msg.pop('clientPolicyAccessCheck', None)
+            self.check_policy(None, got_client_policy, client_policy,
+                              policy_status=client_policy_status,
+                              audit_event=client_policy_event,
+                              reason=client_policy_reason)
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+            if overall_status:
+                # Authentication can proceed no further.
+                return
+
+            try:
+                msg = self.nextMessage(authz_filter)
+            except NoMessageException:
+                self.fail('expected to receive authorization message')
+
+            self.assertEqual(AUTHZ_VERSION, msg.pop('version'))
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, server_policy,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
+        # There will be two SAMR password change attempts.
+        for msg_filter in self.take(2, pwd_change_filter):
+            try:
+                msg = self.nextMessage(msg_filter)
+            except NoMessageException:
+                self.fail('expected to receive SAMR password change message')
+
+            self.assertEqual(AUTHN_VERSION, msg.pop('version'))
+
+            got_status = getattr(ntstatus, msg.pop('status'))
+            self.assertEqual(ntstatus.NT_STATUS_OK, got_status)
+
+            got_client_policy = msg.pop('clientPolicyAccessCheck', None)
+            self.check_policy(None, got_client_policy, None,
+                              policy_status=client_policy_status,
+                              audit_event=client_policy_event,
+                              reason=client_policy_reason)
+
+            got_server_policy = msg.pop('serverPolicyAccessCheck', None)
+            self.check_policy(client_creds, got_server_policy, None,
+                              policy_status=server_policy_status,
+                              audit_event=server_policy_event,
+                              reason=server_policy_reason)
+
     def test_authn_policy_tgt_lifetime_user(self):
         # Create an authentication policy with certain TGT lifetimes set.
         user_life = 111
@@ -166,6 +977,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=user_life,
                                 expected_renew_life=user_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_policy_tgt_lifetime_computer(self):
         user_life = 111
@@ -188,6 +1001,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=computer_life,
                                 expected_renew_life=computer_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_service(self):
         user_life = 111
         computer_life = 222
@@ -209,6 +1024,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=service_life,
                                 expected_renew_life=service_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_tgt_lifetime_user(self):
         # Create an authentication policy with certain TGT lifetimes set.
@@ -251,6 +1068,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=user_life,
                                 expected_renew_life=user_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_tgt_lifetime_computer(self):
         user_life = 111
         computer_life = 222
@@ -288,6 +1107,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=computer_life,
                                 expected_renew_life=computer_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_tgt_lifetime_service(self):
         user_life = 111
@@ -327,6 +1148,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=service_life,
                                 expected_renew_life=service_life)
+
+        self.check_as_log(client_creds)
 
     # Test that an authentication silo takes priority over a policy assigned
     # directly.
@@ -372,6 +1195,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=user_life,
                                 expected_renew_life=user_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_and_policy_tgt_lifetime_computer(self):
         user_life = 111
         computer_life = 222
@@ -410,6 +1235,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=computer_life,
                                 expected_renew_life=computer_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_and_policy_tgt_lifetime_service(self):
         user_life = 111
@@ -452,6 +1279,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=service_life,
                                 expected_renew_life=service_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_max(self):
         # Create an authentication policy with the maximum allowable TGT
         # lifetime set.
@@ -473,6 +1302,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_lifetime)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_min(self):
         # Create an authentication policy with the minimum allowable TGT
         # lifetime set.
@@ -492,6 +1323,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_error=KDC_ERR_NEVER_VALID,
                       expect_status=True,
                       expected_status=ntstatus.NT_STATUS_TIME_DIFFERENCE_AT_DC)
+
+        self.check_as_log(
+            client_creds,
+            status=ntstatus.NT_STATUS_TIME_DIFFERENCE_AT_DC)
 
     def test_authn_policy_tgt_lifetime_zero(self):
         # Create an authentication policy with the TGT lifetime set to zero.
@@ -513,6 +1348,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_one_second(self):
         # Create an authentication policy with the TGT lifetime set to one
         # second.
@@ -531,6 +1368,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
+
+        self.check_as_log(client_creds)
 
     def test_authn_policy_tgt_lifetime_kpasswd_lifetime(self):
         # Create an authentication policy with the TGT lifetime set to two
@@ -551,6 +1390,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_short_protected(self):
         # Create an authentication policy with a short TGT lifetime set.
         lifetime = 111
@@ -569,6 +1410,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
+
+        self.check_as_log(client_creds)
 
     def test_authn_policy_tgt_lifetime_long_protected(self):
         # Create an authentication policy with a long TGT lifetime set. This
@@ -591,6 +1434,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_zero_protected(self):
         # Create an authentication policy with the TGT lifetime set to zero.
         policy = self.create_authn_policy(enforced=True,
@@ -610,6 +1455,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=4 * 60 * 60,
                                 expected_renew_life=4 * 60 * 60)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_tgt_lifetime_none_protected(self):
         # Create an authentication policy with no TGT lifetime set.
         policy = self.create_authn_policy(enforced=True)
@@ -627,6 +1474,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=4 * 60 * 60,
                                 expected_renew_life=4 * 60 * 60)
+
+        self.check_as_log(client_creds)
 
     def test_authn_policy_tgt_lifetime_unenforced_protected(self):
         # Create an unenforced authentication policy with a TGT lifetime set.
@@ -648,6 +1497,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=4 * 60 * 60,
                                 expected_renew_life=4 * 60 * 60)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_not_enforced(self):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is not enforced.
@@ -667,6 +1518,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_policy_unenforced(self):
         # Create an authentication policy with the TGT lifetime set. The policy
@@ -688,6 +1541,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_not_enforced(self):
         # Create an authentication policy with the TGT lifetime set.
@@ -718,6 +1573,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_unenforced(self):
         # Create an authentication policy with the TGT lifetime set.
@@ -750,6 +1607,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_not_enforced_policy(self):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is not enforced.
@@ -777,6 +1636,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_unenforced_policy(self):
         # Create an authentication policy with the TGT lifetime set. The policy
@@ -806,6 +1667,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_not_enforced_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
@@ -844,6 +1707,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_unenforced_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
@@ -884,6 +1749,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_not_enforced_policy_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set. The policy
         # is not enforced.
@@ -919,6 +1786,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=silo_lifetime,
                                 expected_renew_life=silo_lifetime)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_unenforced_policy_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set. The policy
@@ -957,6 +1826,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=silo_lifetime,
                                 expected_renew_life=silo_lifetime)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_not_a_member(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
@@ -982,6 +1853,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_not_a_member_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
@@ -1014,6 +1887,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_not_assigned(self):
         # Create an authentication policy with the TGT lifetime set.
         lifetime = 123
@@ -1043,6 +1918,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_not_assigned_and_assigned_policy(self):
         # Create an authentication policy with the TGT lifetime set.
@@ -1078,6 +1955,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=lifetime,
                                 expected_renew_life=lifetime)
 
+        self.check_as_log(client_creds)
+
     def test_authn_silo_no_applicable_policy(self):
         # Create an authentication policy with the TGT lifetime set.
         user_life = 111
@@ -1107,6 +1986,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_authn_silo_no_tgt_lifetime(self):
         # Create an authentication policy with no TGT lifetime set.
@@ -1142,6 +2023,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
 
+        self.check_as_log(client_creds)
+
     def test_not_a_policy(self):
         samdb = self.get_samdb()
 
@@ -1164,6 +2047,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
 
+        self.check_as_log(client_creds)
+
     def test_not_a_silo(self):
         samdb = self.get_samdb()
 
@@ -1184,6 +2069,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         tgt = self._get_tgt(client_creds, till=till)
         self.check_ticket_times(tgt, expected_life=expected_lifetime,
                                 expected_renew_life=expected_renew_life)
+
+        self.check_as_log(client_creds)
 
     def test_not_a_silo_and_policy(self):
         samdb = self.get_samdb()
@@ -1211,6 +2098,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self.check_ticket_times(tgt, expected_life=user_life,
                                 expected_renew_life=user_life)
 
+        self.check_as_log(client_creds)
+
     def test_authn_policy_allowed_from_empty(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1229,6 +2118,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow(self):
         # Create a machine account with which to perform FAST.
@@ -1255,6 +2148,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_user_deny(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1280,6 +2177,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we get a policy error when trying to authenticate.
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_bad_pwd_allowed_from_user_deny(self):
         # Create a machine account with which to perform FAST.
@@ -1308,6 +2214,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
 
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
     def test_authn_policy_allowed_from_service_allow(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1329,6 +2244,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_service_deny(self):
         # Create a machine account with which to perform FAST.
@@ -1352,6 +2271,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we get a policy error when trying to authenticate.
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_allowed_from_no_owner(self):
         # Create a machine account with which to perform FAST.
@@ -1378,6 +2306,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_GENERIC)
 
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.DESCRIPTOR_NO_OWNER,
+            status=ntstatus.NT_STATUS_UNSUCCESSFUL)
+
     def test_authn_policy_allowed_from_no_owner_unenforced(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1396,6 +2333,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that we don’t get an error if the policy is unenforced.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy,
+                          client_policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+                          event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+                          reason=AuditReason.DESCRIPTOR_NO_OWNER)
 
     def test_authn_policy_allowed_from_owner_self(self):
         # Create a machine account with which to perform FAST.
@@ -1416,6 +2360,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_owner_anon(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1435,6 +2383,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_no_fast(self):
         # Create an authentication policy that restricts authentication.
         # Include some different TGT lifetimes for testing what gets logged.
@@ -1453,6 +2405,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, expected_error=KDC_ERR_POLICY,
                       expect_status=True,
                       expected_status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
+        self.check_as_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_INVALID_WORKSTATION,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.FAST_REQUIRED)
 
     def test_authn_policy_allowed_from_no_fast_negative_lifetime(self):
         # Create an authentication policy that restricts
@@ -1474,6 +2433,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expect_status=True,
                       expected_status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
+        self.check_as_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_INVALID_WORKSTATION,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.FAST_REQUIRED)
+
     def test_authn_policy_allowed_from_no_fast_unenforced(self):
         # Create an unenforced authentication policy that restricts
         # authentication.
@@ -1487,6 +2453,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that we don’t get an error when the policy is unenforced.
         self._get_tgt(client_creds)
+
+        self.check_as_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_INVALID_WORKSTATION,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.FAST_REQUIRED)
 
     def test_authn_policy_allowed_from_user_allow_group_not_a_member(self):
         samdb = self.get_samdb()
@@ -1517,6 +2490,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
 
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
     def test_authn_policy_allowed_from_user_allow_group_member(self):
         samdb = self.get_samdb()
 
@@ -1545,6 +2527,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we can authenticate using an armor ticket, since the
         # machine account belongs to the group.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow_domain_local_group(self):
         samdb = self.get_samdb()
@@ -1576,6 +2562,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # domain-local group.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_user_allow_asserted_identity(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1598,6 +2588,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_user_allow_claims_valid(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1616,6 +2610,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow_compounded_auth(self):
         # Create a machine account with which to perform FAST.
@@ -1637,6 +2635,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
 
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
     def test_authn_policy_allowed_from_user_allow_authenticated_users(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -1655,6 +2662,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow_ntlm_authn(self):
         # Create a machine account with which to perform FAST.
@@ -1675,6 +2686,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that authentication is denied.
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_allowed_from_user_allow_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -1697,6 +2717,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_deny_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -1721,6 +2745,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
 
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
     def test_authn_policy_allowed_from_service_allow_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
@@ -1743,6 +2776,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that we can authenticate using an armor ticket.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_service_deny_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -1767,6 +2804,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we get a policy error when trying to authenticate.
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_allowed_from_user_allow_group_not_a_member_from_rodc(self):
         samdb = self.get_samdb()
@@ -1797,6 +2843,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # belong to the group.
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_allowed_from_user_allow_group_member_from_rodc(self):
         samdb = self.get_samdb()
@@ -1829,6 +2884,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that we can authenticate using an armor ticket, since the
         # machine account belongs to the group.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow_domain_local_group_from_rodc(self):
         samdb = self.get_samdb()
@@ -1863,6 +2922,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # domain-local group.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_user_allow_asserted_identity_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
@@ -1886,6 +2949,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_from_user_allow_claims_valid_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
@@ -1905,6 +2972,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow_compounded_authn_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -1927,6 +2998,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
 
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
     def test_authn_policy_allowed_from_user_allow_authenticated_users_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
@@ -1946,6 +3026,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
+
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
 
     def test_authn_policy_allowed_from_user_allow_ntlm_authn_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -1967,6 +3051,15 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that authentication is denied.
         self._get_tgt(client_creds, armor_tgt=mach_tgt,
                       expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_DEVICE_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED,
+            status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
 
     def test_authn_policy_allowed_from_user_deny_user(self):
         samdb = self.get_samdb()
@@ -1999,6 +3092,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that authentication is allowed.
         self._get_tgt(client_creds, armor_tgt=mach_tgt)
 
+        self.check_as_log(client_creds,
+                          armor_creds=mach_creds,
+                          client_policy=policy)
+
     def test_authn_policy_allowed_to_empty(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2023,6 +3120,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that authentication is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=policy)
 
     def test_authn_policy_allowed_to_computer_allow(self):
         # Create a machine account with which to perform FAST.
@@ -2051,6 +3151,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=policy)
 
     def test_authn_policy_allowed_to_computer_deny(self):
         # Create a machine account with which to perform FAST.
@@ -2086,6 +3189,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_computer_allow_but_deny_mach(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2117,6 +3227,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # access-checked, obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_allow_mach(self):
         # Create a machine account with which to perform FAST.
@@ -2152,6 +3264,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_no_fast(self):
         # Create a user account.
         client_creds = self.get_cached_creds(
@@ -2173,6 +3292,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that obtaining a service ticket is allowed without an armor TGT.
         self._tgs_req(tgt, 0, client_creds, target_creds)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_denied_no_fast(self):
         # Create a user account.
@@ -2199,6 +3320,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_edata=self.expect_padata_outer,
             expect_status=True,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_computer_allow_asserted_identity(self):
         # Create a machine account with which to perform FAST.
@@ -2232,6 +3360,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_allow_claims_valid(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2259,6 +3389,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_allow_compounded_auth(self):
         # Create a machine account with which to perform FAST.
@@ -2294,6 +3426,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_computer_allow_authenticated_users(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2321,6 +3460,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_allow_ntlm_authn(self):
         # Create a machine account with which to perform FAST.
@@ -2356,6 +3497,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_no_owner(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2388,6 +3536,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
                       check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.DESCRIPTOR_NO_OWNER)
+
     def test_authn_policy_allowed_to_no_owner_unenforced(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2413,6 +3568,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds,
+                           target_creds,
+                           policy=policy,
+                           policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+                           event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                           reason=AuditReason.DESCRIPTOR_NO_OWNER)
 
     def test_authn_policy_allowed_to_owner_self(self):
         # Create a machine account with which to perform FAST.
@@ -2441,6 +3603,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_owner_anon(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2466,6 +3630,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_user_allow(self):
         # Create a machine account with which to perform FAST.
@@ -2495,6 +3661,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_user_deny(self):
         # Create a machine account with which to perform FAST.
@@ -2531,6 +3699,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_service_allow(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2559,6 +3734,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_service_deny(self):
         # Create a machine account with which to perform FAST.
@@ -2595,6 +3772,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_user_allow_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2624,6 +3808,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_user_deny_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -2660,6 +3846,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_computer_allow_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2688,6 +3881,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_deny_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -2723,6 +3918,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_service_allow_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2752,6 +3954,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_service_deny_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -2787,6 +3991,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             # We aren’t particular about whether or not we get an NTSTATUS.
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_user_allow_group_not_a_member(self):
         samdb = self.get_samdb()
@@ -2828,6 +4039,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_user_allow_group_member(self):
         samdb = self.get_samdb()
 
@@ -2862,6 +4080,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # to the group.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_user_allow_domain_local_group(self):
         samdb = self.get_samdb()
@@ -2899,6 +4119,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_allow_asserted_identity_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2932,6 +4154,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_allow_claims_valid_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -2960,6 +4184,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is not allowed.
         self._tgs_req(tgt, KDC_ERR_POLICY, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_computer_allow_compounded_authn_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -2995,6 +4226,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_computer_allow_authenticated_users_from_rodc(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -3023,6 +4261,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_allow_ntlm_authn_from_rodc(self):
         # Create a machine account with which to perform FAST.
@@ -3057,6 +4297,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             # We aren’t particular about whether or not we get an NTSTATUS.
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_user_allow_group_not_a_member_from_rodc(self):
         samdb = self.get_samdb()
@@ -3098,6 +4345,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_authn_policy_allowed_to_user_allow_group_member_from_rodc(self):
         samdb = self.get_samdb()
 
@@ -3135,6 +4389,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # to the group.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_user_allow_domain_local_group_from_rodc(self):
         samdb = self.get_samdb()
@@ -3175,6 +4431,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_allow_to_self(self):
         samdb = self.get_samdb()
 
@@ -3207,6 +4465,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that obtaining a service ticket to ourselves is allowed.
         self._tgs_req(tgt, 0, client_creds, client_creds,
                       armor_tgt=mach_tgt)
+
+        self.check_tgs_log(client_creds, client_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_deny_to_self(self):
         samdb = self.get_samdb()
@@ -3242,6 +4502,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, client_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, client_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_allow_to_self_with_self(self):
         samdb = self.get_samdb()
 
@@ -3270,6 +4532,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, client_creds,
                       armor_tgt=tgt)
 
+        self.check_tgs_log(client_creds, client_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_deny_to_self_with_self(self):
         samdb = self.get_samdb()
 
@@ -3297,6 +4561,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # own TGT is allowed, despite the policy’s disallowing it.
         self._tgs_req(tgt, 0, client_creds, client_creds,
                       armor_tgt=tgt)
+
+        self.check_tgs_log(client_creds, client_creds, policy=policy)
 
     def test_authn_policy_allowed_to_user_allow_s4u2self(self):
         # Create a machine account with which to perform FAST.
@@ -3340,6 +4606,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       generate_fast_padata_fn=generate_s4u2self_padata,
                       armor_tgt=mach_tgt)
 
+        # The policy does not apply for S4U2Self, and thus does not appear in
+        # the logs.
+        self.check_tgs_log(client_creds, target_creds, policy=None)
+
     def test_authn_policy_allowed_to_user_deny_s4u2self(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
@@ -3382,6 +4652,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_cname=client_cname,
                       generate_fast_padata_fn=generate_s4u2self_padata,
                       armor_tgt=mach_tgt)
+
+        # The policy does not apply for S4U2Self, and thus does not appear in
+        # the logs.
+        self.check_tgs_log(client_creds, target_creds, policy=None)
 
     # Obtain a service ticket with S4U2Self and use it to perform constrained
     # delegation while a policy is in place.
@@ -3466,6 +4740,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             generate_fast_padata_fn=generate_s4u2self_padata,
             armor_tgt=mach_tgt)
 
+        # The policy does not apply for S4U2Self, and thus does not appear in
+        # the logs.
+        self.check_tgs_log(client_creds, service_creds, policy=None)
+
         # Now perform constrained delegation with this service ticket.
 
         kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
@@ -3494,6 +4772,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=target_etypes,
                       expected_proxy_target=target_spn,
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=target_policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_allow_constrained_delegation(self):
         samdb = self.get_samdb()
@@ -3563,6 +4845,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'host/{service_name}@{service_creds.get_realm()}'
         ]
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket with constrained delegation is
         # allowed.
         self._tgs_req(service_tgt, 0, service_creds, target_creds,
@@ -3576,6 +4862,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=target_etypes,
                       expected_proxy_target=target_spn,
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_deny_constrained_delegation(self):
         samdb = self.get_samdb()
@@ -3633,6 +4923,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket with constrained delegation is
         # not allowed.
         self._tgs_req(
@@ -3646,6 +4940,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
+
+        self.check_tgs_log(
+            service_creds, target_creds,
+            policy=policy,
+            checked_creds=service_creds,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_user_allow_constrained_delegation_wrong_sname(self):
         client_creds = self.get_cached_creds(
@@ -3689,6 +4991,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket with constrained delegation
         # fails if the sname doesn’t match.
         self._tgs_req(service_tgt, KDC_ERR_BADOPTION,
@@ -3699,6 +5005,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       decryption_key=target_decryption_key,
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
+
+        self.check_tgs_log(
+            service_creds, target_creds,
+            checked_creds=service_creds,
+            status=ntstatus.NT_STATUS_UNSUCCESSFUL)
 
     def test_authn_policy_allowed_to_user_allow_rbcd(self):
         samdb = self.get_samdb()
@@ -3767,6 +5078,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'host/{service_name}@{service_creds.get_realm()}'
         ]
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket with RBCD is allowed.
         self._tgs_req(service_tgt, 0, service_creds, target_creds,
                       armor_tgt=mach_tgt,
@@ -3780,6 +5095,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=target_etypes,
                       expected_proxy_target=target_creds.get_spn(),
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_deny_rbcd(self):
         samdb = self.get_samdb()
@@ -3836,6 +5155,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket with RBCD is not allowed.
         self._tgs_req(service_tgt, KDC_ERR_POLICY, service_creds, target_creds,
                       armor_tgt=mach_tgt,
@@ -3845,6 +5168,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       decryption_key=target_decryption_key,
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_allow_rbcd_wrong_sname(self):
         samdb = self.get_samdb()
@@ -3895,6 +5222,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket with RBCD fails if the sname
         # doesn’t match.
         self._tgs_req(service_tgt, KDC_ERR_BADOPTION,
@@ -3906,6 +5237,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       decryption_key=target_decryption_key,
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_allow_constrained_delegation_to_self(self):
         samdb = self.get_samdb()
@@ -3974,6 +5308,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'host/{service_name}@{service_creds.get_realm()}'
         ]
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket to ourselves with constrained
         # delegation is allowed.
         self._tgs_req(service_tgt, 0, service_creds, service_creds,
@@ -3987,6 +5325,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=target_etypes,
                       expected_proxy_target=service_spn,
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, service_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_deny_constrained_delegation_to_self(self):
         samdb = self.get_samdb()
@@ -4055,6 +5397,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'host/{service_name}@{service_creds.get_realm()}'
         ]
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket to ourselves with constrained
         # delegation is allowed, despite the policy’s disallowing it.
         self._tgs_req(service_tgt, 0, service_creds, service_creds,
@@ -4068,6 +5414,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=target_etypes,
                       expected_proxy_target=service_spn,
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, service_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_not_allowed_constrained_delegation_to_self(self):
         samdb = self.get_samdb()
@@ -4121,6 +5471,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             service_creds)
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket to ourselves with constrained
         # delegation is not allowed without msDS-AllowedToDelegateTo.
         self._tgs_req(service_tgt, KDC_ERR_BADOPTION,
@@ -4131,6 +5485,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       decryption_key=target_decryption_key,
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
+
+        self.check_tgs_log(
+            service_creds, service_creds,
+            # The failure is not due to a policy error, so no policy appears in
+            # the logs.
+            policy=None,
+            checked_creds=service_creds,
+            status=ntstatus.NT_STATUS_UNSUCCESSFUL)
 
     def test_authn_policy_allowed_to_user_allow_rbcd_to_self(self):
         samdb = self.get_samdb()
@@ -4204,6 +5566,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'host/{service_name}@{service_creds.get_realm()}'
         ]
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket to ourselves with RBCD is
         # allowed.
         self._tgs_req(service_tgt, 0, service_creds, service_creds,
@@ -4218,6 +5584,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=service_etypes,
                       expected_proxy_target=service_creds.get_spn(),
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, service_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_deny_rbcd_to_self(self):
         samdb = self.get_samdb()
@@ -4291,6 +5661,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             f'host/{service_name}@{service_creds.get_realm()}'
         ]
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket to ourselves with RBCD is
         # allowed, despite the policy’s disallowing it.
         self._tgs_req(service_tgt, 0, service_creds, service_creds,
@@ -4305,6 +5679,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       expected_supported_etypes=service_etypes,
                       expected_proxy_target=service_creds.get_spn(),
                       expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, service_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_not_allowed_rbcd_to_self(self):
         samdb = self.get_samdb()
@@ -4362,6 +5740,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         service_decryption_key = self.TicketDecryptionKey_from_creds(
             service_creds)
 
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
         # Show that obtaining a service ticket to ourselves with RBCD
         # is not allowed without msDS-AllowedToActOnBehalfOfOtherIdentity.
         self._tgs_req(service_tgt, KDC_ERR_BADOPTION,
@@ -4373,6 +5755,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       decryption_key=service_decryption_key,
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
+
+        self.check_tgs_log(client_creds, service_creds,
+                           policy=policy,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_computer_allow_user2user(self):
         # Create a machine account with which to perform FAST.
@@ -4401,6 +5787,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                       armor_tgt=mach_tgt,
                       kdc_options=kdc_options,
                       additional_ticket=target_tgt)
+
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_deny_user2user(self):
         # Create a machine account with which to perform FAST.
@@ -4436,6 +5824,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             expect_status=None,
             expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             check_patypes=False)
+
+        self.check_tgs_log(
+            client_creds, target_creds,
+            policy=policy,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_user_derived_class_allow(self):
         samdb = self.get_samdb()
@@ -4493,6 +5888,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_computer_derived_class_allow(self):
         samdb = self.get_samdb()
 
@@ -4549,6 +5946,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_allowed_to_service_derived_class_allow(self):
         samdb = self.get_samdb()
 
@@ -4603,6 +6002,8 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
+
     def test_authn_policy_ntlm_allow_user(self):
         # Create an authentication policy allowing NTLM authentication for
         # users.
@@ -4620,6 +6021,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that NTLM authentication succeeds.
         self._connect(client_creds, simple_bind=False)
+
+        self.check_ntlm_log(client_creds,
+                            client_policy=policy)
 
     def test_authn_policy_ntlm_deny_user(self):
         # Create an authentication policy denying NTLM authentication for
@@ -4640,6 +6044,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._connect(client_creds, simple_bind=False,
                       expect_error=f'{HRES_SEC_E_LOGON_DENIED:08X}')
 
+        self.check_ntlm_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_ntlm_computer(self):
         # Create an authentication policy denying NTLM authentication.
         denied = 'O:SYD:(D;;CR;;;WD)'
@@ -4656,6 +6066,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that NTLM authentication succeeds.
         self._connect(client_creds, simple_bind=False)
+
+        self.check_ntlm_log(
+            client_creds,
+            client_policy=None)  # Client policies don’t apply to computers.
 
     def test_authn_policy_ntlm_allow_service(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -4675,6 +6089,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that NTLM authentication succeeds.
         self._connect(client_creds, simple_bind=False)
+
+        self.check_ntlm_log(client_creds,
+                            client_policy=policy)
 
     def test_authn_policy_ntlm_deny_service(self):
         # Create an authentication policy denying NTLM authentication for
@@ -4696,6 +6113,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._connect(client_creds, simple_bind=False,
                       expect_error=f'{HRES_SEC_E_LOGON_DENIED:08X}')
 
+        self.check_ntlm_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_ntlm_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
@@ -4711,6 +6134,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that without AllowedToAuthenticateFrom set in the policy, NTLM
         # authentication succeeds.
         self._connect(client_creds, simple_bind=False)
+
+        self.check_ntlm_log(client_creds,
+                            client_policy=policy)
 
     def test_authn_policy_simple_bind_allow_user(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -4729,6 +6155,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that a simple bind succeeds.
         self._connect(client_creds, simple_bind=True)
+
+        self.check_simple_bind_log(client_creds,
+                                   client_policy=policy)
 
     def test_authn_policy_simple_bind_deny_user(self):
         # Create an authentication policy denying NTLM authentication for
@@ -4749,6 +6178,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._connect(client_creds, simple_bind=True,
                       expect_error=f'{HRES_SEC_E_INVALID_TOKEN:08X}')
 
+        self.check_simple_bind_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_simple_bind_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
@@ -4764,6 +6199,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that without AllowedToAuthenticateFrom set in the policy, a
         # simple bind succeeds.
         self._connect(client_creds, simple_bind=True)
+
+        self.check_simple_bind_log(client_creds,
+                                   client_policy=policy)
 
     def test_authn_policy_samr_pwd_change_allow_service_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -4782,6 +6220,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that a SAMR password change is allowed.
         self._test_samr_change_password(client_creds, expect_error=None)
 
+        self.check_samr_pwd_change_log(client_creds,
+                                       client_policy=policy)
+
     def test_authn_policy_samr_pwd_change_allow_service_not_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # managed service accounts.
@@ -4799,6 +6240,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that a SAMR password change is allowed.
         self._test_samr_change_password(client_creds, expect_error=None)
 
+        self.check_samr_pwd_change_log(client_creds,
+                                       client_policy=policy)
+
     def test_authn_policy_samr_pwd_change_allow_service_no_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # managed service accounts.
@@ -4813,6 +6257,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that a SAMR password change is allowed.
         self._test_samr_change_password(client_creds, expect_error=None)
+
+        self.check_samr_pwd_change_log(client_creds,
+                                       client_policy=policy)
 
     def test_authn_policy_samr_pwd_change_deny_service_allowed_from(self):
         # Create an authentication policy denying NTLM authentication for
@@ -4833,6 +6280,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             client_creds, expect_error=None,
             connect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samr_pwd_change_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samr_pwd_change_deny_service_not_allowed_from(self):
         # Create an authentication policy denying NTLM authentication for
         # managed service accounts.
@@ -4852,6 +6305,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             client_creds, expect_error=None,
             connect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samr_pwd_change_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samr_pwd_change_deny_service_no_allowed_from(self):
         # Create an authentication policy denying NTLM authentication for
         # managed service accounts.
@@ -4866,6 +6325,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
 
         # Show that a SAMR password change is allowed.
         self._test_samr_change_password(client_creds, expect_error=None)
+
+        self.check_samr_pwd_change_log(client_creds,
+                                       client_policy=policy)
 
     def test_authn_policy_samlogon_allow_user(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -4886,11 +6348,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy)
+
         # Show that an interactive SamLogon succeeds. Although MS-APDS doesn’t
         # state it, AllowedNTLMNetworkAuthentication applies to interactive
         # logons too.
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            client_policy=policy)
 
     def test_authn_policy_samlogon_deny_user(self):
         # Create an authentication policy denying NTLM authentication for
@@ -4913,11 +6381,23 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
 
     def test_authn_policy_samlogon_network_computer(self):
         # Create an authentication policy denying NTLM authentication.
@@ -4937,6 +6417,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(
             creds=client_creds,
             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=None)  # Client policies don’t apply to computers.
 
     def test_authn_policy_samlogon_interactive_allow_user_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -4958,6 +6442,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
 
+        self.check_samlogon_interactive_log(client_creds,
+                                            client_policy=policy)
+
     def test_authn_policy_samlogon_interactive_allow_user_not_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # users.
@@ -4978,6 +6465,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
 
+        self.check_samlogon_interactive_log(client_creds,
+                                            client_policy=policy)
+
     def test_authn_policy_samlogon_interactive_allow_user_no_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # users.
@@ -4993,6 +6483,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            client_policy=policy)
 
     def test_authn_policy_samlogon_interactive_deny_user_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
@@ -5014,6 +6507,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_interactive_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samlogon_interactive_deny_user_not_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
         # users.
@@ -5034,6 +6533,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_interactive_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samlogon_interactive_deny_user_no_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
         # users.
@@ -5049,6 +6554,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            client_policy=policy)
 
     def test_authn_policy_samlogon_interactive_user_allowed_from(self):
         # Create an authentication policy not specifying whether NTLM
@@ -5069,6 +6577,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_interactive_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samlogon_network_user_allowed_from(self):
         # Create an authentication policy not specifying whether NTLM
         # authentication is allowed or not.
@@ -5087,6 +6601,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             creds=client_creds,
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
 
     def test_authn_policy_samlogon_network_allow_service_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -5107,6 +6627,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy)
+
     def test_authn_policy_samlogon_network_allow_service_not_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # services.
@@ -5126,6 +6649,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy)
+
     def test_authn_policy_samlogon_network_allow_service_no_allowed_from(self):
         # Create an authentication policy allowing NTLM authentication for
         # services.
@@ -5142,6 +6668,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that a network SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy)
 
     def test_authn_policy_samlogon_network_deny_service_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
@@ -5164,6 +6693,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samlogon_network_deny_service_not_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
@@ -5185,6 +6720,12 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samlogon_network_deny_service_no_allowed_from(self):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
@@ -5201,6 +6742,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # Show that a network SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy)
 
     def test_authn_policy_samlogon_network_allow_service_allowed_from_to_self(self):
         # Create an authentication policy allowing NTLM authentication for
@@ -5222,6 +6766,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy,
+                                        server_policy=policy)
+
     def test_authn_policy_samlogon_network_allow_service_not_allowed_from_to_self(self):
         # Create an authentication policy allowing NTLM authentication for
         # services.
@@ -5242,6 +6790,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy,
+                                        server_policy=policy)
+
     def test_authn_policy_samlogon_network_allow_service_no_allowed_from_to_self(self):
         # Create an authentication policy allowing NTLM authentication for
         # services.
@@ -5259,6 +6811,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy,
+                                        server_policy=policy)
 
     def test_authn_policy_samlogon_network_deny_service_allowed_from_to_self(self):
         # Create an authentication policy disallowing NTLM authentication for
@@ -5282,6 +6838,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            server_policy=None,  # Only the client policy appears in the logs.
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
     def test_authn_policy_samlogon_network_deny_service_not_allowed_from_to_self(self):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
@@ -5304,6 +6867,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION,
+            server_policy=None)  # Only the client policy appears in the logs.
+
     def test_authn_policy_samlogon_network_deny_service_no_allowed_from_to_self(self):
         # Create an authentication policy disallowing NTLM authentication for
         # services.
@@ -5322,6 +6892,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy,
+                                        server_policy=policy)
+
     def test_authn_policy_samlogon_interactive_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
@@ -5339,6 +6913,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
 
+        self.check_samlogon_interactive_log(client_creds,
+                                            client_policy=policy)
+
     def test_authn_policy_samlogon_network_deny_no_device_restrictions(self):
         # Create an authentication policy denying NTLM authentication for
         # users.
@@ -5355,6 +6932,9 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         # network SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy)
 
     def test_samlogon_allowed_to_computer_allow(self):
         # Create a user account.
@@ -5379,10 +6959,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_allowed_to_computer_deny(self):
         # Create a user account.
@@ -5409,12 +6995,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_deny_protected(self):
         # Create a protected user account.
@@ -5442,12 +7042,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            # The account’s protection takes precedence, and no policy appears
+            # in the log.
+            server_policy=None,
+            status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            # The account’s protection takes precedence, and no policy appears
+            # in the log.
+            server_policy=None,
+            status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
     def test_samlogon_allowed_to_computer_allow_asserted_identity(self):
         # Create a user account.
@@ -5478,12 +7092,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_allow_claims_valid(self):
         # Create a user account.
@@ -5510,12 +7138,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_allow_compounded_auth(self):
         # Create a user account.
@@ -5542,12 +7184,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_allow_authenticated_users(self):
         # Create a user account.
@@ -5572,10 +7228,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_allowed_to_computer_allow_ntlm_authn(self):
         # Create a user account.
@@ -5602,12 +7264,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_no_owner(self):
         # Create a user account.
@@ -5632,12 +7308,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_INVALID_PARAMETER)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.DESCRIPTOR_NO_OWNER)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_INVALID_PARAMETER)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.DESCRIPTOR_NO_OWNER)
 
     def test_samlogon_allowed_to_no_owner_unenforced(self):
         # Create a user account.
@@ -5660,10 +7350,24 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.DESCRIPTOR_NO_OWNER)
+
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.DESCRIPTOR_NO_OWNER)
 
     def test_samlogon_allowed_to_service_allow(self):
         # Create a user account.
@@ -5689,10 +7393,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_allowed_to_service_deny(self):
         # Create a user account.
@@ -5720,12 +7430,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_allow_group_not_a_member(self):
         samdb = self.get_samdb()
@@ -5757,6 +7481,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
         # Show that an interactive SamLogon fails, as the user account does not
         # belong to the group.
         self._test_samlogon(
@@ -5764,6 +7495,13 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_allow_group_member(self):
         samdb = self.get_samdb()
@@ -5794,11 +7532,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds, since the user account
         # belongs to the group.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_allowed_to_computer_allow_domain_local_group(self):
         samdb = self.get_samdb()
@@ -5830,11 +7574,17 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds, since the user account
         # belongs to the group.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_allowed_to_computer_allow_to_self(self):
         samdb = self.get_samdb()
@@ -5862,6 +7612,11 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=None,  # Client policies don’t apply to computers.
+            server_policy=policy)
 
     def test_samlogon_allowed_to_computer_deny_to_self(self):
         samdb = self.get_samdb()
@@ -5893,6 +7648,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=None,  # Client policies don’t apply to computers.
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
     def test_samlogon_allowed_to_service_allow_to_self(self):
         samdb = self.get_samdb()
 
@@ -5920,6 +7683,10 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(client_creds,
+                                        client_policy=policy,
+                                        server_policy=policy)
 
     def test_samlogon_allowed_to_service_deny_to_self(self):
         samdb = self.get_samdb()
@@ -5951,6 +7718,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             domain_joined_mach_creds=client_creds,
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_samlogon_allowed_to_computer_derived_class_allow(self):
         samdb = self.get_samdb()
@@ -6003,10 +7778,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_allowed_to_service_derived_class_allow(self):
         samdb = self.get_samdb()
@@ -6057,10 +7838,16 @@ class AuthnPolicyTests(KdcTgsBaseTests):
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+        self.check_samlogon_network_log(client_creds,
+                                        server_policy=policy)
+
         # Show that an interactive SamLogon succeeds.
         self._test_samlogon(creds=client_creds,
                             domain_joined_mach_creds=target_creds,
                             logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(client_creds,
+                                            server_policy=policy)
 
     def test_samlogon_bad_pwd_client_policy(self):
         # Create an authentication policy with device restrictions for users.
@@ -6084,11 +7871,23 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
 
     def test_samlogon_bad_pwd_server_policy(self):
         # Create a user account. Use a non-cached account so that it is not
@@ -6120,12 +7919,26 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            # The bad password failure takes precedence, and no policy appears
+            # in the log.
+            server_policy=None,
+            status=ntstatus.NT_STATUS_WRONG_PASSWORD)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            # The bad password failure takes precedence, and no policy appears
+            # in the log.
+            server_policy=None,
+            status=ntstatus.NT_STATUS_WRONG_PASSWORD)
 
     def test_samlogon_bad_pwd_client_and_server_policy(self):
         # Create an authentication policy with device restrictions for users.
@@ -6163,12 +7976,24 @@ class AuthnPolicyTests(KdcTgsBaseTests):
             logon_type=netlogon.NetlogonNetworkInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
+        self.check_samlogon_network_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
+
         # Show that an interactive SamLogon fails.
         self._test_samlogon(
             creds=client_creds,
             domain_joined_mach_creds=target_creds,
             logon_type=netlogon.NetlogonInteractiveInformation,
             expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
+
+        self.check_samlogon_interactive_log(
+            client_creds,
+            client_policy=policy,
+            client_policy_status=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION,
+            event=AuditEvent.NTLM_DEVICE_RESTRICTION)
 
     def check_ticket_times(self,
                            ticket_creds,
