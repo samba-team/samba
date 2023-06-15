@@ -28,6 +28,22 @@ import os
 import re
 
 
+def default_msg_filter(msg):
+    # When our authentication logging tests were written, these were the only
+    # supported message types. The tests were built on the assumption that no
+    # new types would be added, and violating this assumption will result in
+    # many tests failing as they receive messages that they weren’t
+    # expecting. To allow these tests to continue to pass, this default filter
+    # makes sure that only messages for which the tests are prepared pass
+    # though.
+    default_supported_types = {
+        "Authentication",
+        "Authorization",
+    }
+
+    return msg['type'] in default_supported_types
+
+
 class NoMessageException(Exception):
     pass
 
@@ -108,16 +124,22 @@ class AuthLogTestBase(samba.tests.TestCase):
         except IndexError:
             return False
 
-    def waitForMessages(self, isLastExpectedMessage, connection=None):
+    def waitForMessages(self, isLastExpectedMessage, connection=None, *,
+                        msgFilter=default_msg_filter):
         """Wait for all the expected messages to arrive
         The connection is passed through to keep the connection alive
         until all the logging messages have been received.
+
+        By default, only Authentication and Authorization messages will be
+        returned, so that old tests continue to pass. To receive all messages,
+        pass msgFilter=None.
+
         """
 
         messages = []
         while True:
             try:
-                msg = self.nextMessage()
+                msg = self.nextMessage(msgFilter=msgFilter)
             except NoMessageException:
                 return []
 
