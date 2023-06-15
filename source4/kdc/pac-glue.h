@@ -128,6 +128,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     const krb5_const_pac *device_pac,
 				     krb5_const_pac pac);
 
+struct authn_audit_info;
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     struct ldb_context *samdb,
@@ -160,3 +161,12 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 				   const struct samba_kdc_entry *p,
 				   DATA_BLOB **_claims_blob);
+
+krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
+						     struct ldb_context *samdb,
+						     struct loadparm_context *lp_ctx,
+						     const struct samba_kdc_entry *client,
+						     const struct auth_user_info_dc *client_info,
+						     const struct samba_kdc_entry *server,
+						     struct authn_audit_info **server_audit_info_out,
+						     NTSTATUS *status_out);

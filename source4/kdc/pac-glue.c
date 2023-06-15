@@ -31,6 +31,7 @@
 #include "auth/auth_sam_reply.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/pac_utils.h"
+#include "auth/authn_policy.h"
 #include "libcli/security/security.h"
 #include "libds/common/flags.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
@@ -38,6 +39,7 @@
 #include "source4/auth/auth.h"
 #include "source4/dsdb/common/util.h"
 #include "source4/dsdb/samdb/samdb.h"
+#include "source4/kdc/authn_policy_util.h"
 #include "source4/kdc/samba_kdc.h"
 #include "source4/kdc/pac-glue.h"
 #include "source4/kdc/ad_claims.h"
@@ -1631,6 +1633,86 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
 
 	TALLOC_FREE(frame);
 	return werr;
+}
+
+/*
+ * Perform an access check for the client attempting to authenticate to the
+ * server. ‘client_info’ must be talloc-allocated so that we can make a
+ * reference to it.
+ */
+krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
+						     struct ldb_context *samdb,
+						     struct loadparm_context *lp_ctx,
+						     const struct samba_kdc_entry *client,
+						     const struct auth_user_info_dc *client_info,
+						     const struct samba_kdc_entry *server,
+						     struct authn_audit_info **server_audit_info_out,
+						     NTSTATUS *status_out)
+{
+	krb5_error_code ret = 0;
+	NTSTATUS status;
+	_UNUSED_ NTSTATUS _status;
+	struct dom_sid server_sid = {};
+	const struct authn_server_policy *server_policy = server->server_policy;
+
+	if (status_out != NULL) {
+		*status_out = NT_STATUS_OK;
+	}
+
+	ret = samdb_result_dom_sid_buf(server->msg, "objectSid", &server_sid);
+	if (ret) {
+		/*
+		 * Ignore the return status — we are already in an error path,
+		 * and overwriting the real error code with the audit info
+		 * status is unhelpful.
+		 */
+		_status = authn_server_policy_audit_info(mem_ctx,
+							 server_policy,
+							 client_info,
+							 AUTHN_AUDIT_EVENT_OTHER_ERROR,
+							 AUTHN_AUDIT_REASON_NONE,
+							 dsdb_ldb_err_to_ntstatus(ret),
+							 server_audit_info_out);
+		goto out;
+	}
+
+	if (dom_sid_equal(&client_info->sids[PRIMARY_USER_SID_INDEX].sid, &server_sid)) {
+		/* Authenticating to ourselves is always allowed. */
+		status = authn_server_policy_audit_info(mem_ctx,
+							server_policy,
+							client_info,
+							AUTHN_AUDIT_EVENT_OK,
+							AUTHN_AUDIT_REASON_NONE,
+							NT_STATUS_OK,
+							server_audit_info_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = KRB5KRB_ERR_GENERIC;
+		}
+		goto out;
+	}
+
+	status = authn_policy_authenticate_to_service(mem_ctx,
+						      samdb,
+						      lp_ctx,
+						      AUTHN_POLICY_AUTH_TYPE_KERBEROS,
+						      client_info,
+						      server_policy,
+						      server_audit_info_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (status_out != NULL) {
+			*status_out = status;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)) {
+			ret = KRB5KDC_ERR_POLICY;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			ret = KRB5KDC_ERR_POLICY;
+		} else {
+			ret = KRB5KRB_ERR_GENERIC;
+		}
+	}
+
+out:
+	return ret;
 }
 
 static krb5_error_code samba_kdc_add_domain_group_sid(TALLOC_CTX *mem_ctx,
