@@ -832,7 +832,7 @@ static NTSTATUS authsam_check_netlogon_trust(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
-				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
+				     TALLOC_CTX *mem_ctx,
 				     struct ldb_dn *domain_dn,
 				     struct ldb_message *msg,
 				     const struct auth_usersupplied_info *user_info,
@@ -874,7 +874,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	}
 
 	/* See whether an authentication policy applies to the client. */
-	ret = authn_policy_ntlm_client(sam_ctx,
+	ret = authn_policy_ntlm_client(auth_context->sam_ctx,
 				       tmp_ctx,
 				       msg,
 				       &authn_client_policy);
@@ -1080,7 +1080,6 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 
 	nt_status = authsam_authenticate(ctx->auth_ctx,
 					 tmp_ctx,
-					 ctx->auth_ctx->sam_ctx,
 					 domain_dn,
 					 msg,
 					 user_info,
