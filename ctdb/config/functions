@@ -269,6 +269,59 @@ ctdb_get_ip_address()
 	cat "$_ip_addr_file"
 }
 
+# Cache of public IP addresses assigned to this node.  This function
+# exists mainly so statd-callout does not need to talk to ctdbd, so
+# can be run as non-root, but it may be used in other places.  This
+# must be updated/refreshed on failover.  This is done in
+# 10.interface, but doing it in "ipreallocated" isn't enough because
+# clients may connect as soon as "takeip" completes.  Also, the VNN in
+# the daemon is only updated after the "releaseip" event completes, so
+# "ctdb -X ip" can't be relied on there.  Hence, complex updates
+# involving locking for "takeip" & "releaseip".  A future
+# restructuring of the failover model will obsolete all of these
+# moving parts.
+CTDB_MY_PUBLIC_IPS_CACHE="${CTDB_SCRIPT_VARDIR}/my-public-ip-addresses"
+update_my_public_ip_addresses()
+{
+	_event="$1"
+
+	_f="$CTDB_MY_PUBLIC_IPS_CACHE"
+	_lock="${_f}.lock"
+
+	# In private CTDB state directory - no $$ security issue
+	_new="${_f}.new.$$"
+	{
+		flock --timeout 10 9 ||
+			die "ctdb_get_my_public_ip_addresses: timeout"
+
+		case "$_event" in
+		takeip)
+			_ip="$2"
+			# Redirect of stderr guards against initial
+			# missing file
+			cat "$_f" 2>/dev/null >"$_new"
+			echo "$_ip" >>"$_new"
+			;;
+		releaseip)
+			_ip="$2"
+			# Redirect of stderr guards against initial
+			# missing file, which shouldn't happen in
+			# releaseip...
+			grep -Fvx "$_ip" "$_f" 2>/dev/null >"$_new"
+			;;
+		ipreallocated)
+			_pnn=$(ctdb_get_pnn)
+			$CTDB -X ip |
+				awk -F'|' -v pnn="$_pnn" \
+				    '$3 == pnn {print $2}' >"$_new"
+			;;
+		esac
+
+		mv "$_new" "$_f"
+
+	} 9>"$_lock"
+}
+
 # Cached retrieval of database options for use by event scripts.
 #
 # If the variables are already set then they should not be overwritten
