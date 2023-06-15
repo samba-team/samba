@@ -1360,10 +1360,14 @@ class AuthnPolicyTests(KdcTgsBaseTests):
         mach_tgt = self.get_tgt(mach_creds)
 
         # Create an authentication policy that explicitly allows the machine
-        # account for a user. Omit the owner (O:SY) from the SDDL.
+        # account for a user. Omit the owner (O:SY) from the SDDL. Enforce a
+        # TGT lifetime for testing what gets logged.
         allowed = 'D:(A;;CR;;;WD)'
+        INT64_MAX = 0x7fff_ffff_ffff_ffff
+        max_lifetime = INT64_MAX // 10_000_000
         policy = self.create_authn_policy(enforced=True,
-                                          user_allowed_from=allowed)
+                                          user_allowed_from=allowed,
+                                          user_tgt_lifetime=max_lifetime)
 
         # Create a user account with the assigned policy.
         client_creds = self._get_creds(account_type=self.AccountType.USER,
