@@ -566,11 +566,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		dname = dptr_ReadDirName(ctx, dirptr, &sbuf);
 
-		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%u] => "
+		DBG_DEBUG("dir [%s] dirptr [%p] offset [%u] => "
 			  "dname [%s]\n",
 			  smb_fname_str_dbg(dir_hnd->dir_smb_fname),
-			  (long)dirptr,
-			  dirptr->dir_hnd->file_number,
+			  dirptr,
+			  dir_hnd->file_number,
 			  dname ? dname : "(finished)");
 
 		if (dname == NULL) {
