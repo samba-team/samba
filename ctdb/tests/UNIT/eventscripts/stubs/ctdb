@@ -195,8 +195,7 @@ ip_reallocate()
 
 ctdb_ip()
 {
-	# If nobody has done any IP-fu then generate a layout.
-	[ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
+	ip_reallocate
 
 	_mypnn=$(ctdb_pnn)
 

@@ -149,6 +149,8 @@ takeip)
 	ip=$3
 	maskbits=$4
 
+	update_my_public_ip_addresses "takeip" "$ip"
+
 	add_ip_to_iface "$iface" "$ip" "$maskbits" || {
 		exit 1;
 	}
@@ -176,6 +178,8 @@ releaseip)
 	ip_block "$ip" "$iface"
 
 	kill_tcp_connections "$iface" "$ip"
+
+	update_my_public_ip_addresses "releaseip" "$ip"
 
 	delete_ip_from_iface "$iface" "$ip" "$maskbits" || {
 		ip_unblock "$ip" "$iface"
@@ -234,6 +238,11 @@ updateip)
 	# tickle all existing connections, so that dropped packets
 	# are retransmitted and the tcp streams work
 	tickle_tcp_connections "$ip"
+	;;
+
+ipreallocated)
+	# Just to make sure
+	update_my_public_ip_addresses "ipreallocated"
 	;;
 
 monitor)

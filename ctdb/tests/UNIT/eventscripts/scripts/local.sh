@@ -318,6 +318,14 @@ ctdb_set_pnn()
 	CTDB_SCRIPT_VARDIR="${CTDB_TEST_TMP_DIR}/scripts/${FAKE_CTDB_PNN}"
 	export CTDB_SCRIPT_VARDIR
 	mkdir -p "$CTDB_SCRIPT_VARDIR"
+
+	if [ -f "${CTDB_BASE}/public_addresses" ]; then
+		ctdb ip | while read -r _ip _pnn; do
+			if [ "$_pnn" = "$FAKE_CTDB_PNN" ]; then
+				echo "$_ip"
+			fi
+		done >"${CTDB_SCRIPT_VARDIR}/my-public-ip-addresses"
+	fi
 }
 
 ctdb_get_interfaces()
