@@ -404,7 +404,9 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 					 state->auth_ctx->lp_ctx,
 					 &state->auth_ctx->start_time,
 					 state->user_info, status,
-					 NULL, NULL, NULL);
+					 NULL, NULL, NULL,
+					 NULL /* client_audit_info */,
+					 NULL /* server_audit_info */);
 		tevent_req_received(req);
 		return status;
 	}
@@ -421,7 +423,9 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				 state->user_info, status,
 				 state->user_info_dc->info->domain_name,
 				 state->user_info_dc->info->account_name,
-				 &state->user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid);
+				 &state->user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid,
+				 NULL /* client_audit_info */,
+				 NULL /* server_audit_info */);
 
 	/* Release our handle to state->user_info_dc. */
 	*user_info_dc = talloc_reparent(state, mem_ctx, state->user_info_dc);

@@ -2178,7 +2178,9 @@ static void log_authentication(
 	    result,
 	    base_info != NULL ? base_info->logon_domain.string : "",
 	    base_info != NULL ? base_info->account_name.string : "",
-	    sid);
+	    sid,
+	    NULL /* client_audit_info */,
+	    NULL /* server_audit_info */);
 	TALLOC_FREE(ui);
 }
 

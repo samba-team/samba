@@ -126,7 +126,9 @@ void dcesrv_log_successful_authz(
 				   "DCE/RPC",
 				   auth_type,
 				   transport_protection,
-				   auth->session_info);
+				   auth->session_info,
+				   NULL /* client_audit_info */,
+				   NULL /* server_audit_info */);
 
 	auth->auth_audited = true;
 

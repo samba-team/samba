@@ -3247,7 +3247,9 @@ static int check_password_restrictions_and_log(struct setup_password_fields_io *
 					 status,
 					 domain_name,
 					 io->u.sAMAccountName,
-					 io->u.account_sid);
+					 io->u.account_sid,
+					 NULL /* client_audit_info */,
+					 NULL /* server_audit_info */);
 
 	}
 	return ret;

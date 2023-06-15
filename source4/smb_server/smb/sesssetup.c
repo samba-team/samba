@@ -61,7 +61,9 @@ void smbsrv_not_spengo_sesssetup_authz_log(struct smbsrv_request *req,
 				   "SMB",
 				   "bare-NTLM",
 				   AUTHZ_TRANSPORT_PROTECTION_SMB,
-				   session_info);
+				   session_info,
+				   NULL /* client_audit_info */,
+				   NULL /* server_audit_info */);
 
 	talloc_free(frame);
 	return;

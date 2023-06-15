@@ -81,7 +81,9 @@ static void log_password_change_event(struct imessaging_context *msg_ctx,
 				 status,
 				 ui.mapped.domain_name,
 				 ui.mapped.account_name,
-				 sid);
+				 sid,
+				 NULL /* client_audit_info */,
+				 NULL /* server_audit_info */);
 }
 /*
   samr_ChangePasswordUser

@@ -44,9 +44,9 @@
  * increment the major version.
  */
 #define AUTH_MAJOR 1
-#define AUTH_MINOR 2
+#define AUTH_MINOR 3
 #define AUTHZ_MAJOR 1
-#define AUTHZ_MINOR 1
+#define AUTHZ_MINOR 2
 #define KDC_AUTHZ_MAJOR 1
 #define KDC_AUTHZ_MINOR 0
 
@@ -149,11 +149,15 @@ static void log_authentication_event_json(
 	const char *domain_name,
 	const char *account_name,
 	struct dom_sid *sid,
+	const struct authn_audit_info *client_audit_info,
+	const struct authn_audit_info *server_audit_info,
 	enum event_id_type event_id,
 	int debug_level)
 {
 	struct json_object wrapper = json_empty_object;
 	struct json_object authentication = json_empty_object;
+	struct json_object client_policy = json_null_object();
+	struct json_object server_policy = json_null_object();
 	char logon_id[19];
 	int rc = 0;
 	const char *clientDomain = ui->orig_client.domain_name ?
@@ -285,6 +289,30 @@ static void log_authentication_event_json(
 		goto failure;
 	}
 
+	if (client_audit_info != NULL) {
+		client_policy = json_from_audit_info(client_audit_info);
+		if (json_is_invalid(&client_policy)) {
+			goto failure;
+		}
+	}
+
+	rc = json_add_object(&authentication, "clientPolicyAccessCheck", &client_policy);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	if (server_audit_info != NULL) {
+		server_policy = json_from_audit_info(server_audit_info);
+		if (json_is_invalid(&server_policy)) {
+			goto failure;
+		}
+	}
+
+	rc = json_add_object(&authentication, "serverPolicyAccessCheck", &server_policy);
+	if (rc != 0) {
+		goto failure;
+	}
+
 	wrapper = json_new_object();
 	if (json_is_invalid(&wrapper)) {
 		goto failure;
@@ -327,6 +355,8 @@ static void log_authentication_event_json(
 	json_free(&wrapper);
 	return;
 failure:
+	json_free(&server_policy);
+	json_free(&client_policy);
 	/*
 	 * On a failure authentication will not have been added to wrapper so it
 	 * needs to be freed to avoid a leak.
@@ -365,10 +395,14 @@ static void log_successful_authz_event_json(
 	const char *auth_type,
 	const char *transport_protection,
 	struct auth_session_info *session_info,
+	const struct authn_audit_info *client_audit_info,
+	const struct authn_audit_info *server_audit_info,
 	int debug_level)
 {
 	struct json_object wrapper = json_empty_object;
 	struct json_object authorization = json_empty_object;
+	struct json_object client_policy = json_null_object();
+	struct json_object server_policy = json_null_object();
 	int rc = 0;
 
 	authorization = json_new_object();
@@ -431,6 +465,30 @@ static void log_successful_authz_event_json(
 		goto failure;
 	}
 
+	if (client_audit_info != NULL) {
+		client_policy = json_from_audit_info(client_audit_info);
+		if (json_is_invalid(&client_policy)) {
+			goto failure;
+		}
+	}
+
+	rc = json_add_object(&authorization, "clientPolicyAccessCheck", &client_policy);
+	if (rc != 0) {
+		goto failure;
+	}
+
+	if (server_audit_info != NULL) {
+		server_policy = json_from_audit_info(server_audit_info);
+		if (json_is_invalid(&server_policy)) {
+			goto failure;
+		}
+	}
+
+	rc = json_add_object(&authorization, "serverPolicyAccessCheck", &server_policy);
+	if (rc != 0) {
+		goto failure;
+	}
+
 	wrapper = json_new_object();
 	if (json_is_invalid(&wrapper)) {
 		goto failure;
@@ -456,6 +514,8 @@ static void log_successful_authz_event_json(
 	json_free(&wrapper);
 	return;
 failure:
+	json_free(&server_policy);
+	json_free(&client_policy);
 	/*
 	 * On a failure authorization will not have been added to wrapper so it
 	 * needs to be freed to avoid a leak.
@@ -490,6 +550,7 @@ static void log_authz_event_json(
 	struct loadparm_context *lp_ctx,
 	const struct tsocket_address *remote,
 	const struct tsocket_address *local,
+	const struct authn_audit_info *server_audit_info,
 	const char *service_description,
 	const char *auth_type,
 	const char *domain_name,
@@ -502,6 +563,7 @@ static void log_authz_event_json(
 {
 	struct json_object wrapper = json_empty_object;
 	struct json_object authorization = json_empty_object;
+	struct json_object server_policy = json_null_object();
 	int rc = 0;
 
 	authorization = json_new_object();
@@ -554,6 +616,18 @@ static void log_authz_event_json(
 		goto failure;
 	}
 
+	if (server_audit_info != NULL) {
+		server_policy = json_from_audit_info(server_audit_info);
+		if (json_is_invalid(&server_policy)) {
+			goto failure;
+		}
+	}
+
+	rc = json_add_object(&authorization, "serverPolicyAccessCheck", &server_policy);
+	if (rc != 0) {
+		goto failure;
+	}
+
 	wrapper = json_new_object();
 	if (json_is_invalid(&wrapper)) {
 		goto failure;
@@ -579,6 +653,7 @@ static void log_authz_event_json(
 	json_free(&wrapper);
 	return;
 failure:
+	json_free(&server_policy);
 	/*
 	 * On a failure authorization will not have been added to wrapper so it
 	 * needs to be freed to avoid a leak.
@@ -619,6 +694,8 @@ static void log_authentication_event_json(
 	const char *domain_name,
 	const char *account_name,
 	struct dom_sid *sid,
+	const struct authn_audit_info *client_audit_info,
+	const struct authn_audit_info *server_audit_info,
 	enum event_id_type event_id,
 	int debug_level)
 {
@@ -634,6 +711,8 @@ static void log_successful_authz_event_json(
 	const char *auth_type,
 	const char *transport_protection,
 	struct auth_session_info *session_info,
+	const struct authn_audit_info *client_audit_info,
+	const struct authn_audit_info *server_audit_info,
 	int debug_level)
 {
 	log_no_json(msg_ctx, lp_ctx);
@@ -644,6 +723,7 @@ static void log_authz_event_json(
 	struct loadparm_context *lp_ctx,
 	const struct tsocket_address *remote,
 	const struct tsocket_address *local,
+	const struct authn_audit_info *server_audit_info,
 	const char *service_description,
 	const char *auth_type,
 	const char *domain_name,
@@ -813,7 +893,9 @@ void log_authentication_event(
 	NTSTATUS status,
 	const char *domain_name,
 	const char *account_name,
-	struct dom_sid *sid)
+	struct dom_sid *sid,
+	const struct authn_audit_info *client_audit_info,
+	const struct authn_audit_info *server_audit_info)
 {
 	/* set the log level */
 	int debug_level = AUTH_FAILURE_LEVEL;
@@ -845,6 +927,8 @@ void log_authentication_event(
 					      domain_name,
 					      account_name,
 					      sid,
+					      client_audit_info,
+					      server_audit_info,
 					      event_id,
 					      debug_level);
 	}
@@ -918,7 +1002,9 @@ void log_successful_authz_event(
 	const char *service_description,
 	const char *auth_type,
 	const char *transport_protection,
-	struct auth_session_info *session_info)
+	struct auth_session_info *session_info,
+	const struct authn_audit_info *client_audit_info,
+	const struct authn_audit_info *server_audit_info)
 {
 	int debug_level = AUTHZ_SUCCESS_LEVEL;
 
@@ -944,6 +1030,8 @@ void log_successful_authz_event(
 						auth_type,
 						transport_protection,
 						session_info,
+						client_audit_info,
+						server_audit_info,
 						debug_level);
 	}
 }
@@ -959,6 +1047,7 @@ void log_authz_event(
 	struct loadparm_context *lp_ctx,
 	const struct tsocket_address *remote,
 	const struct tsocket_address *local,
+	const struct authn_audit_info *server_audit_info,
 	const char *service_description,
 	const char *auth_type,
 	const char *domain_name,
@@ -980,6 +1069,7 @@ void log_authz_event(
 		log_authz_event_json(msg_ctx, lp_ctx,
 				     remote,
 				     local,
+				     server_audit_info,
 				     service_description,
 				     auth_type,
 				     domain_name,

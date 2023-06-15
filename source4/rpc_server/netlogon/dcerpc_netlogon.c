@@ -839,7 +839,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(
 		status,
 		lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),
 		trust_account_in_db,
-		sid);
+		sid,
+		NULL /* client_audit_info */,
+		NULL /* server_audit_info */);
 
 	return status;
 }

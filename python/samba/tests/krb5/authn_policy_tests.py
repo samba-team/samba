@@ -59,8 +59,8 @@ HRES_SEC_E_INVALID_TOKEN = 0x80090308
 HRES_SEC_E_LOGON_DENIED = 0x8009030C
 
 
-AUTHN_VERSION = {'major': 1, 'minor': 2}
-AUTHZ_VERSION = {'major': 1, 'minor': 1}
+AUTHN_VERSION = {'major': 1, 'minor': 3}
+AUTHZ_VERSION = {'major': 1, 'minor': 2}
 KDC_AUTHZ_VERSION = {'major': 1, 'minor': 0}
 
 

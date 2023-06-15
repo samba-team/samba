@@ -177,6 +177,7 @@ struct auth4_context {
  * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
  * authentication events over the message bus.
  */
+struct authn_audit_info;
 void log_authentication_event(struct imessaging_context *msg_ctx,
 			      struct loadparm_context *lp_ctx,
 			      const struct timeval *start_time,
@@ -184,7 +185,9 @@ void log_authentication_event(struct imessaging_context *msg_ctx,
 			      NTSTATUS status,
 			      const char *domain_name,
 			      const char *account_name,
-			      struct dom_sid *sid);
+			      struct dom_sid *sid,
+			      const struct authn_audit_info *client_audit_info,
+			      const struct authn_audit_info *server_audit_info);
 
 /*
  * Log details of a successful authorization to a service.
@@ -206,7 +209,9 @@ void log_successful_authz_event(struct imessaging_context *msg_ctx,
 				const char *service_description,
 				const char *auth_type,
 				const char *transport_protection,
-				struct auth_session_info *session_info);
+				struct auth_session_info *session_info,
+				const struct authn_audit_info *client_audit_info,
+				const struct authn_audit_info *server_audit_info);
 
 /*
  * Log details of an authorization to a service.
@@ -219,6 +224,7 @@ void log_authz_event(
 	struct loadparm_context *lp_ctx,
 	const struct tsocket_address *remote,
 	const struct tsocket_address *local,
+	const struct authn_audit_info *server_audit_info,
 	const char *service_description,
 	const char *auth_type,
 	const char *domain_name,

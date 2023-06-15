@@ -1596,7 +1596,9 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 						   "LDAP",
 						   "no bind",
 						   transport_protection,
-						   call->conn->session_info);
+						   call->conn->session_info,
+						   NULL /* client_audit_info */,
+						   NULL /* server_audit_info */);
 
 			call->conn->authz_logged = true;
 		}

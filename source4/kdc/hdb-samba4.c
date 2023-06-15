@@ -622,6 +622,7 @@ static krb5_error_code hdb_samba4_tgs_audit(const struct samba_kdc_db_context *k
 			kdc_db_ctx->lp_ctx,
 			remote_host,
 			NULL /* local */,
+			NULL /* server_audit_info */,
 			r->sname,
 			"TGS-REQ with Ticket-Granting Ticket",
 			domain_name,
@@ -911,7 +912,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 					 status,
 					 domain_name,
 					 account_name,
-					 sid);
+					 sid,
+					 NULL /* client_audit_info */,
+					 NULL /* server_audit_info */);
 		if (final_ret == KRB5KRB_ERR_GENERIC && socket_wrapper_enabled()) {
 			/*
 			 * If we're running under make test
@@ -951,7 +954,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 					 &ui,
 					 NT_STATUS_NO_SUCH_USER,
 					 NULL, NULL,
-					 NULL);
+					 NULL,
+					 NULL /* client_audit_info */,
+					 NULL /* server_audit_info */);
 		TALLOC_FREE(frame);
 		break;
 	}

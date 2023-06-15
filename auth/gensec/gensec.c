@@ -242,7 +242,9 @@ static void log_successful_gensec_authz_event(struct gensec_security *gensec_sec
 				   service_description,
 				   final_auth_type,
 				   transport_protection,
-				   session_info);
+				   session_info,
+				   NULL /* client_audit_info */,
+				   NULL /* server_audit_info */);
 }
 
 
