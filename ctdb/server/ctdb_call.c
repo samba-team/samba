@@ -1417,6 +1417,10 @@ void ctdb_call_resend_db(struct ctdb_db_context *ctdb_db)
 		ctdb_call_resend(state);
 		count++;
 	}
+	/* Avoid logging a 0 count below */
+	if (count == 0) {
+		return;
+	}
 	D_NOTICE("Resent calls for database=%s, generation=%u, count=%u\n",
 		 ctdb_db->db_name,
 		 ctdb_db->generation,
