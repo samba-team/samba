@@ -1214,6 +1214,23 @@ struct json_object json_get_object(struct json_object *object, const char *name)
 }
 
 /*
+ * @brief Return the JSON null object.
+ *
+ * @return the JSON null object.
+ */
+_WARN_UNUSED_RESULT_ struct json_object json_null_object(void)
+{
+	struct json_object object = json_empty_object;
+
+	object.root = json_null();
+	if (object.root != NULL) {
+		object.valid = true;
+	}
+
+	return object;
+}
+
+/*
  * @brief Create a JSON object from a structure containing audit information.
  *
  * @param audit_info the audit information from which to create a JSON object.

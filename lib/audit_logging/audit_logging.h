@@ -105,6 +105,7 @@ _WARN_UNUSED_RESULT_ struct json_object json_get_object(
     struct json_object *object, const char *name);
 _WARN_UNUSED_RESULT_ char *json_to_string(TALLOC_CTX *mem_ctx,
 					  const struct json_object *object);
+_WARN_UNUSED_RESULT_ struct json_object json_null_object(void);
 struct authn_audit_info;
 _WARN_UNUSED_RESULT_ struct json_object json_from_audit_info(
 	const struct authn_audit_info *audit_info);
