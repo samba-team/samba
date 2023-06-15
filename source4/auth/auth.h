@@ -68,6 +68,8 @@ struct auth_operations {
 	NTSTATUS (*check_password_recv)(struct tevent_req *subreq,
 				TALLOC_CTX *mem_ctx,
 				struct auth_user_info_dc **interim_info,
+				const struct authn_audit_info **client_audit_info,
+				const struct authn_audit_info **server_audit_info,
 				bool *authoritative);
 };
 

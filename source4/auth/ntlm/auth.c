@@ -158,6 +158,8 @@ struct auth_check_password_state {
 	const struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_method_context *method;
+	const struct authn_audit_info *client_audit_info;
+	const struct authn_audit_info *server_audit_info;
 	uint8_t authoritative;
 };
 
@@ -335,6 +337,8 @@ static void auth_check_password_done(struct tevent_req *subreq)
 
 	status = state->method->ops->check_password_recv(subreq, state,
 							 &state->user_info_dc,
+							 &state->client_audit_info,
+							 &state->server_audit_info,
 							 &authoritative);
 	TALLOC_FREE(subreq);
 	if (!authoritative ||
@@ -405,8 +409,8 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 					 &state->auth_ctx->start_time,
 					 state->user_info, status,
 					 NULL, NULL, NULL,
-					 NULL /* client_audit_info */,
-					 NULL /* server_audit_info */);
+					 state->client_audit_info,
+					 state->server_audit_info);
 		tevent_req_received(req);
 		return status;
 	}
@@ -424,10 +428,14 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				 state->user_info_dc->info->domain_name,
 				 state->user_info_dc->info->account_name,
 				 &state->user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid,
-				 NULL /* client_audit_info */,
-				 NULL /* server_audit_info */);
+				 state->client_audit_info,
+				 state->server_audit_info);
 
-	/* Release our handle to state->user_info_dc. */
+	/*
+	 * Release our handle to state->user_info_dc.
+	 * state->{client,server}_audit_info, if non-NULL, becomes the new
+	 * parent.
+	*/
 	*user_info_dc = talloc_reparent(state, mem_ctx, state->user_info_dc);
 	state->user_info_dc = NULL;
 

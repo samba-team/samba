@@ -281,6 +281,8 @@ static void winbind_check_password_done(struct tevent_req *subreq)
 static NTSTATUS winbind_check_password_recv(struct tevent_req *req,
 					    TALLOC_CTX *mem_ctx,
 					    struct auth_user_info_dc **user_info_dc,
+					    const struct authn_audit_info **client_audit_info,
+					    const struct authn_audit_info **server_audit_info,
 					    bool *pauthoritative)
 {
 	struct winbind_check_password_state *state =
@@ -289,6 +291,8 @@ static NTSTATUS winbind_check_password_recv(struct tevent_req *req,
 	NTSTATUS status = NT_STATUS_OK;
 
 	*pauthoritative = state->authoritative;
+	*client_audit_info = NULL;
+	*server_audit_info = NULL;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);

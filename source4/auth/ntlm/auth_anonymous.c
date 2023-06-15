@@ -124,11 +124,16 @@ static NTSTATUS anonymous_check_password_recv(
 	struct tevent_req *req,
 	TALLOC_CTX *mem_ctx,
 	struct auth_user_info_dc **interim_info,
+	const struct authn_audit_info **client_audit_info,
+	const struct authn_audit_info **server_audit_info,
 	bool *authoritative)
 {
 	struct anonymous_check_password_state *state = tevent_req_data(
 		req, struct anonymous_check_password_state);
 	NTSTATUS status;
+
+	*client_audit_info = NULL;
+	*server_audit_info = NULL;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
