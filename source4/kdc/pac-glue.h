@@ -170,3 +170,14 @@ krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
 						     const struct samba_kdc_entry *server,
 						     struct authn_audit_info **server_audit_info_out,
 						     NTSTATUS *status_out);
+
+krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
+				       krb5_context context,
+				       struct ldb_context *samdb,
+				       struct loadparm_context *lp_ctx,
+				       struct samba_kdc_entry *device,
+				       krb5_const_pac device_pac,
+				       bool device_pac_is_trusted,
+				       const struct authn_kerberos_client_policy *client_policy,
+				       struct authn_audit_info **client_audit_info_out,
+				       NTSTATUS *status_out);
