@@ -37,6 +37,7 @@
 #include "kdc/db-glue.h"
 #include "auth/auth_sam.h"
 #include "auth/common_auth.h"
+#include "auth/authn_policy.h"
 #include <ldb.h>
 #include "sdb.h"
 #include "sdb_hdb.h"
@@ -419,8 +420,106 @@ static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(subreq);
 }
 
+#define SAMBA_HDB_AUTHN_AUDIT_INFO_OBJ "samba:authn_audit_info_obj"
+#define SAMBA_HDB_CLIENT_AUDIT_INFO "samba:client_audit_info"
+#define SAMBA_HDB_SERVER_AUDIT_INFO "samba:server_audit_info"
+
 #define SAMBA_HDB_NT_STATUS_OBJ "samba:nt_status_obj"
 #define SAMBA_HDB_NT_STATUS "samba:nt_status"
+
+struct hdb_audit_info_obj {
+	struct authn_audit_info *audit_info;
+};
+
+static void hdb_audit_info_obj_dealloc(void *ptr)
+{
+	struct hdb_audit_info_obj *audit_info_obj = ptr;
+
+	if (audit_info_obj == NULL) {
+		return;
+	}
+
+	TALLOC_FREE(audit_info_obj->audit_info);
+}
+
+/*
+ * Set talloc-allocated auditing information of the KDC request. On success,
+ * ‘audit_info’ is invalidated and may no longer be used by the caller.
+ */
+static krb5_error_code hdb_samba4_set_steal_audit_info(astgs_request_t r,
+						       const char *key,
+						       struct authn_audit_info *audit_info)
+{
+	struct hdb_audit_info_obj *audit_info_obj = NULL;
+
+	audit_info_obj = kdc_object_alloc(sizeof (*audit_info_obj),
+					  SAMBA_HDB_AUTHN_AUDIT_INFO_OBJ,
+					  hdb_audit_info_obj_dealloc);
+	if (audit_info_obj == NULL) {
+		return ENOMEM;
+	}
+
+	/*
+	 * Steal a handle to the audit information onto the NULL context —
+	 * Heimdal will be responsible for the deallocation of the object.
+	 */
+	audit_info_obj->audit_info = talloc_steal(NULL, audit_info);
+
+	heim_audit_setkv_object((heim_svc_req_desc)r, key, audit_info_obj);
+	heim_release(audit_info_obj);
+
+	return 0;
+}
+
+/*
+ * Set talloc-allocated client auditing information of the KDC request. On
+ * success, ‘client_audit_info’ is invalidated and may no longer be used by the
+ * caller.
+ */
+krb5_error_code hdb_samba4_set_steal_client_audit_info(astgs_request_t r,
+						       struct authn_audit_info *client_audit_info)
+{
+	return hdb_samba4_set_steal_audit_info(r,
+					       SAMBA_HDB_CLIENT_AUDIT_INFO,
+					       client_audit_info);
+}
+
+static const struct authn_audit_info *hdb_samba4_get_client_audit_info(hdb_request_t r)
+{
+	const struct hdb_audit_info_obj *audit_info_obj = NULL;
+
+	audit_info_obj = heim_audit_getkv((heim_svc_req_desc)r, SAMBA_HDB_CLIENT_AUDIT_INFO);
+	if (audit_info_obj == NULL) {
+		return NULL;
+	}
+
+	return audit_info_obj->audit_info;
+}
+
+/*
+ * Set talloc-allocated server auditing information of the KDC request. On
+ * success, ‘server_audit_info’ is invalidated and may no longer be used by the
+ * caller.
+ */
+krb5_error_code hdb_samba4_set_steal_server_audit_info(astgs_request_t r,
+						       struct authn_audit_info *server_audit_info)
+{
+	return hdb_samba4_set_steal_audit_info(r,
+					       SAMBA_HDB_SERVER_AUDIT_INFO,
+					       server_audit_info);
+}
+
+static const struct authn_audit_info *hdb_samba4_get_server_audit_info(hdb_request_t r)
+{
+	const struct hdb_audit_info_obj *audit_info_obj = NULL;
+
+	audit_info_obj = heim_audit_getkv((heim_svc_req_desc)r, SAMBA_HDB_SERVER_AUDIT_INFO);
+	if (audit_info_obj == NULL) {
+		return NULL;
+	}
+
+	return audit_info_obj->audit_info;
+}
 
 struct hdb_ntstatus_obj {
 	NTSTATUS status;
@@ -553,6 +652,7 @@ static krb5_error_code hdb_samba4_tgs_audit(const struct samba_kdc_db_context *k
 					    hdb_request_t r)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct authn_audit_info *server_audit_info = NULL;
 	struct tsocket_address *remote_host = NULL;
 	struct samba_kdc_entry *client_entry = NULL;
 	struct dom_sid sid_buf = {};
@@ -603,6 +703,8 @@ static krb5_error_code hdb_samba4_tgs_audit(const struct samba_kdc_db_context *k
 		/* Ignore the error. */
 	}
 
+	server_audit_info = hdb_samba4_get_server_audit_info(r);
+
 	if (entry != NULL) {
 		client_entry = talloc_get_type_abort(entry->context,
 						     struct samba_kdc_entry);
@@ -622,7 +724,7 @@ static krb5_error_code hdb_samba4_tgs_audit(const struct samba_kdc_db_context *k
 			kdc_db_ctx->lp_ctx,
 			remote_host,
 			NULL /* local */,
-			NULL /* server_audit_info */,
+			server_audit_info,
 			r->sname,
 			"TGS-REQ with Ticket-Granting Ticket",
 			domain_name,
@@ -742,6 +844,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		const char *domain_name = lpcfg_sam_name(p->kdc_db_ctx->lp_ctx);
 		struct tsocket_address *remote_host;
 		const char *auth_description = NULL;
+		const struct authn_audit_info *client_audit_info = NULL;
+		const struct authn_audit_info *server_audit_info = NULL;
 		NTSTATUS status;
 		int ret;
 		bool rwdc_fallback = false;
@@ -905,6 +1009,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			final_ret = HDB_ERR_NOT_FOUND_HERE;
 		}
 
+		client_audit_info = hdb_samba4_get_client_audit_info(r);
+		server_audit_info = hdb_samba4_get_server_audit_info(r);
+
 		log_authentication_event(kdc_db_ctx->msg_ctx,
 					 kdc_db_ctx->lp_ctx,
 					 &r->tv_start,
@@ -913,8 +1020,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 					 domain_name,
 					 account_name,
 					 sid,
-					 NULL /* client_audit_info */,
-					 NULL /* server_audit_info */);
+					 client_audit_info,
+					 server_audit_info);
 		if (final_ret == KRB5KRB_ERR_GENERIC && socket_wrapper_enabled()) {
 			/*
 			 * If we're running under make test
