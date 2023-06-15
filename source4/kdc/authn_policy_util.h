@@ -22,7 +22,7 @@
 #define KDC_AUTHN_POLICY_UTIL_H
 
 #include "lib/replace/replace.h"
-#include "source4/kdc/authn_policy.h"
+#include "auth/authn_policy.h"
 #include <talloc.h>
 
 struct ldb_context;

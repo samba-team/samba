@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+bld.SAMBA_SUBSYSTEM('authn_policy',
+                  source='authn_policy.c',
+                  deps='samba-util')
+
 bld.SAMBA_LIBRARY('common_auth',
                   source='''auth_sam_reply.c
                             wbc_auth_util.c

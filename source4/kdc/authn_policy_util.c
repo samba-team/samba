@@ -20,7 +20,7 @@
 
 #include "lib/replace/replace.h"
 #include "source4/kdc/authn_policy_util.h"
-#include "source4/kdc/authn_policy_impl.h"
+#include "auth/authn_policy_impl.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "libcli/security/security.h"

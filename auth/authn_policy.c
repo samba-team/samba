@@ -19,8 +19,8 @@
 */
 
 #include "lib/replace/replace.h"
-#include "source4/kdc/authn_policy.h"
-#include "source4/kdc/authn_policy_impl.h"
+#include "auth/authn_policy.h"
+#include "auth/authn_policy_impl.h"
 
 bool authn_policy_is_enforced(const struct authn_policy *policy)
 {

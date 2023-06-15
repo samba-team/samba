@@ -23,7 +23,7 @@
 
 #include "lib/replace/replace.h"
 
-#include "source4/kdc/authn_policy.h"
+#include "auth/authn_policy.h"
 #include "lib/util/data_blob.h"
 #include "libcli/util/ntstatus.h"
 
