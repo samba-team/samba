@@ -730,7 +730,8 @@ static NTSTATUS authsam_check_netlogon_trust(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *sam_ctx,
 					     struct loadparm_context *lp_ctx,
 					     const struct auth_usersupplied_info *user_info,
-					     const struct auth_user_info_dc *user_info_dc)
+					     const struct auth_user_info_dc *user_info_dc,
+					     struct authn_audit_info **server_audit_info_out)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 
@@ -809,6 +810,7 @@ static NTSTATUS authsam_check_netlogon_trust(TALLOC_CTX *mem_ctx,
 	}
 
 	if (authn_server_policy != NULL) {
+		struct authn_audit_info *server_audit_info = NULL;
 		NTSTATUS status;
 
 		/*
@@ -821,7 +823,10 @@ static NTSTATUS authsam_check_netlogon_trust(TALLOC_CTX *mem_ctx,
 							      AUTHN_POLICY_AUTH_TYPE_NTLM,
 							      user_info_dc,
 							      authn_server_policy,
-							      NULL /* server_audit_info_out */);
+							      &server_audit_info);
+		if (server_audit_info != NULL) {
+			*server_audit_info_out = talloc_move(mem_ctx, &server_audit_info);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
 			return status;
@@ -838,6 +843,8 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 				     const struct auth_usersupplied_info *user_info,
 				     const struct auth_user_info_dc *user_info_dc,
 				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key,
+				     struct authn_audit_info **client_audit_info_out,
+				     struct authn_audit_info **server_audit_info_out,
 				     bool *authoritative)
 {
 	NTSTATUS nt_status;
@@ -885,8 +892,13 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 
 	nt_status = authn_policy_ntlm_apply_device_restriction(mem_ctx,
 							       authn_client_policy,
-							       NULL /* client_audit_info_out */);
+							       client_audit_info_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		/*
+		 * As we didn’t get far enough to check the server policy, only
+		 * the client policy will be referenced in the authentication
+		 * log message.
+		 */
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
@@ -905,7 +917,8 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 						 auth_context->sam_ctx,
 						 auth_context->lp_ctx,
 						 user_info,
-						 user_info_dc);
+						 user_info_dc,
+						 server_audit_info_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
@@ -958,6 +971,8 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 						 TALLOC_CTX *mem_ctx,
 						 const struct auth_usersupplied_info *user_info, 
 						 struct auth_user_info_dc **user_info_dc,
+						 struct authn_audit_info **client_audit_info_out,
+						 struct authn_audit_info **server_audit_info_out,
 						 bool *authoritative)
 {
 	NTSTATUS nt_status;
@@ -969,6 +984,8 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	TALLOC_CTX *tmp_ctx;
 	const char *p = NULL;
 	struct auth_user_info_dc *reparented = NULL;
+	struct authn_audit_info *client_audit_info = NULL;
+	struct authn_audit_info *server_audit_info = NULL;
 
 	if (ctx->auth_ctx->sam_ctx == NULL) {
 		DEBUG(0, ("No SAM available, cannot log in users\n"));
@@ -1086,7 +1103,15 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 					 *user_info_dc,
 					 &user_sess_key,
 					 &lm_sess_key,
+					 &client_audit_info,
+					 &server_audit_info,
 					 authoritative);
+	if (client_audit_info != NULL) {
+		*client_audit_info_out = talloc_move(mem_ctx, &client_audit_info);
+	}
+	if (server_audit_info != NULL) {
+		*server_audit_info_out = talloc_move(mem_ctx, &server_audit_info);
+	}
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
@@ -1112,7 +1137,10 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		}
 	}
 
-	/* Release our handle to *user_info_dc. */
+	/*
+	 * Release our handle to *user_info_dc. {client,server}_audit_info_out,
+	 * if non-NULL, becomes the new parent.
+	 */
 	reparented = talloc_reparent(tmp_ctx, mem_ctx, *user_info_dc);
 	if (reparented == NULL) {
 		talloc_free(tmp_ctx);
@@ -1126,6 +1154,8 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 
 struct authsam_check_password_state {
 	struct auth_user_info_dc *user_info_dc;
+	struct authn_audit_info *client_audit_info;
+	struct authn_audit_info *server_audit_info;
 	bool authoritative;
 };
 
@@ -1156,6 +1186,8 @@ static struct tevent_req *authsam_check_password_send(
 		state,
 		user_info,
 		&state->user_info_dc,
+		&state->client_audit_info,
+		&state->server_audit_info,
 		&state->authoritative);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
@@ -1179,15 +1211,20 @@ static NTSTATUS authsam_check_password_recv(
 
 	*authoritative = state->authoritative;
 
-	*client_audit_info = NULL;
+	*client_audit_info = talloc_reparent(state, mem_ctx, state->client_audit_info);
+	state->client_audit_info = NULL;
 
-	*server_audit_info = NULL;
+	*server_audit_info = talloc_reparent(state, mem_ctx, state->server_audit_info);
+	state->server_audit_info = NULL;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
 	}
-	/* Release our handle to state->user_info_dc. */
+	/*
+	 * Release our handle to state->user_info_dc.
+	 * {client,server}_audit_info, if non-NULL, becomes the new parent.
+	 */
 	*interim_info = talloc_reparent(state, mem_ctx, state->user_info_dc);
 	state->user_info_dc = NULL;
 
