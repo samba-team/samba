@@ -1415,3 +1415,94 @@ class DnsCmdTestCase(SambaToolCmdTest):
             for s in output_substrings:
                 self.assertIn(s, out)
             tsmap = new_tsmap
+
+    def test_zonecreate_dns_domain_directory_partition(self):
+        zone = "test-dns-domain-dp-zone"
+        dns_dp_opt = "--dns-directory-partition=domain"
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zonecreate",
+                                          os.environ["SERVER"],
+                                          zone,
+                                          self.creds_string,
+                                          dns_dp_opt)
+        self.assertCmdSuccess(result,
+                              out,
+                              err,
+                              "Failed to create zone with "
+                              "--dns-directory-partition option")
+        self.assertTrue('Zone %s created successfully' % zone in out,
+                        "Unexpected output: %s")
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zoneinfo",
+                                          os.environ["SERVER"],
+                                          zone,
+                                          self.creds_string)
+        self.assertCmdSuccess(result, out, err)
+        self.assertTrue("DNS_DP_DOMAIN_DEFAULT" in out,
+                        "Missing DNS_DP_DOMAIN_DEFAULT flag")
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zonedelete",
+                                          os.environ["SERVER"],
+                                          zone,
+                                          self.creds_string)
+        self.assertCmdSuccess(result, out, err,
+                              "Failed to delete zone in domain DNS directory "
+                              "partition")
+        result, out, err = self.runsubcmd("dns",
+                                          "zonelist",
+                                          os.environ["SERVER"],
+                                          self.creds_string)
+        self.assertCmdSuccess(result, out, err,
+                              "Failed to delete zone in domain DNS directory "
+                              "partition")
+        self.assertTrue(zone not in out,
+                        "Deleted zone still exists")
+
+    def test_zonecreate_dns_forest_directory_partition(self):
+        zone = "test-dns-forest-dp-zone"
+        dns_dp_opt = "--dns-directory-partition=forest"
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zonecreate",
+                                          os.environ["SERVER"],
+                                          zone,
+                                          self.creds_string,
+                                          dns_dp_opt)
+        self.assertCmdSuccess(result,
+                              out,
+                              err,
+                              "Failed to create zone with "
+                              "--dns-directory-partition option")
+        self.assertTrue('Zone %s created successfully' % zone in out,
+                        "Unexpected output: %s")
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zoneinfo",
+                                          os.environ["SERVER"],
+                                          zone,
+                                          self.creds_string)
+        self.assertCmdSuccess(result, out, err)
+        self.assertTrue("DNS_DP_FOREST_DEFAULT" in out,
+                        "Missing DNS_DP_FOREST_DEFAULT flag")
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zonedelete",
+                                          os.environ["SERVER"],
+                                          zone,
+                                          self.creds_string)
+        self.assertCmdSuccess(result, out, err,
+                              "Failed to delete zone in forest DNS directory "
+                              "partition")
+
+        result, out, err = self.runsubcmd("dns",
+                                          "zonelist",
+                                          os.environ["SERVER"],
+                                          self.creds_string)
+        self.assertCmdSuccess(result, out, err,
+                              "Failed to delete zone in forest DNS directory "
+                              "partition")
+        self.assertTrue(zone not in out,
+                        "Deleted zone still exists")

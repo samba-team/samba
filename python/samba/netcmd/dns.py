@@ -913,17 +913,34 @@ class cmd_zonecreate(Command):
     takes_options = [
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
-               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver')
+               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
+        Option('--dns-directory-partition',
+               help='Specify the naming context for the new zone, which '
+                    'affects the replication scope (domain or forest wide '
+                    'replication).',
+               default='domain',
+               metavar='domain|forest',
+               choices=['domain', 'forest'],
+               dest='dns_dp'),
     ]
 
-    def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
+    def run(self,
+            server,
+            zone,
+            cli_ver,
+            dns_dp,
+            sambaopts=None,
+            credopts=None,
             versionopts=None):
-
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
         dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         zone = zone.lower()
+
+        dns_directorypartition = dnsserver.DNS_DP_DOMAIN_DEFAULT
+        if dns_dp == 'forest':
+            dns_directorypartition = dnsserver.DNS_DP_FOREST_DEFAULT
 
         client_version = dns_client_version(cli_ver)
         if client_version == dnsserver.DNS_CLIENT_VERSION_W2K:
@@ -942,7 +959,7 @@ class cmd_zonecreate(Command):
             zone_create_info.fAging = 0
             zone_create_info.fDsIntegrated = 1
             zone_create_info.fLoadExisting = 1
-            zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
+            zone_create_info.dwDpFlags = dns_directorypartition
         else:
             typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE
             zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
@@ -951,7 +968,7 @@ class cmd_zonecreate(Command):
             zone_create_info.fAging = 0
             zone_create_info.fDsIntegrated = 1
             zone_create_info.fLoadExisting = 1
-            zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
+            zone_create_info.dwDpFlags = dns_directorypartition
 
         dns_conn.DnssrvOperation2(client_version, 0, server, None,
                                   0, 'ZoneCreate', typeid,
