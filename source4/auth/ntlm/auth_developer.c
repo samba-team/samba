@@ -188,12 +188,13 @@ static NTSTATUS name_to_ntstatus_check_password_recv(
 		req, struct name_to_ntstatus_check_password_state);
 	NTSTATUS status;
 
+	*authoritative = state->authoritative;
+
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
 	}
 	*interim_info = talloc_move(mem_ctx, &state->user_info_dc);
-	*authoritative = state->authoritative;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
