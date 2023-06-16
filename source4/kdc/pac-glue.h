@@ -140,7 +140,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct samba_kdc_entry *device,
 				     krb5_const_pac device_pac,
 				     krb5_const_pac old_pac,
-				     krb5_pac new_pac);
+				     krb5_pac new_pac,
+				     struct authn_audit_info **server_audit_info_out,
+				     NTSTATUS *status_out);
 
 NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *user_info_dc,

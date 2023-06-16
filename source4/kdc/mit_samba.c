@@ -717,7 +717,9 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    NULL /* device */,
 				    NULL /* device_pac */,
 				    *pac,
-				    new_pac);
+				    new_pac,
+				    NULL /* server_audit_info_out */,
+				    NULL /* status_out */);
 	if (code != 0) {
 		krb5_pac_free(context, new_pac);
 		if (code == ENOATTR) {
@@ -831,7 +833,9 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    NULL /* device */,
 				    NULL /* device_pac */,
 				    old_pac,
-				    new_pac);
+				    new_pac,
+				    NULL /* server_audit_info_out */,
+				    NULL /* status_out */);
 	if (code != 0) {
 		if (code == ENOATTR) {
 			/*

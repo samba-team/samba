@@ -98,7 +98,7 @@ bld.SAMBA_SUBSYSTEM('KDC-GLUE',
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
         includes=kdc_include,
-	deps='ldb auth4_sam common_auth samba-credentials hdb PAC_GLUE samba-hostconfig com_err KDC-GLUE',
+	deps='ldb auth4_sam common_auth samba-credentials hdb PAC_GLUE samba-hostconfig com_err KDC-GLUE authn_policy_util',
 	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 

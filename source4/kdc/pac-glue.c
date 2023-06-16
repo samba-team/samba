@@ -2337,7 +2337,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct samba_kdc_entry *device,
 				     const krb5_const_pac device_pac,
 				     const krb5_const_pac old_pac,
-				     krb5_pac new_pac)
+				     krb5_pac new_pac,
+				     struct authn_audit_info **server_audit_info_out,
+				     NTSTATUS *status_out)
 {
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
@@ -2359,6 +2361,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	struct pac_blobs pac_blobs;
 	pac_blobs_init(&pac_blobs);
+
+	if (server_audit_info_out != NULL) {
+		*server_audit_info_out = NULL;
+	}
+
+	if (status_out != NULL) {
+		*status_out = NT_STATUS_OK;
+	}
 
 	is_tgs = smb_krb5_principal_is_tgs(context, server_principal);
 	if (is_tgs == -1) {

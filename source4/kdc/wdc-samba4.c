@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "kdc/authn_policy_util.h"
 #include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
 #include "kdc/pac-glue.h"
@@ -391,7 +392,9 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		talloc_get_type_abort(krbtgt->context, struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_pac new_pac = NULL;
+	struct authn_audit_info *server_audit_info = NULL;
 	krb5_error_code ret;
+	NTSTATUS status = NT_STATUS_OK;
 	uint32_t flags = 0;
 
 	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac context");
@@ -433,7 +436,25 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 				   device_skdc_entry,
 				   device_pac,
 				   *pac,
-				   new_pac);
+				   new_pac,
+				   &server_audit_info,
+				   &status);
+	if (server_audit_info != NULL) {
+		krb5_error_code ret2;
+
+		ret2 = hdb_samba4_set_steal_server_audit_info(r, server_audit_info);
+		if (ret2) {
+			ret = ret2;
+		}
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		krb5_error_code ret2;
+
+		ret2 = hdb_samba4_set_ntstatus(r, status, ret);
+		if (ret2) {
+			ret = ret2;
+		}
+	}
 	if (ret != 0) {
 		krb5_pac_free(context, new_pac);
 		if (ret == ENOATTR) {
