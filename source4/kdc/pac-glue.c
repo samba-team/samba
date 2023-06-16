@@ -1224,7 +1224,7 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 					  struct PAC_SIGNATURE_DATA *pac_srv_sig,
 					  struct PAC_SIGNATURE_DATA *pac_kdc_sig)
 {
-	struct auth_user_info_dc *user_info_dc;
+	struct auth_user_info_dc *user_info_dc = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
@@ -1249,7 +1249,8 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 					   pac_kdc_sig,
 					   resource_groups);
 	if (ret) {
-		return NT_STATUS_UNSUCCESSFUL;
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	/*
@@ -1260,8 +1261,7 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						samdb,
 						user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(user_info_dc);
-		return nt_status;
+		goto out;
 	}
 
 	nt_status = samba_add_compounded_auth(compounded_auth,
@@ -1269,7 +1269,7 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Compounded Authentication: %s\n",
 			nt_errstr(nt_status));
-		return nt_status;
+		goto out;
 	}
 
 	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
@@ -1278,6 +1278,7 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						  group_inclusion,
 						  pac_blob);
 
+out:
 	/*
 	 * The infomation from this is now in the PAC, this memory is
 	 * not used any longer and not passed to the caller
