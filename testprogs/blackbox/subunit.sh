@@ -87,7 +87,7 @@ testit()
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
-	if [ x$status = x0 ]; then
+	if [ ${status} -eq 0 ]; then
 		subunit_pass_test "$name"
 	else
 		echo "$output" | subunit_fail_test "$name"
@@ -107,13 +107,13 @@ testit_grep()
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
-	if [ x$status != x0 ]; then
+	if [ ${status} -ne 0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
 		return $status
 	fi
 	printf '%s' "$output" | grep -q "$grep"
 	gstatus=$?
-	if [ x$gstatus = x0 ]; then
+	if [ ${gstatus} -eq 0 ]; then
 		subunit_pass_test "$name"
 	else
 		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
@@ -135,12 +135,12 @@ testit_grep_count()
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
-	if [ x$status != x0 ]; then
+	if [ ${status} -ne 0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
 		return $status
 	fi
 	found=$(printf '%s' "$output" | grep -c "$grep")
-	if [ x"$found" = x"$num" ]; then
+	if [ "${found}" -eq "$num" ]; then
 	    subunit_pass_test "$name"
 	else
 	    printf 'GREP: "%s" found "%d" times, expected "%d" in output:\n%s'\
@@ -159,7 +159,7 @@ testit_expect_failure()
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
-	if [ x$status = x0 ]; then
+	if [ ${status} = 0 ]; then
 		echo "$output" | subunit_fail_test "$name"
 		return 1
 	else
@@ -180,13 +180,13 @@ testit_expect_failure_grep()
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
-	if [ x$status = x0 ]; then
+	if [ ${status} -eq 0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
 		return 1
 	fi
 	printf '%s' "$output" | grep -q "$grep"
 	gstatus=$?
-	if [ x$gstatus = x0 ]; then
+	if [ ${gstatus} -eq 0 ]; then
 		subunit_pass_test "$name"
 	else
 		printf 'GREP: "%s" not found in output:\n%s' "$grep" "$output" | subunit_fail_test "$name"
