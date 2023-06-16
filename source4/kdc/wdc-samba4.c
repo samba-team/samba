@@ -673,12 +673,20 @@ static char *get_netbios_name(TALLOC_CTX *mem_ctx, HostAddresses *addrs)
 static krb5_error_code samba_wdc_check_client_access(void *priv,
 						     astgs_request_t r)
 {
+	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	TALLOC_CTX *tmp_ctx = NULL;
 	const hdb_entry *client = NULL;
 	struct samba_kdc_entry *kdc_entry;
+	const hdb_entry *device = kdc_request_get_armor_client(r);
+	struct samba_kdc_entry *device_skdc_entry = NULL;
+	const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
+	struct authn_audit_info *client_audit_info = NULL;
 	bool password_change;
 	char *workstation;
 	NTSTATUS nt_status;
+	NTSTATUS check_device_status = NT_STATUS_OK;
+	krb5_error_code ret = 0;
+	bool device_pac_is_trusted = false;
 
 	client = kdc_request_get_client(r);
 
@@ -688,17 +696,70 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	}
 
 	kdc_entry = talloc_get_type_abort(client->context, struct samba_kdc_entry);
-	password_change = (kdc_request_get_server(r) && kdc_request_get_server(r)->flags.change_pw);
+
+	if (device != NULL) {
+		device_skdc_entry = talloc_get_type_abort(device->context,
+							  struct samba_kdc_entry);
+	}
+
+	if (device_pac != NULL) {
+		device_pac_is_trusted = krb5_pac_is_trusted(device_pac);
+	}
+
+	ret = samba_kdc_check_device(tmp_ctx,
+				     context,
+				     kdc_entry->kdc_db_ctx->samdb,
+				     kdc_entry->kdc_db_ctx->lp_ctx,
+				     device_skdc_entry,
+				     device_pac,
+				     device_pac_is_trusted,
+				     kdc_entry->client_policy,
+				     &client_audit_info,
+				     &check_device_status);
+	if (client_audit_info != NULL) {
+		krb5_error_code ret2;
+
+		ret2 = hdb_samba4_set_steal_client_audit_info(r, client_audit_info);
+		if (ret2) {
+			ret = ret2;
+		}
+	}
+	kdc_entry->reject_status = check_device_status;
+	if (!NT_STATUS_IS_OK(check_device_status)) {
+		krb5_error_code ret2;
+
+		/*
+		 * Add the NTSTATUS to the request so we can return it in the
+		 * ‘e-data’ field later.
+		 */
+		ret2 = hdb_samba4_set_ntstatus(r, check_device_status, ret);
+		if (ret2) {
+			ret = ret2;
+		}
+	}
+
+	if (ret) {
+		/*
+		 * As we didn’t get far enough to check the server policy, only
+		 * the client policy will be referenced in the authentication
+		 * log message.
+		 */
+
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	workstation = get_netbios_name(tmp_ctx,
 				       kdc_request_get_req(r)->req_body.addresses);
+	password_change = (kdc_request_get_server(r) && kdc_request_get_server(r)->flags.change_pw);
 
 	nt_status = samba_kdc_check_client_access(kdc_entry,
 						  kdc_request_get_cname((kdc_request_t)r),
 						  workstation,
 						  password_change);
 
+	kdc_entry->reject_status = nt_status;
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		krb5_error_code ret;
 		krb5_error_code ret2;
 
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
