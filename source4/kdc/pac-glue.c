@@ -1215,18 +1215,24 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
-						 krb5_context context,
-						 struct ldb_context *samdb,
-						 const enum auth_group_inclusion group_inclusion,
-						 const enum samba_compounded_auth compounded_auth,
-						 const krb5_const_pac pac, DATA_BLOB *pac_blob)
+static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
+						     krb5_context context,
+						     struct ldb_context *samdb,
+						     const enum auth_group_inclusion group_inclusion,
+						     const enum samba_compounded_auth compounded_auth,
+						     const krb5_const_pac pac,
+						     struct auth_user_info_dc **user_info_dc_out,
+						     struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
 	struct auth_user_info_dc *user_info_dc = NULL;
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
-	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups = NULL;
+
+	*user_info_dc_out = NULL;
+	if (resource_groups_out != NULL) {
+		*resource_groups_out = NULL;
+	}
 
 	if (group_inclusion == AUTH_EXCLUDE_RESOURCE_GROUPS) {
 		/*
@@ -1235,7 +1241,7 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 		 * groups directly from the original PAC and copy them
 		 * unmodified into the new one.
 		 */
-		resource_groups = &_resource_groups;
+		resource_groups = resource_groups_out;
 	}
 
 	ret = kerberos_pac_to_user_info_dc(mem_ctx,
@@ -1279,24 +1285,10 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
-						  user_info_dc,
-						  _resource_groups,
-						  group_inclusion,
-						  pac_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
-			nt_errstr(nt_status));
-
-		ret = EINVAL;
-		goto out;
-	}
+	*user_info_dc_out = user_info_dc;
+	user_info_dc = NULL;
 
 out:
-	/*
-	 * The infomation from this is now in the PAC, this memory is
-	 * not used any longer and not passed to the caller
-	 */
 	TALLOC_FREE(user_info_dc);
 
 	return ret;
@@ -2331,6 +2323,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *device_info_blob = NULL;
 	int is_tgs = false;
 	struct auth_user_info_dc *user_info_dc = NULL;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
 	size_t i = 0;
 
@@ -2525,19 +2518,33 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		code = samba_kdc_update_pac_blob(mem_ctx,
-						 context,
-						 samdb,
-						 group_inclusion,
-						 compounded_auth,
-						 old_pac,
-						 pac_blob);
+		code = samba_kdc_obtain_user_info_dc(mem_ctx,
+						     context,
+						     samdb,
+						     group_inclusion,
+						     compounded_auth,
+						     old_pac,
+						     &user_info_dc,
+						     &_resource_groups);
 		if (code != 0) {
 			const char *err_str = krb5_get_error_message(context, code);
-			DBG_ERR("samba_kdc_update_pac_blob failed: %s\n",
+			DBG_ERR("samba_kdc_obtain_user_info_dc failed: %s\n",
 				err_str != NULL ? err_str : "<unknown>");
 			krb5_free_error_message(context, err_str);
 
+			goto done;
+		}
+
+		nt_status = samba_get_logon_info_pac_blob(mem_ctx,
+							  user_info_dc,
+							  _resource_groups,
+							  group_inclusion,
+							  pac_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
+				nt_errstr(nt_status));
+
+			code = EINVAL;
 			goto done;
 		}
 	}
