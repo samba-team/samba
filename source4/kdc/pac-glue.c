@@ -1249,6 +1249,11 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 					   pac_kdc_sig,
 					   resource_groups);
 	if (ret) {
+		const char *krb5err = krb5_get_error_message(context, ret);
+		DBG_ERR("kerberos_pac_to_user_info_dc failed: %s\n",
+			krb5err != NULL ? krb5err : "?");
+		krb5_free_error_message(context, krb5err);
+
 		goto out;
 	}
 
@@ -1260,6 +1265,9 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						samdb,
 						user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("authsam_update_user_info_dc failed: %s\n",
+			nt_errstr(nt_status));
+
 		ret = EINVAL;
 		goto out;
 	}
@@ -1279,6 +1287,9 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						  group_inclusion,
 						  pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
+			nt_errstr(nt_status));
+
 		ret = EINVAL;
 		goto out;
 	}
