@@ -784,7 +784,6 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				char *base_data,
 				char *end_data,
 				int space_remaining,
-				bool *got_exact_match,
 				int *last_entry_off,
 				struct ea_list *name_list)
 {
@@ -803,7 +802,6 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					 ppdata, base_data, end_data,
 					 space_remaining,
 					 NULL,
-					 got_exact_match,
 					 last_entry_off, name_list, NULL);
 }
 
@@ -1114,7 +1112,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	ask_sharemode = fsp_search_ask_sharemode(fsp);
 
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
-		bool got_exact_match = False;
 
 		ntstatus = get_lanman2_dir_entry(talloc_tos(),
 						 conn,
@@ -1130,7 +1127,6 @@ static void call_trans2findfirst(connection_struct *conn,
 						 pdata,
 						 data_end,
 						 space_remaining,
-						 &got_exact_match,
 						 &last_entry_off,
 						 ea_list);
 		if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_ILLEGAL_CHARACTER)) {
@@ -1148,17 +1144,6 @@ static void call_trans2findfirst(connection_struct *conn,
 
 		if (!finished && !out_of_space) {
 			numentries++;
-		}
-
-		/*
-		 * As an optimisation if we know we aren't looking
-		 * for a wildcard name (ie. the name matches the wildcard exactly)
-		 * then we can finish on any (first) match.
-		 * This speeds up large directory searches. JRA.
-		 */
-
-		if (got_exact_match) {
-			finished = true;
 		}
 
 		/* Ensure space_remaining never goes -ve. */
@@ -1593,7 +1578,6 @@ static void call_trans2findnext(connection_struct *conn,
 	ask_sharemode = fsp_search_ask_sharemode(fsp);
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
-		bool got_exact_match = False;
 
 		ntstatus = get_lanman2_dir_entry(ctx,
 						 conn,
@@ -1609,7 +1593,6 @@ static void call_trans2findnext(connection_struct *conn,
 						 pdata,
 						 data_end,
 						 space_remaining,
-						 &got_exact_match,
 						 &last_entry_off,
 						 ea_list);
 		if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_ILLEGAL_CHARACTER)) {
@@ -1627,17 +1610,6 @@ static void call_trans2findnext(connection_struct *conn,
 
 		if (!finished && !out_of_space) {
 			numentries++;
-		}
-
-		/*
-		 * As an optimisation if we know we aren't looking
-		 * for a wildcard name (ie. the name matches the wildcard exactly)
-		 * then we can finish on any (first) match.
-		 * This speeds up large directory searches. JRA.
-		 */
-
-		if (got_exact_match) {
-			finished = true;
 		}
 
 		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);

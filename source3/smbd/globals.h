@@ -208,7 +208,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       char *end_data,
 			       int space_remaining,
 			       struct smb_filename **smb_fname,
-			       bool *got_exact_match,
 			       int *_last_entry_off,
 			       struct ea_list *name_list,
 			       struct file_id *file_id);

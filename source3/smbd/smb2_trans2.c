@@ -1912,7 +1912,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       char *end_data,
 			       int space_remaining,
 			       struct smb_filename **_smb_fname,
-			       bool *got_exact_match,
 			       int *_last_entry_off,
 			       struct ea_list *name_list,
 			       struct file_id *file_id)
@@ -1941,8 +1940,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	state.got_exact_match = false;
 	state.case_sensitive = dptr_case_sensitive(dirptr);
 
-	*got_exact_match = false;
-
 	p = strrchr_m(path_mask,'/');
 	if(p != NULL) {
 		if(p[1] == '\0') {
@@ -1970,8 +1967,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	if (!ok) {
 		return NT_STATUS_END_OF_FILE;
 	}
-
-	*got_exact_match = state.got_exact_match;
 
 	marshall_with_83_names = (mangled_names == MANGLED_NAMES_YES);
 
