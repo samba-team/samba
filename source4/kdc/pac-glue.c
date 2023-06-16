@@ -2493,7 +2493,26 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!client_pac_is_trusted) {
+	if (client_pac_is_trusted) {
+		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (pac_blob == NULL) {
+			code = ENOMEM;
+			goto done;
+		}
+
+		nt_status = samba_get_logon_info_pac_blob(mem_ctx,
+							  user_info_dc,
+							  _resource_groups,
+							  group_inclusion,
+							  pac_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
+				nt_errstr(nt_status));
+
+			code = EINVAL;
+			goto done;
+		}
+	} else {
 		nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
 						       user_info_dc,
 						       group_inclusion,
@@ -2532,25 +2551,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
 				nt_errstr(nt_status));
-			code = EINVAL;
-			goto done;
-		}
-	} else {
-		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
-		if (pac_blob == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
-
-		nt_status = samba_get_logon_info_pac_blob(mem_ctx,
-							  user_info_dc,
-							  _resource_groups,
-							  group_inclusion,
-							  pac_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
-				nt_errstr(nt_status));
-
 			code = EINVAL;
 			goto done;
 		}
