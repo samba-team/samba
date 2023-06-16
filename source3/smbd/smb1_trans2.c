@@ -1116,36 +1116,34 @@ static void call_trans2findfirst(connection_struct *conn,
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
 		bool got_exact_match = False;
 
-		/* this is a heuristic to avoid seeking the dirptr except when
-			absolutely necessary. It allows for a filename of about 40 chars */
-		if (space_remaining < DIRLEN_GUESS && numentries > 0) {
-			out_of_space = True;
-			finished = False;
+		ntstatus = get_lanman2_dir_entry(talloc_tos(),
+						 conn,
+						 fsp->dptr,
+						 req->flags2,
+						 mask,
+						 dirtype,
+						 info_level,
+						 requires_resume_key,
+						 dont_descend,
+						 ask_sharemode,
+						 &p,
+						 pdata,
+						 data_end,
+						 space_remaining,
+						 &got_exact_match,
+						 &last_entry_off,
+						 ea_list);
+		if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_ILLEGAL_CHARACTER)) {
+			/*
+			 * Bad character conversion on name. Ignore
+			 * this entry.
+			 */
+			continue;
+		}
+		if (NT_STATUS_EQUAL(ntstatus, STATUS_MORE_ENTRIES)) {
+			out_of_space = true;
 		} else {
-			ntstatus = get_lanman2_dir_entry(talloc_tos(),
-					conn,
-					fsp->dptr,
-					req->flags2,
-					mask,dirtype,info_level,
-					requires_resume_key,dont_descend,
-					ask_sharemode,
-					&p,pdata,data_end,
-					space_remaining,
-					&got_exact_match,
-					&last_entry_off, ea_list);
-			if (NT_STATUS_EQUAL(ntstatus,
-					NT_STATUS_ILLEGAL_CHARACTER)) {
-				/*
-				 * Bad character conversion on name. Ignore this
-				 * entry.
-				 */
-				continue;
-			}
-			if (NT_STATUS_EQUAL(ntstatus, STATUS_MORE_ENTRIES)) {
-				out_of_space = true;
-			} else {
-				finished = !NT_STATUS_IS_OK(ntstatus);
-			}
+			finished = !NT_STATUS_IS_OK(ntstatus);
 		}
 
 		if (!finished && !out_of_space) {
@@ -1597,36 +1595,34 @@ static void call_trans2findnext(connection_struct *conn,
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
 		bool got_exact_match = False;
 
-		/* this is a heuristic to avoid seeking the fsp->dptr except when
-			absolutely necessary. It allows for a filename of about 40 chars */
-		if (space_remaining < DIRLEN_GUESS && numentries > 0) {
-			out_of_space = True;
-			finished = False;
+		ntstatus = get_lanman2_dir_entry(ctx,
+						 conn,
+						 fsp->dptr,
+						 req->flags2,
+						 mask,
+						 dirtype,
+						 info_level,
+						 requires_resume_key,
+						 dont_descend,
+						 ask_sharemode,
+						 &p,
+						 pdata,
+						 data_end,
+						 space_remaining,
+						 &got_exact_match,
+						 &last_entry_off,
+						 ea_list);
+		if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_ILLEGAL_CHARACTER)) {
+			/*
+			 * Bad character conversion on name. Ignore
+			 * this entry.
+			 */
+			continue;
+		}
+		if (NT_STATUS_EQUAL(ntstatus, STATUS_MORE_ENTRIES)) {
+			out_of_space = true;
 		} else {
-			ntstatus = get_lanman2_dir_entry(ctx,
-						conn,
-						fsp->dptr,
-						req->flags2,
-						mask,dirtype,info_level,
-						requires_resume_key,dont_descend,
-						ask_sharemode,
-						&p,pdata,data_end,
-						space_remaining,
-						&got_exact_match,
-						&last_entry_off, ea_list);
-			if (NT_STATUS_EQUAL(ntstatus,
-					NT_STATUS_ILLEGAL_CHARACTER)) {
-				/*
-				 * Bad character conversion on name. Ignore this
-				 * entry.
-				 */
-				continue;
-			}
-			if (NT_STATUS_EQUAL(ntstatus, STATUS_MORE_ENTRIES)) {
-				out_of_space = true;
-			} else {
-				finished = !NT_STATUS_IS_OK(ntstatus);
-			}
+			finished = !NT_STATUS_IS_OK(ntstatus);
 		}
 
 		if (!finished && !out_of_space) {
