@@ -1220,9 +1220,7 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						 struct ldb_context *samdb,
 						 const enum auth_group_inclusion group_inclusion,
 						 const enum samba_compounded_auth compounded_auth,
-						 const krb5_const_pac pac, DATA_BLOB *pac_blob,
-						 struct PAC_SIGNATURE_DATA *pac_srv_sig,
-						 struct PAC_SIGNATURE_DATA *pac_kdc_sig)
+						 const krb5_const_pac pac, DATA_BLOB *pac_blob)
 {
 	struct auth_user_info_dc *user_info_dc = NULL;
 	krb5_error_code ret = 0;
@@ -1245,8 +1243,8 @@ static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 					   context,
 					   &user_info_dc,
 					   AUTH_EXCLUDE_RESOURCE_GROUPS,
-					   pac_srv_sig,
-					   pac_kdc_sig,
+					   NULL,
+					   NULL,
 					   resource_groups);
 	if (ret) {
 		const char *krb5err = krb5_get_error_message(context, ret);
@@ -2533,9 +2531,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						 group_inclusion,
 						 compounded_auth,
 						 old_pac,
-						 pac_blob,
-						 NULL,
-						 NULL);
+						 pac_blob);
 		if (code != 0) {
 			const char *err_str = krb5_get_error_message(context, code);
 			DBG_ERR("samba_kdc_update_pac_blob failed: %s\n",
