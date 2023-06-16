@@ -2354,6 +2354,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
+	enum samba_compounded_auth compounded_auth;
 	size_t i = 0;
 
 	struct pac_blobs pac_blobs;
@@ -2372,6 +2373,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
 	} else {
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
+	}
+
+	if (device != NULL && !is_tgs) {
+		compounded_auth = SAMBA_COMPOUNDED_AUTH_INCLUDE;
+	} else {
+		compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 	}
 
 	if (device != NULL && !is_tgs) {
@@ -2458,45 +2465,35 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	code = samba_kdc_obtain_user_info_dc(mem_ctx,
+					     context,
+					     samdb,
+					     group_inclusion,
+					     client,
+					     old_pac,
+					     client_pac_is_trusted,
+					     &user_info_dc,
+					     &_resource_groups);
+	if (code != 0) {
+		const char *err_str = krb5_get_error_message(context, code);
+		DBG_ERR("samba_kdc_obtain_user_info_dc failed: %s\n",
+			err_str != NULL ? err_str : "<unknown>");
+		krb5_free_error_message(context, err_str);
+
+		goto done;
+	}
+
+	nt_status = samba_add_compounded_auth(compounded_auth,
+					      user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add Compounded Authentication: %s\n",
+			nt_errstr(nt_status));
+
+		code = KRB5KDC_ERR_TGT_REVOKED;
+		goto done;
+	}
+
 	if (!client_pac_is_trusted) {
-		const enum samba_compounded_auth compounded_auth =
-			(device != NULL && !is_tgs) ?
-			SAMBA_COMPOUNDED_AUTH_INCLUDE :
-			SAMBA_COMPOUNDED_AUTH_EXCLUDE;
-
-		if (client == NULL) {
-			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-			goto done;
-		}
-
-		code = samba_kdc_obtain_user_info_dc(mem_ctx,
-						     context,
-						     samdb,
-						     group_inclusion,
-						     client,
-						     old_pac,
-						     client_pac_is_trusted,
-						     &user_info_dc,
-						     &_resource_groups);
-		if (code != 0) {
-			const char *err_str = krb5_get_error_message(context, code);
-			DBG_ERR("samba_kdc_obtain_user_info_dc failed: %s\n",
-				err_str != NULL ? err_str : "<unknown>");
-			krb5_free_error_message(context, err_str);
-
-			goto done;
-		}
-
-		nt_status = samba_add_compounded_auth(compounded_auth,
-						      user_info_dc);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("Failed to add Compounded Authentication: %s\n",
-				nt_errstr(nt_status));
-
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			goto done;
-		}
-
 		nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
 						       user_info_dc,
 						       group_inclusion,
@@ -2539,40 +2536,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	} else {
-		const enum samba_compounded_auth compounded_auth =
-			(device != NULL && !is_tgs) ?
-			SAMBA_COMPOUNDED_AUTH_INCLUDE :
-			SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
 		if (pac_blob == NULL) {
 			code = ENOMEM;
-			goto done;
-		}
-
-		code = samba_kdc_obtain_user_info_dc(mem_ctx,
-						     context,
-						     samdb,
-						     group_inclusion,
-						     client,
-						     old_pac,
-						     client_pac_is_trusted,
-						     &user_info_dc,
-						     &_resource_groups);
-		if (code != 0) {
-			const char *err_str = krb5_get_error_message(context, code);
-			DBG_ERR("samba_kdc_obtain_user_info_dc failed: %s\n",
-				err_str != NULL ? err_str : "<unknown>");
-			krb5_free_error_message(context, err_str);
-
-			goto done;
-		}
-
-		nt_status = samba_add_compounded_auth(compounded_auth,
-						      user_info_dc);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("Failed to add Compounded Authentication: %s\n",
-				nt_errstr(nt_status));
-			code = KRB5KDC_ERR_TGT_REVOKED;
 			goto done;
 		}
 
