@@ -1219,7 +1219,6 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						     krb5_context context,
 						     struct ldb_context *samdb,
 						     const enum auth_group_inclusion group_inclusion,
-						     const enum samba_compounded_auth compounded_auth,
 						     const krb5_const_pac pac,
 						     struct auth_user_info_dc **user_info_dc_out,
 						     struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
@@ -1273,15 +1272,6 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 			nt_errstr(nt_status));
 
 		ret = EINVAL;
-		goto out;
-	}
-
-	nt_status = samba_add_compounded_auth(compounded_auth,
-					      user_info_dc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Compounded Authentication: %s\n",
-			nt_errstr(nt_status));
-		ret = KRB5KDC_ERR_TGT_REVOKED;
 		goto out;
 	}
 
@@ -2522,7 +2512,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						     context,
 						     samdb,
 						     group_inclusion,
-						     compounded_auth,
 						     old_pac,
 						     &user_info_dc,
 						     &_resource_groups);
@@ -2532,6 +2521,15 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				err_str != NULL ? err_str : "<unknown>");
 			krb5_free_error_message(context, err_str);
 
+			goto done;
+		}
+
+		nt_status = samba_add_compounded_auth(compounded_auth,
+						      user_info_dc);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add Compounded Authentication: %s\n",
+				nt_errstr(nt_status));
+			code = KRB5KDC_ERR_TGT_REVOKED;
 			goto done;
 		}
 
