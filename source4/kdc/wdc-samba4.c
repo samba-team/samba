@@ -670,15 +670,23 @@ static char *get_netbios_name(TALLOC_CTX *mem_ctx, HostAddresses *addrs)
 static krb5_error_code samba_wdc_check_client_access(void *priv,
 						     astgs_request_t r)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
+	const hdb_entry *client = NULL;
 	struct samba_kdc_entry *kdc_entry;
 	bool password_change;
 	char *workstation;
 	NTSTATUS nt_status;
 
+	client = kdc_request_get_client(r);
 
-	kdc_entry = talloc_get_type(kdc_request_get_client(r)->context, struct samba_kdc_entry);
+	tmp_ctx = talloc_named(client->context, 0, "samba_wdc_check_client_access");
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	kdc_entry = talloc_get_type(client->context, struct samba_kdc_entry);
 	password_change = (kdc_request_get_server(r) && kdc_request_get_server(r)->flags.change_pw);
-	workstation = get_netbios_name((TALLOC_CTX *)kdc_request_get_client(r)->context,
+	workstation = get_netbios_name(tmp_ctx,
 				       kdc_request_get_req(r)->req_body.addresses);
 
 	nt_status = samba_kdc_check_client_access(kdc_entry,
@@ -691,6 +699,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 		krb5_error_code ret2;
 
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
+			talloc_free(tmp_ctx);
 			return ENOMEM;
 		}
 
@@ -705,10 +714,12 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 			ret = ret2;
 		}
 
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
 	/* Now do the standard Heimdal check */
+	talloc_free(tmp_ctx);
 	return KRB5_PLUGIN_NO_HANDLE;
 }
 
