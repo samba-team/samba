@@ -125,6 +125,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
 	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
+	struct authn_audit_info *server_audit_info = NULL;
+	NTSTATUS status = NT_STATUS_OK;
 
 	struct auth_user_info_dc *user_info_dc = NULL;
 
@@ -155,6 +157,40 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
+	}
+
+	/*
+	 * For an S4U2Self request, the authentication policy is not enforced.
+	 */
+	if (!is_s4u2self && authn_policy_restrictions_present(server_entry->server_policy)) {
+		ret = samba_kdc_allowed_to_authenticate_to(mem_ctx,
+							   server_entry->kdc_db_ctx->samdb,
+							   server_entry->kdc_db_ctx->lp_ctx,
+							   skdc_entry,
+							   user_info_dc,
+							   server_entry,
+							   &server_audit_info,
+							   &status);
+		if (server_audit_info != NULL) {
+			krb5_error_code ret2;
+
+			ret2 = hdb_samba4_set_steal_server_audit_info(r, server_audit_info);
+			if (ret == 0) {
+				ret = ret2;
+			}
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			krb5_error_code ret2;
+
+			ret2 = hdb_samba4_set_ntstatus(r, status, ret);
+			if (ret == 0) {
+				ret = ret2;
+			}
+		}
+		if (ret) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
 	}
 
 	nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
