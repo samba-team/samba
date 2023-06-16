@@ -83,7 +83,7 @@ testit()
 {
 	name="$1"
 	shift
-	cmdline="$@"
+	cmdline="$*"
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
@@ -103,7 +103,7 @@ testit_grep()
 	shift
 	grep="$1"
 	shift
-	cmdline="$@"
+	cmdline="$*"
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
@@ -131,7 +131,7 @@ testit_grep_count()
 	shift
 	num="$1"
 	shift
-	cmdline="$@"
+	cmdline="$*"
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
@@ -155,7 +155,7 @@ testit_expect_failure()
 {
 	name="$1"
 	shift
-	cmdline="$@"
+	cmdline="$*"
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
@@ -176,7 +176,7 @@ testit_expect_failure_grep()
 	shift
 	grep="$1"
 	shift
-	cmdline="$@"
+	cmdline="$*"
 	subunit_start_test "$name"
 	output=$($cmdline 2>&1)
 	status=$?
