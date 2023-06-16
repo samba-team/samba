@@ -54,7 +54,7 @@ setup
 
 	Failure of this event will cause CTDB to terminate.
 
-	Example: 00.ctdb processes tunables defined in ctdb.tunables.
+	Example: 11.natgw checks that it has valid configuration
 
 startup
 
