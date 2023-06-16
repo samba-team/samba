@@ -2298,6 +2298,8 @@ done:
  *
  * @param samdb     An open samdb connection.
  *
+ * @param lp_ctx    A loadparm context.
+ *
  * @param flags     Bitwise OR'ed flags
  *
  * @param device_pac_is_trusted Whether the device's PAC was issued by a trusted server,
@@ -2312,6 +2314,12 @@ done:
  * @param delegated_proxy_principal The delegated proxy principal used for
  *                                  updating the constrained delegation PAC
  *                                  buffer.
+
+ * @param delegated_proxy   The delegated proxy kdc entry.
+
+ * @param delegated_proxy_pac       The PAC from the primary TGT (i.e., that of
+ *                                  the delegating service) during a constrained
+ *                                  delegation request.
 
  * @param device    The computer's samba kdc entry; used for compound
  *                  authentication.
@@ -2329,11 +2337,14 @@ done:
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     struct ldb_context *samdb,
+				     struct loadparm_context *lp_ctx,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
 				     const krb5_const_principal server_principal,
 				     const struct samba_kdc_entry *server,
 				     const krb5_const_principal delegated_proxy_principal,
+				     struct samba_kdc_entry *delegated_proxy,
+				     const krb5_const_pac delegated_proxy_pac,
 				     struct samba_kdc_entry *device,
 				     const krb5_const_pac device_pac,
 				     const krb5_const_pac old_pac,
@@ -2350,6 +2361,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *client_claims_blob = NULL;
 	bool client_pac_is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	bool device_pac_is_trusted = flags & SAMBA_KDC_FLAG_DEVICE_KRBTGT_IS_TRUSTED;
+	bool delegated_proxy_pac_is_trusted = flags & SAMBA_KDC_FLAG_DELEGATED_PROXY_IS_TRUSTED;
 	DATA_BLOB *device_claims_blob = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	int is_tgs = false;
@@ -2491,6 +2503,50 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		krb5_free_error_message(context, err_str);
 
 		goto done;
+	}
+
+	/*
+	 * Enforce the AllowedToAuthenticateTo part of an authentication policy,
+	 * if one is present.
+	 */
+	if (authn_policy_restrictions_present(server->server_policy)) {
+		const struct samba_kdc_entry *auth_entry = NULL;
+		struct auth_user_info_dc *auth_user_info_dc = NULL;
+
+		if (delegated_proxy != NULL) {
+			auth_entry = delegated_proxy;
+
+			code = samba_kdc_obtain_user_info_dc(mem_ctx,
+							     context,
+							     samdb,
+							     AUTH_INCLUDE_RESOURCE_GROUPS,
+							     delegated_proxy,
+							     delegated_proxy_pac,
+							     delegated_proxy_pac_is_trusted,
+							     &auth_user_info_dc,
+							     NULL);
+			if (code) {
+				goto done;
+			}
+		} else {
+			auth_entry = client;
+			auth_user_info_dc = user_info_dc;
+		}
+
+		code = samba_kdc_allowed_to_authenticate_to(mem_ctx,
+							    samdb,
+							    lp_ctx,
+							    auth_entry,
+							    auth_user_info_dc,
+							    server,
+							    server_audit_info_out,
+							    status_out);
+		if (auth_user_info_dc != user_info_dc) {
+			talloc_unlink(mem_ctx, auth_user_info_dc);
+		}
+		if (code) {
+			goto done;
+		}
 	}
 
 	nt_status = samba_add_compounded_auth(compounded_auth,
@@ -2770,7 +2826,10 @@ done:
 	TALLOC_FREE(pac_blob);
 	TALLOC_FREE(upn_blob);
 	TALLOC_FREE(deleg_blob);
-	/* Release our handle to user_info_dc. */
+	/*
+	 * Release our handle to user_info_dc. ‘server_audit_info_out’, if
+	 * non-NULL, becomes the new parent.
+	 */
 	talloc_unlink(mem_ctx, user_info_dc);
 	return code;
 }

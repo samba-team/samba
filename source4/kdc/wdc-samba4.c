@@ -384,6 +384,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	const hdb_entry *device = kdc_request_get_explicit_armor_client(r);
 	const krb5_const_pac device_pac = kdc_request_get_explicit_armor_pac(r);
+	struct samba_kdc_entry *delegated_proxy_skdc_entry = NULL;
 	krb5_const_principal delegated_proxy_principal = NULL;
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	struct samba_kdc_entry *device_skdc_entry = NULL;
@@ -404,6 +405,8 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	}
 
 	if (delegated_proxy != NULL) {
+		delegated_proxy_skdc_entry = talloc_get_type_abort(delegated_proxy->context,
+								   struct samba_kdc_entry);
 		delegated_proxy_principal = delegated_proxy->principal;
 	}
 
@@ -429,15 +432,21 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	if (device_pac != NULL && krb5_pac_is_trusted(device_pac)) {
 		flags |= SAMBA_KDC_FLAG_DEVICE_KRBTGT_IS_TRUSTED;
 	}
+	if (delegated_proxy_pac != NULL && krb5_pac_is_trusted(delegated_proxy_pac)) {
+		flags |= SAMBA_KDC_FLAG_DELEGATED_PROXY_IS_TRUSTED;
+	}
 
 	ret = samba_kdc_update_pac(mem_ctx,
 				   context,
 				   krbtgt_skdc_entry->kdc_db_ctx->samdb,
+				   krbtgt_skdc_entry->kdc_db_ctx->lp_ctx,
 				   flags,
 				   client_skdc_entry,
 				   server->principal,
 				   server_skdc_entry,
 				   delegated_proxy_principal,
+				   delegated_proxy_skdc_entry,
+				   delegated_proxy_pac,
 				   device_skdc_entry,
 				   device_pac,
 				   *pac,

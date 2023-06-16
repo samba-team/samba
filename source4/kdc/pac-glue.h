@@ -55,6 +55,7 @@ enum {
 	SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED      = 0x00000008,
 	SAMBA_KDC_FLAG_SKIP_PAC_BUFFER        = 0x00000010,
 	SAMBA_KDC_FLAG_DEVICE_KRBTGT_IS_TRUSTED = 0x00000020,
+	SAMBA_KDC_FLAG_DELEGATED_PROXY_IS_TRUSTED = 0x00000040,
 };
 
 krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
@@ -132,11 +133,14 @@ struct authn_audit_info;
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     struct ldb_context *samdb,
+				     struct loadparm_context *lp_ctx,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
 				     const krb5_const_principal server_principal,
 				     const struct samba_kdc_entry *server,
 				     const krb5_const_principal delegated_proxy_principal,
+				     struct samba_kdc_entry *delegated_proxy,
+				     const krb5_const_pac delegated_proxy_pac,
 				     struct samba_kdc_entry *device,
 				     const krb5_const_pac device_pac,
 				     const krb5_const_pac old_pac,
