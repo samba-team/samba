@@ -15,11 +15,6 @@ setup ()
 	       "
 }
 
-setup_tunable_config ()
-{
-	cat >"${CTDB_BASE}/ctdb.tunables"
-}
-
 result_filter ()
 {
 	_date="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"

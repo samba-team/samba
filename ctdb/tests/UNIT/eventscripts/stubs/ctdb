@@ -312,29 +312,6 @@ ctdb_nodestatus()
 
 ######################################################################
 
-ctdb_setvar()
-{
-	_var="$1"
-
-	for _i in $FAKE_CTDB_TUNABLES_OK; do
-		if [ "$_var" = "$_i" ]; then
-			return 0
-		fi
-	done
-
-	for _i in $FAKE_CTDB_TUNABLES_OBSOLETE; do
-		if [ "$_var" = "$_i" ]; then
-			echo "Setting obsolete tunable variable '${_var}'"
-			return 0
-		fi
-	done
-
-	echo "Unable to set tunable variable '${_var}'"
-	return 1
-}
-
-######################################################################
-
 _t_setup()
 {
 	_t_dir="${CTDB_TEST_TMP_DIR}/fake-ctdb/fake-tdb/$1"
