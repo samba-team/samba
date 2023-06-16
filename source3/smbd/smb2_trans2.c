@@ -832,33 +832,6 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
 	return name_list;
 }
 
-/*********************************************************
- Routine to check if a given string matches exactly.
- as a special case a mask of "." does NOT match. That
- is required for correct wildcard semantics
- Case can be significant or not.
-**********************************************************/
-
-static bool exact_match(bool has_wild,
-			bool case_sensitive,
-			const char *str,
-			const char *mask)
-{
-	if (ISDOT(mask)) {
-		return false;
-	}
-
-	if (has_wild) {
-		return false;
-	}
-
-	if (case_sensitive) {
-		return strcmp(str,mask)==0;
-	} else {
-		return strcasecmp_m(str,mask) == 0;
-	}
-}
-
 /****************************************************************************
  Return the filetype for UNIX extensions.
 ****************************************************************************/
@@ -980,8 +953,6 @@ struct smbd_dirptr_lanman2_state {
 	connection_struct *conn;
 	uint32_t info_level;
 	bool check_mangled_names;
-	bool has_wild;
-	bool got_exact_match;
 	bool case_sensitive;
 };
 
@@ -1035,14 +1006,8 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 		fname = dname;
 	}
 
-	got_match = exact_match(state->has_wild,
-				state->case_sensitive,
-				fname, mask);
-	state->got_exact_match = got_match;
-	if (!got_match) {
-		got_match = mask_match(fname, mask,
-				       state->case_sensitive);
-	}
+	got_match = mask_match(fname, mask,
+			       state->case_sensitive);
 
 	if(!got_match && state->check_mangled_names &&
 	   !mangle_is_8_3(fname, false, state->conn->params)) {
@@ -1059,14 +1024,8 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 			return false;
 		}
 
-		got_match = exact_match(state->has_wild,
-					state->case_sensitive,
-					mangled_name, mask);
-		state->got_exact_match = got_match;
-		if (!got_match) {
-			got_match = mask_match(mangled_name, mask,
-					       state->case_sensitive);
-		}
+		got_match = mask_match(mangled_name, mask,
+				       state->case_sensitive);
 	}
 
 	if (!got_match) {
@@ -1936,8 +1895,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	if (mangled_names != MANGLED_NAMES_NO) {
 		state.check_mangled_names = true;
 	}
-	state.has_wild = dptr_has_wild(dirptr);
-	state.got_exact_match = false;
 	state.case_sensitive = dptr_case_sensitive(dirptr);
 
 	p = strrchr_m(path_mask,'/');
