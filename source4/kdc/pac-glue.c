@@ -1215,17 +1215,17 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
-					  krb5_context context,
-					  struct ldb_context *samdb,
-					  const enum auth_group_inclusion group_inclusion,
-					  const enum samba_compounded_auth compounded_auth,
-					  const krb5_const_pac pac, DATA_BLOB *pac_blob,
-					  struct PAC_SIGNATURE_DATA *pac_srv_sig,
-					  struct PAC_SIGNATURE_DATA *pac_kdc_sig)
+static krb5_error_code samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
+						 krb5_context context,
+						 struct ldb_context *samdb,
+						 const enum auth_group_inclusion group_inclusion,
+						 const enum samba_compounded_auth compounded_auth,
+						 const krb5_const_pac pac, DATA_BLOB *pac_blob,
+						 struct PAC_SIGNATURE_DATA *pac_srv_sig,
+						 struct PAC_SIGNATURE_DATA *pac_kdc_sig)
 {
 	struct auth_user_info_dc *user_info_dc = NULL;
-	krb5_error_code ret;
+	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups = NULL;
@@ -1249,7 +1249,6 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 					   pac_kdc_sig,
 					   resource_groups);
 	if (ret) {
-		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 
@@ -1261,6 +1260,7 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						samdb,
 						user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		ret = EINVAL;
 		goto out;
 	}
 
@@ -1269,6 +1269,7 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Compounded Authentication: %s\n",
 			nt_errstr(nt_status));
+		ret = KRB5KDC_ERR_TGT_REVOKED;
 		goto out;
 	}
 
@@ -1277,6 +1278,10 @@ static NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						  _resource_groups,
 						  group_inclusion,
 						  pac_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ret = EINVAL;
+		goto out;
+	}
 
 out:
 	/*
@@ -1285,7 +1290,7 @@ out:
 	 */
 	TALLOC_FREE(user_info_dc);
 
-	return nt_status;
+	return ret;
 }
 
 static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
@@ -2511,19 +2516,21 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_update_pac_blob(mem_ctx,
-						      context,
-						      samdb,
-						      group_inclusion,
-						      compounded_auth,
-						      old_pac,
-						      pac_blob,
-						      NULL,
-						      NULL);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		code = samba_kdc_update_pac_blob(mem_ctx,
+						 context,
+						 samdb,
+						 group_inclusion,
+						 compounded_auth,
+						 old_pac,
+						 pac_blob,
+						 NULL,
+						 NULL);
+		if (code != 0) {
+			const char *err_str = krb5_get_error_message(context, code);
 			DBG_ERR("samba_kdc_update_pac_blob failed: %s\n",
-				 nt_errstr(nt_status));
-			code = EINVAL;
+				err_str != NULL ? err_str : "<unknown>");
+			krb5_free_error_message(context, err_str);
+
 			goto done;
 		}
 	}
