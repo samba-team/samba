@@ -684,7 +684,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 		return ENOMEM;
 	}
 
-	kdc_entry = talloc_get_type(client->context, struct samba_kdc_entry);
+	kdc_entry = talloc_get_type_abort(client->context, struct samba_kdc_entry);
 	password_change = (kdc_request_get_server(r) && kdc_request_get_server(r)->flags.change_pw);
 	workstation = get_netbios_name(tmp_ctx,
 				       kdc_request_get_req(r)->req_body.addresses);
