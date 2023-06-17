@@ -28,6 +28,74 @@
 #include "rpc_server/mdssvc/dalloc.h"
 #include "rpc_server/mdssvc/marshalling.h"
 
+NTSTATUS mdscli_blob_fetch_props(TALLOC_CTX *mem_ctx,
+				 struct mdscli_ctx *ctx,
+				 struct mdssvc_blob *blob)
+{
+	DALLOC_CTX *d = NULL;
+	uint64_t *uint64p = NULL;
+	sl_array_t *array = NULL;
+	sl_array_t *cmd_array = NULL;
+	NTSTATUS status;
+	int ret;
+
+	d = dalloc_new(mem_ctx);
+	if (d == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	array = dalloc_zero(d, sl_array_t);
+	if (array == NULL) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dalloc_add(d, array, sl_array_t);
+	if (ret != 0) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cmd_array = dalloc_zero(d, sl_array_t);
+	if (cmd_array == NULL) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dalloc_add(array, cmd_array, sl_array_t);
+	if (ret != 0) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dalloc_stradd(cmd_array, "fetchPropertiesForContext:");
+	if (ret != 0) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	uint64p = talloc_zero_array(cmd_array, uint64_t, 2);
+	if (uint64p == NULL) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_set_name(uint64p, "uint64_t *");
+
+	ret = dalloc_add(cmd_array, uint64p, uint64_t *);
+	if (ret != 0) {
+		TALLOC_FREE(d);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = sl_pack_alloc(mem_ctx, d, blob, ctx->max_fragment_size);
+	TALLOC_FREE(d);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
 NTSTATUS mdscli_blob_search(TALLOC_CTX *mem_ctx,
 			    struct mdscli_search_ctx *search,
 			    struct mdssvc_blob *blob)
