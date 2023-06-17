@@ -1025,7 +1025,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_fl
 _PUBLIC_ enum ndr_err_code ndr_push_ipv4address(struct ndr_push *ndr, int ndr_flags, const char *address)
 {
 	uint32_t addr;
-	if (!is_ipaddress(address)) {
+	if (!is_ipaddress_v4(address)) {
 		return ndr_push_error(ndr, NDR_ERR_IPV4ADDRESS,
 				      "Invalid IPv4 address: '%s'",
 				      address);
