@@ -743,6 +743,10 @@ static bool slrpc_fetch_properties(struct mds_ctx *mds_ctx,
 	}
 
 	/* kMDSStoreMetaScopes array */
+	result = dalloc_stradd(dict, "kMDSStoreMetaScopes");
+	if (result != 0) {
+		return false;
+	}
 	array = dalloc_zero(dict, sl_array_t);
 	if (array == NULL) {
 		return NULL;
