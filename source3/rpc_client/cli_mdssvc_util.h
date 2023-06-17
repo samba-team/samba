@@ -21,6 +21,10 @@
 #ifndef _MDSCLI_UTIL_H_
 #define _MDSCLI_UTIL_H_
 
+NTSTATUS mdscli_blob_fetch_props(TALLOC_CTX *mem_ctx,
+				 struct mdscli_ctx *ctx,
+				 struct mdssvc_blob *blob);
+
 NTSTATUS mdscli_blob_search(TALLOC_CTX *mem_ctx,
 			    struct mdscli_search_ctx *search,
 			    struct mdssvc_blob *blob);

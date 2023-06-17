@@ -42,6 +42,7 @@ struct mdscli_ctx {
 	/* cmd specific or unknown fields */
 	struct {
 		char share_path[1025];
+		size_t share_path_len;
 		uint32_t unkn2;
 		uint32_t unkn3;
 	} mdscmd_open;
@@ -56,6 +57,9 @@ struct mdscli_ctx {
 	struct {
 		uint32_t status;
 	} mdscmd_close;
+
+	char *path_scope;
+	size_t path_scope_len;
 };
 
 struct mdscli_search_ctx {
