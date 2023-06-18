@@ -73,7 +73,7 @@ send_notifies()
 	_state_even=$(($(date '+%s') / 2 * 2))
 
 	_prev=""
-	while read _sip _cip; do
+	while read -r _sip _cip; do
 		# NOTE: Consider optimising smnotify to read all the
 		# data from stdin and then run it in the background.
 
@@ -99,7 +99,7 @@ send_notifies()
 
 delete_records()
 {
-	while read _sip _cip; do
+	while read -r _sip _cip; do
 		_key="statd-state@${_sip}@${_cip}"
 		echo "\"${_key}\" \"\""
 	done | $CTDB ptrans "ctdb.tdb"
@@ -124,7 +124,7 @@ add-client)
 	# shellcheck disable=SC2034
 	$CTDB ip -X |
 		tail -n +2 |
-		while IFS="|" read x sip node x; do
+		while IFS="|" read -r x sip node x; do
 			[ "$node" = "$pnn" ] || continue # not us
 			key="statd-state@${sip}@${cip}"
 			echo "\"${key}\" \"${date}\"" >"$key"
@@ -139,7 +139,7 @@ del-client)
 	# shellcheck disable=SC2034
 	$CTDB ip -X |
 		tail -n +2 |
-		while IFS="|" read x sip node x; do
+		while IFS="|" read -r x sip node x; do
 			[ "$node" = "$pnn" ] || continue # not us
 			key="statd-state@${sip}@${cip}"
 			echo "\"${key}\" \"\"" >"$key"
@@ -247,7 +247,7 @@ notify)
 	# There's nothing else we can do with them at this stage.
 	echo "$ctdb_all_ips" |
 		awk -v pnn="$pnn" 'pnn != $2 { print $1 }' |
-		while read sip; do
+		while read -r sip; do
 			rm -f "statd-state@${sip}@"*
 		done
 	;;
