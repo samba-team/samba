@@ -78,6 +78,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query, const char *buf,
 			      ssize_t offset, size_t bufsize,
 			      int count, ssize_t toc_offset,
 			      int encoding);
+static ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize);
 
 /******************************************************************************
  * Wrapper functions for the *VAL macros with bound checking
@@ -1190,11 +1191,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 	return offset;
 }
 
-/******************************************************************************
- * Global functions for packing und unpacking
- ******************************************************************************/
-
-ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
+static ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
 {
 	ssize_t result;
 	char *toc_buf;
@@ -1272,6 +1269,34 @@ ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
 	len += 16 + (toc_index + 1 ) * 8;
 
 	return len;
+}
+
+/******************************************************************************
+ * Global functions for packing und unpacking
+ ******************************************************************************/
+
+NTSTATUS sl_pack_alloc(TALLOC_CTX *mem_ctx,
+		       DALLOC_CTX *d,
+		       struct mdssvc_blob *b,
+		       size_t max_fragment_size)
+{
+	ssize_t len;
+
+	b->spotlight_blob = talloc_zero_array(mem_ctx,
+					      uint8_t,
+					      max_fragment_size);
+	if (b->spotlight_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	len = sl_pack(d, (char *)b->spotlight_blob, max_fragment_size);
+	if (len == -1) {
+		return NT_STATUS_DATA_ERROR;
+	}
+
+	b->length = len;
+	b->size = len;
+	return NT_STATUS_OK;
 }
 
 bool sl_unpack(DALLOC_CTX *query, const char *buf, size_t bufsize)
