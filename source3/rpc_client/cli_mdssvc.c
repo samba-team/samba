@@ -276,15 +276,6 @@ struct tevent_req *mdscli_search_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->response_blob.spotlight_blob = talloc_array(
-		state,
-		uint8_t,
-		mdscli_ctx->max_fragment_size);
-	if (tevent_req_nomem(state->response_blob.spotlight_blob, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->response_blob.size = mdscli_ctx->max_fragment_size;
-
 	subreq = dcerpc_mdssvc_cmd_send(state,
 					ev,
 					mdscli_ctx->bh,
@@ -456,15 +447,6 @@ struct tevent_req *mdscli_get_results_send(
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
-
-	state->response_blob.spotlight_blob = talloc_array(
-		state,
-		uint8_t,
-		mdscli_ctx->max_fragment_size);
-	if (tevent_req_nomem(state->response_blob.spotlight_blob, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->response_blob.size = mdscli_ctx->max_fragment_size;
 
 	subreq = dcerpc_mdssvc_cmd_send(state,
 					ev,
@@ -681,15 +663,6 @@ struct tevent_req *mdscli_get_path_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->response_blob.spotlight_blob = talloc_array(
-		state,
-		uint8_t,
-		mdscli_ctx->max_fragment_size);
-	if (tevent_req_nomem(state->response_blob.spotlight_blob, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->response_blob.size = mdscli_ctx->max_fragment_size;
-
 	subreq = dcerpc_mdssvc_cmd_send(state,
 					ev,
 					mdscli_ctx->bh,
@@ -851,15 +824,6 @@ struct tevent_req *mdscli_close_search_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
-
-	state->response_blob.spotlight_blob = talloc_array(
-		state,
-		uint8_t,
-		mdscli_ctx->max_fragment_size);
-	if (tevent_req_nomem(state->response_blob.spotlight_blob, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->response_blob.size = mdscli_ctx->max_fragment_size;
 
 	subreq = dcerpc_mdssvc_cmd_send(state,
 					ev,
