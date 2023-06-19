@@ -697,7 +697,7 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 	switch (msg_type) {
 	case NBSSrequest: /* session request */
 	{
-		/* inbuf_size is guarenteed to be at least 4. */
+		/* inbuf_size is guaranteed to be at least 4. */
 		fstring name1,name2;
 		int name_type1, name_type2;
 		int name_len1, name_len2;

@@ -958,7 +958,7 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 					 * Even after removing permissions, there
 					 * are still allow permissions - delete the deny.
 					 * It is safe to delete the deny here,
-					 * as we are guarenteed by the deny first
+					 * as we are guaranteed by the deny first
 					 * ordering that all the deny entries for
 					 * this SID have already been merged into one
 					 * before we can get to an allow ace.

@@ -4424,7 +4424,7 @@ const char *volume_label(TALLOC_CTX *ctx, int snum)
 		}
 	}
 
-	/* This returns a max of 33 byte guarenteed null terminated string. */
+	/* This returns a max of 33 byte guaranteed null terminated string. */
 	ret = talloc_strndup(ctx, label, end);
 	if (!ret) {
 		return "";
