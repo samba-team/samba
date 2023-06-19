@@ -236,8 +236,14 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
     #
     def test_ldap_change_password_bad_user(self):
         def isLastExpectedMessage(msg):
-            # Accept any message we receive.
-            return True
+            msg_type = msg["type"]
+
+            # Accept any message we receive, except for those produced while
+            # the Administrator authenticates in setUp().
+            return (msg_type != "Authentication" or (
+                "Administrator" not in msg[msg_type]["clientAccount"])) and (
+                    msg_type != "Authorization" or (
+                        "Administrator" not in msg[msg_type]["account"]))
 
         new_password = samba.generate_random_password(32, 32)
         try:
