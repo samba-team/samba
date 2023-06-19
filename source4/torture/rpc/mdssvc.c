@@ -744,11 +744,9 @@ static bool test_sl_dict_type_safety(struct torture_context *tctx,
 				     ok, done, "dalloc_new failed\n");
 	request_blob.size = 64 * 1024;
 
-	request_blob.length = sl_pack(d,
-				      (char *)request_blob.spotlight_blob,
-				      request_blob.size);
-	torture_assert_goto(tctx, request_blob.length > 0,
-			    ok, done, "sl_pack failed\n");
+	status = sl_pack_alloc(tctx, d, &request_blob, 64 * 1024);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"sl_pack_alloc() failed\n");
 
 	status = dcerpc_mdssvc_cmd(b,
 				   state,
@@ -835,7 +833,6 @@ static bool test_mdssvc_fetch_attr_unknown_cnid(struct torture_context *tctx,
 	const char *path_type = NULL;
 	uint64_t ino64;
 	NTSTATUS status;
-	ssize_t len;
 	int ret;
 	bool ok = true;
 
@@ -900,18 +897,9 @@ static bool test_mdssvc_fetch_attr_unknown_cnid(struct torture_context *tctx,
 	ret = dalloc_add(array, cnids, sl_cnids_t);
 	torture_assert_goto(tctx, ret == 0, ret, done, "dalloc_add failed\n");
 
-	request_blob.spotlight_blob = talloc_array(state,
-						   uint8_t,
-						   max_fragment_size);
-	torture_assert_not_null_goto(tctx, request_blob.spotlight_blob,
-				     ret, done, "dalloc_zero failed\n");
-	request_blob.size = max_fragment_size;
-
-	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
-	torture_assert_goto(tctx, len != -1, ret, done, "sl_pack failed\n");
-
-	request_blob.length = len;
-	request_blob.size = len;
+	status = sl_pack_alloc(tctx, d, &request_blob, max_fragment_size);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"sl_pack_alloc() failed\n");
 
 	status =  dcerpc_mdssvc_cmd(b,
 				    state,
