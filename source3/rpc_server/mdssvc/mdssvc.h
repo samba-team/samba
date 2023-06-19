@@ -158,9 +158,10 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		      const char *sharename,
 		      const char *path,
 		      struct mds_ctx **_mds_ctx);
-extern bool mds_dispatch(struct mds_ctx *query_ctx,
+extern bool mds_dispatch(struct mds_ctx *mds_ctx,
 			 struct mdssvc_blob *request_blob,
-			 struct mdssvc_blob *response_blob);
+			 struct mdssvc_blob *response_blob,
+			 size_t max_fragment_size);
 bool mds_add_result(struct sl_query *slq, const char *path);
 
 #endif /* _MDSSVC_H */

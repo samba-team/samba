@@ -1745,11 +1745,11 @@ error:
  **/
 bool mds_dispatch(struct mds_ctx *mds_ctx,
 		  struct mdssvc_blob *request_blob,
-		  struct mdssvc_blob *response_blob)
+		  struct mdssvc_blob *response_blob,
+		  size_t max_fragment_size)
 {
 	bool ok;
 	int ret;
-	ssize_t len;
 	DALLOC_CTX *query = NULL;
 	DALLOC_CTX *reply = NULL;
 	char *rpccmd;
@@ -1757,6 +1757,7 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 	const struct smb_filename conn_basedir = {
 		.base_name = mds_ctx->conn->connectpath,
 	};
+	NTSTATUS status;
 
 	if (CHECK_DEBUGLVL(10)) {
 		const struct sl_query *slq;
@@ -1823,15 +1824,14 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 
 	DBG_DEBUG("%s", dalloc_dump(reply, 0));
 
-	len = sl_pack(reply,
-		      (char *)response_blob->spotlight_blob,
-		      response_blob->size);
-	if (len == -1) {
-		DBG_ERR("error packing Spotlight RPC reply\n");
-		ok = false;
+	status = sl_pack_alloc(response_blob,
+			       reply,
+			       response_blob,
+			       max_fragment_size);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("sl_pack_alloc() failed\n");
 		goto cleanup;
 	}
-	response_blob->length = len;
 
 cleanup:
 	talloc_free(query);
