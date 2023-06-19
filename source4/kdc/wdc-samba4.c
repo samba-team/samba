@@ -240,7 +240,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 }
 
 static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
-					     const krb5_principal delegated_proxy_principal,
+					     const hdb_entry *delegated_proxy,
 					     const hdb_entry *client,
 					     const hdb_entry *server,
 					     const hdb_entry *krbtgt,
@@ -295,7 +295,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
 	}
 
-	if (delegated_proxy_principal != NULL) {
+	if (delegated_proxy != NULL) {
 		krb5_enctype etype;
 		Key *key = NULL;
 
@@ -374,8 +374,9 @@ out:
 /* Resign (and reform, including possibly new groups) a PAC */
 
 static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
-					   const krb5_principal _client_principal,
-					   const krb5_principal delegated_proxy_principal,
+					   krb5_const_principal _client_principal,
+					   hdb_entry *delegated_proxy,
+					   krb5_const_pac delegated_proxy_pac,
 					   hdb_entry *client,
 					   hdb_entry *server,
 					   hdb_entry *krbtgt,
@@ -384,6 +385,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	const hdb_entry *device = kdc_request_get_explicit_armor_client(r);
 	const krb5_const_pac device_pac = kdc_request_get_explicit_armor_pac(r);
+	krb5_const_principal delegated_proxy_principal = NULL;
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	struct samba_kdc_entry *device_skdc_entry = NULL;
 	const struct samba_kdc_entry *server_skdc_entry =
@@ -400,6 +402,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac context");
 	if (mem_ctx == NULL) {
 		return ENOMEM;
+	}
+
+	if (delegated_proxy != NULL) {
+		delegated_proxy_principal = delegated_proxy->principal;
 	}
 
 	if (client != NULL) {
@@ -477,8 +483,8 @@ out:
 /* Verify a PAC's SID and signatures */
 
 static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
-					    const krb5_principal client_principal,
-					    const krb5_principal delegated_proxy_principal,
+					    krb5_const_principal _client_principal,
+					    hdb_entry *delegated_proxy,
 					    hdb_entry *client,
 					    hdb_entry *server,
 					    hdb_entry *krbtgt,
@@ -499,16 +505,15 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 	krb5_const_pac explicit_armor_pac =
 		kdc_request_get_explicit_armor_pac(r);
 
-	if (delegated_proxy_principal) {
+	if (delegated_proxy) {
 		uint16_t rodc_id;
 		unsigned int my_krbtgt_number;
 
 		/*
-		 * We're using delegated_proxy_principal for the moment to
-		 * indicate cases where the ticket was encrypted with the server
-		 * key, and not a krbtgt key. This cannot be trusted, so we need
-		 * to find a krbtgt key that signs the PAC in order to trust the
-		 * ticket.
+		 * We're using delegated_proxy for the moment to indicate cases
+		 * where the ticket was encrypted with the server key, and not a
+		 * krbtgt key. This cannot be trusted, so we need to find a
+		 * krbtgt key that signs the PAC in order to trust the ticket.
 		 *
 		 * The krbtgt passed in to this function refers to the krbtgt
 		 * used to decrypt the ticket of the server requesting
@@ -618,7 +623,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 	}
 
 	ret = samba_wdc_verify_pac2(r,
-				    delegated_proxy_principal,
+				    delegated_proxy,
 				    client,
 				    server,
 				    krbtgt,
