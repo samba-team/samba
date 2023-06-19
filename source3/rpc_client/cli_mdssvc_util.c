@@ -42,7 +42,7 @@ NTSTATUS mdscli_blob_search(TALLOC_CTX *mem_ctx,
 	sl_array_t *scope_array = NULL;
 	double dval;
 	uint64_t uint64val;
-	ssize_t len;
+	NTSTATUS status;
 	int ret;
 
 	d = dalloc_new(mem_ctx);
@@ -209,23 +209,11 @@ NTSTATUS mdscli_blob_search(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	blob->spotlight_blob = talloc_array(mem_ctx,
-					    uint8_t,
-					    ctx->max_fragment_size);
-	if (blob->spotlight_blob == NULL) {
-		TALLOC_FREE(d);
-		return NT_STATUS_NO_MEMORY;
-	}
-	blob->size = ctx->max_fragment_size;
-
-	len = sl_pack(d, (char *)blob->spotlight_blob, blob->size);
+	status = sl_pack_alloc(mem_ctx, d, blob, ctx->max_fragment_size);
 	TALLOC_FREE(d);
-	if (len == -1) {
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	blob->length = len;
-	blob->size = len;
 	return NT_STATUS_OK;
 }
 
@@ -238,7 +226,7 @@ NTSTATUS mdscli_blob_get_results(TALLOC_CTX *mem_ctx,
 	uint64_t *uint64p = NULL;
 	sl_array_t *array = NULL;
 	sl_array_t *cmd_array = NULL;
-	ssize_t len;
+	NTSTATUS status;
 	int ret;
 
 	d = dalloc_new(mem_ctx);
@@ -293,23 +281,11 @@ NTSTATUS mdscli_blob_get_results(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	blob->spotlight_blob = talloc_array(mem_ctx,
-					    uint8_t,
-					    ctx->max_fragment_size);
-	if (blob->spotlight_blob == NULL) {
-		TALLOC_FREE(d);
-		return NT_STATUS_NO_MEMORY;
-	}
-	blob->size = ctx->max_fragment_size;
-
-	len = sl_pack(d, (char *)blob->spotlight_blob, blob->size);
+	status = sl_pack_alloc(mem_ctx, d, blob, ctx->max_fragment_size);
 	TALLOC_FREE(d);
-	if (len == -1) {
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	blob->length = len;
-	blob->size = len;
 	return NT_STATUS_OK;
 }
 
@@ -325,7 +301,7 @@ NTSTATUS mdscli_blob_get_path(TALLOC_CTX *mem_ctx,
 	sl_array_t *cmd_array = NULL;
 	sl_array_t *attr_array = NULL;
 	sl_cnids_t *cnids = NULL;
-	ssize_t len;
+	NTSTATUS status;
 	int ret;
 
 	d = dalloc_new(mem_ctx);
@@ -426,23 +402,11 @@ NTSTATUS mdscli_blob_get_path(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	blob->spotlight_blob = talloc_array(mem_ctx,
-					    uint8_t,
-					    ctx->max_fragment_size);
-	if (blob->spotlight_blob == NULL) {
-		TALLOC_FREE(d);
-		return NT_STATUS_NO_MEMORY;
-	}
-	blob->size = ctx->max_fragment_size;
-
-	len = sl_pack(d, (char *)blob->spotlight_blob, blob->size);
+	status = sl_pack_alloc(mem_ctx, d, blob, ctx->max_fragment_size);
 	TALLOC_FREE(d);
-	if (len == -1) {
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	blob->length = len;
-	blob->size = len;
 	return NT_STATUS_OK;
 }
 
@@ -455,7 +419,7 @@ NTSTATUS mdscli_blob_close_search(TALLOC_CTX *mem_ctx,
 	uint64_t *uint64p = NULL;
 	sl_array_t *array = NULL;
 	sl_array_t *cmd_array = NULL;
-	ssize_t len;
+	NTSTATUS status;
 	int ret;
 
 	d = dalloc_new(mem_ctx);
@@ -510,22 +474,10 @@ NTSTATUS mdscli_blob_close_search(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	blob->spotlight_blob = talloc_array(mem_ctx,
-					    uint8_t,
-					    ctx->max_fragment_size);
-	if (blob->spotlight_blob == NULL) {
-		TALLOC_FREE(d);
-		return NT_STATUS_NO_MEMORY;
-	}
-	blob->size = ctx->max_fragment_size;
-
-	len = sl_pack(d, (char *)blob->spotlight_blob, blob->size);
+	status = sl_pack_alloc(mem_ctx, d, blob, ctx->max_fragment_size);
 	TALLOC_FREE(d);
-	if (len == -1) {
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	blob->length = len;
-	blob->size = len;
 	return NT_STATUS_OK;
 }

@@ -43,7 +43,6 @@ static NTSTATUS cmd_mdssvc_fetch_properties(
 	uint32_t unkn3;	     /* server always returns 0 ? */
 	struct mdssvc_blob request_blob;
 	struct mdssvc_blob response_blob;
-	ssize_t len;
 	uint32_t max_fragment_size = 64 * 1024;
 	DALLOC_CTX *d, *mds_reply;
 	uint64_t *uint64var;
@@ -137,20 +136,10 @@ static NTSTATUS cmd_mdssvc_fetch_properties(
 		goto done;
 	}
 
-	request_blob.spotlight_blob = talloc_array(mem_ctx, uint8_t, max_fragment_size);
-	if (request_blob.spotlight_blob == NULL) {
-		status = NT_STATUS_INTERNAL_ERROR;
+	status = sl_pack_alloc(mem_ctx, d, &request_blob, max_fragment_size);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
-	request_blob.size = max_fragment_size;
-
-	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
-	if (len == -1) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-	request_blob.length = len;
-	request_blob.size = len;
 
 	status =  dcerpc_mdssvc_cmd(b, mem_ctx,
 				    &share_handle,
@@ -204,7 +193,6 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 	uint32_t unkn3;	     /* server always returns 0 ? */
 	struct mdssvc_blob request_blob;
 	struct mdssvc_blob response_blob;
-	ssize_t len;
 	uint32_t max_fragment_size = 64 * 1024;
 	DALLOC_CTX *d, *mds_reply;
 	uint64_t *uint64var;
@@ -352,22 +340,10 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 		goto done;
 	}
 
-	request_blob.spotlight_blob = talloc_array(mem_ctx,
-						   uint8_t,
-						   max_fragment_size);
-	if (request_blob.spotlight_blob == NULL) {
-		status = NT_STATUS_INTERNAL_ERROR;
+	status = sl_pack_alloc(mem_ctx, d, &request_blob, max_fragment_size);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
-	request_blob.size = max_fragment_size;
-
-	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
-	if (len == -1) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-	request_blob.length = len;
-	request_blob.size = len;
 
 	status = dcerpc_mdssvc_cmd(b, mem_ctx,
 				   &share_handle,

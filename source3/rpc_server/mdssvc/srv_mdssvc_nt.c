@@ -223,7 +223,10 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 	/* We currently don't use fragmentation at the mdssvc RPC layer */
 	*r->out.fragment = 0;
 
-	ok = mds_dispatch(mds_ctx, &r->in.request_blob, r->out.response_blob);
+	ok = mds_dispatch(mds_ctx,
+			  &r->in.request_blob,
+			  r->out.response_blob,
+			  r->in.max_fragment_size1);
 	if (ok) {
 		*r->out.unkn9 = 0;
 	} else {
