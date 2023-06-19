@@ -73,6 +73,10 @@ class Model(metaclass=ModelMeta):
 
         :param kwargs: Optional input fields to populate object with
         """
+        # Used by the _apply method, holds the original ldb Message,
+        # which is used by save() to determine what fields changed.
+        self._message = None
+
         for field_name, field in self.fields.items():
             if field_name in kwargs:
                 default = kwargs[field_name]
@@ -155,6 +159,9 @@ class Model(metaclass=ModelMeta):
         :param ldb: Ldb connection
         :param message: Ldb Message object to apply
         """
+        # Store the ldb Message so that in save we can see what changed.
+        self._message = message
+
         for attr, field in self.fields.items():
             if field.name in message:
                 setattr(self, attr, field.from_db_value(ldb, message[field.name]))
@@ -340,9 +347,8 @@ class Model(metaclass=ModelMeta):
             res = ldb.search(dn, scope=SCOPE_BASE)
             self._apply(ldb, res[0])
         else:
-            # Fetch existing object to work out what fields changed.
-            existing_msg = ldb.search(self.dn, scope=SCOPE_BASE)
-            existing_obj = self.from_message(ldb, existing_msg[0])
+            # Existing Message was stored to work out what fields changed.
+            existing_obj = self.from_message(ldb, self._message)
 
             # Only modify replace or modify fields that have changed.
             # Any fields that are set to None or an empty list get unset.
