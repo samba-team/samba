@@ -944,6 +944,23 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			} else {
 				status = krb5_to_nt_status(r->error_code);
 			}
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_FOUND) {
+			/*
+			 * We found the client principal,
+			 * but we didn’t reach the final
+			 * KDC_AUTH_EVENT_CLIENT_AUTHORIZED,
+			 * so consult the error code.
+			 */
+			if (r->error_code == 0) {
+				DBG_ERR("ERROR: CLIENT_FOUND "
+					"with error=0 => INTERNAL_ERROR\n");
+				status = NT_STATUS_INTERNAL_ERROR;
+				r->error_code = final_ret = KRB5KRB_ERR_GENERIC;
+			} else if (!NT_STATUS_IS_OK(p->reject_status)) {
+				status = p->reject_status;
+			} else {
+				status = krb5_to_nt_status(r->error_code);
+			}
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_TIME_SKEW) {
 			status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
