@@ -766,6 +766,11 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		return hdb_samba4_tgs_audit(kdc_db_ctx, entry, r);
 	}
 
+	if (r->error_code == KRB5KDC_ERR_PREAUTH_REQUIRED) {
+		/* Let’s not log PREAUTH_REQUIRED errors. */
+		return 0;
+	}
+
 	edata_status = hdb_samba4_get_ntstatus(r);
 
 	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_AUTH_EVENT);
