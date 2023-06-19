@@ -695,7 +695,7 @@ krb5_change_password (krb5_context	context,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_set_password instead")
 {
     struct kpwd_proc *p = find_chpw_proto("change password");
 

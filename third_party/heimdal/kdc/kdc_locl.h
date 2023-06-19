@@ -176,9 +176,9 @@ struct astgs_request_desc {
     krb5_ticket *armor_ticket;
     Key *armor_key;
 
-    hdb_entry *explicit_armor_client;
-    HDB *explicit_armor_clientdb;
-    krb5_pac explicit_armor_pac;
+    hdb_entry *armor_client;
+    HDB *armor_clientdb;
+    krb5_pac armor_pac;
 
     KDCFastState fast;
 };

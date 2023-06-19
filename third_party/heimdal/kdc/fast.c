@@ -877,8 +877,10 @@ _kdc_fast_strengthen_reply_key(astgs_request_t r)
 
 	ret = krb5_generate_random_keyblock(r->context, r->reply_key.keytype,
 					    &r->strengthen_key);
-	if (ret)
-	    krb5_abortx(r->context, "random generator fail");
+	if (ret) {
+	    kdc_log(r->context, r->config, 0, "failed to prepare random keyblock");
+	    return ret;
+	}
 
 	ret = _krb5_fast_cf2(r->context,
 			     &r->strengthen_key, "strengthenkey",
@@ -969,16 +971,14 @@ _kdc_fast_check_armor_pac(astgs_request_t r, int flags)
 	goto out;
     }
 
-    if (r->explicit_armor_present) {
-	r->explicit_armor_clientdb = armor_db;
-	armor_db = NULL;
+    r->armor_clientdb = armor_db;
+    armor_db = NULL;
 
-	r->explicit_armor_client = armor_client;
-	armor_client = NULL;
+    r->armor_client = armor_client;
+    armor_client = NULL;
 
-	r->explicit_armor_pac = mspac;
-	mspac = NULL;
-    }
+    r->armor_pac = mspac;
+    mspac = NULL;
 
 out:
     krb5_xfree(armor_client_principal_name);

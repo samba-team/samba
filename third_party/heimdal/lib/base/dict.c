@@ -52,8 +52,10 @@ dict_dealloc(void *ptr)
 {
     heim_dict_t dict = ptr;
     struct hashentry **h, *g, *i;
+    size_t j;
 
-    for (h = dict->tab; h < &dict->tab[dict->size]; ++h) {
+    for (j = 0; j < dict->size; ++j) {
+	h = &dict->tab[j];
 	for (g = h[0]; g; g = i) {
 	    i = g->next;
 	    heim_release(g->key);

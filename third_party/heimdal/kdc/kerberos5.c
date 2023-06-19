@@ -1275,7 +1275,7 @@ pa_enc_ts_validate(astgs_request_t r, const PA_DATA *pa)
 
 struct kdc_patypes {
     int type;
-    char *name;
+    const char *name;
     unsigned int flags;
 #define PA_ANNOUNCE	1
 #define PA_REQ_FAST	2 /* only use inside fast */
@@ -2199,7 +2199,7 @@ generate_pac(astgs_request_t r, const Key *skey, const Key *tkey,
 			 rodc_id,
 			 NULL, /* UPN */
 			 canon_princ,
-			 false, /* add_full_sig */
+			 FALSE, /* add_full_sig */
 			 is_tgs ? &r->pac_attributes : NULL,
 			 &data);
     krb5_free_principal(r->context, client);
@@ -2384,6 +2384,13 @@ _kdc_as_rep(astgs_request_t r)
 	goto out;
     }
 
+    /* Validate armor TGT, and initialize the armor client and PAC */
+    if (r->armor_ticket) {
+	ret = _kdc_fast_check_armor_pac(r, HDB_F_FOR_AS_REQ);
+	if (ret)
+	    goto out;
+    }
+
     b = &req->req_body;
     f = b->kdc_options;
 
@@ -2476,6 +2483,10 @@ _kdc_as_rep(astgs_request_t r)
 	goto out;
     }
     }
+
+    kdc_audit_setkv_number((kdc_request_t)r, KDC_REQUEST_KV_AUTH_EVENT,
+			   KDC_AUTH_EVENT_CLIENT_FOUND);
+
     ret = _kdc_db_fetch(r->context, config, r->server_princ,
 			HDB_F_GET_SERVER | HDB_F_DELAY_NEW_KEYS |
 			flags | (is_tgs ? HDB_F_GET_KRBTGT : 0),
@@ -2494,6 +2505,10 @@ _kdc_as_rep(astgs_request_t r)
 	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	goto out;
     }
+
+    ret = _kdc_check_access(r);
+    if(ret)
+	goto out;
 
     /*
      * This has to be here (not later), because we need to have r->sessionetype
@@ -2661,15 +2676,6 @@ _kdc_as_rep(astgs_request_t r)
     }
 
     r->canon_client_princ = r->client->principal;
-
-    /*
-     * Verify flags after the user been required to prove its identity
-     * with in a preauth mech.
-     */
-
-    ret = _kdc_check_access(r);
-    if(ret)
-	goto out;
 
     if (_kdc_is_anon_request(&r->req)) {
 	ret = _kdc_check_anon_policy(r);
@@ -3058,7 +3064,10 @@ _kdc_as_rep(astgs_request_t r)
     }
 
 out:
-    r->error_code = ret;
+    if (ret) {
+	/* Overwrite ‘error_code’ only if we have an actual error. */
+	r->error_code = ret;
+    }
     {
 	krb5_error_code ret2 = _kdc_audit_request(r);
 	if (ret2) {
@@ -3076,7 +3085,7 @@ out:
 				 r->rep.padata,
 			         r->armor_crypto,
 			         &req->req_body,
-			         r->error_code,
+			         r->error_code ? r->error_code : ret,
 			         r->client_princ,
 			         r->server_princ,
 			         NULL, NULL,

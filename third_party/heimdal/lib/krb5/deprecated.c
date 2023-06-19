@@ -57,7 +57,7 @@
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_data_contents(krb5_context context, krb5_data *data)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_data_free instead")
 {
     krb5_data_free(data);
 }
@@ -120,7 +120,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_keytype_to_string(krb5_context context,
 		       krb5_keytype keytype,
 		       char **string)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_enctype_to_string instead")
 {
     const char *name = NULL;
     int i;
@@ -154,7 +154,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_string_to_keytype(krb5_context context,
 		       const char *string,
 		       krb5_keytype *keytype)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_string_to_enctype instead")
 {
     char *end;
     int i;
@@ -386,7 +386,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_cc_gen_new(krb5_context context,
 		const krb5_cc_ops *ops,
 		krb5_ccache *id)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_cc_new_unique instead")
 {
     return krb5_cc_new_unique(context, ops->prefix, NULL, id);
 }
@@ -400,7 +400,7 @@ krb5_cc_gen_new(krb5_context context,
 KRB5_LIB_FUNCTION krb5_realm * KRB5_LIB_CALL
 krb5_princ_realm(krb5_context context,
 		 krb5_principal principal)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_principal_get_realm instead")
 {
     return &principal->realm;
 }
@@ -416,7 +416,7 @@ KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_princ_set_realm(krb5_context context,
 		     krb5_principal principal,
 		     krb5_realm *realm)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_principal_set_realm instead")
 {
     principal->realm = *realm;
 }
@@ -430,7 +430,7 @@ krb5_princ_set_realm(krb5_context context,
 /* keep this for compatibility with older code */
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_creds_contents (krb5_context context, krb5_creds *c)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_free_cred_contents instead")
 {
     return krb5_free_cred_contents (context, c);
 }
@@ -448,7 +448,7 @@ krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_error_string(krb5_context context, char *str)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_free_error_message instead")
 {
     krb5_free_error_message(context, str);
 }
@@ -456,7 +456,7 @@ krb5_free_error_string(krb5_context context, char *str)
 /**
  * Set the error message returned by krb5_get_error_string().
  *
- * Deprecated: use krb5_get_error_message()
+ * Deprecated: use krb5_set_error_message()
  *
  * @param context Kerberos context
  * @param fmt error message to free
@@ -469,7 +469,7 @@ krb5_free_error_string(krb5_context context, char *str)
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_set_error_string(krb5_context context, const char *fmt, ...)
     __attribute__ ((__format__ (__printf__, 2, 3)))
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_set_error_message instead")
 {
     va_list ap;
 
@@ -480,8 +480,7 @@ krb5_set_error_string(krb5_context context, const char *fmt, ...)
 }
 
 /**
- * Set the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_set_error_message().
+ * Set the error message returned by krb5_get_error_string().
  *
  * Deprecated: use krb5_vset_error_message()
  *
@@ -497,7 +496,7 @@ krb5_set_error_string(krb5_context context, const char *fmt, ...)
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     __attribute__ ((__format__ (__printf__, 2, 0)))
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_vset_error_message instead")
 {
     krb5_vset_error_message(context, 0, fmt, args);
     return 0;
@@ -515,7 +514,7 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_clear_error_string(krb5_context context)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_clear_error_message instead")
 {
     krb5_clear_error_message(context);
 }
@@ -533,7 +532,7 @@ krb5_get_cred_from_kdc_opt(krb5_context context,
 			   krb5_creds **out_creds,
 			   krb5_creds ***ret_tgts,
 			   krb5_flags flags)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_get_credentials_with_flags instead")
 {
     krb5_kdc_flags f;
     f.i = flags;
@@ -554,7 +553,7 @@ krb5_get_cred_from_kdc(krb5_context context,
 		       krb5_creds *in_creds,
 		       krb5_creds **out_creds,
 		       krb5_creds ***ret_tgts)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_get_credentials_with_flags instead")
 {
     return krb5_get_cred_from_kdc_opt(context, ccache,
 				      in_creds, out_creds, ret_tgts, 0);
@@ -568,7 +567,7 @@ krb5_get_cred_from_kdc(krb5_context context,
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_unparsed_name(krb5_context context, char *str)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_xfree instead")
 {
     krb5_xfree(str);
 }
@@ -583,7 +582,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_generate_subkey(krb5_context context,
 		     const krb5_keyblock *key,
 		     krb5_keyblock **subkey)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_generate_subkey_extended instead")
 {
     return krb5_generate_subkey_extended(context, key, ETYPE_NULL, subkey);
 }
@@ -598,7 +597,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_getremoteseqnumber(krb5_context context,
 			     krb5_auth_context auth_context,
 			     int32_t *seqnumber)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_auth_con_getremoteseqnumber instead")
 {
   *seqnumber = auth_context->remote_seqnumber;
   return 0;

@@ -612,7 +612,7 @@ verify_checksum_iov(krb5_context context,
 	    return ret;
     } else if ((flags & KRB5_CRYPTO_FLAG_ALLOW_UNKEYED_CHECKSUM) == 0) {
 	krb5_clear_error_message (context);
-	krb5_set_error_message(context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_INAPP_CKSUM,
 			       N_("Unkeyed checksum type %s provided where keyed "
 				  "checksum was expected", ""), ct->name);
 

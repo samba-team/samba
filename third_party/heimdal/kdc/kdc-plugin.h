@@ -65,8 +65,8 @@ typedef krb5_error_code
 typedef krb5_error_code
 (KRB5_CALLCONV *krb5plugin_kdc_pac_verify)(void *,
 					   astgs_request_t,
-					   const krb5_principal, /* new ticket client */
-					   const krb5_principal, /* delegation proxy */
+					   krb5_const_principal, /* new ticket client */
+					   hdb_entry *, /* delegation proxy */
 					   hdb_entry *,/* client */
 					   hdb_entry *,/* server */
 					   hdb_entry *,/* krbtgt */
@@ -84,8 +84,9 @@ typedef krb5_error_code
 typedef krb5_error_code
 (KRB5_CALLCONV *krb5plugin_kdc_pac_update)(void *,
 					   astgs_request_t,
-					   const krb5_principal, /* new ticket client */
-					   const krb5_principal, /* delegation proxy */
+					   krb5_const_principal, /* new ticket client */
+					   hdb_entry *, /* delegation proxy */
+					   krb5_const_pac, /* delegation proxy pac */
 					   hdb_entry *,/* client */
 					   hdb_entry *,/* server */
 					   hdb_entry *,/* krbtgt */

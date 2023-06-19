@@ -1988,7 +1988,7 @@ krb5_kdc_pk_initialize(krb5_context context,
 		ret = hx509_cert_get_subject(cert, &name);
 		if (ret == 0) {
 		    hx509_name_to_string(name, &str);
-		    krb5_warnx(context, "WARNING Found KDC certificate (%s)"
+		    krb5_warnx(context, "WARNING Found KDC certificate (%s) "
 			       "is missing the PKINIT KDC EKU, this is bad for "
 			       "interoperability.", str);
 		    hx509_name_free(&name);

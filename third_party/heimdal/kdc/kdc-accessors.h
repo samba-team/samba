@@ -346,24 +346,49 @@ ASTGS_REQUEST_GET_ACCESSOR(uint64_t, pac_attributes)
 
 ASTGS_REQUEST_SET_ACCESSOR(uint64_t, pac_attributes)
 
+KDC_LIB_FUNCTION const HDB * KDC_LIB_CALL
+kdc_request_get_explicit_armor_clientdb(astgs_request_t);
+
+KDC_LIB_FUNCTION const hdb_entry * KDC_LIB_CALL
+kdc_request_get_explicit_armor_client(astgs_request_t);
+
+KDC_LIB_FUNCTION const hdb_entry * KDC_LIB_CALL
+kdc_request_get_explicit_armor_server(astgs_request_t);
+
+KDC_LIB_FUNCTION krb5_const_pac KDC_LIB_CALL
+kdc_request_get_explicit_armor_pac(astgs_request_t);
+
 /*
  * const HDB *
- * kdc_request_get_explicit_armor_clientdb(astgs_request_t);
+ * kdc_request_get_armor_clientdb(astgs_request_t);
  */
 
-ASTGS_REQUEST_GET_ACCESSOR_PTR(HDB *, explicit_armor_clientdb)
+ASTGS_REQUEST_GET_ACCESSOR_PTR(HDB *, armor_clientdb)
 
 /*
  * const hdb_entry *
- * kdc_request_get_explicit_armor_client(astgs_request_t);
+ * kdc_request_get_armor_client(astgs_request_t);
  */
-ASTGS_REQUEST_GET_ACCESSOR_PTR(hdb_entry *, explicit_armor_client);
+ASTGS_REQUEST_GET_ACCESSOR_PTR(hdb_entry *, armor_client);
+
+/*
+ * const hdb_entry *
+ * kdc_request_get_armor_server(astgs_request_t);
+ */
+ASTGS_REQUEST_GET_ACCESSOR_PTR(hdb_entry *, armor_server);
 
 /*
  * krb5_const_pac
- * kdc_request_get_explicit_armor_pac(astgs_request_t);
+ * kdc_request_get_armor_pac(astgs_request_t);
  */
 
-ASTGS_REQUEST_GET_ACCESSOR_PTR(struct krb5_pac_data *, explicit_armor_pac);
+ASTGS_REQUEST_GET_ACCESSOR_PTR(struct krb5_pac_data *, armor_pac);
+
+/*
+ * krb5_boolean
+ * kdc_request_get_explicit_armor_present(astgs_request_t);
+ */
+
+ASTGS_REQUEST_GET_ACCESSOR_PTR(krb5_boolean, explicit_armor_present);
 
 #endif /* HEIMDAL_KDC_KDC_ACCESSORS_H */

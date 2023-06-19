@@ -78,7 +78,7 @@ _kdc_synthetic_princ_used_p(krb5_context context, krb5_ticket *ticket)
 krb5_error_code
 _kdc_check_pac(astgs_request_t r,
 	       const krb5_principal client_principal,
-	       const krb5_principal delegated_proxy_principal,
+	       hdb_entry *delegated_proxy,
 	       hdb_entry *client,
 	       hdb_entry *server,
 	       hdb_entry *krbtgt,
@@ -125,11 +125,11 @@ _kdc_check_pac(astgs_request_t r,
 
     /* Verify the KDC signatures. */
     ret = _kdc_pac_verify(r,
-			  client_principal, delegated_proxy_principal,
+			  client_principal, delegated_proxy,
 			  client, server, krbtgt, tkt, pac, &is_trusted);
     if (ret == 0) {
 	if (is_trusted) {
-	    krb5_pac_set_trusted(pac, true);
+	    krb5_pac_set_trusted(pac, TRUE);
 	}
 
 	if (pac_canon_name) {
@@ -1383,6 +1383,9 @@ tgs_build_reply(astgs_request_t priv,
 
     int result;
 
+    const PA_DATA *for_user = NULL;
+    int for_user_idx = 0;
+
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
 
@@ -1592,7 +1595,7 @@ server_lookup:
 	ret = krb5_unparse_name(context, priv->krbtgt->principal, &ktpn);
 	kdc_log(context, config, 4,
 		"No such principal %s (needed for authz-data signature keys) "
-		"while processing TGS-REQ for service %s with krbtg %s",
+		"while processing TGS-REQ for service %s with krbtgt %s",
 		krbtgt_out_n, spn, (ret == 0) ? ktpn : "<unknown>");
 	free(ktpn);
 	ret = KRB5KRB_AP_ERR_NOT_US;
@@ -1892,8 +1895,35 @@ server_lookup:
 	goto out;
     }
 
-    if (priv->pac != NULL) {
-	ret = _kdc_pac_update(priv, priv->client_princ, NULL,
+    /*
+     * Process request
+     */
+
+    /*
+     * Services for User: protocol transition and constrained delegation
+     */
+
+    if (priv->client != NULL &&
+	(for_user = _kdc_find_padata(&priv->req,
+				     &for_user_idx,
+				     KRB5_PADATA_FOR_USER)) != NULL)
+    {
+	/* Process an S4U2Self request. */
+	ret = _kdc_validate_protocol_transition(priv, for_user);
+	if (ret)
+	    goto out;
+    } else if (priv->client != NULL
+	       && b->additional_tickets != NULL
+	       && b->additional_tickets->len != 0
+	       && b->kdc_options.cname_in_addl_tkt
+	       && b->kdc_options.enc_tkt_in_skey == 0)
+    {
+	/* Process an S4U2Proxy request. */
+	ret = _kdc_validate_constrained_delegation(priv);
+	if (ret)
+	    goto out;
+    } else if (priv->pac != NULL) {
+	ret = _kdc_pac_update(priv, priv->client_princ, NULL, NULL,
 			      priv->client, priv->server, priv->krbtgt,
 			      &priv->pac);
 	if (ret == KRB5_PLUGIN_NO_HANDLE) {
@@ -1914,18 +1944,6 @@ server_lookup:
 	    priv->pac_attributes = 0;
 	}
     }
-
-    /*
-     * Process request
-     */
-
-    /*
-     * Services for User: protocol transition and constrained delegation
-     */
-
-    ret = _kdc_validate_services_for_user(priv);
-    if (ret)
-	goto out;
 
     if (b->enc_authorization_data) {
 	unsigned auth_data_usage;
@@ -2206,7 +2224,10 @@ _kdc_tgs_rep(astgs_request_t r)
     }
 
 out:
-    r->error_code = ret;
+    if (ret) {
+	/* Overwrite ‘error_code’ only if we have an actual error. */
+	r->error_code = ret;
+    }
     {
 	krb5_error_code ret2 = _kdc_audit_request(r);
 	if (ret2) {
@@ -2223,7 +2244,7 @@ out:
 				 &error_method,
 				 r->armor_crypto,
 				 &req->req_body,
-				 r->error_code,
+				 r->error_code ? r->error_code : ret,
 				 r->client_princ ? r->client_princ :(r->ticket != NULL ? r->ticket->client : NULL),
 				 r->server_princ ? r->server_princ :(r->ticket != NULL ? r->ticket->server : NULL),
 				 csec, cusec,
@@ -2260,12 +2281,12 @@ out:
 	krb5_free_ticket(r->context, r->armor_ticket);
     if (r->armor_server)
 	_kdc_free_ent(r->context, r->armor_serverdb, r->armor_server);
-    if (r->explicit_armor_client)
+    if (r->armor_client)
 	_kdc_free_ent(r->context,
-		      r->explicit_armor_clientdb,
-		      r->explicit_armor_client);
-    if (r->explicit_armor_pac)
-	krb5_pac_free(r->context, r->explicit_armor_pac);
+		      r->armor_clientdb,
+		      r->armor_client);
+    if (r->armor_pac)
+	krb5_pac_free(r->context, r->armor_pac);
     krb5_free_keyblock_contents(r->context, &r->reply_key);
     krb5_free_keyblock_contents(r->context, &r->enc_ad_key);
     krb5_free_keyblock_contents(r->context, &r->strengthen_key);

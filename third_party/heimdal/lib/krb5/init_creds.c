@@ -408,7 +408,7 @@ krb5_get_init_creds_opt_set_process_last_req(krb5_context context,
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
-    KRB5_DEPRECATED_FUNCTION("Use X instead")
+    KRB5_DEPRECATED_FUNCTION("Use krb5_get_init_creds_opt_alloc instead")
 {
     memset (opt, 0, sizeof(*opt));
 }

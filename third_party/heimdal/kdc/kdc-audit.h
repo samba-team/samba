@@ -52,6 +52,7 @@
 #define KDC_AUTH_EVENT_PREAUTH_FAILED		8   /* generic PA failure */
 #define KDC_AUTH_EVENT_PREAUTH_SUCCEEDED	9   /* generic (non-long term key) PA success */
 #define KDC_AUTH_EVENT_HISTORIC_LONG_TERM_KEY	10  /* PA failed to validate current long term key, but historic */
+#define KDC_AUTH_EVENT_CLIENT_FOUND		11  /* the client was successfully looked up */
 
 /*
  * Audit keys to be queried using kdc_audit_getkv(). There are other keys
