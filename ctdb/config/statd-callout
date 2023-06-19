@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# This must run as root as CTDB tool commands need to access CTDB socket
-[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
-
 # statd must be configured to use this script as its high availability call-out.
 #
 # Modern NFS utils versions use /etc/nfs.conf:

@@ -894,13 +894,6 @@ def build(bld):
         bld.INSTALL_FILES(bld.env.CTDB_ETCDIR, 'config/%s' % t,
                           destname=t, chmod=MODE_755)
 
-    bld.SAMBA_GENERATOR('ctdb-sudoers',
-                        source='config/ctdb.sudoers',
-                        target='ctdb.sudoers',
-                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
-    bld.INSTALL_FILES('${SYSCONFDIR}/sudoers.d', 'ctdb.sudoers',
-                      destname='ctdb')
-
     bld.INSTALL_FILES('${CTDB_ETCDIR}/events/notification',
                       'config/notification.README',
                       destname='README')
