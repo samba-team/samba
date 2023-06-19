@@ -50,6 +50,39 @@ fi
 
 ctdb_setup_state_dir "service" "nfs"
 
+find_statd_sm_dir()
+{
+	if [ -n "$CTDB_TEST_MODE" ]; then
+		_f="${CTDB_TEST_TMP_DIR}/sm"
+		mkdir -p "$_f" "${_f}.bak"
+		echo "$_f"
+		return
+	fi
+
+	for _sm_dir in /var/lib/nfs/statd/sm /var/lib/nfs/sm; do
+		if [ -d "$_sm_dir" ]; then
+			echo "$_sm_dir"
+			break
+		fi
+	done
+}
+
+# Ensure the state directory exists and can be written when called as
+# a non-root user.  Assume the user to run as is the owner of the
+# system statd sm directory, since both rpc.statd and sm-notify run as
+# this directory's owner, so it can read and modify the directory.
+create_add_del_client_dir()
+{
+	_dir="$1"
+
+	if [ ! -d "$_dir" ]; then
+		mkdir -p "$_dir" || die "Failed to create directory \"${_dir}\""
+		ref=$(find_statd_sm_dir)
+		[ -n "$ref" ] || die "Failed to find statd sm directory"
+		chown --reference="$ref" "$_dir"
+	fi
+}
+
 # script_state_dir set by ctdb_setup_state_dir()
 # shellcheck disable=SC2154
 statd_callout_state_dir="${script_state_dir}/statd-callout"
@@ -116,8 +149,7 @@ delete_records()
 
 startup()
 {
-	mkdir -p "$statd_callout_queue_dir" ||
-		die "Failed to create directory \"${statd_callout_queue_dir}\""
+	create_add_del_client_dir "$statd_callout_queue_dir"
 
 	$CTDB attach "$statd_callout_db" persistent
 }
