@@ -75,7 +75,7 @@ class AuthenticationSilo(Model):
         self.refresh(ldb, fields=["members"])
 
     def remove_member(self, ldb, member):
-        """Remove a member to the Authentication Silo.
+        """Remove a member from the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
         list out again, just remove one member only.
