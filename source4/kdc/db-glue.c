@@ -1401,6 +1401,10 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * A principal acting as a client that is not being looked up as the
 	 * principal of an armor ticket may have an authentication policy apply
 	 * to it.
+	 *
+	 * We won’t get an authentication policy for the client of an S4U2Self
+	 * or S4U2Proxy request. Those clients are looked up with
+	 * SDB_F_FOR_TGS_REQ instead of with SDB_F_FOR_AS_REQ.
 	 */
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT &&
 	    (flags & SDB_F_FOR_AS_REQ) &&
