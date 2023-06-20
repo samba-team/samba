@@ -5382,18 +5382,24 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         self.discardMessages()
 
         # Show that obtaining a service ticket with RBCD is not allowed.
-        self._tgs_req(service_tgt, KDC_ERR_POLICY, service_creds, target_creds,
-                      armor_tgt=mach_tgt,
-                      kdc_options=kdc_options,
-                      pac_options='1001',  # supports claims, RBCD
-                      additional_ticket=client_service_tkt,
-                      decryption_key=target_decryption_key,
-                      expect_edata=self.expect_padata_outer,
-                      check_patypes=False)
+        self._tgs_req(
+            service_tgt, KDC_ERR_POLICY, service_creds, target_creds,
+            armor_tgt=mach_tgt,
+            kdc_options=kdc_options,
+            pac_options='1001',  # supports claims, RBCD
+            additional_ticket=client_service_tkt,
+            decryption_key=target_decryption_key,
+            expect_edata=self.expect_padata_outer,
+            expected_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            check_patypes=False)
 
-        self.check_tgs_log(client_creds, target_creds,
-                           policy=policy,
-                           checked_creds=service_creds)
+        self.check_tgs_log(
+            service_creds, target_creds,
+            policy=policy,
+            checked_creds=service_creds,
+            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
     def test_authn_policy_allowed_to_user_allow_rbcd_wrong_sname(self):
         samdb = self.get_samdb()
@@ -5460,8 +5466,9 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
 
-        self.check_tgs_log(client_creds, target_creds,
-                           checked_creds=service_creds)
+        self.check_tgs_log(service_creds, target_creds,
+                           checked_creds=service_creds,
+                           status=ntstatus.NT_STATUS_UNSUCCESSFUL)
 
     def test_authn_policy_allowed_to_user_allow_constrained_delegation_to_self(self):
         samdb = self.get_samdb()
@@ -5974,8 +5981,11 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
                       expect_edata=self.expect_padata_outer,
                       check_patypes=False)
 
-        self.check_tgs_log(client_creds, service_creds,
-                           policy=policy,
+        self.check_tgs_log(service_creds, service_creds,
+                           # The failure is not due to a policy error, so no
+                           # policy appears in the logs.
+                           policy=None,
+                           status=ntstatus.NT_STATUS_UNSUCCESSFUL,
                            checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_computer_allow_user2user(self):
