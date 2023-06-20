@@ -536,7 +536,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	const char *dpath = dir_hnd->dir_smb_fname->base_name;
 	bool dirptr_path_is_dot = ISDOT(dpath);
 	NTSTATUS status;
-	int ret;
 
 	*_smb_fname = NULL;
 	*_mode = 0;
@@ -633,7 +632,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		smb_fname = synthetic_smb_fname(talloc_tos(),
 						pathreal,
 						NULL,
-						&sbuf,
+						NULL,
 						dir_hnd->dir_smb_fname->twrp,
 						dir_hnd->dir_smb_fname->flags);
 		TALLOC_FREE(pathreal);
@@ -643,27 +642,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			return false;
 		}
 
-		if (!VALID_STAT(smb_fname->st)) {
-			/*
-			 * If stat() fails with ENOENT it might be a
-			 * msdfs-symlink in Windows context, this is checked
-			 * below, for now we just want to fill stat info as good
-			 * as we can.
-			 */
-			ret = vfs_stat(conn, smb_fname);
-			if (ret != 0 && errno != ENOENT) {
-				TALLOC_FREE(smb_fname);
-				TALLOC_FREE(dname);
-				TALLOC_FREE(fname);
-				continue;
-			}
-		}
-
 		/* Create smb_fname with NULL stream_name. */
 		atname = synthetic_smb_fname(talloc_tos(),
 					     dname,
 					     NULL,
-					     &smb_fname->st,
+					     NULL,
 					     dir_hnd->dir_smb_fname->twrp,
 					     dir_hnd->dir_smb_fname->flags);
 		if (atname == NULL) {
