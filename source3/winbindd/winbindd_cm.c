@@ -1559,7 +1559,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	if (*dcnames[fd_index] != '\0' && !is_ipaddress(dcnames[fd_index])) {
 		/* Ok, we've got a name for the DC */
 		TALLOC_FREE(domain->dcname);
-		domain->dcname = talloc_strdup(mem_ctx, dcnames[fd_index]);
+		domain->dcname = talloc_strdup(domain, dcnames[fd_index]);
 		if (domain->dcname == NULL) {
 			return false;
 		}
