@@ -3,6 +3,7 @@ import "wsp_data.idl";
 import "misc.idl";
 
 [
+	uuid("3e0ad41d-0d34-4fd2-8a1c-c767d013a1be"),
 	version(1.0),
 	endpoint("ncacn_np:[\\pipe\\MsFteWds]"),
 	helpstring("Windows Search WSP Protocol"),
