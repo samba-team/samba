@@ -37,19 +37,16 @@ bool srv_init_signing(struct smbXsrv_connection *conn)
 		return false;
 	}
 
+	/*
+	 * For SMB2 all we need to know is if signing is mandatory.
+	 * It is always allowed and desired, whatever the smb.conf says.
+	 */
+	(void)lpcfg_server_signing_allowed(lp_ctx, &conn->smb2.signing_mandatory);
+
 #if defined(WITH_SMB1SERVER)
-	if (conn->protocol >= PROTOCOL_SMB2_02) {
+	ok = smb1_srv_init_signing(lp_ctx, conn);
 #endif
-		/*
-		 * For SMB2 all we need to know is if signing is mandatory.
-		 * It is always allowed and desired, whatever the smb.conf says.
-		 */
-		(void)lpcfg_server_signing_allowed(lp_ctx, &conn->smb2.signing_mandatory);
-#if defined(WITH_SMB1SERVER)
-	} else {
-		ok = smb1_srv_init_signing(lp_ctx, conn);
-	}
-#endif
+
 	talloc_unlink(conn, lp_ctx);
 	return ok;
 }
