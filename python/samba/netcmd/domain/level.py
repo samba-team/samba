@@ -189,7 +189,7 @@ class cmd_domain_level(Command):
                 msgs.append("Domain function level changed!")
 
             if forest_level is not None:
-                new_level_forest = string_to_level(forest_level)
+                new_level_forest = functional_level.string_to_level(forest_level)
 
                 if new_level_forest <= level_forest:
                     raise CommandError("Forest function level can't be smaller than or equal to the actual one!")
