@@ -572,30 +572,8 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
 		return 0;
 	}
 
-	/* First do any modifications that depend on the path name. */
-	/* hide files with a name starting with a . */
-	if (lp_hide_dot_files(SNUM(conn))) {
-		const char *p = strrchr_m(smb_fname->base_name, '/');
-		if (p) {
-			p++;
-		} else {
-			p = smb_fname->base_name;
-		}
-
-		/* Only . and .. are not hidden. */
-		if ((p[0] == '.') && !(ISDOT(p) || ISDOTDOT(p))) {
-			result |= FILE_ATTRIBUTE_HIDDEN;
-		}
-	}
-
+	result = dos_mode_from_name(conn, smb_fname, result);
 	result |= dos_mode_from_sbuf(conn, smb_fname);
-
-	/* Optimization : Only call is_hidden_path if it's not already
-	   hidden. */
-	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
-	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
-		result |= FILE_ATTRIBUTE_HIDDEN;
-	}
 
 	if (result == 0) {
 		result = FILE_ATTRIBUTE_NORMAL;
