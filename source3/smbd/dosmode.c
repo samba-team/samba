@@ -189,7 +189,8 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 ****************************************************************************/
 
 static uint32_t dos_mode_from_sbuf(connection_struct *conn,
-				 const struct smb_filename *smb_fname)
+				   const struct stat_ex *st,
+				   struct files_struct *fsp)
 {
 	int result = 0;
 	enum mapreadonly_options ro_opts =
@@ -197,39 +198,36 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 
 #if defined(UF_IMMUTABLE) && defined(SF_IMMUTABLE)
 	/* if we can find out if a file is immutable we should report it r/o */
-	if (smb_fname->st.st_ex_flags & (UF_IMMUTABLE | SF_IMMUTABLE)) {
+	if (st->st_ex_flags & (UF_IMMUTABLE | SF_IMMUTABLE)) {
 		result |= FILE_ATTRIBUTE_READONLY;
 	}
 #endif
 	if (ro_opts == MAP_READONLY_YES) {
 		/* Original Samba method - map inverse of user "w" bit. */
-		if ((smb_fname->st.st_ex_mode & S_IWUSR) == 0) {
+		if ((st->st_ex_mode & S_IWUSR) == 0) {
 			result |= FILE_ATTRIBUTE_READONLY;
 		}
 	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
 		/* smb_fname->fsp can be NULL for an MS-DFS link. */
 		/* Check actual permissions for read-only. */
-		if (smb_fname->fsp != NULL) {
-			if (!can_write_to_fsp(smb_fname->fsp))
-			{
-				result |= FILE_ATTRIBUTE_READONLY;
-			}
+		if ((fsp != NULL) && !can_write_to_fsp(fsp)) {
+			result |= FILE_ATTRIBUTE_READONLY;
 		}
 	} /* Else never set the readonly bit. */
 
-	if (MAP_ARCHIVE(conn) && ((smb_fname->st.st_ex_mode & S_IXUSR) != 0)) {
+	if (MAP_ARCHIVE(conn) && ((st->st_ex_mode & S_IXUSR) != 0)) {
 		result |= FILE_ATTRIBUTE_ARCHIVE;
 	}
 
-	if (MAP_SYSTEM(conn) && ((smb_fname->st.st_ex_mode & S_IXGRP) != 0)) {
+	if (MAP_SYSTEM(conn) && ((st->st_ex_mode & S_IXGRP) != 0)) {
 		result |= FILE_ATTRIBUTE_SYSTEM;
 	}
 
-	if (MAP_HIDDEN(conn) && ((smb_fname->st.st_ex_mode & S_IXOTH) != 0)) {
+	if (MAP_HIDDEN(conn) && ((st->st_ex_mode & S_IXOTH) != 0)) {
 		result |= FILE_ATTRIBUTE_HIDDEN;
 	}
 
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+	if (S_ISDIR(st->st_ex_mode)) {
 		result = FILE_ATTRIBUTE_DIRECTORY |
 			 (result & FILE_ATTRIBUTE_READONLY);
 	}
@@ -579,7 +577,7 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
 	}
 
 	result = dos_mode_from_name(conn, smb_fname, result);
-	result |= dos_mode_from_sbuf(conn, smb_fname);
+	result |= dos_mode_from_sbuf(conn, &smb_fname->st, NULL);
 
 	if (result == 0) {
 		result = FILE_ATTRIBUTE_NORMAL;
@@ -718,7 +716,9 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		 * Only fall back to using UNIX modes if we get NOT_IMPLEMENTED.
 		 */
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			result |= dos_mode_from_sbuf(fsp->conn, fsp->fsp_name);
+			result |= dos_mode_from_sbuf(fsp->conn,
+						     &fsp->fsp_name->st,
+						     fsp);
 		}
 	}
 
