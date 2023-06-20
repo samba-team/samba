@@ -192,7 +192,8 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 				 const struct smb_filename *smb_fname)
 {
 	int result = 0;
-	enum mapreadonly_options ro_opts = (enum mapreadonly_options)lp_map_readonly(SNUM(conn));
+	enum mapreadonly_options ro_opts =
+		(enum mapreadonly_options)lp_map_readonly(SNUM(conn));
 
 #if defined(UF_IMMUTABLE) && defined(SF_IMMUTABLE)
 	/* if we can find out if a file is immutable we should report it r/o */
@@ -216,17 +217,22 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 		}
 	} /* Else never set the readonly bit. */
 
-	if (MAP_ARCHIVE(conn) && ((smb_fname->st.st_ex_mode & S_IXUSR) != 0))
+	if (MAP_ARCHIVE(conn) && ((smb_fname->st.st_ex_mode & S_IXUSR) != 0)) {
 		result |= FILE_ATTRIBUTE_ARCHIVE;
+	}
 
-	if (MAP_SYSTEM(conn) && ((smb_fname->st.st_ex_mode & S_IXGRP) != 0))
+	if (MAP_SYSTEM(conn) && ((smb_fname->st.st_ex_mode & S_IXGRP) != 0)) {
 		result |= FILE_ATTRIBUTE_SYSTEM;
+	}
 
-	if (MAP_HIDDEN(conn) && ((smb_fname->st.st_ex_mode & S_IXOTH) != 0))
+	if (MAP_HIDDEN(conn) && ((smb_fname->st.st_ex_mode & S_IXOTH) != 0)) {
 		result |= FILE_ATTRIBUTE_HIDDEN;
+	}
 
-	if (S_ISDIR(smb_fname->st.st_ex_mode))
-		result = FILE_ATTRIBUTE_DIRECTORY | (result & FILE_ATTRIBUTE_READONLY);
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		result = FILE_ATTRIBUTE_DIRECTORY |
+			 (result & FILE_ATTRIBUTE_READONLY);
+	}
 
 	dos_mode_debug_print(__func__, result);
 
