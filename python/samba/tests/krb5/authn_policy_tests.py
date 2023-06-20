@@ -5074,7 +5074,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         ]
 
         # Don’t confuse the client’s TGS-REQ to the service, above, with the
-        # following constrained delegation request to the service.
+        # following RBCD request to the service.
         self.discardMessages()
 
         # Show that obtaining a service ticket with RBCD is allowed.
@@ -5151,7 +5151,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
             target_creds)
 
         # Don’t confuse the client’s TGS-REQ to the service, above, with the
-        # following constrained delegation request to the service.
+        # following RBCD request to the service.
         self.discardMessages()
 
         # Show that obtaining a service ticket with RBCD is not allowed.
@@ -5218,7 +5218,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
             target_creds)
 
         # Don’t confuse the client’s TGS-REQ to the service, above, with the
-        # following constrained delegation request to the service.
+        # following RBCD request to the service.
         self.discardMessages()
 
         # Show that obtaining a service ticket with RBCD fails if the sname
@@ -5559,7 +5559,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         ]
 
         # Don’t confuse the client’s TGS-REQ to the service, above, with the
-        # following constrained delegation request to the service.
+        # following RBCD request to the service.
         self.discardMessages()
 
         # Show that obtaining a service ticket to ourselves with RBCD is
@@ -5654,7 +5654,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         ]
 
         # Don’t confuse the client’s TGS-REQ to the service, above, with the
-        # following constrained delegation request to the service.
+        # following RBCD request to the service.
         self.discardMessages()
 
         # Show that obtaining a service ticket to ourselves with RBCD is
@@ -5732,7 +5732,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
             service_creds)
 
         # Don’t confuse the client’s TGS-REQ to the service, above, with the
-        # following constrained delegation request to the service.
+        # following RBCD request to the service.
         self.discardMessages()
 
         # Show that obtaining a service ticket to ourselves with RBCD
