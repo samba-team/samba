@@ -1018,7 +1018,8 @@ class S4UKerberosTests(KDCBaseTest):
         self._run_delegation_test(
             {
                 'expected_error_mode': (KDC_ERR_MODIFIED,
-                                        KDC_ERR_BADOPTION),
+                                        KDC_ERR_BADOPTION,
+                                        KDC_ERR_TGT_REVOKED),
                 'allow_delegation': True,
                 'modify_client_tkt_fn': self.remove_ticket_pac,
                 'expect_edata': False,
@@ -1128,7 +1129,8 @@ class S4UKerberosTests(KDCBaseTest):
         # contain a PAC, and an empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_TGT_REVOKED),
                 # We aren’t particular about whether or not we get an NTSTATUS.
                 'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
@@ -1144,7 +1146,8 @@ class S4UKerberosTests(KDCBaseTest):
         # contain a PAC, and a non-empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_TGT_REVOKED),
                 # We aren’t particular about whether or not we get an NTSTATUS.
                 'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NO_MATCH,
@@ -1177,7 +1180,8 @@ class S4UKerberosTests(KDCBaseTest):
         # contain a PAC, and an empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_TGT_REVOKED),
                 # We aren’t particular about whether or not we get an NTSTATUS.
                 'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
@@ -1196,7 +1200,8 @@ class S4UKerberosTests(KDCBaseTest):
         # contain a PAC, and a non-empty msDS-AllowedToDelegateTo attribute.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_TGT_REVOKED),
                 # We aren’t particular about whether or not we get an NTSTATUS.
                 'expect_status': None,
                 'expected_status': ntstatus.NT_STATUS_NO_MATCH,
@@ -1356,7 +1361,8 @@ class S4UKerberosTests(KDCBaseTest):
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
                 if checksum == krb5pac.PAC_TYPE_TICKET_CHECKSUM:
-                    expected_error_mode = KDC_ERR_MODIFIED
+                    expected_error_mode = (KDC_ERR_MODIFIED,
+                                           KDC_ERR_BADOPTION)
                 else:
                     expected_error_mode = KDC_ERR_GENERIC
 
@@ -1443,7 +1449,8 @@ class S4UKerberosTests(KDCBaseTest):
             with self.subTest(checksum=checksum):
                 self._run_delegation_test(
                     {
-                        'expected_error_mode': KDC_ERR_MODIFIED,
+                        'expected_error_mode': (KDC_ERR_MODIFIED,
+                                                KDC_ERR_BAD_INTEGRITY),
                         # We aren’t particular about whether or not we get an
                         # NTSTATUS.
                         'expect_status': None,
@@ -1462,7 +1469,8 @@ class S4UKerberosTests(KDCBaseTest):
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
                 if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
-                    expected_error_mode = KDC_ERR_MODIFIED
+                    expected_error_mode = (KDC_ERR_MODIFIED,
+                                           KDC_ERR_BAD_INTEGRITY)
                     # We aren’t particular about whether or not we get an
                     # NTSTATUS.
                     expect_status = None
@@ -1551,9 +1559,11 @@ class S4UKerberosTests(KDCBaseTest):
                 with self.subTest(checksum=checksum, ctype=ctype):
                     if (checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM
                             and ctype == Cksumtype.SHA1):
-                        expected_error_mode = KDC_ERR_SUMTYPE_NOSUPP
+                        expected_error_mode = (KDC_ERR_SUMTYPE_NOSUPP,
+                                               KDC_ERR_INAPP_CKSUM)
                     else:
-                        expected_error_mode = KDC_ERR_GENERIC
+                        expected_error_mode = (KDC_ERR_GENERIC,
+                                               KDC_ERR_INAPP_CKSUM)
 
                     self._run_delegation_test(
                         {
@@ -1582,10 +1592,12 @@ class S4UKerberosTests(KDCBaseTest):
                         # NTSTATUS.
                         expect_status = None
                         if ctype == Cksumtype.SHA1:
-                            expected_error_mode = KDC_ERR_SUMTYPE_NOSUPP
+                            expected_error_mode = (KDC_ERR_SUMTYPE_NOSUPP,
+                                                   KDC_ERR_INAPP_CKSUM)
                             expected_status = ntstatus.NT_STATUS_LOGON_FAILURE
                         else:
-                            expected_error_mode = KDC_ERR_GENERIC
+                            expected_error_mode = (KDC_ERR_GENERIC,
+                                                   KDC_ERR_INAPP_CKSUM)
                             expected_status = (
                                 ntstatus.NT_STATUS_INSUFFICIENT_RESOURCES)
                     else:

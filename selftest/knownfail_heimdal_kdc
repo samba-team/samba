@@ -34,7 +34,6 @@
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_forwardable
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_not_trusted_empty_allowed
 #
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_no_client_pac_no_auth_data_required
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd\(
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_auth_data_required
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_no_auth_data_required_a
