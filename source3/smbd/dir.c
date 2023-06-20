@@ -407,7 +407,7 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr)
 	if (dptr->has_wild) {
 		const char *name_temp = NULL;
 		char *talloced = NULL;
-		name_temp = ReadDirName(dir_hnd, &st, &talloced);
+		name_temp = ReadDirName(dir_hnd, &talloced);
 		if (name_temp == NULL) {
 			return NULL;
 		}
@@ -1249,9 +1249,11 @@ static NTSTATUS OpenDir_fsp(
  Don't check for veto or invisible files.
 ********************************************************************/
 
-const char *ReadDirName(struct smb_Dir *dir_hnd,
-			SMB_STRUCT_STAT *sbuf, char **ptalloced)
+const char *ReadDirName(struct smb_Dir *dir_hnd, char **ptalloced)
 {
+	struct stat_ex st = {
+		.st_ex_nlink = 0,
+	};
 	const char *n;
 	char *talloced = NULL;
 	connection_struct *conn = dir_hnd->conn;
@@ -1267,7 +1269,11 @@ const char *ReadDirName(struct smb_Dir *dir_hnd,
 		return n;
 	}
 
-	while ((n = vfs_readdirname(conn, dir_hnd->fsp, dir_hnd->dir, sbuf, &talloced))) {
+	while ((n = vfs_readdirname(conn,
+				    dir_hnd->fsp,
+				    dir_hnd->dir,
+				    &st,
+				    &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
 		if (ISDOT(n) || ISDOTDOT(n)) {
 			TALLOC_FREE(talloced);
@@ -1425,7 +1431,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		return status;
 	}
 
-	while ((dname = ReadDirName(dir_hnd, NULL, &talloced))) {
+	while ((dname = ReadDirName(dir_hnd, &talloced))) {
 		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
 		char *fullname = NULL;

@@ -264,9 +264,7 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 	sc_data->num_volumes = 0;
 	sc_data->labels = NULL;
 
-        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
-	       != NULL)
-	{
+	while ((dname = ReadDirName(dir_hnd, &talloced)) != NULL) {
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
 			continue;
@@ -587,9 +585,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 		goto err_out;
 	}
 
-        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
-	       != NULL)
-	{
+	while ((dname = ReadDirName(dir_hnd, &talloced)) != NULL) {
 		struct smb_filename *smb_fname = NULL;
 		struct smb_filename *atname = NULL;
 		time_t snap_secs = 0;

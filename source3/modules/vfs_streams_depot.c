@@ -563,9 +563,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		return status;
 	}
 
-        while ((dname = ReadDirName(dir_hnd, NULL, &talloced))
-	       != NULL)
-	{
+	while ((dname = ReadDirName(dir_hnd, &talloced)) != NULL) {
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
 			continue;

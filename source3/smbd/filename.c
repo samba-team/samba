@@ -323,7 +323,7 @@ NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
 	}
 
 	/* now scan for matching names */
-	while ((dname = ReadDirName(cur_dir, NULL, &talloced))) {
+	while ((dname = ReadDirName(cur_dir, &talloced))) {
 
 		/* Is it dot or dot dot. */
 		if (ISDOT(dname) || ISDOTDOT(dname)) {

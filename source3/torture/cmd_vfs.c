@@ -202,9 +202,7 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-        dname = ReadDirName(vfs->currentdir,
-			    NULL,
-			    &talloced);
+	dname = ReadDirName(vfs->currentdir, &talloced);
 	if (dname == NULL) {
 		printf("readdir: NULL\n");
 		return NT_STATUS_OK;
@@ -2154,9 +2152,7 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 
 	while (true) {
 		/* ReadDirName() returns Windows "encoding" */
-		dname = ReadDirName(vfs->currentdir,
-				    NULL,
-				    &dname_talloced);
+		dname = ReadDirName(vfs->currentdir, &dname_talloced);
 		if (dname == NULL) {
 			break;
 		}

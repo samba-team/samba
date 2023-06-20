@@ -216,8 +216,7 @@ NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
 			      const char *mask,
 			      uint32_t attr,
 			      struct smb_Dir **_dir_hnd);
-const char *ReadDirName(struct smb_Dir *dir_hnd,
-			SMB_STRUCT_STAT *sbuf, char **talloced);
+const char *ReadDirName(struct smb_Dir *dir_hnd, char **talloced);
 void RewindDir(struct smb_Dir *dir_hnd);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);

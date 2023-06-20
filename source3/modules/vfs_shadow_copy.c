@@ -195,7 +195,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 		SHADOW_COPY_LABEL *tlabels;
 		int ret;
 
-		dname = ReadDirName(dir_hnd, NULL, &talloced);
+		dname = ReadDirName(dir_hnd, &talloced);
 		if (dname == NULL) {
 			break;
 		}
