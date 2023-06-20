@@ -4774,6 +4774,53 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
                            policy=target_policy,
                            checked_creds=service_creds)
 
+    def test_authn_policy_s4u2self_not_allowed_from(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that applies to a user and explicitly
+        # denies authentication with any device.
+        denied = f'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_from=denied)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy)
+        client_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[client_creds.get_username()])
+        client_realm = client_creds.get_realm()
+
+        # Create a computer account.
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        target_tgt = self.get_tgt(target_creds)
+
+        def generate_s4u2self_padata(_kdc_exchange_dict,
+                                     _callback_dict,
+                                     req_body):
+            padata = self.PA_S4U2Self_create(
+                name=client_cname,
+                realm=client_realm,
+                tgt_session_key=target_tgt.session_key,
+                ctype=None)
+
+            return [padata], req_body
+
+        # Show that obtaining a service ticket with S4U2Self is allowed,
+        # despite the client’s policy.
+        self._tgs_req(target_tgt, 0, target_creds, target_creds,
+                      expected_cname=client_cname,
+                      generate_fast_padata_fn=generate_s4u2self_padata,
+                      armor_tgt=mach_tgt)
+
+        # The client’s policy does not apply for S4U2Self, and thus does not
+        # appear in the logs.
+        self.check_tgs_log(client_creds, target_creds, policy=None)
+
     def test_authn_policy_allowed_to_user_allow_constrained_delegation(self):
         samdb = self.get_samdb()
 
@@ -4943,6 +4990,186 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
             status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
             event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
             reason=AuditReason.ACCESS_DENIED)
+
+    def test_authn_policy_constrained_delegation_not_allowed_from(self):
+        samdb = self.get_samdb()
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        client_sid = client_creds.get_sid()
+
+        client_username = client_creds.get_username()
+        client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                 names=[client_username])
+
+        client_tkt_options = 'forwardable'
+        expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
+
+        client_tgt = self.get_tgt(client_creds,
+                                  kdc_options=client_tkt_options,
+                                  expected_flags=expected_flags)
+
+        # Create an authentication policy that applies to a user and explicitly
+        # denies authentication with any device.
+        denied = f'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_from=denied)
+
+        # Assign the policy to the client account.
+        self.add_attribute(samdb, str(client_creds.get_dn()),
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a target account.
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            use_cache=False)
+        target_spn = target_creds.get_spn()
+
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'delegation_to_spn': target_spn,
+            })
+        service_tgt = self.get_tgt(service_creds)
+
+        client_service_tkt = self.get_service_ticket(
+            client_tgt,
+            service_creds,
+            kdc_options=client_tkt_options,
+            expected_flags=expected_flags)
+
+        kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
+
+        target_decryption_key = self.TicketDecryptionKey_from_creds(
+            target_creds)
+        target_etypes = target_creds.tgs_supported_enctypes
+
+        service_name = service_creds.get_username()
+        if service_name[-1] == '$':
+            service_name = service_name[:-1]
+        expected_transited_services = [
+            f'host/{service_name}@{service_creds.get_realm()}'
+        ]
+
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following constrained delegation request to the service.
+        self.discardMessages()
+
+        # Show that obtaining a service ticket with constrained delegation is
+        # allowed, despite the client’s policy.
+        self._tgs_req(service_tgt, 0, service_creds, target_creds,
+                      armor_tgt=mach_tgt,
+                      kdc_options=kdc_options,
+                      expected_cname=client_cname,
+                      expected_account_name=client_username,
+                      additional_ticket=client_service_tkt,
+                      decryption_key=target_decryption_key,
+                      expected_sid=client_sid,
+                      expected_supported_etypes=target_etypes,
+                      expected_proxy_target=target_spn,
+                      expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=None,
+                           checked_creds=service_creds)
+
+    def test_authn_policy_rbcd_not_allowed_from(self):
+        samdb = self.get_samdb()
+        functional_level = self.get_domain_functional_level(samdb)
+
+        if functional_level < dsdb.DS_DOMAIN_FUNCTION_2008:
+            self.skipTest('RBCD requires FL2008')
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        client_sid = client_creds.get_sid()
+
+        client_username = client_creds.get_username()
+        client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                 names=[client_username])
+
+        client_tkt_options = 'forwardable'
+        expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
+
+        client_tgt = self.get_tgt(client_creds,
+                                  kdc_options=client_tkt_options,
+                                  expected_flags=expected_flags)
+
+        # Create an authentication policy that applies to a user and explicitly
+        # denies authentication with any device.
+        denied = f'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_from=denied)
+
+        # Assign the policy to the client account.
+        self.add_attribute(samdb, str(client_creds.get_dn()),
+                           'msDS-AssignedAuthNPolicy', str(policy.dn))
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 1})
+        service_tgt = self.get_tgt(service_creds)
+
+        # Create a target account.
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'delegation_from_dn': str(service_creds.get_dn()),
+            })
+
+        client_service_tkt = self.get_service_ticket(
+            client_tgt,
+            service_creds,
+            kdc_options=client_tkt_options,
+            expected_flags=expected_flags)
+
+        kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
+
+        target_decryption_key = self.TicketDecryptionKey_from_creds(
+            target_creds)
+        target_etypes = target_creds.tgs_supported_enctypes
+
+        service_name = service_creds.get_username()
+        if service_name[-1] == '$':
+            service_name = service_name[:-1]
+        expected_transited_services = [
+            f'host/{service_name}@{service_creds.get_realm()}'
+        ]
+
+        # Don’t confuse the client’s TGS-REQ to the service, above, with the
+        # following RBCD request to the service.
+        self.discardMessages()
+
+        # Show that obtaining a service ticket with RBCD is allowed, despite
+        # the client’s policy.
+        self._tgs_req(service_tgt, 0, service_creds, target_creds,
+                      armor_tgt=mach_tgt,
+                      kdc_options=kdc_options,
+                      pac_options='1001',  # supports claims, RBCD
+                      expected_cname=client_cname,
+                      expected_account_name=client_username,
+                      additional_ticket=client_service_tkt,
+                      decryption_key=target_decryption_key,
+                      expected_sid=client_sid,
+                      expected_supported_etypes=target_etypes,
+                      expected_proxy_target=target_creds.get_spn(),
+                      expected_transited_services=expected_transited_services)
+
+        self.check_tgs_log(client_creds, target_creds,
+                           policy=None,
+                           checked_creds=service_creds)
 
     def test_authn_policy_allowed_to_user_allow_constrained_delegation_wrong_sname(self):
         client_creds = self.get_cached_creds(
