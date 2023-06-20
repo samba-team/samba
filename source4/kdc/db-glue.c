@@ -3352,7 +3352,9 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	struct security_descriptor *rbcd_security_descriptor = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct security_token *security_token = NULL;
-	uint32_t session_info_flags = AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	uint32_t session_info_flags =
+		AUTH_SESSION_INFO_DEFAULT_GROUPS |
+		AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
 	/*
 	 * Testing shows that although Windows grants SEC_ADS_GENERIC_ALL access
 	 * in security descriptors it creates for RBCD, its KDC only requires
