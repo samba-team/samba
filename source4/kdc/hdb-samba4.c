@@ -317,6 +317,29 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 }
 
 static krb5_error_code
+hdb_samba4_check_rbcd(krb5_context context, HDB *db,
+		      krb5_const_principal client_principal,
+		      krb5_const_principal server_principal,
+		      krb5_const_pac header_pac,
+		      const hdb_entry *proxy)
+{
+	struct samba_kdc_db_context *kdc_db_ctx = NULL;
+	struct samba_kdc_entry *proxy_skdc_entry = NULL;
+
+	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
+					   struct samba_kdc_db_context);
+	proxy_skdc_entry = talloc_get_type_abort(proxy->context,
+						 struct samba_kdc_entry);
+
+	return samba_kdc_check_s4u2proxy_rbcd(context,
+					      kdc_db_ctx,
+					      client_principal,
+					      server_principal,
+					      header_pac,
+					      proxy_skdc_entry);
+}
+
+static krb5_error_code
 hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 				     hdb_entry *entry,
 				     krb5_const_principal certificate_principal)
@@ -1132,6 +1155,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 
 	(*db)->hdb_audit = hdb_samba4_audit;
 	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_constrained_delegation;
+	(*db)->hdb_check_rbcd = hdb_samba4_check_rbcd;
 	(*db)->hdb_check_pkinit_ms_upn_match = hdb_samba4_check_pkinit_ms_upn_match;
 	(*db)->hdb_check_client_matches_target_service = hdb_samba4_check_client_matches_target_service;
 
