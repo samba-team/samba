@@ -4444,7 +4444,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a computer account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         client_dn = client_creds.get_dn()
         tgt = self.get_tgt(client_creds)
@@ -4479,7 +4478,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a computer account.
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         client_dn = client_creds.get_dn()
         tgt = self.get_tgt(client_creds)
@@ -4680,7 +4678,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a target account.
         target_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         target_spn = target_creds.get_spn()
 
@@ -4803,7 +4800,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a target account.
         target_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         target_spn = target_creds.get_spn()
 
@@ -4889,7 +4885,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a target account.
         target_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         target_spn = target_creds.get_spn()
 
@@ -5267,7 +5262,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a service account.
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
         service_spn = service_creds.get_spn()
@@ -5356,7 +5350,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a service account.
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
         service_spn = service_creds.get_spn()
@@ -5441,7 +5434,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a service account.
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
         service_sid = service_creds.get_sid()
@@ -5710,7 +5702,6 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         # Create a service account.
         service_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'id': 1},
             use_cache=False)
         service_dn_str = str(service_creds.get_dn())
         service_sid = service_creds.get_sid()
