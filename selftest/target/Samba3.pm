@@ -1295,6 +1295,7 @@ sub setup_ad_member_idmap_rid
 	create krb5 conf = no
         map to guest = bad user
 	winbind expand groups = 10
+	server signing = required
 ";
 
 	my $ret = $self->provision(
