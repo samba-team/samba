@@ -1544,15 +1544,13 @@ static void call_trans2findnext(connection_struct *conn,
 						  resume_name,
 						  last_name_sent);
 		if (!sequential) {
-			struct stat_ex st;
 			char *name = NULL;
 			bool found = false;
 
 			dptr_RewindDir(fsp->dptr);
 
 			while ((name = dptr_ReadDirName(talloc_tos(),
-							fsp->dptr,
-							&st)) != NULL) {
+							fsp->dptr)) != NULL) {
 				found = smbd_dptr_name_equal(fsp->dptr,
 							     resume_name,
 							     name);

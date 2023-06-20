@@ -198,9 +198,7 @@ int dptr_dnum(struct dptr_struct *dptr);
 bool dptr_get_priv(struct dptr_struct *dptr);
 void dptr_set_priv(struct dptr_struct *dptr);
 bool dptr_case_sensitive(struct dptr_struct *dptr);
-char *dptr_ReadDirName(TALLOC_CTX *ctx,
-		       struct dptr_struct *dptr,
-		       SMB_STRUCT_STAT *pst);
+char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr);
 struct smb_Dir;
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
 files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,

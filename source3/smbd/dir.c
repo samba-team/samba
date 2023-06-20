@@ -391,10 +391,11 @@ bool dptr_case_sensitive(struct dptr_struct *dptr)
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-char *dptr_ReadDirName(TALLOC_CTX *ctx,
-		       struct dptr_struct *dptr,
-		       SMB_STRUCT_STAT *pst)
+char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr)
 {
+	struct stat_ex st = {
+		.st_ex_nlink = 0,
+	};
 	struct smb_Dir *dir_hnd = dptr->dir_hnd;
 	struct files_struct *dir_fsp = dir_hnd->fsp;
 	struct smb_filename *dir_name = dir_fsp->fsp_name;
@@ -403,12 +404,10 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	int ret;
 	int flags = 0;
 
-	SET_STAT_INVALID(*pst);
-
 	if (dptr->has_wild) {
 		const char *name_temp = NULL;
 		char *talloced = NULL;
-		name_temp = ReadDirName(dir_hnd, pst, &talloced);
+		name_temp = ReadDirName(dir_hnd, &st, &talloced);
 		if (name_temp == NULL) {
 			return NULL;
 		}
@@ -439,7 +438,7 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		flags |= AT_SYMLINK_NOFOLLOW;
 	}
 
-	ret = SMB_VFS_FSTATAT(dptr->conn, dir_fsp, &smb_fname_base, pst, flags);
+	ret = SMB_VFS_FSTATAT(dptr->conn, dir_fsp, &smb_fname_base, &st, flags);
 	if (ret == 0) {
 		return talloc_strdup(ctx, dptr->wcard);
 	}
@@ -551,7 +550,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	slashlen = ( dpath[pathlen-1] != '/') ? 1 : 0;
 
 	while (true) {
-		SMB_STRUCT_STAT sbuf = { 0 };
 		char *dname = NULL;
 		bool isdots;
 		char *fname = NULL;
@@ -563,7 +561,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		bool get_dosmode = get_dosmode_in;
 		bool ok;
 
-		dname = dptr_ReadDirName(ctx, dirptr, &sbuf);
+		dname = dptr_ReadDirName(ctx, dirptr);
 
 		DBG_DEBUG("dir [%s] dirptr [%p] offset [%u] => "
 			  "dname [%s]\n",
