@@ -259,9 +259,6 @@ static NTSTATUS create_sys_acl_blob(const struct security_descriptor *psd,
 	struct security_descriptor_hash_v4 sd_hs4;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *ctx = talloc_tos();
-	NTTIME nttime_now;
-	struct timeval now = timeval_current();
-	nttime_now = timeval_to_nttime(&now);
 
 	ZERO_STRUCT(xacl);
 	ZERO_STRUCT(sd_hs4);
@@ -272,7 +269,6 @@ static NTSTATUS create_sys_acl_blob(const struct security_descriptor *psd,
 	xacl.info.sd_hs4->hash_type = hash_type;
 	memcpy(&xacl.info.sd_hs4->hash[0], hash, XATTR_SD_HASH_SIZE);
 	xacl.info.sd_hs4->description = description;
-	xacl.info.sd_hs4->time = nttime_now;
 	memcpy(&xacl.info.sd_hs4->sys_acl_hash[0], sys_acl_hash, XATTR_SD_HASH_SIZE);
 
 	ndr_err = ndr_push_struct_blob(

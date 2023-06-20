@@ -204,6 +204,11 @@ interface xattr
 					 * this hash (to allow
 					 * forensics later, if we have
 					 * a bug in one codepath */
+		/*
+		 * "time" is always set to 0. Left here to avoid
+		 * bumping the union versions. Remove in case a v5 is
+		 * necessary.
+		 */
 		NTTIME time;
 		uint8 sys_acl_hash[64]; /* 64 bytes hash. */
 	} security_descriptor_hash_v4;
