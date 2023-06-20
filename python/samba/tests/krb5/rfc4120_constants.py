@@ -68,6 +68,10 @@ PADATA_PAC_REQUEST = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-PA-PAC-REQUEST'))
 PADATA_PK_AS_REQ = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REQ'))
+PADATA_PK_AS_REP = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REP'))
+PADATA_PK_AS_REQ_19 = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REQ-19'))
 PADATA_PK_AS_REP_19 = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REP-19'))
 PADATA_PW_SALT = int(
