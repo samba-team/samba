@@ -303,8 +303,8 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 					hdb_entry *entry,
 					krb5_const_principal target_principal)
 {
-	struct samba_kdc_db_context *kdc_db_ctx;
-	struct samba_kdc_entry *skdc_entry;
+	struct samba_kdc_db_context *kdc_db_ctx = NULL;
+	struct samba_kdc_entry *skdc_entry = NULL;
 	krb5_error_code ret;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
