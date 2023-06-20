@@ -544,13 +544,6 @@ static bool test_mdssvc_invalid_ph_cmd(struct torture_context *tctx,
 	request_blob.length = 0;
 	request_blob.size = 0;
 
-	response_blob.spotlight_blob = talloc_array(state,
-						    uint8_t,
-						    0);
-	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
-				     ok, done, "dalloc_zero failed\n");
-	response_blob.size = 0;
-
 	status =  dcerpc_mdssvc_cmd(b,
 				    state,
 				    &ph,
@@ -643,13 +636,6 @@ static bool test_mdssvc_sl_unpack_loop(struct torture_context *tctx,
 	request_blob.spotlight_blob = test_sl_unpack_loop_buf;
 	request_blob.size = sizeof(test_sl_unpack_loop_buf);
 	request_blob.length = sizeof(test_sl_unpack_loop_buf);
-
-	response_blob.spotlight_blob = talloc_array(state,
-						    uint8_t,
-						    0);
-	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
-				     ok, done, "dalloc_zero failed\n");
-	response_blob.size = 0;
 
 	status = dcerpc_mdssvc_cmd(b,
 				   state,
@@ -775,11 +761,6 @@ static bool test_sl_dict_type_safety(struct torture_context *tctx,
 				      request_blob.size);
 	torture_assert_goto(tctx, request_blob.length > 0,
 			    ok, done, "sl_pack failed\n");
-
-	response_blob.spotlight_blob = talloc_array(state, uint8_t, 0);
-	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
-				     ok, done, "dalloc_zero failed\n");
-	response_blob.size = 0;
 
 	status = dcerpc_mdssvc_cmd(b,
 				   state,
@@ -941,13 +922,6 @@ static bool test_mdssvc_fetch_attr_unknown_cnid(struct torture_context *tctx,
 	torture_assert_not_null_goto(tctx, request_blob.spotlight_blob,
 				     ret, done, "dalloc_zero failed\n");
 	request_blob.size = max_fragment_size;
-
-	response_blob.spotlight_blob = talloc_array(state,
-						    uint8_t,
-						    max_fragment_size);
-	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
-				     ret, done, "dalloc_zero failed\n");
-	response_blob.size = max_fragment_size;
 
 	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
 	torture_assert_goto(tctx, len != -1, ret, done, "sl_pack failed\n");
