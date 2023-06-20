@@ -380,6 +380,7 @@
  * Version 48 - Add dirfsp to connectpath_fn()
  * Change to Version 49 - will ship with 4.19
  * Version 49 - remove seekdir and telldir
+ * Version 49 - remove "sbuf" argument from readdir_fn()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 49
@@ -967,8 +968,7 @@ struct vfs_fn_pointers {
 	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
 				     struct files_struct *dirfsp,
-				     DIR *dirp,
-				     SMB_STRUCT_STAT *sbuf);
+				     DIR *dirp);
 	void (*rewind_dir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	int (*mkdirat_fn)(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
@@ -1462,8 +1462,7 @@ DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					uint32_t attributes);
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 				    struct files_struct *dirfsp,
-				    DIR *dirp,
-				    SMB_STRUCT_STAT *sbuf);
+				    DIR *dirp);
 void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 			     DIR *dirp);
 int smb_vfs_call_mkdirat(struct vfs_handle_struct *handle,
@@ -1904,8 +1903,7 @@ DIR *vfs_not_implemented_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 				   const char *mask, uint32_t attr);
 struct dirent *vfs_not_implemented_readdir(vfs_handle_struct *handle,
 					   struct files_struct *dirfsp,
-					   DIR *dirp,
-					   SMB_STRUCT_STAT *sbuf);
+					   DIR *dirp);
 void vfs_not_implemented_rewind_dir(vfs_handle_struct *handle, DIR *dirp);
 int vfs_not_implemented_mkdirat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,

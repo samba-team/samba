@@ -594,57 +594,16 @@ static DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 	return result;
 }
 
-
 static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 				      struct files_struct *dirfsp,
-				      DIR *dirp,
-				      SMB_STRUCT_STAT *sbuf)
+				      DIR *dirp)
 {
 	struct dirent *result;
-	bool fake_ctime = lp_fake_directory_create_times(SNUM(handle->conn));
-	int flags = AT_SYMLINK_NOFOLLOW;
-	SMB_STRUCT_STAT st = {0};
-	int ret;
 
 	START_PROFILE(syscall_readdir);
 
 	result = readdir(dirp);
 	END_PROFILE(syscall_readdir);
-
-	if (sbuf == NULL) {
-		return result;
-	}
-	if (result == NULL) {
-		return NULL;
-	}
-
-	/*
-	 * Default Posix readdir() does not give us stat info.
-	 * Set to invalid to indicate we didn't return this info.
-	 */
-	SET_STAT_INVALID(*sbuf);
-
-	ret = sys_fstatat(dirfd(dirp),
-		      result->d_name,
-		      &st,
-		      flags,
-		      fake_ctime);
-	if (ret != 0) {
-		return result;
-	}
-
-	/*
-	 * As this is an optimization, ignore it if we stat'ed a
-	 * symlink for non-POSIX context. Make the caller do it again
-	 * as we don't know if they wanted the link info, or its
-	 * target info.
-	 */
-	if (S_ISLNK(st.st_ex_mode) &&
-	    !(dirfsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH))
-	{
-		return result;
-	}
-	*sbuf = st;
 
 	return result;
 }

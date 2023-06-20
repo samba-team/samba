@@ -98,7 +98,7 @@ static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, 
 	while (True) {
 		struct dirent *d;
 
-		d = SMB_VFS_NEXT_READDIR(handle, fsp, p, NULL);
+		d = SMB_VFS_NEXT_READDIR(handle, fsp, p);
 		if (d == NULL) {
 			break;
 		}
@@ -127,8 +127,7 @@ static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, 
 
 static struct dirent *shadow_copy_readdir(vfs_handle_struct *handle,
 					  struct files_struct *dirfsp,
-					  DIR *_dirp,
-					  SMB_STRUCT_STAT *sbuf)
+					  DIR *_dirp)
 {
 	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
 

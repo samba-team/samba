@@ -370,41 +370,6 @@ static int widelinks_openat(vfs_handle_struct *handle,
 				   &how);
 }
 
-static struct dirent *widelinks_readdir(vfs_handle_struct *handle,
-					struct files_struct *dirfsp,
-					DIR *dirp,
-					SMB_STRUCT_STAT *sbuf)
-{
-	struct widelinks_config *config = NULL;
-	struct dirent *result;
-
-	SMB_VFS_HANDLE_GET_DATA(handle,
-				config,
-				struct widelinks_config,
-				return NULL);
-
-	result = SMB_VFS_NEXT_READDIR(handle,
-				      dirfsp,
-				      dirp,
-				      sbuf);
-
-	if (!config->active) {
-		/* Module not active. */
-		return result;
-	}
-
-	/*
-	 * Prevent optimization of returning
-	 * the stat info. Force caller to go
-	 * through our LSTAT that hides symlinks.
-	 */
-
-	if (sbuf) {
-		SET_STAT_INVALID(*sbuf);
-	}
-	return result;
-}
-
 static struct vfs_fn_pointers vfs_widelinks_fns = {
 	.connect_fn = widelinks_connect,
 
@@ -418,7 +383,6 @@ static struct vfs_fn_pointers vfs_widelinks_fns = {
 	.chdir_fn = widelinks_chdir,
 	.getwd_fn = widelinks_getwd,
 	.realpath_fn = widelinks_realpath,
-	.readdir_fn = widelinks_readdir
 };
 
 static_decl_vfs;

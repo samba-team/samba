@@ -849,9 +849,6 @@ const char *vfs_readdirname(connection_struct *conn,
 			    void *p,
 			    char **talloced)
 {
-	struct stat_ex st = {
-		.st_ex_nlink = 0,
-	};
 	struct dirent *ptr= NULL;
 	const char *dname;
 	char *translated;
@@ -860,7 +857,7 @@ const char *vfs_readdirname(connection_struct *conn,
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn, dirfsp, (DIR *)p, &st);
+	ptr = SMB_VFS_READDIR(conn, dirfsp, (DIR *)p);
 	if (!ptr)
 		return(NULL);
 
@@ -1493,11 +1490,10 @@ DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 				    struct files_struct *dirfsp,
-				    DIR *dirp,
-				    SMB_STRUCT_STAT *sbuf)
+				    DIR *dirp)
 {
 	VFS_FIND(readdir);
-	return handle->fns->readdir_fn(handle, dirfsp, dirp, sbuf);
+	return handle->fns->readdir_fn(handle, dirfsp, dirp);
 }
 
 void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,

@@ -163,12 +163,10 @@ static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
 }
 
-static struct dirent *skel_readdir(vfs_handle_struct *handle,
-				   struct files_struct *dirfsp,
-				   DIR *dirp,
-				   SMB_STRUCT_STAT *sbuf)
+static struct dirent *
+skel_readdir(vfs_handle_struct *handle, struct files_struct *dirfsp, DIR *dirp)
 {
-	return SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf);
+	return SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp);
 }
 
 static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)

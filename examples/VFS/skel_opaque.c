@@ -157,8 +157,7 @@ static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 
 static struct dirent *skel_readdir(vfs_handle_struct *handle,
 				   struct files_struct *dirfsp,
-				   DIR *dirp,
-				   SMB_STRUCT_STAT *sbuf)
+				   DIR *dirp)
 {
 	return NULL;
 }

@@ -2276,7 +2276,7 @@ static int shadow_copy2_get_shadow_copy_data(
 		time(&(priv->snaps->fetch_time));
 	}
 
-	while ((d = SMB_VFS_NEXT_READDIR(handle, dirfsp, p, NULL))) {
+	while ((d = SMB_VFS_NEXT_READDIR(handle, dirfsp, p))) {
 		char snapshot[GMT_NAME_LEN+1];
 		SHADOW_COPY_LABEL *tlabels;
 
@@ -3373,96 +3373,6 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static struct dirent *shadow_copy2_readdir(vfs_handle_struct *handle,
-					   struct files_struct *dirfsp,
-					   DIR *dirp,
-					   SMB_STRUCT_STAT *sbuf)
-{
-	struct shadow_copy2_private *priv = NULL;
-	struct dirent *ent = NULL;
-	struct smb_filename atname;
-	struct smb_filename *full_fname = NULL;
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	char *conv = NULL;
-	char *abspath = NULL;
-	bool converted = false;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
-				return NULL);
-
-	ent = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf);
-	if (ent == NULL) {
-		return NULL;
-	}
-	if (sbuf == NULL) {
-		return ent;
-	}
-	if (ISDOT(dirfsp->fsp_name->base_name) && ISDOTDOT(ent->d_name)) {
-		return ent;
-	}
-
-	atname = (struct smb_filename) {
-		.base_name = ent->d_name,
-		.twrp = dirfsp->fsp_name->twrp,
-		.flags = dirfsp->fsp_name->flags,
-	};
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  &atname);
-	if (full_fname == NULL) {
-		return NULL;
-	}
-
-	if (!shadow_copy2_strip_snapshot_converted(talloc_tos(),
-						   handle,
-						   full_fname,
-						   &timestamp,
-						   &stripped,
-						   &converted)) {
-		TALLOC_FREE(full_fname);
-		return NULL;
-	}
-
-	if (timestamp == 0 && !converted) {
-		/* Not a snapshot path, no need for convert_sbuf() */
-		TALLOC_FREE(stripped);
-		TALLOC_FREE(full_fname);
-		return ent;
-	}
-
-	if (timestamp == 0) {
-		abspath = make_path_absolute(talloc_tos(),
-					     priv,
-					     full_fname->base_name);
-		TALLOC_FREE(full_fname);
-		if (abspath == NULL) {
-			return NULL;
-		}
-	} else {
-		conv = shadow_copy2_convert(talloc_tos(),
-					    handle,
-					    stripped,
-					    timestamp);
-		TALLOC_FREE(stripped);
-		if (conv == NULL) {
-			return NULL;
-		}
-
-		abspath = make_path_absolute(talloc_tos(), priv, conv);
-		TALLOC_FREE(conv);
-		if (abspath == NULL) {
-			return NULL;
-		}
-	}
-
-	convert_sbuf(handle, abspath, sbuf);
-
-	TALLOC_FREE(abspath);
-	return ent;
-}
-
 static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.connect_fn = shadow_copy2_connect,
 	.disk_free_fn = shadow_copy2_disk_free,
@@ -3494,7 +3404,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.pwrite_recv_fn = shadow_copy2_pwrite_recv,
 	.connectpath_fn = shadow_copy2_connectpath,
 	.parent_pathname_fn = shadow_copy2_parent_pathname,
-	.readdir_fn = shadow_copy2_readdir,
 };
 
 static_decl_vfs;

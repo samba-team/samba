@@ -451,8 +451,7 @@ static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 
 static struct dirent *cephwrap_readdir(struct vfs_handle_struct *handle,
 				       struct files_struct *dirfsp,
-				       DIR *dirp,
-				       SMB_STRUCT_STAT *sbuf)
+				       DIR *dirp)
 {
 	struct dirent *result;
 
@@ -460,10 +459,6 @@ static struct dirent *cephwrap_readdir(struct vfs_handle_struct *handle,
 	result = ceph_readdir(handle->data, (struct ceph_dir_result *) dirp);
 	DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
 
-	/* Default Posix readdir() does not give us stat info.
-	 * Set to invalid to indicate we didn't return this info. */
-	if (sbuf)
-		SET_STAT_INVALID(*sbuf);
 	return result;
 }
 

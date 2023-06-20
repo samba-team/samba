@@ -649,32 +649,19 @@ static int vfs_gluster_closedir(struct vfs_handle_struct *handle, DIR *dirp)
 
 static struct dirent *vfs_gluster_readdir(struct vfs_handle_struct *handle,
 					  struct files_struct *dirfsp,
-					  DIR *dirp,
-					  SMB_STRUCT_STAT *sbuf)
+					  DIR *dirp)
 {
 	static char direntbuf[512];
 	int ret;
-	struct stat stat;
 	struct dirent *dirent = 0;
 
 	START_PROFILE(syscall_readdir);
-	if (sbuf != NULL) {
-		ret = glfs_readdirplus_r((void *)dirp, &stat, (void *)direntbuf,
-					 &dirent);
-	} else {
-		ret = glfs_readdir_r((void *)dirp, (void *)direntbuf, &dirent);
-	}
+
+	ret = glfs_readdir_r((void *)dirp, (void *)direntbuf, &dirent);
 
 	if ((ret < 0) || (dirent == NULL)) {
 		END_PROFILE(syscall_readdir);
 		return NULL;
-	}
-
-	if (sbuf != NULL) {
-		SET_STAT_INVALID(*sbuf);
-		if (!S_ISLNK(stat.st_mode)) {
-			smb_stat_ex_from_stat(sbuf, &stat);
-		}
 	}
 
 	END_PROFILE(syscall_readdir);
