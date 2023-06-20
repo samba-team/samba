@@ -5498,3 +5498,67 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+static bool test_session_require_sign_bug15397(struct torture_context *tctx,
+					       struct smb2_tree *_tree)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *_creds = samba_cmdline_get_creds();
+	struct cli_credentials *creds = NULL;
+	struct smbcli_options options;
+	struct smb2_tree *tree = NULL;
+	uint8_t security_mode;
+	NTSTATUS status;
+	bool ok = true;
+
+	/*
+	 * Setup our own connection so we can control the signing flags
+	 */
+
+	creds = cli_credentials_shallow_copy(tctx, _creds);
+	torture_assert(tctx, creds != NULL, "cli_credentials_shallow_copy");
+
+	options = _tree->session->transport->options;
+	options.client_guid = GUID_random();
+	options.signing = SMB_SIGNING_IF_REQUIRED;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      creds,
+			      &tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"smb2_connect failed");
+
+	security_mode = smb2cli_session_security_mode(tree->session->smbXcli);
+
+	torture_assert_int_equal_goto(
+		tctx,
+		security_mode,
+		SMB2_NEGOTIATE_SIGNING_REQUIRED | SMB2_NEGOTIATE_SIGNING_ENABLED,
+		ok,
+		done,
+		"Signing not required");
+
+done:
+	return ok;
+}
+
+struct torture_suite *torture_smb2_session_req_sign_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(ctx, "session-require-signing");
+
+	torture_suite_add_1smb2_test(suite, "bug15397",
+				     test_session_require_sign_bug15397);
+
+	suite->description = talloc_strdup(suite, "SMB2-SESSION require signing tests");
+	return suite;
+}

@@ -938,6 +938,8 @@ for t in tests:
         # Certain tests fail when run against ad_member with MIT kerberos because the private krb5.conf overrides the provisioned lib/krb5.conf,
         # ad_member_idmap_rid sets "create krb5.conf = no"
         plansmbtorture4testsuite(t, "ad_member_idmap_rid", '//$SERVER/tmp -k yes -U$DC_USERNAME@$REALM%$DC_PASSWORD', 'krb5')
+    elif t == "smb2.session-require-signing":
+        plansmbtorture4testsuite(t, "ad_member_idmap_rid", '//$SERVER_IP/tmp -U$DC_USERNAME@$REALM%$DC_PASSWORD')
     elif t == "rpc.lsa":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
         plansmbtorture4testsuite(t, "nt4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
