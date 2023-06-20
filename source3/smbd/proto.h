@@ -1207,7 +1207,6 @@ off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n);
 const char *vfs_readdirname(connection_struct *conn,
 			    struct files_struct *dirfsp,
 			    void *p,
-			    SMB_STRUCT_STAT *sbuf,
 			    char **talloced);
 int vfs_ChDir(connection_struct *conn,
 			const struct smb_filename *smb_fname);

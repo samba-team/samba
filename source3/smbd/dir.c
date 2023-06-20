@@ -1251,9 +1251,6 @@ static NTSTATUS OpenDir_fsp(
 
 const char *ReadDirName(struct smb_Dir *dir_hnd, char **ptalloced)
 {
-	struct stat_ex st = {
-		.st_ex_nlink = 0,
-	};
 	const char *n;
 	char *talloced = NULL;
 	connection_struct *conn = dir_hnd->conn;
@@ -1272,7 +1269,6 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, char **ptalloced)
 	while ((n = vfs_readdirname(conn,
 				    dir_hnd->fsp,
 				    dir_hnd->dir,
-				    &st,
 				    &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
 		if (ISDOT(n) || ISDOTDOT(n)) {

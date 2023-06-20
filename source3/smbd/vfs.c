@@ -847,9 +847,11 @@ off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n)
 const char *vfs_readdirname(connection_struct *conn,
 			    struct files_struct *dirfsp,
 			    void *p,
-			    SMB_STRUCT_STAT *sbuf,
 			    char **talloced)
 {
+	struct stat_ex st = {
+		.st_ex_nlink = 0,
+	};
 	struct dirent *ptr= NULL;
 	const char *dname;
 	char *translated;
@@ -858,7 +860,7 @@ const char *vfs_readdirname(connection_struct *conn,
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn, dirfsp, (DIR *)p, sbuf);
+	ptr = SMB_VFS_READDIR(conn, dirfsp, (DIR *)p, &st);
 	if (!ptr)
 		return(NULL);
 
