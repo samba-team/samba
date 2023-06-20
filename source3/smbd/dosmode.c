@@ -525,6 +525,38 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+static uint32_t dos_mode_from_name(connection_struct *conn,
+				   const struct smb_filename *smb_fname,
+				   uint32_t dosmode)
+{
+	const char *p = NULL;
+	uint32_t result = dosmode;
+
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
+	    lp_hide_dot_files(SNUM(conn)))
+	{
+		p = strrchr_m(smb_fname->base_name, '/');
+		if (p) {
+			p++;
+		} else {
+			p = smb_fname->base_name;
+		}
+
+		/* Only . and .. are not hidden. */
+		if ((p[0] == '.') && !(ISDOT(p) || ISDOTDOT(p))) {
+			result |= FILE_ATTRIBUTE_HIDDEN;
+		}
+	}
+
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
+	    IS_HIDDEN_PATH(conn, smb_fname->base_name))
+	{
+		result |= FILE_ATTRIBUTE_HIDDEN;
+	}
+
+	return result;
+}
+
 /****************************************************************************
  Change a unix mode to a dos mode for an ms dfs link.
 ****************************************************************************/
@@ -602,38 +634,6 @@ static NTSTATUS dos_mode_check_compressed(struct files_struct *fsp,
 		*is_compressed = false;
 	}
 	return NT_STATUS_OK;
-}
-
-static uint32_t dos_mode_from_name(connection_struct *conn,
-				   const struct smb_filename *smb_fname,
-				   uint32_t dosmode)
-{
-	const char *p = NULL;
-	uint32_t result = dosmode;
-
-	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
-	    lp_hide_dot_files(SNUM(conn)))
-	{
-		p = strrchr_m(smb_fname->base_name, '/');
-		if (p) {
-			p++;
-		} else {
-			p = smb_fname->base_name;
-		}
-
-		/* Only . and .. are not hidden. */
-		if ((p[0] == '.') && !(ISDOT(p) || ISDOTDOT(p))) {
-			result |= FILE_ATTRIBUTE_HIDDEN;
-		}
-	}
-
-	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
-	    IS_HIDDEN_PATH(conn, smb_fname->base_name))
-	{
-		result |= FILE_ATTRIBUTE_HIDDEN;
-	}
-
-	return result;
 }
 
 static uint32_t dos_mode_post(uint32_t dosmode,
