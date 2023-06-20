@@ -1075,7 +1075,9 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 			return false;
 		}
 
-		*_mode = dos_mode_msdfs(state->conn, smb_fname);
+		*_mode = dos_mode_msdfs(state->conn,
+					smb_fname->base_name,
+					&smb_fname->st);
 		return true;
 	}
 

@@ -563,18 +563,19 @@ dos_mode_from_name(connection_struct *conn, const char *name, uint32_t dosmode)
 ****************************************************************************/
 
 uint32_t dos_mode_msdfs(connection_struct *conn,
-		      const struct smb_filename *smb_fname)
+			const char *name,
+			const struct stat_ex *st)
 {
 	uint32_t result = 0;
 
-	DEBUG(8,("dos_mode_msdfs: %s\n", smb_fname_str_dbg(smb_fname)));
+	DEBUG(8, ("dos_mode_msdfs: %s\n", name));
 
-	if (!VALID_STAT(smb_fname->st)) {
+	if (!VALID_STAT(*st)) {
 		return 0;
 	}
 
-	result = dos_mode_from_name(conn, smb_fname->base_name, result);
-	result |= dos_mode_from_sbuf(conn, &smb_fname->st, NULL);
+	result = dos_mode_from_name(conn, name, result);
+	result |= dos_mode_from_sbuf(conn, st, NULL);
 
 	if (result == 0) {
 		result = FILE_ATTRIBUTE_NORMAL;
