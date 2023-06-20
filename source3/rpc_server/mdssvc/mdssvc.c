@@ -1804,19 +1804,21 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 	}
 
 	ok = slcmd->function(mds_ctx, query, reply);
-	if (ok) {
-		DBG_DEBUG("%s", dalloc_dump(reply, 0));
-
-		len = sl_pack(reply,
-			      (char *)response_blob->spotlight_blob,
-			      response_blob->size);
-		if (len == -1) {
-			DBG_ERR("error packing Spotlight RPC reply\n");
-			ok = false;
-			goto cleanup;
-		}
-		response_blob->length = len;
+	if (!ok) {
+		goto cleanup;
 	}
+
+	DBG_DEBUG("%s", dalloc_dump(reply, 0));
+
+	len = sl_pack(reply,
+		      (char *)response_blob->spotlight_blob,
+		      response_blob->size);
+	if (len == -1) {
+		DBG_ERR("error packing Spotlight RPC reply\n");
+		ok = false;
+		goto cleanup;
+	}
+	response_blob->length = len;
 
 cleanup:
 	talloc_free(query);
