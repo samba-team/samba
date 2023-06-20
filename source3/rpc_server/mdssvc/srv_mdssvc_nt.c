@@ -164,7 +164,6 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
 	bool ok;
-	char *rbuf;
 	struct mds_ctx *mds_ctx;
 	NTSTATUS status;
 
@@ -220,14 +219,6 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 		return;
 	}
-
-	rbuf = talloc_zero_array(p->mem_ctx, char, r->in.max_fragment_size1);
-	if (rbuf == NULL) {
-		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-		return;
-	}
-	r->out.response_blob->spotlight_blob = (uint8_t *)rbuf;
-	r->out.response_blob->size = r->in.max_fragment_size1;
 
 	/* We currently don't use fragmentation at the mdssvc RPC layer */
 	*r->out.fragment = 0;
