@@ -529,9 +529,8 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-static uint32_t dos_mode_from_name(connection_struct *conn,
-				   const struct smb_filename *smb_fname,
-				   uint32_t dosmode)
+static uint32_t
+dos_mode_from_name(connection_struct *conn, const char *name, uint32_t dosmode)
 {
 	const char *p = NULL;
 	uint32_t result = dosmode;
@@ -539,11 +538,11 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
 	    lp_hide_dot_files(SNUM(conn)))
 	{
-		p = strrchr_m(smb_fname->base_name, '/');
+		p = strrchr_m(name, '/');
 		if (p) {
 			p++;
 		} else {
-			p = smb_fname->base_name;
+			p = name;
 		}
 
 		/* Only . and .. are not hidden. */
@@ -552,9 +551,7 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 		}
 	}
 
-	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
-	    IS_HIDDEN_PATH(conn, smb_fname->base_name))
-	{
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) && IS_HIDDEN_PATH(conn, name)) {
 		result |= FILE_ATTRIBUTE_HIDDEN;
 	}
 
@@ -576,7 +573,7 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
 		return 0;
 	}
 
-	result = dos_mode_from_name(conn, smb_fname, result);
+	result = dos_mode_from_name(conn, smb_fname->base_name, result);
 	result |= dos_mode_from_sbuf(conn, &smb_fname->st, NULL);
 
 	if (result == 0) {
@@ -656,7 +653,7 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 		}
 	}
 
-	dosmode |= dos_mode_from_name(fsp->conn, smb_fname, dosmode);
+	dosmode |= dos_mode_from_name(fsp->conn, smb_fname->base_name, dosmode);
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
