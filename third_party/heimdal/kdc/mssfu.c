@@ -97,6 +97,38 @@ check_constrained_delegation(krb5_context context,
 }
 
 /*
+ * Determine if resource-based constrained delegation is allowed from this
+ * client to this server
+ */
+
+static krb5_error_code
+check_rbcd(krb5_context context,
+	   krb5_kdc_configuration *config,
+	   HDB *clientdb,
+	   krb5_const_principal s4u_principal,
+	   krb5_const_principal client_principal,
+	   krb5_const_pac client_pac,
+	   const hdb_entry *target)
+{
+    krb5_error_code ret = KRB5KDC_ERR_BADOPTION;
+
+    if (clientdb->hdb_check_rbcd) {
+	ret = clientdb->hdb_check_rbcd(context,
+				       clientdb,
+				       s4u_principal,
+				       client_principal,
+				       client_pac,
+				       target);
+	if (ret == 0)
+	    return 0;
+    }
+
+    kdc_log(context, config, 4,
+	    "Bad request for resource-based constrained delegation");
+    return ret;
+}
+
+/*
  * Validate a protocol transition (S4U2Self) request. If successfully
  * validated then the client in the request structure will be replaced
  * with the impersonated client.
@@ -350,6 +382,9 @@ _kdc_validate_constrained_delegation(astgs_request_t r)
     Key *clientkey;
     Ticket *t;
     krb5_const_realm local_realm;
+    const PA_DATA *pac_options_data = NULL;
+    int pac_options_data_idx = 0;
+    krb5_boolean rbcd_support = FALSE;
 
     memset(&evidence_tkt, 0, sizeof(evidence_tkt));
     local_realm =
@@ -457,13 +492,55 @@ _kdc_validate_constrained_delegation(astgs_request_t r)
 	goto out;
     }
 
-    ret = check_constrained_delegation(r->context, r->config, r->clientdb,
-				       r->client, r->server, r->server_princ);
-    if (ret) {
+    pac_options_data = _kdc_find_padata(&r->req,
+					&pac_options_data_idx,
+					KRB5_PADATA_PAC_OPTIONS);
+    if (pac_options_data != NULL) {
+	PA_PAC_OPTIONS pac_options;
+	size_t size = 0;
+
+	ret = decode_PA_PAC_OPTIONS(pac_options_data->padata_value.data,
+				    pac_options_data->padata_value.length,
+				    &pac_options,
+				    &size);
+	if (ret) {
+	    goto out;
+	}
+
+	if (size != pac_options_data->padata_value.length) {
+	    free_PA_PAC_OPTIONS(&pac_options);
+	    ret = KRB5KDC_ERR_BADOPTION;
+	    goto out;
+	}
+
+	rbcd_support = pac_options.flags.resource_based_constrained_delegation != 0;
+
+	free_PA_PAC_OPTIONS(&pac_options);
+    }
+
+    if (rbcd_support) {
+	ret = check_rbcd(r->context, r->config, r->clientdb,
+			 s4u_client_name, r->client_princ, r->pac, r->server);
+    } else {
+	ret = KRB5KDC_ERR_BADOPTION;
+    }
+    if (ret == KRB5KDC_ERR_BADOPTION) {
+	/* RBCD was denied or not supported; try constrained delegation. */
+	ret = check_constrained_delegation(r->context, r->config, r->clientdb,
+					   r->client, r->server, r->server_princ);
+	if (ret) {
+	    kdc_audit_addreason((kdc_request_t)r,
+				"Constrained delegation not allowed");
+	    kdc_log(r->context, r->config, 4,
+		    "constrained delegation from %s (%s) as %s to %s not allowed",
+		    r->cname, s4usname, s4ucname, r->sname);
+	    goto out;
+	}
+    } else if (ret) {
 	kdc_audit_addreason((kdc_request_t)r,
-			    "Constrained delegation not allowed");
+			    "Resource-based constrained delegation not allowed");
 	kdc_log(r->context, r->config, 4,
-		"constrained delegation from %s (%s) as %s to %s not allowed",
+		"resource-based constrained delegation from %s (%s) as %s to %s not allowed",
 		r->cname, s4usname, s4ucname, r->sname);
 	goto out;
     }
