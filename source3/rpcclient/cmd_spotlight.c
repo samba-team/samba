@@ -144,13 +144,6 @@ static NTSTATUS cmd_mdssvc_fetch_properties(
 	}
 	request_blob.size = max_fragment_size;
 
-	response_blob.spotlight_blob = talloc_array(mem_ctx, uint8_t, max_fragment_size);
-	if (response_blob.spotlight_blob == NULL) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-	response_blob.size = max_fragment_size;
-
 	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
 	if (len == -1) {
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -367,15 +360,6 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 		goto done;
 	}
 	request_blob.size = max_fragment_size;
-
-	response_blob.spotlight_blob = talloc_array(mem_ctx,
-						    uint8_t,
-						    max_fragment_size);
-	if (response_blob.spotlight_blob == NULL) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-	response_blob.size = max_fragment_size;
 
 	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
 	if (len == -1) {
