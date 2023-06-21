@@ -1709,6 +1709,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             'force_nt4_hash': False,
             'assigned_policy': None,
             'assigned_silo': None,
+            'logon_hours': None,
         }
 
         account_opts = {
@@ -1760,7 +1761,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                             id,
                             force_nt4_hash,
                             assigned_policy,
-                            assigned_silo):
+                            assigned_silo,
+                            logon_hours):
         if account_type is self.AccountType.USER:
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
@@ -1824,6 +1826,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         if assigned_silo is not None:
             details['msDS-AssignedAuthNPolicySilo'] = assigned_silo
+
+        if logon_hours is not None:
+            details['logonHours'] = logon_hours
 
         creds, dn = self.create_account(samdb, user_name,
                                         account_type=account_type,

@@ -22,11 +22,13 @@ import os
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+from samba import ntstatus
 from samba.tests import DynamicTestCase
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    KDC_ERR_CLIENT_REVOKED,
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_ETYPE_NOSUPP,
@@ -48,6 +50,8 @@ class AsReqBaseTest(KDCBaseTest):
                                   name_type=NT_PRINCIPAL, etypes=None,
                                   expected_error=None, expect_edata=None,
                                   expected_pa_error=None, expect_pa_edata=None,
+                                  expect_status=None,
+                                  expect_pa_status=None,
                                   kdc_options=None, till=None):
         user_name = client_creds.get_username()
         if client_account is None:
@@ -101,9 +105,10 @@ class AsReqBaseTest(KDCBaseTest):
             expected_supported_etypes=krbtgt_supported_etypes,
             expected_account_name=user_name,
             pac_request=True,
-            expect_edata=expect_edata)
+            expect_edata=expect_edata,
+            expected_status=expect_status)
 
-        if expected_error is not None:
+        if rep['error-code'] != KDC_ERR_PREAUTH_REQUIRED:
             return None
 
         etype_info2 = kdc_exchange_dict['preauth_etype_info2']
@@ -148,6 +153,7 @@ class AsReqBaseTest(KDCBaseTest):
             expected_supported_etypes=krbtgt_supported_etypes,
             expected_account_name=user_name,
             expect_edata=expect_pa_edata,
+            expected_status=expect_pa_status,
             preauth_key=preauth_key,
             ticket_decryption_key=krbtgt_decryption_key,
             pac_request=True)
@@ -530,6 +536,43 @@ class AsReqKerberosTests(AsReqBaseTest):
         self._run_as_req_enc_timestamp(
             client_creds,
             till='99990913024805Z')
+
+    def test_logon_hours(self):
+        """Test making an AS-REQ with a logonHours attribute that disallows
+        logging in."""
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'logon_hours': bytes(21)})
+
+        # Expect to get a CLIENT_REVOKED error.
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            expected_error=(KDC_ERR_CLIENT_REVOKED, KDC_ERR_PREAUTH_REQUIRED),
+            expect_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS,
+            expected_pa_error=KDC_ERR_CLIENT_REVOKED,
+            expect_pa_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS)
+
+    def test_logon_hours_wrong_password(self):
+        """Test making an AS-REQ with a wrong password and a logonHours
+        attribute that disallows logging in."""
+
+        # Use a non-cached account so that it is not locked out for other
+        # tests.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'logon_hours': bytes(21)},
+            use_cache=False)
+
+        client_creds.set_password('wrong password')
+
+        # Expect to get a CLIENT_REVOKED error.
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            expected_error=(KDC_ERR_CLIENT_REVOKED, KDC_ERR_PREAUTH_REQUIRED),
+            expect_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS,
+            expected_pa_error=KDC_ERR_CLIENT_REVOKED,
+            expect_pa_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS)
 
 
 if __name__ == "__main__":

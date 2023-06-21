@@ -3,6 +3,11 @@
 # kerberos
 ^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_mit_
 #
+# AS-REQ tests
+#
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_logon_hours_wrong_password.fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_logon_hours_wrong_password.fl2008r2dc
+#
 # Heimdal currently fails the following MS-KILE client principal lookup
 # tests
 ^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_6_a

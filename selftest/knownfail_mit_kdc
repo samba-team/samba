@@ -3,6 +3,13 @@
 # kerberos
 ^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_heimdal_
 #
+# AS-REQ tests
+#
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_logon_hours.fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_logon_hours.fl2008r2dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_logon_hours_wrong_password.fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_logon_hours_wrong_password.fl2008r2dc
+#
 # Currently MOST but not quite all the Canonicalization tests fail on the
 # MIT KDC
 #
