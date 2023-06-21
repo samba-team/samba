@@ -890,9 +890,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def _run_upn_dns_info_ex_test(self, client_creds):
         service_creds = self.get_service_creds()
 
-        samdb = self.get_samdb()
-        dn = client_creds.get_dn()
-
         account_name = client_creds.get_username()
         upn_name = client_creds.get_upn()
         if upn_name is None:
@@ -2148,7 +2145,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_as_requester_sid(self):
         creds = self._get_creds()
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         self.get_tgt(creds, pac_request=None,
@@ -2159,7 +2155,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_tgs_requester_sid(self):
         creds = self._get_creds()
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2173,7 +2168,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_tgs_requester_sid_renew(self):
         creds = self._get_creds()
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2192,7 +2186,6 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2209,7 +2202,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_tgs_requester_sid_missing_renew(self):
         creds = self._get_creds()
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2225,7 +2217,6 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2240,7 +2231,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_tgs_requester_sid_validate(self):
         creds = self._get_creds()
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2259,7 +2249,6 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2276,7 +2265,6 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_tgs_requester_sid_missing_validate(self):
         creds = self._get_creds()
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
@@ -2292,7 +2280,6 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
 
-        samdb = self.get_samdb()
         sid = creds.get_sid()
 
         tgt = self.get_tgt(creds, pac_request=None,
