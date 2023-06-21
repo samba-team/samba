@@ -25,7 +25,7 @@
 import ldb
 import samba.getopt as options
 from samba.auth import system_session
-from samba.dsdb import DS_DOMAIN_FUNCTION_2000
+from samba.dsdb import check_and_update_fl, DS_DOMAIN_FUNCTION_2000
 from samba.netcmd import Command, CommandError, Option
 from samba.samdb import SamDB
 
@@ -67,6 +67,16 @@ class cmd_domain_level(Command):
                       credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
+
+        in_transaction = False
+        if subcommand == "raise" and not H.startswith("ldap"):
+            samdb.transaction_start()
+            in_transaction = True
+            try:
+                check_and_update_fl(samdb, lp)
+            except Exception as e:
+                samdb.transaction_cancel()
+                raise e
 
         try:
             res_forest = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
@@ -117,6 +127,8 @@ class cmd_domain_level(Command):
             if level_domain > min_level_dc:
                 raise CommandError("Domain function level is higher than the lowest function level of a DC. Correct this or reprovision!")
         except Exception as e:
+            if in_transaction:
+                samdb.transaction_cancel()
             raise e
 
         def do_show():
@@ -222,10 +234,18 @@ class cmd_domain_level(Command):
             return
 
         if subcommand == "show":
+            assert not in_transaction
             do_show()
             return
         elif subcommand == "raise":
-            do_raise()
+            try:
+                do_raise()
+            except Exception as e:
+                if in_transaction:
+                    samdb.transaction_cancel()
+                raise e
+            if in_transaction:
+                samdb.transaction_commit()
             return
 
         raise AssertionError("Internal Error subcommand[%s] not handled" % subcommand)
