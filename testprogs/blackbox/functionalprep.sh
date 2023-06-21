@@ -93,6 +93,22 @@ functional_prep_2016()
 	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/2019_schema/private/sam.ldb --function-level=2016
 }
 
+level_raise_2012R2()
+{
+	$PYTHON $BINDIR/samba-tool domain level raise \
+		-H tdb://$PREFIX_ABS/2019_schema/private/sam.ldb \
+		--option="ad dc functional level = 2012_R2" \
+		--domain-level=2012_R2 --forest-level=2012_R2
+}
+
+level_raise_2016()
+{
+	$PYTHON $BINDIR/samba-tool domain level raise \
+		-H tdb://$PREFIX_ABS/2019_schema/private/sam.ldb \
+		--option="ad dc functional level = 2016" \
+		--domain-level=2016 --forest-level=2016
+}
+
 functional_prep_2012R2()
 {
 	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/2012R2_schema/private/sam.ldb --function-level=2012_R2
@@ -156,6 +172,11 @@ testit "provision_schema_2019_prep_skip" provision_schema_2019_prep_skip || fail
 
 # Perform functional prep up to 2016 level
 testit "functional_prep_2016" functional_prep_2016 || failed=$(expr $failed + 1)
+
+# raise the levels to 2012_R2
+testit "level_raise_2012R2" level_raise_2012R2 || failed=$(expr $failed + 1)
+# raise the levels to 2016
+testit "level_raise_2016" level_raise_2016 || failed=$(expr $failed + 1)
 
 cleanup_output_directories
 
