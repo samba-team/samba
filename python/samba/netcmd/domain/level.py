@@ -57,6 +57,9 @@ class cmd_domain_level(Command):
 
     def run(self, subcommand, H=None, forest_level=None, domain_level=None,
             quiet=False, credopts=None, sambaopts=None, versionopts=None):
+        if subcommand not in ["show", "raise"]:
+            raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
+
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -205,5 +208,3 @@ class cmd_domain_level(Command):
                 msgs.append("Forest function level changed!")
             msgs.append("All changes applied successfully!")
             self.message("\n".join(msgs))
-        else:
-            raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
