@@ -119,7 +119,7 @@ class cmd_domain_level(Command):
         except Exception as e:
             raise e
 
-        if subcommand == "show":
+        def do_show():
             self.message("Domain and forest function level for domain '%s'" % domain_dn)
             if level_forest == DS_DOMAIN_FUNCTION_2000 and level_domain_mixed != 0:
                 self.message("\nATTENTION: You run SAMBA 4 on a forest function level lower than Windows 2000 (Native). This isn't supported! Please raise!")
@@ -141,9 +141,12 @@ class cmd_domain_level(Command):
 
             outstr = functional_level.level_to_string(min_level_dc)
             self.message("Lowest function level of a DC: (Windows) " + outstr)
+            return
 
-        elif subcommand == "raise":
+        def do_raise():
             msgs = []
+
+            current_level_domain = level_domain
 
             if domain_level is not None:
                 try:
@@ -196,7 +199,7 @@ class cmd_domain_level(Command):
                     if enum != ldb.ERR_UNWILLING_TO_PERFORM:
                         raise
 
-                level_domain = new_level_domain
+                current_level_domain = new_level_domain
                 msgs.append("Domain function level changed!")
 
             if forest_level is not None:
@@ -204,7 +207,7 @@ class cmd_domain_level(Command):
 
                 if new_level_forest <= level_forest:
                     raise CommandError("Forest function level can't be smaller than or equal to the actual one!")
-                if new_level_forest > level_domain:
+                if new_level_forest > current_level_domain:
                     raise CommandError("Forest function level can't be higher than the domain function level(s). Please raise it/them first!")
 
                 m = ldb.Message()
@@ -216,3 +219,13 @@ class cmd_domain_level(Command):
                 msgs.append("Forest function level changed!")
             msgs.append("All changes applied successfully!")
             self.message("\n".join(msgs))
+            return
+
+        if subcommand == "show":
+            do_show()
+            return
+        elif subcommand == "raise":
+            do_raise()
+            return
+
+        raise AssertionError("Internal Error subcommand[%s] not handled" % subcommand)
