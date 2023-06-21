@@ -2,7 +2,8 @@
 
 import os
 
-VERSION="1.4.0"
+VERSION = "1.4.2"
+
 
 def configure(conf):
     if conf.CHECK_SOCKET_WRAPPER():
@@ -55,6 +56,10 @@ def configure(conf):
         conf.CHECK_FUNCS('accept4')
         conf.CHECK_FUNCS('sendmmsg recvmmsg')
         conf.CHECK_FUNCS('__close_nocancel')
+        conf.CHECK_FUNCS('openat64')
+        conf.CHECK_FUNCS('fopen64')
+        conf.CHECK_FUNCS('open64')
+        conf.CHECK_FUNCS('fcntl64')
 
         conf.CHECK_FUNCS_IN('bind',
                             'socket',

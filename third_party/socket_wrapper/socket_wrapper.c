@@ -44,6 +44,12 @@
 
 #include "config.h"
 
+/*
+ * Make sure we do not redirect (f)open(at)() or fcntl() to their 64bit
+ * variants
+ */
+#undef _FILE_OFFSET_BITS
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -93,6 +99,10 @@
 #include <pthread.h>
 
 #include "socket_wrapper.h"
+
+#ifdef __USE_FILE_OFFSET64
+#error -D_FILE_OFFSET_BITS=64 should not be set for socket_wrapper!
+#endif
 
 enum swrap_dbglvl_e {
 	SWRAP_LOG_ERROR = 0,
@@ -507,6 +517,9 @@ typedef int (*__libc_connect)(int sockfd,
 typedef int (*__libc_dup)(int fd);
 typedef int (*__libc_dup2)(int oldfd, int newfd);
 typedef int (*__libc_fcntl)(int fd, int cmd, ...);
+#ifdef HAVE_FCNTL64
+typedef int (*__libc_fcntl64)(int fd, int cmd, ...);
+#endif
 typedef FILE *(*__libc_fopen)(const char *name, const char *mode);
 #ifdef HAVE_FOPEN64
 typedef FILE *(*__libc_fopen64)(const char *name, const char *mode);
@@ -531,6 +544,9 @@ typedef int (*__libc_open)(const char *pathname, int flags, ...);
 #ifdef HAVE_OPEN64
 typedef int (*__libc_open64)(const char *pathname, int flags, ...);
 #endif /* HAVE_OPEN64 */
+#ifdef HAVE_OPENAT64
+typedef int (*__libc_openat64)(int dirfd, const char *pathname, int flags, ...);
+#endif /* HAVE_OPENAT64 */
 typedef int (*__libc_openat)(int dirfd, const char *path, int flags, ...);
 typedef int (*__libc_pipe)(int pipefd[2]);
 typedef int (*__libc_read)(int fd, void *buf, size_t count);
@@ -612,6 +628,9 @@ struct swrap_libc_symbols {
 	SWRAP_SYMBOL_ENTRY(dup);
 	SWRAP_SYMBOL_ENTRY(dup2);
 	SWRAP_SYMBOL_ENTRY(fcntl);
+#ifdef HAVE_FCNTL64
+	SWRAP_SYMBOL_ENTRY(fcntl64);
+#endif
 	SWRAP_SYMBOL_ENTRY(fopen);
 #ifdef HAVE_FOPEN64
 	SWRAP_SYMBOL_ENTRY(fopen64);
@@ -627,6 +646,9 @@ struct swrap_libc_symbols {
 	SWRAP_SYMBOL_ENTRY(open);
 #ifdef HAVE_OPEN64
 	SWRAP_SYMBOL_ENTRY(open64);
+#endif
+#ifdef HAVE_OPENAT64
+	SWRAP_SYMBOL_ENTRY(openat64);
 #endif
 	SWRAP_SYMBOL_ENTRY(openat);
 	SWRAP_SYMBOL_ENTRY(pipe);
@@ -983,6 +1005,23 @@ static int libc_vfcntl(int fd, int cmd, va_list ap)
 	return rc;
 }
 
+#ifdef HAVE_FCNTL64
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
+static int libc_vfcntl64(int fd, int cmd, va_list ap)
+{
+	void *arg;
+	int rc;
+
+	swrap_bind_symbol_all();
+
+	arg = va_arg(ap, void *);
+
+	rc = swrap.libc.symbols._libc_fcntl64.f(fd, cmd, arg);
+
+	return rc;
+}
+#endif
+
 static int libc_getpeername(int sockfd,
 			    struct sockaddr *addr,
 			    socklen_t *addrlen)
@@ -1114,6 +1153,29 @@ static int libc_vopen64(const char *pathname, int flags, va_list ap)
 	return fd;
 }
 #endif /* HAVE_OPEN64 */
+
+#ifdef HAVE_OPENAT64
+static int
+libc_vopenat64(int dirfd, const char *pathname, int flags, va_list ap)
+{
+	int mode = 0;
+	int fd;
+
+	swrap_bind_symbol_all();
+
+	swrap_inject_o_largefile(&flags);
+
+	if (flags & O_CREAT) {
+		mode = va_arg(ap, int);
+	}
+	fd = swrap.libc.symbols._libc_openat64.f(dirfd,
+						 pathname,
+						 flags,
+						 (mode_t)mode);
+
+	return fd;
+}
+#endif /* HAVE_OPENAT64 */
 
 static int libc_vopenat(int dirfd, const char *path, int flags, va_list ap)
 {
@@ -1401,6 +1463,9 @@ static void __swrap_bind_symbol_all_once(void)
 	swrap_bind_symbol_libc(dup);
 	swrap_bind_symbol_libc(dup2);
 	swrap_bind_symbol_libc(fcntl);
+#ifdef HAVE_FCNTL64
+	swrap_bind_symbol_libc(fcntl64);
+#endif
 	swrap_bind_symbol_libc(fopen);
 #ifdef HAVE_FOPEN64
 	swrap_bind_symbol_libc(fopen64);
@@ -1416,6 +1481,9 @@ static void __swrap_bind_symbol_all_once(void)
 	swrap_bind_symbol_libc(open);
 #ifdef HAVE_OPEN64
 	swrap_bind_symbol_libc(open64);
+#endif
+#ifdef HAVE_OPENAT64
+	swrap_bind_symbol_libc(openat64);
 #endif
 	swrap_bind_symbol_libc(openat);
 	swrap_bind_symbol_libsocket(pipe);
@@ -4568,6 +4636,7 @@ static FILE *swrap_fopen(const char *name, const char *mode)
 	return fp;
 }
 
+#undef fopen /* Needed for LFS handling */
 FILE *fopen(const char *name, const char *mode)
 {
 	return swrap_fopen(name, mode);
@@ -4619,6 +4688,7 @@ static int swrap_vopen(const char *pathname, int flags, va_list ap)
 	return ret;
 }
 
+#undef open /* Needed for LFS handling */
 int open(const char *pathname, int flags, ...)
 {
 	va_list ap;
@@ -4667,6 +4737,42 @@ int open64(const char *pathname, int flags, ...)
 #endif /* HAVE_OPEN64 */
 
 /****************************************************************************
+ *   OPENAT64
+ ***************************************************************************/
+
+#ifdef HAVE_OPENAT64
+static int
+swrap_vopenat64(int dirfd, const char *pathname, int flags, va_list ap)
+{
+	int ret;
+
+	ret = libc_vopenat64(dirfd, pathname, flags, ap);
+	if (ret != -1) {
+		/*
+		 * There are methods for closing descriptors (libc-internal code
+		 * paths, direct syscalls) which close descriptors in ways that
+		 * we can't intercept, so try to recover when we notice that
+		 * that's happened
+		 */
+		swrap_remove_stale(ret);
+	}
+	return ret;
+}
+
+int openat64(int dirfd, const char *pathname, int flags, ...)
+{
+	va_list ap;
+	int fd;
+
+	va_start(ap, flags);
+	fd = swrap_vopenat64(dirfd, pathname, flags, ap);
+	va_end(ap);
+
+	return fd;
+}
+#endif /* HAVE_OPENAT64 */
+
+/****************************************************************************
  *   OPENAT
  ***************************************************************************/
 
@@ -4688,6 +4794,7 @@ static int swrap_vopenat(int dirfd, const char *path, int flags, va_list ap)
 	return ret;
 }
 
+#undef openat /* Needed for LFS handling */
 int openat(int dirfd, const char *path, int flags, ...)
 {
 	va_list ap;
@@ -8412,6 +8519,7 @@ static int swrap_vfcntl(int fd, int cmd, va_list va)
 	return rc;
 }
 
+#undef fcntl /* Needed for LFS handling */
 int fcntl(int fd, int cmd, ...)
 {
 	va_list va;
@@ -8425,6 +8533,80 @@ int fcntl(int fd, int cmd, ...)
 
 	return rc;
 }
+
+/****************************
+ * FCNTL64
+ ***************************/
+
+#ifdef HAVE_FCNTL64
+static int swrap_vfcntl64(int fd, int cmd, va_list va)
+{
+	struct socket_info *si;
+	int rc, dup_fd, idx;
+
+	idx = find_socket_info_index(fd);
+	if (idx == -1) {
+		return libc_vfcntl64(fd, cmd, va);
+	}
+
+	si = swrap_get_socket_info(idx);
+
+	switch (cmd) {
+	case F_DUPFD:
+		dup_fd = libc_vfcntl64(fd, cmd, va);
+		if (dup_fd == -1) {
+			int saved_errno = errno;
+			errno = saved_errno;
+			return -1;
+		}
+
+		/* Make sure we don't have an entry for the fd */
+		swrap_remove_stale(dup_fd);
+
+		if ((size_t)dup_fd >= socket_fds_max) {
+			SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "The max socket index limit of %zu has been reached, "
+			  "trying to add %d",
+			  socket_fds_max,
+			  dup_fd);
+			libc_close(dup_fd);
+			errno = EMFILE;
+			return -1;
+		}
+
+		SWRAP_LOCK_SI(si);
+
+		swrap_inc_refcount(si);
+
+		SWRAP_UNLOCK_SI(si);
+
+
+		set_socket_info_index(dup_fd, idx);
+
+		rc = dup_fd;
+		break;
+	default:
+		rc = libc_vfcntl64(fd, cmd, va);
+		break;
+	}
+
+	return rc;
+}
+
+int fcntl64(int fd, int cmd, ...)
+{
+	va_list va;
+	int rc;
+
+	va_start(va, cmd);
+
+	rc = swrap_vfcntl64(fd, cmd, va);
+
+	va_end(va);
+
+	return rc;
+}
+#endif
 
 /****************************
  * EVENTFD
