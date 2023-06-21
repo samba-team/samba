@@ -98,9 +98,14 @@ functional_prep_2012R2()
 	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/2012R2_schema/private/sam.ldb --function-level=2012_R2
 }
 
-functional_prep_old()
+functional_prep_2012R2_old()
 {
 	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --function-level=2012_R2
+}
+
+functional_prep_2016_old()
+{
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --function-level=2016
 }
 
 steal_roles()
@@ -110,9 +115,14 @@ steal_roles()
 	$PYTHON $BINDIR/samba-tool fsmo seize --role=infrastructure -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --force
 }
 
-schema_upgrade()
+schema_upgrade_2012R2_old()
 {
 	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --schema=2012_R2
+}
+
+schema_upgrade_2019_old()
+{
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --schema=2019
 }
 
 # double-check we cleaned up from the last test run
@@ -133,9 +143,11 @@ testit $OLD_RELEASE undump_old || failed=$(expr $failed + 1)
 
 testit "steal_roles" steal_roles || failed=$(expr $failed + 1)
 
-testit "schema_upgrade" schema_upgrade || failed=$(expr $failed + 1)
+testit "schema_upgrade_2012R2_old" schema_upgrade_2012R2_old || failed=$(expr $failed + 1)
+testit "functional_prep_2012R2_old" functional_prep_2012R2_old || failed=$(expr $failed + 1)
 
-testit "functional_prep_old" functional_prep_old || failed=$(expr $failed + 1)
+testit "schema_upgrade_2019_old" schema_upgrade_2019_old || failed=$(expr $failed + 1)
+testit "functional_prep_2016_old" functional_prep_2016_old || failed=$(expr $failed + 1)
 
 cleanup_output_directories
 
