@@ -433,6 +433,8 @@ static const struct enum_list enum_debug_syslog_format[] = {
 
 static const struct enum_list enum_ad_functional_level[] = {
 	{DS_DOMAIN_FUNCTION_2008_R2, "2008_R2"},
+	{DS_DOMAIN_FUNCTION_2012, "2012"},
+	{DS_DOMAIN_FUNCTION_2012_R2, "2012_R2"},
 	{DS_DOMAIN_FUNCTION_2016, "2016"},
 	{-1, NULL}
 };

@@ -16,6 +16,14 @@
 	    2008 R2 Functional Level</para>
 	</listitem>
 	<listitem>
+	    <para><constant>2012</constant>: Similar to Windows
+	    2012 Functional Level</para>
+	</listitem>
+	<listitem>
+	    <para><constant>2012_R2</constant>: Similar to Windows
+	    2012 R2 Functional Level</para>
+	</listitem>
+	<listitem>
 	    <para><constant>2016</constant>: Similar to Windows
 	    2016 Functional Level</para>
 	</listitem>
