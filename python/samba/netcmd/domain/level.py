@@ -76,6 +76,12 @@ class cmd_domain_level(Command):
                                   attrs=["msDS-Behavior-Version", "nTMixedDomain"])
         assert len(res_domain) == 1
 
+        res_domain_cross = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
+                                        scope=ldb.SCOPE_SUBTREE,
+                                        expression="(&(objectClass=crossRef)(nCName=%s))" % domain_dn,
+                                        attrs=["msDS-Behavior-Version"])
+        assert len(res_domain_cross) == 1
+
         res_dc_s = samdb.search("CN=Sites,%s" % samdb.get_config_basedn(),
                                 scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
                                 attrs=["msDS-Behavior-Version"])
@@ -157,7 +163,7 @@ class cmd_domain_level(Command):
                     samdb.modify(m)
                     # Under partitions
                     m = ldb.Message()
-                    m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup") + ",CN=Partitions,%s" % samdb.get_config_basedn())
+                    m.dn = res_domain_cross[0].dn
                     m["nTMixedDomain"] = ldb.MessageElement("0",
                                                             ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     try:
@@ -176,8 +182,7 @@ class cmd_domain_level(Command):
                 samdb.modify(m)
                 # Under partitions
                 m = ldb.Message()
-                m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
-                              + ",CN=Partitions,%s" % samdb.get_config_basedn())
+                m.dn = res_domain_cross[0].dn
                 m["msDS-Behavior-Version"] = ldb.MessageElement(
                     str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                     "msDS-Behavior-Version")
