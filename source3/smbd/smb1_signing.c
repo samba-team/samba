@@ -170,17 +170,12 @@ static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
  Called by server negprot when signing has been negotiated.
 ************************************************************/
 
-bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
+bool smb1_srv_init_signing(struct loadparm_context *lp_ctx,
+			   struct smbXsrv_connection *conn)
 {
 	bool allowed = true;
 	bool desired;
 	bool mandatory = false;
-
-	struct loadparm_context *lp_ctx = loadparm_init_s3(conn, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		return false;
-	}
 
 	/*
 	 * if the client and server allow signing,
@@ -195,7 +190,6 @@ bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
 	 */
 
 	desired = lpcfg_server_signing_allowed(lp_ctx, &mandatory);
-	talloc_unlink(conn, lp_ctx);
 
 	if (lp_async_smb_echo_handler()) {
 		struct smbd_shm_signing *s;
