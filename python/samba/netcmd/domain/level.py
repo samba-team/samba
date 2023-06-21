@@ -68,53 +68,56 @@ class cmd_domain_level(Command):
 
         domain_dn = samdb.domain_dn()
 
-        res_forest = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
-                                  scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
-        assert len(res_forest) == 1
+        try:
+            res_forest = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
+                                      scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+            assert len(res_forest) == 1
 
-        res_domain = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
-                                  attrs=["msDS-Behavior-Version", "nTMixedDomain"])
-        assert len(res_domain) == 1
+            res_domain = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
+                                      attrs=["msDS-Behavior-Version", "nTMixedDomain"])
+            assert len(res_domain) == 1
 
-        res_domain_cross = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
-                                        scope=ldb.SCOPE_SUBTREE,
-                                        expression="(&(objectClass=crossRef)(nCName=%s))" % domain_dn,
-                                        attrs=["msDS-Behavior-Version"])
-        assert len(res_domain_cross) == 1
+            res_domain_cross = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
+                                            scope=ldb.SCOPE_SUBTREE,
+                                            expression="(&(objectClass=crossRef)(nCName=%s))" % domain_dn,
+                                            attrs=["msDS-Behavior-Version"])
+            assert len(res_domain_cross) == 1
 
-        res_dc_s = samdb.search("CN=Sites,%s" % samdb.get_config_basedn(),
-                                scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
-                                attrs=["msDS-Behavior-Version"])
-        assert len(res_dc_s) >= 1
+            res_dc_s = samdb.search("CN=Sites,%s" % samdb.get_config_basedn(),
+                                    scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
+                                    attrs=["msDS-Behavior-Version"])
+            assert len(res_dc_s) >= 1
 
-        # default values, since "msDS-Behavior-Version" does not exist on Windows 2000 AD
-        level_forest = DS_DOMAIN_FUNCTION_2000
-        level_domain = DS_DOMAIN_FUNCTION_2000
+            # default values, since "msDS-Behavior-Version" does not exist on Windows 2000 AD
+            level_forest = DS_DOMAIN_FUNCTION_2000
+            level_domain = DS_DOMAIN_FUNCTION_2000
 
-        if "msDS-Behavior-Version" in res_forest[0]:
-            level_forest = int(res_forest[0]["msDS-Behavior-Version"][0])
-        if "msDS-Behavior-Version" in res_domain[0]:
-            level_domain = int(res_domain[0]["msDS-Behavior-Version"][0])
-        level_domain_mixed = int(res_domain[0]["nTMixedDomain"][0])
+            if "msDS-Behavior-Version" in res_forest[0]:
+                level_forest = int(res_forest[0]["msDS-Behavior-Version"][0])
+            if "msDS-Behavior-Version" in res_domain[0]:
+                level_domain = int(res_domain[0]["msDS-Behavior-Version"][0])
+            level_domain_mixed = int(res_domain[0]["nTMixedDomain"][0])
 
-        min_level_dc = None
-        for msg in res_dc_s:
-            if "msDS-Behavior-Version" in msg:
-                if min_level_dc is None or int(msg["msDS-Behavior-Version"][0]) < min_level_dc:
-                    min_level_dc = int(msg["msDS-Behavior-Version"][0])
-            else:
-                min_level_dc = DS_DOMAIN_FUNCTION_2000
-                # well, this is the least
-                break
+            min_level_dc = None
+            for msg in res_dc_s:
+                if "msDS-Behavior-Version" in msg:
+                    if min_level_dc is None or int(msg["msDS-Behavior-Version"][0]) < min_level_dc:
+                        min_level_dc = int(msg["msDS-Behavior-Version"][0])
+                else:
+                    min_level_dc = DS_DOMAIN_FUNCTION_2000
+                    # well, this is the least
+                    break
 
-        if level_forest < DS_DOMAIN_FUNCTION_2000 or level_domain < DS_DOMAIN_FUNCTION_2000:
-            raise CommandError("Domain and/or forest function level(s) is/are invalid. Correct them or reprovision!")
-        if min_level_dc < DS_DOMAIN_FUNCTION_2000:
-            raise CommandError("Lowest function level of a DC is invalid. Correct this or reprovision!")
-        if level_forest > level_domain:
-            raise CommandError("Forest function level is higher than the domain level(s). Correct this or reprovision!")
-        if level_domain > min_level_dc:
-            raise CommandError("Domain function level is higher than the lowest function level of a DC. Correct this or reprovision!")
+            if level_forest < DS_DOMAIN_FUNCTION_2000 or level_domain < DS_DOMAIN_FUNCTION_2000:
+                raise CommandError("Domain and/or forest function level(s) is/are invalid. Correct them or reprovision!")
+            if min_level_dc < DS_DOMAIN_FUNCTION_2000:
+                raise CommandError("Lowest function level of a DC is invalid. Correct this or reprovision!")
+            if level_forest > level_domain:
+                raise CommandError("Forest function level is higher than the domain level(s). Correct this or reprovision!")
+            if level_domain > min_level_dc:
+                raise CommandError("Domain function level is higher than the lowest function level of a DC. Correct this or reprovision!")
+        except Exception as e:
+            raise e
 
         if subcommand == "show":
             self.message("Domain and forest function level for domain '%s'" % domain_dn)
