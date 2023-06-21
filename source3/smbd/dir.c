@@ -546,12 +546,19 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		return true;
 	}
 
+	if (dont_descend && (dptr_FileNumber(dirptr) >= 2)) {
+		/*
+		 * . and .. were returned first, we're done showing
+		 * the directory as empty.
+		 */
+		return false;
+	}
+
 	pathlen = strlen(dpath);
 	slashlen = ( dpath[pathlen-1] != '/') ? 1 : 0;
 
 	while (true) {
 		char *dname = NULL;
-		bool isdots;
 		char *fname = NULL;
 		char *pathreal = NULL;
 		struct smb_filename *atname = NULL;
@@ -572,12 +579,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		if (dname == NULL) {
 			return false;
-		}
-
-		isdots = (ISDOT(dname) || ISDOTDOT(dname));
-		if (dont_descend && !isdots) {
-			TALLOC_FREE(dname);
-			continue;
 		}
 
 		if (IS_VETO_PATH(conn, dname)) {
