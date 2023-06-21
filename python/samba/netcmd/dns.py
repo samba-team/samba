@@ -917,7 +917,7 @@ class cmd_zonecreate(Command):
         Option('--dns-directory-partition',
                help='Specify the naming context for the new zone, which '
                     'affects the replication scope (domain or forest wide '
-                    'replication).',
+                    'replication, default: domain).',
                default='domain',
                metavar='domain|forest',
                choices=['domain', 'forest'],
