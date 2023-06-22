@@ -793,8 +793,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		if (!dir_check_ftype(mode, dirtype)) {
-			DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",
-				fname, (unsigned int)mode, (unsigned int)dirtype));
+			DBG_INFO("[%s] attribs 0x%" PRIx32 " didn't match "
+				 "0x%" PRIx32 "\n",
+				 fname,
+				 mode,
+				 dirtype);
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
@@ -814,10 +817,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			}
 		}
 
-		DEBUG(3,("smbd_dirptr_get_entry mask=[%s] found %s "
-			"fname=%s (%s)\n",
-			mask, smb_fname_str_dbg(smb_fname),
-			dname, fname));
+		DBG_NOTICE("mask=[%s] found %s fname=%s (%s)\n",
+			   mask,
+			   smb_fname_str_dbg(smb_fname),
+			   dname,
+			   fname);
 
 		TALLOC_FREE(dname);
 
