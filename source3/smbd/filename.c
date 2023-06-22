@@ -1483,27 +1483,39 @@ next:
 	goto next;
 }
 
+char *full_path_from_dirfsp_at_basename(TALLOC_CTX *mem_ctx,
+					const struct files_struct *dirfsp,
+					const char *at_base_name)
+{
+	char *path = NULL;
+
+	if (dirfsp == dirfsp->conn->cwd_fsp ||
+	    ISDOT(dirfsp->fsp_name->base_name) || at_base_name[0] == '/') {
+		path = talloc_strdup(mem_ctx, at_base_name);
+	} else {
+		path = talloc_asprintf(mem_ctx,
+				       "%s/%s",
+				       dirfsp->fsp_name->base_name,
+				       at_base_name);
+	}
+
+	return path;
+}
+
 /*
  * Build the full path from a dirfsp and dirfsp relative name
  */
-struct smb_filename *full_path_from_dirfsp_atname(
-	TALLOC_CTX *mem_ctx,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *atname)
+struct smb_filename *
+full_path_from_dirfsp_atname(TALLOC_CTX *mem_ctx,
+			     const struct files_struct *dirfsp,
+			     const struct smb_filename *atname)
 {
 	struct smb_filename *fname = NULL;
 	char *path = NULL;
 
-	if (dirfsp == dirfsp->conn->cwd_fsp ||
-	    ISDOT(dirfsp->fsp_name->base_name) ||
-	    atname->base_name[0] == '/')
-	{
-		path = talloc_strdup(mem_ctx, atname->base_name);
-	} else {
-		path = talloc_asprintf(mem_ctx, "%s/%s",
-				       dirfsp->fsp_name->base_name,
-				       atname->base_name);
-	}
+	path = full_path_from_dirfsp_at_basename(mem_ctx,
+						 dirfsp,
+						 atname->base_name);
 	if (path == NULL) {
 		return NULL;
 	}

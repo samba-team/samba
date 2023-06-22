@@ -726,6 +726,9 @@ NTSTATUS filename_convert_dirfsp(
 	NTTIME twrp,
 	struct files_struct **pdirfsp,
 	struct smb_filename **psmb_name_rel);
+char *full_path_from_dirfsp_at_basename(TALLOC_CTX *mem_ctx,
+					const struct files_struct *dirfsp,
+					const char *at_base_name);
 struct smb_filename *full_path_from_dirfsp_atname(
 	TALLOC_CTX *mem_ctx,
 	const struct files_struct *dirfsp,
