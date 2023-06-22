@@ -475,7 +475,6 @@ class cmd_ntacl_sysvolcheck(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         creds.set_kerberos_state(DONT_USE_KERBEROS)
-        logger = self.get_logger()
 
         netlogon = lp.get("path", "netlogon")
         sysvol = lp.get("path", "sysvol")
