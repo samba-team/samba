@@ -2414,6 +2414,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		if (device_pac_is_trusted) {
 			krb5_data device_claims_data;
+
+			/*
+			 * [MS-KILE] 3.3.5.7.4 Compound Identity: the client
+			 * claims from the device PAC become the device claims
+			 * in the new PAC.
+			 */
 			code = krb5_pac_get_buffer(context, device_pac,
 						   PAC_TYPE_CLIENT_CLAIMS_INFO,
 						   &device_claims_data);
