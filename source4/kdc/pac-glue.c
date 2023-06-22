@@ -2307,6 +2307,8 @@ done:
  *
  * @param client    The client samba kdc entry.
  *
+ * @param client_krbtgt     The krbtgt samba kdc entry that verified the client
+ *
  * @param server_principal  The server principal
  *
  * @param server    The server samba kdc entry.
@@ -2324,6 +2326,8 @@ done:
  * @param device    The computer's samba kdc entry; used for compound
  *                  authentication.
  *
+ * @param device_krbtgt     The krbtgt samba kdc entry that verified the device
+ *
  * @param device_pac        The PAC from the computer's TGT; used
  *                          for compound authentication.
  *
@@ -2339,12 +2343,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct ldb_context *samdb,
 				     struct loadparm_context *lp_ctx,
 				     uint32_t flags,
+				     const struct samba_kdc_entry *client_krbtgt,
 				     struct samba_kdc_entry *client,
 				     const krb5_const_principal server_principal,
 				     const struct samba_kdc_entry *server,
 				     const krb5_const_principal delegated_proxy_principal,
 				     struct samba_kdc_entry *delegated_proxy,
 				     const krb5_const_pac delegated_proxy_pac,
+				     const struct samba_kdc_entry *device_krbtgt,
 				     struct samba_kdc_entry *device,
 				     const krb5_const_pac device_pac,
 				     const krb5_const_pac old_pac,

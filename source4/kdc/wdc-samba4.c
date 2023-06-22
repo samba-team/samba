@@ -428,6 +428,8 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		talloc_get_type_abort(server->context, struct samba_kdc_entry);
 	const struct samba_kdc_entry *krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->context, struct samba_kdc_entry);
+	const struct samba_kdc_entry *client_krbtgt_skdc_entry = krbtgt_skdc_entry;
+	const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_pac new_pac = NULL;
 	struct authn_audit_info *server_audit_info = NULL;
@@ -452,8 +454,14 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	}
 
 	if (device != NULL) {
+		const hdb_entry *device_krbtgt = NULL;
+
 		device_skdc_entry = talloc_get_type_abort(device->context,
 							  struct samba_kdc_entry);
+
+		device_krbtgt = kdc_request_get_explicit_armor_server(r);
+		device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
+								 struct samba_kdc_entry);
 	}
 
 	ret = krb5_pac_init(context, &new_pac);
@@ -477,12 +485,14 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 				   krbtgt_skdc_entry->kdc_db_ctx->samdb,
 				   krbtgt_skdc_entry->kdc_db_ctx->lp_ctx,
 				   flags,
+				   client_krbtgt_skdc_entry,
 				   client_skdc_entry,
 				   server->principal,
 				   server_skdc_entry,
 				   delegated_proxy_principal,
 				   delegated_proxy_skdc_entry,
 				   delegated_proxy_pac,
+				   device_krbtgt_skdc_entry,
 				   device_skdc_entry,
 				   device_pac,
 				   *pac,
