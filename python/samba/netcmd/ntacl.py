@@ -122,15 +122,15 @@ class cmd_ntacl_set(Command):
                 else:
                     self.outf.write("file: %s\n" % _path)
             try:
-                return setntacl(lp,
-                                _path,
-                                acl,
-                                str(domain_sid),
-                                system_session_unix(),
-                                xattr_backend,
-                                eadb_file,
-                                use_ntvfs=use_ntvfs,
-                                service=service)
+                setntacl(lp,
+                         _path,
+                         acl,
+                         str(domain_sid),
+                         system_session_unix(),
+                         xattr_backend,
+                         eadb_file,
+                         use_ntvfs=use_ntvfs,
+                         service=service)
             except Exception as e:
                 raise CommandError("Could not set acl for %s: %s" % (_path, e))
 
