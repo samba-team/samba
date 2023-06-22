@@ -760,12 +760,12 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 
+		/* The ldb_binary_encode_string() here avoids LDAP filter injection attacks */
 		unparsed_name_encoded = ldb_binary_encode_string(mem_ctx, unparsed_name);
 		if (unparsed_name_encoded == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		/* The ldb_binary_encode_string() here avoid LDAP filter injection attacks */
 		result_filter = talloc_asprintf(mem_ctx, "(&(userPrincipalName=%s)(objectClass=user))",
 						unparsed_name_encoded);
 
