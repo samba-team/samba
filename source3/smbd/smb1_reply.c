@@ -1207,20 +1207,6 @@ static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 				    bool get_dosmode,
 				    uint32_t *_mode)
 {
-	connection_struct *conn = (connection_struct *)private_data;
-
-	if (!VALID_STAT(smb_fname->st)) {
-		if ((SMB_VFS_STAT(conn, smb_fname)) != 0) {
-			DEBUG(5,
-			      ("smbd_dirptr_8_3_mode_fn: "
-			       "Couldn't stat [%s]. Error "
-			       "= %s\n",
-			       smb_fname_str_dbg(smb_fname),
-			       strerror(errno)));
-			return false;
-		}
-	}
-
 	if (get_dosmode) {
 		*_mode = fdos_mode(smb_fname->fsp);
 		smb_fname->st = smb_fname->fsp->fsp_name->st;

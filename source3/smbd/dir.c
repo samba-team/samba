@@ -709,6 +709,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			get_dosmode = false;
 		}
 
+		/*
+		 * openat_pathref_fsp() filled atname->st, but from
+		 * now on we're working with smb_fname. Keep the stat
+		 * info for mode_fn's use.
+		 */
+		smb_fname->st = atname->st;
+
 		status = move_smb_fname_fsp_link(smb_fname, atname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("Failed to move pathref for [%s]: %s\n",
