@@ -2421,6 +2421,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				/* no-op */
 			} else if (code != 0) {
 				goto done;
+			} else if (device_krbtgt->is_trust) {
+				/*
+				 * TODO: we need claim translation over trusts,
+				 * for now we just clear them...
+				 */
+				device_claims_blob = &data_blob_null;
 			} else {
 				DATA_BLOB *device_claims = NULL;
 
@@ -2587,6 +2593,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 			code = EINVAL;
 			goto done;
+		}
+
+		/*
+		 * TODO: we need claim translation over trusts,
+		 * for now we just clear them...
+		 */
+		if (client_krbtgt->is_trust) {
+			client_claims_blob = &data_blob_null;
 		}
 	} else {
 		nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
