@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/auth.h"
 #include "auth/common_auth.h"
 #include "auth/kerberos/pac_utils.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 
 krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 					  struct PAC_SIGNATURE_DATA *sig,
@@ -44,26 +45,34 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 	krb5_keyusage usage = 0;
 	krb5_boolean checksum_valid = false;
 	krb5_data input;
+	size_t idx = 0;
+	struct {
+		krb5_cksumtype cksum_type;
+		krb5_enctype enc_type;
+	} supported_types[] = {
+		{CKSUMTYPE_HMAC_SHA1_96_AES_256, ENCTYPE_AES256_CTS_HMAC_SHA1_96},
+		{CKSUMTYPE_HMAC_SHA1_96_AES_128, ENCTYPE_AES128_CTS_HMAC_SHA1_96},
+		/* RFC8009 types. Not supported by AD yet but used by FreeIPA and MIT Kerberos */
+		{CKSUMTYPE_HMAC_SHA256_128_AES128, ENCTYPE_AES128_CTS_HMAC_SHA256_128},
+		{CKSUMTYPE_HMAC_SHA384_192_AES256, ENCTYPE_AES256_CTS_HMAC_SHA384_192},
+		{0, 0},
+	};
 
-	switch (sig->type) {
-	case CKSUMTYPE_HMAC_MD5:
-		/* ignores the key type */
-		break;
-	case CKSUMTYPE_HMAC_SHA1_96_AES_256:
-		if (KRB5_KEY_TYPE(keyblock) != ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
-			return EINVAL;
+	for(idx = 0; supported_types[idx].cksum_type != 0; idx++) {
+		if (sig->type == supported_types[idx].cksum_type) {
+			if (KRB5_KEY_TYPE(keyblock) != supported_types[idx].enc_type) {
+				return EINVAL;
+			}
+			/* ok */
+			break;
 		}
-		/* ok */
-		break;
-	case CKSUMTYPE_HMAC_SHA1_96_AES_128:
-		if (KRB5_KEY_TYPE(keyblock) != ENCTYPE_AES128_CTS_HMAC_SHA1_96) {
-			return EINVAL;
-		}
-		/* ok */
-		break;
-	default:
-		DEBUG(2,("check_pac_checksum: Checksum Type %"PRIu32" is not supported\n",
-			sig->type));
+	}
+
+	/* do not do key type check for HMAC-MD5 */
+	if ((sig->type != CKSUMTYPE_HMAC_MD5) &&
+	    (supported_types[idx].cksum_type == 0)) {
+		DEBUG(2,("check_pac_checksum: Checksum Type %d is not supported\n",
+			(int)sig->type));
 		return EINVAL;
 	}
 
