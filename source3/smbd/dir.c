@@ -530,9 +530,10 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 {
 	connection_struct *conn = dirptr->conn;
 	struct smb_Dir *dir_hnd = dirptr->dir_hnd;
+	struct smb_filename *dir_fname = dir_hnd->dir_smb_fname;
 	size_t slashlen;
 	size_t pathlen;
-	const char *dpath = dir_hnd->dir_smb_fname->base_name;
+	const char *dpath = dir_fname->base_name;
 	bool dirptr_path_is_dot = ISDOT(dpath);
 	NTSTATUS status;
 
@@ -572,7 +573,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		DBG_DEBUG("dir [%s] dirptr [%p] offset [%u] => "
 			  "dname [%s]\n",
-			  smb_fname_str_dbg(dir_hnd->dir_smb_fname),
+			  smb_fname_str_dbg(dir_fname),
 			  dirptr,
 			  dir_hnd->file_number,
 			  dname ? dname : "(finished)");
@@ -632,8 +633,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 						pathreal,
 						NULL,
 						NULL,
-						dir_hnd->dir_smb_fname->twrp,
-						dir_hnd->dir_smb_fname->flags);
+						dir_fname->twrp,
+						dir_fname->flags);
 		TALLOC_FREE(pathreal);
 		if (smb_fname == NULL) {
 			TALLOC_FREE(dname);
@@ -646,8 +647,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 					     dname,
 					     NULL,
 					     NULL,
-					     dir_hnd->dir_smb_fname->twrp,
-					     dir_hnd->dir_smb_fname->flags);
+					     dir_fname->twrp,
+					     dir_fname->flags);
 		if (atname == NULL) {
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
