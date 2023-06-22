@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Blackbox tests for weak crytpo
+# Blackbox tests for weak crypto
 # Copyright (c) 2020      Andreas Schneider <asn@samba.org>
 #
 
