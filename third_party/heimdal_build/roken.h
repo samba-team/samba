@@ -159,8 +159,8 @@
 #undef SOCKET_WRAPPER_REPLACE
 #include "../heimdal/lib/roken/roken.h.in"
 
-extern const char *heimdal_version;
-extern const char *heimdal_long_version;
+extern const char *const heimdal_version;
+extern const char *const heimdal_long_version;
 
 /* we do not want any __APPLE__ magic */
 #ifdef __APPLE__
