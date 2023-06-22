@@ -1207,9 +1207,19 @@ static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 				    bool get_dosmode,
 				    uint32_t *_mode)
 {
+	if (*_mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+		/*
+		 * Don't show symlinks/special files to old clients
+		 */
+		return false;
+	}
+
 	if (get_dosmode) {
+		SMB_ASSERT(smb_fname != NULL);
 		*_mode = fdos_mode(smb_fname->fsp);
-		smb_fname->st = smb_fname->fsp->fsp_name->st;
+		if (smb_fname->fsp != NULL) {
+			smb_fname->st = smb_fname->fsp->fsp_name->st;
+		}
 	}
 	return true;
 }

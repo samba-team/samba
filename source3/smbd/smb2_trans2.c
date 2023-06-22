@@ -913,39 +913,6 @@ NTSTATUS unix_perms_from_wire(connection_struct *conn,
 }
 
 /****************************************************************************
- Needed to show the msdfs symlinks as directories. Modifies psbuf
- to be a directory if it's a msdfs link.
-****************************************************************************/
-
-static bool check_msdfs_link(struct files_struct *dirfsp,
-			     struct smb_filename *atname,
-			     struct smb_filename *smb_fname)
-{
-	int saved_errno = errno;
-	if(lp_host_msdfs() &&
-		lp_msdfs_root(SNUM(dirfsp->conn)) &&
-		is_msdfs_link(dirfsp, atname)) {
-
-		/*
-		 * Copy the returned stat struct from the relative
-		 * to the full pathname.
-		 */
-		smb_fname->st = atname->st;
-
-		DEBUG(5,("check_msdfs_link: Masquerading msdfs link %s "
-			"as a directory\n",
-			smb_fname->base_name));
-		smb_fname->st.st_ex_mode =
-			(smb_fname->st.st_ex_mode & 0xFFF) | S_IFDIR;
-		errno = saved_errno;
-		return true;
-	}
-	errno = saved_errno;
-	return false;
-}
-
-
-/****************************************************************************
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
@@ -1048,46 +1015,13 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 					bool get_dosmode,
 					uint32_t *_mode)
 {
-	struct smbd_dirptr_lanman2_state *state =
-		(struct smbd_dirptr_lanman2_state *)private_data;
-
-	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
-		if (SMB_VFS_LSTAT(state->conn, smb_fname) != 0) {
-			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
-				 "Couldn't lstat [%s] (%s)\n",
-				 smb_fname_str_dbg(smb_fname),
-				 strerror(errno)));
-			return false;
+	if (get_dosmode) {
+		SMB_ASSERT(smb_fname != NULL);
+		*_mode = fdos_mode(smb_fname->fsp);
+		if (smb_fname->fsp != NULL) {
+			smb_fname->st = smb_fname->fsp->fsp_name->st;
 		}
-		return true;
 	}
-
-	if (S_ISLNK(smb_fname->st.st_ex_mode)) {
-		/* Needed to show the msdfs symlinks as
-		 * directories */
-
-		bool ms_dfs_link = check_msdfs_link(dirfsp, atname, smb_fname);
-		if (!ms_dfs_link) {
-			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
-				 "Couldn't stat [%s] (%s)\n",
-				 smb_fname_str_dbg(smb_fname),
-				 strerror(errno)));
-			return false;
-		}
-
-		*_mode = dos_mode_msdfs(state->conn,
-					smb_fname->base_name,
-					&smb_fname->st);
-		return true;
-	}
-
-	if (!get_dosmode) {
-		return true;
-	}
-
-	*_mode = fdos_mode(smb_fname->fsp);
-	smb_fname->st = smb_fname->fsp->fsp_name->st;
-
 	return true;
 }
 

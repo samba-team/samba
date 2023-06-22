@@ -28,6 +28,7 @@
 #include "../lib/util/memcache.h"
 #include "../librpc/gen_ndr/open_files.h"
 #include "lib/util/string_wrappers.h"
+#include "libcli/smb/reparse_symlink.h"
 
 /*
    This module implements directory related functions for Samba.
@@ -531,10 +532,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	connection_struct *conn = dirptr->conn;
 	struct smb_Dir *dir_hnd = dirptr->dir_hnd;
 	struct smb_filename *dir_fname = dir_hnd->dir_smb_fname;
-	size_t slashlen;
-	size_t pathlen;
+	bool posix = (dir_fname->flags & SMB_FILENAME_POSIX_PATH);
 	const char *dpath = dir_fname->base_name;
-	bool dirptr_path_is_dot = ISDOT(dpath);
 	NTSTATUS status;
 
 	*_smb_fname = NULL;
@@ -555,17 +554,12 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	pathlen = strlen(dpath);
-	slashlen = ( dpath[pathlen-1] != '/') ? 1 : 0;
-
 	while (true) {
 		char *dname = NULL;
 		char *fname = NULL;
-		char *pathreal = NULL;
-		struct smb_filename *atname = NULL;
 		struct smb_filename *smb_fname = NULL;
+		struct open_symlink_err *symlink_err = NULL;
 		uint32_t mode = 0;
-		bool check_dfs_symlink = false;
 		bool get_dosmode = get_dosmode_in;
 		bool ok;
 
@@ -599,199 +593,184 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		/*
-		 * This used to be
-		 * pathreal = talloc_asprintf(ctx, "%s%s%s", dirptr->path,
-		 *			      needslash?"/":"", dname);
-		 * but this was measurably slower than doing the memcpy.
-		 */
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 
-		pathreal = talloc_array(
-			ctx, char,
-			pathlen + slashlen + talloc_get_size(dname));
-		if (!pathreal) {
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			return false;
-		}
+			const char *dotname = dname;
 
-		/*
-		 * We don't want to pass ./xxx to modules below us so don't
-		 * add the path if it is just . by itself.
-		 */
-		if (dirptr_path_is_dot) {
-			memcpy(pathreal, dname, talloc_get_size(dname));
-		} else {
-			memcpy(pathreal, dpath, pathlen);
-			pathreal[pathlen] = '/';
-			memcpy(pathreal + slashlen + pathlen, dname,
-			       talloc_get_size(dname));
-		}
-
-		/* Create smb_fname with NULL stream_name. */
-		smb_fname = synthetic_smb_fname(talloc_tos(),
-						pathreal,
-						NULL,
-						NULL,
-						dir_fname->twrp,
-						dir_fname->flags);
-		TALLOC_FREE(pathreal);
-		if (smb_fname == NULL) {
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			return false;
-		}
-
-		/* Create smb_fname with NULL stream_name. */
-		atname = synthetic_smb_fname(talloc_tos(),
-					     dname,
-					     NULL,
-					     NULL,
-					     dir_fname->twrp,
-					     dir_fname->flags);
-		if (atname == NULL) {
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			TALLOC_FREE(smb_fname);
-			return false;
-		}
-
-		/*
-		 * openat_pathref_fsp() will return
-		 * NT_STATUS_OBJECT_NAME_NOT_FOUND in non-POSIX context when
-		 * hitting a dangling symlink. It may be a DFS symlink, this is
-		 * checked below by the mode_fn() call, so we have to allow this
-		 * here.
-		 *
-		 * NT_STATUS_STOPPED_ON_SYMLINK is returned in POSIX context
-		 * when hitting a symlink and ensures we always return directory
-		 * entries that are symlinks in POSIX context.
-		 */
-		status = openat_pathref_fsp(dir_hnd->fsp, atname);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
-		{
-			TALLOC_FREE(atname);
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			TALLOC_FREE(smb_fname);
-			continue;
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			if (!(atname->flags & SMB_FILENAME_POSIX_PATH)) {
-				check_dfs_symlink = true;
+			if (ISDOTDOT(dname) && ISDOT(dpath)) {
+				/*
+				 * Handle ".." in toplevel like "." to not
+				 * leak info from outside the share.
+				 */
+				dotname = ".";
 			}
+
+			smb_fname = synthetic_smb_fname(talloc_tos(),
+							dotname,
+							NULL,
+							NULL,
+							dir_fname->twrp,
+							dir_fname->flags);
+			if (smb_fname == NULL) {
+				TALLOC_FREE(dname);
+				return false;
+			}
+
+			status = openat_pathref_fsp(dir_hnd->fsp, smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_INFO("Could not open \"..\": %s\n",
+					 nt_errstr(status));
+				TALLOC_FREE(smb_fname);
+				TALLOC_FREE(dname);
+				continue;
+			}
+
+			mode = fdos_mode(smb_fname->fsp);
+
 			/*
-			 * Check if it's a symlink. We only want to return this
-			 * if it's a DFS symlink or in POSIX mode. Disable
-			 * getting dosmode in the mode_fn() and prime the mode
-			 * as FILE_ATTRIBUTE_NORMAL.
+			 * Don't leak INO/DEV/User SID/Group SID about
+			 * the containing directory of the share.
 			 */
-			mode = FILE_ATTRIBUTE_NORMAL;
-			get_dosmode = false;
+			if (ISDOT(dpath) && ISDOTDOT(dname)) {
+				/*
+				 * Ensure posix fileid and sids are hidden
+				 */
+				smb_fname->st.st_ex_ino = 0;
+				smb_fname->st.st_ex_dev = 0;
+				smb_fname->st.st_ex_uid = -1;
+				smb_fname->st.st_ex_gid = -1;
+			}
+
+			goto done;
 		}
 
-		/*
-		 * openat_pathref_fsp() filled atname->st, but from
-		 * now on we're working with smb_fname. Keep the stat
-		 * info for mode_fn's use.
-		 */
-		smb_fname->st = atname->st;
+		status = openat_pathref_fsp_nosymlink(talloc_tos(),
+						      conn,
+						      dir_hnd->fsp,
+						      dname,
+						      dir_fname->twrp,
+						      posix,
+						      &smb_fname,
+						      &symlink_err);
 
-		status = move_smb_fname_fsp_link(smb_fname, atname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("Failed to move pathref for [%s]: %s\n",
-				    smb_fname_str_dbg(smb_fname),
-				    nt_errstr(status));
-			TALLOC_FREE(atname);
-			TALLOC_FREE(smb_fname);
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			continue;
-		}
-
-		if (!is_visible_fsp(smb_fname->fsp)) {
-			TALLOC_FREE(atname);
-			TALLOC_FREE(smb_fname);
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			continue;
-		}
-
-		/*
-		 * Don't leak metadata about the containing
-		 * directory of the share.
-		 */
-		if (dirptr_path_is_dot && ISDOTDOT(dname)) {
-			/*
-			 * Making a copy here, then freeing
-			 * the original will close the smb_fname->fsp.
-			 */
-			struct smb_filename *tmp_smb_fname =
-				cp_smb_filename(ctx, smb_fname);
-
-			if (tmp_smb_fname == NULL) {
-				TALLOC_FREE(atname);
+		if (NT_STATUS_IS_OK(status)) {
+			bool visible = is_visible_fsp(smb_fname->fsp);
+			if (!visible) {
 				TALLOC_FREE(smb_fname);
 				TALLOC_FREE(dname);
 				TALLOC_FREE(fname);
+				continue;
+			}
+		} else if (NT_STATUS_EQUAL(status,
+					   NT_STATUS_STOPPED_ON_SYMLINK)) {
+			struct symlink_reparse_struct *reparse =
+				symlink_err->reparse;
+			const char *target = reparse->substitute_name;
+			bool is_msdfs_link;
+
+			is_msdfs_link = lp_host_msdfs();
+			is_msdfs_link &= lp_msdfs_root(SNUM(conn));
+			is_msdfs_link &= (strncmp(target, "msdfs:", 6) == 0);
+
+			if (is_msdfs_link) {
+				char *path = NULL;
+
+				path = full_path_from_dirfsp_at_basename(
+					talloc_tos(),
+					dir_hnd->fsp,
+					dname);
+				if (path == NULL) {
+					return false;
+				}
+
+				smb_fname =
+					synthetic_smb_fname(talloc_tos(),
+							    path,
+							    NULL,
+							    &symlink_err->st,
+							    dir_fname->twrp,
+							    dir_fname->flags);
+				TALLOC_FREE(path);
+				if (smb_fname == NULL) {
+					return false;
+				}
+
+				DBG_INFO("Masquerading msdfs link %s as a"
+					 "directory\n",
+					 smb_fname->base_name);
+
+				smb_fname->st.st_ex_mode =
+					(smb_fname->st.st_ex_mode & ~S_IFMT) |
+					S_IFDIR;
+
+				mode = dos_mode_msdfs(conn,
+						      dname,
+						      &smb_fname->st);
+				get_dosmode = false;
+				ask_sharemode = false;
+				goto done;
+			}
+
+			smb_fname = synthetic_smb_fname(talloc_tos(),
+							dname,
+							NULL,
+							&symlink_err->st,
+							dir_fname->twrp,
+							dir_fname->flags);
+			if (smb_fname == NULL) {
 				return false;
 			}
+
+			status = openat_pathref_fsp(dir_hnd->fsp, smb_fname);
+
+			if (posix) {
+				/*
+				 * Posix always wants to see symlinks,
+				 * dangling or not. We've done the
+				 * openat_pathref_fsp() to fill in
+				 * smb_fname->fsp just in case it's
+				 * not dangling.
+				 */
+				mode = FILE_ATTRIBUTE_NORMAL;
+				get_dosmode = false;
+				ask_sharemode = false;
+				goto done;
+			}
+
+			if (!NT_STATUS_IS_OK(status)) {
+				/*
+				 * Dangling symlink. Hide.
+				 */
+				TALLOC_FREE(smb_fname);
+				TALLOC_FREE(fname);
+				TALLOC_FREE(dname);
+				continue;
+			}
+		} else {
+			DBG_NOTICE("Could not open %s: %s\n",
+				   dname,
+				   nt_errstr(status));
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
 			TALLOC_FREE(smb_fname);
-			smb_fname = tmp_smb_fname;
-			mode = FILE_ATTRIBUTE_DIRECTORY;
-			get_dosmode = false;
+			continue;
 		}
 
 		ok = mode_fn(ctx,
 			     private_data,
 			     dir_hnd->fsp,
-			     atname,
+			     NULL,
 			     smb_fname,
 			     get_dosmode,
 			     &mode);
 		if (!ok) {
-			TALLOC_FREE(atname);
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
 			continue;
 		}
 
-		TALLOC_FREE(atname);
-
-		/*
-		 * Don't leak INO/DEV/User SID/Group SID about the containing
-		 * directory of the share. This MUST happen AFTER the call to
-		 * mode_fn().
-		 */
-		if (dirptr_path_is_dot && ISDOTDOT(dname)) {
-			/* Ensure posix fileid and sids are hidden
-			 */
-			smb_fname->st.st_ex_ino = 0;
-			smb_fname->st.st_ex_dev = 0;
-			smb_fname->st.st_ex_uid = -1;
-			smb_fname->st.st_ex_gid = -1;
-		}
-
-		/*
-		 * The only valid cases where we return the directory entry if
-		 * it's a symlink are:
-		 *
-		 * 1. POSIX context, always return it, or
-		 *
-		 * 2. a DFS symlink where the mode_fn() call above has verified
-		 *    this and set mode to FILE_ATTRIBUTE_REPARSE_POINT.
-		 */
-		if (check_dfs_symlink &&
-		    !(mode & FILE_ATTRIBUTE_REPARSE_POINT))
-		{
-			TALLOC_FREE(smb_fname);
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			continue;
-		}
+	done:
 
 		if (!dir_check_ftype(mode, dirtype)) {
 			DBG_INFO("[%s] attribs 0x%" PRIx32 " didn't match "
