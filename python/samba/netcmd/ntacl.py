@@ -20,8 +20,7 @@ from samba.credentials import DONT_USE_KERBEROS
 import samba.getopt as options
 from samba.dcerpc import security, idmap
 from samba.ntacls import setntacl, getntacl, getdosinfo
-from samba import Ldb
-from samba.ndr import ndr_unpack, ndr_print
+from samba.ndr import ndr_print
 from samba.samdb import SamDB
 from samba.samba3 import param as s3param, passdb
 from samba import provision
