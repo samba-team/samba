@@ -316,7 +316,7 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 		}
 	}
 	if (nt_hash != NULL) {
-		DEBUG(5, ("Passing LM password hash through credentials set\n"));
+		DEBUG(5, ("Passing NT password hash through credentials set\n"));
 		ntlm_secpkg.flags |= PAC_CREDENTIAL_NTLM_HAS_NT_HASH;
 		ntlm_secpkg.nt_password = *nt_hash;
 		ZERO_STRUCTP(nt_hash);
