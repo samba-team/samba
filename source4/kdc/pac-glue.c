@@ -2306,31 +2306,31 @@ done:
  *                              as opposed to an RODC.
  *
  * @param client    The client samba kdc entry.
-
+ *
  * @param server_principal  The server principal
-
+ *
  * @param server    The server samba kdc entry.
-
+ *
  * @param delegated_proxy_principal The delegated proxy principal used for
  *                                  updating the constrained delegation PAC
  *                                  buffer.
-
+ *
  * @param delegated_proxy   The delegated proxy kdc entry.
-
+ *
  * @param delegated_proxy_pac       The PAC from the primary TGT (i.e., that of
  *                                  the delegating service) during a constrained
  *                                  delegation request.
-
+ *
  * @param device    The computer's samba kdc entry; used for compound
  *                  authentication.
-
+ *
  * @param device_pac        The PAC from the computer's TGT; used
  *                          for compound authentication.
-
+ *
  * @param old_pac                   The old PAC
-
+ *
  * @param new_pac                   The new already allocated PAC
-
+ *
  * @return A Kerberos error code. If no PAC should be returned, the code will be
  * ENOATTR!
  */
