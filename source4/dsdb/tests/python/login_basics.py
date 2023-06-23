@@ -122,7 +122,7 @@ class BasicUserAuthTests(BasePasswordTestCase):
         lastLogon = int(res[0]["lastLogon"][0])
 
         # check that the user can change its password
-        new_password = "thatsAcomplPASS2"
+        too_old_password = "thatsAcomplTooOldPass1!"
         user_ldb.modify_ldif("""
 dn: %s
 changetype: modify
@@ -130,12 +130,60 @@ delete: userPassword
 userPassword: %s
 add: userPassword
 userPassword: %s
-""" % (userdn, userpass, new_password))
+""" % (userdn, userpass, too_old_password))
+
+        # change the password again
+        older_password = "thatsAcomplOlderPass1!"
+        user_ldb.modify_ldif("""
+dn: %s
+changetype: modify
+delete: userPassword
+userPassword: %s
+add: userPassword
+userPassword: %s
+""" % (userdn, too_old_password, older_password))
+
+        # change the password again
+        old_password = "thatsAcomplOldPass1!"
+        user_ldb.modify_ldif("""
+dn: %s
+changetype: modify
+delete: userPassword
+userPassword: %s
+add: userPassword
+userPassword: %s
+""" % (userdn, older_password, old_password))
+
+        # change the password once more
+        new_password = "thatsAcomplNewPass1!"
+        user_ldb.modify_ldif("""
+dn: %s
+changetype: modify
+delete: userPassword
+userPassword: %s
+add: userPassword
+userPassword: %s
+""" % (userdn, old_password, new_password))
 
         # discard the old creds (i.e. get rid of our valid Kerberos ticket)
         del test_creds
         test_creds = self.insta_creds(creds)
-        test_creds.set_password(userpass)
+        test_creds.set_password(older_password)
+
+        self.assertLoginFailure(ldap_url, test_creds, self.lp)
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='Test with older password fails (but badPwdCount=0)')
+
+        del test_creds
+        test_creds = self.insta_creds(creds)
+        test_creds.set_password(old_password)
 
         # for Kerberos, logging in with the old password fails
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
@@ -166,8 +214,10 @@ userPassword: %s
                                       userAccountControl=UF_NORMAL_ACCOUNT,
                                       msDSUserAccountControlComputed=0,
                                       msg=info_msg)
+            logonCount = int(res[0]["logonCount"][0])
+            lastLogon = int(res[0]["lastLogon"][0])
 
-        # check logging in with the new password succeeds
+        # check logging in with the correct password succeeds
         test_creds.set_password(new_password)
         user_ldb = self.assertLoginSuccess(ldap_url, test_creds, self.lp)
         res = self._check_account(userdn,
@@ -179,6 +229,37 @@ userPassword: %s
                                   userAccountControl=UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0,
                                   msg='Test login with new password succeeds')
+        logonCount = int(res[0]["logonCount"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+
+        del test_creds
+        test_creds = self.insta_creds(creds)
+        test_creds.set_password(too_old_password)
+
+        self.assertLoginFailure(ldap_url, test_creds, self.lp)
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='Test login with too old password fails')
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # check logging in with the correct password succeeds
+        test_creds.set_password(new_password)
+        user_ldb = self.assertLoginSuccess(ldap_url, test_creds, self.lp)
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lastLogon=('greater', lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='Test login with new password succeeds again')
 
     def test_login_basics_krb5(self):
         self._test_login_basics(self.lockout1krb5_creds)
