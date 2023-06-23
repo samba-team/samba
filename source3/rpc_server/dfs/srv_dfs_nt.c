@@ -390,7 +390,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
-	size_t consumedcnt = strlen(r->in.dfs_entry_path);
+	size_t consumedcnt = 0;
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
 	TALLOC_CTX *ctx = talloc_tos();
