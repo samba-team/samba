@@ -27,7 +27,8 @@ from ldb import ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError,\
     Message, MessageElement, SCOPE_BASE, SCOPE_SUBTREE, binary_encode
 from samba.sd_utils import SDUtils
 
-from .exceptions import MultipleObjectsReturned
+from .exceptions import DeleteError, DoesNotExist, MultipleObjectsReturned,\
+    ProtectError, UnprotectError
 from .fields import DateTimeField, DnField, Field, GUIDField, IntegerField,\
     StringField
 
@@ -173,7 +174,15 @@ class Model(metaclass=ModelMeta):
         :param fields: Optional list of field names to refresh
         """
         attrs = [self.fields[f].name for f in fields] if fields else None
-        res = ldb.search(self.dn, scope=SCOPE_BASE, attrs=attrs)
+
+        # This shouldn't normally happen but in case the object refresh fails.
+        try:
+            res = ldb.search(self.dn, scope=SCOPE_BASE, attrs=attrs)
+        except LdbError as e:
+            if e.args[0] == ERR_NO_SUCH_OBJECT:
+                raise DoesNotExist(f"Refresh failed, object gone: {self.dn}")
+            raise
+
         self._apply(ldb, res[0])
 
     def as_dict(self, include_hidden=False):
@@ -225,9 +234,17 @@ class Model(metaclass=ModelMeta):
         :param ldb: Ldb connection
         :param kwargs: Search criteria as keyword args
         """
-        result = ldb.search(cls.get_search_dn(ldb),
-                            scope=SCOPE_SUBTREE,
-                            expression=cls.build_expression(**kwargs))
+        base_dn = cls.get_search_dn(ldb)
+
+        # If the container does not exist produce a friendly error message.
+        try:
+            result = ldb.search(base_dn,
+                                scope=SCOPE_SUBTREE,
+                                expression=cls.build_expression(**kwargs))
+        except LdbError as e:
+            if e.args[0] == ERR_NO_SUCH_OBJECT:
+                raise DoesNotExist(f"Container does not exist: {base_dn}")
+            raise
 
         # For now this returns a simple generator of model instances.
         # This could eventually become a QuerySet class if we need to add
@@ -262,9 +279,17 @@ class Model(metaclass=ModelMeta):
                 else:
                     raise
         else:
-            res = ldb.search(cls.get_search_dn(ldb),
-                             scope=SCOPE_SUBTREE,
-                             expression=cls.build_expression(**kwargs))
+            base_dn = cls.get_search_dn(ldb)
+
+            # If the container does not exist produce a friendly error message.
+            try:
+                res = ldb.search(base_dn,
+                                 scope=SCOPE_SUBTREE,
+                                 expression=cls.build_expression(**kwargs))
+            except LdbError as e:
+                if e.args[0] == ERR_NO_SUCH_OBJECT:
+                    raise DoesNotExist(f"Container does not exist: {base_dn}")
+                raise
 
         # Expect to get one object back or raise MultipleObjectsReturned.
         # For multiple records, please call .query() instead.
@@ -382,8 +407,13 @@ class Model(metaclass=ModelMeta):
 
         :param ldb: Ldb connection
         """
-        if self.dn is not None:
+        if self.dn is None:
+            raise DeleteError("Cannot delete object that doesn't have a dn.")
+
+        try:
             ldb.delete(self.dn)
+        except LdbError as e:
+            raise DeleteError(f"Delete failed: {e}")
 
     def protect(self, ldb):
         """Protect object from accidental deletion.
@@ -391,7 +421,11 @@ class Model(metaclass=ModelMeta):
         :param ldb: Ldb connection
         """
         utils = SDUtils(ldb)
-        utils.dacl_add_ace(self.dn, "(D;;DTSD;;;WD)")
+
+        try:
+            utils.dacl_add_ace(self.dn, "(D;;DTSD;;;WD)")
+        except LdbError as e:
+            raise ProtectError(f"Failed to protect object: {e}")
 
     def unprotect(self, ldb):
         """Unprotect object from accidental deletion.
@@ -399,4 +433,8 @@ class Model(metaclass=ModelMeta):
         :param ldb: Ldb connection
         """
         utils = SDUtils(ldb)
-        utils.dacl_delete_aces(self.dn, "(D;;DTSD;;;WD)")
+
+        try:
+            utils.dacl_delete_aces(self.dn, "(D;;DTSD;;;WD)")
+        except LdbError as e:
+            raise UnprotectError(f"Failed to unprotect object: {e}")

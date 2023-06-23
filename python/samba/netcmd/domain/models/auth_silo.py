@@ -20,8 +20,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE, Message, MessageElement
+from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE, LdbError, Message, MessageElement
 
+from .exceptions import AddMemberError, RemoveMemberError
 from .fields import DnField, BooleanField, StringField
 from .model import Model
 
@@ -65,7 +66,10 @@ class AuthenticationSilo(Model):
                                    "msDS-AuthNPolicySiloMembers"))
 
         # Update authentication silo.
-        ldb.modify(message)
+        try:
+            ldb.modify(message)
+        except LdbError as e:
+            raise AddMemberError(f"Failed to add silo member: {e}")
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])
@@ -85,7 +89,10 @@ class AuthenticationSilo(Model):
                                    "msDS-AuthNPolicySiloMembers"))
 
         # Update authentication silo.
-        ldb.modify(message)
+        try:
+            ldb.modify(message)
+        except LdbError as e:
+            raise RemoveMemberError(f"Failed to remove silo member: {e}")
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])

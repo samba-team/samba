@@ -20,5 +20,33 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-class MultipleObjectsReturned(Exception):
+class ModelError(Exception):
+    pass
+
+
+class MultipleObjectsReturned(ModelError):
+    pass
+
+
+class DoesNotExist(ModelError):
+    pass
+
+
+class AddMemberError(ModelError):
+    pass
+
+
+class RemoveMemberError(ModelError):
+    pass
+
+
+class ProtectError(ModelError):
+    pass
+
+
+class UnprotectError(ModelError):
+    pass
+
+
+class DeleteError(ModelError):
     pass
