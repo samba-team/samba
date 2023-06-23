@@ -31,8 +31,15 @@ ${RPCCLIENTCMD} -c "dfsenum 5"
 RC=$?
 testit "dfsenum" test ${RC} -eq 0 || failed=$((failed + 1))
 
+# This test fails: _dfs_EnumEx() is not implemented on samba RPC server side
 ${RPCCLIENTCMD} -c "dfsenumex 5"
 RC=$?
 testit "dfsenumex" test ${RC} -eq 0 || failed=$((failed + 1))
+
+# Every backslash is reduced twice, so we need to enter it 4 times.
+# Rpc server then gets: '\\server\share\path'
+${RPCCLIENTCMD} -c "dfsgetinfo \\\\\\\\${SERVER}\\\\msdfs-share\\\\msdfs-src1 ${SERVER} msdfs-src1"
+RC=$?
+testit "dfsgetinfo" test ${RC} -eq 0 || failed=$((failed + 1))
 
 testok "$0" "${failed}"

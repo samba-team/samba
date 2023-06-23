@@ -1,2 +1,3 @@
 #_dfs_EnumEx() is not implemented on RPC server side
 ^samba3.blackbox.rpcclient_dfs.dfsenumex
+^samba3.blackbox.rpcclient_dfs.dfsgetinfo
