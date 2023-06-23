@@ -21,11 +21,11 @@
 #
 
 import samba.getopt as options
-from ldb import LdbError
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AuthenticationPolicy
 from samba.netcmd.domain.models.auth_policy import MIN_TGT_LIFETIME,\
     MAX_TGT_LIFETIME, StrongNTLMPolicy
+from samba.netcmd.domain.models.exceptions import ModelError
 from samba.netcmd.validators import Range
 
 
@@ -52,8 +52,11 @@ class cmd_domain_auth_policy_list(Command):
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Authentication policies grouped by cn.
-        policies = {policy.cn: policy.as_dict()
-                    for policy in AuthenticationPolicy.query(ldb)}
+        try:
+            policies = {policy.cn: policy.as_dict()
+                        for policy in AuthenticationPolicy.query(ldb)}
+        except ModelError as e:
+            raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -88,8 +91,12 @@ class cmd_domain_auth_policy_view(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            policy = AuthenticationPolicy.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if authentication policy exists first.
-        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is None:
             raise CommandError(f"Authentication policy {name} not found.")
 
@@ -171,8 +178,12 @@ class cmd_domain_auth_policy_create(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            policy = AuthenticationPolicy.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Make sure authentication policy doesn't already exist.
-        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is not None:
             raise CommandError(f"Authentication policy {name} already exists.")
 
@@ -201,7 +212,7 @@ class cmd_domain_auth_policy_create(Command):
 
             if protect:
                 policy.protect(ldb)
-        except LdbError as e:
+        except ModelError as e:
             raise CommandError(e)
 
         # Authentication policy created successfully.
@@ -281,8 +292,12 @@ class cmd_domain_auth_policy_modify(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            policy = AuthenticationPolicy.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if authentication policy exists.
-        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is None:
             raise CommandError(f"Authentication policy {name} not found.")
 
@@ -326,7 +341,7 @@ class cmd_domain_auth_policy_modify(Command):
                 policy.protect(ldb)
             elif unprotect:
                 policy.unprotect(ldb)
-        except LdbError as e:
+        except ModelError as e:
             raise CommandError(e)
 
         # Authentication policy updated successfully.
@@ -360,8 +375,12 @@ class cmd_domain_auth_policy_delete(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            policy = AuthenticationPolicy.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if authentication policy exists first.
-        policy = AuthenticationPolicy.get(ldb, cn=name)
         if policy is None:
             raise CommandError(f"Authentication policy {name} not found.")
 
@@ -371,7 +390,7 @@ class cmd_domain_auth_policy_delete(Command):
                 policy.unprotect(ldb)
 
             policy.delete(ldb)
-        except LdbError as e:
+        except ModelError as e:
             if not force:
                 raise CommandError(
                     f"{e}\nTry --force to delete protected authentication policies.")

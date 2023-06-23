@@ -21,9 +21,9 @@
 #
 
 import samba.getopt as options
-from ldb import LdbError
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
+from samba.netcmd.domain.models.exceptions import ModelError
 
 from .silo_member import cmd_domain_auth_silo_member
 
@@ -51,8 +51,11 @@ class cmd_domain_auth_silo_list(Command):
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Authentication silos grouped by cn.
-        silos = {silo.cn: silo.as_dict()
-                 for silo in AuthenticationSilo.query(ldb)}
+        try:
+            silos = {silo.cn: silo.as_dict()
+                     for silo in AuthenticationSilo.query(ldb)}
+        except ModelError as e:
+            raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -87,8 +90,12 @@ class cmd_domain_auth_silo_view(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            silo = AuthenticationSilo.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if silo exists first.
-        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
@@ -173,8 +180,12 @@ class cmd_domain_auth_silo_create(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            silo = AuthenticationSilo.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Make sure silo doesn't already exist.
-        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is not None:
             raise CommandError(f"Authentication silo {name} already exists.")
 
@@ -206,7 +217,7 @@ class cmd_domain_auth_silo_create(Command):
 
             if protect:
                 silo.protect(ldb)
-        except LdbError as e:
+        except ModelError as e:
             raise CommandError(e)
 
         # Authentication silo created successfully.
@@ -266,7 +277,7 @@ class cmd_domain_auth_silo_modify(Command):
         """
         try:
             return AuthenticationPolicy.lookup(ldb, name)
-        except (LookupError, ValueError) as e:
+        except (LookupError, ModelError, ValueError) as e:
             raise CommandError(e)
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
@@ -290,8 +301,12 @@ class cmd_domain_auth_silo_modify(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            silo = AuthenticationSilo.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if silo exists first.
-        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
@@ -331,7 +346,7 @@ class cmd_domain_auth_silo_modify(Command):
                 silo.protect(ldb)
             elif unprotect:
                 silo.unprotect(ldb)
-        except LdbError as e:
+        except ModelError as e:
             raise CommandError(e)
 
         # Silo updated successfully.
@@ -365,8 +380,12 @@ class cmd_domain_auth_silo_delete(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            silo = AuthenticationSilo.get(ldb, cn=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if silo exists first.
-        silo = AuthenticationSilo.get(ldb, cn=name)
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
@@ -376,7 +395,7 @@ class cmd_domain_auth_silo_delete(Command):
                 silo.unprotect(ldb)
 
             silo.delete(ldb)
-        except LdbError as e:
+        except ModelError as e:
             if not force:
                 raise CommandError(
                     f"{e}\nTry --force to delete protected authentication silos.")

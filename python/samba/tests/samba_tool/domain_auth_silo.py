@@ -24,7 +24,7 @@ import json
 from collections import defaultdict
 from unittest.mock import patch
 
-from ldb import LdbError
+from samba.netcmd.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
@@ -203,9 +203,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_create_fails(self):
         """Test creating an authentication silo, but it fails."""
-        # Raise LdbError when ldb.add() is called.
+        # Raise ModelError when ldb.add() is called.
         with patch.object(SamDB, "add") as add_mock:
-            add_mock.side_effect = LdbError("Custom error message")
+            add_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                            "--name", "createFails",
                                            "--policy", "Single Policy")
@@ -302,9 +302,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_modify_fails(self):
         """Test modify authentication silo, but it fails."""
-        # Raise LdbError when ldb.modify() is called.
+        # Raise ModelError when ldb.modify() is called.
         with patch.object(SamDB, "modify") as add_mock:
-            add_mock.side_effect = LdbError("Custom error message")
+            add_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "modify",
                                            "--name", "developers",
                                            "--description", "Devs")
@@ -384,9 +384,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         self.assertIsNotNone(silo)
 
         # Try delete with --force.
-        # Patch SDUtils.dacl_delete_aces with a Mock that raises LdbError.
+        # Patch SDUtils.dacl_delete_aces with a Mock that raises ModelError.
         with patch.object(SDUtils, "dacl_delete_aces") as delete_mock:
-            delete_mock.side_effect = LdbError("Custom error message")
+            delete_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "delete",
                                            "--name", "deleteForceFail",
                                            "--force")
@@ -403,9 +403,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         silo = self.get_authentication_silo("regularSilo")
         self.assertIsNotNone(silo)
 
-        # Raise LdbError when ldb.delete() is called.
+        # Raise ModelError when ldb.delete() is called.
         with patch.object(SamDB, "delete") as delete_mock:
-            delete_mock.side_effect = LdbError("Custom error message")
+            delete_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "delete",
                                            "--name", "regularSilo")
             self.assertEqual(result, -1)
@@ -425,9 +425,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         silo = self.get_authentication_silo("protectedSilo")
         self.assertIsNotNone(silo)
 
-        # Raise LdbError when ldb.delete() is called.
+        # Raise ModelError when ldb.delete() is called.
         with patch.object(SamDB, "delete") as delete_mock:
-            delete_mock.side_effect = LdbError("Custom error message")
+            delete_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "delete",
                                            "--name", "protectedSilo",
                                            "--force")
