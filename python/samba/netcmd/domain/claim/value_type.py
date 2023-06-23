@@ -23,6 +23,7 @@
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import ValueType
+from samba.netcmd.domain.models.exceptions import ModelError
 
 
 class cmd_domain_claim_value_type_list(Command):
@@ -48,8 +49,11 @@ class cmd_domain_claim_value_type_list(Command):
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
         # Value types grouped by display name.
-        value_types = {value_type.display_name: value_type.as_dict()
-                       for value_type in ValueType.query(ldb)}
+        try:
+            value_types = {value_type.display_name: value_type.as_dict()
+                           for value_type in ValueType.query(ldb)}
+        except ModelError as e:
+            raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
@@ -84,8 +88,12 @@ class cmd_domain_claim_value_type_view(Command):
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
+        try:
+            value_type = ValueType.get(ldb, display_name=name)
+        except ModelError as e:
+            raise CommandError(e)
+
         # Check if value type exists first.
-        value_type = ValueType.get(ldb, display_name=name)
         if value_type is None:
             raise CommandError(f"Value type {name} not found.")
 
