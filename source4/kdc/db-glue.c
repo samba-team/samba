@@ -3449,10 +3449,10 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	data = ldb_msg_find_ldb_val(proxy_skdc_entry->msg,
 				    "msDS-AllowedToActOnBehalfOfOtherIdentity");
 	if (data == NULL) {
-		DBG_ERR("Could not find security descriptor "
-			"msDS-AllowedToActOnBehalfOfOtherIdentity in "
-			"proxy[%s]\n",
-			proxy_dn);
+		DBG_WARNING("Could not find security descriptor "
+			    "msDS-AllowedToActOnBehalfOfOtherIdentity in "
+			    "proxy[%s]\n",
+			    proxy_dn);
 		code = KRB5KDC_ERR_BADOPTION;
 		goto out;
 	}
