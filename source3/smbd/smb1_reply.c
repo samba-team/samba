@@ -1202,7 +1202,6 @@ static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
 static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 				    void *private_data,
 				    struct files_struct *dirfsp,
-				    struct smb_filename *atname,
 				    struct smb_filename *smb_fname,
 				    bool get_dosmode,
 				    uint32_t *_mode)
