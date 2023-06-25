@@ -106,7 +106,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
-	DATA_BLOB *client_claims_blob = NULL;
+	const DATA_BLOB *client_claims_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =

@@ -473,7 +473,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	DATA_BLOB *pcred_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
-	DATA_BLOB *client_claims_blob = NULL;
+	const DATA_BLOB *client_claims_blob = NULL;
 	NTSTATUS nt_status;
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;

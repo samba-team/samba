@@ -1130,7 +1130,7 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 				   const struct samba_kdc_entry *p,
-				   DATA_BLOB **_claims_blob)
+				   const DATA_BLOB **_claims_blob)
 {
 	DATA_BLOB *claims_blob = NULL;
 	NTSTATUS nt_status;
@@ -2364,11 +2364,11 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
-	DATA_BLOB *client_claims_blob = NULL;
+	const DATA_BLOB *client_claims_blob = NULL;
 	bool client_pac_is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	bool device_pac_is_trusted = flags & SAMBA_KDC_FLAG_DEVICE_KRBTGT_IS_TRUSTED;
 	bool delegated_proxy_pac_is_trusted = flags & SAMBA_KDC_FLAG_DELEGATED_PROXY_IS_TRUSTED;
-	DATA_BLOB *device_claims_blob = NULL;
+	const DATA_BLOB *device_claims_blob = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	int is_tgs = false;
 	struct auth_user_info_dc *user_info_dc = NULL;
@@ -2422,23 +2422,27 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			} else if (code != 0) {
 				goto done;
 			} else {
-				device_claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
-				if (device_claims_blob == NULL) {
+				DATA_BLOB *device_claims = NULL;
+
+				device_claims = talloc_zero(mem_ctx, DATA_BLOB);
+				if (device_claims == NULL) {
 					smb_krb5_free_data_contents(context, &device_claims_data);
 					code = ENOMEM;
 					goto done;
 				}
 
-				*device_claims_blob = data_blob_talloc(mem_ctx,
-								       device_claims_data.data,
-								       device_claims_data.length);
-				if (device_claims_blob->data == NULL && device_claims_data.length != 0) {
+				*device_claims = data_blob_talloc(mem_ctx,
+								  device_claims_data.data,
+								  device_claims_data.length);
+				if (device_claims->data == NULL && device_claims_data.length != 0) {
 					smb_krb5_free_data_contents(context, &device_claims_data);
 					code = ENOMEM;
 					goto done;
 				}
 
 				smb_krb5_free_data_contents(context, &device_claims_data);
+
+				device_claims_blob = device_claims;
 			}
 
 			code = samba_kdc_create_device_info_blob(mem_ctx,
