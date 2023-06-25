@@ -2700,14 +2700,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (device_claims_blob != NULL) {
-		code = pac_blobs_add_blob(&pac_blobs,
-					  mem_ctx,
-					  PAC_TYPE_DEVICE_CLAIMS_INFO,
-					  device_claims_blob);
-		if (code != 0) {
-			goto done;
-		}
+	code = pac_blobs_add_blob(&pac_blobs,
+				  mem_ctx,
+				  PAC_TYPE_DEVICE_CLAIMS_INFO,
+				  device_claims_blob);
+	if (code != 0) {
+		goto done;
 	}
 
 	if (!client_pac_is_trusted || !is_tgs) {
