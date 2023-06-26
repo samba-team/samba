@@ -503,7 +503,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		krb5_error_code ret2;
 
 		ret2 = hdb_samba4_set_steal_server_audit_info(r, server_audit_info);
-		if (ret2) {
+		if (ret == 0) {
 			ret = ret2;
 		}
 	}
@@ -511,7 +511,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		krb5_error_code ret2;
 
 		ret2 = hdb_samba4_set_ntstatus(r, status, ret);
-		if (ret2) {
+		if (ret == 0) {
 			ret = ret2;
 		}
 	}
