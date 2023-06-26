@@ -31,6 +31,7 @@ struct unix_error_map {
 	{	"EBADF",	EBADF	},
 	{	"EINTR",	EINTR	},
 	{	"EACCES",	EACCES	},
+	{	"EROFS",	EROFS	},
 };
 
 static int find_unix_error_from_string(const char *err_str)
