@@ -1420,6 +1420,13 @@ plantestsuite("samba3.blackbox.chdir-cache", "simpleserver:local",
                '$PREFIX',
                'simpleserver'])
 
+plantestsuite("samba3.blackbox.rofs_error", "simpleserver",
+              [os.path.join(samba3srcdir, "script/tests/test_rofs.sh"),
+               configuration,
+               os.path.join(bindir(), "smbclient"),
+               '$SERVER_IP',
+               "error_inject"])
+
 plantestsuite("samba3.blackbox.zero_readsize",
               "simpleserver:local",
               [os.path.join(samba3srcdir,
