@@ -151,10 +151,6 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	 * list only the attribute that have been modified since last interogation
 	 *
 	 */
-	newmsg = ldb_msg_new(dsc->req);
-	if (newmsg == NULL) {
-		return ldb_oom(ldb);
-	}
 	for (i = msg->num_elements - 1; i >= 0; i--) {
 		if (ldb_attr_cmp(msg->elements[i].name, "uSNChanged") == 0) {
 			int error = 0;
@@ -201,11 +197,6 @@ static int dirsync_filter_entry(struct ldb_request *req,
 			 */
 			return LDB_SUCCESS;
 		}
-		newmsg->dn = ldb_dn_new(newmsg, ldb, "");
-		if (newmsg->dn == NULL) {
-			return ldb_oom(ldb);
-		}
-
 		el = ldb_msg_find_element(msg, "objectGUID");
 		if ( el != NULL) {
 			guidfound = true;
@@ -216,46 +207,12 @@ static int dirsync_filter_entry(struct ldb_request *req,
 		 * well will uncomment the code bellow
 		 */
 		SMB_ASSERT(guidfound == true);
-		/*
-		if (guidfound == false) {
-			struct GUID guid;
-			struct ldb_val *new_val;
-			DATA_BLOB guid_blob;
-
-			tmp[0] = '\0';
-			txt = strrchr(txt, ':');
-			if (txt == NULL) {
-				return ldb_module_done(dsc->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
-			}
-			txt++;
-
-			status = GUID_from_string(txt, &guid);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ldb_module_done(dsc->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
-			}
-
-			status = GUID_to_ndr_blob(&guid, msg, &guid_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ldb_module_done(dsc->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
-			}
-
-			new_val = talloc(msg, struct ldb_val);
-			if (new_val == NULL) {
-				return ldb_oom(ldb);
-			}
-			new_val->data = talloc_steal(new_val, guid_blob.data);
-			new_val->length = guid_blob.length;
-			if (ldb_msg_add_value(msg, "objectGUID", new_val, NULL) != 0) {
-				return ldb_module_done(dsc->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
-			}
-		}
-		*/
-		ldb_msg_add(newmsg, el, LDB_FLAG_MOD_ADD);
-		talloc_steal(newmsg->elements, el->name);
-		talloc_steal(newmsg->elements, el->values);
-
-		talloc_steal(newmsg->elements, msg);
 		return ldb_module_send_entry(dsc->req, msg, controls);
+	}
+
+	newmsg = ldb_msg_new(dsc->req);
+	if (newmsg == NULL) {
+		return ldb_oom(ldb);
 	}
 
 	ndr_err = ndr_pull_struct_blob(replMetaData, dsc, &rmd,
