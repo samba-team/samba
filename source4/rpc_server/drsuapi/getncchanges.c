@@ -1711,6 +1711,7 @@ static const char *collect_objects_attrs[] = { "uSNChanged",
  */
 static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 					   TALLOC_CTX *mem_ctx,
+					   struct drsuapi_getncchanges_state *getnc_state,
 					   struct drsuapi_DsGetNCChangesRequest10 *req10,
 					   struct ldb_dn *search_dn,
 					   const char *extra_filter,
@@ -1719,7 +1720,6 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 	int ret;
 	char* search_filter;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-	struct drsuapi_getncchanges_state *getnc_state = b_state->getncchanges_state;
 	bool critical_only = false;
 
 	if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
@@ -1773,6 +1773,7 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
  */
 static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_state,
 						TALLOC_CTX *mem_ctx,
+						struct drsuapi_getncchanges_state *getnc_state,
 						struct drsuapi_DsGetNCChangesRequest10 *req10,
 						struct drsuapi_DsGetNCChangesCtr6 *ctr6,
 						struct ldb_dn *search_dn,
@@ -1932,7 +1933,13 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		/* TODO: implement extended op specific collection
 		 * of objects. Right now we just normal procedure
 		 * for collecting objects */
-		return getncchanges_collect_objects(b_state, mem_ctx, req10, search_dn, extra_filter, search_res);
+		return getncchanges_collect_objects(b_state,
+						    mem_ctx,
+						    getnc_state,
+						    req10,
+						    search_dn,
+						    extra_filter,
+						    search_res);
 	}
 }
 
@@ -2712,7 +2719,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	WERROR werr;
 	struct dcesrv_handle *h;
 	struct drsuapi_bind_state *b_state;
-	struct drsuapi_getncchanges_state *getnc_state;
+	struct drsuapi_getncchanges_state *getnc_state = NULL;
 	struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t options;
 	uint32_t link_count = 0;
@@ -2962,7 +2969,31 @@ allowed:
 		ZERO_STRUCT(req10->highwatermark);
 	}
 
-	getnc_state = b_state->getncchanges_state;
+	/*
+	 * An extended operation is "special single-response cycle"
+	 * per MS-DRSR 4.1.10.1.1 "Start and Finish" so we don't need
+	 * to guess if this is a continuation of any long-term
+	 * state.
+	 *
+	 * Otherwise, maintain (including marking as stale, which is
+	 * what the below is for) the replication state.
+	 *
+	 * Note that point 5 "The server implementation MAY declare
+	 * the supplied values ... as too stale to use."  would allow
+	 * resetting the state at almost any point, Microsoft Azure AD
+	 * Connect will switch back and forth between a REPL_OBJ and a
+	 * full replication, so we must not reset the statue during
+	 * extended operations.
+	 */
+	if (req10->extended_op == DRSUAPI_EXOP_NONE &&
+	    b_state->getncchanges_full_repl_state != NULL) {
+		/*
+		 * Knowing that this is not an extended operation, we
+		 * can access (and validate) the full replication
+		 * state
+		 */
+		getnc_state = b_state->getncchanges_full_repl_state;
+	}
 
 	/* see if a previous replication has been abandoned */
 	if (getnc_state) {
@@ -2975,7 +3006,9 @@ allowed:
 		if (ret != LDB_SUCCESS) {
 			/*
 			 * This can't fail as we have done this above
-			 * implicitly but not got the DN out
+			 * implicitly but not got the DN out, but
+			 * print a good error message regardless just
+			 * in case.
 			 */
 			DBG_ERR("Bad DN '%s' as Naming Context for GetNCChanges: %s\n",
 				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
@@ -2988,7 +3021,7 @@ allowed:
 				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
 				 ldb_dn_get_linearized(getnc_state->last_dn)));
 			TALLOC_FREE(getnc_state);
-			b_state->getncchanges_state = NULL;
+			b_state->getncchanges_full_repl_state = NULL;
 		}
 	}
 
@@ -3002,10 +3035,15 @@ allowed:
 				 (ret > 0) ? "older" : "newer",
 				 ldb_dn_get_linearized(getnc_state->last_dn)));
 			TALLOC_FREE(getnc_state);
-			b_state->getncchanges_state = NULL;
+			b_state->getncchanges_full_repl_state = NULL;
 		}
 	}
 
+	 /*
+	  * This is either a new replication cycle, or an extended
+	  * operation.  A new cycle is triggered above by the
+	  * TALLOC_FREE() which sets getnc_state to NULL.
+	  */
 	if (getnc_state == NULL) {
 		struct ldb_result *res = NULL;
 		const char *attrs[] = {
@@ -3114,12 +3152,33 @@ allowed:
 			return WERR_DS_DRA_NOT_SUPPORTED;
 		}
 
-		/* Initialize the state we'll store over the replication cycle */
-		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
+		/*
+		 * Initialize the state, initially for the remainder
+		 * of this call (EXOPs)
+		 *
+		 * An extended operation is a "special single-response
+		 * cycle" per MS-DRSR 4.1.10.1.1 "Start and Finish"
+		 *
+		 */
+		getnc_state = talloc_zero(mem_ctx, struct drsuapi_getncchanges_state);
 		if (getnc_state == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
-		b_state->getncchanges_state = getnc_state;
+
+		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+			/*
+			 * Promote the memory to being a store of
+			 * long-term state that we will use over the
+			 * replication cycle for full replication
+			 * requests
+			 *
+			 * Store the state in a clearly named location
+			 * for pulling back only during full
+			 * replications
+			 */
+			b_state->getncchanges_full_repl_state
+				= talloc_steal(b_state, getnc_state);
+		}
 
 		getnc_state->ncRoot_dn = ncRoot_dn;
 		talloc_steal(getnc_state, ncRoot_dn);
@@ -3200,11 +3259,13 @@ allowed:
 		}
 
 		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
-			werr = getncchanges_collect_objects(b_state, mem_ctx, req10,
+			werr = getncchanges_collect_objects(b_state, mem_ctx,
+							    getnc_state, req10,
 							    search_dn, extra_filter,
 							    &search_res);
 		} else {
-			werr = getncchanges_collect_objects_exop(b_state, mem_ctx, req10,
+			werr = getncchanges_collect_objects_exop(b_state, mem_ctx,
+								 getnc_state, req10,
 								 &r->out.ctr->ctr6,
 								 search_dn, extra_filter,
 								 &search_res);
@@ -3656,7 +3717,11 @@ allowed:
 		r->out.ctr->ctr6.nc_linked_attributes_count = getnc_state->total_links;
 	}
 
-	if (!r->out.ctr->ctr6.more_data) {
+	if (req10->extended_op != DRSUAPI_EXOP_NONE) {
+		r->out.ctr->ctr6.uptodateness_vector = NULL;
+		r->out.ctr->ctr6.nc_object_count = 0;
+		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
+	} else if (!r->out.ctr->ctr6.more_data) {
 
 		/* this is the last response in the replication cycle */
 		r->out.ctr->ctr6.new_highwatermark = getnc_state->final_hwm;
@@ -3668,9 +3733,13 @@ allowed:
 		 * that the RPC message we're sending contains links stored in
 		 * getnc_state. mem_ctx is local to this RPC call, so the memory
 		 * will get freed after the RPC message is sent on the wire.
+		 *
+		 * We must not do this for an EXOP, as that should not
+		 * end the replication state, which is why that is
+		 * checked first above.
 		 */
 		talloc_steal(mem_ctx, getnc_state);
-		b_state->getncchanges_state = NULL;
+		b_state->getncchanges_full_repl_state = NULL;
 	} else {
 		ret = drsuapi_DsReplicaHighWaterMark_cmp(&r->out.ctr->ctr6.old_highwatermark,
 							 &r->out.ctr->ctr6.new_highwatermark);
@@ -3690,12 +3759,6 @@ allowed:
 		}
 
 		getnc_state->last_hwm = r->out.ctr->ctr6.new_highwatermark;
-	}
-
-	if (req10->extended_op != DRSUAPI_EXOP_NONE) {
-		r->out.ctr->ctr6.uptodateness_vector = NULL;
-		r->out.ctr->ctr6.nc_object_count = 0;
-		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
 	}
 
 	TALLOC_FREE(repl_chunk);
