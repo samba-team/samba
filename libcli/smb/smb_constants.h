@@ -615,6 +615,16 @@ enum csc_policy {
 #define IO_REPARSE_TAG_NFS	     0x80000014
 
 /*
+ * Sub-types for IO_REPARSE_TAG_NFS from [MS-FSCC] 2.1.2.6 Network
+ * File System (NFS) Reparse Data Buffer
+ */
+#define NFS_SPECFILE_LNK	     0x00000000014B4E4C
+#define NFS_SPECFILE_CHR	     0x0000000000524843
+#define NFS_SPECFILE_BLK	     0x00000000004B4C42
+#define NFS_SPECFILE_FIFO	     0x000000004F464946
+#define NFS_SPECFILE_SOCK	     0x000000004B434F53
+
+/*
  * Flag from [MS-FSCC] 2.1.2.4 Symbolic Link Reparse Data Buffer
  */
 #define SYMLINK_FLAG_RELATIVE	     0x00000001
