@@ -52,28 +52,28 @@ static int find_unix_error_from_string(const char *err_str)
 static int inject_unix_error(const char *vfs_func, vfs_handle_struct *handle)
 {
 	const char *err_str;
+	int error;
 
 	err_str = lp_parm_const_string(SNUM(handle->conn),
 				       "error_inject", vfs_func, NULL);
-
-	if (err_str != NULL) {
-		int error;
-
-		error = find_unix_error_from_string(err_str);
-		if (error != 0) {
-			DBG_WARNING("Returning error %s for VFS function %s\n",
-				    err_str, vfs_func);
-			return error;
-		}
-
-		if (strequal(err_str, "panic")) {
-			DBG_ERR("Panic in VFS function %s\n", vfs_func);
-			smb_panic("error_inject");
-		}
-
-		DBG_ERR("Unknown error inject %s requested "
-			"for vfs function %s\n", err_str, vfs_func);
+	if (err_str == NULL) {
+		return 0;
 	}
+
+	error = find_unix_error_from_string(err_str);
+	if (error != 0) {
+		DBG_WARNING("Returning error %s for VFS function %s\n",
+			    err_str, vfs_func);
+		return error;
+	}
+
+	if (strequal(err_str, "panic")) {
+		DBG_ERR("Panic in VFS function %s\n", vfs_func);
+		smb_panic("error_inject");
+	}
+
+	DBG_ERR("Unknown error inject %s requested "
+		"for vfs function %s\n", err_str, vfs_func);
 
 	return 0;
 }
