@@ -4025,8 +4025,11 @@ bool test_ioctl_zero_data(struct torture_context *tctx)
 				      create.out.file.handle,
 				      offset,
 				      beyond_final_zero);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"FSCTL_ZERO_DATA failed.\n");
+	torture_assert_ntstatus_ok_goto(tctx,
+					status,
+					ret,
+					done,
+					"FSCTL_SET_ZERO_DATA failed.\n");
 
 done:
 	return ret;
