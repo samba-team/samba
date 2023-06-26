@@ -1213,6 +1213,61 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # The NC should be the first object returned due to GET_ANC
         self.assertEqual(ctr.first_object.object.identifier.guid, guid)
 
+    def _test_do_full_repl_no_overlap(self, mix=True, get_anc=False):
+        self.default_hwm = drsuapi.DsReplicaHighWaterMark()
+
+        # We set get_anc=True so we can assert the BASE DN will be the
+        # first object
+        ctr6 = self._repl_send_request(get_anc=get_anc)
+        guid_list_1 = self._get_ctr6_object_guids(ctr6)
+
+        if mix:
+            dc_guid_1 = self.ldb_dc1.get_invocation_id()
+
+            req8 = self._exop_req8(dest_dsa=None,
+                                   invocation_id=dc_guid_1,
+                                   nc_dn_str=self.ldb_dc1.get_default_basedn(),
+                                   exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ)
+
+            (level, ctr_repl_obj) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+
+            self.assertEqual(ctr_repl_obj.extended_ret, drsuapi.DRSUAPI_EXOP_ERR_SUCCESS)
+
+            repl_obj_guid_list = self._get_ctr6_object_guids(ctr_repl_obj)
+
+            self.assertEqual(len(repl_obj_guid_list), 1)
+
+            # This should be the first object in the main replication due
+            # to get_anc=True above in one case, and a rule that the NC must be first regardless otherwise
+            self.assertEqual(repl_obj_guid_list[0], guid_list_1[0])
+
+        self.last_ctr = ctr6
+        ctr6 = self._repl_send_request(get_anc=True)
+        guid_list_2 = self._get_ctr6_object_guids(ctr6)
+
+        self.assertNotEqual(guid_list_1, guid_list_2)
+
+    def test_do_full_repl_no_overlap_get_anc(self):
+        """
+        Make sure that a full replication on an nc succeeds to the goal despite needing multiple passes
+        """
+        self._test_do_full_repl_no_overlap(mix=False, get_anc=True)
+
+    def test_do_full_repl_no_overlap(self):
+        """
+        Make sure that a full replication on an nc succeeds to the goal despite needing multiple passes
+        """
+        self._test_do_full_repl_no_overlap(mix=False)
+
+    def test_do_full_repl_mix_no_overlap(self):
+        """
+        Make sure that a full replication on an nc succeeds to the goal despite needing multiple passes
+
+        Assert this is true even if we do a REPL_OBJ in between the replications
+
+        """
+        self._test_do_full_repl_no_overlap(mix=True)
+
 
 class DcConnection:
     """Helper class to track a connection to another DC"""
