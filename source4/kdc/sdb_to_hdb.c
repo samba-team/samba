@@ -61,7 +61,7 @@ static void sdb_flags_to_hdb_flags(const struct SDBFlags *s,
 	h->virtual = s->virtual;
 	h->synthetic = s->synthetic;
 	h->no_auth_data_reqd = s->no_auth_data_reqd;
-	h->_unused24 = s->_unused24;
+	h->auth_data_reqd = s->auth_data_reqd;
 	h->_unused25 = s->_unused25;
 	h->_unused26 = s->_unused26;
 	h->_unused27 = s->_unused27;

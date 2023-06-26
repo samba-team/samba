@@ -74,7 +74,7 @@ struct SDBFlags {
 	unsigned int virtual:1;
 	unsigned int synthetic:1;
 	unsigned int no_auth_data_reqd:1;
-	unsigned int _unused24:1;
+	unsigned int auth_data_reqd:1;
 	unsigned int _unused25:1;
 	unsigned int _unused26:1;
 	unsigned int _unused27:1;
