@@ -116,6 +116,7 @@ static int vfs_error_inject_openat(struct vfs_handle_struct *handle,
 				   const struct vfs_open_how *how)
 {
 	int error = inject_unix_error("openat", handle);
+	int create_error = inject_unix_error("openat_create", handle);
 	int dirfsp_flags = (O_NOFOLLOW|O_DIRECTORY);
 	bool return_error;
 
@@ -126,6 +127,24 @@ static int vfs_error_inject_openat(struct vfs_handle_struct *handle,
 	dirfsp_flags |= O_SEARCH;
 #endif
 #endif
+
+	if ((create_error != 0) && (how->flags & O_CREAT)) {
+		struct stat_ex st = {
+			.st_ex_nlink = 0,
+		};
+		int ret;
+
+		ret = SMB_VFS_FSTATAT(handle->conn,
+				      dirfsp,
+				      smb_fname,
+				      &st,
+				      AT_SYMLINK_NOFOLLOW);
+
+		if ((ret == -1) && (errno == ENOENT)) {
+			errno = create_error;
+			return -1;
+		}
+	}
 
 	return_error = (error != 0);
 	return_error &= !fsp->fsp_flags.is_pathref;
