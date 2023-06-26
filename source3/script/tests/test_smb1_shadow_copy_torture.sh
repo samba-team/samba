@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Blackbox test for shadow_copy2 VFS - SMB1 only.
 #

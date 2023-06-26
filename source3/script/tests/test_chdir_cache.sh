@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Ensure we get a chdir_current_service error if CHDIR fails with EACCESS
 # for an SMB2 request.

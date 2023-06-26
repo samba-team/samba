@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Test terminating an smbclient connection with outstanding
 # aio requests.

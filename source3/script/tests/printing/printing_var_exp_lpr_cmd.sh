@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 logfile="${SELFTEST_TMPDIR}/${USER}_printing_var_exp.log"
 

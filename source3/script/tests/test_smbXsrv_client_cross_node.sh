@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Test smbd let cluster node 0 destroy the connection,
 # if the client with a specific client-guid connections to node 1

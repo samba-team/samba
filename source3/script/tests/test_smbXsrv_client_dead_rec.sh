@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Test smbd doesn't crash if there an existing dead record for a client with a
 # specific client-guid in smbXsrv_client_global.tdb
