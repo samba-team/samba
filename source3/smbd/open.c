@@ -780,6 +780,15 @@ again:
 			smb_fname_rel,
 			&fsp->fsp_name->st,
 			AT_SYMLINK_NOFOLLOW);
+
+		if (ret == -1) {
+			/*
+			 * Keep the original error. Otherwise we would
+			 * mask for example EROFS for open(O_CREAT),
+			 * turning it into ENOENT.
+			 */
+			goto out;
+		}
 	} else {
 		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
 	}
