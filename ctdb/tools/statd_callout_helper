@@ -79,6 +79,7 @@ create_add_del_client_dir()
 # shellcheck disable=SC2154
 statd_callout_state_dir="${script_state_dir}/statd_callout"
 
+statd_callout_mode="persistent_db"
 statd_callout_db="ctdb.tdb"
 statd_callout_queue_dir="${statd_callout_state_dir}/queue"
 
@@ -140,31 +141,26 @@ send_notifies()
 	done
 }
 
-delete_records()
-{
-	while read -r _sip _cip; do
-		_key="statd-state@${_sip}@${_cip}"
-		echo "\"${_key}\" \"\""
-	done | $CTDB ptrans "$statd_callout_db"
-}
-
 ############################################################
 
-# Keep a file per server-IP/client-IP pair, to keep track of the last
-# "add-client" or "del-client'.  These get pushed to a database during
-# "update", which will generally be run once each "monitor" cycle.  In
-# this way we avoid scalability problems with flood of persistent
-# transactions after a "notify" when all the clients re-take their
-# locks.
+# Use file/key names of the form statd-state@<server-IP>@<client-IP>
+# to track the last "add-client" or "del-client".  These files contain
+# the key and a value, quoted and ready to pass to "ctdb ptrans".  For
+# add-client the value is the date (for debugging) and for del-client
+# the value is empty (representing a delete).  These get pushed to
+# $statd_callout_db during "update", which will generally be run once each
+# "monitor" cycle.  In this way we avoid scalability problems with
+# flood of persistent transactions after a "notify" when all the
+# clients reclaim their locks.
 
-startup()
+startup_persistent_db()
 {
+	_config_file="$1"
+
 	create_add_del_client_dir "$statd_callout_queue_dir"
 
 	$CTDB attach "$statd_callout_db" persistent
 
-	_default="${CTDB_SCRIPT_VARDIR}/statd_callout.conf"
-	_config_file="${CTDB_STATD_CALLOUT_CONFIG_FILE:-"${_default}"}"
 	cat >"$_config_file" <<EOF
 persistent_db
 ${statd_callout_queue_dir}
@@ -183,6 +179,108 @@ persistent_db_make_grep_filter()
 	done <"$CTDB_MY_PUBLIC_IPS_CACHE" >"$persistent_db_grep_filter"
 }
 
+update_persistent_db()
+{
+	_files="${statd_callout_state_dir}/.file_list"
+	find "$statd_callout_queue_dir" -name "statd-state@*" >"$_files"
+	if [ ! -s "$_files" ]; then
+		# No files!
+		rm "$_files"
+		exit 0
+	fi
+
+	persistent_db_make_grep_filter
+
+	# Use cat instead of direct grep since POSIX grep does not
+	# have -h
+	_items="${statd_callout_state_dir}/.items"
+	xargs cat <"$_files" | grep -F -f "$persistent_db_grep_filter" >"$_items"
+
+	if [ -s "$_items" ]; then
+		if $CTDB ptrans "$statd_callout_db" <"$_items"; then
+			xargs rm -f <"$_files"
+		fi
+	fi
+
+	rm -f "$_files" "$persistent_db_grep_filter" "$_items"
+}
+
+list_records_persistent_db()
+{
+	persistent_db_make_grep_filter
+
+	$CTDB catdb "$statd_callout_db" |
+		sed -n -e 's|^key([0-9]*) = "\([^"]*\)".*|\1|p' |
+		grep -F -f "$persistent_db_grep_filter" |
+		sed -e 's|statd-state@\([^@]*\)@\(.*\)|\1 \2|'
+
+	rm -f "$persistent_db_grep_filter"
+}
+
+delete_records_persistent_db()
+{
+	while read -r _sip _cip; do
+		_key="statd-state@${_sip}@${_cip}"
+		echo "\"${_key}\" \"\""
+	done | $CTDB ptrans "$statd_callout_db"
+}
+
+cleanup_persistent_db()
+{
+	# Remove any stale touch files (i.e. for IPs not currently
+	# hosted on this node and created since the last "update").
+	# There's nothing else we can do with them at this stage.
+	_pnn=$(ctdb_get_pnn)
+	_ctdb_all_ips=$($CTDB ip all | tail -n +2)
+	echo "$_ctdb_all_ips" |
+		awk -v pnn="$_pnn" 'pnn != $2 { print $1 }' |
+		while read -r _sip; do
+			rm -f "${statd_callout_queue_dir}/statd-state@${_sip}@"*
+		done
+}
+
+############################################################
+
+# Per-mode initialisation
+startup()
+{
+	_default="${CTDB_SCRIPT_VARDIR}/statd_callout.conf"
+	_config_file="${CTDB_STATD_CALLOUT_CONFIG_FILE:-"${_default}"}"
+
+	"startup_${statd_callout_mode}" "$_config_file"
+}
+
+# Process a record queue in local storage and use it to update cluster
+# storage.  For implementations that update cluster storage directly,
+# this will be a no-op.
+update()
+{
+	"update_${statd_callout_mode}"
+}
+
+# Query cluster storage for entries matching this node's server IPs
+# and Write pairs of:
+#   server-IP client-IP
+# to stdout.
+list_records()
+{
+	"list_records_${statd_callout_mode}" | sort
+}
+
+# Read pairs of:
+#   server-IP client-IP
+# from stdin and delete associated records during notify.
+delete_records()
+{
+	"delete_records_${statd_callout_mode}"
+}
+
+# Do any required cleanup
+cleanup()
+{
+	"cleanup_${statd_callout_mode}"
+}
+
 ############################################################
 
 case "$1" in
@@ -191,28 +289,7 @@ startup)
 	;;
 
 update)
-	files="${statd_callout_state_dir}/.file_list"
-	find "$statd_callout_queue_dir" -name "statd-state@*" >"$files"
-	if [ ! -s "$files" ]; then
-		# No files!
-		rm "$files"
-		exit 0
-	fi
-
-	persistent_db_make_grep_filter
-
-	# Use cat instead of direct grep since POSIX grep does not
-	# have -h
-	items="${statd_callout_state_dir}/.items"
-	xargs cat <"$files" | grep -F -f "$persistent_db_grep_filter" >"$items"
-
-	if [ -s "$items" ]; then
-		if $CTDB ptrans "$statd_callout_db" <"$items"; then
-			xargs rm -f <"$files"
-		fi
-	fi
-
-	rm -f "$files" "$persistent_db_grep_filter" "$items"
+	update
 	;;
 
 notify)
@@ -236,17 +313,8 @@ notify)
 	sleep 2
 	"$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
 
-	persistent_db_make_grep_filter
-
-	# Produce "server-IP client-IP" per-line in .statd_state
 	statd_state="${statd_callout_state_dir}/.statd_state"
-	$CTDB catdb "$statd_callout_db" |
-		sed -n -e 's|^key([0-9]*) = "\([^"]*\)".*|\1|p' |
-		grep -F -f "$persistent_db_grep_filter" |
-		sed -e 's|statd-state@\([^@]*\)@\(.*\)|\1 \2|' |
-		sort >"$statd_state"
-
-	rm -f "$persistent_db_grep_filter"
+	list_records >"$statd_state"
 
 	if [ ! -s "$statd_state" ]; then
 		rm -f "$statd_state"
@@ -258,15 +326,6 @@ notify)
 
 	rm -f "$statd_state"
 
-	# Remove any stale touch files (i.e. for IPs not currently
-	# hosted on this node and created since the last "update").
-	# There's nothing else we can do with them at this stage.
-	pnn=$(ctdb_get_pnn)
-	$CTDB ip all |
-		tail -n +2 |
-		awk -v pnn="$pnn" 'pnn != $2 { print $1 }' |
-		while read -r sip; do
-			rm -f "${statd_callout_queue_dir}/statd-state@${sip}@"*
-		done
+	cleanup
 	;;
 esac
