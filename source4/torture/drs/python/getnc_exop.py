@@ -295,6 +295,29 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             (enum, estr) = e1.args
             self.assertEqual(enum, werror.WERR_DS_DRA_BAD_NC)
 
+    def test_valid_GUID_only_REPL_OBJ(self):
+        dc_guid_1 = self.ldb_dc1.get_invocation_id()
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
+
+        res = self.ldb_dc1.search(base=self.ou, scope=SCOPE_BASE,
+                                  attrs=["objectGUID"])
+
+        guid = misc.GUID(res[0]["objectGUID"][0])
+
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=dc_guid_1,
+                               nc_dn_str="",
+                               nc_guid=guid,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ)
+
+        try:
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+        except WERRORError as e1:
+            (enum, estr) = e1.args
+            self.fail(f"Failed to call GetNCChanges with EXOP_REPL_OBJ and a GUID: {estr}")
+
+        self.assertEqual(ctr.first_object.object.identifier.guid, guid)
+
     def test_DummyDN_valid_GUID_REPL_OBJ(self):
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
         drs, drs_handle = self._ds_bind(self.dnsname_dc1, ip=self.url_dc1)
@@ -314,7 +337,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
         except WERRORError as e1:
             (enum, estr) = e1.args
-            self.fail(f"Failed to call GetNCChanges with EXOP_REPL_OBJ and a GUID: {estr}")
+            self.fail(f"Failed to call GetNCChanges with EXOP_REPL_OBJ, DummyDN and a GUID: {estr}")
 
         self.assertEqual(ctr.first_object.object.identifier.guid, guid)
 
