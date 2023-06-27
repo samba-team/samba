@@ -3136,13 +3136,6 @@ allowed:
 		TALLOC_FREE(res);
 	}
 
-	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
-	    ldb_dn_is_null(getnc_state->ncRoot_dn)) {
-		DEBUG(0,(__location__ ": Bad DN '%s'\n",
-			 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot)));
-		return WERR_DS_DRA_INVALID_PARAMETER;
-	}
-
 	ncRoot->guid = getnc_state->ncRoot_guid;
 
 	/* we need the session key for encrypting password attributes */
