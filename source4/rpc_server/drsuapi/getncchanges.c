@@ -2996,7 +2996,7 @@ allowed:
 	}
 
 	/* see if a previous replication has been abandoned */
-	if (getnc_state) {
+	if (getnc_state != NULL) {
 		struct ldb_dn *new_dn;
 		ret = drs_ObjectIdentifier_to_dn_and_nc_root(getnc_state,
 							     sam_ctx,
@@ -3025,7 +3025,7 @@ allowed:
 		}
 	}
 
-	if (getnc_state) {
+	if (getnc_state != NULL) {
 		ret = drsuapi_DsReplicaHighWaterMark_cmp(&getnc_state->last_hwm,
 							 &req10->highwatermark);
 		if (ret != 0) {
