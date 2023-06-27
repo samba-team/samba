@@ -213,8 +213,8 @@ static int dirsync_filter_entry(struct ldb_request *req,
 		}
 		/*
 		 * We expect to find the GUID in the object,
-		 * if it turns out not to be the case sometime
-		 * well will uncomment the code below
+		 * if it turns out not to be the case sometimes
+		 * we will uncomment the code below
 		 */
 		SMB_ASSERT(guidfound == true);
 		/*
