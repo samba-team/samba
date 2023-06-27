@@ -2708,7 +2708,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		dcesrv_call_session_info(dce_call);
 	struct imessaging_context *imsg_ctx =
 		dcesrv_imessaging_context(dce_call->conn);
-	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
+	struct drsuapi_DsReplicaObjectIdentifier *untrusted_ncRoot;
 	int ret;
 	uint32_t i, k;
 	struct dsdb_schema *schema;
@@ -2830,8 +2830,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* Perform access checks. */
-	ncRoot = req10->naming_context;
-	if (ncRoot == NULL) {
+	untrusted_ncRoot = req10->naming_context;
+	if (untrusted_ncRoot == NULL) {
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges with no NC\n"));
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
@@ -3000,7 +3000,7 @@ allowed:
 		struct ldb_dn *new_dn;
 		ret = drs_ObjectIdentifier_to_dn_and_nc_root(getnc_state,
 							     sam_ctx,
-							     ncRoot,
+							     untrusted_ncRoot,
 							     &new_dn,
 							     NULL);
 		if (ret != LDB_SUCCESS) {
@@ -3011,7 +3011,7 @@ allowed:
 			 * in case.
 			 */
 			DBG_ERR("Bad DN '%s' as Naming Context for GetNCChanges: %s\n",
-				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+				drs_ObjectIdentifier_to_debug_string(mem_ctx, untrusted_ncRoot),
 				ldb_strerror(ret));
 			return WERR_DS_DRA_INVALID_PARAMETER;
 		}
@@ -3056,12 +3056,12 @@ allowed:
 
 		ret = drs_ObjectIdentifier_to_dn_and_nc_root(mem_ctx,
 							     sam_ctx,
-							     ncRoot,
+							     untrusted_ncRoot,
 							     &ncRoot_dn,
 							     NULL);
 		if (ret != LDB_SUCCESS) {
 			DBG_ERR("Bad DN '%s' as Naming Context or EXOP DN for GetNCChanges: %s\n",
-				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+				drs_ObjectIdentifier_to_debug_string(mem_ctx, untrusted_ncRoot),
 				ldb_strerror(ret));
 			return WERR_DS_DRA_BAD_DN;
 		}
@@ -3380,7 +3380,7 @@ allowed:
 	 * Match Windows and echo back the original values from the request, even if
 	 * they say DummyDN for the string NC
 	 */
-	*r->out.ctr->ctr6.naming_context = *ncRoot;
+	*r->out.ctr->ctr6.naming_context = *untrusted_ncRoot;
 
 	/* find the SID if there is one */
 	dsdb_find_sid_by_dn(sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
@@ -3615,7 +3615,15 @@ allowed:
 		struct drsuapi_DsReplicaUpdateRefsRequest1 ureq;
 		DEBUG(3,("UpdateRefs on getncchanges for %s\n",
 			 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
-		ureq.naming_context = ncRoot;
+
+		/*
+		 * We pass the pre-validation NC root here as
+		 * drsuapi_UpdateRefs() has to check its own input
+		 * values due to being called from
+		 * dcesrv_drsuapi_DsReplicaUpdateRefs()
+		 */
+
+		ureq.naming_context = untrusted_ncRoot;
 		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(sam_ctx, mem_ctx,
 								   &req10->destination_dsa_guid);
 		if (!ureq.dest_dsa_dns_name) {
@@ -3638,7 +3646,7 @@ allowed:
 					  &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed UpdateRefs on %s for %s in DsGetNCChanges - %s\n",
-				 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+				 drs_ObjectIdentifier_to_debug_string(mem_ctx, untrusted_ncRoot),
 				 ureq.dest_dsa_dns_name,
 				 win_errstr(werr)));
 		}
@@ -3772,7 +3780,7 @@ allowed:
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
 	       (unsigned long long)(req10->highwatermark.highest_usn+1),
 	       req10->replica_flags,
-	       drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+	       drs_ObjectIdentifier_to_debug_string(mem_ctx, untrusted_ncRoot),
 	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->num_records:i,
 	       r->out.ctr->ctr6.linked_attributes_count,
