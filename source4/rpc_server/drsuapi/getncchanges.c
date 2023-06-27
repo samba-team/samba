@@ -2977,8 +2977,9 @@ allowed:
 			 * This can't fail as we have done this above
 			 * implicitly but not got the DN out
 			 */
-			DBG_ERR("Bad DN '%s'\n",
-				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot));
+			DBG_ERR("Bad DN '%s' as Naming Context for GetNCChanges: %s\n",
+				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+				ldb_strerror(ret));
 			return WERR_DS_DRA_INVALID_PARAMETER;
 		}
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
