@@ -3185,7 +3185,6 @@ allowed:
 
 		getnc_state->ncRoot_guid = samdb_result_guid(res->msgs[0],
 							     "objectGUID");
-		ncRoot->guid = getnc_state->ncRoot_guid;
 
 		/* find out if we are to replicate Schema NC */
 		ret = ldb_dn_compare_base(ldb_get_schema_basedn(sam_ctx),
@@ -3194,8 +3193,6 @@ allowed:
 
 		TALLOC_FREE(res);
 	}
-
-	ncRoot->guid = getnc_state->ncRoot_guid;
 
 	/* we need the session key for encrypting password attributes */
 	status = dcesrv_auth_session_key(dce_call, &session_key);
@@ -3378,10 +3375,18 @@ allowed:
 	if (r->out.ctr->ctr6.naming_context == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
+
+	/*
+	 * Match Windows and echo back the original values from the request, even if
+	 * they say DummyDN for the string NC
+	 */
 	*r->out.ctr->ctr6.naming_context = *ncRoot;
 
 	/* find the SID if there is one */
 	dsdb_find_sid_by_dn(sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
+
+	/* Set GUID */
+	r->out.ctr->ctr6.naming_context->guid = getnc_state->ncRoot_guid;
 
 	dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, &ctr);
 	r->out.ctr->ctr6.mapping_ctr = *ctr;
