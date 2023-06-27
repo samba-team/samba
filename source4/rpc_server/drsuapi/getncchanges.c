@@ -3726,7 +3726,7 @@ allowed:
 		/* this is the last response in the replication cycle */
 		r->out.ctr->ctr6.new_highwatermark = getnc_state->final_hwm;
 		r->out.ctr->ctr6.uptodateness_vector = talloc_move(mem_ctx,
-							&getnc_state->final_udv);
+								   &getnc_state->final_udv);
 
 		/*
 		 * Free the state info stored for the replication cycle. Note
