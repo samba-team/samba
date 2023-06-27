@@ -554,6 +554,18 @@ int drs_ObjectIdentifier_to_dn_and_nc_root(TALLOC_CTX *mem_ctx,
 						 new_dn,
 						 normalised_dn,
 						 nc_root);
+	if (ret != LDB_SUCCESS) {
+		/*
+		 * dsdb_normalise_dn_and_find_nc_root() sets LDB error
+		 * strings, and the functions it calls do also
+		 */
+		DBG_NOTICE("Failed to find DN \"%s\" -> \"%s\" for normalisation: %s (%s)\n",
+			   drs_ObjectIdentifier_to_debug_string(mem_ctx, nc),
+			   ldb_dn_get_extended_linearized(mem_ctx, new_dn, 1),
+			   ldb_errstring(ldb),
+			   ldb_strerror(ret));
+	}
+
 	TALLOC_FREE(new_dn);
 	return ret;
 }
