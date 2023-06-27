@@ -3022,6 +3022,9 @@ allowed:
 							     &ncRoot_dn,
 							     NULL);
 		if (ret != LDB_SUCCESS) {
+			DBG_ERR("Bad DN '%s' as Naming Context or EXOP DN for GetNCChanges: %s\n",
+				drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot),
+				ldb_strerror(ret));
 			return WERR_DS_DRA_BAD_DN;
 		}
 
