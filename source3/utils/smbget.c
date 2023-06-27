@@ -265,6 +265,7 @@ static bool smb_download_dir(const char *base, const char *name, int resume)
 		if (!ok) {
 			fprintf(stderr, "Failed to download %s: %s\n",
 				newname, strerror(errno));
+			free(newname);
 			free(tmpname);
 			return false;
 		}
