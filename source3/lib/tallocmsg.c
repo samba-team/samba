@@ -81,5 +81,5 @@ void register_msg_pool_usage(
 		DBG_WARNING("messaging_filtered_read_send failed\n");
 		return;
 	}
-	DEBUG(2, ("Registered MSG_REQ_POOL_USAGE\n"));
+	DBG_INFO("Registered MSG_REQ_POOL_USAGE\n");
 }
