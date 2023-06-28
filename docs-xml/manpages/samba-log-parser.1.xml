@@ -20,7 +20,7 @@ options:
   --traceid ID   specify the traceid of the trace records
   --pid PID      specify the pid of winbind client
   --breakdown    breakdown the traces into per traceid files
-  --merge        merge logs by timestamp
+  --merge-by-timestamp   merge logs by timestamp
   --flow         show the request/sub-request flow traces
   --flow-compact show the request/sub-request flow traces without dcerpc details
 
@@ -31,7 +31,7 @@ options:
 		<arg choice="opt">--pid=PID</arg>
 		<arg choice="opt">--traceid=ID</arg>
 		<arg choice="opt">--breakdown</arg>
-		<arg choice="opt">--merge</arg>
+		<arg choice="opt">--merge-by-timestamp</arg>
 		<arg choice="opt">--flow</arg>
 		<arg choice="opt">--flow-compact</arg>
 		<arg choice="opt">-h|--help</arg>
@@ -79,8 +79,9 @@ options:
 		</varlistentry>
 
 		<varlistentry>
-		<term>--merge</term>
+		<term>--merge-by-timestamp</term>
 		<listitem><para>Sort the trace lines according to the timestamp.
+		Works with log files without traceid header field as well.
 		</para></listitem>
 		</varlistentry>
 
@@ -118,7 +119,7 @@ options:
 	</para>
 
 	<programlisting>
-	# samba-log-parser --pid 999999 --merge /var/log/samba
+	# samba-log-parser --pid 999999 --merge-by-timestamp /var/log/samba
 	</programlisting>
 
 	<para>Break down the traces into separate files according to traceid sorted
@@ -126,7 +127,15 @@ options:
 	</para>
 
 	<programlisting>
-	# samba-log-parser --breakdown --merge /var/log/samba
+	# samba-log-parser --breakdown --merge-by-timestamp /var/log/samba
+	</programlisting>
+
+	<para>Sort traces using the timestamp for log files found in the samba log
+	directory. Traces do not need to contain the traceid header field.
+	</para>
+
+	<programlisting>
+	# samba-log-parser --merge-by-timestamp /var/log/samba
 	</programlisting>
 </refsect1>
 

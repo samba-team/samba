@@ -5,11 +5,12 @@
 # A script to parse samba (especially winbind) logfiles.
 # Trace files should be in a non-syslog format (debug syslog format = no).
 #
-#    --traceid  ...  Specify the traceid of the request to parse
-#    --pid      ...  Specify the pid
-#    --merge    ...  Merge logs by timestamp
-#    --flow     ...  Show the request/sub-request call flow
-#    --flow-compact ... Show the request/sub-request call flow without dcerpc
+#    --traceid      ...  Specify the traceid of the request to parse
+#    --pid          ...  Specify the pid
+#    --breakdown    ...  Break to separate files per each traceid
+#    --merge-by-timestamp    ...  Merge logs by timestamp
+#    --flow         ...  Show the request/sub-request call flow
+#    --flow-compact ...  Show the request/sub-request call flow without dcerpc
 #
 #
 # Copyright (c) 2023      Andreas Schneider <asn@samba.org>
@@ -39,6 +40,16 @@ from argparse import ArgumentParser
 from collections import defaultdict
 
 # Trace record consists of a trace header followed by one or more text lines.
+#
+# This tool expects trace header format based on these smb.conf parameters:
+#
+# debug syslog format = no
+# debug hires timestamp = yes
+# winbind debug traceid = yes
+#
+# If 'winbind debug traceid = no' is set, then the option --merge-by-timestamp
+# still can be used.
+#
 # Each trace header contains a traceid, which is the main identifier for this
 # tool. A single traceid is either provided via command line option --traceid
 # or a list of traceids is derived from the PID specified via option --pid.
@@ -54,6 +65,26 @@ from collections import defaultdict
 # To make all this easy we put into memory all trace records and do the final
 # traceid filtering only after all files are read. This can require lot of
 # memory if files are big.
+
+
+def process_file_no_traceid(record_list, fname):
+    with open(fname, "r") as infile:
+        data = infile.readlines()
+    date = ""
+    record_lines = []
+
+    RE_HEADER_NO_TRACEID = re.compile(
+        r"^\[(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{6}).*")
+    for line in data:
+        header = RE_HEADER_NO_TRACEID.search(line)
+        if header:
+            # Append all previous trace lines of a record
+            if record_lines:
+                record_list.append((date, None, record_lines, fname))
+                record_lines = []
+            # Remember the new date
+            date = header.group(1)
+        record_lines.append(line)
 
 
 def process_file(record_list, traceid_set, fname, opid, otraceid):
@@ -204,7 +235,7 @@ def setup_parser():
         help="breakdown the traces into per traceid files"
     )
     parser.add_argument(
-        "--merge",
+        "--merge-by-timestamp",
         action="store_true",
         dest="merge",
         default=False,
@@ -235,11 +266,16 @@ def main(): # noqa
     parser = setup_parser()
     options = parser.parse_args()
 
-    if not options.traceid and not options.pid and not options.breakdown:
-        print("One of --traceid or --pid is needed or --breakdown.")
+    if (not options.traceid and not options.pid and not options.breakdown
+            and not options.merge):
+        print("One of --traceid or --pid is needed"
+              " or --breakdown or --merge-by-timestamp.")
         sys.exit(1)
     elif options.traceid and options.pid:
-        print("Only one of --traceid or --pid or --breakdown is allowed.")
+        print("Only one of --traceid or --pid is allowed.")
+        sys.exit(1)
+    elif options.breakdown and (options.traceid or options.pid):
+        print("--breakdown cannot be combined with --traceid and --pid.")
         sys.exit(1)
 
     if options.flow and not options.traceid:
@@ -259,28 +295,49 @@ def main(): # noqa
         print("Path to logfile or directory with logs is needed.")
         sys.exit(1)
 
+    merge_with_no_traceid = (not options.traceid and not options.pid
+                             and not options.breakdown) and options.merge
+
     path = options.path
     if os.path.isdir(path):
         for root, dirs, files in os.walk(path):
             for name in files:
-                process_file(
-                    record_list,
-                    traceid_set,
-                    os.path.join(root, name),
-                    options.pid,
-                    options.traceid,
-                )
+                if merge_with_no_traceid:
+                    process_file_no_traceid(
+                        record_list,
+                        os.path.join(root, name)
+                    )
+                else:
+                    process_file(
+                        record_list,
+                        traceid_set,
+                        os.path.join(root, name),
+                        options.pid,
+                        options.traceid,
+                    )
     elif os.path.isfile(path):
-        process_file(
-            record_list,
-            traceid_set,
-            path,
-            options.pid,
-            options.traceid
-        )
+        if merge_with_no_traceid:
+            process_file_no_traceid(
+                record_list,
+                path
+            )
+        else:
+            process_file(
+                record_list,
+                traceid_set,
+                path,
+                options.pid,
+                options.traceid
+            )
     else:
         print(path, "Path is neither file or directory.")
         sys.exit(1)
+
+    # Sort only using timestamps, no use of traceid
+    if merge_with_no_traceid:
+        record_list.sort()
+        print_record_list(record_list, sys.stdout)
+        sys.exit(0)
 
     # Keep only records with matching traceids
     if not options.breakdown:
