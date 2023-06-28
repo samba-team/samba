@@ -62,11 +62,11 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn);
 
 static const struct smbd_smb2_dispatch_table {
 	uint16_t opcode;
-	bool need_session;
-	bool need_tcon;
-	bool as_root;
 	uint16_t fileid_ofs;
-	bool modify;
+	bool need_session : 1;
+	bool need_tcon : 1;
+	bool as_root : 1;
+	bool modify : 1;
 } smbd_smb2_table[] = {
 	{
 		.opcode = SMB2_OP_NEGPROT,
