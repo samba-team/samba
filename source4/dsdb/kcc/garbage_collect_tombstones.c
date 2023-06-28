@@ -64,8 +64,8 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(1, ("Doing a full scan on %s and looking for deleted objects\n",
-		  ldb_dn_get_linearized(part->dn)));
+	DBG_INFO("Doing a full scan on %s and looking for deleted objects\n",
+		  ldb_dn_get_linearized(part->dn));
 
 	flags = DSDB_SEARCH_SHOW_RECYCLED |
 		DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
