@@ -38,6 +38,8 @@ die()
 	exit 1
 }
 
+load_script_options "service" "60.nfs"
+
 ############################################################
 
 ctdb_setup_state_dir "service" "nfs"
@@ -79,9 +81,46 @@ create_add_del_client_dir()
 # shellcheck disable=SC2154
 statd_callout_state_dir="${script_state_dir}/statd_callout"
 
-statd_callout_mode="persistent_db"
-statd_callout_db="ctdb.tdb"
-statd_callout_queue_dir="${statd_callout_state_dir}/queue"
+# Set default value, if necessary
+: "${CTDB_STATD_CALLOUT_SHARED_STORAGE:=persistent_db}"
+
+statd_callout_mode="${CTDB_STATD_CALLOUT_SHARED_STORAGE%%:*}"
+statd_callout_location="${CTDB_STATD_CALLOUT_SHARED_STORAGE#*:}"
+# If not given then mode determines the default location
+if [ "$statd_callout_location" = "$CTDB_STATD_CALLOUT_SHARED_STORAGE" ]; then
+	statd_callout_location=""
+fi
+
+case "$statd_callout_mode" in
+persistent_db)
+	statd_callout_db="${statd_callout_location:-ctdb.tdb}"
+	statd_callout_queue_dir="${statd_callout_state_dir}/queue"
+	;;
+shared_dir)
+	statd_callout_shared_dir="${statd_callout_location:-statd}"
+	case "$statd_callout_shared_dir" in
+	/*)
+		:
+		;;
+	*)
+		if [ -z "$CTDB_NFS_SHARED_STATE_DIR" ]; then
+			die "CTDB_NFS_SHARED_STATE_DIR is not set"
+		fi
+		t="${CTDB_NFS_SHARED_STATE_DIR}/${statd_callout_shared_dir}"
+		statd_callout_shared_dir="$t"
+		;;
+	esac
+
+	if [ -n "$CTDB_TEST_MODE" ]; then
+		t="${CTDB_TEST_TMP_DIR}${statd_callout_shared_dir}"
+		statd_callout_shared_dir="$t"
+	fi
+	;;
+*)
+	mode="$statd_callout_mode"
+	die "error: unknown CTDB_STATD_CALLOUT_SHARED_STORAGE mode ${mode}"
+	;;
+esac
 
 ############################################################
 
@@ -241,11 +280,68 @@ cleanup_persistent_db()
 
 ############################################################
 
+# Use file/key names of the form statd-state@<server-IP>@<client-IP>
+# to track the "add-client" and "del-client".  statd_callout add and
+# removes files directly in $statd_callout_shared_dir.  This may
+# result in performance problems if thousands of clients reclaim locks
+# after failover and the cluster filesystem is unable to handle the
+# load.
+
+startup_shared_dir()
+{
+	_config_file="$1"
+
+	create_add_del_client_dir "$statd_callout_shared_dir"
+
+	cat >"$_config_file" <<EOF
+shared_dir
+${statd_callout_shared_dir}
+${CTDB_MY_PUBLIC_IPS_CACHE}
+EOF
+}
+
+update_shared_dir()
+{
+	:
+}
+
+list_records_shared_dir()
+{
+	while read -r _ip; do
+		ls "${statd_callout_shared_dir}/statd-state@${_ip}@"*
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE" |
+		while read -r _f; do
+			if [ ! -f "$_f" ]; then
+				continue
+			fi
+			_t="${_f#"${statd_callout_shared_dir}/statd-state@"}"
+			_sip="${_t%@*}"
+			_cip="${_t#*@}"
+			echo "$_sip" "$_cip"
+		done
+}
+
+delete_records_shared_dir()
+{
+	while read -r _sip _cip; do
+		echo "${statd_callout_shared_dir}/statd-state@${_sip}@${_cip}"
+	done | xargs rm -f
+}
+
+cleanup_shared_dir()
+{
+	:
+}
+
+############################################################
+
 # Per-mode initialisation
 startup()
 {
 	_default="${CTDB_SCRIPT_VARDIR}/statd_callout.conf"
 	_config_file="${CTDB_STATD_CALLOUT_CONFIG_FILE:-"${_default}"}"
+
+	mkdir -p "$statd_callout_state_dir"
 
 	"startup_${statd_callout_mode}" "$_config_file"
 }

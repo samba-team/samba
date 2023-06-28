@@ -1041,6 +1041,65 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  </listitem>
 	</varlistentry>
 
+	<varlistentry>
+	  <term>
+	    CTDB_STATD_CALLOUT_SHARED_STORAGE=<parameter>LOCATION</parameter>
+	  </term>
+	  <listitem>
+	    <para>
+	      LOCATION where NFSv3 statd state will be stored.  Valid
+	      values are:
+	    </para>
+	    <variablelist>
+	      <varlistentry>
+		<term>
+		  persistent_db<optional>:<parameter>TDB</parameter></optional>
+		</term>
+		<listitem>
+		  <para>
+		    Data is queued to local storage and then dequeued
+		    to TDB during monitor events.  This means there is
+		    a window where locking state may be lost.
+		    However, this works around performance limitations
+		    in CTDB's persistent database handling.
+		  </para>
+		  <para>
+		    If :TDB is omitted then TDB defaults to
+		    <filename>ctdb.tdb</filename>.
+		  </para>
+		</listitem>
+	      </varlistentry>
+	      <varlistentry>
+		<term>
+		  shared_dir<optional>:<parameter>DIRECTORY</parameter></optional>
+		</term>
+		<listitem>
+		  <para>
+		    DIRECTORY is a directory in a cluster filesystem
+		    that is shared between the nodes.  If DIRECTORY is
+		    relative (i.e. does not start with '/') then it is
+		    appended to CTDB_NFS_SHARED_STATE_DIR.  If
+		    :DIRECTORY is omitted then DIRECTORY defaults to
+		    <filename>statd</filename>.
+		  </para>
+		  <para>
+		    Using a shared directory may result in performance
+		    and/or stability problems.  rpc.statd is
+		    single-threaded and its HA callout is called
+		    synchronously, causing any latency introduced by
+		    the callout to be cumulative.  Stability issues
+		    are most likely if thousands of clients reclaim
+		    locks after failover and use of the cluster
+		    filesystem introduces too much additional
+		    latency.  Too much latency in in the HA callout
+		    may cause rpc.statd to fail health monitoring.
+		  </para>
+		</listitem>
+	      </varlistentry>
+	    </variablelist>
+	  </listitem>
+	</varlistentry>
+
       </variablelist>
 
     </refsect2>

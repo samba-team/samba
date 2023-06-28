@@ -35,8 +35,9 @@
  * The first line is the mode.  Currently supported modes are:
  *
  *   persistent_db
+ *   shared_dir
  *
- * In this mode, the file contains 2 subsequent lines of text:
+ * In these modes, the file contains 2 subsequent lines of text:
  *
  *   path: directory where files should be created
  *   ips_file: file containing node's currently assigned public IP addresses
@@ -48,6 +49,7 @@ static const char *progname;
 struct {
 	enum {
 		CTDB_SC_MODE_PERSISTENT_DB,
+		CTDB_SC_MODE_SHARED_DIR,
 	} mode;
 	union {
 		struct {
@@ -87,6 +89,7 @@ static void free_config(void)
 {
 	switch (config.mode) {
 	case CTDB_SC_MODE_PERSISTENT_DB:
+	case CTDB_SC_MODE_SHARED_DIR:
 		free(config.path);
 		config.path = NULL;
 		free(config.ips_file);
@@ -127,6 +130,8 @@ static void read_config(void)
 	}
 	if (strcmp(mode, "persistent_db") == 0) {
 		config.mode = CTDB_SC_MODE_PERSISTENT_DB;
+	} else if (strcmp(mode, "shared_dir") == 0) {
+		config.mode = CTDB_SC_MODE_SHARED_DIR;
 	} else {
 		fprintf(stderr,
 			"%s: unknown mode=%s in %s\n",
@@ -140,6 +145,7 @@ static void read_config(void)
 
 	switch (config.mode) {
 	case CTDB_SC_MODE_PERSISTENT_DB:
+	case CTDB_SC_MODE_SHARED_DIR:
 		status = getline_strip(&config.path, &n, f);
 		if (!status) {
 			goto parse_error;
@@ -288,6 +294,51 @@ static void del_client_persistent_db(const char *cip)
 	for_each_sip(del_client_persistent_db_line, cip);
 }
 
+static void add_client_shared_dir_line(const char *sip, const char *cip)
+{
+	char path[PATH_MAX];
+	FILE *f;
+
+	make_path(path, sizeof(path), sip, cip);
+
+	f = fopen(path, "w");
+	if (f == NULL) {
+		fprintf(stderr,
+			"%s: unable to open for writing %s\n",
+			progname,
+			path);
+		exit(1);
+	}
+	fclose(f);
+}
+
+static void add_client_shared_dir(const char *cip)
+{
+	for_each_sip(add_client_shared_dir_line, cip);
+}
+
+static void del_client_shared_dir_line(const char *sip, const char *cip)
+{
+	char path[PATH_MAX];
+	int ret;
+
+	make_path(path, sizeof(path), sip, cip);
+
+	ret = unlink(path);
+	if (ret != 0) {
+		fprintf(stderr,
+			"%s: unable to remove %s\n",
+			progname,
+			path);
+		exit(1);
+	}
+}
+
+static void del_client_shared_dir(const char *cip)
+{
+	for_each_sip(del_client_shared_dir_line, cip);
+}
+
 static void usage(void)
 {
 	printf("usage: %s: { add-client | del-client } <client-ip>\n", progname);
@@ -313,12 +364,18 @@ int main(int argc, const char *argv[])
 		case CTDB_SC_MODE_PERSISTENT_DB:
 			add_client_persistent_db(mon_name);
 			break;
+		case CTDB_SC_MODE_SHARED_DIR:
+			add_client_shared_dir(mon_name);
+			break;
 		}
 	} else if (strcmp(event, "del-client") == 0) {
 		mon_name = argv[2];
 		switch (config.mode) {
 		case CTDB_SC_MODE_PERSISTENT_DB:
 			del_client_persistent_db(mon_name);
+			break;
+		case CTDB_SC_MODE_SHARED_DIR:
+			del_client_shared_dir(mon_name);
 			break;
 		}
 	} else {
