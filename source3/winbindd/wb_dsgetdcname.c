@@ -125,7 +125,7 @@ NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	D_INFO("WB command dsgetdcname end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
-		D_WARNING("Failed with %s.\n", nt_errstr(status));
+		D_NOTICE("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	*pdcinfo = talloc_move(mem_ctx, &state->dcinfo);
