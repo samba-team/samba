@@ -145,7 +145,7 @@ NTSTATUS wb_dsgetdcname_gencache_set(const char *domname,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (DEBUGLEVEL >= 10) {
+	if (DEBUGLEVEL >= DBGLVL_DEBUG) {
 		NDR_PRINT_DEBUG(netr_DsRGetDCNameInfo, dcinfo);
 	}
 
@@ -237,7 +237,7 @@ NTSTATUS wb_dsgetdcname_gencache_get(TALLOC_CTX *mem_ctx,
 		return state.status;
 	}
 
-	if (DEBUGLEVEL >= 10) {
+	if (DEBUGLEVEL >= DBGLVL_DEBUG) {
 		NDR_PRINT_DEBUG(netr_DsRGetDCNameInfo, state.dcinfo);
 	}
 
