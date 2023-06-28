@@ -1340,8 +1340,8 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 
 		/* Bad (old) cred cache. Delete and pretend we
 		   don't have it. */
-		DEBUG(0,("wcache_get_creds: bad entry for [CRED/%s] - deleting\n",
-				sidstr.buf));
+		DBG_WARNING("wcache_get_creds: bad entry for [CRED/%s] - deleting\n",
+				sidstr.buf);
 		wcache_delete("CRED/%s", sidstr.buf);
 		centry_free(centry);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -3237,9 +3237,9 @@ bool initialize_winbindd_cache(void)
 	if (cache_bad) {
 		char *db_path;
 
-		DEBUG(0,("initialize_winbindd_cache: clearing cache "
+		DBG_NOTICE("initialize_winbindd_cache: clearing cache "
 			"and re-creating with version number %d\n",
-			WINBINDD_CACHE_VERSION ));
+			WINBINDD_CACHE_VERSION);
 
 		tdb_close(wcache->tdb);
 		wcache->tdb = NULL;
@@ -4212,7 +4212,7 @@ static bool wbcache_upgrade_v1_to_v2(TDB_CONTEXT *tdb)
 {
 	int rc;
 
-	DEBUG(1, ("Upgrade to version 2 of the winbindd_cache.tdb\n"));
+	DBG_NOTICE("Upgrade to version 2 of the winbindd_cache.tdb\n");
 
 	rc = tdb_traverse(tdb, wbcache_update_centry_fn, NULL);
 	if (rc < 0) {
