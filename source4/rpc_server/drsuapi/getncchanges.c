@@ -3567,7 +3567,15 @@ allowed:
 			getncchanges_chunk_add_objects(repl_chunk, new_objs);
 
 			talloc_free(getnc_state->last_dn);
-			getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
+			/*
+			 * talloc_steal() as we still need msg->dn to
+			 * be a valid pointer for the log on the next
+			 * line.
+			 *
+			 * msg only remains in scope for the next 25
+			 * lines or so anyway.
+			 */
+			getnc_state->last_dn = talloc_steal(getnc_state, msg->dn);
 		}
 
 		DEBUG(8,(__location__ ": %s object %s new tmp_highest_usn=%" PRIu64 "\n",
