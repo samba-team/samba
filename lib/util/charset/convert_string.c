@@ -493,7 +493,9 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 }
 
 /**
- * Convert string from one encoding to another, making error checking etc
+ * Convert string from one encoding to another, with error checking.
+ * This version produces more logging information than
+ * convert_string_error(), but is otherwise functionally identical.
  *
  * @param src pointer to source string (multibyte or singlebyte)
  * @param srclen length of the source string in bytes
@@ -514,7 +516,8 @@ _PUBLIC_ bool convert_string(charset_t from, charset_t to,
 }
 
 /**
- * Convert string from one encoding to another, making error checking etc
+ * Convert string from one encoding to another, with error checking.
+ * This version is less verbose than convert_string().
  *
  * @param src pointer to source string (multibyte or singlebyte)
  * @param srclen length of the source string in bytes
