@@ -29,8 +29,8 @@ options:
 		<command>samba-log-parser</command>
 		<arg choice="req">path</arg>
 		<arg choice="opt">--pid=PID</arg>
-	<arg choice="opt">--traceid=ID</arg>
-	<arg choice="opt">--breakdown</arg>
+		<arg choice="opt">--traceid=ID</arg>
+		<arg choice="opt">--breakdown</arg>
 		<arg choice="opt">--merge</arg>
 		<arg choice="opt">--flow</arg>
 		<arg choice="opt">--flow-compact</arg>
@@ -70,31 +70,31 @@ options:
 
 		<varlistentry>
 		<term>--breakdown</term>
-	<listitem><para>Break down all traces to separate files in the current
-	working directory. For each traceid, three files are created:
-	traceid.full
-	traceid.flow
-	traceid.flowcompact
+		<listitem><para>Break down all traces to separate files in the current
+		working directory. For each traceid, three files are created:
+		traceid.full
+		traceid.flow
+		traceid.flowcompact
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>--merge</term>
-	<listitem><para>Sort the trace lines according to the timestamp.
-	</para></listitem>
+		<listitem><para>Sort the trace lines according to the timestamp.
+		</para></listitem>
 		</varlistentry>
 
 
 		<varlistentry>
 		<term>--flow</term>
-	<listitem><para>Display the request/sub-request flow.
+		<listitem><para>Display the request/sub-request flow.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>--flow-compact</term>
-	<listitem><para>Display the request/sub-request flow without dcerpc
-	call details.
+		<listitem><para>Display the request/sub-request flow without dcerpc
+		call details.
 		</para></listitem>
 		</varlistentry>
 
