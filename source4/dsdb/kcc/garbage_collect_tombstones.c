@@ -99,14 +99,14 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 					  DSDB_SEARCH_SHOW_RECYCLED
 					  |DSDB_MODIFY_RELAX);
 			if (ret != LDB_SUCCESS) {
-				DEBUG(1,(__location__ ": Failed to remove "
+				DBG_WARNING(__location__ ": Failed to remove "
 					 "deleted object %s\n",
 					 ldb_dn_get_linearized(res->
-							       msgs[i]->dn)));
+							       msgs[i]->dn));
 			} else {
-				DEBUG(4,("Removed deleted object %s\n",
+				DBG_INFO("Removed deleted object %s\n",
 					 ldb_dn_get_linearized(res->
-							       msgs[i]->dn)));
+							       msgs[i]->dn));
 				(*num_objects_removed)++;
 			}
 			continue;
@@ -164,10 +164,10 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 						   &element->values[k],
 						   attrib->syntax->ldap_oid);
 				if (dn == NULL) {
-					DEBUG(1, ("Failed to parse linked attribute blob of "
+					DBG_WARNING("Failed to parse linked attribute blob of "
 						  "%s on %s while expunging expired links\n",
 						  element->name,
-						  ldb_dn_get_linearized(res->msgs[i]->dn)));
+						  ldb_dn_get_linearized(res->msgs[i]->dn));
 					continue;
 				}
 
@@ -175,7 +175,7 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 								     &whenChanged,
 								     "RMD_CHANGETIME");
 				if (!NT_STATUS_IS_OK(status)) {
-					DEBUG(1, ("Error: RMD_CHANGETIME is missing on a forward link.\n"));
+					DBG_WARNING("Error: RMD_CHANGETIME is missing on a forward link.\n");
 					talloc_free(dn);
 					continue;
 				}
@@ -188,7 +188,7 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 				guid_blob = ldb_dn_get_extended_component(dn->dn, "GUID");
 				status = GUID_from_ndr_blob(guid_blob, &guid);
 				if (!NT_STATUS_IS_OK(status)) {
-					DEBUG(1, ("Error: Invalid GUID on link target.\n"));
+					DBG_WARNING("Error: Invalid GUID on link target.\n");
 					talloc_free(dn);
 					continue;
 				}
@@ -226,11 +226,11 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 			ret = dsdb_modify(samdb, cleanup_msg,
 					  DSDB_REPLMD_VANISH_LINKS);
 			if (ret != LDB_SUCCESS) {
-				DEBUG(1,(__location__ ": Failed to remove deleted object %s\n",
-					 ldb_dn_get_linearized(res->msgs[i]->dn)));
+				DBG_WARNING(__location__ ": Failed to remove deleted object %s\n",
+					 ldb_dn_get_linearized(res->msgs[i]->dn));
 			} else {
-				DEBUG(4,("Removed deleted object %s\n",
-					 ldb_dn_get_linearized(res->msgs[i]->dn)));
+				DBG_INFO("Removed deleted object %s\n",
+					 ldb_dn_get_linearized(res->msgs[i]->dn));
 				*num_links_removed = *num_links_removed + num_modified;
 			}
 
