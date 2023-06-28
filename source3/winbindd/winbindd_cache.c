@@ -3585,10 +3585,10 @@ bool set_global_winbindd_state_offline(void)
 	};
 	int rc;
 
-	DBG_ERR("Offline requested\n");
+	DBG_NOTICE("Offline requested\n");
 
 	if (wcache == NULL || wcache->tdb == NULL) {
-		DBG_ERR("Winbind cache doesn't exist yet\n");
+		DBG_NOTICE("Winbind cache doesn't exist yet\n");
 		return false;
 	}
 
