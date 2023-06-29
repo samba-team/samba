@@ -6122,12 +6122,14 @@ static int process_stdin(void)
 		int i;
 
 		/* display a prompt */
-		if (asprintf(&the_prompt, "smb: %s> ", client_get_cur_dir()) < 0) {
+		the_prompt = talloc_asprintf(frame,
+					     "smb: %s> ",
+					     client_get_cur_dir());
+		if (the_prompt == NULL) {
 			TALLOC_FREE(frame);
 			break;
 		}
 		line = smb_readline(the_prompt, readline_callback, completion_fn);
-		SAFE_FREE(the_prompt);
 		if (!line) {
 			TALLOC_FREE(frame);
 			break;
