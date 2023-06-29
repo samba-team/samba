@@ -1847,6 +1847,165 @@ static bool test_plato(struct torture_context *tctx)
 	return true;
 }
 
+
+
+static bool test_short_strings(struct torture_context *tctx)
+{
+	char zeros[6] = {0};
+	char s[6] =     {'s'};
+	bool ok;
+	char *out;
+	size_t out_len;
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF8, CH_UTF16LE,
+				   zeros, 0,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"\", 0} to utf16 failed");
+	torture_assert(tctx, out_len == 2, "{\"\", 0} length is two");
+	torture_assert(tctx, out[0] == 0 && out[1] == 0, "{\"\", 0} utf16 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF8, CH_UTF16LE,
+				   zeros, 1,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"\\0\", 1} to utf16 failed");
+	torture_assert(tctx, out_len == 2, "{\"\\0\", 1} length is two");
+	torture_assert(tctx, out[0] == 0 && out[1] == 0, "{\"\\0\", 1} utf16 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF8, CH_UTF16LE,
+				   zeros, 2,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"\\0\\0\", 2} to utf16 failed");
+	torture_assert(tctx, out_len == 4, "{\"\\0\\0\", 2} length is four");
+	torture_assert(tctx, out[0] == 0 && out[1] == 0, "{\"\\0\\0\", 2} utf16 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF8, CH_UTF16LE,
+				   s, 0,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"s\", 0} to utf16 failed");
+	torture_assert(tctx, out_len == 2, "{\"s\", 0} length is two");
+	torture_assert(tctx, out[0] == 0 && out[1] == 0,
+		       "{\"s\", 0} utf16 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF8, CH_UTF16LE,
+				   s, 1,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"s\", 1} to utf16 failed");
+	torture_assert(tctx, out_len == 2, "{\"s\", 1} length is two");
+	torture_assert(tctx, out[0] == 's' && out[1] == 0,
+		       "{\"s\", 1} utf16 is s");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF8, CH_UTF16LE,
+				   s, 2,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"s\\0\", 2} to utf16 failed");
+	torture_assert(tctx, out_len == 4, "{\"s\\0\", 2} length is four");
+	torture_assert(tctx, out[0] == 's' && out[1] == 0,
+		       "{\"s\\0\", 0} utf16 is s");
+	TALLOC_FREE(out);
+
+
+	/* going to utf8 */
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   zeros, 0,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"\", 0} to utf8 failed");
+	torture_assert(tctx, out_len == 1, "{\"\", 0} length is one");
+	torture_assert(tctx, out[0] == 0, "{\"\", 0} utf8[0] is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   zeros, 2,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"\\0\", 1} to utf8 failed");
+	torture_assert(tctx, out_len == 1, "{\"\\0\", 1} length is one");
+	torture_assert(tctx, out[0] == 0 && out[1] == 0,
+		       "{\"\\0\", 1} utf8 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   zeros, 4,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"\\0\\0\\0\\0\", 4} to utf8 failed");
+	torture_assert(tctx, out_len == 2, "{\"\\0\\0\\0\\0\", 4} length is two");
+	torture_assert(tctx, out[0] == 0 && out[1] == 0,
+		       "{\"\\0\\0\\0\\0\", 4} utf8 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   s, 0,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"s\", 0} to utf8 failed");
+	torture_assert(tctx, out_len == 1, "{\"s\", 0} length is one");
+	torture_assert(tctx, out[0] == 0, "{\"s\", 0} utf8 is zero");
+	TALLOC_FREE(out);
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   s, 2,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"s\\0\", 2} to utf8 failed");
+	torture_assert(tctx, out_len == 1, "{\"s\\0\", 2} length is one");
+	torture_assert(tctx, out[0] == 's' && out[1] == 0,
+		       "{\"s\\0\", 2} utf8 is s");
+	TALLOC_FREE(out);
+
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   s, 4,
+				   &out, &out_len);
+	torture_assert(tctx, ok, "{\"s\\0\\0\\0\", 4} utf8 failed");
+	torture_assert(tctx, out_len == 2, "\"s\\0\\0\\0\", 4} utf8 length is two");
+	torture_assert(tctx, out[0] == 's' && out[1] == 0,
+		       "{\"s\\0\\0\\0\", 4} utf8 is s");
+	TALLOC_FREE(out);
+
+	/* odd numbers of bytes from UTF-16 should fail */
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   s, 1,
+				   &out, &out_len);
+	torture_assert(tctx, ! ok, "{\"s\", 1} to utf8 should have failed");
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   s, 3,
+				   &out, &out_len);
+	torture_assert(tctx, ! ok, "{\"s\\0\\0\", 3} to utf8 should have failed");
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   zeros, 1,
+				   &out, &out_len);
+	torture_assert(tctx, ! ok,
+		       "{\"\\0\", 1} to utf8 should have failed");
+
+	ok = convert_string_talloc(tctx,
+				   CH_UTF16LE, CH_UTF8,
+				   zeros, 5,
+				   &out, &out_len);
+	torture_assert(tctx, ! ok,
+		       "{\"\\0\\0\\0\\0\", 5} to utf8 should have failed");
+
+	return true;
+}
+
+
 static bool test_plato_latin(struct torture_context *tctx)
 {
 	DATA_BLOB plato_latin_utf8 = base64_decode_data_blob(plato_latin_utf8_base64);
@@ -2020,6 +2179,7 @@ struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string");
 
+	torture_suite_add_simple_test(suite, "short_strings", test_short_strings);
 	torture_suite_add_simple_test(suite, "gd", test_gd);
 	torture_suite_add_simple_test(suite, "plato", test_plato);
 	torture_suite_add_simple_test(suite, "plato_latin", test_plato_latin);
