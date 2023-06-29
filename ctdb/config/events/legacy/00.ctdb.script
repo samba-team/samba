@@ -120,10 +120,6 @@ init)
 	    check_non_persistent_databases
 	fi
 	;;
-
-startup)
-	$CTDB attach ctdb.tdb persistent
-	;;
 esac
 
 # all OK

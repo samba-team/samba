@@ -7,12 +7,14 @@ define_test "2 x add-client to different nodes, notify on both"
 setup
 
 ok_null
+simple_test_event "startup"
 simple_test_event "add-client" "192.168.123.45"
 simple_test_event "update"
 
 ctdb_set_pnn 1
 
 ok_null
+simple_test_event "startup"
 simple_test_event "add-client" "192.168.123.46"
 simple_test_event "update"
 

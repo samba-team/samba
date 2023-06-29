@@ -54,6 +54,8 @@ ctdb_setup_state_dir "service" "nfs"
 # shellcheck disable=SC2154
 d="${script_state_dir}/statd-callout"
 
+statd_callout_db="ctdb.tdb"
+
 mkdir -p "$d" || die "Failed to create directory \"${d}\""
 cd "$d" || die "Failed to change directory to \"${d}\""
 
@@ -104,18 +106,29 @@ delete_records()
 	while read -r _sip _cip; do
 		_key="statd-state@${_sip}@${_cip}"
 		echo "\"${_key}\" \"\""
-	done | $CTDB ptrans "ctdb.tdb"
+	done | $CTDB ptrans "$statd_callout_db"
+}
+
+############################################################
+
+# Keep a file per server-IP/client-IP pair, to keep track of the last
+# "add-client" or "del-client'.  These get pushed to a database during
+# "update", which will generally be run once each "monitor" cycle.  In
+# this way we avoid scalability problems with flood of persistent
+# transactions after a "notify" when all the clients re-take their
+# locks.
+
+startup()
+{
+	$CTDB attach "$statd_callout_db" persistent
 }
 
 ############################################################
 
 case "$1" in
-# Keep a single file to keep track of the last "add-client" or
-# "del-client'.  These get pushed to ctdb.tdb during "update",
-# which will generally be run once each "monitor" cycle.  In this
-# way we avoid scalability problems with flood of persistent
-# transactions after a "notify" when all the clients re-take their
-# locks.
+startup)
+	startup
+	;;
 
 add-client)
 	# statd does not tell us to which IP the client connected so
@@ -165,7 +178,7 @@ update)
 	# shellcheck disable=SC2086
 	items=$(sed -n "$sed_expr" $files)
 	if [ -n "$items" ]; then
-		if echo "$items" | $CTDB ptrans "ctdb.tdb"; then
+		if echo "$items" | $CTDB ptrans "$statd_callout_db"; then
 			# shellcheck disable=SC2086
 			rm $files
 		fi
@@ -238,7 +251,9 @@ notify)
                 ip = $1; gsub(/\./, "\\.", ip);
                 printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }')
 
-	statd_state=$($CTDB catdb ctdb.tdb | sed -n "$sed_expr" | sort)
+	statd_state=$($CTDB catdb "$statd_callout_db" |
+		sed -n "$sed_expr" |
+		sort)
 	[ -n "$statd_state" ] || exit 0
 
 	echo "$statd_state" | send_notifies

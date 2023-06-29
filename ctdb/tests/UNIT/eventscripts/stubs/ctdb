@@ -333,6 +333,11 @@ _t_del()
 	rm -f "${_t_dir}/$1"
 }
 
+ctdb_attach()
+{
+	_t_setup "$1"
+}
+
 ctdb_pstore()
 {
 	_t_setup "$1"

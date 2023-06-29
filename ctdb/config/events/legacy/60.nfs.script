@@ -265,6 +265,10 @@ nfs_callout_init "$script_state_dir"
 
 case "$1" in
 startup)
+	if [ -x "${CTDB_BASE}/statd-callout" ] ; then
+		"${CTDB_BASE}/statd-callout" startup
+	fi
+
 	nfs_callout "$@" || exit $?
 	;;
 
