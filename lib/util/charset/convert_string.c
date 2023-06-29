@@ -342,9 +342,6 @@ bool convert_string_handle(struct smb_iconv_handle *ic,
  * converted.
  *
  * Ensure the srclen contains the terminating zero.
- *
- * I hate the goto's in this function. It's emberrassing.....
- * There has to be a cleaner way to do this. JRA.
  */
 bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 				  charset_t from, charset_t to,
