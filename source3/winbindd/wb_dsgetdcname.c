@@ -24,6 +24,7 @@
 #include "lib/gencache.h"
 
 struct wb_dsgetdcname_state {
+	const char *domain_name;
 	struct netr_DsRGetDCNameInfo *dcinfo;
 };
 
@@ -89,6 +90,11 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		guid_ptr = &guid;
 	}
 
+	state->domain_name = talloc_strdup(state, domain_name);
+	if (tevent_req_nomem(state->domain_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	subreq = dcerpc_wbint_DsGetDcName_send(
 		state, ev, child_binding_handle, domain_name, guid_ptr, site_name,
 		flags, &state->dcinfo);
@@ -123,9 +129,12 @@ NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_dsgetdcname_state);
 	NTSTATUS status;
 
-	D_INFO("WB command dsgetdcname end.\n");
+	D_INFO("WB command dsgetdcname for %s end.\n",
+	       state->domain_name);
 	if (tevent_req_is_nterror(req, &status)) {
-		D_NOTICE("Failed with %s.\n", nt_errstr(status));
+		D_NOTICE("Failed for %s with %s.\n",
+			 state->domain_name,
+			 nt_errstr(status));
 		return status;
 	}
 	*pdcinfo = talloc_move(mem_ctx, &state->dcinfo);
