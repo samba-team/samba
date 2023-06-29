@@ -57,9 +57,6 @@ statd_callout_state_dir="${script_state_dir}/statd-callout"
 statd_callout_db="ctdb.tdb"
 statd_callout_queue_dir="${statd_callout_state_dir}/queue"
 
-mkdir -p "$statd_callout_queue_dir" ||
-	die "Failed to create directory \"${statd_callout_queue_dir}\""
-
 pnn=$(ctdb_get_pnn)
 
 ############################################################
@@ -121,6 +118,9 @@ delete_records()
 
 startup()
 {
+	mkdir -p "$statd_callout_queue_dir" ||
+		die "Failed to create directory \"${statd_callout_queue_dir}\""
+
 	$CTDB attach "$statd_callout_db" persistent
 }
 
