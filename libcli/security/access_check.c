@@ -24,6 +24,8 @@
 #include "replace.h"
 #include "lib/util/debug.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/conditional_ace.h"
+#include "libcli/security/conditional_ace.h"
 
 /* Map generic access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to
@@ -516,6 +518,51 @@ static NTSTATUS check_object_specific_access(const struct security_ace *ace,
 	return NT_STATUS_OK;
 }
 
+
+static NTSTATUS check_callback_ace_access(const struct security_ace *ace,
+					  const struct security_token *token,
+					  const struct security_descriptor *sd,
+					  bool *grant_access)
+{
+        bool ok;
+	int result;
+	*grant_access = false;
+	/*
+	 * Until we discover otherwise, we assume all callback ACEs
+	 * are conditional ACEs.
+	 */
+        ok = access_check_conditional_ace(ace, token, sd, &result);
+        if (!ok) {
+                DBG_WARNING("callback ACE was not a valid conditional ACE\n");
+		return NT_STATUS_INVALID_ACE_CONDITION;
+        }
+        switch (ace->type) {
+	case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
+                if (result == ACE_CONDITION_TRUE) {
+			*grant_access = true;
+                        return NT_STATUS_OK;
+                }
+                return NT_STATUS_ACCESS_DENIED;
+        case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+        case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
+                if (result == ACE_CONDITION_FALSE) {
+                        return NT_STATUS_OK;
+                }
+                return NT_STATUS_ACCESS_DENIED;
+	case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT:
+                if (result == ACE_CONDITION_TRUE) {
+                        return NT_STATUS_OK;
+                }
+                return NT_STATUS_ACCESS_DENIED;
+        default:
+                DBG_ERR("unknown conditional ACE type: %u\n", ace->type);
+                return NT_STATUS_INVALID_PARAMETER;
+        }
+
+	return NT_STATUS_OK;
+}
+
+
 NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd,
 					    const struct security_token *token,
 					    uint32_t access_desired,
@@ -612,6 +659,20 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+			status = check_callback_ace_access(ace, token, sd,
+                                                           &grant_access);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			if (grant_access) {
+				return NT_STATUS_OK;
+			}
+			break;
+
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
 			status = check_object_specific_access(ace, tree,
