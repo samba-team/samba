@@ -1,7 +1,7 @@
 setup()
 {
-	ctdb_set_pnn
 	setup_public_addresses
+	ctdb_set_pnn
 	setup_date "123456789"
 }
 

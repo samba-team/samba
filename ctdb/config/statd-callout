@@ -57,8 +57,6 @@ statd_callout_state_dir="${script_state_dir}/statd-callout"
 statd_callout_db="ctdb.tdb"
 statd_callout_queue_dir="${statd_callout_state_dir}/queue"
 
-pnn=$(ctdb_get_pnn)
-
 ############################################################
 
 send_notifies()
@@ -136,32 +134,22 @@ add-client)
 	# we must add it to all the IPs that we serve
 	cip="$2"
 	date=$(date '+%s')
-	# x is intentionally ignored
-	# shellcheck disable=SC2034
-	$CTDB ip -X |
-		tail -n +2 |
-		while IFS="|" read -r x sip node x; do
-			[ "$node" = "$pnn" ] || continue # not us
-			key="statd-state@${sip}@${cip}"
-			file="${statd_callout_queue_dir}/${key}"
-			echo "\"${key}\" \"${date}\"" >"$file"
-		done
+	while read -r sip; do
+		key="statd-state@${sip}@${cip}"
+		file="${statd_callout_queue_dir}/${key}"
+		echo "\"${key}\" \"${date}\"" >"$file"
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
 	;;
 
 del-client)
 	# statd does not tell us from which IP the client disconnected
 	# so we must add it to all the IPs that we serve
 	cip="$2"
-	# x is intentionally ignored
-	# shellcheck disable=SC2034
-	$CTDB ip -X |
-		tail -n +2 |
-		while IFS="|" read -r x sip node x; do
-			[ "$node" = "$pnn" ] || continue # not us
-			key="statd-state@${sip}@${cip}"
-			file="${statd_callout_queue_dir}/${key}"
-			echo "\"${key}\" \"\"" >"$file"
-		done
+	while read -r sip; do
+		key="statd-state@${sip}@${cip}"
+		file="${statd_callout_queue_dir}/${key}"
+		echo "\"${key}\" \"\"" >"$file"
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
 	;;
 
 update)
@@ -172,13 +160,9 @@ update)
 		# No files!
 		exit 0
 	fi
-	# Filter out lines for any IP addresses that are not currently
-	# hosted public IP addresses.
-	ctdb_ips=$($CTDB ip | tail -n +2)
-	sed_expr=$(echo "$ctdb_ips" |
-		awk -v pnn="$pnn" 'pnn == $2 {
-                ip = $1; gsub(/\./, "\\.", ip);
-                printf "/statd-state@%s@/p\n", ip }')
+	sed_expr=$(awk '{
+		ip = $1; gsub(/\./, "\\.", ip);
+		printf "/statd-state@%s@/p\n", ip }' "$CTDB_MY_PUBLIC_IPS_CACHE")
 	# Intentional multi-word expansion for multiple files
 	# shellcheck disable=SC2086
 	items=$(sed -n "$sed_expr" $files)
@@ -250,11 +234,10 @@ notify)
 	# Construct a sed expression to take catdb output and produce pairs of:
 	#   server-IP client-IP
 	# but only for the server-IPs that are hosted on this node.
-	ctdb_all_ips=$($CTDB ip all | tail -n +2)
-	sed_expr=$(echo "$ctdb_all_ips" |
-		awk -v pnn="$pnn" 'pnn == $2 {
-                ip = $1; gsub(/\./, "\\.", ip);
-                printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }')
+	sed_expr=$(awk '{
+		       ip = $1; gsub(/\./, "\\.", ip);
+		       printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }' \
+			       "$CTDB_MY_PUBLIC_IPS_CACHE")
 
 	statd_state=$($CTDB catdb "$statd_callout_db" |
 		sed -n "$sed_expr" |
@@ -267,7 +250,9 @@ notify)
 	# Remove any stale touch files (i.e. for IPs not currently
 	# hosted on this node and created since the last "update").
 	# There's nothing else we can do with them at this stage.
-	echo "$ctdb_all_ips" |
+	pnn=$(ctdb_get_pnn)
+	$CTDB ip all |
+		tail -n +2 |
 		awk -v pnn="$pnn" 'pnn != $2 { print $1 }' |
 		while read -r sip; do
 			rm -f "${statd_callout_queue_dir}/statd-state@${sip}@"*
