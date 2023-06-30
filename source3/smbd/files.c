@@ -823,8 +823,7 @@ static NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
+NTSTATUS openat_pathref_fsp_nosymlink(TALLOC_CTX *mem_ctx,
 				      struct connection_struct *conn,
 				      struct files_struct *in_dirfsp,
 				      const char *path_in,
@@ -1224,6 +1223,25 @@ done:
 			  nt_errstr(status));
 		goto fail;
 	}
+
+	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+		/*
+		 * Last component was a symlink we opened with O_PATH, fail it
+		 * here.
+		 */
+		status = create_open_symlink_err(mem_ctx,
+						 fsp,
+						 NULL,
+						 &symlink_err);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		symlink_err->st = fsp->fsp_name->st;
+
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		goto fail;
+	}
+
 	/*
 	 * We must correctly set fsp->file_id as code inside
 	 * open.c will use this to check if delete_on_close
@@ -1276,58 +1294,6 @@ fail:
 
 	TALLOC_FREE(path);
 	return status;
-}
-
-NTSTATUS openat_pathref_fsp_nosymlink(TALLOC_CTX *mem_ctx,
-				      struct connection_struct *conn,
-				      struct files_struct *dirfsp,
-				      const char *path_in,
-				      NTTIME twrp,
-				      bool posix,
-				      struct smb_filename **_smb_fname,
-				      struct open_symlink_err **_symlink_err)
-{
-	struct smb_filename *smb_fname = NULL;
-	struct open_symlink_err *symlink_err = NULL;
-	NTSTATUS status;
-
-	status = openat_pathref_fsp_nosymlink_internal(mem_ctx,
-						       conn,
-						       dirfsp,
-						       path_in,
-						       twrp,
-						       posix,
-						       &smb_fname,
-						       &symlink_err);
-
-	if (NT_STATUS_IS_OK(status) && S_ISLNK(smb_fname->st.st_ex_mode)) {
-
-		status = create_open_symlink_err(mem_ctx,
-						 smb_fname->fsp,
-						 NULL,
-						 &symlink_err);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("create_open_symlink_err() failed: %s\n",
-				  nt_errstr(status));
-			TALLOC_FREE(symlink_err);
-			return status;
-		}
-
-		symlink_err->st = smb_fname->st;
-
-		TALLOC_FREE(smb_fname);
-		status = NT_STATUS_STOPPED_ON_SYMLINK;
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-		*_symlink_err = symlink_err;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*_smb_fname = smb_fname;
-	return NT_STATUS_OK;
 }
 
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname)
