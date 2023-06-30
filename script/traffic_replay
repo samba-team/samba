@@ -174,7 +174,7 @@ def main():
         if not os.path.exists(model_file):
             logger.error("Model file %s doesn't exist" % model_file)
             sys.exit(1)
-    # the model-file can be ommitted for --generate-users-only and
+    # the model-file can be omitted for --generate-users-only and
     # --cleanup-up, but it should be specified in all other cases
     elif not opts.generate_users_only:
         logger.error("No model file specified to replay traffic from")

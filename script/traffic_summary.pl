@@ -45,7 +45,7 @@ my $ip_sequence = 0;     # count of unique IP addresses seen
 
 my $timestamp;           # Packet timestamp
 my $stream;              # Wireshark stream number
-my $ip_proto;            # IP protocol (IANA protocl number)
+my $ip_proto;            # IP protocol (IANA protocol number)
 my $source;              # source IP address
 my $dest;                # destination address
 my $proto;               # application protocol name
@@ -578,7 +578,7 @@ It reads the pdml input from stdin or the list of files passed on the command li
      B<Wireshark Stream Number>  Calculated by wireshark groups related requests and responses
      B<Source IP>                The unique sequence number for the source IP address
      B<Destination IP>           The unique sequence number for the destination IP address
-     B<protocl>                  The protocol name
+     B<protocol>                 The protocol name
      B<opcode>                   The protocol operation code
      B<Description>              The protocol or operation description
      B<extra>                    Extra protocol specific data, may be more than one field
@@ -636,7 +636,7 @@ It reads the pdml input from stdin or the list of files passed on the command li
 =head3 ldap modifiyRequest
      In addition to the standard ldap fields the modification type is also captured
 
-     modify_operator      for modifyRequests this contains the modifiy operation
+     modify_operator      for modifyRequests this contains the modify operation
                             0 - add
                             1 - delete
                             2 - replace
@@ -683,7 +683,7 @@ indicates a kerberos encrypted operation.
 tshark indicated that the packet was malformed, for ldap it usually indicates TLS
 encrypted traffic.
 
-=head1 LISENCE AND COPYRIGHT
+=head1 LICENSE AND COPYRIGHT
 
  Copyright (C) Catalyst.Net Ltd 2017
 
