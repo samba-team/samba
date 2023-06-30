@@ -6759,6 +6759,7 @@ struct cli_qpathinfo_state {
 };
 
 static void cli_qpathinfo_done(struct tevent_req *subreq);
+static void cli_qpathinfo_done2(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -6775,6 +6776,33 @@ struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		uint16_t smb2_level = 0;
+
+		switch (level) {
+		case SMB_QUERY_FILE_ALT_NAME_INFO:
+			smb2_level = FSCC_FILE_ALTERNATE_NAME_INFORMATION;
+			break;
+		default:
+			tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = cli_smb2_qpathinfo_send(state,
+						 ev,
+						 cli,
+						 fname,
+						 smb2_level,
+						 min_rdata,
+						 max_rdata);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_qpathinfo_done2, req);
+		return req;
+	}
+
 	state->min_rdata = min_rdata;
 	SSVAL(state->setup, 0, TRANSACT2_QPATHINFO);
 
@@ -6843,6 +6871,24 @@ static void cli_qpathinfo_done(struct tevent_req *subreq)
 				NULL, 0, NULL,
 				&state->rdata, state->min_rdata,
 				&state->num_rdata);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_qpathinfo_done2(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_qpathinfo_state *state =
+		tevent_req_data(req, struct cli_qpathinfo_state);
+	NTSTATUS status;
+
+	status = cli_smb2_qpathinfo_recv(subreq,
+					 state,
+					 &state->rdata,
+					 &state->num_rdata);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
