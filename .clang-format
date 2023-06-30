@@ -12,6 +12,7 @@ BraceWrapping:
     AfterExternBlock: true
     BeforeElse: false
     BeforeWhile: false
+    AfterControlStatement: MultiLine
 AllowShortIfStatementsOnASingleLine: false
 ColumnLimit: 80
 IndentCaseLabels: false
@@ -19,8 +20,14 @@ AlignAfterOpenBracket: Align
 BinPackParameters: false
 BinPackArguments: false
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowAllArgumentsOnNextLine: false
+AllowAllArgumentsOnNextLine: true
 AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakAfterReturnType: None
 AlignEscapedNewlines: Left
 SortIncludes: false
+IndentGotoLabels: false
+WhitespaceSensitiveMacros: ['DEBUG']
+PenaltyReturnTypeOnItsOwnLine: 1000
+PenaltyBreakAssignment: 200
+PenaltyBreakBeforeFirstCallParameter: 100
+BreakBeforeBinaryOperators: None
