@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett         2001-2002
@@ -86,7 +86,7 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 				 uint8_t chal[8])
 {
 	if (auth_context->challenge.length) {
-		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
+		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n",
 			  auth_context->challenge_set_by));
 		memcpy(chal, auth_context->challenge.data, 8);
 		return NT_STATUS_OK;
@@ -111,14 +111,14 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
  * Check user is in correct domain (if required)
  *
  * @param user Only used to fill in the debug message
- * 
+ *
  * @param domain The domain to be verified
  *
- * @return True if the user can connect with that domain, 
+ * @return True if the user can connect with that domain,
  *         False otherwise.
 **/
 
-static bool check_domain_match(const char *user, const char *domain) 
+static bool check_domain_match(const char *user, const char *domain)
 {
 	/*
 	 * If we aren't serving to trusted domains, we must make sure that
@@ -127,8 +127,8 @@ static bool check_domain_match(const char *user, const char *domain)
 	 */
 
 	if (!lp_allow_trusted_domains() &&
-	    !(strequal("", domain) || 
-	      strequal(lp_workgroup(), domain) || 
+	    !(strequal("", domain) ||
+	      strequal(lp_workgroup(), domain) ||
 	      is_myname(domain))) {
 		DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
 		return False;
@@ -146,17 +146,17 @@ static bool check_domain_match(const char *user, const char *domain)
  * This function does NOT need to be in a become_root()/unbecome_root() pair
  * as it makes the calls itself when needed.
  *
- * The return value takes precedence over the contents of the server_info 
- * struct.  When the return is other than NT_STATUS_OK the contents 
+ * The return value takes precedence over the contents of the server_info
+ * struct.  When the return is other than NT_STATUS_OK the contents
  * of that structure is undefined.
  *
  * @param user_info Contains the user supplied components, including the passwords.
  *                  Must be created with make_user_info() or one of its wrappers.
  *
- * @param auth_context Supplies the challenges and some other data. 
- *                  Must be created with make_auth_context(), and the challenges should be 
- *                  filled in, either at creation or by calling the challenge geneation 
- *                  function auth_get_challenge().  
+ * @param auth_context Supplies the challenges and some other data.
+ *                  Must be created with make_auth_context(), and the challenges should be
+ *                  filled in, either at creation or by calling the challenge generation
+ *                  function auth_get_challenge().
  *
  * @param pserver_info If successful, contains information about the authentication,
  *                     including a struct samu struct describing the user.
@@ -198,10 +198,10 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 	*pauthoritative = 1;
 
-	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
+	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n",
 		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
 
-	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
+	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n",
 		  user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
 
 	if (auth_context->challenge.length != 8) {
@@ -218,7 +218,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
+	DEBUG(100, ("user_info has passwords of length %d and %d\n",
 		    (int)user_info->password.response.lanman.length, (int)user_info->password.response.nt.length));
 	DEBUG(100, ("lm:\n"));
 	dump_data(100, user_info->password.response.lanman.data, user_info->password.response.lanman.length);
@@ -487,7 +487,7 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	for (;*text_list; text_list++) { 
+	for (;*text_list; text_list++) {
 		if (load_auth_module(*auth_context, *text_list, &t)) {
 		    DLIST_ADD_END(list, t);
 		}

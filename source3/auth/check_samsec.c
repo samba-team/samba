@@ -429,7 +429,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 				    user_info, &user_sess_key, &lm_sess_key);
 
 	/*
-	 * We must re-load the sam acount information under a mutex
+	 * We must re-load the sam account information under a mutex
 	 * lock to ensure we don't miss any concurrent account lockout
 	 * changes.
 	 */
@@ -589,7 +589,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 
 done:
 	/*
-	 * Always flush the getpwsid cache or this will grow indefinetly for
+	 * Always flush the getpwsid cache or this will grow indefinitely for
 	 * each NTLM auththentication.
 	 */
 	memcache_flush(NULL, PDB_GETPWSID_CACHE);

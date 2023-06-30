@@ -22,7 +22,7 @@
 
 /*
  * This module provides PAM based functions for validation of
- * username/password pairs, account managment, session and access control.
+ * username/password pairs, account management, session and access control.
  * Note: SMB password checking is done in smbpass.c
  */
 
@@ -95,7 +95,7 @@ static bool smb_pam_error_handler(pam_handle_t *pamh, int pam_error, const char 
 
 /*******************************************************************
  This function is a sanity check, to make sure that we NEVER report
- failure as sucess.
+ failure as success.
 *********************************************************************/
 
 static bool smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
@@ -137,7 +137,7 @@ static int smb_pam_conv(int num_msg,
 		return PAM_CONV_ERR;
 
 	/*
-	 * Apparantly HPUX has a buggy PAM that doesn't support the
+	 * Apparently HPUX has a buggy PAM that doesn't support the
 	 * appdata_ptr. Fail if this is the case. JRA.
 	 */
 
@@ -306,7 +306,7 @@ static int smb_pam_passchange_conv(int num_msg,
 		return PAM_CONV_ERR;
 
 	/*
-	 * Apparantly HPUX has a buggy PAM that doesn't support the
+	 * Apparently HPUX has a buggy PAM that doesn't support the
 	 * appdata_ptr. Fail if this is the case. JRA.
 	 */
 
@@ -607,7 +607,7 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, const char * user)
 	NTSTATUS nt_status = NT_STATUS_NO_TOKEN;
 
 	/*
-	 * This will allow samba to aquire a kerberos token. And, when
+	 * This will allow samba to acquire a kerberos token. And, when
 	 * exporting an AFS cell, be able to /write/ to this cell.
 	 */
 

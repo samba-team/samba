@@ -109,7 +109,7 @@ static NTSTATUS auth_init_anonymous(
 /** 
  * Return an error based on username
  *
- * This function allows the testing of obsure errors, as well as the generation
+ * This function allows the testing of obscure errors, as well as the generation
  * of NT_STATUS -> DOS error mapping tables.
  *
  * This module is of no value to end-users.

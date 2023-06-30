@@ -85,7 +85,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 		if (pac_blob == NULL) {
 			/*
-			 * This should already be catched at the main
+			 * This should already be caught at the main
 			 * gensec layer, but better check twice
 			 */
 			status = NT_STATUS_INTERNAL_ERROR;

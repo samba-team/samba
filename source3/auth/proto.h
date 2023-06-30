@@ -64,8 +64,8 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
  * This function does NOT need to be in a become_root()/unbecome_root() pair
  * as it makes the calls itself when needed.
  *
- * The return value takes precedence over the contents of the server_info 
- * struct.  When the return is other than NT_STATUS_OK the contents 
+ * The return value takes precedence over the contents of the server_info
+ * struct.  When the return is other than NT_STATUS_OK the contents
  * of that structure is undefined.
  *
  * @param mem_ctx   The memory context to use to allocate server_info
@@ -73,10 +73,10 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
  * @param user_info Contains the user supplied components, including the passwords.
  *                  Must be created with make_user_info() or one of its wrappers.
  *
- * @param auth_context Supplies the challenges and some other data. 
- *                  Must be created with make_auth_context(), and the challenges should be 
- *                  filled in, either at creation or by calling the challenge geneation 
- *                  function auth_get_challenge().  
+ * @param auth_context Supplies the challenges and some other data.
+ *                  Must be created with make_auth_context(), and the challenges should be
+ *                  filled in, either at creation or by calling the challenge generation
+ *                  function auth_get_challenge().
  *
  * @param pserver_info If successful, contains information about the authentication,
  *                     including a struct samu struct describing the user.

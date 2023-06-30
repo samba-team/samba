@@ -258,7 +258,7 @@ NTSTATUS pass_check(const struct passwd *pass,
         if NT_STATUS_IS_OK(nt_status) {
 		return (nt_status);
 	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
-                /* No point continuing if its not the password thats to blame (ie PAM disabled). */
+                /* No point continuing if its not the password that's to blame (ie PAM disabled). */
                 return (nt_status);
         }
 

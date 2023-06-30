@@ -2295,7 +2295,7 @@ bool is_trusted_domain(const char* dom_name)
 
 /*
   on a logon error possibly map the error to success if "map to guest"
-  is set approriately
+  is set appropriately
 */
 NTSTATUS do_map_to_guest_server_info(TALLOC_CTX *mem_ctx,
 				     NTSTATUS status,
