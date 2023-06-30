@@ -180,7 +180,7 @@
  *              const struct smb_filename *
  * Version 35 - Change opendir from const char *, to
  *              const struct smb_filename *
- * Version 35 - Wrap aio async funtions args in a struct vfs_aio_state
+ * Version 35 - Wrap aio async functions args in a struct vfs_aio_state
  * Version 35 - Change chmod from const char *, to
  *              const struct smb_filename *
  * Version 35 - Change chmod_acl from const char *, to
@@ -614,7 +614,7 @@ typedef struct files_struct {
  * Currently Samba bases the decision whether to call POSIX open() on a
  * client pathname or whether to leave the low-level handle at -1, what we
  * call a stat-open, in the function open_file() and it is based on the
- * client requested SMB acccess mask.
+ * client requested SMB access mask.
  *
  * The set of rights that trigger an open() include READ_CONTROL_ACCESS,
  * resulting in a call to open() with at least O_RDONLY. If the filesystem
@@ -1209,7 +1209,7 @@ struct vfs_fn_pointers {
 					   struct files_struct *fsp,
 					   uint32_t *dosmode);
 
-	NTSTATUS (*fset_dos_attributes_fn)(struct vfs_handle_struct *hande,
+	NTSTATUS (*fset_dos_attributes_fn)(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
 					   uint32_t dosmode);
 
@@ -1351,7 +1351,7 @@ struct vfs_statvfs_struct {
 };
 
 /* Add a new FSP extension of the given type. Returns a pointer to the
- * extenstion data.
+ * extension data.
  */
 #define VFS_ADD_FSP_EXTENSION(handle, fsp, type, destroy_fn)		\
     (type *)vfs_add_fsp_extension_notype(handle, (fsp), sizeof(type), (destroy_fn))

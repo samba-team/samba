@@ -115,7 +115,7 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* how long (in miliseconds) to wait for a socket connect to happen */
+/* how long (in milliseconds) to wait for a socket connect to happen */
 #define LONG_CONNECT_TIMEOUT 30000
 #define SHORT_CONNECT_TIMEOUT 5000
 
@@ -125,12 +125,12 @@
 /* the directory to sit in when idle */
 /* #define IDLE_DIR "/" */
 
-/* Timout (in seconds) to wait for an oplock break
+/* Timeout (in seconds) to wait for an oplock break
    message to return from the client. */
 
 #define OPLOCK_BREAK_TIMEOUT 35
 
-/* Timout (in seconds) to add to the oplock break timeout
+/* Timeout (in seconds) to add to the oplock break timeout
    to wait for the smbd to smbd message to return. */
 
 #define OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR 2

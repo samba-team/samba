@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   FAKE FILE suppport, for faking up special files windows want access to
+   FAKE FILE support, for faking up special files windows want access to
    Copyright (C) Stefan (metze) Metzmacher	2003
    
    This program is free software; you can redistribute it and/or modify

@@ -86,7 +86,7 @@ NTSTATUS idmap_autorid_acquire_range(struct db_context *db,
 				     struct autorid_range_config *range);
 
 /**
- * Delete a domain#index <-> range maping from the database.
+ * Delete a domain#index <-> range mapping from the database.
  * The mapping is specified by the sid and index.
  * If force == true, invalid mapping records are deleted as far
  * as possible, otherwise they are left untouched.
@@ -97,7 +97,7 @@ NTSTATUS idmap_autorid_delete_range_by_sid(struct db_context *db,
 					   bool force);
 
 /**
- * Delete a domain#index <-> range maping from the database.
+ * Delete a domain#index <-> range mapping from the database.
  * The mapping is specified by the range number.
  * If force == true, invalid mapping records are deleted as far
  * as possible, otherwise they are left untouched.

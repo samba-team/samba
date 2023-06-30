@@ -209,7 +209,7 @@ struct nmb_data {
 	time_t refresh_time; /* The time the record should be refreshed. */
   
 	uint64_t id;		/* unique id */
-	struct in_addr wins_ip;	/* the adress of the wins server this record comes from */
+	struct in_addr wins_ip;	/* the address of the wins server this record comes from */
 
 	int wins_flags;		/* similar to the netbios flags but different ! */
 };

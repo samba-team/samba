@@ -501,7 +501,7 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 
 /*
  * Global value meaning that the smb_uid field should be
- * ingored (in share level security and protocol level == CORE)
+ * ignored (in share level security and protocol level == CORE)
  */
 
 #define UID_FIELD_INVALID 0

@@ -74,10 +74,10 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 /**
  * CAVEAT:
  *
- * While the messaging_send*() functions are synchronuous by API,
+ * While the messaging_send*() functions are synchronous by API,
  * they trigger a tevent-based loop upon sending bigger messages.
  *
- * Hence callers should not use these in purely synchonous code,
+ * Hence callers should not use these in purely synchronous code,
  * but run a tevent_loop instead.
  */
 NTSTATUS messaging_send(struct messaging_context *msg_ctx,

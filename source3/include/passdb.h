@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    passdb structures and parameters
    Copyright (C) Gerald Carter 2001
@@ -165,7 +165,7 @@ NTSTATUS pdb_create_builtin_alias(uint32_t rid, gid_t gid);
 
 #define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
 
-/* Password history contants. */
+/* Password history constants. */
 #define PW_HISTORY_SALT_LEN 16
 #define SALTED_MD5_HASH_LEN 16
 #define PW_HISTORY_ENTRY_LEN (PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN)
@@ -309,7 +309,7 @@ struct samu {
 	/* a tag for who added the private methods */
 
 	const struct pdb_methods *backend_private_methods;
-	void *backend_private_data; 
+	void *backend_private_data;
 	void (*backend_private_data_free_fn)(void **);
 
 	/* maintain a copy of the user's struct passwd */
@@ -396,12 +396,12 @@ enum pdb_policy_type {
 #define PDB_CAP_TRUSTED_DOMAINS_EX	0x0004
 
 /*****************************************************************
- Functions to be implemented by the new (v2) passdb API 
+ Functions to be implemented by the new (v2) passdb API
 ****************************************************************/
 
 /*
  * This next constant specifies the version number of the PASSDB interface
- * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
+ * this SAMBA will load. Increment this if *ANY* changes are made to the interface.
  * Changed interface to fix int -> size_t problems. JRA.
  * There's no point in allocating arrays in
  * samr_lookup_rids twice. It was done in the srv_samr_nt.c code as well as in
@@ -423,7 +423,7 @@ enum pdb_policy_type {
 
 #define PASSDB_INTERFACE_VERSION 25
 
-struct pdb_methods 
+struct pdb_methods
 {
 	const char *name; /* What name got this module */
 
@@ -564,13 +564,13 @@ struct pdb_methods
 			       struct pdb_search *search,
 			       const struct dom_sid *sid);
 
-	/* 
+	/*
 	 * Instead of passing down a gid or uid, this function sends down a pointer
-	 * to a unixid. 
+	 * to a unixid.
 	 *
 	 * This acts as an in-out variable so that the idmap functions can correctly
 	 * receive ID_TYPE_BOTH, filling in cache details correctly rather than forcing
-	 * the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+	 * the cache to store ID_TYPE_UID or ID_TYPE_GID.
 	 */
 	bool (*id_to_sid)(struct pdb_methods *methods, struct unixid *id,
 			  struct dom_sid *sid);
@@ -582,16 +582,16 @@ struct pdb_methods
 
 
 	bool (*get_trusteddom_pw)(struct pdb_methods *methods,
-				  const char *domain, char** pwd, 
+				  const char *domain, char** pwd,
 				  struct dom_sid *sid, time_t *pass_last_set_time);
 	NTSTATUS (*get_trusteddom_creds)(struct pdb_methods *methods,
 					 const char *domain,
 					 TALLOC_CTX *mem_ctx,
 					 struct cli_credentials **creds);
-	bool (*set_trusteddom_pw)(struct pdb_methods *methods, 
+	bool (*set_trusteddom_pw)(struct pdb_methods *methods,
 				  const char* domain, const char* pwd,
 				  const struct dom_sid *sid);
-	bool (*del_trusteddom_pw)(struct pdb_methods *methods, 
+	bool (*del_trusteddom_pw)(struct pdb_methods *methods,
 				  const char *domain);
 	NTSTATUS (*enum_trusteddoms)(struct pdb_methods *methods,
 				     TALLOC_CTX *mem_ctx, uint32_t *num_domains,
@@ -898,13 +898,13 @@ NTSTATUS pdb_lookup_rids(const struct dom_sid *domain_sid,
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
-/* 
+/*
  * Instead of passing down a gid or uid, this function sends down a pointer
- * to a unixid. 
+ * to a unixid.
  *
  * This acts as an in-out variable so that the idmap functions can correctly
  * receive ID_TYPE_BOTH, filling in cache details correctly rather than forcing
- * the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+ * the cache to store ID_TYPE_UID or ID_TYPE_GID.
  */
 bool pdb_id_to_sid(struct unixid *id, struct dom_sid *sid);
 bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id);
