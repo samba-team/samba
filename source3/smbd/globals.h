@@ -522,6 +522,11 @@ struct smbXsrv_connection {
 		} smbtorture;
 
 		bool signing_mandatory;
+		/*
+		 * This is ConstrainedConnection in MS-SMB2,
+		 * but with reversed value...
+		 */
+		bool got_authenticated_session;
 	} smb2;
 };
 

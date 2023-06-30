@@ -495,6 +495,17 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 				goto inval;
 			}
 
+			if (!xconn->smb2.got_authenticated_session) {
+				D_INFO("Got SMB2_TRANSFORM header, "
+				       "but not no authenticated session yet "
+				       "client[%s] server[%s]\n",
+				       tsocket_address_string(
+					xconn->remote_address, talloc_tos()),
+				       tsocket_address_string(
+					xconn->local_address, talloc_tos()));
+				goto inval;
+			}
+
 			if (len < SMB2_TF_HDR_SIZE) {
 				DEBUG(1, ("%d bytes left, expected at least %d\n",
 					   (int)len, SMB2_TF_HDR_SIZE));

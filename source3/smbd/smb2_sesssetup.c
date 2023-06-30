@@ -272,6 +272,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->global->signing_flags &= ~SMBXSRV_SIGNING_REQUIRED;
 		/* we map anonymous to guest internally */
 		guest = true;
+	} else {
+		/*
+		 * Remember we got one authenticated session on the connection
+		 * in order to allow SMB3 decryption to happen
+		 * (sadly even for future anonymous connections).
+		 */
+		xconn->smb2.got_authenticated_session = true;
 	}
 
 	if (guest && (x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED)) {
@@ -289,7 +296,10 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 	x->global->signing_algo = xconn->smb2.server.sign_algo;
 	x->global->encryption_cipher = xconn->smb2.server.cipher;
-	if (guest) {
+	if (*out_session_flags & SMB2_SESSION_FLAG_IS_GUEST) {
+		/*
+		 * A fallback to guest can't do any encryption
+		 */
 		x->global->encryption_cipher = SMB2_ENCRYPTION_NONE;
 	}
 
@@ -642,6 +652,12 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 			  nt_errstr(status)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
+
+	/*
+	 * Remember we got one authenticated session on the connection
+	 * in order to allow SMB3 decryption to happen
+	 */
+	xconn->smb2.got_authenticated_session = true;
 
 	*out_session_id = session->global->session_wire_id;
 
