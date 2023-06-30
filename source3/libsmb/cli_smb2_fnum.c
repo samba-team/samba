@@ -2243,6 +2243,152 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 	return status;
 }
 
+struct cli_smb2_qpathinfo_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *fname;
+	uint16_t fnum;
+	uint16_t level;
+	uint32_t min_rdata;
+	uint32_t max_rdata;
+
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static void cli_smb2_qpathinfo_opened(struct tevent_req *subreq);
+static void cli_smb2_qpathinfo_done(struct tevent_req *subreq);
+static void cli_smb2_qpathinfo_closed(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_qpathinfo_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct cli_state *cli,
+					   const char *fname,
+					   uint16_t level,
+					   uint32_t min_rdata,
+					   uint32_t max_rdata)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_qpathinfo_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx,
+				&state,
+				struct cli_smb2_qpathinfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->level = level;
+	state->min_rdata = min_rdata;
+	state->max_rdata = max_rdata;
+
+	subreq = get_fnum_from_path_send(state,
+					 ev,
+					 cli,
+					 fname,
+					 FILE_READ_ATTRIBUTES);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_qpathinfo_opened, req);
+	return req;
+}
+
+static void cli_smb2_qpathinfo_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_smb2_qpathinfo_state *state =
+		tevent_req_data(req, struct cli_smb2_qpathinfo_state);
+	NTSTATUS status;
+
+	status = get_fnum_from_path_recv(subreq, &state->fnum);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_smb2_query_info_fnum_send(state,
+					       state->ev,
+					       state->cli,
+					       state->fnum,
+					       1, /* in_info_type */
+					       state->level,
+					       state->max_rdata,
+					       NULL, /* in_input_buffer */
+					       0,    /* in_additional_info */
+					       0);   /* in_flags */
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_qpathinfo_done, req);
+}
+
+static void cli_smb2_qpathinfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_smb2_qpathinfo_state *state =
+		tevent_req_data(req, struct cli_smb2_qpathinfo_state);
+
+	state->status =
+		cli_smb2_query_info_fnum_recv(subreq, state, &state->out);
+	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_IS_OK(state->status) &&
+	    (state->out.length < state->min_rdata)) {
+		state->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_qpathinfo_closed, req);
+}
+
+static void cli_smb2_qpathinfo_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_smb2_qpathinfo_state *state =
+		tevent_req_data(req, struct cli_smb2_qpathinfo_state);
+	NTSTATUS status;
+
+	status = cli_smb2_close_fnum_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (tevent_req_nterror(req, state->status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb2_qpathinfo_recv(struct tevent_req *req,
+				 TALLOC_CTX *mem_ctx,
+				 uint8_t **rdata,
+				 uint32_t *num_rdata)
+{
+	struct cli_smb2_qpathinfo_state *state =
+		tevent_req_data(req, struct cli_smb2_qpathinfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	*rdata = talloc_move(mem_ctx, &state->out.data);
+	*num_rdata = state->out.length;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 /***************************************************************
  Wrapper that allows SMB2 to get pathname attributes.
  Synchronous only.
