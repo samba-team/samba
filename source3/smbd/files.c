@@ -800,6 +800,29 @@ static bool full_path_extend(char **dir, const char *atname)
 	return (*dir) != NULL;
 }
 
+static NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
+					files_struct *dirfsp,
+					struct smb_filename *smb_relname,
+					struct open_symlink_err **_err)
+{
+	struct open_symlink_err *err = NULL;
+	NTSTATUS status;
+
+	err = talloc_zero(mem_ctx, struct open_symlink_err);
+	if (err == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = read_symlink_reparse(err, dirfsp, smb_relname, &err->reparse);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(err);
+		return status;
+	}
+
+	*_err = err;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS
 openat_pathref_fsp_nosymlink_internal(TALLOC_CTX *mem_ctx,
 				      struct connection_struct *conn,
@@ -1053,17 +1076,12 @@ next:
 		 * below.
 		 */
 
-		symlink_err = talloc_zero(mem_ctx, struct open_symlink_err);
-		if (symlink_err == NULL) {
-			goto nomem;
-		}
-
-		status = read_symlink_reparse(symlink_err,
-					      dirfsp,
-					      &rel_fname,
-					      &symlink_err->reparse);
+		status = create_open_symlink_err(mem_ctx,
+						 dirfsp,
+						 &rel_fname,
+						 &symlink_err);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("readlink_talloc failed: %s\n",
+			DBG_DEBUG("create_open_symlink_err failed: %s\n",
 				  nt_errstr(status));
 			goto fail;
 		}
@@ -1118,17 +1136,13 @@ next:
 		 * freadlink.
 		 */
 
-		symlink_err = talloc_zero(mem_ctx, struct open_symlink_err);
-		if (symlink_err == NULL) {
-			goto nomem;
-		}
+		status = create_open_symlink_err(mem_ctx,
+						 dirfsp,
+						 NULL,
+						 &symlink_err);
 
-		status = read_symlink_reparse(symlink_err,
-					      dirfsp,
-					      NULL,
-					      &symlink_err->reparse);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("readlink_talloc failed: %s\n",
+			DBG_DEBUG("create_open_symlink_err failed: %s\n",
 				  nt_errstr(status));
 			status = NT_STATUS_NOT_A_DIRECTORY;
 			goto fail;
@@ -1288,17 +1302,12 @@ NTSTATUS openat_pathref_fsp_nosymlink(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(status) && S_ISLNK(smb_fname->st.st_ex_mode)) {
 
-		symlink_err = talloc_zero(mem_ctx, struct open_symlink_err);
-		if (symlink_err == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = read_symlink_reparse(symlink_err,
-					      smb_fname->fsp,
-					      NULL,
-					      &symlink_err->reparse);
+		status = create_open_symlink_err(mem_ctx,
+						 smb_fname->fsp,
+						 NULL,
+						 &symlink_err);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("read_symlink_reparse() failed: %s\n",
+			DBG_DEBUG("create_open_symlink_err() failed: %s\n",
 				  nt_errstr(status));
 			TALLOC_FREE(symlink_err);
 			return status;
