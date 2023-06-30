@@ -312,7 +312,7 @@ EOF
 # PNN can already be cached in the state directory.
 ctdb_set_pnn()
 {
-	export FAKE_CTDB_PNN="$1"
+	export FAKE_CTDB_PNN="${1:-0}"
 	echo "Setting up PNN ${FAKE_CTDB_PNN}"
 
 	CTDB_SCRIPT_VARDIR="${CTDB_TEST_TMP_DIR}/scripts/${FAKE_CTDB_PNN}"
