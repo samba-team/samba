@@ -324,7 +324,6 @@ def configure(conf):
     conf.RECURSE('source4/auth')
     conf.RECURSE('nsswitch')
     conf.RECURSE('libcli/smbreadline')
-    conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         if not (Options.options.without_ad_dc):

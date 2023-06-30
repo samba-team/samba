@@ -2,11 +2,6 @@
 from waflib import Errors, Logs
 
 
-def configure(conf):
-    if conf.CHECK_FUNCS('SHA1_Update'):
-        conf.DEFINE('SHA1_RENAME_NEEDED', 1)
-
-
 def build(bld):
     extra_deps = ""
 
