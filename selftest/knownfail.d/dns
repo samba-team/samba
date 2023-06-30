@@ -1,5 +1,5 @@
 # These tests are expected to fail because we want to ensure that
-# unauthenicated updates are not permitted against the default
+# unauthenticated updates are not permitted against the default
 # configuration, nor against an RODC
 
 samba.tests.dns.__main__.TestDNSUpdates.test_delete_record\(rodc:local\)

@@ -1,4 +1,4 @@
-# This fails as there is no second DC in this enviroment, so it is always the owner
+# This fails as there is no second DC in this environment, so it is always the owner
 samba4.drs.getnc_exop.python\(chgdcpass\).getnc_exop.DrsReplicaSyncTestCase.test_FSMONotOwner\(chgdcpass\)
 # This fails because GET_ANC is now poorly implemented (matching Samba 4.5)
 ^samba4.drs.getnc_exop.python\(chgdcpass\).getnc_exop.DrsReplicaSyncTestCase.test_link_utdv_hwm\(chgdcpass\)

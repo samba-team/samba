@@ -2,7 +2,7 @@
 #
 # Helper script. If you want a 2nd shell that communicates with the testenv DC
 # you can use the nsenter command to change the namespace you're in. However,
-# this command is a bit unwieldly and changes depending on the testenv PID.
+# this command is a bit unwieldy and changes depending on the testenv PID.
 # We can generate a helper script on the fly that abstracts all this
 # complexity, allowing you to use the same, simple command to change the
 # namespace that you're in, e.g.

@@ -105,7 +105,7 @@
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_spn(?!_)
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_spn_realm
 #
-# KDC COMPATABLITY
+# KDC COMPATIBILITY
 #
 samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_ticket_signature
 #

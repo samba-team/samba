@@ -1,5 +1,5 @@
 #
-# We expect all the MIT specific compatability tests to fail on heimdal
+# We expect all the MIT specific compatibility tests to fail on heimdal
 # kerberos
 ^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_mit_
 #

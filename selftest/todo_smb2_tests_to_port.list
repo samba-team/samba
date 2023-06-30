@@ -8,7 +8,7 @@
 #    python3 selftest/tests.py  | grep "^samba" \
 #        | grep _smb1 | grep -v _done
 #
-# Tests that are ported should be moved to approriate _smb1_done
+# Tests that are ported should be moved to appropriate _smb1_done
 # test environment and the entry removed from here
 samba3.base.attr(ad_dc_smb1)
 samba3.base.attr(nt4_dc_smb1)

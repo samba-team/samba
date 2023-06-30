@@ -1194,7 +1194,7 @@ sub setup_admem_idmap_autorid
 	idmap config * : range = 1000000-19999999
 	idmap config * : rangesize = 1000000
 
-	# Prevent overridding the provisioned lib/krb5.conf which sets certain
+	# Prevent overriding the provisioned lib/krb5.conf which sets certain
 	# values required for tests to succeed
 	create krb5 conf = no
 ";
@@ -1290,7 +1290,7 @@ sub setup_ad_member_idmap_rid
 	idmap config * : range = 1000000-1999999
 	idmap config $dcvars->{DOMAIN} : backend = rid
 	idmap config $dcvars->{DOMAIN} : range = 2000000-2999999
-	# Prevent overridding the provisioned lib/krb5.conf which sets certain
+	# Prevent overriding the provisioned lib/krb5.conf which sets certain
 	# values required for tests to succeed
 	create krb5 conf = no
         map to guest = bad user
@@ -3262,7 +3262,7 @@ sub provision($$)
 
 [fsrvp_share]
 	path = $fsrvp_shrdir
-	comment = fake shapshots using rsync
+	comment = fake snapshots using rsync
 	vfs objects = shell_snap shadow_copy2
 	shell_snap:check path command = $fake_snap_pl --check
 	shell_snap:create command = $fake_snap_pl --create

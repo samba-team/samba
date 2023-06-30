@@ -1,6 +1,6 @@
 # following SMB1/SMB2 test env split it seems this test
 # fails randomly however it doesn't seem to be directly
-# related to the changes (e.g. not protocl negotiation
+# related to the changes (e.g. not protocol negotiation
 # specific) Best guess is the order of test having being
 # changed (as a result of test moving env) or some other
 # strange env related side affect is causing this.

@@ -62,7 +62,7 @@
 ^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(ad_dc_smb1\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
 # smbclient4 behaves differently from smbclient (s3) when encountering
-# logon failures when possesing a valid ticket. Test below has been
+# logon failures when possessing a valid ticket. Test below has been
 # changed to use smbclient (in order to support SMB2) and this part of the
 # test fails due to this difference
 ^samba4.blackbox.chgdcpass.Test login with kerberos ccache after 2nd password change\(chgdcpass\)
@@ -303,7 +303,7 @@
 #
 ^samba.tests.dcerpc.integer.samba.tests.dcerpc.integer.IntegerTests.test_.*_into_uint8_list
 #
-# Samba sort takes a primative approach to unicode sort. These tests
+# Samba sort takes a primitive approach to unicode sort. These tests
 # match Windows 2012R2 behaviour.
 #
 ^samba4.ldap.sort.python.+UnicodeSortTests

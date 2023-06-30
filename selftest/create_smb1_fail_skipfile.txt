@@ -12,14 +12,14 @@ environments to be SMB2_02.
 
 Servers will only offer protocols starting with the min specified in the
 conf files, we don't need to change the client value here yet (until SMB1 is
-truely gone)
+truly gone)
 
 2.
 The following environments will still negotiate SMB1
    ad_dc_ntvfs, rpc_proxy & s4member
 
 3.
-Make test wont stop on first error
+Make test won't stop on first error
 
 Once this patch is applied either
 a. Commit to gitlab or
@@ -139,7 +139,7 @@ index 00000000000..eedfdbb6c35
 +#!/usr/bin/env python3
 +#
 +# Simple script to parse make test stdout results
-+# to find the tests that are in error, the scrip
++# to find the tests that are in error, the script
 +# then creates a line for each error suitable for
 +# putting into a skip file.
 +# This scripts intended use is in SMB1 to SMB2 test

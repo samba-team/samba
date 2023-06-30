@@ -39,7 +39,7 @@ function check_arg()
 CNF="${1-}"
 test -n "${CNF}" || {
 	print_usage
-	echo "ERROR: speficy <CNF_FILE> see manage-ca.templates.d/manage-CA-example.com.cnf"
+	echo "ERROR: specify <CNF_FILE> see manage-ca.templates.d/manage-CA-example.com.cnf"
 	exit 1
 }
 test -e "${CNF}" || {
