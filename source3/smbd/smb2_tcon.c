@@ -331,6 +331,10 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		}
 	}
 
+	if (guest_session) {
+		/* make sure we don't ask for optional encryption */
+		encryption_desired = false;
+	}
 	if (encryption_desired) {
 		encryption_flags |= SMBXSRV_ENCRYPTION_DESIRED;
 	}
