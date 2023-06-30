@@ -1430,7 +1430,7 @@ static NTSTATUS tar_extract_skip_path(struct tar *t,
 }
 
 /**
- * tar_create_skip_path - check if @fullpath shoud be skipped
+ * tar_create_skip_path - check if @fullpath should be skipped
  * @fullpath: full remote path of the current file
  * @finfo: remote file attributes
  * @_skip: returned skip not
@@ -1542,7 +1542,7 @@ static const char* skip_useless_char_in_path(const char *p)
  * @full: container path
  * @_subpath_match: set true if @sub is a subpath of @full, otherwise false
  *
- * String comparaison is case-insensitive.
+ * String comparison is case-insensitive.
  */
 static NTSTATUS is_subpath(const char *sub, const char *full,
 			   bool *_subpath_match)
