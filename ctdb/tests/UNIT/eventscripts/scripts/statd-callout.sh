@@ -1,10 +1,28 @@
 setup()
 {
+	CTDB_STATD_CALLOUT_SHARED_STORAGE="$1"
+
 	setup_public_addresses
 	ctdb_set_pnn
 	setup_date "1234567890"
 
 	export FAKE_NFS_HOSTNAME="cluster1"
+
+	case "$CTDB_STATD_CALLOUT_SHARED_STORAGE" in
+	"" | persistent_db)
+		CTDB_STATD_CALLOUT_SHARED_STORAGE="persistent_db:ctdb.tdb"
+		;;
+	shared_dir)
+		export CTDB_NFS_SHARED_STATE_DIR="/clusterfs"
+		;;
+	esac
+
+	export CTDB_STATD_CALLOUT_SHARED_STORAGE
+	statd_callout_mode="${CTDB_STATD_CALLOUT_SHARED_STORAGE%%:*}"
+	statd_callout_location="${CTDB_STATD_CALLOUT_SHARED_STORAGE#*:}"
+	if [ "$statd_callout_location" = "$CTDB_STATD_CALLOUT_SHARED_STORAGE" ]; then
+		statd_callout_location=""
+	fi
 }
 
 ctdb_catdb_format_pairs()
@@ -44,8 +62,51 @@ EOF
 		done |
 		ctdb_catdb_format_pairs | {
 		ok
-		simple_test_command ctdb catdb ctdb.tdb
+		simple_test_command ctdb catdb "$statd_callout_location"
 	} || exit $?
+}
+
+check_shared_dir_statd_state()
+{
+	ctdb_get_my_public_addresses |
+		while read -r _ _sip _; do
+			for _cip; do
+				echo "statd-state@${_sip}@${_cip}"
+			done
+		done |
+		sort | {
+		ok
+		_dir="${CTDB_TEST_TMP_DIR}${statd_callout_location}"
+		mkdir -p "$_dir"
+		(cd "$_dir" && simple_test_command ls)
+	} || exit $?
+}
+
+check_shared_storage_statd_state()
+{
+	case "$statd_callout_mode" in
+	persistent_db)
+		if [ -z "$statd_callout_location" ]; then
+			statd_callout_location="ctdb.tdb"
+		fi
+		check_ctdb_tdb_statd_state "$@"
+		;;
+	shared_dir)
+		if [ -z "$statd_callout_location" ]; then
+			statd_callout_location="statd"
+		fi
+		case "$statd_callout_location" in
+		/*)
+			:
+			;;
+		*)
+			_t="$CTDB_NFS_SHARED_STATE_DIR"
+			statd_callout_location="${_t}/${statd_callout_location}"
+			;;
+		esac
+		check_shared_dir_statd_state "$@"
+		;;
+	esac
 }
 
 check_statd_callout_smnotify()

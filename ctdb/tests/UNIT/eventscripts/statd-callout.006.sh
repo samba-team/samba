@@ -2,9 +2,14 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "2 x add-client to different nodes, notify on both"
+if [ -z "$CTDB_STATD_CALLOUT_SHARED_STORAGE" ]; then
+	CTDB_STATD_CALLOUT_SHARED_STORAGE="persistent_db"
+fi
+mode="$CTDB_STATD_CALLOUT_SHARED_STORAGE"
 
-setup
+define_test "${mode} - 2 x add-client to different nodes, notify on both"
+
+setup "$mode"
 
 ok_null
 simple_test_event "startup"
@@ -26,4 +31,4 @@ ctdb_set_pnn 1
 
 check_statd_callout_smnotify "192.168.123.46"
 
-check_ctdb_tdb_statd_state
+check_shared_storage_statd_state
