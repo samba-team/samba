@@ -1189,7 +1189,7 @@ class DsdbStartUpTests(TestCase):
         lp = samba.tests.env_loadparm()
         path = lp.configfile
 
-        # This is to avoid a tatoo of the global state
+        # This is to avoid a tattoo of the global state
         self.lp = LoadParm(filename_for_non_global_lp=path)
         self.creds = Credentials()
         self.creds.guess(self.lp)
