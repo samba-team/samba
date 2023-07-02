@@ -1,5 +1,7 @@
 setup()
 {
+	# shellcheck disable=SC2034
+	# Used in expected output
 	service_name="netbios"
 
 	if [ "$1" != "down" ]; then

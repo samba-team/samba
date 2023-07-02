@@ -1,5 +1,7 @@
 setup()
 {
+	# shellcheck disable=SC2034
+	# Used in expected output
 	service_name="samba"
 
 	if [ "$1" != "down" ]; then
@@ -46,9 +48,11 @@ samba_setup_fake_threads()
 	_count=0
 	for _pid; do
 		[ "$_count" -lt 5 ] || break
-		_t=$(program_stack_trace "smbd" $_pid)
+		_t=$(program_stack_trace "smbd" "$_pid")
 		_out="${_out:+${_out}${_nl}}${_t}"
 		_count=$((_count + 1))
 	done
+	# shellcheck disable=SC2034
+	# Used in expected output
 	SAMBA_STACK_TRACES="$_out"
 }

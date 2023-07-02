@@ -3,6 +3,8 @@ setup()
 	setup_public_addresses
 	setup_shares
 
+	# shellcheck disable=SC2034
+	# Used in expected output
 	service_name="nfs"
 
 	if [ -z "$CTDB_NFS_DISTRO_STYLE" ]; then
@@ -116,7 +118,7 @@ nfs_setup_fake_threads()
 	nfsd)
 		export PROCFS_PATH="${CTDB_TEST_TMP_DIR}/proc"
 		_threads="${PROCFS_PATH}/fs/nfsd/threads"
-		mkdir -p $(dirname "$_threads")
+		mkdir -p "$(dirname "$_threads")"
 		echo $# >"$_threads"
 		export FAKE_NFSD_THREAD_PIDS="$*"
 		;;
@@ -129,7 +131,7 @@ nfs_setup_fake_threads()
 guess_output()
 {
 	case "$1" in
-	$CTDB_NFS_CALLOUT\ start\ nlockmgr)
+	"${CTDB_NFS_CALLOUT} start nlockmgr")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		sysvinit-redhat)
 			echo "&Starting nfslock: OK"
@@ -144,7 +146,7 @@ EOF
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ start\ nfs)
+	"${CTDB_NFS_CALLOUT} start nfs")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		sysvinit-redhat)
 			cat <<EOF
@@ -173,14 +175,14 @@ EOF
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ stop\ mountd)
+	"${CTDB_NFS_CALLOUT} stop mountd")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-*)
 			echo "Stopping nfs-mountd: OK"
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ stop\ rquotad)
+	"${CTDB_NFS_CALLOUT} stop rquotad")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-redhat)
 			echo "Stopping rpc-rquotad: OK"
@@ -194,21 +196,21 @@ EOF
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ stop\ status)
+	"${CTDB_NFS_CALLOUT} stop status")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-*)
 			echo "Stopping rpc-statd: OK"
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ start\ mountd)
+	"${CTDB_NFS_CALLOUT} start mountd")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-*)
 			echo "&Starting nfs-mountd: OK"
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ start\ rquotad)
+	"${CTDB_NFS_CALLOUT} start rquotad")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-redhat)
 			echo "&Starting rpc-rquotad: OK"
@@ -218,7 +220,7 @@ EOF
 			;;
 		esac
 		;;
-	$CTDB_NFS_CALLOUT\ start\ status)
+	"${CTDB_NFS_CALLOUT} start status")
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-*)
 			echo "&Starting rpc-statd: OK"
@@ -246,7 +248,7 @@ rpc_set_service_failure_response()
 
 	# Default
 	ok_null
-	if [ $_numfails -eq 0 ]; then
+	if [ "$_numfails" -eq 0 ]; then
 		return
 	fi
 
@@ -270,12 +272,16 @@ rpc_set_service_failure_response()
 		# Subshell to restrict scope variables...
 
 		# Defaults
+		# shellcheck disable=SC2034
+		# Unused, but for completeness, possible future use
 		family="tcp"
 		version=""
 		unhealthy_after=1
 		restart_every=0
 		service_stop_cmd=""
 		service_start_cmd=""
+		# shellcheck disable=SC2034
+		# Unused, but for completeness, possible future use
 		service_check_cmd=""
 		service_debug_cmd=""
 
@@ -298,8 +304,8 @@ $_rpc_service failed RPC check:
 rpcinfo: RPC: Program not registered
 program $_rpc_service${_ver:+ version }${_ver} is not available"
 
-		if [ $unhealthy_after -gt 0 -a \
-			$_numfails -ge $unhealthy_after ]; then
+		if [ $unhealthy_after -gt 0 ] &&
+			[ "$_numfails" -ge $unhealthy_after ]; then
 			_unhealthy=true
 			echo 1 >"$_rc_file"
 			echo "ERROR: ${_rpc_check_out}" >>"$_out"
@@ -309,7 +315,7 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 		fi
 
 		if [ $restart_every -gt 0 ] &&
-			[ $(($_numfails % $restart_every)) -eq 0 ]; then
+			[ $((_numfails % restart_every)) -eq 0 ]; then
 			if ! $_unhealthy; then
 				echo "WARNING: ${_rpc_check_out}" >>"$_out"
 			fi
@@ -320,15 +326,15 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 			guess_output "$service_stop_cmd" >>"$_out"
 
 			if [ -n "$service_debug_cmd" ]; then
-				$service_debug_cmd 2>&1 >>"$_out"
+				$service_debug_cmd >>"$_out" 2>&1
 			fi
 
 			guess_output "$service_start_cmd" >>"$_out"
 		fi
 	)
 
-	read _rc <"$_rc_file"
-	required_result $_rc <"$_out"
+	read -r _rc <"$_rc_file"
+	required_result "$_rc" <"$_out"
 
 	rm -f "$_out" "$_rc_file"
 }
@@ -345,10 +351,10 @@ program_stack_traces()
 		_pids="$FAKE_RPC_THREAD_PIDS"
 	fi
 	for _pid in $_pids; do
-		[ $_count -le $_max ] || break
+		[ $_count -le "$_max" ] || break
 
 		program_stack_trace "$_prog" "$_pid"
-		_count=$(($_count + 1))
+		_count=$((_count + 1))
 	done
 }
 
@@ -385,10 +391,12 @@ nfs_iterate_test()
 		shift
 	fi
 
+	# shellcheck disable=SC2154
+	# Variables defined in define_test()
 	echo "Running $_repeats iterations of \"$script $event\" $args"
 
 	_iterate_failcount=0
-	for _iteration in $(seq 1 $_repeats); do
+	for _iteration in $(seq 1 "$_repeats"); do
 		# This is not a numerical comparison because $1 will
 		# often not be set.
 		if [ "$_iteration" = "$1" ]; then
@@ -406,7 +414,7 @@ EOF
 				   >/dev/null 2>&1 ; then
 				_iterate_failcount=0
 			else
-				_iterate_failcount=$(($_iterate_failcount + 1))
+				_iterate_failcount=$((_iterate_failcount + 1))
 			fi
 			rpc_set_service_failure_response \
 				"$_rpc_service" $_iterate_failcount

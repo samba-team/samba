@@ -12,7 +12,7 @@ setup()
 setup_ctdb_natgw()
 {
 	# Read from stdin
-	while read _ip _opts; do
+	while read -r _ip _opts; do
 		case "$_opts" in
 		leader)
 			export FAKE_CTDB_NATGW_LEADER="$_ip"
@@ -29,7 +29,7 @@ setup_ctdb_natgw()
 
 	# Assume all of the nodes are on a /24 network and have IPv4
 	# addresses:
-	read _ip <"$natgw_nodes"
+	read -r _ip <"$natgw_nodes"
 
 	setup_script_options <<EOF
 CTDB_NATGW_NODES="$natgw_nodes"

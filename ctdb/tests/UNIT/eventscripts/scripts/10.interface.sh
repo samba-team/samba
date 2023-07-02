@@ -14,7 +14,7 @@ _tcp_connections()
 	_cip_prefix="${_cip_base%.*}"
 	_cip_suffix="${_cip_base##*.}"
 
-	for _i in $(seq 1 $_count); do
+	for _i in $(seq 1 "$_count"); do
 		_cip_last=$((_cip_suffix + _i))
 		_cip="${_cip_prefix}.${_cip_last}"
 		_cport=$((_cport_base + _i))

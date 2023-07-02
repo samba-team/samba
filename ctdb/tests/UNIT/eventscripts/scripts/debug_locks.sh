@@ -261,6 +261,8 @@ $_out
 ===== End of debug locks PID=PID =====
 EOF
 
+	# shellcheck disable=SC2154
+	# script_dir and script set in define_test()
 	script_test "${script_dir}/${script}" \
 		"$_lock_helper_pid" \
 		"$_helper_scope" \

@@ -2,6 +2,8 @@ setup()
 {
 	setup_public_addresses
 
+	# shellcheck disable=SC2034
+	# Used in expected output
 	service_name="per_ip_routing"
 
 	setup_script_options <<EOF
@@ -32,7 +34,7 @@ create_policy_routing_config()
 				cat >/dev/null
 			}
 		fi |
-		while read _dev _ip _bits; do
+		while read -r _dev _ip _bits; do
 			_net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
 			_gw="${_net%.*}.254" # a dumb, calculated default
 

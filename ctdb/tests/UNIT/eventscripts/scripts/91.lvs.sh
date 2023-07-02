@@ -21,7 +21,7 @@ EOF
 
 	# Read from stdin
 	_pnn=0
-	while read _ip _opts; do
+	while read -r _ip _opts; do
 		case "$_opts" in
 		leader)
 			FAKE_CTDB_LVS_LEADER="$_pnn"
@@ -34,7 +34,7 @@ EOF
 			echo "$_ip"
 			;;
 		esac
-		_pnn=$(($_pnn + 1))
+		_pnn=$((_pnn + 1))
 	done >"$CTDB_LVS_NODES"
 }
 

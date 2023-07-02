@@ -191,7 +191,7 @@ shares_missing()
 				    "$_type" "${_i}")
 			_out="${_out}${_out:+${_nl}}${_t}"
 		done
-		_n=$(($_n + 1))
+		_n=$((_n + 1))
 	done
 
 	echo "$_out"
@@ -230,7 +230,7 @@ dump_routes()
 	ip rule show
 
 	ip rule show |
-		while read _p _x _i _x _t; do
+		while read -r _p _ _i _ _t; do
 			# Remove trailing colon after priority/preference.
 			_p="${_p%:}"
 			# Only remove rules that match our priority/preference.
@@ -252,20 +252,22 @@ ipv4_host_addr_to_net()
 	_host_ul=0
 	for _o in $(
 		export IFS="."
+		# shellcheck disable=SC2086
+		# Intentional word splitting
 		echo $_host
 	); do
-		_host_ul=$((($_host_ul << 8) + $_o)) # work around Emacs color bug
+		_host_ul=$(((_host_ul << 8) + _o)) # work around Emacs color bug
 	done
 
 	# Calculate the mask and apply it.
-	_mask_ul=$((0xffffffff << (32 - $_maskbits)))
-	_net_ul=$(($_host_ul & $_mask_ul))
+	_mask_ul=$((0xffffffff << (32 - _maskbits)))
+	_net_ul=$((_host_ul & _mask_ul))
 
 	# Now convert to a network address one byte at a time.
 	_net=""
 	for _o in $(seq 1 4); do
-		_net="$(($_net_ul & 255))${_net:+.}${_net}"
-		_net_ul=$(($_net_ul >> 8))
+		_net="$((_net_ul & 255))${_net:+.}${_net}"
+		_net_ul=$((_net_ul >> 8))
 	done
 
 	echo "${_net}/${_maskbits}"
@@ -275,6 +277,8 @@ ipv4_host_addr_to_net()
 
 # CTDB fakery
 
+# shellcheck disable=SC2120
+# Argument can be used in testcases
 setup_numnodes()
 {
 	export FAKE_CTDB_NUMNODES="${1:-3}"
@@ -326,7 +330,7 @@ ctdb_get_interfaces()
 ctdb_get_1_interface()
 {
 	_t=$(ctdb_get_interfaces)
-	echo ${_t%% *}
+	echo "${_t%% *}"
 }
 
 # Print public addresses on this node as: interface IP maskbits
@@ -334,13 +338,13 @@ ctdb_get_1_interface()
 ctdb_get_my_public_addresses()
 {
 	ctdb ip -v -X | {
-		read _x # skip header line
+		read -r _ # skip header line
 
-		while IFS="|" read _x _ip _x _iface _x; do
+		while IFS="|" read -r _ _ip _ _iface _; do
 			[ -n "$_iface" ] || continue
-			while IFS="/$IFS" read _i _maskbits _x; do
+			while IFS="/$IFS" read -r _i _maskbits _; do
 				if [ "$_ip" = "$_i" ]; then
-					echo $_iface $_ip $_maskbits
+					echo "$_iface $_ip $_maskbits"
 					break
 				fi
 			done <"${CTDB_BASE}/public_addresses"
@@ -378,7 +382,7 @@ check_routes()
 				cat >/dev/null
 			}
 		fi | {
-		while read _dev _ip _bits; do
+		while read -r _dev _ip _bits; do
 			_net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
 			_gw="${_net%.*}.254" # a dumb, calculated default
 
@@ -517,15 +521,19 @@ define_test()
 
 simple_test()
 {
-	[ -n "$event" ] || die 'simple_test: $event not set'
+	[ -n "$event" ] || die 'simple_test: event not set'
 
-	args="$@"
+	args="$*"
 
+	# shellcheck disable=SC2317
+	# used in unit_test(), etc.
 	test_header()
 	{
 		echo "Running script \"$script $event${args:+ }$args\""
 	}
 
+	# shellcheck disable=SC2317
+	# used in unit_test(), etc.
 	extra_header()
 	{
 		cat <<EOF
@@ -547,7 +555,7 @@ EOF
 simple_test_event()
 {
 	# If something has previously failed then don't continue.
-	: ${_passed:=true}
+	: "${_passed:=true}"
 	$_passed || return 1
 
 	event="$1"
