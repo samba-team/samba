@@ -478,7 +478,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;
 	struct samba_kdc_entry *server_entry = NULL;
-	bool is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
+	bool is_krbtgt;
 	/* Only include resource groups in a service ticket. */
 	enum auth_group_inclusion group_inclusion;
 	enum samba_asserted_identity asserted_identity =
@@ -488,9 +488,16 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
 	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 
+	if (client == NULL) {
+		return EINVAL;
+	}
 	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
 
+	if (server == NULL) {
+		return EINVAL;
+	}
+	is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
 	server_entry = talloc_get_type_abort(server->e_data,
 					     struct samba_kdc_entry);
 
@@ -784,6 +791,10 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 		talloc_get_type_abort(krbtgt->e_data,
 				      struct samba_kdc_entry);
 
+	if (server == NULL) {
+		code = EINVAL;
+		goto done;
+	}
 	server_skdc_entry =
 		talloc_get_type_abort(server->e_data,
 				      struct samba_kdc_entry);
