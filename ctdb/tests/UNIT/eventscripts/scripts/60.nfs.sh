@@ -1,11 +1,11 @@
-setup ()
+setup()
 {
 	setup_public_addresses
 	setup_shares
 
 	service_name="nfs"
 
-	if [ -z "$CTDB_NFS_DISTRO_STYLE" ] ; then
+	if [ -z "$CTDB_NFS_DISTRO_STYLE" ]; then
 		# Currently supported: sysvinit-redhat, systemd-redhat
 		CTDB_NFS_DISTRO_STYLE="systemd-redhat"
 	fi
@@ -20,7 +20,7 @@ EOF
 
 	export RPCNFSDCOUNT
 
-	if [ "$1" != "down" ] ; then
+	if [ "$1" != "down" ]; then
 		debug <<EOF
 Setting up NFS environment: all RPC services up, NFS managed by CTDB
 EOF
@@ -43,7 +43,7 @@ EOF
 			"nlockmgr" "status"
 
 		nfs_setup_fake_threads "nfsd"
-		nfs_setup_fake_threads "rpc.foobar"  # Set the variable to empty
+		nfs_setup_fake_threads "rpc.foobar" # Set the variable to empty
 	else
 		debug <<EOF
 Setting up NFS environment: all RPC services down, NFS not managed by CTDB
@@ -72,14 +72,14 @@ EOF
 	rm "${CTDB_BASE}/statd-callout"
 }
 
-rpc_services_down ()
+rpc_services_down()
 {
 	_out=""
-	for _s in $FAKE_RPCINFO_SERVICES ; do
-		for _i ; do
-			if [ "$_i" = "${_s%%:*}" ] ; then
-			    debug "Marking RPC service \"${_i}\" as UNAVAILABLE"
-			    continue 2
+	for _s in $FAKE_RPCINFO_SERVICES; do
+		for _i; do
+			if [ "$_i" = "${_s%%:*}" ]; then
+				debug "Marking RPC service \"${_i}\" as UNAVAILABLE"
+				continue 2
 			fi
 		done
 		_out="${_out}${_out:+ }${_s}"
@@ -87,18 +87,18 @@ rpc_services_down ()
 	FAKE_RPCINFO_SERVICES="$_out"
 }
 
-rpc_services_up ()
+rpc_services_up()
 {
 	_out="$FAKE_RPCINFO_SERVICES"
-	for _i ; do
+	for _i; do
 		debug "Marking RPC service \"${_i}\" as available"
 		case "$_i" in
 		portmapper) _t="2:4" ;;
-		nfs)        _t="2:3" ;;
-		mountd)     _t="1:3" ;;
-		rquotad)    _t="1:2" ;;
-		nlockmgr)   _t="3:4" ;;
-		status)     _t="1:1" ;;
+		nfs) _t="2:3" ;;
+		mountd) _t="1:3" ;;
+		rquotad) _t="1:2" ;;
+		nlockmgr) _t="3:4" ;;
+		status) _t="1:1" ;;
 		*) die "Internal error - unsupported RPC service \"${_i}\"" ;;
 		esac
 
@@ -107,9 +107,10 @@ rpc_services_up ()
 	export FAKE_RPCINFO_SERVICES="$_out"
 }
 
-nfs_setup_fake_threads ()
+nfs_setup_fake_threads()
 {
-	_prog="$1" ; shift
+	_prog="$1"
+	shift
 
 	case "$_prog" in
 	nfsd)
@@ -125,7 +126,7 @@ nfs_setup_fake_threads ()
 	esac
 }
 
-guess_output ()
+guess_output()
 {
 	case "$1" in
 	$CTDB_NFS_CALLOUT\ start\ nlockmgr)
@@ -226,6 +227,7 @@ EOF
 		;;
 	*)
 		: # Nothing
+		;;
 	esac
 }
 
@@ -237,14 +239,14 @@ EOF
 # if it is incomplete and hacky.  So, if the 60.nfs eventscript
 # changes and the tests start to fail then it may be due to this
 # function being incomplete.
-rpc_set_service_failure_response ()
+rpc_set_service_failure_response()
 {
 	_rpc_service="$1"
 	_numfails="${2:-1}" # default 1
 
 	# Default
 	ok_null
-	if [ $_numfails -eq 0 ] ; then
+	if [ $_numfails -eq 0 ]; then
 		return
 	fi
 
@@ -257,7 +259,7 @@ rpc_set_service_failure_response ()
 	_dir="${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}"
 
 	_file=$(ls "$_dir"/[0-9][0-9]."${_rpc_service}.check")
-	[ -r "$_file" ] || \
+	[ -r "$_file" ] ||
 		die "RPC check file \"$_file\" does not exist or is not unique"
 
 	_out="${CTDB_TEST_TMP_DIR}/rpc_failure_output"
@@ -283,12 +285,12 @@ rpc_set_service_failure_response ()
 		# Just use the first version, or use default.  This is
 		# dumb but handles all the cases that we care about
 		# now...
-		if [ -n "$version" ] ; then
+		if [ -n "$version" ]; then
 			_ver="${version%% *}"
 		else
 			case "$_rpc_service" in
 			portmapper) _ver="" ;;
-			*) 	    _ver=1  ;;
+			*) _ver=1 ;;
 			esac
 		fi
 		_rpc_check_out="\
@@ -297,7 +299,7 @@ rpcinfo: RPC: Program not registered
 program $_rpc_service${_ver:+ version }${_ver} is not available"
 
 		if [ $unhealthy_after -gt 0 -a \
-		     $_numfails -ge $unhealthy_after ] ; then
+			$_numfails -ge $unhealthy_after ]; then
 			_unhealthy=true
 			echo 1 >"$_rc_file"
 			echo "ERROR: ${_rpc_check_out}" >>"$_out"
@@ -306,18 +308,18 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 			echo 0 >"$_rc_file"
 		fi
 
-		if [ $restart_every -gt 0 ] && \
-			   [ $(($_numfails % $restart_every)) -eq 0 ] ; then
-			if ! $_unhealthy ; then
+		if [ $restart_every -gt 0 ] &&
+			[ $(($_numfails % $restart_every)) -eq 0 ]; then
+			if ! $_unhealthy; then
 				echo "WARNING: ${_rpc_check_out}" >>"$_out"
 			fi
 
-			echo "Trying to restart service \"${_rpc_service}\"..."\
-			     >>"$_out"
+			echo "Trying to restart service \"${_rpc_service}\"..." \
+				>>"$_out"
 
 			guess_output "$service_stop_cmd" >>"$_out"
 
-			if [ -n "$service_debug_cmd" ] ; then
+			if [ -n "$service_debug_cmd" ]; then
 				$service_debug_cmd 2>&1 >>"$_out"
 			fi
 
@@ -331,18 +333,18 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 	rm -f "$_out" "$_rc_file"
 }
 
-program_stack_traces ()
+program_stack_traces()
 {
 	_prog="$1"
 	_max="${2:-1}"
 
 	_count=1
-	if [ "$_prog" = "nfsd" ] ; then
+	if [ "$_prog" = "nfsd" ]; then
 		_pids="$FAKE_NFSD_THREAD_PIDS"
 	else
 		_pids="$FAKE_RPC_THREAD_PIDS"
 	fi
-	for _pid in $_pids ; do
+	for _pid in $_pids; do
 		[ $_count -le $_max ] || break
 
 		program_stack_trace "$_prog" "$_pid"
@@ -373,11 +375,11 @@ program_stack_traces ()
 #   These arguments can allow a service to be started or stopped
 #   before a particular iteration.
 #
-nfs_iterate_test ()
+nfs_iterate_test()
 {
 	_repeats="$1"
 	_rpc_service="$2"
-	if [ -n "$2" ] ; then
+	if [ -n "$2" ]; then
 		shift 2
 	else
 		shift
@@ -386,10 +388,10 @@ nfs_iterate_test ()
 	echo "Running $_repeats iterations of \"$script $event\" $args"
 
 	_iterate_failcount=0
-	for _iteration in $(seq 1 $_repeats) ; do
+	for _iteration in $(seq 1 $_repeats); do
 		# This is not a numerical comparison because $1 will
 		# often not be set.
-		if [ "$_iteration" = "$1" ] ; then
+		if [ "$_iteration" = "$1" ]; then
 			debug <<EOF
 ##################################################
 EOF
@@ -399,20 +401,20 @@ EOF
 EOF
 			shift 2
 		fi
-		if [ -n "$_rpc_service" ] ; then
+		if [ -n "$_rpc_service" ]; then
 			_ok=false
-			if [ -n "$service_check_cmd" ] ; then
-				if eval "$service_check_cmd" ; then
+			if [ -n "$service_check_cmd" ]; then
+				if eval "$service_check_cmd"; then
 					_ok=true
 				fi
 			else
 				if rpcinfo -T tcp localhost "$_rpc_service" \
-					   >/dev/null 2>&1 ; then
+					>/dev/null 2>&1; then
 					_ok=true
 				fi
 			fi
 
-			if $_ok ; then
+			if $_ok; then
 				_iterate_failcount=0
 			else
 				_iterate_failcount=$(($_iterate_failcount + 1))
@@ -422,14 +424,14 @@ EOF
 		fi
 		_out=$(simple_test 2>&1)
 		_ret=$?
-		if "$CTDB_TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
+		if "$CTDB_TEST_VERBOSE" || [ $_ret -ne 0 ]; then
 			cat <<EOF
 ##################################################
 Iteration ${_iteration}:
 $_out
 EOF
 		fi
-		if [ $_ret -ne 0 ] ; then
+		if [ $_ret -ne 0 ]; then
 			exit $_ret
 		fi
 	done

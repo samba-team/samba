@@ -1,4 +1,4 @@
-setup ()
+setup()
 {
 	_ip="$1"
 	_iface="$2"
@@ -21,7 +21,7 @@ EOF
 
 	# Read from stdin
 	_pnn=0
-	while read _ip _opts ; do
+	while read _ip _opts; do
 		case "$_opts" in
 		leader)
 			FAKE_CTDB_LVS_LEADER="$_pnn"
@@ -38,9 +38,9 @@ EOF
 	done >"$CTDB_LVS_NODES"
 }
 
-check_ipvsadm ()
+check_ipvsadm()
 {
-	if [ "$1" = "NULL" ] ; then
+	if [ "$1" = "NULL" ]; then
 		required_result 0 <<EOF
 $lvs_header
 EOF
@@ -54,11 +54,11 @@ EOF
 	simple_test_command ipvsadm -l -n
 }
 
-check_lvs_ip ()
+check_lvs_ip()
 {
 	_scope="$1"
 
-	if [ "$_scope" = "NULL" ] ; then
+	if [ "$_scope" = "NULL" ]; then
 		required_result 0 <<EOF
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00

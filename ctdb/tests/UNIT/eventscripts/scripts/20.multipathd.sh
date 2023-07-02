@@ -1,16 +1,17 @@
-setup ()
+setup()
 {
 	_failures=""
 	_devices=""
-	for i ; do
+	for i; do
 		case "$i" in
 		\!*)
 			_t="${i#!}"
 			echo "Marking ${_t} as having no active paths"
 			_failures="${_failures}${_failures:+ }${_t}"
-		;;
+			;;
 		*)
 			_t="$i"
+			;;
 		esac
 		_devices="${_devices}${_devices:+ }${_t}"
 	done

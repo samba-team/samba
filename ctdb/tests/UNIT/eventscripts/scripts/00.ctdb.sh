@@ -1,4 +1,4 @@
-setup ()
+setup()
 {
 	setup_dbdir
 	setup_date
@@ -15,7 +15,7 @@ setup ()
 	       "
 }
 
-result_filter ()
+result_filter()
 {
 	_date="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"
 	_time="[0-9][0-9][0-9][0-9][0-9][0-9]"

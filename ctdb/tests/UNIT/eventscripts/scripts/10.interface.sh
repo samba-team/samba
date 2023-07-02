@@ -1,9 +1,9 @@
-setup ()
+setup()
 {
 	setup_public_addresses
 }
 
-_tcp_connections ()
+_tcp_connections()
 {
 	_count="$1"
 	_sip="$2"
@@ -14,7 +14,7 @@ _tcp_connections ()
 	_cip_prefix="${_cip_base%.*}"
 	_cip_suffix="${_cip_base##*.}"
 
-	for _i in $(seq 1 $_count) ; do
+	for _i in $(seq 1 $_count); do
 		_cip_last=$((_cip_suffix + _i))
 		_cip="${_cip_prefix}.${_cip_last}"
 		_cport=$((_cport_base + _i))
@@ -22,14 +22,14 @@ _tcp_connections ()
 	done
 }
 
-setup_tcp_connections ()
+setup_tcp_connections()
 {
 	_t="${FAKE_NETWORK_STATE}/tcp-established"
 	export FAKE_NETSTAT_TCP_ESTABLISHED_FILE="$_t"
 	_tcp_connections "$@" >"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
 }
 
-setup_tcp_connections_unkillable ()
+setup_tcp_connections_unkillable()
 {
 	# These connections are listed by the "ss" stub but are not
 	# killed by the "ctdb killtcp" stub.  So killing these
@@ -44,7 +44,7 @@ setup_tcp_connections_unkillable ()
 
 # arg1 is interface name, arg2 is currently active slave (use "None"
 # if none), arg3 is MII status ("up" or "down").
-setup_bond ()
+setup_bond()
 {
 	_iface="$1"
 	_slave="${2:-${_iface}_sl_0}"

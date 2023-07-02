@@ -1,15 +1,15 @@
-setup ()
+setup()
 {
 	ctdb_set_pnn
 	setup_public_addresses
 	setup_date "123456789"
 }
 
-ctdb_catdb_format_pairs ()
+ctdb_catdb_format_pairs()
 {
 	_count=0
 
-	while read _k _v ; do
+	while read _k _v; do
 		_kn=$(echo -n "$_k" | wc -c)
 		_vn=$(echo -n "$_v" | wc -c)
 		cat <<EOF
@@ -25,11 +25,11 @@ EOF
 	echo "Dumped ${_count} records"
 }
 
-check_ctdb_tdb_statd_state ()
+check_ctdb_tdb_statd_state()
 {
 	ctdb_get_my_public_addresses |
-		while read _x _sip _x ; do
-			for _cip ; do
+		while read _x _sip _x; do
+			for _cip; do
 				cat <<EOF
 statd-state@${_sip}@${_cip} $(date)
 EOF
@@ -41,7 +41,7 @@ EOF
 	} || exit $?
 }
 
-check_statd_callout_smnotify ()
+check_statd_callout_smnotify()
 {
 	_state_even=$(( $(date '+%s') / 2 * 2))
 	_state_odd=$(($_state_even + 1))
@@ -49,8 +49,8 @@ check_statd_callout_smnotify ()
 	nfs_load_config
 
 	ctdb_get_my_public_addresses |
-		while read _x _sip _x ; do
-			for _cip ; do
+		while read _x _sip _x; do
+			for _cip; do
 				cat <<EOF
 SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${_sip}, STATE=${_state_even}
 SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state_even}

@@ -1,4 +1,4 @@
-setup ()
+setup()
 {
 	debug "Setting up NAT gateway"
 
@@ -9,10 +9,10 @@ setup ()
 
 # A separate function for this makes sense because it can be done
 # multiple times per test
-setup_ctdb_natgw ()
+setup_ctdb_natgw()
 {
 	# Read from stdin
-	while read _ip _opts ; do
+	while read _ip _opts; do
 		case "$_opts" in
 		leader)
 			export FAKE_CTDB_NATGW_LEADER="$_ip"
@@ -43,11 +43,11 @@ CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
 EOF
 }
 
-ok_natgw_leader_ip_addr_show ()
+ok_natgw_leader_ip_addr_show()
 {
 	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" |
-	       cksum |
-	       sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
+		cksum |
+		sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
 
 	# This is based on CTDB_NATGW_PUBLIC_IP
 	_brd="10.1.1.255"
@@ -60,11 +60,11 @@ ok_natgw_leader_ip_addr_show ()
 EOF
 }
 
-ok_natgw_follower_ip_addr_show ()
+ok_natgw_follower_ip_addr_show()
 {
 	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" |
-	       cksum |
-	       sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
+		cksum |
+		sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
 
 	ok <<EOF
 1: ${CTDB_NATGW_PUBLIC_IFACE}: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
@@ -72,12 +72,12 @@ ok_natgw_follower_ip_addr_show ()
 EOF
 }
 
-ok_natgw_leader_static_routes ()
+ok_natgw_leader_static_routes()
 {
 	_nl="
 "
 	_t=""
-	for _i in $CTDB_NATGW_STATIC_ROUTES ; do
+	for _i in $CTDB_NATGW_STATIC_ROUTES; do
 		# This is intentionally different to the code in 11.natgw ;-)
 		case "$_i" in
 		*@*)
@@ -87,6 +87,7 @@ ok_natgw_leader_static_routes ()
 		*)
 			_net="$_i"
 			_gw="$CTDB_NATGW_DEFAULT_GATEWAY"
+			;;
 		esac
 
 		[ -n "$_gw" ] || continue
@@ -97,12 +98,12 @@ ok_natgw_leader_static_routes ()
 	ok "$_t"
 }
 
-ok_natgw_follower_static_routes ()
+ok_natgw_follower_static_routes()
 {
 	_nl="
 "
 	_t=""
-	for _i in $CTDB_NATGW_STATIC_ROUTES ; do
+	for _i in $CTDB_NATGW_STATIC_ROUTES; do
 		# This is intentionally different to the code in 11.natgw ;-)
 		_net=$(echo "$_i" | sed -e 's|@.*||')
 

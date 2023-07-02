@@ -1,16 +1,16 @@
-set_mem_usage ()
+set_mem_usage()
 {
 	_mem_usage="${1:-10}" # Default is 10%
 	_swap_usage="${2:-0}" # Default is  0%
 
 	_swap_total=5857276
-	_swap_free=$(( (100 - $_swap_usage) * $_swap_total / 100 ))
+	_swap_free=$(((100 - $_swap_usage) * $_swap_total / 100))
 
 	_mem_total=3940712
 	_mem_free=225268
 	_mem_buffers=146120
-	_mem_cached=$(( $_mem_total * (100 - $_mem_usage) / 100 -
-			$_mem_free - $_mem_buffers ))
+	_mem_cached=$(($_mem_total * (100 - $_mem_usage) / 100 - \
+		$_mem_free - $_mem_buffers))
 
 	export FAKE_PROC_MEMINFO="\
 MemTotal:        ${_mem_total} kB
@@ -31,12 +31,12 @@ SwapFree:        ${_swap_free} kB
 ..."
 }
 
-set_fs_usage ()
+set_fs_usage()
 {
-	export FAKE_FS_USE="${1:-10}"  # Default is 10% usage
+	export FAKE_FS_USE="${1:-10}" # Default is 10% usage
 }
 
-setup ()
+setup()
 {
 	setup_dbdir
 
