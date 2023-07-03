@@ -548,6 +548,12 @@ static int traverse_connections(const struct connections_data *crec,
 		case SMB2_ENCRYPTION_AES128_GCM:
 			encryption = "AES-128-GCM";
 			break;
+		case SMB2_ENCRYPTION_AES256_CCM:
+			encryption = "AES-256-CCM";
+			break;
+		case SMB2_ENCRYPTION_AES256_GCM:
+			encryption = "AES-256-GCM";
+			break;
 		default:
 			encryption = "???";
 			break;
