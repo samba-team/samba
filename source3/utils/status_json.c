@@ -258,6 +258,8 @@ static int add_crypto_to_json(struct json_object *parent_json,
 
 	if (degree == CRYPTO_DEGREE_NONE) {
 		degree_str = "none";
+	} else if (degree == CRYPTO_DEGREE_ANONYMOUS) {
+		degree_str = "anonymous";
 	} else if (degree == CRYPTO_DEGREE_PARTIAL) {
 		degree_str = "partial";
 	} else {
