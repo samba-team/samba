@@ -139,6 +139,8 @@ monitor_filesystem_usage()
 	done
 }
 
+# shellcheck disable=SC2317
+# Called indirectly via check_thresholds()
 dump_memory_info()
 {
 	get_proc "meminfo"

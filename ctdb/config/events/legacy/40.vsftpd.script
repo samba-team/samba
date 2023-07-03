@@ -10,7 +10,9 @@ service_name="vsftpd"
 
 service_reconfigure ()
 {
-    service $service_name restart
+	# shellcheck disable=SC2317
+	# Called indirectly via ctdb_service_reconfigure()
+	service "$service_name" restart
 }
 
 load_script_options

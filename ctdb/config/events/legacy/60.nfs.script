@@ -19,6 +19,8 @@ ctdb_setup_state_dir "service" "$service_name"
 service_reconfigure ()
 {
     # Restart lock manager, notify clients
+    # shellcheck disable=SC2317
+    # Called indirectly via check_thresholds()
     if [ -x "${CTDB_BASE}/statd-callout" ] ; then
 	"${CTDB_BASE}/statd-callout" notify &
     fi >/dev/null 2>&1
