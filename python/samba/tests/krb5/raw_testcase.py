@@ -3995,30 +3995,16 @@ class RawKerberosTest(TestCase):
             if self.strict_checking:
                 self.assertIsNone(s2kparams)
 
-    def check_rep_padata(self,
-                         kdc_exchange_dict,
-                         callback_dict,
-                         rep_padata,
-                         error_code):
-        rep_msg_type = kdc_exchange_dict['rep_msg_type']
+    @staticmethod
+    def greatest_common_etype(etypes, proposed_etypes):
+        return max(filter(lambda e: e in etypes, proposed_etypes),
+                   default=None)
 
-        req_body = kdc_exchange_dict['req_body']
-        proposed_etypes = req_body['etype']
-
-        sent_fast = self.sent_fast(kdc_exchange_dict)
-        sent_enc_challenge = self.sent_enc_challenge(kdc_exchange_dict)
-
-        if rep_msg_type == KRB_TGS_REP:
-            self.assertTrue(sent_fast)
-
-        rc4_support = kdc_exchange_dict['rc4_support']
-
-        def expected_etype(etypes, proposed_etypes):
-            return max(filter(lambda e: e in etypes, proposed_etypes),
-                       default=None)
-
+    def supported_aes_rc4_etypes(self, kdc_exchange_dict):
         creds = kdc_exchange_dict['creds']
         supported_etypes = self.get_default_enctypes(creds)
+
+        rc4_support = kdc_exchange_dict['rc4_support']
 
         aes_etypes = set()
         if kcrypto.Enctype.AES256 in supported_etypes:
@@ -4030,8 +4016,36 @@ class RawKerberosTest(TestCase):
         if rc4_support and kcrypto.Enctype.RC4 in supported_etypes:
             rc4_etypes.add(kcrypto.Enctype.RC4)
 
-        expected_aes = expected_etype(aes_etypes, proposed_etypes)
-        expected_rc4 = expected_etype(rc4_etypes, proposed_etypes)
+        return aes_etypes, rc4_etypes
+
+    def greatest_aes_rc4_etypes(self, kdc_exchange_dict):
+        req_body = kdc_exchange_dict['req_body']
+        proposed_etypes = req_body['etype']
+
+        aes_etypes, rc4_etypes = self.supported_aes_rc4_etypes(kdc_exchange_dict)
+
+        expected_aes = self.greatest_common_etype(aes_etypes, proposed_etypes)
+        expected_rc4 = self.greatest_common_etype(rc4_etypes, proposed_etypes)
+
+        return expected_aes, expected_rc4
+
+    def check_rep_padata(self,
+                         kdc_exchange_dict,
+                         callback_dict,
+                         rep_padata,
+                         error_code):
+        rep_msg_type = kdc_exchange_dict['rep_msg_type']
+
+        sent_fast = self.sent_fast(kdc_exchange_dict)
+        sent_enc_challenge = self.sent_enc_challenge(kdc_exchange_dict)
+
+        if rep_msg_type == KRB_TGS_REP:
+            self.assertTrue(sent_fast)
+
+        rc4_support = kdc_exchange_dict['rc4_support']
+
+        expected_aes, expected_rc4 = self.greatest_aes_rc4_etypes(
+            kdc_exchange_dict)
 
         expect_etype_info2 = ()
         expect_etype_info = False
