@@ -86,8 +86,9 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 				 uint8_t chal[8])
 {
 	if (auth_context->challenge.length) {
-		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n",
-			  auth_context->challenge_set_by));
+		DBG_INFO("get_ntlm_challenge (auth subsystem): returning "
+			 "previous challenge by module %s (normal)\n",
+			  auth_context->challenge_set_by);
 		memcpy(chal, auth_context->challenge.data, 8);
 		return NT_STATUS_OK;
 	}
@@ -198,11 +199,16 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 	*pauthoritative = 1;
 
-	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n",
-		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
+	DBG_NOTICE("check_ntlm_password:  Checking password for unmapped user "
+		   "[%s]\\[%s]@[%s] with the new password interface\n",
+		   user_info->client.domain_name,
+		   user_info->client.account_name,
+		   user_info->workstation_name);
 
-	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n",
-		  user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
+	DBG_NOTICE("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n",
+		   user_info->mapped.domain_name,
+		   user_info->mapped.account_name,
+		   user_info->workstation_name);
 
 	if (auth_context->challenge.length != 8) {
 		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));
