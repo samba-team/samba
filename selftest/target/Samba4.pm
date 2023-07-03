@@ -938,6 +938,7 @@ nogroup:x:65534:nobody
                 GID_RFC2307TEST => $gid_rfc2307test,
                 SERVER_ROLE => $ctx->{server_role},
 	        RESOLV_CONF => $ctx->{resolv_conf},
+		KRB5_CRL_FILE => $crlfile,
 	};
 
 	if (defined($ctx->{use_resolv_wrapper})) {

@@ -196,6 +196,7 @@ sub prepare_keyblobs($)
 
 	my $cadir = "$ENV{SRCDIR_ABS}/selftest/manage-ca/CA-samba.example.com";
 	my $cacert = "$cadir/Public/CA-samba.example.com-cert.pem";
+	# A file containing a CRL with no revocations.
 	my $cacrl_pem = "$cadir/Public/CA-samba.example.com-crl.pem";
 	my $dcdnsname = "$ctx->{hostname}.$ctx->{dnsname}";
 	my $dcdir = "$cadir/DCs/$dcdnsname";
@@ -382,6 +383,7 @@ sub mk_krb5_conf($$)
 	enable-pkinit = true
 	pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
 	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+	pkinit_revoke = FILE:$ctx->{tlsdir}/crl.pem
 
 ";
 		}
@@ -963,6 +965,7 @@ my @exported_envvars = (
 	"UNACCEPTABLE_PASSWORD",
 	"LOCK_DIR",
 	"SMBD_TEST_LOG",
+	"KRB5_CRL_FILE",
 
 	# nss_wrapper
 	"NSS_WRAPPER_PASSWD",

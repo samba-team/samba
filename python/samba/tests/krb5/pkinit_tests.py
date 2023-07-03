@@ -40,6 +40,7 @@ from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.raw_testcase import PkInit
 from samba.tests.krb5.rfc4120_constants import (
     DES_EDE3_CBC,
+    KDC_ERR_CLIENT_NOT_TRUSTED,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_MODIFIED,
     KDC_ERR_PREAUTH_EXPIRED,
@@ -550,6 +551,40 @@ class PkInitTests(KDCBaseTest):
                          freshness_token=b'',
                          expect_error=KDC_ERR_MODIFIED)
 
+    def test_pkinit_revoked(self):
+        """Test PK-INIT with a revoked certificate."""
+        client_creds = self._get_creds()
+        target_creds = self.get_service_creds()
+
+        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
+
+        certificate = self.create_certificate(client_creds,
+                                              ca_cert,
+                                              ca_private_key)
+
+        # The initial public-key PK-INIT request should succeed.
+        self._pkinit_req(client_creds, target_creds,
+                         certificate=certificate)
+
+        # The initial Diffie-Hellman PK-INIT request should succeed.
+        self._pkinit_req(client_creds, target_creds,
+                         certificate=certificate,
+                         using_pkinit=PkInit.DIFFIE_HELLMAN)
+
+        # Revoke the client’s certificate.
+        self.revoke_certificate(certificate, ca_cert, ca_private_key)
+
+        # The subsequent public-key PK-INIT request should fail.
+        self._pkinit_req(client_creds, target_creds,
+                         certificate=certificate,
+                         expect_error=KDC_ERR_CLIENT_NOT_TRUSTED)
+
+        # The subsequent Diffie-Hellman PK-INIT request should also fail.
+        self._pkinit_req(client_creds, target_creds,
+                         certificate=certificate,
+                         using_pkinit=PkInit.DIFFIE_HELLMAN,
+                         expect_error=KDC_ERR_CLIENT_NOT_TRUSTED)
+
     def _as_req(self,
                 creds,
                 target_creds,
@@ -850,6 +885,63 @@ class PkInitTests(KDCBaseTest):
         )
 
         return certificate
+
+    def revoke_certificate(self, certificate,
+                           ca_cert,
+                           ca_private_key,
+                           crl_signature=None):
+        if crl_signature is None:
+            crl_signature = hashes.SHA256
+
+        # Read the existing certificate revocation list.
+        crl_path = samba.tests.env_get_var_value('KRB5_CRL_FILE')
+        with open(crl_path, 'rb') as crl_file:
+            crl_data = crl_file.read()
+
+        try:
+            # Get the list of existing revoked certificates.
+            revoked_certs = x509.load_pem_x509_crl(crl_data, default_backend())
+            extensions = revoked_certs.extensions
+        except ValueError:
+            # We couldn’t parse the file. Let’s just create a new CRL from
+            # scratch.
+            revoked_certs = []
+            extensions = []
+
+        # Create a new CRL.
+        builder = x509.CertificateRevocationListBuilder()
+        builder = builder.issuer_name(ca_cert.issuer)
+        builder = builder.last_update(datetime.today())
+        one_day = timedelta(1, 0, 0)
+        builder = builder.next_update(datetime.today() + one_day)
+
+        # Add the existing revoked certificates.
+        for revoked_cert in revoked_certs:
+            builder = builder.add_revoked_certificate(revoked_cert)
+
+        # Add the serial number of the certificate that we’re revoking.
+        revoked_cert = x509.RevokedCertificateBuilder().serial_number(
+            certificate.serial_number
+        ).revocation_date(
+            datetime.today()
+        ).build(default_backend())
+        builder = builder.add_revoked_certificate(revoked_cert)
+
+        # Copy over any extensions from the existing certificate.
+        for extension in extensions:
+            builder = builder.add_extension(extension.value,
+                                            extension.critical)
+
+        # Sign the CRL with the CA’s private key.
+        crl = builder.sign(
+            private_key=ca_private_key, algorithm=crl_signature(),
+            backend=default_backend(),
+        )
+
+        # Write the CRL back out to the file.
+        crl_data = crl.public_bytes(serialization.Encoding.PEM)
+        with open(crl_path, 'wb') as crl_file:
+            crl_file.write(crl_data)
 
     def _pkinit_req(self,
                     creds,

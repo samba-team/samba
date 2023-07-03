@@ -87,6 +87,7 @@
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_supported_cms_types.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_supported_cms_types_dh.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_rc4.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_revoked.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_service.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_service_dh.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_certificate_signature.ad_dc
