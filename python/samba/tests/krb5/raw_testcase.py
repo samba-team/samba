@@ -30,7 +30,7 @@ import math
 from enum import Enum
 from pprint import pprint
 
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import asymmetric, hashes
 from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.backends import default_backend
 
@@ -406,6 +406,8 @@ class KerberosCredentials(Credentials):
         self.sid = None
         self.account_type = None
 
+        self._private_key = None
+
     def set_as_supported_enctypes(self, value):
         self.as_supported_enctypes = int(value)
 
@@ -552,6 +554,20 @@ class KerberosCredentials(Credentials):
     def update_password(self, password):
         self.set_password(password)
         self.set_kvno(self.get_kvno() + 1)
+
+    def get_private_key(self):
+        if self._private_key is None:
+            # Generate a new keypair.
+            self._private_key = asymmetric.rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=2048,
+                backend=default_backend()
+            )
+
+        return self._private_key
+
+    def get_public_key(self):
+        return self.get_private_key().public_key()
 
 
 class KerberosTicketCreds:
