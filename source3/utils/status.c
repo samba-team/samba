@@ -483,9 +483,29 @@ static int traverse_connections_stdout(struct traverse_state *state,
 				       char *server_id,
 				       const char *machine,
 				       const char *timestr,
-				       const char *encryption,
-				       const char *signing)
+				       const char *encryption_cipher,
+				       enum crypto_degree encryption_degree,
+				       const char *signing_cipher,
+				       enum crypto_degree signing_degree)
 {
+	fstring encryption;
+	fstring signing;
+
+	if (encryption_degree == CRYPTO_DEGREE_FULL) {
+		fstr_sprintf(encryption, "%s", encryption_cipher);
+	} else if (encryption_degree == CRYPTO_DEGREE_PARTIAL) {
+		fstr_sprintf(encryption, "partial(%s)", encryption_cipher);
+	} else {
+		fstr_sprintf(encryption, "-");
+	}
+	if (signing_degree == CRYPTO_DEGREE_FULL) {
+		fstr_sprintf(signing, "%s", signing_cipher);
+	} else if (signing_degree == CRYPTO_DEGREE_PARTIAL) {
+		fstr_sprintf(signing, "partial(%s)", signing_cipher);
+	} else {
+		fstr_sprintf(signing, "-");
+	}
+
 	d_printf("%-12s %-7s %-13s %-32s %-12s %-12s\n",
 		 servicename, server_id, machine, timestr, encryption, signing);
 
@@ -538,7 +558,9 @@ static int traverse_connections(const struct connections_data *crec,
 		return -1;
 	}
 
-	if (smbXsrv_is_encrypted(crec->encryption_flags)) {
+	if (smbXsrv_is_encrypted(crec->encryption_flags) ||
+	    smbXsrv_is_partially_encrypted(crec->encryption_flags))
+	{
 		switch (crec->cipher) {
 		case SMB_ENCRYPTION_GSSAPI:
 			encryption = "GSSAPI";
@@ -559,10 +581,16 @@ static int traverse_connections(const struct connections_data *crec,
 			encryption = "???";
 			break;
 		}
-		encryption_degree = CRYPTO_DEGREE_FULL;
+		if (smbXsrv_is_encrypted(crec->encryption_flags)) {
+			encryption_degree = CRYPTO_DEGREE_FULL;
+		} else if (smbXsrv_is_partially_encrypted(crec->encryption_flags)) {
+			encryption_degree = CRYPTO_DEGREE_PARTIAL;
+		}
 	}
 
-	if (smbXsrv_is_signed(crec->signing_flags)) {
+	if (smbXsrv_is_signed(crec->signing_flags) ||
+	    smbXsrv_is_partially_signed(crec->signing_flags))
+	{
 		switch (crec->signing) {
 		case SMB2_SIGNING_MD5_SMB1:
 			signing = "HMAC-MD5";
@@ -580,7 +608,11 @@ static int traverse_connections(const struct connections_data *crec,
 			signing = "???";
 			break;
 		}
-		signing_degree = CRYPTO_DEGREE_FULL;
+		if (smbXsrv_is_signed(crec->signing_flags)) {
+			signing_degree = CRYPTO_DEGREE_FULL;
+		} else if (smbXsrv_is_partially_signed(crec->signing_flags)) {
+			signing_degree = CRYPTO_DEGREE_PARTIAL;
+		}
 	}
 
 	if (!state->json_output) {
@@ -590,7 +622,9 @@ static int traverse_connections(const struct connections_data *crec,
 						     crec->machine,
 						     timestr,
 						     encryption,
-						     signing);
+						     encryption_degree,
+						     signing,
+						     signing_degree);
 	} else {
 		result = traverse_connections_json(state,
 						   crec,
