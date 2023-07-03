@@ -300,8 +300,8 @@ run_tests ()
 			die "test \"$f\" is not recognised"
 		fi
 
-		if $exit_on_fail && [ $status -ne 0 ] ; then
-			return $status
+		if $exit_on_fail && [ "$status" -ne 0 ] ; then
+			return "$status"
 		fi
 	done
 }
@@ -371,7 +371,7 @@ while [ "$max_iterations" -eq 0 ] || [ $iterations -lt "$max_iterations" ] ; do
 done
 
 if $with_summary ; then
-	if [ $status -eq 0 ] || ! $exit_on_fail ; then
+	if [ "$status" -eq 0 ] || ! $exit_on_fail ; then
 		echo
 		cat "$summary_file"
 
@@ -391,7 +391,7 @@ echo
 do_cleanup
 
 if $no_header || $exit_on_fail ; then
-    exit $status
+    exit "$status"
 elif [ $tests_failed -gt 0 ] ; then
     exit 1
 else

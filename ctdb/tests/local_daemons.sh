@@ -193,7 +193,7 @@ local_daemons_setup ()
 	else
 		setup_public_addresses "$_num_nodes" \
 				       $_node_no_ips \
-				       $_use_ipv6 >"$_public_addresses_all"
+				       "$_use_ipv6" >"$_public_addresses_all"
 	fi
 
 	_cluster_lock_dir="${directory}/shared/.ctdb"
@@ -226,7 +226,7 @@ local_daemons_setup ()
 		_public_addresses="${CTDB_BASE}/public_addresses"
 
 		if  [ -z "$_public_addresses_file" ] && \
-			    [ $_node_no_ips -eq "$_n" ] ; then
+			    [ "$_node_no_ips" -eq "$_n" ] ; then
 			echo "Node ${_n} will have no public IPs."
 			: >"$_public_addresses"
 		else
