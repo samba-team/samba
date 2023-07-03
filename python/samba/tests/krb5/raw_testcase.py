@@ -4362,6 +4362,10 @@ class RawKerberosTest(TestCase):
         if expect_requester_sid:
             expected_types.append(krb5pac.PAC_TYPE_REQUESTER_SID)
 
+        sent_pk_as_req = self.sent_pk_as_req(kdc_exchange_dict)
+        if sent_pk_as_req:
+            expected_types.append(krb5pac.PAC_TYPE_CREDENTIAL_INFO)
+
         buffer_types = [pac_buffer.type
                         for pac_buffer in pac.buffers]
         self.assertSequenceElementsEqual(
@@ -4592,6 +4596,48 @@ class RawKerberosTest(TestCase):
                 device_info = pac_buffer.info.info
 
                 self.check_device_info(device_info, kdc_exchange_dict)
+
+            elif pac_buffer.type == krb5pac.PAC_TYPE_CREDENTIAL_INFO:
+                credential_info = pac_buffer.info
+
+                expected_etype = self.expected_etype(kdc_exchange_dict)
+
+                self.assertEqual(0, credential_info.version)
+                self.assertEqual(expected_etype,
+                                 credential_info.encryption_type)
+
+                encrypted_data = credential_info.encrypted_data
+                reply_key = kdc_exchange_dict['reply_key']
+
+                data = reply_key.decrypt(KU_NON_KERB_SALT, encrypted_data)
+
+                credential_data_ndr = ndr_unpack(
+                    krb5pac.PAC_CREDENTIAL_DATA_NDR, data)
+
+                credential_data = credential_data_ndr.ctr.data
+
+                self.assertEqual(1, credential_data.credential_count)
+                self.assertEqual(credential_data.credential_count,
+                                 len(credential_data.credentials))
+
+                package = credential_data.credentials[0]
+                self.assertEqual('NTLM', str(package.package_name))
+
+                ntlm_blob = bytes(package.credential)
+
+                ntlm_package = ndr_unpack(krb5pac.PAC_CREDENTIAL_NTLM_SECPKG,
+                                          ntlm_blob)
+
+                self.assertEqual(0, ntlm_package.version)
+                self.assertEqual(krb5pac.PAC_CREDENTIAL_NTLM_HAS_NT_HASH,
+                                 ntlm_package.flags)
+
+                creds = kdc_exchange_dict['creds']
+                nt_password = bytes(ntlm_package.nt_password.hash)
+                self.assertEqual(creds.get_nt_hash(), nt_password)
+
+                lm_password = bytes(ntlm_package.lm_password.hash)
+                self.assertEqual(bytes(16), lm_password)
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
