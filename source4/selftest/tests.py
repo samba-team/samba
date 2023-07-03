@@ -1212,6 +1212,22 @@ check_padata = int('SAMBA4_USES_HEIMDAL' in config_hash)
 expect_nt_status = int('SAMBA4_USES_HEIMDAL' in config_hash)
 as_req_logging_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 tgs_req_logging_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
+
+ca_dir = os.path.join('selftest', 'manage-ca', 'CA-samba.example.com')
+
+# This certificate is currently used just to get the name of the certificate
+# issuer.
+ca_cert_path = os.path.join(ca_dir,
+                            'DCs',
+                            'addc.addom.samba.example.com',
+                            'DC-addc.addom.samba.example.com-cert.pem')
+
+# The private key is used to issue new certificates.
+ca_private_key_path = os.path.join(ca_dir,
+                                   'Private',
+                                   'CA-samba.example.com-private-key.pem')
+ca_pass = '1234'
+
 krb5_environ = {
     'SERVICE_USERNAME': '$SERVER',
     'ADMIN_USERNAME': '$DC_USERNAME',
@@ -1232,6 +1248,9 @@ krb5_environ = {
     'EXPECT_NT_STATUS': expect_nt_status,
     'AS_REQ_LOGGING_SUPPORT': as_req_logging_support,
     'TGS_REQ_LOGGING_SUPPORT': tgs_req_logging_support,
+    'CA_CERT': ca_cert_path,
+    'CA_PRIVATE_KEY': ca_private_key_path,
+    'CA_PASS': ca_pass,
 }
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("none", "samba.tests.krb5.claims_in_pac")
@@ -1993,6 +2012,10 @@ for env, forced_rc4 in [('ad_dc', False),
 planoldpythontestsuite(
     'ad_dc',
     'samba.tests.krb5.authn_policy_tests',
+    environ=krb5_environ)
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.pkinit_tests',
     environ=krb5_environ)
 
 for env in [

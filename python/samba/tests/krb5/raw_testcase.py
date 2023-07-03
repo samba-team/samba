@@ -30,8 +30,9 @@ import math
 from enum import Enum
 from pprint import pprint
 
+from cryptography import x509
 from cryptography.hazmat.primitives import asymmetric, hashes
-from cryptography.hazmat.primitives.ciphers import algorithms
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
 from pyasn1.codec.der.decoder import decode as pyasn1_der_decode
@@ -88,6 +89,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_FAST_REQ_CHKSUM,
     KU_KRB_PRIV,
     KU_NON_KERB_CKSUM_SALT,
+    KU_NON_KERB_SALT,
+    KU_PKINIT_AS_REQ,
     KU_TGS_REP_ENC_PART_SESSION,
     KU_TGS_REP_ENC_PART_SUB_KEY,
     KU_TGS_REQ_AUTH,
@@ -111,6 +114,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PAC_OPTIONS,
     PADATA_PAC_REQUEST,
     PADATA_PKINIT_KX,
+    PADATA_PK_AS_REP,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
     PADATA_SUPPORTED_ETYPES,
@@ -590,6 +594,12 @@ class KerberosTicketCreds:
     def set_sname(self, sname):
         self.ticket['sname'] = sname
         self.sname = sname
+
+
+class PkInit(Enum):
+    NOT_USED = object()
+    PUBLIC_KEY = object()
+    DIFFIE_HELLMAN = object()
 
 
 class RawKerberosTest(TestCase):
@@ -2909,6 +2919,7 @@ class RawKerberosTest(TestCase):
 
     def as_exchange_dict(self,
                          creds=None,
+                         client_cert=None,
                          expected_crealm=None,
                          expected_cname=None,
                          expected_anon=False,
@@ -2955,6 +2966,8 @@ class RawKerberosTest(TestCase):
                          ap_options=None,
                          fast_ap_options=None,
                          strict_edata_checking=True,
+                         using_pkinit=PkInit.NOT_USED,
+                         pk_nonce=None,
                          expect_edata=None,
                          expect_pac=True,
                          expect_client_claims=None,
@@ -2984,6 +2997,7 @@ class RawKerberosTest(TestCase):
             'rep_asn1Spec': krb5_asn1.AS_REP,
             'rep_encpart_asn1Spec': krb5_asn1.EncASRepPart,
             'creds': creds,
+            'client_cert': client_cert,
             'expected_crealm': expected_crealm,
             'expected_cname': expected_cname,
             'expected_anon': expected_anon,
@@ -3030,6 +3044,8 @@ class RawKerberosTest(TestCase):
             'ap_options': ap_options,
             'fast_ap_options': fast_ap_options,
             'strict_edata_checking': strict_edata_checking,
+            'using_pkinit': using_pkinit,
+            'pk_nonce': pk_nonce,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_client_claims': expect_client_claims,
@@ -3283,9 +3299,355 @@ class RawKerberosTest(TestCase):
         encpart_decryption_key, encpart_decryption_usage = (
             self.get_preauth_key(kdc_exchange_dict))
 
-        if armor_key is not None:
-            pa_dict = self.get_pa_dict(padata)
+        pa_dict = self.get_pa_dict(padata)
 
+        if PADATA_PK_AS_REP in pa_dict:
+            pk_as_rep = pa_dict[PADATA_PK_AS_REP]
+            pk_as_rep = self.der_decode(pk_as_rep,
+                                        asn1Spec=krb5_asn1.PA_PK_AS_REP())
+
+            using_pkinit = kdc_exchange_dict['using_pkinit']
+            if using_pkinit is PkInit.PUBLIC_KEY:
+                content_info = self.der_decode(
+                    pk_as_rep['encKeyPack'],
+                    asn1Spec=krb5_asn1.ContentInfo())
+                self.assertEqual(str(krb5_asn1.id_envelopedData),
+                                 content_info['contentType'])
+
+                content = self.der_decode(content_info['content'],
+                                          asn1Spec=krb5_asn1.EnvelopedData())
+
+                self.assertEqual(0, content['version'])
+                originator_info = content['originatorInfo']
+                self.assertFalse(originator_info.get('certs'))
+                self.assertFalse(originator_info.get('crls'))
+                self.assertFalse(content.get('unprotectedAttrs'))
+
+                encrypted_content_info = content['encryptedContentInfo']
+                recipient_infos = content['recipientInfos']
+
+                self.assertEqual(1, len(recipient_infos))
+                ktri = recipient_infos[0]['ktri']
+
+                if self.strict_checking:
+                    self.assertEqual(0, ktri['version'])
+
+                private_key = encpart_decryption_key
+                self.assertIsInstance(private_key,
+                                      asymmetric.rsa.RSAPrivateKey)
+
+                client_subject_key_id = (
+                    x509.SubjectKeyIdentifier.from_public_key(
+                        private_key.public_key()))
+
+                # Check that the client certificate is named as the recipient.
+                ktri_rid = ktri['rid']
+                try:
+                    issuer_and_serial_number = ktri_rid[
+                        'issuerAndSerialNumber']
+                except KeyError:
+                    subject_key_id = ktri_rid['subjectKeyIdentifier']
+                    self.assertEqual(subject_key_id,
+                                     client_subject_key_id.digest)
+                else:
+                    client_certificate = kdc_exchange_dict['client_cert']
+
+                    self.assertIsNotNone(issuer_and_serial_number['issuer'])
+                    self.assertEqual(issuer_and_serial_number['serialNumber'],
+                                     client_certificate.serial_number)
+
+                key_encryption_algorithm = ktri['keyEncryptionAlgorithm']
+                self.assertEqual(str(krb5_asn1.rsaEncryption),
+                                 key_encryption_algorithm['algorithm'])
+                if self.strict_checking:
+                    self.assertEqual(
+                        b'\x05\x00',
+                        key_encryption_algorithm.get('parameters'))
+
+                encrypted_key = ktri['encryptedKey']
+
+                # Decrypt the key.
+                pad_len = 256 - len(encrypted_key)
+                if pad_len:
+                    encrypted_key = bytes(pad_len) + encrypted_key
+                decrypted_key = private_key.decrypt(
+                    encrypted_key,
+                    padding=asymmetric.padding.PKCS1v15())
+
+                self.assertEqual(str(krb5_asn1.id_signedData),
+                                 encrypted_content_info['contentType'])
+
+                encrypted_content = encrypted_content_info['encryptedContent']
+                encryption_algorithm = encrypted_content_info[
+                    'contentEncryptionAlgorithm']
+
+                cipher_algorithm = self.cipher_from_algorithm(encryption_algorithm['algorithm'])
+
+                # This will serve as the IV.
+                parameters = self.der_decode(
+                    encryption_algorithm['parameters'],
+                    asn1Spec=krb5_asn1.CMSCBCParameter())
+
+                # Decrypt the content.
+                cipher = Cipher(cipher_algorithm(decrypted_key),
+                                modes.CBC(parameters),
+                                default_backend())
+                decryptor = cipher.decryptor()
+                decrypted_content = decryptor.update(encrypted_content)
+                decrypted_content += decryptor.finalize()
+
+                # The padding doesn’t fully comply to PKCS7 with a specified
+                # blocksize, so we must unpad the data ourselves.
+                decrypted_content = self.unpad(decrypted_content)
+
+                signed_data = None
+                signed_data_rfc2315 = None
+
+                first_tag = decrypted_content[0]
+                if first_tag == 0x30:  # ASN.1 SEQUENCE tag
+                    signed_data = decrypted_content
+                else:
+                    # Windows encodes the ASN.1 incorrectly, neglecting to add
+                    # the SEQUENCE tag. We’ll have to prepend it ourselves in
+                    # order for the decoding to work.
+                    encoded_len = self.asn1_length(decrypted_content)
+                    decrypted_content = bytes([0x30]) + encoded_len + (
+                        decrypted_content)
+
+                    if first_tag == 0x02:  # ASN.1 INTEGER tag
+
+                        # The INTEGER tag indicates that the data is encoded
+                        # with the earlier variant of the SignedData ASN.1
+                        # schema specified in RFC2315, as per [MS-PKCA] 2.2.4
+                        # (PA-PK-AS-REP).
+                        signed_data_rfc2315 = decrypted_content
+
+                    elif first_tag == 0x06:  # ASN.1 OBJECT IDENTIFIER tag
+
+                        # The OBJECT IDENTIFIER tag indicates that the data is
+                        # encoded as SignedData and wrapped in a ContentInfo
+                        # structure, which we shall have to decode first. This
+                        # seems to be the case when the supportedCMSTypes field
+                        # in the client’s AuthPack is missing or empty.
+
+                        content_info = self.der_decode(
+                            decrypted_content,
+                            asn1Spec=krb5_asn1.ContentInfo())
+                        self.assertEqual(str(krb5_asn1.id_signedData),
+                                         content_info['contentType'])
+                        signed_data = content_info['content']
+                    else:
+                        self.fail(f'got reply with unknown initial tag '
+                                  f'({first_tag})')
+
+                if signed_data is not None:
+                    signed_data = self.der_decode(
+                        signed_data, asn1Spec=krb5_asn1.SignedData())
+
+                    encap_content_info = signed_data['encapContentInfo']
+
+                    content_type = encap_content_info['eContentType']
+                    content = encap_content_info['eContent']
+                elif signed_data_rfc2315 is not None:
+                    signed_data = self.der_decode(
+                        signed_data_rfc2315,
+                        asn1Spec=krb5_asn1.SignedData_RFC2315())
+
+                    encap_content_info = signed_data['contentInfo']
+
+                    content_type = encap_content_info['contentType']
+                    content = self.der_decode(
+                        encap_content_info['content'],
+                        asn1Spec=pyasn1.type.univ.OctetString())
+                else:
+                    self.fail('we must have got SignedData')
+
+                self.assertEqual(str(krb5_asn1.id_pkinit_rkeyData),
+                                 content_type)
+                reply_key_pack = self.der_decode(
+                    content, asn1Spec=krb5_asn1.ReplyKeyPack())
+
+                as_checksum = reply_key_pack['asChecksum']
+
+                req_obj = kdc_exchange_dict['req_obj']
+                req_asn1Spec = kdc_exchange_dict['req_asn1Spec']
+                req_obj = self.der_encode(req_obj,
+                                          asn1Spec=req_asn1Spec())
+
+                reply_key = reply_key_pack['replyKey']
+
+                # Reply the encpart decryption key with the decrypted key from
+                # the reply.
+                encpart_decryption_key = self.SessionKey_create(
+                    etype=reply_key['keytype'],
+                    contents=reply_key['keyvalue'],
+                    kvno=None)
+
+                # Verify the checksum over the AS request body.
+                kcrypto.verify_checksum(as_checksum['cksumtype'],
+                                        encpart_decryption_key.key,
+                                        KU_PKINIT_AS_REQ,
+                                        req_obj,
+                                        as_checksum['checksum'])
+            elif using_pkinit is PkInit.DIFFIE_HELLMAN:
+                content_info = self.der_decode(
+                    pk_as_rep['dhInfo']['dhSignedData'],
+                    asn1Spec=krb5_asn1.ContentInfo())
+                self.assertEqual(str(krb5_asn1.id_signedData),
+                                 content_info['contentType'])
+
+                signed_data = self.der_decode(content_info['content'],
+                                              asn1Spec=krb5_asn1.SignedData())
+
+                encap_content_info = signed_data['encapContentInfo']
+                content = encap_content_info['eContent']
+
+                self.assertEqual(str(krb5_asn1.id_pkinit_DHKeyData),
+                                 encap_content_info['eContentType'])
+
+                dh_key_info = self.der_decode(
+                    content, asn1Spec=krb5_asn1.KDCDHKeyInfo())
+
+                self.assertNotIn('dhKeyExpiration', dh_key_info)
+
+                dh_private_key = encpart_decryption_key
+                self.assertIsInstance(dh_private_key,
+                                      asymmetric.dh.DHPrivateKey)
+
+                self.assertElementEqual(dh_key_info, 'nonce',
+                                        kdc_exchange_dict['pk_nonce'])
+
+                dh_public_key_data = self.bytes_from_bit_string(
+                    dh_key_info['subjectPublicKey'])
+                dh_public_key_decoded = self.der_decode(
+                    dh_public_key_data, asn1Spec=krb5_asn1.DHPublicKey())
+
+                dh_numbers = dh_private_key.parameters().parameter_numbers()
+
+                public_numbers = asymmetric.dh.DHPublicNumbers(
+                    dh_public_key_decoded, dh_numbers)
+                dh_public_key = public_numbers.public_key(default_backend())
+
+                # Perform the Diffie-Hellman key exchange.
+                shared_secret = dh_private_key.exchange(dh_public_key)
+
+                # Pad the shared secret out to the length of ‘p’.
+                p_len = self.length_in_bytes(dh_numbers.p)
+                padding_len = p_len - len(shared_secret)
+                self.assertGreaterEqual(padding_len, 0)
+                padded_shared_secret = bytes(padding_len) + shared_secret
+
+                reply_key_enc_type = self.expected_etype(kdc_exchange_dict)
+
+                # At the moment, we don’t specify a nonce in the request, so we
+                # can assume these are empty.
+                client_nonce = b''
+                server_nonce = b''
+
+                ciphertext = padded_shared_secret + client_nonce + server_nonce
+
+                # Replace the encpart decryption key with the key derived from
+                # the Diffie-Hellman key exchange.
+                encpart_decryption_key = self.octetstring2key(
+                    ciphertext, reply_key_enc_type)
+            else:
+                self.fail(f'invalid value for using_pkinit: {using_pkinit}')
+
+            self.assertEqual(3, signed_data['version'])
+
+            digest_algorithms = signed_data['digestAlgorithms']
+            self.assertEqual(1, len(digest_algorithms))
+            digest_algorithm = digest_algorithms[0]
+            # Ensure the hash algorithm is valid.
+            _ = self.hash_from_algorithm_id(digest_algorithm)
+
+            self.assertFalse(signed_data.get('crls'))
+
+            signer_infos = signed_data['signerInfos']
+            self.assertEqual(1, len(signer_infos))
+            signer_info = signer_infos[0]
+
+            self.assertEqual(1, signer_info['version'])
+
+            # Get the certificate presented by the KDC.
+            kdc_certificates = signed_data['certificates']
+            self.assertEqual(1, len(kdc_certificates))
+            kdc_certificate = self.der_encode(
+                kdc_certificates[0], asn1Spec=krb5_asn1.CertificateChoices())
+            kdc_certificate = x509.load_der_x509_certificate(kdc_certificate,
+                                                             default_backend())
+
+            # Verify that the KDC’s certificate is named as the signer.
+            sid = signer_info['sid']
+            try:
+                issuer_and_serial_number = sid['issuerAndSerialNumber']
+            except KeyError:
+                extension = kdc_certificate.extensions.get_extension_for_oid(
+                    x509.oid.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
+                cert_subject_key_id = extension.value.digest
+                self.assertEqual(sid['subjectKeyIdentifier'], cert_subject_key_id)
+            else:
+                self.assertIsNotNone(issuer_and_serial_number['issuer'])
+                self.assertEqual(issuer_and_serial_number['serialNumber'],
+                                 kdc_certificate.serial_number)
+
+            digest_algorithm = signer_info['digestAlgorithm']
+            digest_hash_fn = self.hash_from_algorithm_id(digest_algorithm)
+
+            signed_attrs = signer_info['signedAttrs']
+            self.assertEqual(2, len(signed_attrs))
+
+            signed_attr0 = signed_attrs[0]
+            self.assertEqual(str(krb5_asn1.id_contentType),
+                             signed_attr0['attrType'])
+            signed_attr0_values = signed_attr0['attrValues']
+            self.assertEqual(1, len(signed_attr0_values))
+            signed_attr0_value = self.der_decode(
+                signed_attr0_values[0],
+                asn1Spec=krb5_asn1.ContentType())
+            if using_pkinit is PkInit.DIFFIE_HELLMAN:
+                self.assertEqual(str(krb5_asn1.id_pkinit_DHKeyData),
+                                 signed_attr0_value)
+            else:
+                self.assertEqual(str(krb5_asn1.id_pkinit_rkeyData),
+                                 signed_attr0_value)
+
+            signed_attr1 = signed_attrs[1]
+            self.assertEqual(str(krb5_asn1.id_messageDigest),
+                             signed_attr1['attrType'])
+            signed_attr1_values = signed_attr1['attrValues']
+            self.assertEqual(1, len(signed_attr1_values))
+            message_digest = self.der_decode(signed_attr1_values[0],
+                                             krb5_asn1.MessageDigest())
+
+            signature_algorithm = signer_info['signatureAlgorithm']
+            hash_fn = self.hash_from_algorithm_id(signature_algorithm)
+
+            # Compute the hash of the content to be signed. With the
+            # Diffie-Hellman key exchange, this signature is over the type
+            # KDCDHKeyInfo; otherwise, it is over the type ReplyKeyPack.
+            digest = hashes.Hash(digest_hash_fn(), default_backend())
+            digest.update(content)
+            digest = digest.finalize()
+
+            # Verify the hash. Note: this is a non–constant time comparison.
+            self.assertEqual(digest, message_digest)
+
+            # Re-encode the attributes ready for verifying the signature.
+            cms_attrs = self.der_encode(signed_attrs,
+                                        asn1Spec=krb5_asn1.CMSAttributes())
+
+            # Verify the signature.
+            kdc_public_key = kdc_certificate.public_key()
+            kdc_public_key.verify(
+                signer_info['signature'],
+                cms_attrs,
+                asymmetric.padding.PKCS1v15(),
+                hash_fn())
+
+            self.assertFalse(signer_info.get('unsignedAttrs'))
+
+        if armor_key is not None:
             if PADATA_FX_FAST in pa_dict:
                 fx_fast_data = pa_dict[PADATA_FX_FAST]
                 fast_response = self.check_fx_fast_data(kdc_exchange_dict,
@@ -3495,8 +3857,11 @@ class RawKerberosTest(TestCase):
                 self.assertElementPresent(encpart_key, 'keyvalue')
                 encpart_session_key = self.EncryptionKey_import(encpart_key)
             self.assertElementPresent(encpart_private, 'last-req')
+            expected_nonce = kdc_exchange_dict.get('pk_nonce')
+            if not expected_nonce:
+                expected_nonce = kdc_exchange_dict['nonce']
             self.assertElementEqual(encpart_private, 'nonce',
-                                    kdc_exchange_dict['nonce'])
+                                    expected_nonce)
             if rep_msg_type == KRB_AS_REP:
                 if self.strict_checking:
                     self.assertElementPresent(encpart_private,
@@ -4361,21 +4726,26 @@ class RawKerberosTest(TestCase):
         expected_patypes = ()
 
         sent_fast = self.sent_fast(kdc_exchange_dict)
+        using_pkinit = kdc_exchange_dict.get('using_pkinit', PkInit.NOT_USED)
         rep_msg_type = kdc_exchange_dict['rep_msg_type']
 
         if sent_fast:
             expected_patypes += (PADATA_FX_FAST,)
         elif rep_msg_type == KRB_AS_REP:
-            chosen_etype = self.getElementValue(encpart, 'etype')
-            self.assertIsNotNone(chosen_etype)
+            if using_pkinit is PkInit.NOT_USED:
+                chosen_etype = self.getElementValue(encpart, 'etype')
+                self.assertIsNotNone(chosen_etype)
 
-            if chosen_etype in {kcrypto.Enctype.AES256,
-                                kcrypto.Enctype.AES128}:
-                expected_patypes += (PADATA_ETYPE_INFO2,)
+                if chosen_etype in {kcrypto.Enctype.AES256,
+                                    kcrypto.Enctype.AES128}:
+                    expected_patypes += (PADATA_ETYPE_INFO2,)
 
-            preauth_key = kdc_exchange_dict['preauth_key']
-            if preauth_key.etype == kcrypto.Enctype.RC4 and rep_padata is None:
-                rep_padata = ()
+                preauth_key = kdc_exchange_dict['preauth_key']
+                self.assertIsInstance(preauth_key, Krb5EncryptionKey)
+                if preauth_key.etype == kcrypto.Enctype.RC4 and rep_padata is None:
+                    rep_padata = ()
+            else:
+                expected_patypes += PADATA_PK_AS_REP,
         elif rep_msg_type == KRB_TGS_REP:
             if expected_patypes == () and rep_padata is None:
                 rep_padata = ()
@@ -4385,7 +4755,9 @@ class RawKerberosTest(TestCase):
 
         self.assertIsNotNone(rep_padata)
         got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
-        self.assertSequenceElementsEqual(expected_patypes, got_patypes)
+        self.assertSequenceElementsEqual(expected_patypes, got_patypes,
+                                         # Windows does not add this.
+                                         unchecked={PADATA_PKINIT_KX})
 
         if len(expected_patypes) == 0:
             return None

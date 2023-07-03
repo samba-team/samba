@@ -33,6 +33,8 @@ DES3_CBC_MD5 = int(
 DES3_CBC_SHA1 = int(
     krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-DES3-CBC-SHA1'))
 
+DES_EDE3_CBC = 15  # des-ede3-cbc-EnvOID — required for Windows PK-INIT.
+
 # Message types
 KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
 KRB_AP_REP = int(krb5_asn1.MessageTypeValues('krb-ap-rep'))
@@ -84,6 +86,8 @@ PADATA_GSS = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-GSS'))
 PADATA_REQ_ENC_PA_REP = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-REQ-ENC-PA-REP'))
+PADATA_AS_FRESHNESS = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-AS-FRESHNESS'))
 
 # Error codes
 KDC_ERR_C_PRINCIPAL_UNKNOWN = 6
@@ -185,6 +189,7 @@ KU_TGS_REQ_AUTH_DAT_SUBKEY = 5
 KU_TGS_REQ_AUTH_CKSUM = 6
 ''' TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator cksum, keyed
     with the tgs session key (section 5.5.1) '''
+KU_PKINIT_AS_REQ = 6
 KU_TGS_REQ_AUTH = 7
 ''' TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator (includes tgs
     authenticator subkey), encrypted with the tgs session key
