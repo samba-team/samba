@@ -319,8 +319,7 @@ ctdb_set_pnn()
 
 ctdb_get_interfaces()
 {
-	# The echo/subshell forces all the output onto 1 line.
-	echo $(ctdb ifaces -X | awk -F'|' 'FNR > 1 {print $2}')
+	ctdb ifaces -X | awk -F'|' 'FNR > 1 {print $2}' | xargs
 }
 
 ctdb_get_1_interface()
