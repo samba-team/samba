@@ -493,6 +493,8 @@ static int traverse_connections_stdout(struct traverse_state *state,
 
 	if (encryption_degree == CRYPTO_DEGREE_FULL) {
 		fstr_sprintf(encryption, "%s", encryption_cipher);
+	} else if (encryption_degree == CRYPTO_DEGREE_ANONYMOUS) {
+		fstr_sprintf(encryption, "anonymous(%s)", encryption_cipher);
 	} else if (encryption_degree == CRYPTO_DEGREE_PARTIAL) {
 		fstr_sprintf(encryption, "partial(%s)", encryption_cipher);
 	} else {
@@ -500,6 +502,8 @@ static int traverse_connections_stdout(struct traverse_state *state,
 	}
 	if (signing_degree == CRYPTO_DEGREE_FULL) {
 		fstr_sprintf(signing, "%s", signing_cipher);
+	} else if (signing_degree == CRYPTO_DEGREE_ANONYMOUS) {
+		fstr_sprintf(signing, "anonymous(%s)", signing_cipher);
 	} else if (signing_degree == CRYPTO_DEGREE_PARTIAL) {
 		fstr_sprintf(signing, "partial(%s)", signing_cipher);
 	} else {
@@ -586,6 +590,11 @@ static int traverse_connections(const struct connections_data *crec,
 		} else if (smbXsrv_is_partially_encrypted(crec->encryption_flags)) {
 			encryption_degree = CRYPTO_DEGREE_PARTIAL;
 		}
+		if (encryption_degree != CRYPTO_DEGREE_NONE &&
+		    !crec->authenticated)
+		{
+			encryption_degree = CRYPTO_DEGREE_ANONYMOUS;
+		}
 	}
 
 	if (smbXsrv_is_signed(crec->signing_flags) ||
@@ -612,6 +621,11 @@ static int traverse_connections(const struct connections_data *crec,
 			signing_degree = CRYPTO_DEGREE_FULL;
 		} else if (smbXsrv_is_partially_signed(crec->signing_flags)) {
 			signing_degree = CRYPTO_DEGREE_PARTIAL;
+		}
+		if (signing_degree != CRYPTO_DEGREE_NONE &&
+		    !crec->authenticated)
+		{
+			signing_degree = CRYPTO_DEGREE_ANONYMOUS;
 		}
 	}
 
@@ -655,6 +669,8 @@ static int traverse_sessionid_stdout(struct traverse_state *state,
 
 	if (encryption_degree == CRYPTO_DEGREE_FULL) {
 		fstr_sprintf(encryption, "%s", encryption_cipher);
+	} else if (encryption_degree == CRYPTO_DEGREE_ANONYMOUS) {
+		fstr_sprintf(encryption, "anonymous(%s)", encryption_cipher);
 	} else if (encryption_degree == CRYPTO_DEGREE_PARTIAL) {
 		fstr_sprintf(encryption, "partial(%s)", encryption_cipher);
 	} else {
@@ -662,6 +678,8 @@ static int traverse_sessionid_stdout(struct traverse_state *state,
 	}
 	if (signing_degree == CRYPTO_DEGREE_FULL) {
 		fstr_sprintf(signing, "%s", signing_cipher);
+	} else if (signing_degree == CRYPTO_DEGREE_ANONYMOUS) {
+		fstr_sprintf(signing, "anonymous(%s)", signing_cipher);
 	} else if (signing_degree == CRYPTO_DEGREE_PARTIAL) {
 		fstr_sprintf(signing, "partial(%s)", signing_cipher);
 	} else {
@@ -796,6 +814,11 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		} else if (smbXsrv_is_partially_encrypted(session->encryption_flags)) {
 			encryption_degree = CRYPTO_DEGREE_PARTIAL;
 		}
+		if (encryption_degree != CRYPTO_DEGREE_NONE &&
+		    !session->authenticated)
+		{
+			encryption_degree = CRYPTO_DEGREE_ANONYMOUS;
+		}
 	}
 
 	if (smbXsrv_is_signed(session->signing_flags) ||
@@ -822,6 +845,11 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			signing_degree = CRYPTO_DEGREE_FULL;
 		} else if (smbXsrv_is_partially_signed(session->signing_flags)) {
 			signing_degree = CRYPTO_DEGREE_PARTIAL;
+		}
+		if (signing_degree != CRYPTO_DEGREE_NONE &&
+		    !session->authenticated)
+		{
+			signing_degree = CRYPTO_DEGREE_ANONYMOUS;
 		}
 	}
 
