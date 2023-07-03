@@ -155,15 +155,6 @@ bld.SAMBA3_BINARY('dbwrap_torture',
                  ''',
                  install=False)
 
-bld.SAMBA3_BINARY('split_tokens',
-                 source='split_tokens.c',
-                 deps='''
-                 talloc
-                 CMDLINE_S3
-                 smbconf
-                 ''',
-                 install=False)
-
 bld.SAMBA3_BINARY('samba-regedit',
                   source="""regedit.c regedit_samba3.c
                             regedit_wrap.c regedit_treeview.c
