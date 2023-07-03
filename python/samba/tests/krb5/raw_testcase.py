@@ -1227,12 +1227,6 @@ class RawKerberosTest(TestCase):
         self._disconnect("transaction done")
         return rep
 
-    def assertNoValue(self, value):
-        self.assertTrue(value.isNoValue)
-
-    def assertHasValue(self, value):
-        self.assertIsNotNone(value)
-
     def getElementValue(self, obj, elem):
         return obj.get(elem)
 
