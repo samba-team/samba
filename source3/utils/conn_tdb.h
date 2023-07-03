@@ -36,6 +36,7 @@ struct connections_data {
 	uint16_t dialect;
 	uint8_t signing_flags;
 	uint16_t signing;
+	bool authenticated;
 };
 
 /* The following definitions come from lib/conn_tdb.c  */

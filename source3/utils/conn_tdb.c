@@ -27,6 +27,7 @@
 #include "conn_tdb.h"
 #include "util_tdb.h"
 #include "lib/util/string_wrappers.h"
+#include "../libcli/security/session.h"
 
 struct connections_forall_state {
 	struct db_context *session_by_pid;
@@ -44,6 +45,7 @@ struct connections_forall_session {
 	uint16_t cipher;
 	uint16_t dialect;
 	uint16_t signing;
+	bool authenticated;
 };
 
 static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
@@ -55,6 +57,7 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 
 	uint32_t id = global->session_global_id;
 	struct connections_forall_session sess;
+	enum security_user_level ul;
 
 	if (global->auth_session_info == NULL) {
 		sess.uid = -1;
@@ -68,6 +71,12 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 	sess.cipher = global->channels[0].encryption_cipher;
 	sess.signing = global->channels[0].signing_algo;
 	sess.dialect = global->connection_dialect;
+	ul = security_session_user_level(global->auth_session_info, NULL);
+	if (ul >= SECURITY_USER) {
+		sess.authenticated = true;
+	} else {
+		sess.authenticated = false;
+	}
 
 	status = dbwrap_store(state->session_by_pid,
 			      make_tdb_data((void*)&id, sizeof(id)),
@@ -132,6 +141,7 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 	data.dialect = sess.dialect;
 	data.signing = sess.signing;
 	data.signing_flags = global->signing_flags;
+	data.authenticated = sess.authenticated;
 
 	state->count++;
 
