@@ -45,7 +45,6 @@ struct connections_forall_session {
 	uint16_t cipher;
 	uint16_t dialect;
 	uint16_t signing;
-	uint8_t signing_flags;
 };
 
 static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
@@ -70,7 +69,6 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 	sess.cipher = global->channels[0].encryption_cipher;
 	sess.signing = global->channels[0].signing_algo;
 	sess.dialect = global->connection_dialect;
-	sess.signing_flags = global->signing_flags;
 
 	status = dbwrap_store(state->session_by_pid,
 			      make_tdb_data((void*)&id, sizeof(id)),
