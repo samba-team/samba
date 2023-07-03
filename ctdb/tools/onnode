@@ -254,6 +254,8 @@ get_nodes ()
 	done
 }
 
+# shellcheck disable=SC2317
+# push() called indirectly via $ONNODE_SSH
 push ()
 {
 	local host="$1"
