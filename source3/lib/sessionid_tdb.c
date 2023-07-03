@@ -24,6 +24,7 @@
 #include "session.h"
 #include "util_tdb.h"
 #include "smbd/globals.h"
+#include "../libcli/security/session.h"
 
 struct sessionid_traverse_read_state {
 	int (*fn)(const char *key, struct sessionid *session,
@@ -47,11 +48,18 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 	};
 
 	if (session_info != NULL) {
+		enum security_user_level ul;
+
 		session.uid = session_info->unix_token->uid;
 		session.gid = session_info->unix_token->gid;
 		strncpy(session.username,
 			session_info->unix_info->unix_name,
 			sizeof(fstring)-1);
+
+		ul = security_session_user_level(session_info, NULL);
+		if (ul >= SECURITY_USER) {
+			session.authenticated = true;
+		}
 	}
 
 	strncpy(session.remote_machine,
