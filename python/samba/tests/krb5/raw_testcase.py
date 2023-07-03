@@ -79,6 +79,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REP,
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
+    KU_AS_FRESHNESS,
     KU_AS_REP_ENC_PART,
     KU_AP_REQ_ENC_PART,
     KU_AS_REQ,
@@ -101,6 +102,7 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_PRINCIPAL,
     NT_SRV_INST,
     NT_WELLKNOWN,
+    PADATA_AS_FRESHNESS,
     PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO,
@@ -1839,7 +1841,8 @@ class RawKerberosTest(TestCase):
                                ctime,
                                nonce,
                                *,
-                               pa_checksum=None):
+                               pa_checksum=None,
+                               freshness_token=None):
         pk_authenticator_obj = {
             'cusec': cusec,
             'ctime': ctime,
@@ -1847,6 +1850,8 @@ class RawKerberosTest(TestCase):
         }
         if pa_checksum is not None:
             pk_authenticator_obj['paChecksum'] = pa_checksum
+        if freshness_token is not None:
+            pk_authenticator_obj['freshnessToken'] = freshness_token
 
         return pk_authenticator_obj
 
@@ -2437,6 +2442,32 @@ class RawKerberosTest(TestCase):
             self.assertEqual(b'\x05\x00', parameters)
 
         return hash
+
+    def create_freshness_token(self,
+                               epoch=None,
+                               *,
+                               offset=None,
+                               krbtgt_creds=None):
+        timestamp, usec = self.get_KerberosTimeWithUsec(epoch, offset)
+
+        # Encode the freshness token as PA-ENC-TS-ENC.
+        ts_enc = self.PA_ENC_TS_ENC_create(timestamp, usec)
+        ts_enc = self.der_encode(ts_enc, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
+
+        if krbtgt_creds is None:
+            krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+
+        # Encrypt the freshness token.
+        freshness = self.EncryptedData_create(krbtgt_key, KU_AS_FRESHNESS, ts_enc)
+
+        freshness_token = self.der_encode(freshness,
+                                          asn1Spec=krb5_asn1.EncryptedData())
+
+        # Prepend a couple of zero bytes.
+        freshness_token = bytes(2) + freshness_token
+
+        return freshness_token
 
     def kpasswd_create(self,
                        subkey,
@@ -4920,6 +4951,8 @@ class RawKerberosTest(TestCase):
                 if len(expect_etype_info2) != 0:
                     expected_patypes += (PADATA_ETYPE_INFO2,)
 
+                sent_freshness = self.sent_freshness(kdc_exchange_dict)
+
                 if error_code not in (KDC_ERR_PREAUTH_FAILED, KDC_ERR_SKEW,
                                       KDC_ERR_POLICY, KDC_ERR_CLIENT_REVOKED):
                     if sent_fast:
@@ -4929,7 +4962,11 @@ class RawKerberosTest(TestCase):
 
                     if not sent_enc_challenge:
                         expected_patypes += (PADATA_PK_AS_REQ,)
-                        expected_patypes += (PADATA_PK_AS_REP_19,)
+                        if not sent_freshness:
+                            expected_patypes += (PADATA_PK_AS_REP_19,)
+
+                if sent_freshness:
+                    expected_patypes += PADATA_AS_FRESHNESS,
 
                 if (self.kdc_fast_support
                         and not sent_fast
@@ -4969,6 +5006,39 @@ class RawKerberosTest(TestCase):
         pk_as_rep19 = pa_dict.get(PADATA_PK_AS_REP_19)
         if pk_as_rep19 is not None:
             self.assertEqual(len(pk_as_rep19), 0)
+
+        freshness_token = pa_dict.get(PADATA_AS_FRESHNESS)
+        if freshness_token is not None:
+            self.assertEqual(bytes(2), freshness_token[:2])
+
+            freshness = self.der_decode(freshness_token[2:],
+                                        asn1Spec=krb5_asn1.EncryptedData())
+
+            krbtgt_creds = self.get_krbtgt_creds()
+            krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+
+            self.assertElementEqual(freshness, 'etype', krbtgt_key.etype)
+            self.assertElementKVNO(freshness, 'kvno', krbtgt_key.kvno)
+
+            # Decrypt the freshness token.
+            ts_enc = krbtgt_key.decrypt(KU_AS_FRESHNESS,
+                                        freshness['cipher'])
+
+            # Ensure that we can decode it as PA-ENC-TS-ENC.
+            ts_enc = self.der_decode(ts_enc,
+                                     asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
+            freshness_time = self.get_EpochFromKerberosTime(
+                ts_enc['patimestamp'])
+            freshness_time += ts_enc['pausec'] / 1e6
+
+            # Ensure that it is reasonably close to the current time (within
+            # five minutes, to allow for clock skew).
+            current_time = datetime.datetime.now(
+                datetime.timezone.utc).timestamp()
+            self.assertLess(current_time - 5 * 60, freshness_time)
+            self.assertLess(freshness_time, current_time + 5 * 60)
+
+            kdc_exchange_dict['freshness_token'] = freshness_token
 
         fx_fast = pa_dict.get(PADATA_FX_FAST)
         if fx_fast is not None:
@@ -5796,6 +5866,11 @@ class RawKerberosTest(TestCase):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
 
         return PADATA_PK_AS_REQ in fast_pa_dict
+
+    def sent_freshness(self, kdc_exchange_dict):
+        fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
+
+        return PADATA_AS_FRESHNESS in fast_pa_dict
 
     def get_sent_pac_options(self, kdc_exchange_dict):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
