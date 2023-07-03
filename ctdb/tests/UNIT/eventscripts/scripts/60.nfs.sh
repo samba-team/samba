@@ -358,8 +358,8 @@ program_stack_traces()
 #
 # - 2nd argument is the NFS/RPC service being tested
 #
-#   rpcinfo (or $service_check_cmd) is used on each iteration to test
-#   the availability of the service
+#   rpcinfo is used on each iteration to test the availability of the
+#   service
 #
 #   If this is not set or null then no RPC service is checked and the
 #   required output is not reset on each iteration.  This is useful in
@@ -402,19 +402,8 @@ EOF
 			shift 2
 		fi
 		if [ -n "$_rpc_service" ]; then
-			_ok=false
-			if [ -n "$service_check_cmd" ]; then
-				if eval "$service_check_cmd"; then
-					_ok=true
-				fi
-			else
-				if rpcinfo -T tcp localhost "$_rpc_service" \
-					>/dev/null 2>&1; then
-					_ok=true
-				fi
-			fi
-
-			if $_ok; then
+			if rpcinfo -T tcp localhost "$_rpc_service" \
+				   >/dev/null 2>&1 ; then
 				_iterate_failcount=0
 			else
 				_iterate_failcount=$(($_iterate_failcount + 1))
