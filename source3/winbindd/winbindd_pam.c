@@ -1637,6 +1637,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	int attempts = 0;
 	int netr_attempts = 0;
 	bool retry = false;
+	bool valid_result = false;
 	NTSTATUS result;
 	enum netr_LogonInfoClass logon_type_i;
 	enum netr_LogonInfoClass logon_type_n;
@@ -1817,6 +1818,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			continue;
 		}
 
+		valid_result = true;
+
 		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			/*
 			 * Got DCERPC_FAULT_OP_RNG_ERROR for SamLogon
@@ -1842,6 +1845,25 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		}
 
 	} while ( (attempts < 3) && retry );
+
+	if (!valid_result) {
+		/*
+		 * This matches what windows does. In a chain of transitive
+		 * trusts the ACCESS_DENIED/authoritative=0 is not propagated
+		 * instead of NT_STATUS_NO_LOGON_SERVERS/authoritative=1 is
+		 * passed along the chain if there's no other DC is available.
+		 */
+		DBG_WARNING("Mapping %s/authoritative=%u to "
+			    "NT_STATUS_NO_LOGON_SERVERS/authoritative=1 for"
+			    "USERNAME[%s] USERDOMAIN[%s] REMOTE-DOMAIN[%s] \n",
+			    nt_errstr(result),
+			    *authoritative,
+			    username,
+			    domainname,
+			    domain->name);
+		*authoritative = 1;
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
