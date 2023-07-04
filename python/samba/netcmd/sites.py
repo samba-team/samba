@@ -17,9 +17,7 @@
 #
 
 from samba import sites, subnets
-from samba.samdb import SamDB
 import samba.getopt as options
-from samba.auth import system_session
 from samba.netcmd import (
     Command,
     CommandError,
@@ -124,10 +122,7 @@ class cmd_sites_create(Command):
 
     def run(self, sitename, H=None, sambaopts=None, credopts=None,
             versionopts=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
+        samdb = self.ldb_connect(H, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -161,10 +156,7 @@ class cmd_sites_delete(Command):
 
     def run(self, sitename, H=None, sambaopts=None, credopts=None,
             versionopts=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
+        samdb = self.ldb_connect(H, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -282,10 +274,7 @@ class cmd_sites_subnet_create(Command):
 
     def run(self, subnetname, site_of_subnet, H=None, sambaopts=None,
             credopts=None, versionopts=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
+        samdb = self.ldb_connect(H, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -320,10 +309,7 @@ class cmd_sites_subnet_delete(Command):
 
     def run(self, subnetname, H=None, sambaopts=None, credopts=None,
             versionopts=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
+        samdb = self.ldb_connect(H, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -355,10 +341,7 @@ class cmd_sites_subnet_set_site(Command):
 
     def run(self, subnetname, site_of_subnet, H=None, sambaopts=None,
             credopts=None, versionopts=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
+        samdb = self.ldb_connect(H, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
