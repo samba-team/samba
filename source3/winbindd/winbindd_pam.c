@@ -1678,6 +1678,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				 "(error: %s, attempts: %d)\n",
 				  nt_errstr(result), netr_attempts));
 
+			reset_cm_connection_on_error(domain, NULL, result);
+
 			/* After the first retry always close the connection */
 			if (netr_attempts > 0) {
 				DEBUG(3, ("This is again a problem for this "
@@ -1800,25 +1802,19 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-		if (!rpccli_is_connected(netlogon_pipe)) {
-			retry = true;
+		retry = reset_cm_connection_on_error(domain,
+						     netlogon_pipe->binding_handle,
+						     result);
+		if (retry) {
+			DBG_PREFIX(attempts > 1 ? DBGLVL_NOTICE : DBGLVL_INFO, (
+				   "This is problem %d for this "
+				   "particular call,"
+				   "DOMAIN[%s] DC[%s] - %s\n",
+				   attempts,
+				   domain->name,
+				   domain->dcname,
+				   nt_errstr(result)));
 			continue;
-		}
-
-		/* if we get access denied, a possible cause was that we had
-		   an open connection to the DC, but someone changed our
-		   machine account password out from underneath us using 'net
-		   rpc changetrustpw' */
-
-		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(1,("winbind_samlogon_retry_loop: sam_logon returned "
-				 "ACCESS_DENIED.  Maybe the DC has Restrict "
-				 "NTLM set or the trust account "
-				"password was changed and we didn't know it. "
-				 "Killing connections to domain %s\n",
-				domainname));
-			invalidate_cm_connection(domain);
-			retry = true;
 		}
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
@@ -1845,15 +1841,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			break;
 		}
 
-	} while ( (attempts < 2) && retry );
-
-	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT)) {
-		DEBUG(3,("winbind_samlogon_retry_loop: sam_network_logon(ex) "
-				"returned NT_STATUS_IO_TIMEOUT after the retry. "
-				"Killing connections to domain %s\n",
-			domainname));
-		invalidate_cm_connection(domain);
-	}
+	} while ( (attempts < 3) && retry );
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
