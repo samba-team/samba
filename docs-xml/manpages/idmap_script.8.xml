@@ -59,18 +59,9 @@
 	<title>IDMAP SCRIPT</title>
 
 	<para>
-	The tdb2 idmap backend supports an external program for performing id mappings
+	The script idmap backend supports an external program for performing id mappings
 	through the &smb.conf; option <parameter>idmap config * : script</parameter> or
 	its deprecated legacy form <parameter>idmap : script</parameter>.
-	</para>
-
-	<para>
-	The mappings obtained by the script are then stored in the idmap tdb2
-	database instead of mappings created by the incrementing id counters.
-	It is therefore important that the script covers the complete range of
-	SIDs that can be passed in for SID to Unix ID mapping, since otherwise
-	SIDs unmapped by the script might get mapped to IDs that had
-	previously been mapped by the script.
 	</para>
 
 	<para>
