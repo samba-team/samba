@@ -2980,7 +2980,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
-				"the password is too short. It should be equal or longer than %u characters!",
+				"the password is too short. It should be equal to or longer than %u characters!",
 				W_ERROR_V(*werror),
 				ldb_strerror(ret),
 				io->ac->status->domain_data.minPwdLength);
