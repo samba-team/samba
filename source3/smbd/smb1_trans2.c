@@ -3317,10 +3317,11 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 
 static NTSTATUS smb_posix_open(connection_struct *conn,
 			       struct smb_request *req,
-				char **ppdata,
-				int total_data,
-				struct smb_filename *smb_fname,
-				int *pdata_return_size)
+			       char **ppdata,
+			       int total_data,
+			       struct files_struct *dirfsp,
+			       struct smb_filename *smb_fname,
+			       int *pdata_return_size)
 {
 	bool extended_oplock_granted = False;
 	char *pdata = *ppdata;
@@ -3482,7 +3483,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
@@ -4550,13 +4551,13 @@ static void call_trans2setpathinfo(
 		break;
 
 	case SMB_POSIX_PATH_OPEN:
-		status = smb_posix_open(
-			conn,
-			req,
-			ppdata,
-			total_data,
-			smb_fname,
-			&data_return_size);
+		status = smb_posix_open(conn,
+					req,
+					ppdata,
+					total_data,
+					dirfsp,
+					smb_fname,
+					&data_return_size);
 		break;
 
 	case SMB_POSIX_PATH_UNLINK:
