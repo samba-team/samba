@@ -28,7 +28,7 @@
 	</para>
 
 	<para>
-	NOTE: The idmap_rid backend can NOT bet used as the default backend.
+	NOTE: The idmap_rid backend can NOT be used as the default backend.
 	One usually needs to define a writeable default idmap range, using
 	a backend like <parameter>tdb</parameter> or <parameter>ldap</parameter>
 	that can create unix ids, in order to be able to map the BUILTIN sids
@@ -108,6 +108,7 @@
 
 	idmap config TRUSTED : backend  = rid
 	idmap config TRUSTED : range    = 50000 - 99999
+	idmap config TRUSTED : base_rid = 500000
 	</programlisting>
 </refsect1>
 
