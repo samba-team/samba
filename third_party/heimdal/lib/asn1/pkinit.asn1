@@ -83,6 +83,7 @@ PKAuthenticator ::= SEQUENCE {
 	ctime                   [1] KerberosTime,
 	nonce                   [2] INTEGER (0..4294967295),
 	paChecksum              [3] OCTET STRING OPTIONAL,
+	freshnessToken          [4] OCTET STRING OPTIONAL,
 	...
 }
 

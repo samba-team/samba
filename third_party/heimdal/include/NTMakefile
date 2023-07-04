@@ -111,8 +111,8 @@ while(<>) {
 
 $(INCDIR)\version.h: ..\windows\NTMakefile.version NTMakefile
 	$(CP) << $@
-const char *heimdal_long_version = "@(#)$$Version: $(VER_PACKAGE_NAME) $(VER_PACKAGE_VERSION) by $(USERNAME) on $(COMPUTERNAME) ($(CPU)-pc-windows) $$";
-const char *heimdal_version = "$(VER_PACKAGE_NAME) $(VER_PACKAGE_VERSION)";
+const char *const heimdal_long_version = "@(#)$$Version: $(VER_PACKAGE_NAME) $(VER_PACKAGE_VERSION) by $(USERNAME) on $(COMPUTERNAME) ($(CPU)-pc-windows) $$";
+const char *const heimdal_version = "$(VER_PACKAGE_NAME) $(VER_PACKAGE_VERSION)";
 <<
 
 all:: $(INCFILES)

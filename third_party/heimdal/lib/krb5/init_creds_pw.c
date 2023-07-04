@@ -61,7 +61,7 @@ struct krb5_gss_init_ctx_data {
 struct krb5_get_init_creds_ctx {
     KDCOptions flags;
     krb5_creds cred;
-    krb5_addresses *addrs;
+    const krb5_addresses *addrs;
     krb5_enctype *etypes;
     krb5_preauthtype *pre_auth_types;
     char *in_tkt_service;
@@ -447,7 +447,7 @@ krb5_init_creds_warn_user(krb5_context context,
     return 0;
 }
 
-static krb5_addresses no_addrs = { 0, NULL };
+static const krb5_addresses no_addrs = { 0, NULL };
 
 static krb5_error_code
 get_init_creds_common(krb5_context context,
@@ -1941,9 +1941,9 @@ typedef krb5_error_code (*pa_restart_f)(krb5_context, krb5_init_creds_context, v
 typedef krb5_error_code (*pa_step_f)(krb5_context, krb5_init_creds_context, void *, PA_DATA *, const AS_REQ *, const AS_REP *, METHOD_DATA *, METHOD_DATA *);
 typedef void            (*pa_release_f)(void *);
 
-struct patype {
+static const struct patype {
     int type;
-    char *name;
+    const char *name;
     int flags;
 #define PA_F_ANNOUNCE		1
 #define PA_F_CONFIG		2
@@ -2085,7 +2085,7 @@ get_pa_type_name(int type)
  */
 
 struct pa_auth_mech {
-    struct patype *patype;
+    const struct patype *patype;
     struct pa_auth_mech *next; /* when doing authentication sets */
     char pactx[1];
 };
@@ -2155,7 +2155,7 @@ mech_dealloc(void *ctx)
 	pa_mech->patype->release((void *)&pa_mech->pactx[0]);
 }
 
-struct heim_type_data pa_auth_mech_object = {
+static const struct heim_type_data pa_auth_mech_object = {
     HEIM_TID_PA_AUTH_MECH,
     "heim-pa-mech-context",
     NULL,
@@ -2170,7 +2170,7 @@ static struct pa_auth_mech *
 pa_mech_create(krb5_context context, krb5_init_creds_context ctx, int pa_type)
 {
     struct pa_auth_mech *pa_mech;
-    struct patype *patype = NULL;
+    const struct patype *patype = NULL;
     size_t n;
 
     for (n = 0; patype == NULL && n < sizeof(patypes)/sizeof(patypes[0]); n++) {

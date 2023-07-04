@@ -75,7 +75,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_plugin_register(krb5_context context,
 		     enum krb5_plugin_type type,
 		     const char *name,
-		     void *symbol)
+		     const void *symbol)
 {
     /*
      * It's not clear that PLUGIN_TYPE_FUNC was ever used or supported. It likely
@@ -147,7 +147,7 @@ _krb5_unload_plugins(krb5_context context, const char *name)
  */
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_plugin_run_f(krb5_context context,
-		   struct heim_plugin_data *caller,
+		   const struct heim_plugin_data *caller,
 		   int flags,
 		   void *userctx,
 		   krb5_error_code (KRB5_LIB_CALL *func)(krb5_context, const void *, void *, void *))

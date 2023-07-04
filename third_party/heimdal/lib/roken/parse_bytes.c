@@ -37,10 +37,10 @@
 #include "parse_bytes.h"
 
 static struct units bytes_units[] = {
-    { "petabyte", 1024UL * 1024 * 1024 * 1024 * 1024 },
-    { "PB", 1024UL * 1024 * 1024 * 1024 * 1024 },
-    { "terabyte", 1024UL * 1024 * 1024 * 1024 },
-    { "TB", 1024UL * 1024 * 1024 * 1024 },
+    { "petabyte", 1024ULL * 1024 * 1024 * 1024 * 1024 },
+    { "PB", 1024ULL * 1024 * 1024 * 1024 * 1024 },
+    { "terabyte", 1024ULL * 1024 * 1024 * 1024 },
+    { "TB", 1024ULL * 1024 * 1024 * 1024 },
     { "gigabyte", 1024 * 1024 * 1024 },
     { "gbyte", 1024 * 1024 * 1024 },
     { "GB", 1024 * 1024 * 1024 },
@@ -54,28 +54,28 @@ static struct units bytes_units[] = {
 };
 
 static struct units bytes_short_units[] = {
-    { "PB", 1024UL * 1024 * 1024 * 1024 * 1024 },
-    { "TB", 1024UL * 1024 * 1024 * 1024 },
+    { "PB", 1024ULL * 1024 * 1024 * 1024 * 1024 },
+    { "TB", 1024ULL * 1024 * 1024 * 1024 },
     { "GB", 1024 * 1024 * 1024 },
     { "MB", 1024 * 1024 },
     { "KB", 1024 },
     { NULL, 0 }
 };
 
-ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
+ROKEN_LIB_FUNCTION int64_t ROKEN_LIB_CALL
 parse_bytes(const char *s, const char *def_unit)
 {
     return parse_units (s, bytes_units, def_unit);
 }
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-unparse_bytes(ssize_t t, char *s, size_t len)
+unparse_bytes(int64_t t, char *s, size_t len)
 {
     return unparse_units (t, bytes_units, s, len);
 }
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-unparse_bytes_short (ssize_t t, char *s, size_t len)
+unparse_bytes_short (int64_t t, char *s, size_t len)
 {
     return unparse_units_approx (t, bytes_short_units, s, len);
 }

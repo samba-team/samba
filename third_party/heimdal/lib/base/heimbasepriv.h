@@ -46,6 +46,7 @@ typedef uintptr_t (*heim_type_hash)(void *);
 typedef heim_string_t (*heim_type_description)(void *);
 
 typedef struct heim_type_data *heim_type_t;
+typedef const struct heim_type_data *heim_const_type_t;
 
 struct heim_type_data {
     heim_tid_t tid;
@@ -58,7 +59,7 @@ struct heim_type_data {
     heim_type_description desc;
 };
 
-heim_type_t _heim_get_isa(heim_object_t);
+heim_const_type_t _heim_get_isa(heim_object_t);
 
 heim_type_t
 _heim_create_type(const char *name,
@@ -70,7 +71,7 @@ _heim_create_type(const char *name,
 		  heim_type_description desc);
 
 heim_object_t
-_heim_alloc_object(heim_type_t type, size_t size);
+_heim_alloc_object(heim_const_type_t type, size_t size);
 
 void *
 _heim_get_isaextra(heim_object_t o, size_t idx);

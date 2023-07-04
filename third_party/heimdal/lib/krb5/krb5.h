@@ -296,6 +296,8 @@ typedef enum krb5_key_usage {
     /* fast challenge from client */
     KRB5_KU_ENC_CHALLENGE_KDC = 55,
     /* fast challenge from kdc */
+    KRB5_KU_AS_FRESHNESS = 60,
+    /* Freshness token from KDC */
     KRB5_KU_DIGEST_ENCRYPT = -18,
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,
@@ -697,7 +699,7 @@ typedef struct {
     KRB_ERROR error;
 } krb5_kdc_rep;
 
-extern const char *heimdal_version, *heimdal_long_version;
+extern const char *const heimdal_version, *const heimdal_long_version;
 
 typedef void (KRB5_CALLCONV * krb5_log_log_func_t)(krb5_context,
 						   const char*,
@@ -1018,8 +1020,8 @@ typedef struct krb5_kx509_req_ctx_data *krb5_kx509_req_ctx;
 
 /* variables */
 
-extern KRB5_LIB_VARIABLE const char *krb5_config_file;
-extern KRB5_LIB_VARIABLE const char *krb5_defkeyname;
+extern KRB5_LIB_VARIABLE const char *const krb5_config_file;
+extern KRB5_LIB_VARIABLE const char *const krb5_defkeyname;
 
 
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops;
@@ -1038,13 +1040,13 @@ extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_mkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_akf_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_any_ops;
 
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_api;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_file;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_memory;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_scc;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_dcc;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_keyring;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_api;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_file;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_memory;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_kcm;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_scc;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_dcc;
+extern KRB5_LIB_VARIABLE const char *const krb5_cc_type_keyring;
 
 /* clang analyzer workarounds */
 

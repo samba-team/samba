@@ -734,7 +734,7 @@ addrport_print_addr (const krb5_address *addr, char *str, size_t len)
     return ret_len;
 }
 
-static struct addr_operations at[] = {
+static const struct addr_operations at[] = {
     {
 	AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
 	ipv4_sockaddr2addr,
@@ -810,7 +810,7 @@ static struct addr_operations at[] = {
     }
 };
 
-static size_t num_addrs = sizeof(at) / sizeof(at[0]);
+static const size_t num_addrs = sizeof(at) / sizeof(at[0]);
 
 static size_t max_sockaddr_size = 0;
 
@@ -818,7 +818,7 @@ static size_t max_sockaddr_size = 0;
  * generic functions
  */
 
-static struct addr_operations *
+static const struct addr_operations *
 find_af(int af)
 {
     size_t i;
@@ -830,7 +830,7 @@ find_af(int af)
     return NULL;
 }
 
-static struct addr_operations *
+static const struct addr_operations *
 find_atype(krb5_address_type atype)
 {
     size_t i;
@@ -859,7 +859,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sockaddr2address (krb5_context context,
 		       const struct sockaddr *sa, krb5_address *addr)
 {
-    struct addr_operations *a = find_af(sa->sa_family);
+    const struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
 				N_("Address family %d not supported", ""),
@@ -887,7 +887,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sockaddr2port (krb5_context context,
 		    const struct sockaddr *sa, int16_t *port)
 {
-    struct addr_operations *a = find_af(sa->sa_family);
+    const struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
 				N_("Address family %d not supported", ""),
@@ -925,7 +925,7 @@ krb5_addr2sockaddr (krb5_context context,
 		    krb5_socklen_t *sa_size,
 		    int port)
 {
-    struct addr_operations *a = find_atype(addr->addr_type);
+    const struct addr_operations *a = find_atype(addr->addr_type);
 
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
@@ -981,7 +981,7 @@ krb5_max_sockaddr_size (void)
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 {
-    struct addr_operations *a = find_af(sa->sa_family);
+    const struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL || a->uninteresting == NULL)
 	return TRUE;
     return (*a->uninteresting)(sa);
@@ -990,7 +990,7 @@ krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_sockaddr_is_loopback(const struct sockaddr *sa)
 {
-    struct addr_operations *a = find_af(sa->sa_family);
+    const struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL || a->is_loopback == NULL)
 	return TRUE;
     return (*a->is_loopback)(sa);
@@ -1022,7 +1022,7 @@ krb5_h_addr2sockaddr (krb5_context context,
 		      krb5_socklen_t *sa_size,
 		      int port)
 {
-    struct addr_operations *a = find_af(af);
+    const struct addr_operations *a = find_af(af);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
 				"Address family %d not supported", af);
@@ -1051,7 +1051,7 @@ krb5_h_addr2addr (krb5_context context,
 		  int af,
 		  const char *haddr, krb5_address *addr)
 {
-    struct addr_operations *a = find_af(af);
+    const struct addr_operations *a = find_af(af);
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
 				N_("Address family %d not supported", ""), af);
@@ -1084,7 +1084,7 @@ krb5_anyaddr (krb5_context context,
 	      krb5_socklen_t *sa_size,
 	      int port)
 {
-    struct addr_operations *a = find_af (af);
+    const struct addr_operations *a = find_af (af);
 
     if (a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
@@ -1116,7 +1116,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_print_address (const krb5_address *addr,
 		    char *str, size_t len, size_t *ret_len)
 {
-    struct addr_operations *a = find_atype(addr->addr_type);
+    const struct addr_operations *a = find_atype(addr->addr_type);
     int ret;
 
     if (a == NULL || a->print_addr == NULL) {
@@ -1267,7 +1267,7 @@ krb5_address_order(krb5_context context,
 {
     /* this sucks; what if both addresses have order functions, which
        should we call? this works for now, though */
-    struct addr_operations *a;
+    const struct addr_operations *a;
     a = find_atype(addr1->addr_type);
     if(a == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
@@ -1359,7 +1359,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_address(krb5_context context,
 		  krb5_address *address)
 {
-    struct addr_operations *a = find_atype (address->addr_type);
+    const struct addr_operations *a = find_atype (address->addr_type);
     if(a != NULL && a->free_addr != NULL)
 	return (*a->free_addr)(context, address);
     krb5_data_free (&address->address);
@@ -1405,7 +1405,7 @@ krb5_copy_address(krb5_context context,
 		  const krb5_address *inaddr,
 		  krb5_address *outaddr)
 {
-    struct addr_operations *a = find_af (inaddr->addr_type);
+    const struct addr_operations *a = find_af (inaddr->addr_type);
     if(a != NULL && a->copy_addr != NULL)
 	return (*a->copy_addr)(context, inaddr, outaddr);
     return copy_HostAddress(inaddr, outaddr);
@@ -1563,7 +1563,7 @@ krb5_address_prefixlen_boundary(krb5_context context,
 				krb5_address *low,
 				krb5_address *high)
 {
-    struct addr_operations *a = find_atype (inaddr->addr_type);
+    const struct addr_operations *a = find_atype (inaddr->addr_type);
     if(a != NULL && a->mask_boundary != NULL)
 	return (*a->mask_boundary)(context, inaddr, prefixlen, low, high);
     krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,

@@ -520,7 +520,7 @@ struct hipc_ops {
 		 void (*)(void *, int, heim_idata *, heim_icred));
 };
 
-struct hipc_ops ipcs[] = {
+static const struct hipc_ops ipcs[] = {
 #if defined(__APPLE__) && defined(HAVE_GCD)
     { "MACH", mach_init, mach_release, mach_ipc, mach_async },
 #endif
@@ -531,7 +531,7 @@ struct hipc_ops ipcs[] = {
 };
 
 struct heim_ipc {
-    struct hipc_ops *ops;
+    const struct hipc_ops *ops;
     void *ctx;
 };
 

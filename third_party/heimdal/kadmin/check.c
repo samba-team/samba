@@ -136,8 +136,9 @@ check(void *opt, int argc, char **argv)
 
     ret = get_check_entry(p, &ent);
     if (ret) {
-	printf("%s doesn't exist, are you sure %s is a realm in your database",
-	       p, realm);
+	fprintf(stderr,
+	        "%s does not exist, are you sure %s is a realm in your database?\n",
+	        p, realm);
 	free(p);
 	goto fail;
     }
@@ -156,8 +157,9 @@ check(void *opt, int argc, char **argv)
 
     ret = get_check_entry(p, &ent);
     if (ret) {
-	printf("%s doesn't exist, "
-	       "there is no way to do remote administration", p);
+	fprintf(stderr,
+	        "%s does not exist, there is no way to do remote administration.\n",
+	        p);
 	free(p);
 	goto fail;
     }
@@ -176,8 +178,9 @@ check(void *opt, int argc, char **argv)
 
     ret = get_check_entry(p, &ent);
     if (ret) {
-	printf("%s doesn't exist, "
-	       "there is no way to do change password", p);
+	fprintf(stderr,
+	        "%s does not exist, there is no way to do change password.\n",
+	        p);
 	free(p);
 	goto fail;
     }
@@ -189,7 +192,7 @@ check(void *opt, int argc, char **argv)
      * Check default@REALM
      *
      * Check that disallow-all-tix is set on the default principal
-     * (or that the entry doesn't exists)
+     * (or that the entry does not exist)
      */
 
     if (asprintf(&p, "default@%s", realm) == -1) {
@@ -200,7 +203,7 @@ check(void *opt, int argc, char **argv)
     ret = get_check_entry(p, &ent);
     if (ret == 0) {
 	if ((ent.attributes & KRB5_KDB_DISALLOW_ALL_TIX) == 0) {
-	    printf("default template entry is not disabled\n");
+	    fprintf(stderr, "default template entry is not disabled\n");
 	    ret = EINVAL;
 	}
 	kadm5_free_principal_ent(kadm_handle, &ent);

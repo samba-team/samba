@@ -102,7 +102,7 @@ struct heim_plugin_data {
     const char *module;
     const char *name;
     int min_version;
-    const char **deps;
+    const char *const *deps;
     heim_get_instance_func_t get_instance;
 };
 

@@ -79,7 +79,7 @@ KRB5_LIB_FUNCTION const char * KRB5_LIB_CALL
 com_right_r (struct et_list *list, long code, char *, size_t);
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
-initialize_error_table_r (struct et_list **, const char **, int, long);
+initialize_error_table_r (struct et_list **, const char *const *, int, long);
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 free_error_table (struct et_list *);

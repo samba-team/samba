@@ -585,6 +585,13 @@ pa_pkinit_validate(astgs_request_t r, const PA_DATA *pa)
 	goto out;
     }
 
+    /* Validate the freshness token. */
+    ret = _kdc_pk_validate_freshness_token(r, pkp);
+    if (ret) {
+	_kdc_r_log(r, 4, "Failed to validate freshness token");
+	goto out;
+    }
+
     ret = _kdc_pk_check_client(r, pkp, &client_cert);
     if (client_cert)
 	kdc_audit_addkv((kdc_request_t)r, 0, KDC_REQUEST_KV_PKINIT_CLIENT_CERT,
@@ -614,6 +621,12 @@ pa_pkinit_validate(astgs_request_t r, const PA_DATA *pa)
 
     kdc_audit_setkv_number((kdc_request_t)r, KDC_REQUEST_KV_AUTH_EVENT,
 			   KDC_AUTH_EVENT_PREAUTH_SUCCEEDED);
+
+    /*
+     * Match Windows by preferring the authenticator nonce over the one in the
+     * request body.
+     */
+    r->ek.nonce = _kdc_pk_nonce(pkp);
 
  out:
     if (pkp)
@@ -1273,6 +1286,109 @@ pa_enc_ts_validate(astgs_request_t r, const PA_DATA *pa)
     return ret;
 }
 
+#ifdef PKINIT
+
+static krb5_error_code
+make_freshness_token(astgs_request_t r, const Key *krbtgt_key, unsigned krbtgt_kvno)
+{
+    krb5_error_code ret = 0;
+    const struct timeval current_kdc_time = krb5_kdc_get_time();
+    int usec = current_kdc_time.tv_usec;
+    const PA_ENC_TS_ENC ts_enc = {
+	.patimestamp = current_kdc_time.tv_sec,
+	.pausec = &usec,
+    };
+    unsigned char *encoded_ts_enc = NULL;
+    size_t ts_enc_size;
+    size_t ts_enc_len = 0;
+    EncryptedData encdata;
+    krb5_crypto crypto;
+    unsigned char *token = NULL;
+    size_t token_size;
+    size_t token_len = 0;
+    size_t token_alloc_size;
+
+    ASN1_MALLOC_ENCODE(PA_ENC_TS_ENC,
+		       encoded_ts_enc,
+		       ts_enc_size,
+		       &ts_enc,
+		       &ts_enc_len,
+		       ret);
+    if (ret)
+	return ret;
+    if (ts_enc_size != ts_enc_len)
+	krb5_abortx(r->context, "internal error in ASN.1 encoder");
+
+    ret = krb5_crypto_init(r->context, &krbtgt_key->key, 0, &crypto);
+    if (ret) {
+	free(encoded_ts_enc);
+	return ret;
+    }
+
+    ret = krb5_encrypt_EncryptedData(r->context,
+				     crypto,
+				     KRB5_KU_AS_FRESHNESS,
+				     encoded_ts_enc,
+				     ts_enc_len,
+				     krbtgt_kvno,
+				     &encdata);
+    free(encoded_ts_enc);
+    krb5_crypto_destroy(r->context, crypto);
+    if (ret)
+	return ret;
+
+    token_size = length_EncryptedData(&encdata);
+    token_alloc_size = token_size + 2; /* Account for the two leading zero bytes. */
+    token = calloc(1, token_alloc_size);
+    if (token == NULL) {
+	free_EncryptedData(&encdata);
+	return ENOMEM;
+    }
+
+    ret = encode_EncryptedData(token + token_alloc_size - 1,
+			       token_size,
+			       &encdata,
+			       &token_len);
+    free_EncryptedData(&encdata);
+    if (ret) {
+	free(token);
+	return ret;
+    }
+    if (token_size != token_len)
+	krb5_abortx(r->context, "internal error in ASN.1 encoder");
+
+    ret = krb5_padata_add(r->context,
+			  r->rep.padata,
+			  KRB5_PADATA_AS_FRESHNESS,
+			  token,
+			  token_alloc_size);
+    if (ret)
+	free(token);
+    return ret;
+}
+
+#endif /* PKINIT */
+
+static krb5_error_code
+send_freshness_token(astgs_request_t r, const Key *krbtgt_key, unsigned krbtgt_kvno)
+{
+    krb5_error_code ret = 0;
+#ifdef PKINIT
+    int idx = 0;
+    const PA_DATA *freshness_padata = NULL;
+
+    freshness_padata = _kdc_find_padata(&r->req,
+					&idx,
+					KRB5_PADATA_AS_FRESHNESS);
+    if (freshness_padata == NULL) {
+	return 0;
+    }
+
+    ret = make_freshness_token(r, krbtgt_key, krbtgt_kvno);
+#endif /* PKINIT */
+    return ret;
+}
+
 struct kdc_patypes {
     int type;
     const char *name;
@@ -1629,8 +1745,8 @@ get_pa_etype_info(krb5_context context,
  *
  */
 
-extern int _krb5_AES_SHA1_string_to_default_iterator;
-extern int _krb5_AES_SHA2_string_to_default_iterator;
+extern const int _krb5_AES_SHA1_string_to_default_iterator;
+extern const int _krb5_AES_SHA2_string_to_default_iterator;
 
 static krb5_error_code
 make_s2kparams(int value, size_t len, krb5_data **ps2kparams)
@@ -2365,6 +2481,7 @@ _kdc_as_rep(astgs_request_t r)
     krb5_boolean is_tgs;
     const char *msg;
     Key *krbtgt_key;
+    unsigned krbtgt_kvno;
 
     memset(rep, 0, sizeof(*rep));
 
@@ -2532,6 +2649,36 @@ _kdc_as_rep(astgs_request_t r)
     }
 
     /*
+     * Select the best encryption type for the KDC without regard to
+     * the client since the client never needs to read that data.
+     */
+
+    ret = _kdc_get_preferred_key(r->context, config,
+				 r->server, r->sname,
+				 &setype, &skey);
+    if(ret)
+	goto out;
+
+    /* If server is not krbtgt, fetch local krbtgt key for signing authdata */
+    if (is_tgs) {
+	krbtgt_key = skey;
+	krbtgt_kvno = r->server->kvno;
+    } else {
+	ret = get_local_tgs(r->context, config, r->server_princ->realm,
+			    &r->krbtgtdb, &r->krbtgt);
+	if (ret)
+	    goto out;
+
+	ret = _kdc_get_preferred_key(r->context, config, r->krbtgt,
+				      r->server_princ->realm,
+				      NULL, &krbtgt_key);
+	if (ret)
+	    goto out;
+
+	krbtgt_kvno = r->server->kvno;
+    }
+
+    /*
      * Pre-auth processing
      */
 
@@ -2654,6 +2801,14 @@ _kdc_as_rep(astgs_request_t r)
 		goto out;
 	}
 
+	/*
+	 * If the client indicated support for PKINIT Freshness, send back a
+	 * freshness token.
+	 */
+	ret = send_freshness_token(r, krbtgt_key, krbtgt_kvno);
+	if (ret)
+	    goto out;
+
 	/* 
 	 * send requre preauth is its required or anon is requested,
 	 * anon is today only allowed via preauth mechanisms.
@@ -2689,33 +2844,6 @@ _kdc_as_rep(astgs_request_t r)
 
     kdc_audit_setkv_number((kdc_request_t)r, KDC_REQUEST_KV_AUTH_EVENT,
 			   KDC_AUTH_EVENT_CLIENT_AUTHORIZED);
-
-    /*
-     * Select the best encryption type for the KDC with out regard to
-     * the client since the client never needs to read that data.
-     */
-
-    ret = _kdc_get_preferred_key(r->context, config,
-				 r->server, r->sname,
-				 &setype, &skey);
-    if(ret)
-	goto out;
-
-    /* If server is not krbtgt, fetch local krbtgt key for signing authdata */
-    if (is_tgs) {
-	krbtgt_key = skey;
-    } else {
-	ret = get_local_tgs(r->context, config, r->server_princ->realm,
-			    &r->krbtgtdb, &r->krbtgt);
-	if (ret)
-	    goto out;
-
-	ret = _kdc_get_preferred_key(r->context, config, r->krbtgt,
-				      r->server_princ->realm,
-				      NULL, &krbtgt_key);
-	if (ret)
-	    goto out;
-    }
 
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey) {
 	ret = KRB5KDC_ERR_BADOPTION;
@@ -2925,7 +3053,10 @@ _kdc_as_rep(astgs_request_t r)
 	r->ek.last_req.val[r->ek.last_req.len].lr_value = 0;
 	++r->ek.last_req.len;
     }
-    r->ek.nonce = b->nonce;
+    /* Set the nonce if it’s not already set. */
+    if (!r->ek.nonce) {
+	r->ek.nonce = b->nonce;
+    }
     if (r->client->valid_end || r->client->pw_end) {
 	ALLOC(r->ek.key_expiration);
 	if (r->client->valid_end) {

@@ -319,7 +319,9 @@ set_ptypes(krb5_context context,
 	   krb5_preauthdata **preauth)
 {
     static krb5_preauthdata preauth2;
-    static krb5_preauthtype ptypes2[] = { KRB5_PADATA_ENC_TIMESTAMP, KRB5_PADATA_NONE };
+    static const krb5_preauthtype ptypes2[] = {
+	    KRB5_PADATA_ENC_TIMESTAMP, KRB5_PADATA_NONE
+    };
 
     if(error->e_data) {
 	METHOD_DATA md;

@@ -63,7 +63,7 @@ error_message (long code)
 }
 
 KRB5_LIB_FUNCTION int KRB5_LIB_CALL
-init_error_table(const char **msgs, long base, int count)
+init_error_table(const char *const *msgs, long base, int count)
 {
     initialize_error_table_r(&_et_list, msgs, count, base);
     return 0;

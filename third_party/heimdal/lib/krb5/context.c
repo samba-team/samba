@@ -372,7 +372,7 @@ kt_ops_copy(krb5_context context, const krb5_context src_context)
     return 0;
 }
 
-static const char *sysplugin_dirs[] =  {
+static const char *const sysplugin_dirs[] =  {
 #ifdef _WIN32
     "$ORIGIN",
 #else

@@ -646,7 +646,7 @@ static int
 HandleOP(GetVersionAndCapabilities)
 {
     int32_t cap = HAS_MONIKER;
-    char name[256] = "unknown", *str;
+    char *name = NULL, *str = NULL;
     int ret;
 
     if (targetname)
@@ -656,13 +656,16 @@ HandleOP(GetVersionAndCapabilities)
     {
 	struct utsname ut;
 	if (uname(&ut) == 0) {
-	    snprintf(name, sizeof(name), "%s-%s-%s",
-		     ut.sysname, ut.version, ut.machine);
+	    if (asprintf(&name, "%s-%s-%s",
+		    ut.sysname, ut.version, ut.machine) == -1) {
+		errx(1, "out of memory");
+	    }
 	}
     }
 #endif
 
-    ret = asprintf(&str, "gssmask %s %s", PACKAGE_STRING, name);
+    ret = asprintf(&str, "gssmask %s %s", PACKAGE_STRING,
+	name ? name : "unknown");
     if (ret == -1)
 	errx(1, "out of memory");
 
@@ -670,6 +673,7 @@ HandleOP(GetVersionAndCapabilities)
     put32(c, cap);
     putstring(c, str);
     free(str);
+    free(name);
 
     return 0;
 }

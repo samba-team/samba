@@ -769,7 +769,7 @@ mdb_seq(krb5_context context, HDB *db,
 {
     DB *d = (DB*)db->hdb_db;
     DBT key, value;
-    krb5_data key_data, data;
+    krb5_data data;
     int code;
 
     code = db->hdb_lock(context, db, HDB_RLOCK);
@@ -790,8 +790,6 @@ mdb_seq(krb5_context context, HDB *db,
 	return HDB_ERR_NOENTRY;
     }
 
-    key_data.data = key.data;
-    key_data.length = key.size;
     data.data = value.data;
     data.length = value.size;
     memset(entry, 0, sizeof(*entry));

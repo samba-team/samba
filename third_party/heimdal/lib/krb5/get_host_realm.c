@@ -109,17 +109,17 @@ dns_find_realm(krb5_context context,
 	       const char *domain,
 	       krb5_realm **realms)
 {
-    static const char *default_labels[] = { "_kerberos", NULL };
+    static const char *const default_labels[] = { "_kerberos", NULL };
     char dom[MAXHOSTNAMELEN];
     struct rk_dns_reply *r;
-    const char **labels;
+    const char *const *labels;
     char **config_labels;
     int i, ret = 0;
 
     config_labels = krb5_config_get_strings(context, NULL, "libdefaults",
 					    "dns_lookup_realm_labels", NULL);
     if(config_labels != NULL)
-	labels = (const char **)config_labels;
+	labels = (const char *const *)config_labels;
     else
 	labels = default_labels;
     if(*domain == '.')

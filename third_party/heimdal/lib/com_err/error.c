@@ -81,7 +81,7 @@ struct foobar {
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 initialize_error_table_r(struct et_list **list,
-			 const char **messages,
+			 const char *const *messages,
 			 int num_errors,
 			 long base)
 {

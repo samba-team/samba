@@ -33,6 +33,7 @@
 
 #include "hx_locl.h"
 
+#include <stdint.h>
 #include <hxtool-commands.h>
 #include <sl.h>
 #include <rtbl.h>
@@ -1661,13 +1662,15 @@ random_data(void *opt, int argc, char **argv)
 {
     void *ptr;
     ssize_t len;
+    int64_t bytes;
     int ret;
 
-    len = parse_bytes(argv[0], "byte");
-    if (len <= 0) {
+    bytes = parse_bytes(argv[0], "byte");
+    if (bytes <= 0 || bytes > SSIZE_MAX) {
 	fprintf(stderr, "bad argument to random-data\n");
 	return 1;
     }
+    len = bytes;
 
     ptr = malloc(len);
     if (ptr == NULL) {

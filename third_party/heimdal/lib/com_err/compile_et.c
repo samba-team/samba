@@ -87,7 +87,7 @@ generate_c(void)
     fprintf(c_file, "#define N_(x) (x)\n");
     fprintf(c_file, "\n");
 
-    fprintf(c_file, "static const char *%s_error_strings[] = {\n", name);
+    fprintf(c_file, "static const char *const %s_error_strings[] = {\n", name);
 
     for(ec = codes, n = 0; ec; ec = ec->next, n++) {
 	while(n < ec->number) {

@@ -37,6 +37,8 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 
+#define MAX_REQUEST_MAX 67108864ll /* 64MB, the maximum accepted value of max_request */
+
 struct dbinfo {
     char *realm;
     char *dbname;
@@ -222,11 +224,16 @@ configure(krb5_context context, int argc, char **argv, int *optidx)
 	krb5_err(context, 1, ret, "krb5_kdc_set_dbinfo");
 
     if (max_request_str) {
-        ssize_t bytes;
+        int64_t bytes;
 
         if ((bytes = parse_bytes(max_request_str, NULL)) < 0)
             krb5_errx(context, 1, "--max-request must be non-negative");
-	max_request_tcp = max_request_udp = bytes;
+
+        if (bytes > MAX_REQUEST_MAX)
+            krb5_errx(context, 1, "--max-request size is too big "
+                      "(must be smaller than %lld)", MAX_REQUEST_MAX);
+
+        max_request_tcp = max_request_udp = bytes;
     }
 
     if(max_request_tcp == 0){
@@ -236,10 +243,15 @@ configure(krb5_context context, int argc, char **argv, int *optidx)
 				    "max-request",
 				    NULL);
         if (p) {
-            ssize_t bytes;
+            int64_t bytes;
 
             if ((bytes = parse_bytes(max_request_str, NULL)) < 0)
                 krb5_errx(context, 1, "[kdc] max-request must be non-negative");
+
+            if (bytes > MAX_REQUEST_MAX)
+                krb5_errx(context, 1, "[kdc] max-request size is too big "
+                          "(must be smaller than %lld)", MAX_REQUEST_MAX);
+
             max_request_tcp = max_request_udp = bytes;
         }
     }

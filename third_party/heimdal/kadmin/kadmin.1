@@ -473,25 +473,49 @@ The only policy supported by Heimdal is
 If a krb5 config file is given, it will be saved in the entry.
 .Pp
 Possible attributes are:
-.Li new-princ ,
-.Li support-desmd5 ,
-.Li pwchange-service ,
-.Li disallow-client ,
-.Li disallow-svr ,
-.Li requires-pw-change ,
-.Li requires-hw-auth ,
-.Li requires-pre-auth ,
-.Li allow-digest ,
-.Li trusted-for-delegation ,
-.Li ok-as-delegate ,
-.Li disallow-all-tix ,
-.Li disallow-dup-skey ,
-.Li disallow-proxiable ,
-.Li disallow-renewable ,
-.Li disallow-tgt-based ,
-.Li disallow-forwardable ,
-.Li disallow-postdated ,
-.Li no-auth-data-reqd
+.Bl -tag -width Ds
+.It new-princ
+not used
+.It support-desmd5
+not used
+.It pwchange-service
+for kadmin/admin style service principals
+.It requires-pw-change
+force the user to change their password
+.It requires-hw-auth
+.It requires-pre-auth
+.It allow-digest
+allow NTLM for this user in the KDC's digest service
+.It trusted-for-delegation
+.It ok-as-delegate
+allow forwarding of tickets to this service principal
+.It disallow-client
+disallow issuance of tickets for this principal as a client
+.It disallow-svr
+disallow issuance of tickets for this principal as a server
+.It disallow-all-tix
+disallow issuance of tickets for this principal as a client or
+server
+.It disallow-dup-skey
+not used
+.It disallow-proxiable
+disallow proxiable tickets
+.It disallow-renewable ,
+disallow reneable tickets
+.It disallow-tgt-based ,
+require initial tickets for this service, such as password
+changing services
+.It disallow-forwardable
+disallow forwardable tickets
+.It disallow-postdated
+disallow postdated tickets
+.It no-auth-data-reqd
+do not include a PAC in tickets issued to this service
+.It auth-data-reqd
+do include a PAC in tickets issued to this service even if the
+.Li disable_pac
+KDC configuration parameter is set to true
+.El
 .Pp
 Attributes may be negated with a "-", e.g.,
 .Pp

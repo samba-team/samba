@@ -76,8 +76,8 @@ krb5_mk_error_ext(krb5_context context,
 	msg.realm = server->realm;
 	msg.sname = server->name;
     }else{
-	static char unspec[] = "<unspecified realm>";
-	msg.realm = unspec;
+	static const char unspec[] = "<unspecified realm>";
+	msg.realm = rk_UNCONST(unspec);
     }
     msg.crealm = rk_UNCONST(client_realm);
     msg.cname = rk_UNCONST(client_name);

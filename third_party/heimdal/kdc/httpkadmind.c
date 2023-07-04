@@ -1274,6 +1274,7 @@ make_kstuple(krb5_context context,
 
 /* Copied from kadmin/util.c */
 struct units kdb_attrs[] = {
+    { "auth-data-reqd",         KRB5_KDB_AUTH_DATA_REQUIRED },
     { "no-auth-data-reqd",      KRB5_KDB_NO_AUTH_DATA_REQUIRED },
     { "disallow-client",        KRB5_KDB_DISALLOW_CLIENT },
     { "virtual",                KRB5_KDB_VIRTUAL },

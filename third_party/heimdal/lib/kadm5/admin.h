@@ -78,6 +78,7 @@
 #define KRB5_KDB_VIRTUAL                0x00400000 /* MIT doesn't have this */
 #define KRB5_KDB_DISALLOW_CLIENT        0x00800000 /* MIT doesn't have this */
 #define KRB5_KDB_NO_AUTH_DATA_REQUIRED	0x01000000 /* 0x00400000 in MIT */
+#define KRB5_KDB_AUTH_DATA_REQUIRED	0x02000000
 
 /*
  * MIT has:

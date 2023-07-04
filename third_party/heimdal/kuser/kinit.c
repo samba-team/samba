@@ -779,29 +779,81 @@ get_new_tickets(krb5_context context,
 
 #ifdef HAVE_FRAMEWORK_SECURITY
     if (passwd[0] == '\0') {
+	enum querykey {
+	    qk_class, qk_matchlimit, qk_service, qk_account, qk_secreturndata,
+	};
+	const void *querykeys[] = {
+	    [qk_class] = kSecClass,
+	    [qk_matchlimit] = kSecMatchLimit,
+	    [qk_service] = kSecAttrService,
+	    [qk_account] = kSecAttrAccount,
+	    [qk_secreturndata] = kSecReturnData,
+	};
+	const void *queryargs[] = {
+	    [qk_class] = kSecClassGenericPassword,
+	    [qk_matchlimit] = kSecMatchLimitOne,
+	    [qk_service] = NULL, /* filled in later */
+	    [qk_account] = NULL, /* filled in later */
+	    [qk_secreturndata] = kCFBooleanTrue,
+	};
+	CFStringRef service_ref = NULL;
+	CFStringRef account_ref = NULL;
+	CFDictionaryRef query_ref = NULL;
 	const char *realm;
 	OSStatus osret;
-	UInt32 length;
-	void *buffer;
-	char *name;
+	char *name = NULL;
+	CFTypeRef item_ref = NULL;
+	CFDataRef item;
+	CFIndex length;
 
 	realm = krb5_principal_get_realm(context, principal);
 
 	ret = krb5_unparse_name_flags(context, principal,
 				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &name);
 	if (ret)
-	    goto nopassword;
+	    goto fail;
 
-	osret = SecKeychainFindGenericPassword(NULL, strlen(realm), realm,
-					       strlen(name), name,
-					       &length, &buffer, NULL);
+	service_ref = CFStringCreateWithCString(kCFAllocatorDefault, realm,
+	    kCFStringEncodingUTF8);
+	if (service_ref == NULL)
+	    goto fail;
+
+	account_ref = CFStringCreateWithCString(kCFAllocatorDefault, name,
+	    kCFStringEncodingUTF8);
+	if (account_ref == NULL)
+	    goto fail;
+
+	queryargs[qk_service] = service_ref;
+	queryargs[qk_account] = account_ref;
+	query_ref = CFDictionaryCreate(kCFAllocatorDefault,
+	    querykeys, queryargs,
+	    /*numValues*/sizeof(querykeys)/sizeof(querykeys[0]),
+	    /*keyCallbacks*/NULL, /*valueCallbacks*/NULL);
+	if (query_ref == NULL)
+	    goto fail;
+
+	osret = SecItemCopyMatching(query_ref, &item_ref);
+	if (osret != noErr)
+	    goto fail;
+
+	item = item_ref;
+	length = CFDataGetLength(item);
+	if (length >= sizeof(passwd) - 1)
+	    goto fail;
+
+	CFDataGetBytes(item, CFRangeMake(0, length), (UInt8 *)passwd);
+	passwd[length] = '\0';
+
+    fail:
+	if (item_ref)
+	    CFRelease(item_ref);
+	if (query_ref)
+	    CFRelease(query_ref);
+	if (account_ref)
+	    CFRelease(account_ref);
+	if (service_ref)
+	    CFRelease(service_ref);
 	free(name);
-	if (osret == noErr && length < sizeof(passwd) - 1) {
-	    memcpy(passwd, buffer, length);
-	    passwd[length] = '\0';
-	}
-    nopassword:
-	do { } while(0);
     }
 #endif
 

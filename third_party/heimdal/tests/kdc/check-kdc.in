@@ -261,6 +261,7 @@ ${kadmin} ext -k ${keytab} ${alias1}@${R} || exit 1
 ${kadmin} modify --alias=${alias2}@${R} ${alias1}@${R}
 
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
+${kadmin} modify --attributes=+no-auth-data-reqd krbtgt/${R2}@${R} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
 
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R3}@${R2} || exit 1
@@ -551,6 +552,20 @@ for a in $enctypes; do
 done
 ${kdestroy}
 
+echo "Getting client initial tickets with PAC"; > messages.log
+${kinit} --request-pac --password-file=${objdir}/foopassword foo@$R || \
+	{ ec=1 ; eval "${testfailed}"; }
+for a in $enctypes; do
+	echo "Getting tickets for PAC-less service principal ($a)"; > messages.log
+	${kgetcred} -e $a ${server4}@${R2} || { ec=1 ; eval "${testfailed}"; }
+	${test_ap_req} --verify-pac ${server4}@${R2} ${keytab} ${cache} && \
+		{ ec=1 ; eval "${testfailed}"; }
+	${test_ap_req} --no-verify-pac ${server4}@${R2} ${keytab} ${cache} || \
+		{ ec=1 ; eval "${testfailed}"; }
+	${kdestroy} --credential=${server4}@${R2}
+done
+${kdestroy}
+
 echo "Getting client authenticated anonymous initial tickets"; > messages.log
 ${kinit} -n --password-file=${objdir}/foopassword foo@$R || \
 	{ ec=1 ; eval "${testfailed}"; }
@@ -558,6 +573,8 @@ for a in $enctypes; do
 	echo "Getting tickets ($a)"; > messages.log
 	${kgetcred} -e $a ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 	${test_ap_req} --no-verify-pac ${server}@${R} ${keytab} ${cache} || \
+		{ ec=1 ; eval "${testfailed}"; }
+	${test_ap_req} --verify-pac ${server}@${R} ${keytab} ${cache} && \
 		{ ec=1 ; eval "${testfailed}"; }
 	${kdestroy} --credential=${server}@${R}
 done
@@ -575,7 +592,7 @@ for a in $enctypes; do
 done
 ${kdestroy}
 
-echo "Getting client initial tickets for cross realm case"; > messages.log
+echo "Getting client initial tickets for cross realm case (no-auth-data-reqd for ${R2})"; > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@$R || { ec=1 ; eval "${testfailed}"; }
 for a in $enctypes; do
 	echo "Getting cross realm tickets ($a)"; > messages.log
@@ -583,7 +600,24 @@ for a in $enctypes; do
 	echo "  checking we we got back right ticket"
 	${klist} | grep ${server2}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
 	echo "  checking if ticket is useful"
-	${test_ap_req} ${server2}@${R2} ${keytab} ${cache} || \
+	${test_ap_req} --no-verify-pac ${server2}@${R2} ${keytab} ${cache} || \
+		{ ec=1 ; eval "${testfailed}"; }
+	${test_ap_req} --verify-pac ${server2}@${R2} ${keytab} ${cache} && \
+		{ ec=1 ; eval "${testfailed}"; }
+	${kdestroy} --credential=${server2}@${R2}
+done
+${kdestroy}
+
+echo "Getting client initial tickets for cross realm case (w/ PAC)"; > messages.log
+${kadmin} modify --attributes=-no-auth-data-reqd krbtgt/${R2}@${R} || exit 1
+${kinit} --password-file=${objdir}/foopassword foo@$R || { ec=1 ; eval "${testfailed}"; }
+for a in $enctypes; do
+	echo "Getting cross realm tickets ($a)"; > messages.log
+	${kgetcred} -e $a ${server2}@${R2} || { ec=1 ; eval "${testfailed}"; }
+	echo "  checking we we got back right ticket"
+	${klist} | grep ${server2}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
+	echo "  checking if ticket is useful"
+	${test_ap_req} --verify-pac ${server2}@${R2} ${keytab} ${cache} || \
 		{ ec=1 ; eval "${testfailed}"; }
 	${kdestroy} --credential=${server2}@${R2}
 done

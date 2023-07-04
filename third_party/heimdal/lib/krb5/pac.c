@@ -141,7 +141,7 @@ pac_dealloc(void *ctx)
     free(pac->pac);
 }
 
-struct heim_type_data pac_object = {
+static const struct heim_type_data pac_object = {
     HEIM_TID_PAC,
     "heim-pac",
     NULL,
@@ -597,7 +597,7 @@ krb5_pac_get_buffer(krb5_context context, krb5_const_pac p,
     return ENOENT;
 }
 
-static struct {
+static const struct {
     uint32_t type;
     krb5_data name;
 } pac_buffer_name_map[] = {
@@ -1982,8 +1982,8 @@ _krb5_pac_get_attributes_info(krb5_context context,
     return 0;
 }
 
-static unsigned char single_zero = '\0';
-static krb5_data single_zero_pac = { 1, &single_zero };
+static const unsigned char single_zero = '\0';
+static const krb5_data single_zero_pac = { 1, rk_UNCONST(&single_zero) };
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_kdc_pac_ticket_parse(krb5_context context,

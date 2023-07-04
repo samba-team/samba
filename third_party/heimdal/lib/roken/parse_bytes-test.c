@@ -38,7 +38,7 @@
 
 static struct testcase {
     int canonicalp;
-    ssize_t val;
+    int64_t val;
     const char *def_unit;
     const char *str;
 } tests[] = {
@@ -52,7 +52,7 @@ static struct testcase {
     {1, 1024 * 1024, NULL, "1 megabyte"},
     {0, 1025, NULL, "1 kilobyte 1"},
     {1, 1025, NULL, "1 kilobyte 1 byte"},
-    {1, 1024UL * 1024 * 1024 * 1024, NULL, "1 terabyte"},
+    {1, 1024ULL * 1024 * 1024 * 1024, NULL, "1 terabyte"},
 };
 
 int
@@ -63,7 +63,7 @@ main(int argc, char **argv)
 
     for (i = 0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
 	char buf[256];
-	ssize_t val = parse_bytes (tests[i].str, tests[i].def_unit);
+	int64_t val = parse_bytes (tests[i].str, tests[i].def_unit);
 
 	if (val != tests[i].val) {
 	    printf ("parse_bytes (%s, %s) = %lld != %lld\n",

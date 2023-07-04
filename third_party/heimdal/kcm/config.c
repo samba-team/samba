@@ -36,6 +36,8 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 
+#define MAX_REQUEST_MAX 67108864ll /* 64MB, the maximum accepted value of max_request */
+
 static const char *config_file;	/* location of kcm config file */
 
 size_t max_request = 0;		/* maximal size of a request */
@@ -360,13 +362,16 @@ kcm_configure(int argc, char **argv)
     }
 
     if (max_request_str) {
-        ssize_t bytes;
+        int64_t bytes;
 
         if ((bytes = parse_bytes(max_request_str, NULL)) < 0)
             krb5_errx(kcm_context, 1,
                       "--max-request size must be non-negative");
+        if (bytes > MAX_REQUEST_MAX)
+            krb5_errx(kcm_context, 1, "--max-request size is too big "
+                      "(must be smaller than %lld)", MAX_REQUEST_MAX);
 
-	max_request = bytes;
+        max_request = bytes;
     }
 
     if(max_request == 0){
@@ -376,11 +381,15 @@ kcm_configure(int argc, char **argv)
 				    "max-request",
 				    NULL);
         if (p) {
-            ssize_t bytes;
+            int64_t bytes;
 
             if ((bytes = parse_bytes(max_request_str, NULL)) < 0)
                 krb5_errx(kcm_context, 1,
                           "[kcm] max-request size must be non-negative");
+            if (bytes > MAX_REQUEST_MAX)
+                krb5_errx(kcm_context, 1, "[kcm] max-request size is too big "
+                          "(must be smaller than %lld)", MAX_REQUEST_MAX);
+
             max_request = bytes;
         }
     }

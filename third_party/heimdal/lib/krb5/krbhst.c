@@ -709,9 +709,9 @@ plcallback(krb5_context context,
     return KRB5_PLUGIN_NO_HANDLE;
 }
 
-static const char *locate_plugin_deps[] = { "krb5", NULL };
+static const char *const locate_plugin_deps[] = { "krb5", NULL };
 
-static struct heim_plugin_data
+static const struct heim_plugin_data
 locate_plugin_data = {
     "krb5",
     KRB5_PLUGIN_LOCATE,

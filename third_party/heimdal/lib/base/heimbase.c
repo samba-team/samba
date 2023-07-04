@@ -40,7 +40,7 @@
 static heim_base_atomic(uint32_t) tidglobal = HEIM_TID_USER;
 
 struct heim_base {
-    heim_type_t isa;
+    heim_const_type_t isa;
     heim_base_atomic(uint32_t) ref_cnt;
     HEIM_TAILQ_ENTRY(heim_base) autorel;
     heim_auto_release_t autorelpool;
@@ -49,7 +49,7 @@ struct heim_base {
 
 /* specialized version of base */
 struct heim_base_mem {
-    heim_type_t isa;
+    heim_const_type_t isa;
     heim_base_atomic(uint32_t) ref_cnt;
     HEIM_TAILQ_ENTRY(heim_base) autorel;
     heim_auto_release_t autorelpool;
@@ -182,7 +182,7 @@ static heim_type_t tagged_isa[9] = {
     NULL
 };
 
-heim_type_t
+heim_const_type_t
 _heim_get_isa(heim_object_t ptr)
 {
     struct heim_base *p;
@@ -206,7 +206,7 @@ _heim_get_isa(heim_object_t ptr)
 heim_tid_t
 heim_get_tid(heim_object_t ptr)
 {
-    heim_type_t isa = _heim_get_isa(ptr);
+    heim_const_type_t isa = _heim_get_isa(ptr);
     return isa->tid;
 }
 
@@ -221,7 +221,7 @@ heim_get_tid(heim_object_t ptr)
 uintptr_t
 heim_get_hash(heim_object_t ptr)
 {
-    heim_type_t isa = _heim_get_isa(ptr);
+    heim_const_type_t isa = _heim_get_isa(ptr);
     if (isa->hash)
 	return isa->hash(ptr);
     return (uintptr_t)ptr;
@@ -241,7 +241,7 @@ int
 heim_cmp(heim_object_t a, heim_object_t b)
 {
     heim_tid_t ta, tb;
-    heim_type_t isa;
+    heim_const_type_t isa;
 
     ta = heim_get_tid(a);
     tb = heim_get_tid(b);
@@ -272,7 +272,7 @@ memory_dealloc(void *ptr)
     }
 }
 
-struct heim_type_data memory_object = {
+static const struct heim_type_data memory_object = {
     HEIM_TID_MEMORY,
     "memory-object",
     NULL,
@@ -338,7 +338,7 @@ _heim_create_type(const char *name,
 }
 
 heim_object_t
-_heim_alloc_object(heim_type_t type, size_t size)
+_heim_alloc_object(heim_const_type_t type, size_t size)
 {
     /* XXX should use posix_memalign */
     struct heim_base *p = calloc(1, size + sizeof(*p));

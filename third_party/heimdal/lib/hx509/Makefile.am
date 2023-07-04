@@ -11,7 +11,7 @@ BUILT_SOURCES =				\
 	hx509_err.c			\
 	hx509_err.h
 
-AM_YFLAGS = -o sel-gram.c
+AM_YFLAGS = -d -o sel-gram.c
 
 dist_libhx509_la_SOURCES = \
 	ca.c \

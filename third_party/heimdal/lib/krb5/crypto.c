@@ -1922,13 +1922,13 @@ krb5_decrypt_iov_ivec(krb5_context context,
 	    goto cleanup;
     } else {
 	krb5_data ivec_data;
-	static unsigned char zero_ivec[EVP_MAX_IV_LENGTH];
+	static const unsigned char zero_ivec[EVP_MAX_IV_LENGTH];
 
 	heim_assert(et->blocksize <= sizeof(zero_ivec),
 		    "blocksize too big for ivec buffer");
 
 	ivec_data.length = et->blocksize;
-	ivec_data.data = ivec ? ivec : zero_ivec;
+	ivec_data.data = ivec ? ivec : rk_UNCONST(zero_ivec);
 
 	ret = iov_coalesce(context, &ivec_data, data, num_data, TRUE, &sign_data);
 	if(ret)

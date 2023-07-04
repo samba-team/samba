@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 WFLAGS += $(WFLAGS_ENUM_CONV)
 
-YFLAGS = -o asn1parse.c -t
+AM_YFLAGS = -d -o asn1parse.c -t
 
 AM_CPPFLAGS += $(ROKEN_RENAME) -I$(top_builddir)/include -I$(top_srcdir)/lib/base
 

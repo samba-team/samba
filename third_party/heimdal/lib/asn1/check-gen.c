@@ -54,6 +54,12 @@
 static int my_copy_vers_called;
 static int my_free_vers_called;
 
+#include <limits.h>
+#if UINT_MAX == 0xffffffff
+// 32 bit
+#define DISABLE_TEST_64
+#endif
+
 int
 my_copy_vers(const my_vers *from, my_vers *to)
 {
@@ -2143,17 +2149,21 @@ static int
 test_default(void)
 {
     struct test_case tests[] = {
+#ifndef DISABLE_TEST_64
 	{ NULL, 2, "\x30\x00", NULL },
+#endif
 	{ NULL, 25,
           "\x30\x17\x0c\x07\x68\x65\x69\x6d\x64\x61"
           "\x6c\xa0\x03\x02\x01\x07\x02\x04\x7f\xff"
           "\xff\xff\x01\x01\x00",
 	  NULL
 	},
+#ifndef DISABLE_TEST_64
 	{ NULL, 10,
           "\x30\x08\xa0\x03\x02\x01\x07\x01\x01\x00",
 	  NULL
 	},
+#endif
 	{ NULL, 17,
           "\x30\x0f\x0c\x07\x68\x65\x69\x6d\x64\x61\x6c\x02\x04"
           "\x7f\xff\xff\xff",
@@ -2162,9 +2172,13 @@ test_default(void)
     };
 
     TESTDefault values[] = {
-	{ "Heimdal", 8, 9223372036854775807, 1 },
+#ifndef DISABLE_TEST_64
+	{ "Heimdal", 8, 9223372036854775807LL, 1 },
+#endif
 	{ "heimdal", 7, 2147483647, 0 },
-	{ "Heimdal", 7, 9223372036854775807, 0 },
+#ifndef DISABLE_TEST_64
+	{ "Heimdal", 7, 9223372036854775807LL, 0 },
+#endif
 	{ "heimdal", 8, 2147483647, 1 },
     };
     int i, ret;

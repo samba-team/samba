@@ -67,10 +67,10 @@ plcallback(krb5_context context, const void *plug, void *plugctx, void *userctx)
 }
 
 static krb5_error_code plugin_reg_ret;
-static krb5plugin_kuserok_ftable kuserok_simple_plug;
-static krb5plugin_kuserok_ftable kuserok_sys_k5login_plug;
-static krb5plugin_kuserok_ftable kuserok_user_k5login_plug;
-static krb5plugin_kuserok_ftable kuserok_deny_plug;
+static const krb5plugin_kuserok_ftable kuserok_simple_plug;
+static const krb5plugin_kuserok_ftable kuserok_sys_k5login_plug;
+static const krb5plugin_kuserok_ftable kuserok_user_k5login_plug;
+static const krb5plugin_kuserok_ftable kuserok_deny_plug;
 
 static void
 reg_def_plugins_once(void *ctx)
@@ -455,9 +455,9 @@ krb5_kuserok(krb5_context context,
 }
 
 
-static const char *kuserok_plugin_deps[] = { "krb5", NULL };
+static const char *const kuserok_plugin_deps[] = { "krb5", NULL };
 
-static struct heim_plugin_data
+static const struct heim_plugin_data
 kuserok_plugin_data = {
     "krb5",
     KRB5_PLUGIN_KUSEROK,
@@ -723,28 +723,28 @@ kuser_ok_null_plugin_fini(void *ctx)
     return;
 }
 
-static krb5plugin_kuserok_ftable kuserok_simple_plug = {
+static const krb5plugin_kuserok_ftable kuserok_simple_plug = {
     KRB5_PLUGIN_KUSEROK_VERSION_0,
     kuser_ok_null_plugin_init,
     kuser_ok_null_plugin_fini,
     kuserok_simple_plug_f,
 };
 
-static krb5plugin_kuserok_ftable kuserok_sys_k5login_plug = {
+static const krb5plugin_kuserok_ftable kuserok_sys_k5login_plug = {
     KRB5_PLUGIN_KUSEROK_VERSION_0,
     kuser_ok_null_plugin_init,
     kuser_ok_null_plugin_fini,
     kuserok_sys_k5login_plug_f,
 };
 
-static krb5plugin_kuserok_ftable kuserok_user_k5login_plug = {
+static const krb5plugin_kuserok_ftable kuserok_user_k5login_plug = {
     KRB5_PLUGIN_KUSEROK_VERSION_0,
     kuser_ok_null_plugin_init,
     kuser_ok_null_plugin_fini,
     kuserok_user_k5login_plug_f,
 };
 
-static krb5plugin_kuserok_ftable kuserok_deny_plug = {
+static const krb5plugin_kuserok_ftable kuserok_deny_plug = {
     KRB5_PLUGIN_KUSEROK_VERSION_0,
     kuser_ok_null_plugin_init,
     kuser_ok_null_plugin_fini,

@@ -51,7 +51,7 @@ KRB5_LIB_FUNCTION const char * KRB5_LIB_CALL
 error_message (long);
 
 KRB5_LIB_FUNCTION int KRB5_LIB_CALL
-init_error_table (const char**, long, int);
+init_error_table (const char *const *, long, int);
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 com_err_va (const char *, long, const char *, va_list)

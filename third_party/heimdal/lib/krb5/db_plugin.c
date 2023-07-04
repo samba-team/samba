@@ -14,9 +14,9 @@ db_plugins_plcallback(krb5_context context, const void *plug, void *plugctx,
     return 0;
 }
 
-static const char *db_plugin_deps[] = { "krb5", NULL };
+static const char *const db_plugin_deps[] = { "krb5", NULL };
 
-static struct heim_plugin_data
+static const struct heim_plugin_data
 db_plugin_data = {
     "krb5",
     KRB5_PLUGIN_DB,

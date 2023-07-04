@@ -75,6 +75,7 @@ struct heim_plugin_common_ftable_desc {
 };
 typedef struct heim_plugin_common_ftable_desc heim_plugin_common_ftable;
 typedef struct heim_plugin_common_ftable_desc *heim_plugin_common_ftable_p;
+typedef const struct heim_plugin_common_ftable_desc *heim_plugin_common_ftable_const_p;
 typedef struct heim_plugin_common_ftable_desc * const heim_plugin_common_ftable_cp;
 
 typedef int

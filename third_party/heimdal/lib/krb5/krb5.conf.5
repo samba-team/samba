@@ -828,6 +828,11 @@ addresses in the tickets.
 .It Li allow-null-ticket-addresses = Va BOOL
 Allow address-less tickets.
 .\" XXX
+.It Li disable_pac = Va BOOL
+Do not include a PAC in service tickets.
+However, if a service has the
+.Li auth-data-reqd
+attribute then the KDC will include a PAC anyways.
 .It Li enable_fast = Va BOOL
 Enable RFC 6113 FAST support, this is enabled by default.
 .It Li enable_fast_cookie = Va BOOL
@@ -846,6 +851,10 @@ Enabled by default for now, but in a future release will be
 disabled.
 .It Li enable-pkinit = Va BOOL
 Enable PKINIT (disabled by default).
+.It Li require-pkinit-freshness = Va BOOL
+If PKINIT is enabled, require that PKINIT requests contain a
+freshness token proving recent possession of the private key.
+Disabled by default.
 .It Li allow-anonymous = Va BOOL
 If the kdc is allowed to hand out anonymous tickets.
 .It Li synthetic_clients = Va BOOL

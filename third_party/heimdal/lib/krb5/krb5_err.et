@@ -108,6 +108,9 @@ error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not suppo
 #error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
 #error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
 
+index 90
+error_code PREAUTH_EXPIRED, "Pre-authentication data expired"
+
 index 91
 error_code MORE_PREAUTH_DATA_REQUIRED, "More pre-authentication data required"
 

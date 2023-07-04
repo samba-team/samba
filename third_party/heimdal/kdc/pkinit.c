@@ -67,6 +67,7 @@ struct pk_client_params {
     hx509_peer_info peer;
     hx509_certs client_anchors;
     hx509_verify_ctx verify_ctx;
+    heim_octet_string *freshness_token;
 };
 
 struct pk_principal_mapping {
@@ -681,6 +682,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 	    ret = KRB5KRB_ERR_GENERIC;
 	    krb5_set_error_message(context, ret,
 				   "DH not supported for Win2k");
+	    free_AuthPack_Win2k(&ap);
 	    goto out;
 	}
 	free_AuthPack_Win2k(&ap);
@@ -766,6 +768,25 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 	    hx509_peer_info_add_cms_alg(context->hx509ctx, cp->peer,
 					hx509_signature_sha1());
 	}
+
+	/*
+	 * Copy the freshness token into the out parameters if it is present.
+	 */
+	if (ap.pkAuthenticator.freshnessToken != NULL) {
+	    cp->freshness_token = calloc(1, sizeof (cp->freshness_token));
+	    if (cp->freshness_token == NULL) {
+		ret = ENOMEM;
+		free_AuthPack(&ap);
+		goto out;
+	    }
+
+	    ret = der_copy_octet_string(ap.pkAuthenticator.freshnessToken, cp->freshness_token);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
+	}
+
 	free_AuthPack(&ap);
     } else
 	krb5_abortx(context, "internal pkinit error");
@@ -798,6 +819,12 @@ krb5_timestamp
 _kdc_pk_max_life(pk_client_params *pkp)
 {
     return pkp->max_life;
+}
+
+unsigned
+_kdc_pk_nonce(pk_client_params *pkp)
+{
+    return pkp->nonce;
 }
 
 /*
@@ -1811,6 +1838,156 @@ _kdc_pk_check_client(astgs_request_t r,
     *subject_name = NULL;
 
     return ret;
+}
+
+krb5_error_code
+_kdc_pk_validate_freshness_token(astgs_request_t r,
+				 pk_client_params *cp)
+{
+    krb5_error_code ret = 0;
+    uint8_t *token_data = NULL;
+    size_t token_len;
+    uint8_t *remaining_token_data = NULL;
+    size_t remaining_len;
+    EncryptedData enc_data;
+    size_t size;
+    const hdb_entry *krbtgt = NULL;
+    krb5_kvno kvno;
+    const Keys *keys = NULL;
+    Key *key = NULL;
+    krb5_crypto crypto;
+    krb5_data ts_data;
+    PA_ENC_TS_ENC ts_enc;
+    long time_diff;
+
+    if (cp->freshness_token == NULL) {
+	if (r->config->require_pkinit_freshness) {
+	    ret = KRB5KDC_ERR_PREAUTH_FAILED;
+	    kdc_log(r->context, r->config, 0, "PKINIT request is missing required freshness token");
+	}
+
+	return ret;
+    }
+
+    token_data = cp->freshness_token->data;
+    token_len = cp->freshness_token->length;
+
+    /* Ensure that the token be not empty. */
+    if (token_data == NULL) {
+	kdc_log(r->context, r->config, 0, "Got empty freshness token");
+	return KRB5KDC_ERR_PREAUTH_FAILED;
+    }
+
+    /* Ensure that the two leading bytes are zero. */
+    if (token_len < 2 || token_data[0] || token_data[1]) {
+	kdc_log(r->context, r->config, 0, "Freshness token contains invalid data");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    /* Decrypt the freshness token. */
+
+    remaining_token_data = token_data + 2;
+    remaining_len = token_len - 2;
+
+    ret = decode_EncryptedData(remaining_token_data, remaining_len, &enc_data, &size);
+    if (ret) {
+	kdc_log(r->context, r->config, 0, "Failed to decode freshness token");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    if (size != remaining_len) {
+	kdc_log(r->context, r->config, 0, "Trailing data in EncryptedData of freshness token");
+	free_EncryptedData(&enc_data);
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    krbtgt = (r->krbtgt != NULL) ? r->krbtgt : r->server;
+    kvno = (enc_data.kvno != NULL) ? *enc_data.kvno : 0;
+
+    /* We will only accept freshness tokens signed by our local krbtgt. */
+    keys = hdb_kvno2keys(r->context, krbtgt, kvno);
+    if (keys == NULL) {
+	kdc_log(r->context, r->config, 0,
+		"No key with kvno %"PRId32" to decrypt freshness token",
+		kvno);
+	free_EncryptedData(&enc_data);
+	return KRB5KDC_ERR_PREAUTH_FAILED;
+    }
+
+    ret = hdb_enctype2key(r->context, r->client, keys,
+			  enc_data.etype, &key);
+    if (ret) {
+	kdc_log(r->context, r->config, 0,
+		"No key with kvno %"PRId32", enctype %d to decrypt freshness token",
+		kvno, enc_data.etype);
+	free_EncryptedData(&enc_data);
+	return KRB5KDC_ERR_PREAUTH_FAILED;
+    }
+
+    ret = krb5_crypto_init(r->context, &key->key, 0, &crypto);
+    if (ret) {
+	const char *msg = krb5_get_error_message(r->context, ret);
+	kdc_log(r->context, r->config, 0,
+		"While attempting to decrypt freshness token, krb5_crypto_init failed: %s", msg);
+	krb5_free_error_message(r->context, msg);
+
+	free_EncryptedData(&enc_data);
+	return ret;
+    }
+
+    ret = krb5_decrypt_EncryptedData(r->context,
+				     crypto,
+				     KRB5_KU_AS_FRESHNESS,
+				     &enc_data,
+				     &ts_data);
+    krb5_crypto_destroy(r->context, crypto);
+    free_EncryptedData(&enc_data);
+    if (ret) {
+	kdc_log(r->context, r->config, 0, "Failed to decrypt freshness token");
+
+	free_EncryptedData(&enc_data);
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    /* Decode the timestamp. */
+
+    ret = decode_PA_ENC_TS_ENC(ts_data.data,
+			       ts_data.length,
+			       &ts_enc,
+			       &size);
+    if (ret) {
+	kdc_log(r->context, r->config, 0, "Failed to decode PA-ENC-TS-ENC in freshness token");
+	krb5_data_free(&ts_data);
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    if (size != ts_data.length) {
+	kdc_log(r->context, r->config, 0, "Trailing data in PA-ENC-TS-ENC of freshness token");
+	free_PA_ENC_TS_ENC(&ts_enc);
+	krb5_data_free(&ts_data);
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    krb5_data_free(&ts_data);
+
+    time_diff = labs(kdc_time - ts_enc.patimestamp);
+    if (time_diff > r->context->max_skew) {
+	char token_time[100];
+
+	krb5_format_time(r->context, ts_enc.patimestamp,
+			 token_time, sizeof(token_time), TRUE);
+
+	kdc_log(r->context, r->config, 4, "Freshness token has too large time skew: "
+		"time in token %s is out by %ld > %ld seconds — %s",
+		token_time,
+		time_diff,
+		r->context->max_skew,
+		r->cname);
+
+	r->e_text = NULL;
+	free_PA_ENC_TS_ENC(&ts_enc);
+	return KRB5_KDC_ERR_PREAUTH_EXPIRED;
+    }
+
+    free_PA_ENC_TS_ENC(&ts_enc);
+    return 0;
 }
 
 static krb5_error_code

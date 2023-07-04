@@ -44,7 +44,7 @@ static krb5_error_code KRB5_LIB_CALL an2ln_def_plug_an2ln(void *, krb5_context, 
 					    krb5_const_principal, set_result_f,
 					    void *);
 
-static krb5plugin_an2ln_ftable an2ln_def_plug = {
+static const krb5plugin_an2ln_ftable an2ln_def_plug = {
     0,
     an2ln_def_plug_init,
     an2ln_def_plug_fini,
@@ -81,9 +81,9 @@ plcallback(krb5_context context,
     return locate->an2ln(plugctx, context, plctx->rule, plctx->aname, set_res, plctx);
 }
 
-static const char *an2ln_plugin_deps[] = { "krb5", NULL };
+static const char *const an2ln_plugin_deps[] = { "krb5", NULL };
 
-static struct heim_plugin_data
+static const struct heim_plugin_data
 an2ln_plugin_data = {
     "krb5",
     KRB5_PLUGIN_AN2LN,

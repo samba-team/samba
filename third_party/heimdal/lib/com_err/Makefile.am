@@ -2,8 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-YFLAGS = -d -o parse.c
-LFLAGS = @FLEXNOUNPUTARGS@
+AM_YFLAGS = -d -o parse.c
+AM_LFLAGS = @FLEXNOUNPUTARGS@
 
 lib_LTLIBRARIES = libcom_err.la
 libcom_err_la_LDFLAGS = -version-info 2:3:1

@@ -39,7 +39,7 @@
 #include <string.h>
 
 #ifdef KRB5
-extern const char *heimdal_version;
+extern const char *const heimdal_version;
 #endif
 #include <version.h>
 

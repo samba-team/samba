@@ -35,7 +35,7 @@
 
 #include "krb5_locl.h"
 
-KRB5_LIB_VARIABLE const char *krb5_config_file =
+KRB5_LIB_VARIABLE const char *const krb5_config_file =
 #ifdef KRB5_DEFAULT_CONFIG_FILE
 KRB5_DEFAULT_CONFIG_FILE
 #else
@@ -56,12 +56,12 @@ SYSCONFDIR "/krb5.conf" PATH_SEP
 #endif /* KRB5_DEFAULT_CONFIG_FILE */
 ;
 
-KRB5_LIB_VARIABLE const char *krb5_defkeyname = KEYTAB_DEFAULT;
+KRB5_LIB_VARIABLE const char *const krb5_defkeyname = KEYTAB_DEFAULT;
 
-KRB5_LIB_VARIABLE const char *krb5_cc_type_api = "API";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_file = "FILE";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_memory = "MEMORY";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm = "KCM";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_scc = "SCC";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_dcc = "DIR";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_keyring = "KEYRING";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_api = "API";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_file = "FILE";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_memory = "MEMORY";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_kcm = "KCM";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_scc = "SCC";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_dcc = "DIR";
+KRB5_LIB_VARIABLE const char *const krb5_cc_type_keyring = "KEYRING";

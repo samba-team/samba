@@ -478,7 +478,7 @@ typedef krb5_error_code (*kpwd_process_reply) (krb5_context,
 					       krb5_data *,
 					       const char *);
 
-static struct kpwd_proc {
+static const struct kpwd_proc {
     const char *name;
     int flags;
 #define SUPPORT_TCP	1
@@ -513,7 +513,7 @@ change_password_loop (krb5_context	context,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string,
-		      struct kpwd_proc	*proc)
+		      const struct kpwd_proc	*proc)
 {
     krb5_error_code ret;
     krb5_auth_context auth_context = NULL;
@@ -662,10 +662,10 @@ change_password_loop (krb5_context	context,
 
 #ifndef HEIMDAL_SMALLER
 
-static struct kpwd_proc *
+static const struct kpwd_proc *
 find_chpw_proto(const char *name)
 {
-    struct kpwd_proc *p;
+    const struct kpwd_proc *p;
     for (p = procs; p->name != NULL; p++) {
 	if (strcmp(p->name, name) == 0)
 	    return p;
@@ -697,7 +697,7 @@ krb5_change_password (krb5_context	context,
 		      krb5_data		*result_string)
     KRB5_DEPRECATED_FUNCTION("Use krb5_set_password instead")
 {
-    struct kpwd_proc *p = find_chpw_proto("change password");
+    const struct kpwd_proc *p = find_chpw_proto("change password");
 
     *result_code = KRB5_KPASSWD_MALFORMED;
     result_code_string->data = result_string->data = NULL;

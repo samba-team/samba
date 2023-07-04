@@ -47,6 +47,7 @@ get_response(const char *prompt, const char *def, char *buf, size_t len);
  */
 
 struct units kdb_attrs[] = {
+    { "auth-data-reqd",	        KRB5_KDB_AUTH_DATA_REQUIRED },
     { "no-auth-data-reqd",	KRB5_KDB_NO_AUTH_DATA_REQUIRED },
     { "disallow-client",	KRB5_KDB_DISALLOW_CLIENT },
     { "virtual",		KRB5_KDB_VIRTUAL },

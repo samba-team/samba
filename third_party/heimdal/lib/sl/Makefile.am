@@ -8,8 +8,8 @@ endif
 
 AM_CPPFLAGS += $(ROKEN_RENAME)
 
-YFLAGS = -d -o slc-gram.c
-LFLAGS = @FLEXNOUNPUTARGS@
+AM_YFLAGS = -d -o slc-gram.c
+AM_LFLAGS = @FLEXNOUNPUTARGS@
 
 include_HEADERS = sl.h
 

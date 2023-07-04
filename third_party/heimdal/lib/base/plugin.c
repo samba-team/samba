@@ -152,7 +152,7 @@ copy_internal_dso(const char *name)
 }
 
 struct heim_plugin {
-    heim_plugin_common_ftable_p ftable;
+    heim_plugin_common_ftable_const_p ftable;
     void *ctx;
 };
 
@@ -166,7 +166,7 @@ plugin_free(void *ptr)
 }
 
 struct heim_plugin_register_ctx {
-    void *symbol;
+    const void *symbol;
     int is_dup;
 };
 
@@ -199,7 +199,7 @@ heim_plugin_register(heim_context context,
                      heim_pcontext pcontext,
                      const char *module,
                      const char *name,
-                     void *ftable)
+                     const void *ftable)
 {
     heim_error_code ret;
     heim_array_t plugins;
@@ -480,7 +480,7 @@ struct iter_ctx {
     heim_context context;
     heim_pcontext pcontext;
     heim_string_t n;
-    struct heim_plugin_data *caller;
+    const struct heim_plugin_data *caller;
     int flags;
     heim_array_t result;
     int32_t (HEIM_LIB_CALL *func)(void *, const void *, void *, void *);
@@ -540,7 +540,7 @@ add_dso_plugin_struct(heim_context context,
 
 static int
 validate_plugin_deps(heim_context context,
-                     struct heim_plugin_data *caller,
+                     const struct heim_plugin_data *caller,
                      const char *dsopath,
                      heim_get_instance_func_t get_instance)
 {
@@ -583,7 +583,7 @@ validate_plugin_deps(heim_context context,
 static heim_array_t
 add_dso_plugins_load_fn(heim_context context,
                         heim_pcontext pcontext,
-                        struct heim_plugin_data *caller,
+                        const struct heim_plugin_data *caller,
                         const char *dsopath,
                         void *dsohandle)
 {
@@ -635,7 +635,7 @@ add_dso_plugins_load_fn(heim_context context,
             heim_warn(context, ret, "plugin %s[%zu] failed to initialize",
                       dsopath, i);
         } else {
-            pl->ftable = rk_UNCONST(cpm);
+            pl->ftable = cpm;
             heim_array_append_value(plugins, pl);
         }
         heim_release(pl);
@@ -738,7 +738,7 @@ eval_results(heim_object_t value, void *ctx, int *stop)
 heim_error_code
 heim_plugin_run_f(heim_context context,
                   heim_pcontext pcontext,
-                  struct heim_plugin_data *caller,
+                  const struct heim_plugin_data *caller,
                   int flags,
                   int32_t nohandle,
                   void *userctx,

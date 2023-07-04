@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-int _krb5_AES_SHA2_string_to_default_iterator = 32768;
+const int _krb5_AES_SHA2_string_to_default_iterator = 32768;
 
 static krb5_error_code
 AES_SHA2_string_to_key(krb5_context context,
