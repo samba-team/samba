@@ -171,7 +171,7 @@ setup_shares()
 shares_missing()
 {
 	# Mark some shares as non-existent
-	_fmt="$1"
+	_type="$1"
 	shift
 
 	_out=""
@@ -187,7 +187,8 @@ shares_missing()
 
 			debug "Mark share $_n as missing share \"$_i\""
 			rmdir "$_i"
-			_t=$(printf "$_fmt" "${_i}")
+			_t=$(printf "ERROR: %s directory \"%s\" not available" \
+				    "$_type" "${_i}")
 			_out="${_out}${_out:+${_nl}}${_t}"
 		done
 		_n=$(($_n + 1))
