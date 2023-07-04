@@ -1842,7 +1842,19 @@ class RawKerberosTest(TestCase):
                                nonce,
                                *,
                                pa_checksum=None,
-                               freshness_token=None):
+                               freshness_token=None,
+                               kdc_name=None,
+                               kdc_realm=None,
+                               win2k_variant=False):
+        if win2k_variant:
+            self.assertIsNone(pa_checksum)
+            self.assertIsNone(freshness_token)
+            self.assertIsNotNone(kdc_name)
+            self.assertIsNotNone(kdc_realm)
+        else:
+            self.assertIsNone(kdc_name)
+            self.assertIsNone(kdc_realm)
+
         pk_authenticator_obj = {
             'cusec': cusec,
             'ctime': ctime,
@@ -1852,6 +1864,10 @@ class RawKerberosTest(TestCase):
             pk_authenticator_obj['paChecksum'] = pa_checksum
         if freshness_token is not None:
             pk_authenticator_obj['freshnessToken'] = freshness_token
+        if kdc_name is not None:
+            pk_authenticator_obj['kdcName'] = kdc_name
+        if kdc_realm is not None:
+            pk_authenticator_obj['kdcRealm'] = kdc_realm
 
         return pk_authenticator_obj
 
@@ -2143,7 +2159,12 @@ class RawKerberosTest(TestCase):
                         *,
                         client_public_value=None,
                         supported_cms_types=None,
-                        client_dh_nonce=None):
+                        client_dh_nonce=None,
+                        win2k_variant=False):
+        if win2k_variant:
+            self.assertIsNone(supported_cms_types)
+            self.assertIsNone(client_dh_nonce)
+
         auth_pack_obj = {
             'pkAuthenticator': pk_authenticator,
         }
@@ -2161,7 +2182,18 @@ class RawKerberosTest(TestCase):
                          signed_auth_pack,
                          *,
                          trusted_certifiers=None,
-                         kdc_pk_id=None):
+                         kdc_pk_id=None,
+                         kdc_cert=None,
+                         encryption_cert=None,
+                         win2k_variant=False):
+        if win2k_variant:
+            self.assertIsNone(kdc_pk_id)
+            asn1_spec = krb5_asn1.PA_PK_AS_REQ_Win2k
+        else:
+            self.assertIsNone(kdc_cert)
+            self.assertIsNone(encryption_cert)
+            asn1_spec = krb5_asn1.PA_PK_AS_REQ
+
         content_info_obj = self.ContentInfo_create(
             krb5_asn1.id_signedData, signed_auth_pack)
         content_info = self.der_encode(content_info_obj,
@@ -2175,9 +2207,12 @@ class RawKerberosTest(TestCase):
             pk_as_req_obj['trustedCertifiers'] = trusted_certifiers
         if kdc_pk_id is not None:
             pk_as_req_obj['kdcPkId'] = kdc_pk_id
+        if kdc_cert is not None:
+            pk_as_req_obj['kdcCert'] = kdc_cert
+        if encryption_cert is not None:
+            pk_as_req_obj['encryptionCert'] = encryption_cert
 
-        return self.der_encode(pk_as_req_obj,
-                               asn1Spec=krb5_asn1.PA_PK_AS_REQ())
+        return self.der_encode(pk_as_req_obj, asn1Spec=asn1_spec())
 
     def SignerInfo_create(self,
                           signer_id,
@@ -3326,10 +3361,19 @@ class RawKerberosTest(TestCase):
 
         pa_dict = self.get_pa_dict(padata)
 
-        if PADATA_PK_AS_REP in pa_dict:
-            pk_as_rep = pa_dict[PADATA_PK_AS_REP]
+        pk_as_rep = pa_dict.get(PADATA_PK_AS_REP)
+        if pk_as_rep is not None:
+            pk_as_rep_asn1_spec = krb5_asn1.PA_PK_AS_REP
+            reply_key_pack_asn1_spec = krb5_asn1.ReplyKeyPack
+            pk_win2k = False
+        else:
+            pk_as_rep = pa_dict.get(PADATA_PK_AS_REP_19)
+            pk_as_rep_asn1_spec = krb5_asn1.PA_PK_AS_REP_Win2k
+            reply_key_pack_asn1_spec = krb5_asn1.ReplyKeyPack_Win2k
+            pk_win2k = True
+        if pk_as_rep is not None:
             pk_as_rep = self.der_decode(pk_as_rep,
-                                        asn1Spec=krb5_asn1.PA_PK_AS_REP())
+                                        asn1Spec=pk_as_rep_asn1_spec())
 
             using_pkinit = kdc_exchange_dict['using_pkinit']
             if using_pkinit is PkInit.PUBLIC_KEY:
@@ -3490,9 +3534,7 @@ class RawKerberosTest(TestCase):
                 self.assertEqual(str(krb5_asn1.id_pkinit_rkeyData),
                                  content_type)
                 reply_key_pack = self.der_decode(
-                    content, asn1Spec=krb5_asn1.ReplyKeyPack())
-
-                as_checksum = reply_key_pack['asChecksum']
+                    content, asn1Spec=reply_key_pack_asn1_spec())
 
                 req_obj = kdc_exchange_dict['req_obj']
                 req_asn1Spec = kdc_exchange_dict['req_asn1Spec']
@@ -3508,12 +3550,15 @@ class RawKerberosTest(TestCase):
                     contents=reply_key['keyvalue'],
                     kvno=None)
 
-                # Verify the checksum over the AS request body.
-                kcrypto.verify_checksum(as_checksum['cksumtype'],
-                                        encpart_decryption_key.key,
-                                        KU_PKINIT_AS_REQ,
-                                        req_obj,
-                                        as_checksum['checksum'])
+                if not pk_win2k:
+                    as_checksum = reply_key_pack['asChecksum']
+
+                    # Verify the checksum over the AS request body.
+                    kcrypto.verify_checksum(as_checksum['cksumtype'],
+                                            encpart_decryption_key.key,
+                                            KU_PKINIT_AS_REQ,
+                                            req_obj,
+                                            as_checksum['checksum'])
             elif using_pkinit is PkInit.DIFFIE_HELLMAN:
                 content_info = self.der_decode(
                     pk_as_rep['dhInfo']['dhSignedData'],
@@ -4387,7 +4432,8 @@ class RawKerberosTest(TestCase):
         if expect_requester_sid:
             expected_types.append(krb5pac.PAC_TYPE_REQUESTER_SID)
 
-        sent_pk_as_req = self.sent_pk_as_req(kdc_exchange_dict)
+        sent_pk_as_req = self.sent_pk_as_req(kdc_exchange_dict) or (
+            self.sent_pk_as_req_win2k(kdc_exchange_dict))
         if sent_pk_as_req:
             expected_types.append(krb5pac.PAC_TYPE_CREDENTIAL_INFO)
 
@@ -4797,13 +4843,16 @@ class RawKerberosTest(TestCase):
         expected_patypes = ()
 
         sent_fast = self.sent_fast(kdc_exchange_dict)
-        using_pkinit = kdc_exchange_dict.get('using_pkinit', PkInit.NOT_USED)
         rep_msg_type = kdc_exchange_dict['rep_msg_type']
 
         if sent_fast:
             expected_patypes += (PADATA_FX_FAST,)
         elif rep_msg_type == KRB_AS_REP:
-            if using_pkinit is PkInit.NOT_USED:
+            if self.sent_pk_as_req(kdc_exchange_dict):
+                expected_patypes += PADATA_PK_AS_REP,
+            elif self.sent_pk_as_req_win2k(kdc_exchange_dict):
+                expected_patypes += PADATA_PK_AS_REP_19,
+            else:
                 chosen_etype = self.getElementValue(encpart, 'etype')
                 self.assertIsNotNone(chosen_etype)
 
@@ -4815,8 +4864,6 @@ class RawKerberosTest(TestCase):
                 self.assertIsInstance(preauth_key, Krb5EncryptionKey)
                 if preauth_key.etype == kcrypto.Enctype.RC4 and rep_padata is None:
                     rep_padata = ()
-            else:
-                expected_patypes += PADATA_PK_AS_REP,
         elif rep_msg_type == KRB_TGS_REP:
             if expected_patypes == () and rep_padata is None:
                 rep_padata = ()
@@ -5866,6 +5913,11 @@ class RawKerberosTest(TestCase):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
 
         return PADATA_PK_AS_REQ in fast_pa_dict
+
+    def sent_pk_as_req_win2k(self, kdc_exchange_dict):
+        fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
+
+        return PADATA_PK_AS_REP_19 in fast_pa_dict
 
     def sent_freshness(self, kdc_exchange_dict):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)

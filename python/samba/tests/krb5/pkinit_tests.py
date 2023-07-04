@@ -49,6 +49,7 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_PRINCIPAL,
     PADATA_AS_FRESHNESS,
     PADATA_ENC_TIMESTAMP,
+    PADATA_PK_AS_REP_19,
     PADATA_PK_AS_REQ,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
@@ -91,6 +92,13 @@ class PkInitTests(KDCBaseTest):
 
         self._pkinit_req(client_creds, target_creds,
                          using_pkinit=PkInit.DIFFIE_HELLMAN)
+
+    def test_pkinit_win2k(self):
+        """Test public-key Windows 2000 PK-INIT."""
+        client_creds = self._get_creds()
+        target_creds = self.get_service_creds()
+
+        self._pkinit_req(client_creds, target_creds, win2k_variant=True)
 
     def test_pkinit_no_des3(self):
         """Test public-key PK-INIT without specifying the DES3 encryption
@@ -172,6 +180,13 @@ class PkInitTests(KDCBaseTest):
         self._pkinit_req(client_creds, target_creds,
                          using_pkinit=PkInit.DIFFIE_HELLMAN)
 
+    def test_pkinit_computer_win2k(self):
+        """Test public-key Windows 2000 PK-INIT with a computer account."""
+        client_creds = self._get_creds(self.AccountType.COMPUTER)
+        target_creds = self.get_service_creds()
+
+        self._pkinit_req(client_creds, target_creds, win2k_variant=True)
+
     def test_pkinit_service(self):
         """Test public-key PK-INIT with a service account."""
         client_creds = self._get_creds(self.AccountType.MANAGED_SERVICE)
@@ -186,6 +201,13 @@ class PkInitTests(KDCBaseTest):
 
         self._pkinit_req(client_creds, target_creds,
                          using_pkinit=PkInit.DIFFIE_HELLMAN)
+
+    def test_pkinit_service_win2k(self):
+        """Test public-key Windows 2000 PK-INIT with a service account."""
+        client_creds = self._get_creds(self.AccountType.MANAGED_SERVICE)
+        target_creds = self.get_service_creds()
+
+        self._pkinit_req(client_creds, target_creds, win2k_variant=True)
 
     def test_pkinit_no_supported_cms_types(self):
         """Test public-key PK-INIT, excluding the supportedCmsTypes field. This
@@ -243,6 +265,16 @@ class PkInitTests(KDCBaseTest):
             using_pkinit=PkInit.DIFFIE_HELLMAN,
             signature_algorithm=krb5_asn1.id_pkcs1_sha256WithRSAEncryption)
 
+    def test_pkinit_sha256_signature_win2k(self):
+        """Test public-key Windows 2000 PK-INIT with a SHA256 signature."""
+        client_creds = self._get_creds()
+        target_creds = self.get_service_creds()
+
+        self._pkinit_req(
+            client_creds, target_creds,
+            signature_algorithm=krb5_asn1.id_pkcs1_sha256WithRSAEncryption,
+            win2k_variant=True)
+
     def test_pkinit_sha256_certificate_signature(self):
         """Test public-key PK-INIT with a SHA256 certificate signature."""
         client_creds = self._get_creds()
@@ -261,6 +293,17 @@ class PkInitTests(KDCBaseTest):
             client_creds, target_creds,
             using_pkinit=PkInit.DIFFIE_HELLMAN,
             certificate_signature=hashes.SHA256)
+
+    def test_pkinit_sha256_certificate_signature_win2k(self):
+        """Test public-key Windows 2000 PK-INIT with a SHA256 certificate
+        signature."""
+        client_creds = self._get_creds()
+        target_creds = self.get_service_creds()
+
+        self._pkinit_req(
+            client_creds, target_creds,
+            certificate_signature=hashes.SHA256,
+            win2k_variant=True)
 
     def test_pkinit_freshness(self):
         """Test public-key PK-INIT with the PKINIT Freshness Extension."""
@@ -632,6 +675,7 @@ class PkInitTests(KDCBaseTest):
                     signature_algorithm=None,
                     certificate_signature=None,
                     freshness_token=None,
+                    win2k_variant=False,
                     ):
         self.assertIsNot(using_pkinit, PkInit.NOT_USED)
 
@@ -843,17 +887,27 @@ class PkInitTests(KDCBaseTest):
         def generate_pk_padata(_kdc_exchange_dict,
                                _callback_dict,
                                req_body):
-            checksum_blob = self.der_encode(
-                req_body,
-                asn1Spec=krb5_asn1.KDC_REQ_BODY())
+            if win2k_variant:
+                digest = None
+            else:
+                checksum_blob = self.der_encode(
+                    req_body,
+                    asn1Spec=krb5_asn1.KDC_REQ_BODY())
 
-            # Calculate the SHA1 checksum over the KDC-REQ-BODY. This checksum
-            # is required to be present in the authenticator, and must be SHA1.
-            digest = hashes.Hash(hashes.SHA1(), default_backend())
-            digest.update(checksum_blob)
-            digest = digest.finalize()
+                # Calculate the SHA1 checksum over the KDC-REQ-BODY. This checksum
+                # is required to be present in the authenticator, and must be SHA1.
+                digest = hashes.Hash(hashes.SHA1(), default_backend())
+                digest.update(checksum_blob)
+                digest = digest.finalize()
 
             ctime, cusec = self.get_KerberosTimeWithUsec()
+
+            if win2k_variant:
+                krbtgt_sname = self.get_krbtgt_sname()
+                krbtgt_realm = self.get_krbtgt_creds().get_realm()
+            else:
+                krbtgt_sname = None
+                krbtgt_realm = None
 
             # Create the authenticator, which shows that we had possession of
             # the private key at some point.
@@ -862,7 +916,10 @@ class PkInitTests(KDCBaseTest):
                 ctime,
                 pk_nonce,
                 pa_checksum=digest,
-                freshness_token=freshness_token)
+                freshness_token=freshness_token,
+                kdc_name=krbtgt_sname,
+                kdc_realm=krbtgt_realm,
+                win2k_variant=win2k_variant)
 
             if using_pkinit is PkInit.DIFFIE_HELLMAN:
                 dh_public_key = dh_private_key.public_key()
@@ -899,7 +956,9 @@ class PkInitTests(KDCBaseTest):
             # differently encoded ReplyKeyPack, wrapping it first in a
             # ContentInfo structure.
             nonlocal supported_cms_types
-            if supported_cms_types is False:
+            if win2k_variant:
+                self.assertIsNone(supported_cms_types)
+            elif supported_cms_types is False:
                 # Exclude this field.
                 supported_cms_types = None
             elif supported_cms_types is None:
@@ -916,10 +975,13 @@ class PkInitTests(KDCBaseTest):
                 authenticator_obj,
                 client_public_value=client_public_value,
                 supported_cms_types=supported_cms_types,
-                client_dh_nonce=client_dh_nonce)
+                client_dh_nonce=client_dh_nonce,
+                win2k_variant=win2k_variant)
 
-            auth_pack = self.der_encode(auth_pack_obj,
-                                        asn1Spec=krb5_asn1.AuthPack())
+            asn1_spec = (krb5_asn1.AuthPack_Win2k
+                         if win2k_variant
+                         else krb5_asn1.AuthPack)
+            auth_pack = self.der_encode(auth_pack_obj, asn1Spec=asn1_spec())
 
             signature_hash = self.hash_from_algorithm(signature_algorithm)
 
@@ -964,9 +1026,13 @@ class PkInitTests(KDCBaseTest):
                                               # trusted by the client, that can
                                               # be used to certify the KDC.
                                               trusted_certifiers=None,
-                                              kdc_pk_id=None)
+                                              kdc_pk_id=None,
+                                              win2k_variant=win2k_variant)
 
-            padata = [self.PA_DATA_create(PADATA_PK_AS_REQ, pk_as_req)]
+            pa_type = (PADATA_PK_AS_REP_19
+                       if win2k_variant
+                       else PADATA_PK_AS_REQ)
+            padata = [self.PA_DATA_create(pa_type, pk_as_req)]
 
             return padata, req_body
 
