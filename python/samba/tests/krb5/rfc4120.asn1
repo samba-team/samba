@@ -1476,6 +1476,44 @@ encryptionAlgorithm OBJECT IDENTIFIER ::= {rsadsi 3}
 
 des-EDE3-CBC OBJECT IDENTIFIER ::= {encryptionAlgorithm 7}
 
+-- Windows 2000 PK-INIT definitions
+
+PKAuthenticator-Win2k ::= SEQUENCE {
+   kdcName                 [0] PrincipalName,
+   kdcRealm                [1] Realm,
+   cusec                   [2] INTEGER (0..4294967295),
+   ctime                   [3] KerberosTime,
+   nonce                   [4] INTEGER (-2147483648..2147483647)
+}
+
+AuthPack-Win2k ::= SEQUENCE {
+   pkAuthenticator         [0] PKAuthenticator-Win2k
+}
+
+TrustedCA-Win2k ::= CHOICE {
+   caName                  [1] ANY,
+   issuerAndSerial         [2] IssuerAndSerialNumber
+}
+
+PA-PK-AS-REQ-Win2k ::= SEQUENCE {
+   signedAuthPack          [0] IMPLICIT OCTET STRING,
+   trustedCertifiers       [2] SEQUENCE OF TrustedCA-Win2k OPTIONAL,
+   kdcCert                 [3] IMPLICIT OCTET STRING OPTIONAL,
+   encryptionCert          [4] IMPLICIT OCTET STRING OPTIONAL,
+   ...
+}
+
+PA-PK-AS-REP-Win2k ::= CHOICE {
+   dhSignedData            [0] IMPLICIT OCTET STRING,
+   encKeyPack              [1] IMPLICIT OCTET STRING
+}
+
+ReplyKeyPack-Win2k ::= SEQUENCE {
+   replyKey                [0] EncryptionKey,
+   nonce                   [1] INTEGER (-2147483648..2147483647),
+   ...
+}
+
 --
 
 id-pkinit-ms-san OBJECT IDENTIFIER ::= {
