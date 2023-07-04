@@ -1008,16 +1008,13 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	/* And restore our original timeout. */
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+	if (reset_cm_connection_on_error(domain, b, status)) {
 		/*
 		 * This can happen if the schannel key is not
 		 * valid anymore, we need to invalidate the
 		 * all connections to the dc and reestablish
 		 * a netlogon connection first.
 		 */
-		invalidate_cm_connection(domain);
 		domain->can_do_ncacn_ip_tcp = domain->active_directory;
 		if (!retried) {
 			retried = true;
@@ -1087,16 +1084,13 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	/* And restore our original timeout. */
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+	if (reset_cm_connection_on_error(domain, b, status)) {
 		/*
 		 * This can happen if the schannel key is not
 		 * valid anymore, we need to invalidate the
 		 * all connections to the dc and reestablish
 		 * a netlogon connection first.
 		 */
-		invalidate_cm_connection(domain);
 		if (!retried) {
 			retried = true;
 			goto connect;
