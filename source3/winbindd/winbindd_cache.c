@@ -1508,6 +1508,7 @@ do_query:
 			DEBUG(3, ("query_user_list: returned 0x%08x, "
 				  "retrying\n", NT_STATUS_V(status)));
 		}
+		reset_cm_connection_on_error(domain, NULL, status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL)) {
 			DEBUG(3, ("query_user_list: flushing "
 				  "connection cache\n"));
