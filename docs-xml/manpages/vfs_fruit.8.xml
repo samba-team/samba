@@ -419,6 +419,24 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:validate_afpinfo = yes | no</term>
+	    <listitem>
+	      <para>Apple clients use the AFP_AfpInfo stream to store structured
+	      file metadata. As part of the marshaled data stored in the stream
+	      the first eight bytes contain some header information. Apple's SMB
+	      server as well as Samba will validate this header bytes processing
+	      a client write request on this stream, and, if the validation
+	      fails, fail the write. While this validation is generally correct,
+	      in some data migration scenarios clients may try to migrate data
+	      from 3rd-party SMB servers to Samba servers where the header
+	      information is broken for whatever reason. To allow migration and
+	      header fix-up in these scenarios, the validation can be temporarily
+	      disabled by setting this option to <emphasis>no</emphasis>.</para>
+	      <para>The default is <emphasis>yes</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 

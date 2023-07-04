@@ -187,6 +187,6 @@ int adouble_path(TALLOC_CTX *ctx,
 
 AfpInfo *afpinfo_new(TALLOC_CTX *ctx);
 ssize_t afpinfo_pack(const AfpInfo *ai, char *buf);
-AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data);
+AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data, bool validate);
 
 #endif

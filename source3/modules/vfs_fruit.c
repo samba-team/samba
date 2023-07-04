@@ -134,6 +134,7 @@ struct fruit_config_data {
 	bool convert_adouble;
 	bool wipe_intentionally_left_blank_rfork;
 	bool delete_empty_adfiles;
+	bool validate_afpinfo;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -376,6 +377,10 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	config->delete_empty_adfiles = lp_parm_bool(
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
 		"delete_empty_adfiles", false);
+
+	config->validate_afpinfo = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+		"validate_afpinfo", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
@@ -2637,10 +2642,12 @@ static ssize_t fruit_pread_recv(struct tevent_req *req,
 }
 
 static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
-					files_struct *fsp, const void *data,
+					files_struct *fsp, const void *indata,
 					size_t n, off_t offset)
 {
 	struct fio *fio = fruit_get_complete_fio(handle, fsp);
+	const void *data = indata;
+	char afpinfo_buf[AFP_INFO_SIZE];
 	AfpInfo *ai = NULL;
 	size_t nwritten;
 	int ret;
@@ -2681,7 +2688,7 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 		fio->fake_fd = false;
 	}
 
-	ai = afpinfo_unpack(talloc_tos(), data);
+	ai = afpinfo_unpack(talloc_tos(), data, fio->config->validate_afpinfo);
 	if (ai == NULL) {
 		return -1;
 	}
@@ -2713,6 +2720,21 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 		return n;
 	}
 
+	if (!fio->config->validate_afpinfo) {
+		/*
+		 * Ensure the buffer contains a valid header, so marshall
+		 * the data from the afpinfo struck back into a buffer
+		 * and write that instead of the possibly malformed data
+		 * we got from the client.
+		 */
+		nwritten = afpinfo_pack(ai, afpinfo_buf);
+		if (nwritten != AFP_INFO_SIZE) {
+			errno = EINVAL;
+			return -1;
+		}
+		data = afpinfo_buf;
+	}
+
 	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 	if (nwritten != n) {
 		return -1;
@@ -2725,13 +2747,17 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 					  files_struct *fsp, const void *data,
 					  size_t n, off_t offset)
 {
+	struct fruit_config_data *config = NULL;
 	struct adouble *ad = NULL;
 	AfpInfo *ai = NULL;
 	char *p = NULL;
 	int ret;
 	bool ok;
 
-	ai = afpinfo_unpack(talloc_tos(), data);
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	ai = afpinfo_unpack(talloc_tos(), data, config->validate_afpinfo);
 	if (ai == NULL) {
 		return -1;
 	}
@@ -2811,10 +2837,12 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	cmp = memcmp(data, "AFP", 3);
-	if (cmp != 0) {
-		errno = EINVAL;
-		return -1;
+	if (fio->config->validate_afpinfo) {
+		cmp = memcmp(data, "AFP", 3);
+		if (cmp != 0) {
+			errno = EINVAL;
+			return -1;
+		}
 	}
 
 	if (n <= AFP_OFF_FinderInfo) {

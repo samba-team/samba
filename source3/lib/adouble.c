@@ -2827,7 +2827,7 @@ ssize_t afpinfo_pack(const AfpInfo *ai, char *buf)
  * Buffer size must be at least AFP_INFO_SIZE
  * Returns allocated AfpInfo struct
  **/
-AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data)
+AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data, bool validate)
 {
 	AfpInfo *ai = talloc_zero(ctx, AfpInfo);
 	if (ai == NULL) {
@@ -2840,10 +2840,16 @@ AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data)
 	memcpy(ai->afpi_FinderInfo, (const char *)data + 16,
 	       sizeof(ai->afpi_FinderInfo));
 
-	if (ai->afpi_Signature != AFP_Signature
-	    || ai->afpi_Version != AFP_Version) {
-		DEBUG(1, ("Bad AfpInfo signature or version\n"));
-		TALLOC_FREE(ai);
+	if (validate) {
+		if (ai->afpi_Signature != AFP_Signature
+		    || ai->afpi_Version != AFP_Version)
+		{
+			DEBUG(1, ("Bad AfpInfo signature or version\n"));
+			TALLOC_FREE(ai);
+		}
+	} else {
+		ai->afpi_Signature = AFP_Signature;
+		ai->afpi_Version = AFP_Version;
 	}
 
 	return ai;
