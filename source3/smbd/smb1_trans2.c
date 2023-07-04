@@ -3609,9 +3609,10 @@ static void smb_posix_unlink_locked(struct share_mode_lock *lck,
 
 static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				 struct smb_request *req,
-				const char *pdata,
-				int total_data,
-				struct smb_filename *smb_fname)
+				 const char *pdata,
+				 int total_data,
+				 struct files_struct *dirfsp,
+				 struct smb_filename *smb_fname)
 {
 	struct smb_posix_unlink_state state = {};
 	NTSTATUS status = NT_STATUS_OK;
@@ -3658,7 +3659,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		DELETE_ACCESS,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
@@ -4561,8 +4562,12 @@ static void call_trans2setpathinfo(
 		break;
 
 	case SMB_POSIX_PATH_UNLINK:
-		status = smb_posix_unlink(
-			conn, req, *ppdata, total_data, smb_fname);
+		status = smb_posix_unlink(conn,
+					  req,
+					  *ppdata,
+					  total_data,
+					  dirfsp,
+					  smb_fname);
 		break;
 
 	case SMB_SET_FILE_UNIX_LINK:
