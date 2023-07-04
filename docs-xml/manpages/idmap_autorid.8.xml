@@ -59,7 +59,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>rangesize = numberofidsperdomain</term>
+		<term>rangesize = numberofidsperrange</term>
 		<listitem><para>
 			Defines the number of uids/gids available per
 			domain range. The minimum needed value is 2000.
