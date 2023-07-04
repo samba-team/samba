@@ -446,6 +446,7 @@ again:
 	 * The retry loop is bound by the timeout
 	 */
 	retry = false;
+	num_requests = 0;
 
 	for (i = 0; i < count; i++) {
 		char server[INET6_ADDRSTRLEN];
