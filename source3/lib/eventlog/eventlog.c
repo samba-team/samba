@@ -485,7 +485,7 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb
 
 	start = line;
 
-	/* empty line signyfiying record delimiter, or we're at the end of the buffer */
+	/* empty line signifying record delimiter, or we're at the end of the buffer */
 	if ( start == NULL || strlen( start ) == 0 ) {
 		DEBUG( 6,
 		       ( "parse_logentry: found end-of-record indicator.\n" ) );
