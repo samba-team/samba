@@ -977,6 +977,19 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
 	<varlistentry>
 	  <term>
+	    CTDB_NFS_SHARED_STATE_DIR=<parameter>DIRECTORY</parameter>
+	  </term>
+	  <listitem>
+	    <para>
+	      DIRECTORY where clustered NFS shared state will be
+	      located.  DIRECTORY should be in a cluster filesystem
+	      that is shared between the nodes.  No default.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>
 	    CTDB_NFS_SKIP_SHARE_CHECK=yes|no
 	  </term>
 	  <listitem>
@@ -1024,30 +1037,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	    </para>
 	    <para>
 	      Default is "::1".
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>
-	    CTDB_NFS_STATE_FS_TYPE=<parameter>TYPE</parameter>
-	  </term>
-	  <listitem>
-	    <para>
-	      The type of filesystem used for a clustered NFS' shared
-	      state. No default.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>
-	    CTDB_NFS_STATE_MNT=<parameter>DIR</parameter>
-	  </term>
-	  <listitem>
-	    <para>
-	      The directory where a clustered NFS' shared state will be
-	      located. No default.
 	    </para>
 	  </listitem>
 	</varlistentry>

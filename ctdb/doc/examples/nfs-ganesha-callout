@@ -36,10 +36,40 @@
 # Exit on 1st error
 set -e
 
-# Filesystem type and mount point for the (typically clustered)
-# volume that will contain the NFS-Ganesha state.
-state_fs="${CTDB_NFS_STATE_FS_TYPE:-gpfs}"
-state_dir="${CTDB_NFS_STATE_MNT}" # No sane default.
+die()
+{
+	echo "$1"
+	exit 1
+}
+
+# Shared directory, typically on a cluster filesystem, that will
+# contain the NFS-Ganesha state
+if [ -z "$CTDB_NFS_SHARED_STATE_DIR" ]; then
+	die "$0: CTDB_NFS_SHARED_STATE_DIR is not set"
+fi
+
+if [ ! -d "$CTDB_NFS_SHARED_STATE_DIR" ]; then
+	t="$CTDB_NFS_SHARED_STATE_DIR" # Readability, below
+	die "$0: CTDB_NFS_SHARED_STATE_DIR=${t} not found"
+fi
+
+state_fs=$(findmnt -n --target "$CTDB_NFS_SHARED_STATE_DIR" -o FSTYPE)
+
+case "$state_fs" in
+glusterfs | gpfs)
+	:
+	;;
+fuse.glusterfs)
+	state_fs="glusterfs"
+	;;
+*)
+	d="$CTDB_NFS_SHARED_STATE_DIR"
+	die "$0: filesystem type \"${state_fs}\" is not supported for ${d}"
+	;;
+esac
+
+# Always put NFS-Ganesha state in its own subdirectory
+state_dir="${CTDB_NFS_SHARED_STATE_DIR}/ganesha"
 
 # Location of exports file
 nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/etc/ganesha/ganesha.conf}"
@@ -47,7 +77,6 @@ nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/etc/ganesha/ganesha.conf}"
 # To change the following, edit the default values below.  Do not set
 # these - they aren't configuration variables, just hooks for testing.
 nfs_service="${CTDB_NFS_SERVICE:-nfs-ganesha}"
-ganesha_rec_subdir=${CTDB_GANESHA_REC_SUBDIR:-.ganesha}
 procfs=${PROCFS_PATH:-/proc}
 
 case "$state_fs" in
@@ -55,13 +84,9 @@ gpfs)
 	GANRECDIR="/var/lib/nfs/ganesha"
 	;;
 glusterfs)
-	if [ -z "${state_dir}" ]; then
-		echo "CTDB_NFS_STATE_MNT not defined for GlusterFS"
-		exit 1
-	fi
 	host=$(hostname)
-	NODESTATEDIR="$state_dir/nfs-ganesha/$host"
-	GANSTATEDIR="$state_dir/nfs-ganesha/.noderefs"
+	NODESTATEDIR="${state_dir}/${host}"
+	GANSTATEDIR="${state_dir}/.noderefs"
 	NODESTATELN="$GANSTATEDIR/$host"
 	;;
 esac
@@ -184,21 +209,10 @@ get_cluster_fs_state()
 
 create_ganesha_recdirs()
 {
-	if ! _mounts=$(mount | grep "$state_fs"); then
-		echo "Failed to find mounts of type $state_fs"
-		exit 1
-	fi
-	if [ -z "$_mounts" ]; then
-		echo "startup $state_fs not ready"
-		exit 0
-	fi
-
 	case "$state_fs" in
 	gpfs)
-		_mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
-		_link_dst="${_mntpt}/${ganesha_rec_subdir}"
-		mkdir -vp "$_link_dst"
-		check_ln "$_link_dst" "$GANRECDIR"
+		mkdir -vp "$state_dir"
+		check_ln "$state_dir" "$GANRECDIR"
 		;;
 	glusterfs)
 		[ -d /var/lib/nfs.backup ] ||
@@ -279,6 +293,7 @@ nfs_stats()
 		# unhelpful for avoiding an unhealthy service
 		echo "Not implemented" >&2
 		exit 1
+		;;
 	esac
 }
 

@@ -1160,11 +1160,8 @@ nfs_callout_init()
 	export CTDB_NFS_CALLOUT_STATE_DIR="${_state_dir}/callout-state"
 
 	# Export, if set, for use by clustered NFS callouts
-	if [ -n "$CTDB_NFS_STATE_FS_TYPE" ]; then
-		export CTDB_NFS_STATE_FS_TYPE
-	fi
-	if [ -n "$CTDB_NFS_STATE_MNT" ]; then
-		export CTDB_NFS_STATE_MNT
+	if [ -n "$CTDB_NFS_SHARED_STATE_DIR" ]; then
+		export CTDB_NFS_SHARED_STATE_DIR
 	fi
 	if [ -n "$CTDB_NFS_EXPORTS_FILE" ]; then
 		export CTDB_NFS_EXPORTS_FILE
