@@ -3,7 +3,7 @@
 # Example script for "wins hook".  This attempts to update the DNS with
 # new A records for the NETBIOS name that Samba passes us. We do this
 # the simple way, by deleting all DNS records for the name and then
-# readding all the expected 'A' records.
+# re-adding all the expected 'A' records.
 #
 # Written by Stephen Rothwell <sfr@linuxcare.com>
 #
