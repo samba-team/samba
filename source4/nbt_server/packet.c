@@ -368,7 +368,7 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 	if (packet->answers == NULL) goto failed;
 
 	packet->answers[0].name              = *name;
-	packet->answers[0].rr_type           = NBT_QTYPE_NETBIOS;
+	packet->answers[0].rr_type           = NBT_QTYPE_WACK;
 	packet->answers[0].rr_class          = NBT_QCLASS_IP;
 	packet->answers[0].ttl               = ttl;
 	packet->answers[0].rdata.data.length = 2;

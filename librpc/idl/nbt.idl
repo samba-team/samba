@@ -79,12 +79,18 @@ interface nbt
 		NBT_QCLASS_IP = 0x01
 	} nbt_qclass;
 
-	typedef [public,enum16bit] enum {
+	typedef [public,enum16bit,nopush] enum {
 		NBT_QTYPE_ADDRESS     = 0x0001,
 		NBT_QTYPE_NAMESERVICE = 0x0002,
 		NBT_QTYPE_NULL        = 0x000A,
 		NBT_QTYPE_NETBIOS     = 0x0020,
-		NBT_QTYPE_STATUS      = 0x0021
+		NBT_QTYPE_STATUS      = 0x0021,
+		/*
+		 * Indicates that this is a WACK packet. As long as the size of
+		 * ‘int’ is larger than 16 bits, this value cannot appear on the
+		 * wire. We’ll encode it instead as NBT_QTYPE_NETBIOS.
+		 */
+		NBT_QTYPE_WACK        = -1
 	} nbt_qtype;
 
 	typedef struct {
@@ -168,13 +174,7 @@ interface nbt
 		[default]                 nbt_rdata_data   data;
 	} nbt_rdata;
 
-/*
- * this macro works around the problem
- * that we need to use nbt_rdata_data
- * together with NBT_QTYPE_NETBIOS
- * for WACK replies
- */
-	typedef [flag(LIBNDR_PRINT_ARRAY_HEX),nopush] struct {
+	typedef [flag(LIBNDR_PRINT_ARRAY_HEX)] struct {
 		nbt_name   name;
 		nbt_qtype  rr_type;
 		nbt_qclass rr_class;
