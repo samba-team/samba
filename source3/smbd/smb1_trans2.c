@@ -3872,9 +3872,10 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_unix_mknod(connection_struct *conn,
-					const char *pdata,
-					int total_data,
-					const struct smb_filename *smb_fname)
+			       const char *pdata,
+			       int total_data,
+			       struct files_struct *dirfsp,
+			       const struct smb_filename *smb_fname)
 {
 	uint32_t file_type = IVAL(pdata,56);
 #if defined(HAVE_MAKEDEV)
@@ -3887,7 +3888,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 	mode_t unixmode;
 	int ret;
 	struct smb_filename *parent_fname = NULL;
-	struct smb_filename *base_name = NULL;
+	struct smb_filename *atname = NULL;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -3944,21 +3945,21 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		  "%.0f mode 0%o for file %s\n", (double)dev,
 		  (unsigned int)unixmode, smb_fname_str_dbg(smb_fname)));
 
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				smb_fname,
-				&parent_fname,
-				&base_name);
+	status = SMB_VFS_PARENT_PATHNAME(dirfsp->conn,
+					 talloc_tos(),
+					 smb_fname,
+					 &parent_fname,
+					 &atname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* Ok - do the mknod. */
 	ret = SMB_VFS_MKNODAT(conn,
-			parent_fname->fsp,
-			base_name,
-			unixmode,
-			dev);
+			      dirfsp,
+			      atname,
+			      unixmode,
+			      dev);
 
 	if (ret != 0) {
 		TALLOC_FREE(parent_fname);
@@ -3971,7 +3972,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 
 	if (lp_inherit_permissions(SNUM(conn))) {
 		inherit_access_posix_acl(conn,
-					 parent_fname->fsp,
+					 dirfsp,
 					 smb_fname,
 					 unixmode);
 	}
@@ -3988,6 +3989,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					struct smb_request *req,
 					const char *pdata,
 					int total_data,
+					struct files_struct *dirfsp,
 					files_struct *fsp,
 					struct smb_filename *smb_fname)
 {
@@ -4057,10 +4059,15 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		 * a new info level should be used for mknod. JRA.
 		 */
 
+		if (dirfsp == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		return smb_unix_mknod(conn,
-					pdata,
-					total_data,
-					smb_fname);
+				      pdata,
+				      total_data,
+				      dirfsp,
+				      smb_fname);
 	}
 
 #if 1
@@ -4221,6 +4228,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 					struct smb_request *req,
 					const char *pdata,
 					int total_data,
+					struct files_struct *dirfsp,
 					files_struct *fsp,
 					struct smb_filename *smb_fname)
 {
@@ -4239,8 +4247,13 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 	/* Start by setting all the fields that are common between UNIX_BASIC
 	 * and UNIX_INFO2.
 	 */
-	status = smb_set_file_unix_basic(conn, req, pdata, total_data,
-					 fsp, smb_fname);
+	status = smb_set_file_unix_basic(conn,
+					 req,
+					 pdata,
+					 total_data,
+					 dirfsp,
+					 fsp,
+					 smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4581,23 +4594,23 @@ static void call_trans2setpathinfo(
 		break;
 
 	case SMB_SET_FILE_UNIX_BASIC:
-		status = smb_set_file_unix_basic(
-			conn,
-			req,
-			*ppdata,
-			total_data,
-			smb_fname->fsp,
-			smb_fname);
+		status = smb_set_file_unix_basic(conn,
+						 req,
+						 *ppdata,
+						 total_data,
+						 dirfsp,
+						 smb_fname->fsp,
+						 smb_fname);
 		break;
 
 	case SMB_SET_FILE_UNIX_INFO2:
-		status = smb_set_file_unix_info2(
-			conn,
-			req,
-			*ppdata,
-			total_data,
-			smb_fname->fsp,
-			smb_fname);
+		status = smb_set_file_unix_info2(conn,
+						 req,
+						 *ppdata,
+						 total_data,
+						 dirfsp,
+						 smb_fname->fsp,
+						 smb_fname);
 		break;
 	case SMB_SET_POSIX_ACL:
 		status = smb_set_posix_acl(
@@ -4762,13 +4775,23 @@ static void call_trans2setfileinfo(
 		break;
 
 	case SMB_SET_FILE_UNIX_BASIC:
-		status = smb_set_file_unix_basic(
-			conn, req, pdata, total_data, fsp, smb_fname);
+		status = smb_set_file_unix_basic(conn,
+						 req,
+						 pdata,
+						 total_data,
+						 NULL,
+						 fsp,
+						 smb_fname);
 		break;
 
 	case SMB_SET_FILE_UNIX_INFO2:
-		status = smb_set_file_unix_info2(
-			conn, req, pdata, total_data, fsp, smb_fname);
+		status = smb_set_file_unix_info2(conn,
+						 req,
+						 pdata,
+						 total_data,
+						 NULL,
+						 fsp,
+						 smb_fname);
 		break;
 
 	case SMB_SET_POSIX_LOCK:
