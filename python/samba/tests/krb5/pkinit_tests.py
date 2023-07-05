@@ -663,30 +663,7 @@ class PkInitTests(KDCBaseTest):
 
         return kdc_exchange_dict
 
-    def _pkinit_req(self,
-                    creds,
-                    target_creds,
-                    *,
-                    expect_error=0,
-                    using_pkinit=PkInit.PUBLIC_KEY,
-                    etypes=None,
-                    pk_nonce=None,
-                    supported_cms_types=None,
-                    signature_algorithm=None,
-                    certificate_signature=None,
-                    freshness_token=None,
-                    win2k_variant=False,
-                    ):
-        self.assertIsNot(using_pkinit, PkInit.NOT_USED)
-
-        if signature_algorithm is None:
-            # This algorithm must be one of ‘sig_algs’ for it to be supported
-            # by Heimdal.
-            signature_algorithm = krb5_asn1.sha1WithRSAEncryption
-
-        signature_algorithm_id = self.AlgorithmIdentifier_create(
-            signature_algorithm)
-
+    def create_certificate(self, creds, certificate_signature=None):
         if certificate_signature is None:
             certificate_signature = hashes.SHA1
 
@@ -865,6 +842,35 @@ class PkInitTests(KDCBaseTest):
             backend=default_backend()
         )
 
+        return certificate
+
+    def _pkinit_req(self,
+                    creds,
+                    target_creds,
+                    *,
+                    expect_error=0,
+                    using_pkinit=PkInit.PUBLIC_KEY,
+                    etypes=None,
+                    pk_nonce=None,
+                    supported_cms_types=None,
+                    signature_algorithm=None,
+                    certificate_signature=None,
+                    freshness_token=None,
+                    win2k_variant=False,
+                    ):
+        self.assertIsNot(using_pkinit, PkInit.NOT_USED)
+
+        if signature_algorithm is None:
+            # This algorithm must be one of ‘sig_algs’ for it to be supported
+            # by Heimdal.
+            signature_algorithm = krb5_asn1.sha1WithRSAEncryption
+
+        signature_algorithm_id = self.AlgorithmIdentifier_create(
+            signature_algorithm)
+
+        # Create a certificate for the client signed by the CA.
+        certificate = self.create_certificate(creds, certificate_signature)
+
         private_key = creds.get_private_key()
 
         if using_pkinit is PkInit.DIFFIE_HELLMAN:
@@ -993,8 +999,10 @@ class PkInitTests(KDCBaseTest):
             encap_content_info_obj = self.EncapsulatedContentInfo_create(
                 krb5_asn1.id_pkinit_authData, auth_pack)
 
+            subject_key_id = certificate.extensions.get_extension_for_oid(
+                x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
             signer_identifier = self.SignerIdentifier_create(
-                subject_key_id=subject_key_id.digest)
+                subject_key_id=subject_key_id.value.digest)
 
             signer_info = self.SignerInfo_create(
                 signer_identifier,
@@ -1036,6 +1044,7 @@ class PkInitTests(KDCBaseTest):
 
             return padata, req_body
 
+        user_name = creds.get_username()
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=user_name.split('/'))
 
