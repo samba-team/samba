@@ -1306,7 +1306,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 self.report("ERROR: Duplicate forward link values for attribute '%s' in '%s'" % (attrname, obj.dn))
             for m in missing_forward_links:
                 self.report("Missing   link '%s'" % (m))
-                if not self.confirm_all("Schedule readding missing forward link for attribute %s" % attrname,
+                if not self.confirm_all("Schedule re-adding missing forward link for attribute %s" % attrname,
                                         'fix_all_missing_forward_links'):
                     self.err_orphaned_backlink(m.dn, reverse_link_name,
                                                obj.dn.extended_str(), obj.dn,
