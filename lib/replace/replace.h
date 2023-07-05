@@ -205,7 +205,7 @@
 #endif
 
 #ifndef HAVE_STRERROR
-extern char *sys_errlist[];
+extern const char *const sys_errlist[];
 #define strerror(i) sys_errlist[i]
 #endif
 
