@@ -2025,7 +2025,8 @@ static void get_fnum_from_path_opened_file(struct tevent_req *subreq)
 		subreq, &state->fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)) {
 		/*
 		 * Naive option to match our SMB1 code. Assume the
 		 * symlink path that tripped us up was the last
