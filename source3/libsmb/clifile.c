@@ -3449,7 +3449,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 				pfnum,
 				&cr);
 
-	/* Try and cope will all varients of "we don't do this call"
+	/* Try and cope will all variants of "we don't do this call"
 	   and fall back to openX. */
 
 	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_IMPLEMENTED) ||
@@ -5228,7 +5228,7 @@ NTSTATUS cli_disk_size(struct cli_state *cli, const char *path, uint64_t *bsize,
 			&sectors_per_block,
 			&bytes_per_sector);
 
-        /* Try and cope will all varients of "we don't do this call"
+        /* Try and cope will all variants of "we don't do this call"
            and fall back to cli_dskattr. */
 
 	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_IMPLEMENTED) ||

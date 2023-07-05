@@ -34,7 +34,7 @@
 
 /*********************************************************
  Change the domain password on the PDC.
- Do most of the legwork ourselfs.  Caller must have
+ Do most of the legwork ourselves.  Caller must have
  already setup the connection to the NETLOGON pipe
 **********************************************************/
 

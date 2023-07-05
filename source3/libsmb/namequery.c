@@ -3438,7 +3438,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 }
 
 /*********************************************************************
- Small wrapper function to get the DC list and sort it if neccessary.
+ Small wrapper function to get the DC list and sort it if necessary.
  Returns a samba_sockaddr array.
 *********************************************************************/
 

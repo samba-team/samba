@@ -881,7 +881,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	SIVAL(param, 6, resume_key); /* ff_resume_key */
 	/*
 	 * NB. *DON'T* use continue here. If you do it seems that W2K
-	 * and bretheren can miss filenames. Use last filename
+	 * and brethren can miss filenames. Use last filename
 	 * continue instead. JRA
 	 */
 	SSVAL(param, 10, (FLAG_TRANS2_FIND_REQUIRE_RESUME

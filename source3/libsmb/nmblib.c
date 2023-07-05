@@ -300,7 +300,7 @@ void put_name(char *dest, const char *name, int pad, unsigned int name_type)
 
  Compressed names are really weird. The "compression" doubles the
  size. The idea is that it also means that compressed names conform
- to the doman name system. See RFC1002.
+ to the domain name system. See RFC1002.
 
  If buf == NULL this is a length calculation.
 ******************************************************************/

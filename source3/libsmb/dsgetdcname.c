@@ -402,7 +402,7 @@ static bool check_allowed_required_flags(uint32_t flags,
 	uint32_t offered_type = flags & (DS_IS_FLAT_NAME|DS_IS_DNS_NAME);
 	uint32_t query_type = flags & (DS_BACKGROUND_ONLY|DS_FORCE_REDISCOVERY);
 
-	/* FIXME: check for DSGETDC_VALID_FLAGS and check for excluse bits
+	/* FIXME: check for DSGETDC_VALID_FLAGS and check for exclusive bits
 	 * (DS_PDC_REQUIRED, DS_KDC_REQUIRED, DS_GC_SERVER_REQUIRED) */
 
 	debug_dsdcinfo_flags(10, flags);

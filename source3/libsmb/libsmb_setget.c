@@ -189,7 +189,7 @@ smbc_setOptionDebugToStderr(SMBCCTX *c, smbc_bool b)
 		/*
 		 * We do not have a unique per-thread debug state? For
 		 * now, we'll just leave it up to the user. If any one
-		 * context spefies debug to stderr then all will be (and
+		 * context specifies debug to stderr then all will be (and
 		 * will stay that way, as it is unsafe to flip back if
 		 * stdout is in use for other things)
 		 */

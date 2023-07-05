@@ -1023,7 +1023,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	}
 
 	/*
-	 * Bug#10123 - DFS referal entries can be provided in a random order,
+	 * Bug#10123 - DFS referral entries can be provided in a random order,
 	 * so check the connection cache for each item to avoid unnecessary
 	 * reconnections.
 	 */

@@ -46,7 +46,7 @@
  *
  * @param lock_mutex
  *   Lock a mutex. This function should expect three parameters: plock,
- *   lock_type, and location. The mutex aassociated with identifier plock
+ *   lock_type, and location. The mutex associated with identifier plock
  *   should be locked if lock_type is 1, and unlocked if lock_type is 2. The
  *   location parameter can be used for debugging, as it contains the
  *   compiler-provided __location__ of the call.

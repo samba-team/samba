@@ -38,7 +38,7 @@
  * Check a server for being alive and well.
  * returns 0 if the server is in shape. Returns 1 on error
  *
- * Also useable outside libsmbclient to enable external cache
+ * Also usable outside libsmbclient to enable external cache
  * to do some checks too.
  */
 int
@@ -100,7 +100,7 @@ SMBC_check_server(SMBCCTX * context,
  * Remove a server from the cached server list it's unused.
  * On success, 0 is returned. 1 is returned if the server could not be removed.
  *
- * Also useable outside libsmbclient
+ * Also usable outside libsmbclient
  */
 int
 SMBC_remove_unused_server(SMBCCTX * context,

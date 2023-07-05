@@ -1563,7 +1563,7 @@ static void cli_smb2_list_closed(struct tevent_req *subreq)
  * QUERY_DIRECTORY has returned with another buffer. This way we
  * guarantee that no asynchronous request is open after this call
  * returns an entry, so that other synchronous requests can be issued
- * on the same connection while the directoy listing proceeds.
+ * on the same connection while the directory listing proceeds.
  */
 NTSTATUS cli_smb2_list_recv(
 	struct tevent_req *req,
@@ -3330,8 +3330,8 @@ static struct tevent_req *cli_smb2_rename_fnum_send(
 	 * for a SMB2_FILE_RENAME_INFORMATION buffer of
 	 * 24 bytes. It returns NT_STATUS_INFO_LENGTH_MISMATCH
 	 * if the length is less. This isn't an alignment
-	 * issue as Windows client happily 2-byte align
-	 * for larget target name sizes. Also the Windows 10
+	 * issue as Windows client accepts happily 2-byte align
+	 * for larger target name sizes. Also the Windows 10
 	 * SMB1 server doesn't have this restriction.
 	 *
 	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14403

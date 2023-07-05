@@ -29,7 +29,7 @@
 #define IPSTR_LIST_CHAR	','
 
 /**
- * Allocate and initialise an ipstr list using samba_sockaddr ip adresses
+ * Allocate and initialise an ipstr list using samba_sockaddr ip addresses
  * passed as arguments.
  *
  * @param ctx TALLOC_CTX to use
@@ -329,7 +329,7 @@ bool namecache_fetch(TALLOC_CTX *ctx,
 	DBG_INFO("name %s#%02X found.\n", name, name_type);
 
 	/*
-	 * Split up the stored value into the list of IP adresses
+	 * Split up the stored value into the list of IP addresses
 	 */
 	*num_names = ipstr_list_parse(ctx, value, sa_list);
 

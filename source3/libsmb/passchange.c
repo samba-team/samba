@@ -160,7 +160,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		/*
 		 * If the user password must be changed the ntlmssp bind will
 		 * fail the same way as the session setup above did. The
-		 * difference ist that with a pipe bind we don't get a good
+		 * difference is that with a pipe bind we don't get a good
 		 * error message, the result will be that the rpc call below
 		 * will just fail. So we do it anonymously, there's no other
 		 * way.
