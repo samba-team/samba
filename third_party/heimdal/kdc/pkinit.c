@@ -231,6 +231,7 @@ generate_dh_keyblock(krb5_context context,
 	    size -= dh_gen_keylen;
 	    memmove(dh_gen_key + size, dh_gen_key, dh_gen_keylen);
 	    memset(dh_gen_key, 0, size);
+	    dh_gen_keylen += size;
 	}
     } else if (client_params->keyex == USE_ECDH) {
 	if (client_params->u.ecdh.public_key == NULL) {
@@ -459,6 +460,8 @@ _kdc_pk_rd_padata(astgs_request_t priv,
     hx509_verify_set_time(cp->verify_ctx, kdc_time);
     hx509_verify_attach_anchors(cp->verify_ctx, trust_anchors);
     hx509_certs_free(&trust_anchors);
+
+    hx509_verify_attach_revoke(cp->verify_ctx, kdc_identity->revokectx);
 
     if (config->pkinit_allow_proxy_certs)
 	hx509_verify_set_proxy_certificate(cp->verify_ctx, 1);

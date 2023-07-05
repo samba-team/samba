@@ -67,7 +67,6 @@
 # PK-INIT tests
 #
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_des3.ad_dc
-^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_revoked.ad_dc
 #
 # Windows 2000 PK-INIT tests
 #

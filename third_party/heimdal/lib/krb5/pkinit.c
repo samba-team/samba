@@ -1493,6 +1493,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	    size -= dh_gen_keylen;
 	    memmove(dh_gen_key + size, dh_gen_key, dh_gen_keylen);
 	    memset(dh_gen_key, 0, size);
+	    dh_gen_keylen += size;
 	}
 
     } else {
