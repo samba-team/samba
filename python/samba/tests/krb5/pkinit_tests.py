@@ -699,13 +699,15 @@ class PkInitTests(KDCBaseTest):
 
         return ca_cert, ca_private_key
 
-    def create_certificate(self, creds, certificate_signature=None):
+    def create_certificate(self,
+                           creds,
+                           ca_cert,
+                           ca_private_key,
+                           certificate_signature=None):
         if certificate_signature is None:
             certificate_signature = hashes.SHA1
 
         user_name = creds.get_username()
-
-        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
 
         builder = x509.CertificateBuilder()
 
@@ -873,8 +875,13 @@ class PkInitTests(KDCBaseTest):
         signature_algorithm_id = self.AlgorithmIdentifier_create(
             signature_algorithm)
 
+        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
+
         # Create a certificate for the client signed by the CA.
-        certificate = self.create_certificate(creds, certificate_signature)
+        certificate = self.create_certificate(creds,
+                                              ca_cert,
+                                              ca_private_key,
+                                              certificate_signature)
 
         private_key = creds.get_private_key()
 
