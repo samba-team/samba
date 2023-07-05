@@ -240,7 +240,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	/* Now return the PAC information to the callers.  We ingore
+	/* Now return the PAC information to the callers.  We ignore
 	 * the session_info and instead pick out the PAC via the
 	 * private_data on the auth_context */
 	status = gensec_session_info(gensec_server_context, tmp_ctx, &session_info);

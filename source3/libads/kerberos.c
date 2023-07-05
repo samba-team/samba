@@ -880,7 +880,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 				goto done; /* Not a fatal error. */
 			}
 
-			/* Yes, this is a race conditon... too bad. */
+			/* Yes, this is a race condition... too bad. */
 			if (rename(SYSTEM_KRB5_CONF_PATH, newpath) == -1) {
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: rename "
 					"of %s to %s failed. Errno %s\n",

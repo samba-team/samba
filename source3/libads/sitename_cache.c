@@ -38,7 +38,7 @@ static char *sitename_key(TALLOC_CTX *mem_ctx, const char *realm)
 
 /****************************************************************************
  Store the AD client sitename.
- We store indefinately as every new CLDAP query will re-write this.
+ We store indefinitely as every new CLDAP query will re-write this.
 ****************************************************************************/
 
 bool sitename_store(const char *realm, const char *sitename)
@@ -61,7 +61,7 @@ bool sitename_store(const char *realm, const char *sitename)
 		return ret;
 	}
 
-	expire = get_time_t_max(); /* Store indefinately. */
+	expire = get_time_t_max(); /* Store indefinitely. */
 
 	DEBUG(10,("sitename_store: realm = [%s], sitename = [%s], expire = [%u]\n",
 		realm, sitename, (unsigned int)expire ));
