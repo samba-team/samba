@@ -529,7 +529,7 @@ class TestDNSUpdates(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
 
     def test_readd_record(self):
-        "Test if adding, deleting and then readding a records works"
+        "Test if adding, deleting and then re-adding a records works"
 
         NAME = "readdrec.%s" % self.get_dns_domain()
 
