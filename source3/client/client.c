@@ -3075,6 +3075,64 @@ static int cmd_posix_rmdir(void)
 	return 0;
 }
 
+static int cmd_mkfifo(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *mask = NULL;
+	char *buf = NULL;
+	char *targetname = NULL;
+	struct cli_state *targetcli;
+	mode_t mode;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+	NTSTATUS status;
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		d_printf("mkfifo <filename> 0<mode>\n");
+		return 1;
+	}
+	mask = talloc_asprintf(ctx, "%s%s", client_get_cur_dir(), buf);
+	if (!mask) {
+		return 1;
+	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		d_printf("mkfifo <filename> 0<mode>\n");
+		return 1;
+	}
+
+	mode = (mode_t)strtol(buf, (char **)NULL, 8);
+	if ((mode & ~(S_IRWXU | S_IRWXG | S_IRWXO)) != 0) {
+		d_printf("mode %o can only contain permission bits\n", mode);
+		return 1;
+	}
+
+	status = cli_resolve_path(ctx,
+				  "",
+				  creds,
+				  cli,
+				  mask,
+				  &targetcli,
+				  &targetname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("mkfifo %s: %s\n", mask, nt_errstr(status));
+		return 1;
+	}
+
+	status = cli_mknod(targetcli, targetname, mode | S_IFIFO, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to open file %s. %s\n",
+			 targetname,
+			 nt_errstr(status));
+	} else {
+		d_printf("mkfifo created %s\n", targetname);
+	}
+	return 0;
+}
+
 static int cmd_close(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
@@ -5621,6 +5679,7 @@ static struct {
   {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
   {"mget",cmd_mget,"<mask> get all the matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
+  {"mkfifo",cmd_mkfifo,"<file mode> make a fifo",{COMPL_NONE,COMPL_NONE}},
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
