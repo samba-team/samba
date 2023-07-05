@@ -1059,12 +1059,10 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			off_t *size, uint32_t *pattr,
 			SMB_INO_T *ino)
 {
-	TALLOC_CTX *frame = NULL;
-	struct tevent_context *ev;
-	struct tevent_req *req;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
