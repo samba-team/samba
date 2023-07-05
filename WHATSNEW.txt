@@ -1,4 +1,74 @@
                    ==============================
+                   Release Notes for Samba 4.18.4
+                           July 05, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.18 release series.
+
+
+Changes since 4.18.3
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15404: Backport --pidl-developer fixes.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 14030: Named crashes on DLZ zone update.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 2312: smbcacls and smbcquotas do not check // before the server.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15382: cli_list loops 100% CPU against pre-lanman2 servers.
+   * BUG 15391: smbclient leaks fds with showacls.
+   * BUG 15402: smbd returns NOT_FOUND when creating files on a r/o filesystem.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15355: NSS_WRAPPER_HOSTNAME doesn't match NSS_WRAPPER_HOSTS entry and
+     causes test timeouts.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15384: net ads lookup (with unspecified realm) fails.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15381: Register Samba processes with GPFS.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15390: Python tarfile extraction needs change to avoid a warning
+     (CVE-2007-4559 mitigation).
+   * BUG 15398: The winbind child segfaults when listing users with `winbind
+     scan trusted domains = yes`.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15383: Remove comments about deprecated 'write cache size'.
+   * BUG 15403: smbget memory leak if failed to download files recursively.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.18.3
                             May 31, 2023
                    ==============================
@@ -58,8 +128,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.2
                            April 19, 2023
