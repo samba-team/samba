@@ -923,6 +923,16 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 				errno = EILSEQ;
 				goto error;
 			}
+			if (codepoint > 0x10ffff) {
+				/*
+				 * Unicode stops at 0x10ffff, and if
+				 * we ignore that, we'll end up
+				 * encoding the wrong characters in
+				 * the surrogate pair.
+				 */
+				errno = EILSEQ;
+				goto error;
+			}
 
 			codepoint -= 0x10000;
 
