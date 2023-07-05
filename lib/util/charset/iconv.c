@@ -861,6 +861,39 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 				errno = EILSEQ;
 				goto error;
 			}
+			if (codepoint >= 0xd800 && codepoint <= 0xdfff) {
+				/*
+				 * This is an invalid codepoint, per
+				 * RFC3629, as it encodes part of a
+				 * UTF-16 surrogate pair for a
+				 * character over U+10000, which ought
+				 * to have been encoded as a four byte
+				 * utf-8 sequence.
+				 *
+				 * Prior to Vista, Windows might
+				 * sometimes produce invalid strings
+				 * where a utf-16 sequence containing
+				 * surrogate pairs was converted
+				 * "verbatim" into utf-8, instead of
+				 * encoding the actual codepoint. This
+				 * format is sometimes called "WTF-8".
+				 *
+				 * If we were to support that, we'd
+				 * have a branch here for the case
+				 * where the codepoint is between
+				 * 0xd800 and 0xdbff (a "high
+				 * surrogate"), and read a *six*
+				 * character sequence from there which
+				 * would include a low surrogate. But
+				 * that would undermine the
+				 * hard-learnt principle that each
+				 * character should only have one
+				 * encoding.
+				 */
+				errno = EILSEQ;
+				goto error;
+			}
+
 			uc[0] = codepoint & 0xff;
 			uc[1] = codepoint >> 8;
 			c  += 3;
