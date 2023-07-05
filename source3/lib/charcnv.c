@@ -336,7 +336,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 	*ppdest = NULL;
 
 #ifdef DEVELOPER
-	/* Ensure we never use the braindead "malloc" varient. */
+	/* Ensure we never use the braindead "malloc" variant. */
 	if (ctx == NULL) {
 		smb_panic("NULL talloc CTX in pull_ucs2_base_talloc\n");
 	}
@@ -417,7 +417,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
   STR_ASCII     use ascii even with unicode packet.
   STR_NOALIGN   means don't do alignment.
  dest_len is the maximum length allowed in the destination. If dest_len
- is -1 then no maxiumum is used.
+ is -1 then no maximum is used.
 **/
 
 size_t push_string_check_fn(void *dest, const char *src,
@@ -441,7 +441,7 @@ size_t push_string_check_fn(void *dest, const char *src,
   STR_ASCII     use ascii even with unicode packet.
   STR_NOALIGN   means don't do alignment.
  dest_len is the maximum length allowed in the destination. If dest_len
- is -1 then no maxiumum is used.
+ is -1 then no maximum is used.
 **/
 
 size_t push_string_base(const char *base, uint16_t flags2,

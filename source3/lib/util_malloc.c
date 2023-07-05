@@ -67,10 +67,10 @@ static void *realloc_(void *ptr, size_t size)
 
  and not to have to keep track of the old 'p' contents to free later, nor
  to worry if the size parameter was zero. In the case where NULL is returned
- we guarentee that p has been freed.
+ we guarantee that p has been freed.
 
  If free later semantics are desired, then pass 'free_old_on_error' as False which
- guarentees that the old contents are not freed on error, even if size == 0. To use
+ guarantees that the old contents are not freed on error, even if size == 0. To use
  this idiom use :
 
  tmp = SMB_REALLOC_KEEP_OLD_ON_ERROR(p, size);

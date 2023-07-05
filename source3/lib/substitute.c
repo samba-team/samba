@@ -198,7 +198,7 @@ const char *get_current_user_info_domain(void)
  Return a new allocated and expanded string.
  Based on code by Branko Cibej <branko.cibej@hermes.si>
  When this is called p points at the '%' character.
- May substitute multiple occurrencies of the same env var.
+ May substitute multiple occurrences of the same env var.
 ********************************************************************/
 
 static char *realloc_expand_env_var(char *str, char *p)
@@ -275,7 +275,7 @@ void standard_sub_basic(const char *smb_name, const char *domain_name,
 }
 
 /*
- * Limit addresses to hexalpha charactes and underscore, safe for path
+ * Limit addresses to hexalpha characters and underscore, safe for path
  * components for Windows clients.
  */
 static void make_address_pathsafe(char *addr)

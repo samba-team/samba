@@ -124,7 +124,7 @@ bool srprs_quoted_string(const char** ptr, struct cbuf* str, bool* cont);
  * Match a hex string.
  *
  * @param[in,out] ptr parse position
- * @param         len maximum number of diggits to match
+ * @param         len maximum number of digits to match
  * @param[out]    u   value of the match
  *
  * @return true if matched

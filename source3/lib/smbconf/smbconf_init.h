@@ -23,7 +23,7 @@
 struct smbconf_ctx;
 
 /**
- * intialization dispatcher function.
+ * initialization dispatcher function.
  * takes source string in the form of "backend:path"
  */
 sbcErr smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,

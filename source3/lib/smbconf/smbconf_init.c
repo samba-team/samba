@@ -27,7 +27,7 @@
  * smbconf initialization dispatcher
  *
  * this takes a configuration source in the form of
- * backend:path and calles the appropriate backend
+ * backend:path and calls the appropriate backend
  * init function with the path argument
  *
  * known backends:

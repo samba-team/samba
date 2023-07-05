@@ -60,7 +60,7 @@ void  cbuf_delete(cbuf* b);
 
 /**
  * Reset the buffer to initial state.
- * Set the write positon to the start of buffer, effectivly
+ * Set the write position to the start of buffer, effectivly
  * clearing its contents. Doesn't free memory.
  *
  * @param b the buffer to clear
@@ -126,9 +126,9 @@ char* cbuf_reserve(cbuf* b, size_t len);
 /**
  * Put a character into the buffer.
  *
- * @param b a charcter buffer, may be NULL.
+ * @param b a character buffer, may be NULL.
  * @param c a character
- * @return number of charcters written ((b==NULL) ? 0 : 1)
+ * @return number of characters written ((b==NULL) ? 0 : 1)
  *
  * @retval -1 on error
  */
@@ -176,7 +176,7 @@ int cbuf_putdw(cbuf* b, uint32_t u);
 /**
  * Print formatted to a character buffer.
  *
- * @param b a charcter buffer
+ * @param b a character buffer
  * @param fmt a printf format string
  *
  * @return number of characters written, negative on error
@@ -189,7 +189,7 @@ int cbuf_printf(cbuf* b, const char* fmt, ...) PRINTF_ATTRIBUTE(2,3);
  *
  * @param b a character buffer.
  *
- * @return index of the next charcter to write.
+ * @return index of the next character to write.
  */
 size_t cbuf_getpos(const cbuf* b);
 
@@ -197,7 +197,7 @@ size_t cbuf_getpos(const cbuf* b);
  * Set the current write position of a buffer.
  * Invalidates the buffer contents from on the new position.
  *
- * @param b a charcter buffer
+ * @param b a character buffer
  * @param pos a position obtained by cbuf_getpos
  */
 void cbuf_setpos(cbuf* b, size_t pos);

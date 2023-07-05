@@ -429,7 +429,7 @@ static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
  where
  - keys known: 'speed', 'capability', 'if_index'
  - speed is in bits per second
- - capabilites known: 'RSS', 'RDMA'
+ - capabilities known: 'RSS', 'RDMA'
  - if_index should be used with care, because
    these indexes should not conicide with indexes
    the kernel sets...

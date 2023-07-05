@@ -541,7 +541,7 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 }
 
 /**********************************************************************
- Some varients of the LDAP rebind code do not pass in the third 'arg'
+ Some variants of the LDAP rebind code do not pass in the third 'arg'
  pointer to a void*, so we try and work around it by assuming that the
  value of the 'LDAP *' pointer is the same as the one we had passed in
  **********************************************************************/
@@ -1200,7 +1200,7 @@ static time_t calc_ldap_abs_endtime(int ldap_to)
 	}
 
 	/* Make the alarm time one second beyond
-	   the timout we're setting for the
+	   the timeout we're setting for the
 	   remote search timeout, to allow that
 	   to fire in preference. */
 

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba system utilities
    Copyright (C) Andrew Tridgell 1992-1998
@@ -727,7 +727,7 @@ int getgroups_max(void)
 
 /**************************************************************************
  Wrap setgroups and getgroups for systems that declare getgroups() as
- returning an array of gid_t, but actuall return an array of int.
+ returning an array of gid_t, but actually return an array of int.
 ****************************************************************************/
 
 #if defined(HAVE_BROKEN_GETGROUPS)
@@ -753,9 +753,9 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 	 */
 
 	if(setlen < 0) {
-		errno = EINVAL; 
+		errno = EINVAL;
 		return -1;
-	} 
+	}
 
 	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
 		DEBUG(0,("sys_getgroups: Malloc fail.\n"));
@@ -785,14 +785,14 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 static int sys_broken_setgroups(int setlen, gid_t *gidset)
 {
 	GID_T *group_list;
-	int i ; 
+	int i ;
 
 	if (setlen == 0)
 		return 0 ;
 
 	if (setlen < 0 || setlen > setgroups_max()) {
-		errno = EINVAL; 
-		return -1;   
+		errno = EINVAL;
+		return -1;
 	}
 
 	/*
@@ -802,11 +802,11 @@ static int sys_broken_setgroups(int setlen, gid_t *gidset)
 
 	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
 		DEBUG(0,("sys_setgroups: Malloc fail.\n"));
-		return -1;    
+		return -1;
 	}
 
-	for(i = 0; i < setlen; i++) 
-		group_list[i] = (GID_T) gidset[i]; 
+	for(i = 0; i < setlen; i++)
+		group_list[i] = (GID_T) gidset[i];
 
 	if(samba_setgroups(setlen, group_list) != 0) {
 		int saved_errno = errno;
@@ -843,7 +843,7 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 	/* setgroups(2) will fail with EINVAL if we pass too many groups. */
 	max = setgroups_max();
 
-	/* No group list, just make sure we are setting the efective GID. */
+	/* No group list, just make sure we are setting the effective GID. */
 	if (setlen == 0) {
 		return samba_setgroups(1, &primary_gid);
 	}

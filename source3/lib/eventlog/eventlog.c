@@ -356,7 +356,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 		if ( strequal( ptr->name, logname ) ) {
 			ptr->ref_count++;
 
-			/* trick to alow clearing of the eventlog tdb.
+			/* trick to allow clearing of the eventlog tdb.
 			   The force_clear flag should imply that someone
 			   has done a force close.  So make sure the tdb
 			   is NULL.  If this is a normal open, then just
@@ -485,7 +485,7 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb
 
 	start = line;
 
-	/* empty line signyfiying record delimeter, or we're at the end of the buffer */
+	/* empty line signyfiying record delimiter, or we're at the end of the buffer */
 	if ( start == NULL || strlen( start ) == 0 ) {
 		DEBUG( 6,
 		       ( "parse_logentry: found end-of-record indicator.\n" ) );
@@ -761,7 +761,7 @@ struct EVENTLOGRECORD *evlog_pull_record(TALLOC_CTX *mem_ctx,
  write an eventlog entry. Note that we have to lock, read next
  eventlog, increment, write, write the record, unlock
 
- coming into this, ee has the eventlog record, and the auxilliary date
+ coming into this, ee has the eventlog record, and the auxiliary date
  (computer name, etc.) filled into the other structure. Before packing
  into a record, this routine will calc the appropriate padding, etc.,
  and then blast out the record in a form that can be read back in

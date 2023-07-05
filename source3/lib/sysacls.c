@@ -357,7 +357,7 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 /*
  * acl_get_file, acl_get_fd, acl_set_file, acl_set_fd and
  * sys_acl_delete_def_fd are to be redirected to the default
- * statically-bound acl vfs module, but they are replacable.
+ * statically-bound acl vfs module, but they are replaceable.
  */
 
 #if defined(HAVE_POSIX_ACLS)

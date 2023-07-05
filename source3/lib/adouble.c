@@ -132,7 +132,7 @@
  *
  * The ad_xattr_header follows the FinderInfo data in the FinderInfo entry if
  * the length of the FinderInfo entry is larger then 32 bytes. It is then
- * preceeded with 2 bytes padding.
+ * preceded with 2 bytes padding.
  *
  * Cf: https://opensource.apple.com/source/xnu/xnu-4570.1.46/bsd/vfs/vfs_xattr.c
  */

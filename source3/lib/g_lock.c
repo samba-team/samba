@@ -756,7 +756,7 @@ static NTSTATUS g_lock_trylock(
 
 				/*
 				 * We're trying to upgrade, and the
-				 * exlusive lock is taken by someone
+				 * exclusive lock is taken by someone
 				 * else. This means that someone else
 				 * is waiting for us to give up our
 				 * shared lock. If we now also wait
@@ -873,7 +873,7 @@ noexclusive:
 
 		if (lck.num_shared == 0) {
 			/*
-			 * If we store ourself as exclusive writter,
+			 * If we store ourself as exclusive writer,
 			 * without any pending readers ...
 			 */
 			goto got_lock;
@@ -1456,7 +1456,7 @@ static void g_lock_writev_data_fn(
 	bool ok;
 
 	/*
-	 * We're holding an exclusiv write lock.
+	 * We're holding an exclusive write lock.
 	 *
 	 * Now we're updating the content of the record.
 	 *

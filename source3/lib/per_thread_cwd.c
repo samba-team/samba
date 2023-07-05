@@ -54,7 +54,7 @@ void per_thread_cwd_check(void)
 	 * per container namespaces.
 	 *
 	 * It's possible that the whole unshare()
-	 * is blocked in order to disallow neested
+	 * is blocked in order to disallow nested
 	 * containers.
 	 *
 	 * That's why we sadly need a runtime check

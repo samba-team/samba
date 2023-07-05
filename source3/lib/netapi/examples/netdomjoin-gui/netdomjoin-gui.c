@@ -999,7 +999,7 @@ static void callback_do_join_workgroup(GtkWidget *widget,
 				       gpointer data)
 {
 	struct join_state *state = (struct join_state *)data;
-	debug("callback_do_join_workgroup choosen\n");
+	debug("callback_do_join_workgroup chosen\n");
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_workgroup), TRUE);
 	gtk_widget_grab_focus(GTK_WIDGET(state->entry_workgroup));
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_domain), FALSE);
@@ -1012,7 +1012,7 @@ static void callback_do_join_domain(GtkWidget *widget,
 				    gpointer data)
 {
 	struct join_state *state = (struct join_state *)data;
-	debug("callback_do_join_domain choosen\n");
+	debug("callback_do_join_domain chosen\n");
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_domain), TRUE);
 	gtk_widget_grab_focus(GTK_WIDGET(state->entry_domain));
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_workgroup), FALSE);

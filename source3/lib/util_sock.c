@@ -45,7 +45,7 @@ bool is_a_socket(int fd)
 }
 
 /****************************************************************************
- Read data from a file descriptor with a timout in msec.
+ Read data from a file descriptor with a timeout in msec.
  mincount = if timeout, minimum to read before returning
  maxcount = number to be read.
  time_out = timeout in milliseconds

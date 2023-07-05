@@ -434,7 +434,7 @@ NET_API_STATUS netapitest_group(struct libnetapi_ctx *ctx,
 		goto out;
 	}
 
-	/* set it again via exlicit member set */
+	/* set it again via explicit member set */
 
 	status = test_netgroupsetusers(hostname, groupname2, 0, 1, &username);
 	if (status) {

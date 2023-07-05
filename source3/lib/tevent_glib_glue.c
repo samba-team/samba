@@ -68,7 +68,7 @@ struct tevent_glib_glue {
 
 	/*
 	 * Don't call tevent_glib_prepare() in the tevent tracepoint handler if
-	 * explicity told so. This is an optimisation for the case that glib
+	 * explicitly told so. This is an optimisation for the case that glib
 	 * event sources are created from glib event callbacks.
 	 */
 	bool skip_glib_refresh;
@@ -677,7 +677,7 @@ static bool tevent_glib_prepare(struct tevent_glib_glue *glue)
 
 	/*
 	 * Discard "ready" return value from g_main_context_prepare(). We don't
-	 * want to dispatch events here, thats only done in from the tevent loop.
+	 * want to dispatch events here, that's only done in from the tevent loop.
 	 */
 	(void)g_main_context_prepare(glue->gmain_ctx, &glue->gpriority);
 
@@ -709,7 +709,7 @@ static bool tevent_glib_prepare(struct tevent_glib_glue *glue)
  *
  * When tevent_glib_process() is called the thread must own the glib
  * gmain_ctx. That is achieved by tevent_glib_prepare() being the only function
- * that acuires context ownership.
+ * that acquires context ownership.
  *
  * To give other threads that are blocked on g_main_context_acquire(gmain_ctx) a
  * chance to acquire context ownership (eg needed to attach event sources), we

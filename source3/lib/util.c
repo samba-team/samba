@@ -911,10 +911,10 @@ bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pi
 	ret = sys_fcntl_ptr(fd,op,&lock);
 
 	if (ret == -1) {
-		int sav = errno;
+		int saved_errno = errno;
 		DEBUG(3,("fcntl_getlock: lock request failed at offset %.0f count %.0f type %d (%s)\n",
 			(double)*poffset,(double)*pcount,*ptype,strerror(errno)));
-		errno = sav;
+		errno = saved_errno;
 		return False;
 	}
 
@@ -1495,7 +1495,7 @@ bool mask_match_search(const char *string, const char *pattern, bool is_case_sen
 }
 
 /*******************************************************************
- A wrapper that handles a list of patters and calls mask_match()
+ A wrapper that handles a list of patterns and calls mask_match()
  on each.  Returns True if any of the patterns match.
 *******************************************************************/
 

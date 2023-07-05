@@ -45,7 +45,7 @@
 #define smb_panic(x) exit(1)
 #endif
 
-/* are we running as non-root? This is used by the regresison test code,
+/* are we running as non-root? This is used by the regression test code,
    and potentially also for sites that want non-root smbd */
 static uid_t initial_uid;
 static gid_t initial_gid;
