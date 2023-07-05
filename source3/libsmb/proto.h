@@ -335,6 +335,8 @@ struct tevent_req *cli_mknod_send(
 	mode_t mode,
 	dev_t dev);
 NTSTATUS cli_mknod_recv(struct tevent_req *req);
+NTSTATUS
+cli_mknod(struct cli_state *cli, const char *fname, mode_t mode, dev_t dev);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct cli_state *cli,
