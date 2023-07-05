@@ -7243,6 +7243,8 @@ struct tevent_req *cli_fsctl_send(
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_fsctl_state *state = NULL;
 	uint16_t *setup = NULL;
+	uint8_t *data = NULL;
+	uint32_t num_data = 0;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_fsctl_state);
 	if (req == NULL) {
@@ -7268,17 +7270,29 @@ struct tevent_req *cli_fsctl_send(
 	SCVAL(setup, 6, 1);	/* IsFcntl */
 	SCVAL(setup, 7, 0);	/* IsFlags */
 
-	subreq = cli_trans_send(
-		state, ev, cli,
-		0,		/* additional_flags2 */
-		SMBnttrans,	/* cmd */
-		NULL,		/* name */
-		-1, 		/* fid */
-		NT_TRANSACT_IOCTL, /* function */
-		0,		   /* flags */
-		setup, 4, 0,	   /* setup */
-		NULL, 0, 0,	    /* param */
-		in->data, in->length, max_out); /* data */
+	if (in) {
+		data = in->data;
+		num_data = in->length;
+	}
+
+	subreq = cli_trans_send(state,
+				ev,
+				cli,
+				0,		   /* additional_flags2 */
+				SMBnttrans,	   /* cmd */
+				NULL,		   /* name */
+				-1,		   /* fid */
+				NT_TRANSACT_IOCTL, /* function */
+				0,		   /* flags */
+				setup,
+				4,
+				0, /* setup */
+				NULL,
+				0,
+				0, /* param */
+				data,
+				num_data,
+				max_out); /* data */
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
