@@ -104,7 +104,7 @@ static void smbd_scavenger_parent_dead(struct tevent_context *event_ctx,
 		  server_id_str_buf(*state->scavenger_id, &tmp1),
 		  server_id_str_buf(state->parent_id, &tmp2)));
 
-	exit_server("smbd_scavenger_parent_dead");
+	exit_server_cleanly("smbd_scavenger_parent_dead");
 }
 
 static void scavenger_sig_term_handler(struct tevent_context *ev,
