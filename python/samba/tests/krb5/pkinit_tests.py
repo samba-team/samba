@@ -855,6 +855,7 @@ class PkInitTests(KDCBaseTest):
                     creds,
                     target_creds,
                     *,
+                    certificate=None,
                     expect_error=0,
                     using_pkinit=PkInit.PUBLIC_KEY,
                     etypes=None,
@@ -875,13 +876,14 @@ class PkInitTests(KDCBaseTest):
         signature_algorithm_id = self.AlgorithmIdentifier_create(
             signature_algorithm)
 
-        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
+        if certificate is None:
+            ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
 
-        # Create a certificate for the client signed by the CA.
-        certificate = self.create_certificate(creds,
-                                              ca_cert,
-                                              ca_private_key,
-                                              certificate_signature)
+            # Create a certificate for the client signed by the CA.
+            certificate = self.create_certificate(creds,
+                                                  ca_cert,
+                                                  ca_private_key,
+                                                  certificate_signature)
 
         private_key = creds.get_private_key()
 
