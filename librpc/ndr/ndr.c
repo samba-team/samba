@@ -286,6 +286,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 	}
 
 	ndr->alloc_size += NDR_BASE_MARSHALL_SIZE;
+	if (size == UINT32_MAX) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, "Overflow in push_expand");
+	}
 	if (size+1 > ndr->alloc_size) {
 		ndr->alloc_size = size+1;
 	}
