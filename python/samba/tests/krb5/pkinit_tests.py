@@ -663,12 +663,7 @@ class PkInitTests(KDCBaseTest):
 
         return kdc_exchange_dict
 
-    def create_certificate(self, creds, certificate_signature=None):
-        if certificate_signature is None:
-            certificate_signature = hashes.SHA1
-
-        user_name = creds.get_username()
-
+    def get_ca_cert_and_private_key(self):
         # The password with which to try to encrypt the certificate or private
         # key specified on the command line.
         ca_pass = samba.tests.env_get_var_value('CA_PASS', allow_missing=True)
@@ -701,6 +696,16 @@ class PkInitTests(KDCBaseTest):
             with open(ca_private_key_path, mode='rb') as f:
                 ca_private_key = serialization.load_pem_private_key(
                     f.read(), password=ca_pass, backend=default_backend())
+
+        return ca_cert, ca_private_key
+
+    def create_certificate(self, creds, certificate_signature=None):
+        if certificate_signature is None:
+            certificate_signature = hashes.SHA1
+
+        user_name = creds.get_username()
+
+        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
 
         builder = x509.CertificateBuilder()
 
