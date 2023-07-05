@@ -79,7 +79,7 @@ typedef struct _SambaAfpInfo
 
 /*
 ** On SAMBA this structure is followed by 4 bytes that store the create
-** date of the file or folder asociated with it.
+** date of the file or folder associated with it.
 */
 
 /*
@@ -173,7 +173,7 @@ enum {
 
 /*
 ** We will be adding some new info level to the Trans2_Set_Path_Information and Trans2_Query_Path_Information.
-** These info levels will allow the client to add, get, and remove desktop inforamtion from the
+** These info levels will allow the client to add, get, and remove desktop information from the
 ** server. How the server stores this information is up to them.
 */
 
@@ -208,7 +208,7 @@ enum {
 **				e.g. 	index of 5 means get the fifth entry of this application name in the database.
 **						if not entry return an error.
 **
-** The server returns with a structure that contains the full path to the appication and
+** The server returns with a structure that contains the full path to the application and
 ** its creator's date.
 */
 #define SMB_MAC_DT_GET_APPL	  0x306
