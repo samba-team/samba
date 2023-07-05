@@ -19,10 +19,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import json
 import os
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba import sites
+from samba import sites, subnets
 
 
 class BaseSitesCmdTestCase(SambaToolCmdTest):
@@ -55,6 +56,33 @@ class SitesCmdTestCase(BaseSitesCmdTestCase):
 
         # now delete it
         self.samdb.delete(dnsite, ["tree_delete:0"])
+
+    def test_site_list(self):
+        result, out, err = self.runsubcmd("sites", "list",
+                                          "-H", self.dburl, self.creds_string)
+        self.assertCmdSuccess(result, out, err)
+        self.assertIn("Default-First-Site-Name", out)
+
+        # The same but with --json
+        result, out, err = self.runsubcmd("sites", "list", "--json",
+                                          "-H", self.dburl, self.creds_string)
+        self.assertCmdSuccess(result, out, err)
+        json_data = json.loads(out)
+        self.assertIn("Default-First-Site-Name", json_data)
+
+    def test_site_view(self):
+        result, out, err = self.runsubcmd("sites", "view",
+                                          "Default-First-Site-Name",
+                                          "-H", self.dburl, self.creds_string)
+        self.assertCmdSuccess(result, out, err)
+        json_data = json.loads(out)
+        self.assertEqual(json_data["cn"], "Default-First-Site-Name")
+
+        # Now try one that doesn't exist
+        result, out, err = self.runsubcmd("sites", "view",
+                                          "Does-Not-Exist",
+                                          "-H", self.dburl, self.creds_string)
+        self.assertCmdFail(result, err)
 
 
 class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
@@ -134,3 +162,44 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
 
             self.assertIsNotNone(ret)
             self.assertEqual(len(ret), 0)
+
+    def test_site_subnet_list(self):
+        subnet = "10.9.8.0/24"
+        subnets.create_subnet(self.samdb, self.samdb.get_config_basedn(),
+                              subnet, self.sitename)
+
+        # cleanup after test
+        dnsubnet = ldb.Dn(self.samdb, ("CN=%s,CN=Subnets,CN=Sites,%s" %
+                                       (subnet, self.config_dn)))
+        self.addCleanup(self.samdb.delete, dnsubnet, ["tree_delete:1"])
+
+        result, out, err = self.runsubcmd("sites", "subnet", "list",
+                                          self.sitename,
+                                          "-H", self.dburl, self.creds_string)
+
+        self.assertCmdSuccess(result, out, err)
+        self.assertIn(subnet, out)
+
+    def test_site_subnet_view(self):
+        subnet = "50.60.0.0/16"
+        subnets.create_subnet(self.samdb, self.samdb.get_config_basedn(),
+                              subnet, self.sitename2)
+
+        # cleanup after test
+        dnsubnet = ldb.Dn(self.samdb, ("CN=%s,CN=Subnets,CN=Sites,%s" %
+                                       (subnet, self.config_dn)))
+        self.addCleanup(self.samdb.delete, dnsubnet, ["tree_delete:1"])
+
+        result, out, err = self.runsubcmd("sites", "subnet",
+                                          "view", subnet,
+                                          "-H", self.dburl, self.creds_string)
+
+        self.assertCmdSuccess(result, out, err)
+        json_data = json.loads(out)
+        self.assertEqual(json_data["cn"], subnet)
+
+        # Now try one that doesn't exist
+        result, out, err = self.runsubcmd("sites", "subnet",
+                                          "view", "50.0.0.0/8",
+                                          "-H", self.dburl, self.creds_string)
+        self.assertCmdFail(result, err)
