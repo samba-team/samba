@@ -241,7 +241,7 @@ service_check()
 	fi
 
 	# Check that NFS Ganesha is running, according to PID file
-	_pidfile="/var/run/ganesha.pid"
+	_pidfile="/var/run/ganesha/ganesha.pid"
 	_ganesha="/usr/bin/ganesha.nfsd"
 	if ! {
 		read -r _pid <"$_pidfile" &&
