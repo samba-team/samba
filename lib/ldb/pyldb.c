@@ -3854,6 +3854,7 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 		ret = ldb_msg_add(pyldb_Message_AsMessage(self), el, el->flags);
 		if (ret != LDB_SUCCESS) {
 			PyErr_SetLdbError(PyExc_LdbError, ret, NULL);
+			talloc_unlink(self->msg, el);
 			return -1;
 		}
 	}
