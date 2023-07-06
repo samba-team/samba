@@ -1426,6 +1426,28 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 				return NULL;
 			}
 			memcpy(&msg->elements[msg_pos], msg_el, sizeof(*msg_el));
+
+			/*
+			 * PyObject_AsMessageElement might have returned a
+			 * reference to an existing MessageElement, and so left
+			 * the name and flags unchanged. Thus if those members
+			 * aren’t set, we’ll assume that the user forgot to
+			 * initialize them.
+			 */
+			if (msg->elements[msg_pos].name == NULL) {
+				/* No name was set — set it now. */
+				msg->elements[msg_pos].name = talloc_strdup(msg->elements, key_str);
+				if (msg->elements[msg_pos].name == NULL) {
+					PyErr_NoMemory();
+					TALLOC_FREE(msg);
+					return NULL;
+				}
+			}
+			if (msg->elements[msg_pos].flags == 0) {
+				/* No flags were set — set them now. */
+				msg->elements[msg_pos].flags = mod_flags;
+			}
+
 			msg_pos++;
 		}
 	}
@@ -3848,6 +3870,22 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 		struct ldb_message_element *el = PyObject_AsMessageElement(self->msg,
 									   value, 0, attr_name);
 		if (el == NULL) {
+			return -1;
+		}
+		if (el->name == NULL) {
+			/*
+			 * If ‘value’ is a MessageElement,
+			 * PyObject_AsMessageElement() will have returned a
+			 * reference to it without setting the name. We don’t
+			 * want to modify the original object to set the name
+			 * ourselves, but making a copy would result in
+			 * different behaviour for a caller relying on a
+			 * reference being kept. Rather than continue with a
+			 * NULL name (and probably fail later on), let’s catch
+			 * this potential mistake early.
+			 */
+			PyErr_SetString(PyExc_ValueError, "MessageElement has no name set");
+			talloc_unlink(self->msg, el);
 			return -1;
 		}
 		ldb_msg_remove_attr(pyldb_Message_AsMessage(self), attr_name);
