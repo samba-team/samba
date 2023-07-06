@@ -166,10 +166,11 @@ fail:
 	return ret;
 }
 
-struct symlink_reparse_struct *symlink_reparse_buffer_parse(
-	TALLOC_CTX *mem_ctx, const uint8_t *src, size_t srclen)
+int symlink_reparse_buffer_parse(TALLOC_CTX *mem_ctx,
+				 struct symlink_reparse_struct *dst,
+				 const uint8_t *src,
+				 size_t srclen)
 {
-	struct symlink_reparse_struct *result = NULL;
 	uint16_t reparse_data_length;
 	uint16_t substitute_name_offset, substitute_name_length;
 	uint16_t print_name_offset, print_name_length;
@@ -177,13 +178,13 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 
 	if (srclen < 20) {
 		DBG_DEBUG("srclen = %zu, expected >= 20\n", srclen);
-		goto fail;
+		return EINVAL;
 	}
 	if (IVAL(src, 0) != IO_REPARSE_TAG_SYMLINK) {
 		DBG_DEBUG("Got ReparseTag %8.8x, expected %8.8x\n",
 			  IVAL(src, 0),
 			  IO_REPARSE_TAG_SYMLINK);
-		goto fail;
+		return EINVAL;
 	}
 
 	reparse_data_length	= SVAL(src, 4);
@@ -195,14 +196,14 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 	if (reparse_data_length < 12) {
 		DBG_DEBUG("reparse_data_length = %"PRIu16", expected >= 12\n",
 			  reparse_data_length);
-		goto fail;
+		return EINVAL;
 	}
 	if (smb_buffer_oob(srclen - 8, reparse_data_length, 0)) {
 		DBG_DEBUG("reparse_data_length (%"PRIu16") too large for "
 			   "src_len (%zu)\n",
 			  reparse_data_length,
 			  srclen);
-		goto fail;
+		return EINVAL;
 	}
 	if (smb_buffer_oob(reparse_data_length - 12, substitute_name_offset,
 			   substitute_name_length)) {
@@ -211,7 +212,7 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 			  substitute_name_offset,
 			  substitute_name_length,
 			  reparse_data_length - 12);
-		goto fail;
+		return EINVAL;
 	}
 	if (smb_buffer_oob(reparse_data_length - 12, print_name_offset,
 			   print_name_length)) {
@@ -220,47 +221,41 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 			  print_name_offset,
 			  print_name_length,
 			  reparse_data_length - 12);
-		goto fail;
+		return EINVAL;
 	}
 
-	result = talloc_zero(mem_ctx, struct symlink_reparse_struct);
-	if (result == NULL) {
-		DBG_DEBUG("talloc failed\n");
-		goto fail;
-	}
+	*dst = (struct symlink_reparse_struct) {
+		.unparsed_path_length = PULL_LE_U16(src, 6),
+		.flags = PULL_LE_U32(src, 16),
+	};
 
-	ok = convert_string_talloc(
-		result,
-		CH_UTF16,
-		CH_UNIX,
-		src + 20 + substitute_name_offset,
-		substitute_name_length,
-		&result->substitute_name,
-		NULL);
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UTF16,
+				   CH_UNIX,
+				   src + 20 + substitute_name_offset,
+				   substitute_name_length,
+				   &dst->substitute_name,
+				   NULL);
 	if (!ok) {
+		int ret = errno;
 		DBG_DEBUG("convert_string_talloc for substitute_name "
 			  "failed\n");
-		goto fail;
+		return ret;
 	}
 
-	ok = convert_string_talloc(
-		result,
-		CH_UTF16,
-		CH_UNIX,
-		src + 20 + print_name_offset,
-		print_name_length,
-		&result->print_name,
-		NULL);
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UTF16,
+				   CH_UNIX,
+				   src + 20 + print_name_offset,
+				   print_name_length,
+				   &dst->print_name,
+				   NULL);
 	if (!ok) {
+		int ret = errno;
 		DBG_DEBUG("convert_string_talloc for print_name failed\n");
-		goto fail;
+		TALLOC_FREE(dst->substitute_name);
+		return ret;
 	}
 
-	result->unparsed_path_length = SVAL(src, 6);
-	result->flags = IVAL(src, 16);
-
-	return result;
-fail:
-	TALLOC_FREE(result);
-	return NULL;
+	return 0;
 }

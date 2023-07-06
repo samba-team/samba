@@ -368,8 +368,9 @@ NTSTATUS cli_readlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 {
 	struct cli_readlink_state *state = tevent_req_data(
 		req, struct cli_readlink_state);
-	struct symlink_reparse_struct *symlink = NULL;
+	struct symlink_reparse_struct symlink = { .flags = 0, };
 	NTSTATUS status;
+	int ret;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
@@ -392,26 +393,27 @@ NTSTATUS cli_readlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	symlink = symlink_reparse_buffer_parse(
-		talloc_tos(), state->data, state->num_data);
-	if (symlink == NULL) {
+	ret = symlink_reparse_buffer_parse(
+		talloc_tos(), &symlink, state->data, state->num_data);
+	if (ret != 0) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	if (psubstitute_name != NULL) {
 		*psubstitute_name = talloc_move(
-			mem_ctx, &symlink->substitute_name);
+			mem_ctx, &symlink.substitute_name);
 	}
 
 	if (pprint_name != NULL) {
-		*pprint_name = talloc_move(mem_ctx, &symlink->print_name);
+		*pprint_name = talloc_move(mem_ctx, &symlink.print_name);
 	}
 
 	if (pflags != NULL) {
-		*pflags = symlink->flags;
+		*pflags = symlink.flags;
 	}
 
-	TALLOC_FREE(symlink);
+	TALLOC_FREE(symlink.print_name);
+	TALLOC_FREE(symlink.substitute_name);
 
 	return NT_STATUS_OK;
 }

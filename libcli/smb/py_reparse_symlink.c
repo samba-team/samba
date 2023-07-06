@@ -104,8 +104,11 @@ static PyObject *py_reparse_symlink_get(PyObject *module, PyObject *args)
 {
 	char *buf = NULL;
 	Py_ssize_t buflen;
-	struct symlink_reparse_struct *syml = NULL;
+	struct symlink_reparse_struct syml = {
+		.flags = 0,
+	};
 	PyObject *result = NULL;
+	int ret;
 	bool ok;
 
 	ok = PyArg_ParseTuple(args, PYARG_BYTES_LEN ":get", &buf, &buflen);
@@ -113,19 +116,21 @@ static PyObject *py_reparse_symlink_get(PyObject *module, PyObject *args)
 		return NULL;
 	}
 
-	syml = symlink_reparse_buffer_parse(NULL, (uint8_t *)buf, buflen);
-	if (syml == NULL) {
-		PyErr_NoMemory();
+	ret = symlink_reparse_buffer_parse(NULL, &syml, (uint8_t *)buf, buflen);
+	if (ret != 0) {
+		errno = ret;
+		PyErr_SetFromErrno(PyExc_RuntimeError);
 		return NULL;
 	}
 
-	result = Py_BuildValue(
-		"ssII",
-		syml->substitute_name,
-		syml->print_name,
-		(unsigned)syml->unparsed_path_length,
-		(unsigned)syml->flags);
-	TALLOC_FREE(syml);
+	result = Py_BuildValue("ssII",
+			       syml.substitute_name,
+			       syml.print_name,
+			       (unsigned)syml.unparsed_path_length,
+			       (unsigned)syml.flags);
+
+	TALLOC_FREE(syml.print_name);
+	TALLOC_FREE(syml.substitute_name);
 	return result;
 }
 

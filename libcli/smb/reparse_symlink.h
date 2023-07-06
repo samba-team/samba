@@ -50,7 +50,9 @@ bool symlink_reparse_buffer_marshall(
 	TALLOC_CTX *mem_ctx,
 	uint8_t **pdst,
 	size_t *pdstlen);
-struct symlink_reparse_struct *symlink_reparse_buffer_parse(
-	TALLOC_CTX *mem_ctx, const uint8_t *src, size_t srclen);
+int symlink_reparse_buffer_parse(TALLOC_CTX *mem_ctx,
+				 struct symlink_reparse_struct *dst,
+				 const uint8_t *src,
+				 size_t srclen);
 
 #endif

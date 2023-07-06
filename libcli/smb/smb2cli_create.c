@@ -198,6 +198,7 @@ static NTSTATUS smb2cli_parse_symlink_error_response(
 {
 	struct symlink_reparse_struct *symlink = NULL;
 	uint32_t symlink_length, error_tag;
+	int ret;
 
 	if (buflen < 8) {
 		DBG_DEBUG("buffer too short: %zu bytes\n", buflen);
@@ -219,10 +220,15 @@ static NTSTATUS smb2cli_parse_symlink_error_response(
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	symlink = symlink_reparse_buffer_parse(
-		mem_ctx, buf+8, buflen-8);
+	symlink = talloc(mem_ctx, struct symlink_reparse_struct);
 	if (symlink == NULL) {
-		DBG_DEBUG("symlink_reparse_buffer_parse failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = symlink_reparse_buffer_parse(
+		symlink, symlink, buf+8, buflen-8);
+	if (ret != 0) {
+		DBG_DEBUG("symlink_reparse_buffer_parse failed: %s\n", strerror(ret));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
