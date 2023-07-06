@@ -593,8 +593,8 @@ static bool smb_download_file(const char *base, const char *name,
 		if (opt.blocksize > max_block_size) {
 			if (opt.blocksize != SMB_DEFAULT_BLOCKSIZE) {
 				fprintf(stderr,
-				        "Warning: Overriding block size to %d \
-				         due to limit-rate", max_block_size);
+				        "Warning: Overriding block size to %d "
+					"due to limit-rate", max_block_size);
 			}
 			opt.blocksize = max_block_size;
 		}

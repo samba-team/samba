@@ -6500,8 +6500,8 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(1,("NetServerEnum2 error: Couldn't find primary domain controller\
-		 for domain %s\n", domain_name));
+	DEBUG(1,("NetServerEnum2 error: Couldn't find primary domain controller "
+		 "for domain %s\n", domain_name));
 
 	/* Try netr_GetDcName */
 
@@ -6524,8 +6524,8 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 		return status;
 	}
 
-	DEBUG(1,("netr_GetDcName error: Couldn't find primary domain controller\
-		 for domain %s\n", domain_name));
+	DEBUG(1,("netr_GetDcName error: Couldn't find primary domain controller "
+		 "for domain %s\n", domain_name));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
