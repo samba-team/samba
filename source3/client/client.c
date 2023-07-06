@@ -41,6 +41,7 @@
 #include "lib/util/time_basic.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/cmdline/cmdline.h"
+#include "libcli/smb/reparse.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -1707,20 +1708,38 @@ static int do_allinfo(const char *name)
 	}
 
 	if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-		char *subst, *print;
-		uint32_t flags;
+		struct reparse_data_buffer *rep = NULL;
+		uint8_t *data = NULL;
+		uint32_t datalen;
+		char *s = NULL;
 
-		status = cli_readlink(cli, name, talloc_tos(), &subst, &print,
-				      &flags);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "cli_readlink returned %s\n",
-				  nt_errstr(status));
-		} else {
-			d_printf("symlink: subst=[%s], print=[%s], flags=%x\n",
-				 subst, print, flags);
-			TALLOC_FREE(subst);
-			TALLOC_FREE(print);
+		rep = talloc_zero(talloc_tos(), struct reparse_data_buffer);
+		if (rep == NULL) {
+			d_printf("talloc_zero() failed\n");
+			return false;
 		}
+
+		status = cli_get_reparse_data(cli, name, rep, &data, &datalen);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr,
+				  "cli_get_reparse_data() failed: %s\n",
+				  nt_errstr(status));
+			TALLOC_FREE(rep);
+			return false;
+		}
+
+		status = reparse_data_buffer_parse(rep, rep, data, datalen);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr,
+				  "reparse_data_buffer_parse() failed: %s\n",
+				  nt_errstr(status));
+			TALLOC_FREE(rep);
+			return false;
+		}
+
+		s = reparse_data_buffer_str(rep, rep);
+		d_printf("%s", s);
+		TALLOC_FREE(rep);
 	}
 
 	status = cli_ntcreate(cli, name, 0,
