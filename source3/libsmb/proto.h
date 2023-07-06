@@ -1033,6 +1033,20 @@ NTSTATUS cli_symlink_recv(struct tevent_req *req);
 NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
 		     const char *newname, uint32_t flags);
 
+struct tevent_req *cli_get_reparse_data_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli,
+					     const char *fname);
+NTSTATUS cli_get_reparse_data_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   uint8_t **_data,
+				   uint32_t *_datalen);
+NTSTATUS cli_get_reparse_data(struct cli_state *cli,
+			      const char *fname,
+			      TALLOC_CTX *mem_ctx,
+			      uint8_t **_data,
+			      uint32_t *_datalen);
+
 struct tevent_req *cli_readlink_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct cli_state *cli,
