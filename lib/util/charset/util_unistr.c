@@ -222,6 +222,127 @@ size_t utf16_len_n(const void *src, size_t n)
 	return len;
 }
 
+
+/**
+ * Determine the length and validity of a utf-8 string.
+ *
+ * @param input the string pointer
+ * @param maxlen maximum size of the string
+ * @param byte_len receives the length of the valid section
+ * @param char_len receives the number of unicode characters in the valid section
+ * @param utf16_len receives the number of bytes the string would need in UTF16 encoding.
+ *
+ * @return true if the input is valid up to maxlen, or a '\0' byte, otherwise false.
+ */
+bool utf8_check(const char *input, size_t maxlen,
+		size_t *byte_len,
+		size_t *char_len,
+		size_t *utf16_len)
+{
+	const uint8_t *s = (const uint8_t *)input;
+	size_t i;
+	size_t chars = 0;
+	size_t long_chars = 0;
+	uint32_t codepoint;
+	uint8_t a, b, c, d;
+	for (i = 0; i < maxlen; i++, chars++) {
+		if (s[i] == 0) {
+			break;
+		}
+		if (s[i] < 0x80) {
+			continue;
+		}
+		if ((s[i] & 0xe0) == 0xc0) {
+			/* 110xxxxx 10xxxxxx */
+			a = s[i];
+			if (maxlen - i < 2) {
+				goto error;
+			}
+			b = s[i + 1];
+			if ((b & 0xc0) != 0x80) {
+				goto error;
+			}
+			codepoint = (a & 31) << 6 | (b & 63);
+			if (codepoint < 0x80) {
+				goto error;
+			}
+			i++;
+			continue;
+		}
+		if ((s[i] & 0xf0) == 0xe0) {
+			/* 1110xxxx 10xxxxxx 10xxxxxx */
+			if (maxlen - i < 3) {
+				goto error;
+			}
+			a = s[i];
+			b = s[i + 1];
+			c = s[i + 2];
+			if ((b & 0xc0) != 0x80 || (c & 0xc0) != 0x80) {
+				goto error;
+			}
+			codepoint = (c & 63) | (b & 63) << 6 | (a & 15) << 12;
+
+			if (codepoint < 0x800) {
+				goto error;
+			}
+			if (codepoint >= 0xd800 && codepoint <= 0xdfff) {
+				/*
+				 * This is an invalid codepoint, per
+				 * RFC3629, as it encodes part of a
+				 * UTF-16 surrogate pair for a
+				 * character over U+10000, which ought
+				 * to have been encoded as a four byte
+				 * utf-8 sequence.
+				 */
+				goto error;
+			}
+			i += 2;
+			continue;
+		}
+
+		if ((s[i] & 0xf8) == 0xf0) {
+			/* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */
+			if (maxlen - i < 4) {
+				goto error;
+			}
+			a = s[i];
+			b = s[i + 1];
+			c = s[i + 2];
+			d = s[i + 3];
+
+			if ((b & 0xc0) != 0x80 ||
+			    (c & 0xc0) != 0x80 ||
+			    (d & 0xc0) != 0x80) {
+				goto error;
+			}
+			codepoint = (d & 63) | (c & 63) << 6 | (b & 63) << 12 | (a & 7) << 18;
+
+			if (codepoint < 0x10000 || codepoint > 0x10ffff) {
+				goto error;
+			}
+			/* this one will need two UTF16 characters */
+			long_chars++;
+			i += 3;
+			continue;
+		}
+		/*
+		 * If it wasn't handled yet, it's wrong.
+		 */
+		goto error;
+	}
+	*byte_len = i;
+	*char_len = chars;
+	*utf16_len = chars + long_chars;
+	return true;
+
+error:
+	*byte_len = i;
+	*char_len = chars;
+	*utf16_len = chars + long_chars;
+	return false;
+}
+
+
 /**
  * Copy a string from a char* unix src to a dos codepage string destination.
  *

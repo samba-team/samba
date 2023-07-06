@@ -167,6 +167,11 @@ char *strrchr_m(const char *s, char c);
 char *strchr_m(const char *s, char c);
 char *strstr_m(const char *src, const char *findstr);
 
+bool utf8_check(const char *input, size_t maxlen,
+		size_t *byte_len,
+		size_t *char_len,
+		size_t *utf16_len);
+
 bool push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
 bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src, size_t *converted_size);
 bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
