@@ -1392,6 +1392,11 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_obj));
+	if (msg->elements == NULL) {
+		PyErr_NoMemory();
+		TALLOC_FREE(msg);
+		return NULL;
+	}
 
 	if (dn_value) {
 		if (!pyldb_Object_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
