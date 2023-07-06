@@ -437,7 +437,7 @@ static void become_local_master_stage1(struct subnet_record *subrec,
 
 	if(!work) {
 		DBG_WARNING("become_local_master_stage1: Error - cannot find \
-			%s on subnet %s\n", work_name, subrec->subnet_name);
+%s on subnet %s\n", work_name, subrec->subnet_name);
 		return;
 	}
 
