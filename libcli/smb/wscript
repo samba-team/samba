@@ -46,6 +46,7 @@ def build(bld):
            smb2_posix.c
            tstream_smbXcli_np.c
            reparse_symlink.c
+           reparse.c
     ''',
     deps='''
         LIBCRYPTO gnutls NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
