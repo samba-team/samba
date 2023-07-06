@@ -1396,14 +1396,17 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 	if (dn_value) {
 		if (!pyldb_Object_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
 			PyErr_SetString(PyExc_TypeError, "unable to import dn object");
+			TALLOC_FREE(msg);
 			return NULL;
 		}
 		if (msg->dn == NULL) {
 			PyErr_SetString(PyExc_TypeError, "dn set but not found");
+			TALLOC_FREE(msg);
 			return NULL;
 		}
 	} else {
 		PyErr_SetString(PyExc_TypeError, "no dn set");
+		TALLOC_FREE(msg);
 		return NULL;
 	}
 
@@ -1414,6 +1417,7 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 							   mod_flags, key_str);
 			if (msg_el == NULL) {
 				PyErr_Format(PyExc_TypeError, "unable to import element '%s'", key_str);
+				TALLOC_FREE(msg);
 				return NULL;
 			}
 			memcpy(&msg->elements[msg_pos], msg_el, sizeof(*msg_el));
