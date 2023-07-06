@@ -1,4 +1,63 @@
                    ==============================
+                   Release Notes for Samba 4.17.9
+                           July 06, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.17 release series.
+
+
+Changes since 4.17.8
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15404: Backport --pidl-developer fixes.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15275: smbd_scavenger crashes when service smbd is stopped.
+   * BUG 15378: vfs_fruit might cause a failing open for delete.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 14030: named crashes on DLZ zone update.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15361: winbind recurses into itself via rpcd_lsad.
+   * BUG 15382: cli_list loops 100% CPU against pre-lanman2 servers.
+   * BUG 15391: smbclient leaks fds with showacls.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15374: aes256 smb3 encryption algorithms are not allowed in
+     smb3_sid_parse().
+   * BUG 15413: winbindd gets stuck on NT_STATUS_RPC_SEC_PKG_ERROR.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15403: smbget memory leak if failed to download files recursively.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.17.8
                             May 11, 2023
                    ==============================
@@ -75,8 +134,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.17.7
                            March 29, 2023
