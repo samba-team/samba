@@ -788,6 +788,18 @@ bool ldb_msg_element_equal_ordered(const struct ldb_message_element *el1,
 int ldb_msg_element_compare_name(struct ldb_message_element *el1,
 				 struct ldb_message_element *el2)
 {
+	if (el1->name == el2->name) {
+		return 0;
+	}
+
+	if (el1->name == NULL) {
+		return -1;
+	}
+
+	if (el2->name == NULL) {
+		return 1;
+	}
+
 	return ldb_attr_cmp(el1->name, el2->name);
 }
 
