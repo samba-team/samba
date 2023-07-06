@@ -546,6 +546,9 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 		for (i=0; i<r->num_attributes; i++) {
 			struct ldb_message_element *attrib = &r->attributes[i];
 			if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) goto err;
+			if (attrib->name == NULL) {
+				goto err;
+			}
 			if (!asn1_write_OctetString(data, attrib->name,
 					       strlen(attrib->name))) goto err;
 			if (!asn1_push_tag(data, ASN1_SET)) goto err;
