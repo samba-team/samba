@@ -3138,12 +3138,12 @@ static PyTypeObject PyLdbModule = {
  * This will accept any sequence objects that contains strings, or 
  * a string object.
  *
- * A reference to set_obj will be borrowed. 
+ * A reference to set_obj might be borrowed.
  *
  * @param mem_ctx Memory context
  * @param set_obj Python object to convert
- * @param flags ldb_message_element flags to set
- * @param attr_name Name of the attribute
+ * @param flags ldb_message_element flags to set, if a new element is returned
+ * @param attr_name Name of the attribute to set, if a new element is returned
  * @return New ldb_message_element, allocated as child of mem_ctx
  */
 static struct ldb_message_element *PyObject_AsMessageElement(
