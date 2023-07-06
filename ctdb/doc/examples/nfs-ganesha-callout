@@ -72,7 +72,7 @@ usage()
 	cat <<EOF
 usage: $_c { shutdown | startup }
        $_c { stop | start | check } nfs
-       $_c { releaseip | takeip }
+       $_c { releaseip | takeip } <iface> <ip> <maskbits>
        $_c { monitor-list-shares }
 EOF
 	exit 1
