@@ -407,8 +407,8 @@ class KCC(object):
                     nttime2unix(failed_link.time_first_failure)
                 # TODO guard against future
                 if unix_first_failure > self.unix_now:
-                    logger.error("The last success time attribute for \
-                                 repsFrom is in the future!")
+                    logger.error("The last success time attribute for "
+                                 "repsFrom is in the future!")
 
                 # Perform calculation in seconds
                 if (self.unix_now - unix_first_failure) > 60 * 60 * 2:
