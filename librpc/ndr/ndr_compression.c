@@ -742,8 +742,8 @@ static enum ndr_err_code ndr_pull_compression_xpress_huff_raw_chunk(struct ndr_p
 					  plain_chunk.length);
 	if (ret < 0) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "XPRESS HUFF lzxpress_huffman_decompress() returned %d\n",
-				      (int)ret);
+				      "XPRESS HUFF lzxpress_huffman_decompress() returned %zd\n",
+				      ret);
 	}
 
 	if (plain_chunk.length != ret) {
@@ -794,8 +794,8 @@ static enum ndr_err_code ndr_push_compression_xpress_huff_raw_chunk(struct ndr_p
 					comp_chunk.length);
 	if (ret < 0) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "XPRESS HUFF lzxpress_huffman_compress() returned %d\n",
-				      (int)ret);
+				      "XPRESS HUFF lzxpress_huffman_compress() returned %zd\n",
+				      ret);
 	}
 
 	if (ret > comp_chunk.length) {
