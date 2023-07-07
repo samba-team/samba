@@ -347,7 +347,7 @@ done:
  *
  * This is required because the nt_hash is calculated over the raw utf16 blob,
  * which might not be completely valid utf16, which means the conversion
- * from CH_UTF16MUNGED to CH_UTF8 might loose information.
+ * from CH_UTF16MUNGED to CH_UTF8 might lose information.
  */
 _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 						 const DATA_BLOB *password_utf16,
@@ -401,7 +401,7 @@ _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
  *
  * This is required because the nt_hash is calculated over the raw utf16 blob,
  * which might not be completely valid utf16, which means the conversion
- * from CH_UTF16MUNGED to CH_UTF8 might loose information.
+ * from CH_UTF16MUNGED to CH_UTF8 might lose information.
  */
 _PUBLIC_ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cred,
 						     const DATA_BLOB *password_utf16)
