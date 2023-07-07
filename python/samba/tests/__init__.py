@@ -704,3 +704,19 @@ def check_help_consistency(out,
 
     if errors:
         return "\n".join(errors)
+
+
+def get_env_dir(key):
+    """A helper to pull a directory name from the environment, used in
+    some tests that optionally write e.g. fuzz seeds into a directory
+    named in an environment valiable.
+    """
+    dir = os.environ.get(key)
+    if dir is None:
+        return None
+
+    if not os.path.isdir(dir):
+        raise ValueError(
+            f"{key} should name an existing directory (got '{dir}')")
+
+    return dir
