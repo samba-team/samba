@@ -184,6 +184,10 @@ def configure(conf):
     conf.CHECK_TYPE('blkcnt_t', 'long', headers='sys/types.h sys/stat.h unistd.h')
 
     conf.CHECK_SIZEOF('bool char int "long long" long short size_t ssize_t')
+    sizeof_int = conf.env["SIZEOF_INT"]
+    if sizeof_int < 4:
+        conf.fatal(f"Samba won't work with int of size {sizeof_int} (requires >= 4)")
+
     conf.CHECK_SIZEOF('int8_t uint8_t int16_t uint16_t int32_t uint32_t int64_t uint64_t')
     conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
     conf.CHECK_SIZEOF('off_t dev_t ino_t time_t')
