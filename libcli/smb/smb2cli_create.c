@@ -23,7 +23,7 @@
 #include "smb_common.h"
 #include "smbXcli_base.h"
 #include "smb2_create_blob.h"
-#include "reparse_symlink.h"
+#include "reparse.h"
 
 struct smb2cli_create_state {
 	enum protocol_types protocol; /* for symlink error response parser */
@@ -197,8 +197,11 @@ static NTSTATUS smb2cli_parse_symlink_error_response(
 	struct symlink_reparse_struct **psymlink)
 {
 	struct symlink_reparse_struct *symlink = NULL;
+	struct reparse_data_buffer reparse_buf = {
+		.tag = 0,
+	};
 	uint32_t symlink_length, error_tag;
-	int ret;
+	NTSTATUS status;
 
 	if (buflen < 8) {
 		DBG_DEBUG("buffer too short: %zu bytes\n", buflen);
@@ -225,13 +228,26 @@ static NTSTATUS smb2cli_parse_symlink_error_response(
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = symlink_reparse_buffer_parse(
-		symlink, symlink, buf+8, buflen-8);
-	if (ret != 0) {
-		DBG_DEBUG("symlink_reparse_buffer_parse failed: %s\n", strerror(ret));
+	status = reparse_data_buffer_parse(symlink,
+					   &reparse_buf,
+					   buf + 8,
+					   buflen - 8);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("reparse_data_buffer_parse() failed: %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(symlink);
+		return status;
+	}
+
+	if (reparse_buf.tag != IO_REPARSE_TAG_SYMLINK) {
+		DBG_DEBUG("Got tag 0x%" PRIx32 ", "
+			  "expected IO_REPARSE_TAG_SYMLINK\n",
+			  reparse_buf.tag);
+		TALLOC_FREE(symlink);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
+	*symlink = reparse_buf.parsed.lnk;
 	*psymlink = symlink;
 	return NT_STATUS_OK;
 }
