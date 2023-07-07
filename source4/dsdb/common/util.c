@@ -3994,6 +3994,34 @@ int dsdb_dc_functional_level(struct ldb_context *ldb)
 	return *dcFunctionality;
 }
 
+const char *dsdb_dc_operatingSystemVersion(int dc_functional_level)
+{
+	const char *operatingSystemVersion = NULL;
+
+	/*
+	 * While we are there also update
+	 * operatingSystem and operatingSystemVersion
+	 * as at least operatingSystemVersion is really
+	 * important for some clients/applications (like exchange).
+	 */
+
+	if (dc_functional_level >= DS_DOMAIN_FUNCTION_2016) {
+		/* Pretend Windows 2016 */
+		operatingSystemVersion = "10.0 (14393)";
+	} else if (dc_functional_level >= DS_DOMAIN_FUNCTION_2012_R2) {
+		/* Pretend Windows 2012 R2 */
+		operatingSystemVersion = "6.3 (9600)";
+	} else if (dc_functional_level >= DS_DOMAIN_FUNCTION_2012) {
+		/* Pretend Windows 2012 */
+		operatingSystemVersion = "6.2 (9200)";
+	} else {
+		/* Pretend Windows 2008 R2 */
+		operatingSystemVersion = "6.1 (7600)";
+	}
+
+	return operatingSystemVersion;
+}
+
 int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_context *lp_ctx)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -4006,7 +4034,9 @@ int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_contex
 	bool am_rodc;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *dc_ntds_settings_dn = NULL;
-
+	struct ldb_dn *dc_computer_dn = NULL;
+	const char *operatingSystem = NULL;
+	const char *operatingSystemVersion = NULL;
 
 	db_dc_functional_level = dsdb_dc_functional_level(ldb_ctx);
 	db_domain_functional_level = dsdb_functional_level(ldb_ctx);
@@ -4030,6 +4060,14 @@ int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_contex
 
 	/* Check if we need to update the DB */
 	if (db_dc_functional_level == lp_dc_functional_level) {
+		/*
+		 * Note that this early return means
+		 * we're not updating operatingSystem and
+		 * operatingSystemVersion.
+		 *
+		 * But at least for now that's
+		 * exactly what we want.
+		 */
 		TALLOC_FREE(frame);
 		return LDB_SUCCESS;
 	}
@@ -4044,8 +4082,9 @@ int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_contex
 
 	if (am_rodc) {
 		DBG_WARNING("Unable to update DC's msDS-Behavior-Version "
-			    "to correct value (%d from %d) as we are an RODC\n",
-			    db_forest_functional_level, lp_dc_functional_level);
+			    "(from %d to %d) and operatingSystem[Version] "
+			    "as we are an RODC\n",
+			    db_dc_functional_level, lp_dc_functional_level);
 		TALLOC_FREE(frame);
 		return LDB_SUCCESS;
 	}
@@ -4104,6 +4143,66 @@ int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_contex
 			TALLOC_FREE(frame);
 			return ret;
 		}
+	}
+
+	/*
+	 * While we are there also update
+	 * operatingSystem and operatingSystemVersion
+	 * as at least operatingSystemVersion is really
+	 * important for some clients/applications (like exchange).
+	 */
+
+	operatingSystem = talloc_asprintf(frame, "Samba-%s",
+					  samba_version_string());
+	if (operatingSystem == NULL) {
+		TALLOC_FREE(frame);
+		return ldb_oom(ldb_ctx);
+	}
+
+	operatingSystemVersion = dsdb_dc_operatingSystemVersion(db_dc_functional_level);
+
+	ret = samdb_server_reference_dn(ldb_ctx, frame, &dc_computer_dn);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed get the dc_computer_dn: %s\n",
+			ldb_errstring(ldb_ctx));
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	msg = ldb_msg_new(frame);
+	if (msg == NULL) {
+		DBG_ERR("Failed to allocate message to update msDS-Behavior-Version\n");
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	msg->dn = dc_computer_dn;
+
+	ret = samdb_msg_add_addval(ldb_ctx, frame, msg,
+				   "operatingSystem",
+				   operatingSystem);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to set new operatingSystem on message\n");
+		TALLOC_FREE(frame);
+		return ldb_operr(ldb_ctx);
+	}
+
+	ret = samdb_msg_add_addval(ldb_ctx, frame, msg,
+				   "operatingSystemVersion",
+				   operatingSystemVersion);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to set new operatingSystemVersion on message\n");
+		TALLOC_FREE(frame);
+		return ldb_operr(ldb_ctx);
+	}
+
+	ret = dsdb_replace(ldb_ctx, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to update DB with new operatingSystem[Version] on %s: %s\n",
+			ldb_dn_get_linearized(dc_computer_dn),
+			ldb_errstring(ldb_ctx));
+		TALLOC_FREE(frame);
+		return ret;
 	}
 
 	TALLOC_FREE(frame);
