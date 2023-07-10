@@ -620,7 +620,7 @@ _PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
  * This checks the string length based on the elements. The returned number
  * includes the terminating null byte(s) if found.
  *
- * @param[in]  _var    The string the calculate the length for.
+ * @param[in]  _var    The string to calculate the length for.
  *
  * @param[in]  length  The length of the buffer passed by _var.
  *
