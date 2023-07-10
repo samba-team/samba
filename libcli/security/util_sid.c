@@ -193,32 +193,42 @@ static const struct security_token system_token = {
  Lookup string names for SID types.
 ****************************************************************************/
 
-static const struct {
-	enum lsa_SidType sid_type;
-	const char *string;
-} sid_name_type[] = {
-	{SID_NAME_USE_NONE, "None"},
-	{SID_NAME_USER, "User"},
-	{SID_NAME_DOM_GRP, "Domain Group"},
-	{SID_NAME_DOMAIN, "Domain"},
-	{SID_NAME_ALIAS, "Local Group"},
-	{SID_NAME_WKN_GRP, "Well-known Group"},
-	{SID_NAME_DELETED, "Deleted Account"},
-	{SID_NAME_INVALID, "Invalid Account"},
-	{SID_NAME_UNKNOWN, "UNKNOWN"},
-	{SID_NAME_COMPUTER, "Computer"},
-	{SID_NAME_LABEL, "Mandatory Label"}
-};
-
 const char *sid_type_lookup(uint32_t sid_type)
 {
-	size_t i;
-
-	/* Look through list */
-	for (i=0; i < ARRAY_SIZE(sid_name_type); i++) {
-		if (sid_name_type[i].sid_type == sid_type) {
-			return sid_name_type[i].string;
-		}
+	switch (sid_type) {
+	case SID_NAME_USE_NONE:
+		return "None";
+		break;
+	case SID_NAME_USER:
+		return "User";
+		break;
+	case SID_NAME_DOM_GRP:
+		return "Domain Group";
+		break;
+	case SID_NAME_DOMAIN:
+		return "Domain";
+		break;
+	case SID_NAME_ALIAS:
+		return "Local Group";
+		break;
+	case SID_NAME_WKN_GRP:
+		return "Well-known Group";
+		break;
+	case SID_NAME_DELETED:
+		return "Deleted Account";
+		break;
+	case SID_NAME_INVALID:
+		return "Invalid Account";
+		break;
+	case SID_NAME_UNKNOWN:
+		return "UNKNOWN";
+		break;
+	case SID_NAME_COMPUTER:
+		return "Computer";
+		break;
+	case SID_NAME_LABEL:
+		return "Mandatory Label";
+		break;
 	}
 
 	/* Default return */
