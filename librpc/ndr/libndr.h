@@ -48,6 +48,14 @@ struct ndr_token_list {
 
 struct ndr_compression_state;
 
+/*
+ * If you’re considering changing the size of this type, see also
+ * $scalar_alignment in pidl/lib/Parse/Pidl/NDR.pm.
+ */
+typedef uint32_t libndr_flags;
+#define PRI_LIBNDR_FLAGS PRIx32
+#define PRI_LIBNDR_FLAGS_DECIMAL PRIu32
+
 /* this is the base structure passed to routines that
    parse MSRPC formatted data
 
@@ -57,7 +65,7 @@ struct ndr_compression_state;
    particular transport
 */
 struct ndr_pull {
-	uint32_t flags; /* LIBNDR_FLAG_* */
+	libndr_flags flags; /* LIBNDR_FLAG_* */
 	uint8_t *data;
 	uint32_t data_size;
 	uint32_t offset;
@@ -91,7 +99,7 @@ struct ndr_pull {
 
 /* structure passed to functions that generate NDR formatted data */
 struct ndr_push {
-	uint32_t flags; /* LIBNDR_FLAG_* */
+	libndr_flags flags; /* LIBNDR_FLAG_* */
 	uint8_t *data;
 	uint32_t alloc_size;
 	uint32_t offset;
@@ -116,7 +124,7 @@ struct ndr_push {
 
 /* structure passed to functions that print IDL structures */
 struct ndr_print {
-	uint32_t flags; /* LIBNDR_FLAG_* */
+	libndr_flags flags; /* LIBNDR_FLAG_* */
 	uint32_t depth;
 	struct ndr_token_list switch_list;
 	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
@@ -582,11 +590,11 @@ void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct do
 enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
 enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
+size_t ndr_size_dom_sid28(const struct dom_sid *sid, libndr_flags flags);
 enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
 enum ndr_err_code ndr_pull_dom_sid0(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
+size_t ndr_size_dom_sid0(const struct dom_sid *sid, libndr_flags flags);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
 void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
 void ndr_zero_memory(void *ptr, size_t len);
@@ -603,8 +611,8 @@ enum ndr_err_code ndr_push_struct_into_fixed_blob(DATA_BLOB *blob,
 						  const void *p,
 						  ndr_push_flags_fn_t fn);
 enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, uint32_t level, ndr_push_flags_fn_t fn);
-size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push);
-size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push);
+size_t ndr_size_struct(const void *p, libndr_flags flags, ndr_push_flags_fn_t push);
+size_t ndr_size_union(const void *p, libndr_flags flags, uint32_t level, ndr_push_flags_fn_t push);
 uint32_t ndr_push_get_relative_base_offset(struct ndr_push *ndr);
 void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32_t offset);
 enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset);
@@ -642,7 +650,7 @@ char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char 
 char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 				ndr_print_function_t fn, const char *name,
 				int flags, void *ptr);
-void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
+void ndr_set_flags(libndr_flags *pflags, libndr_flags new_flags);
 enum ndr_err_code _ndr_pull_error(struct ndr_pull *ndr,
 				  enum ndr_err_code ndr_err,
 				  const char *function,
@@ -815,7 +823,7 @@ uint32_t ndr_size_string(int ret, const char * const* string, int flags);
 enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a);
 enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a);
 void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a);
-size_t ndr_size_string_array(const char **a, uint32_t count, int flags);
+size_t ndr_size_string_array(const char **a, uint32_t count, libndr_flags flags);
 uint32_t ndr_string_length(const void *_var, uint32_t element_size);
 enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size);
 enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset);
@@ -874,6 +882,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timeval(struct ndr_pull *ndr,
 _PUBLIC_ void ndr_print_timeval(struct ndr_print *ndr, const char *name,
 				const struct timeval *t);
 
+_PUBLIC_ void ndr_print_libndr_flags(struct ndr_print *ndr, const char *name,
+				       libndr_flags flags);
 
 
 #endif /* __LIBNDR_H__ */

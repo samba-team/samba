@@ -1582,3 +1582,9 @@ _PUBLIC_ void ndr_print_timeval(struct ndr_print *ndr, const char *name,
 	ndr->print(ndr, "%-25s: %s.%ld", name, timestring(ndr, t->tv_sec),
 		   (long)t->tv_usec);
 }
+
+_PUBLIC_ void ndr_print_libndr_flags(struct ndr_print *ndr, const char *name,
+				       libndr_flags flags)
+{
+	ndr->print(ndr, "%-25s: 0x%016"PRI_LIBNDR_FLAGS" (%"PRI_LIBNDR_FLAGS_DECIMAL")", name, flags, flags);
+}

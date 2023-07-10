@@ -22,9 +22,10 @@
 #define _ACE_H_
 
 #include "librpc/gen_ndr/security.h"
+#include "librpc/ndr/libndr.h"
 
 bool sec_ace_object(uint8_t type);
-size_t ndr_subcontext_size_of_ace_coda(const struct security_ace *ace, size_t ace_size, int flags);
+size_t ndr_subcontext_size_of_ace_coda(const struct security_ace *ace, size_t ace_size, libndr_flags flags);
 bool sec_ace_callback(uint8_t type);
 bool sec_ace_resource(uint8_t type);
 bool sec_ace_has_extra_blob(uint8_t type);

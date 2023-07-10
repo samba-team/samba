@@ -583,7 +583,7 @@ failed:
 	return ret;
 }
 
-_PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
+_PUBLIC_ void ndr_set_flags(libndr_flags *pflags, libndr_flags new_flags)
 {
 	/* the big/little endian flags are inter-dependent */
 	if (new_flags & LIBNDR_FLAG_LITTLE_ENDIAN) {
@@ -1528,7 +1528,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_
 /*
   generic ndr_size_*() handler for structures
 */
-_PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
+_PUBLIC_ size_t ndr_size_struct(const void *p, libndr_flags flags, ndr_push_flags_fn_t push)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code status;
@@ -1558,7 +1558,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 /*
   generic ndr_size_*() handler for unions
 */
-_PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push)
+_PUBLIC_ size_t ndr_size_union(const void *p, libndr_flags flags, uint32_t level, ndr_push_flags_fn_t push)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code status;

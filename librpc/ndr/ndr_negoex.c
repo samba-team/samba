@@ -452,7 +452,7 @@ enum ndr_err_code ndr_push_negoex_MESSAGE_ARRAY(struct ndr_push *ndr, int ndr_fl
 {
 	uint32_t cntr_messages_0;
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 		if (ndr_flags & NDR_SCALARS) {
@@ -473,7 +473,7 @@ enum ndr_err_code ndr_pull_negoex_MESSAGE_ARRAY(struct ndr_pull *ndr, int ndr_fl
 	uint32_t cntr_messages_0;
 	TALLOC_CTX *_mem_save_messages_0 = NULL;
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 		if (ndr_flags & NDR_SCALARS) {

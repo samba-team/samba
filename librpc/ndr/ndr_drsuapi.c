@@ -385,7 +385,7 @@ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr6(struct 
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, int flags)
+_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, libndr_flags flags)
 {
 	return ndr_size_struct((const struct drsuapi_DsReplicaObjectIdentifier3 *)r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 }
@@ -427,7 +427,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAddEntry_AttrErrListItem_V1(struct ndr_print *
 
 enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flags, const union drsuapi_DsBindInfo *r)
 {
-	uint32_t _flags_save = ndr->flags;
+	libndr_flags _flags_save = ndr->flags;
 	ndr->flags = ndr->flags & ~LIBNDR_FLAG_NDR64;
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
@@ -488,7 +488,7 @@ enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flag
 
 enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsBindInfo *r)
 {
-	uint32_t _flags_save = ndr->flags;
+	libndr_flags _flags_save = ndr->flags;
 	ndr->flags = ndr->flags & ~LIBNDR_FLAG_NDR64;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {

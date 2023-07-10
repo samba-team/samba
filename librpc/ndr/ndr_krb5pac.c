@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 
-size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
+size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, libndr_flags flags)
 {
 	size_t s = ndr_size_PAC_INFO(r, level, flags);
 	switch (level) {
@@ -43,7 +43,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 		NDR_CHECK(ndr_push_PAC_TYPE(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, _ndr_size_PAC_INFO(r->info,r->type,LIBNDR_FLAG_ALIGN8)));
 		{
-			uint32_t _flags_save_PAC_INFO = ndr->flags;
+			libndr_flags _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->info));
 			ndr->flags = _flags_save_PAC_INFO;
@@ -52,7 +52,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
-			uint32_t _flags_save_PAC_INFO = ndr->flags;
+			libndr_flags _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			if (r->info) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->info));
@@ -84,7 +84,7 @@ enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struc
 		NDR_CHECK(ndr_pull_PAC_TYPE(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size));
 		{
-			uint32_t _flags_save_PAC_INFO = ndr->flags;
+			libndr_flags _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
 			if (_ptr_info) {
@@ -99,7 +99,7 @@ enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struc
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		{
-			uint32_t _flags_save_PAC_INFO = ndr->flags;
+			libndr_flags _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			if (r->info) {
 				uint32_t _relative_save_offset;

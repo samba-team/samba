@@ -33,7 +33,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	size_t conv_src_len = 0, converted_size;
 	int do_convert = 1, chset = CH_UTF16;
 	unsigned byte_mul = 2;
-	unsigned flags = ndr->flags;
+	libndr_flags flags = ndr->flags;
 	unsigned c_len_term = 0;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -74,7 +74,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &ofs));
 		if (ofs != 0) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, "non-zero array offset with string flags 0x%"PRIx32"\n",
+			return ndr_pull_error(ndr, NDR_ERR_STRING, "non-zero array offset with string flags 0x%"PRI_LIBNDR_FLAGS"\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len2));
@@ -104,7 +104,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &ofs));
 		if (ofs != 0) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, "non-zero array offset with string flags 0x%"PRIx32"\n",
+			return ndr_pull_error(ndr, NDR_ERR_STRING, "non-zero array offset with string flags 0x%"PRI_LIBNDR_FLAGS"\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
@@ -141,7 +141,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 
 	case LIBNDR_FLAG_STR_NOTERM:
 		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32" (missing NDR_REMAINING)\n",
+			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS" (missing NDR_REMAINING)\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 		conv_src_len = ndr->data_size - ndr->offset;
@@ -149,7 +149,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32"\n",
+		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -173,7 +173,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 					   &as,
 					   &converted_size)) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
-					      "Bad character conversion with flags 0x%"PRIx32, flags);
+					      "Bad character conversion with flags 0x%"PRI_LIBNDR_FLAGS, flags);
 		}
 	}
 
@@ -204,7 +204,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 	ssize_t s_len, c_len;
 	size_t d_len;
 	int do_convert = 1, chset = CH_UTF16;
-	uint32_t flags = ndr->flags;
+	libndr_flags flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
 
@@ -252,7 +252,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 					  &dest, &d_len))
 	{
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV,
-				      "Bad character push conversion with flags 0x%"PRIx32, flags);
+				      "Bad character push conversion with flags 0x%"PRI_LIBNDR_FLAGS, flags);
 	}
 
 	if (flags & LIBNDR_FLAG_STR_BYTESIZE) {
@@ -299,7 +299,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 			break;
 		}
 
-		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32"\n",
+		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -314,7 +314,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 _PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 {
 	size_t c_len;
-	unsigned flags = ndr->flags;
+	libndr_flags flags = ndr->flags;
 	unsigned byte_mul = 2;
 	unsigned c_len_term = 1;
 
@@ -406,8 +406,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 {
 	const char **a = NULL;
 	uint32_t count;
-	unsigned flags = ndr->flags;
-	unsigned saved_flags = ndr->flags;
+	libndr_flags flags = ndr->flags;
+	libndr_flags saved_flags = ndr->flags;
 	uint32_t alloc_size;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -456,7 +456,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 
 	case LIBNDR_FLAG_STR_NOTERM:
 		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32" (missing NDR_REMAINING)\n",
+			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS" (missing NDR_REMAINING)\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 		/*
@@ -498,7 +498,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32"\n",
+		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -512,8 +512,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 _PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
 {
 	uint32_t count;
-	unsigned flags = ndr->flags;
-	unsigned saved_flags = ndr->flags;
+	libndr_flags flags = ndr->flags;
+	libndr_flags saved_flags = ndr->flags;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
@@ -533,7 +533,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_f
 
 	case LIBNDR_FLAG_STR_NOTERM:
 		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
-			return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32" (missing NDR_REMAINING)\n",
+			return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS" (missing NDR_REMAINING)\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 
@@ -550,7 +550,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_f
 		break;
 
 	default:
-		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRIx32"\n",
+		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -577,7 +577,7 @@ _PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_string_array(const char **a, uint32_t count, int flags)
+_PUBLIC_ size_t ndr_size_string_array(const char **a, uint32_t count, libndr_flags flags)
 {
 	uint32_t i;
 	size_t size = 0;

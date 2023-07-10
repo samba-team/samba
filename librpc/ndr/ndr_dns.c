@@ -194,13 +194,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr,
 						int ndr_flags,
 						const struct dns_res_rec *r)
 {
-	uint32_t _flags_save_STRUCT = ndr->flags;
+	libndr_flags _flags_save_STRUCT = ndr->flags;
 	uint32_t _saved_offset1, _saved_offset2;
 	uint16_t length;
 	ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX |
 				   LIBNDR_FLAG_NOALIGN);
 	if (ndr_flags & NDR_SCALARS) {
-		uint32_t _flags_save_name = ndr->flags;
+		libndr_flags _flags_save_name = ndr->flags;
 
 		NDR_CHECK(ndr_push_align(ndr, 4));
 
@@ -269,7 +269,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_res_rec(struct ndr_pull *ndr,
 						int ndr_flags,
 						struct dns_res_rec *r)
 {
-	uint32_t _flags_save_STRUCT = ndr->flags;
+	libndr_flags _flags_save_STRUCT = ndr->flags;
 	uint32_t _saved_offset1;
 	uint32_t pad, length;
 

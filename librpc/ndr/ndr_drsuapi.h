@@ -28,7 +28,7 @@ void ndr_print_drsuapi_DsReplicaObjectListItem(struct ndr_print *ndr, const char
 void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const char *name,
 						 const struct drsuapi_DsReplicaObjectListItemEx *r);
 
-size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, int flags);
+size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary_without_Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, libndr_flags flags);
 
 
 #endif /* _LIBRPC_NDR_NDR_DRSUAPI_H */

@@ -159,7 +159,7 @@ sub start_flags($$$)
 	if (defined $flags) {
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("uint32_t _flags_save_$e->{TYPE} = $ndr->flags;");
+		$self->pidl("libndr_flags _flags_save_$e->{TYPE} = $ndr->flags;");
 		$self->pidl("ndr_set_flags(&$ndr->flags, $flags);");
 	}
 }
@@ -1892,7 +1892,7 @@ sub DeclStruct($$$$)
 sub ArgsStructNdrSize($$$)
 {
 	my ($d, $name, $varname) = @_;
-	return "const struct $name *$varname, int flags";
+	return "const struct $name *$varname, libndr_flags flags";
 }
 
 $typefamily{STRUCT} = {
@@ -2254,7 +2254,7 @@ sub DeclUnion($$$$)
 sub ArgsUnionNdrSize($$)
 {
 	my ($d,$name) = @_;
-	return "const union $name *r, uint32_t level, int flags";
+	return "const union $name *r, uint32_t level, libndr_flags flags";
 }
 
 $typefamily{UNION} = {

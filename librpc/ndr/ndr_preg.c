@@ -26,7 +26,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_preg_file(struct ndr_push *ndr, int ndr_flag
 {
 	uint32_t cntr_entries_0;
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_push_align(ndr, 4));
@@ -46,7 +46,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_preg_file(struct ndr_push *ndr, int ndr_flag
 _PUBLIC_ enum ndr_err_code ndr_pull_preg_file(struct ndr_pull *ndr, int ndr_flags, struct preg_file *r)
 {
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 4));

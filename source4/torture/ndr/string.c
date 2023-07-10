@@ -18,14 +18,14 @@ static const char utf8[] = { 0x6b, 0x61, 0x6d, 0x65, 0x6c, 0xc3, 0xa5,
 			     0xc3, 0xb2, 0x00 };
 
 /* purely for convenience */
-static const int fl_ascii_null = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM;
-static const int fl_ascii_noterm = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING;
-static const int fl_utf8_null = LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM;
-static const int fl_raw8_null = LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM;
+static const libndr_flags fl_ascii_null = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM;
+static const libndr_flags fl_ascii_noterm = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING;
+static const libndr_flags fl_utf8_null = LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM;
+static const libndr_flags fl_raw8_null = LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM;
 
 static bool
 test_ndr_push_string (struct torture_context *tctx, const char *string,
-                      int flags, enum ndr_err_code exp_ndr_err,
+                      libndr_flags flags, enum ndr_err_code exp_ndr_err,
                       bool strcmp_pass)
 {
 	TALLOC_CTX *mem_ctx;
@@ -33,7 +33,7 @@ test_ndr_push_string (struct torture_context *tctx, const char *string,
 	enum ndr_err_code err;
 
 	torture_comment(tctx,
-                        "test_ndr_push_string %s flags 0x%x expecting "
+                        "test_ndr_push_string %s flags 0x%"PRI_LIBNDR_FLAGS" expecting "
 	                "err 0x%x and strcmp %s\n", string, flags, exp_ndr_err,
 	                strcmp_pass?"pass":"fail");
 	if (exp_ndr_err != NDR_ERR_SUCCESS) {
@@ -74,7 +74,7 @@ test_ndr_push_string (struct torture_context *tctx, const char *string,
 
 static bool
 test_ndr_pull_string (struct torture_context *tctx, const char *string,
-                      int flags, enum ndr_err_code exp_ndr_err,
+                      libndr_flags flags, enum ndr_err_code exp_ndr_err,
                       bool strcmp_pass)
 {
 	TALLOC_CTX *mem_ctx;
@@ -84,7 +84,7 @@ test_ndr_pull_string (struct torture_context *tctx, const char *string,
 	const char *result = NULL;
 
 	torture_comment(tctx,
-                        "test_ndr_pull_string '%s' flags 0x%x expecting "
+                        "test_ndr_pull_string '%s' flags 0x%"PRI_LIBNDR_FLAGS" expecting "
 	                "err 0x%x and strcmp %s\n", string, flags, exp_ndr_err,
 	                strcmp_pass?"pass":"fail");
 	if (exp_ndr_err != NDR_ERR_SUCCESS) {

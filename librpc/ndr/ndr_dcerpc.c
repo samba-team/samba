@@ -143,7 +143,7 @@ enum ndr_err_code ndr_pull_dcerpc_bind_nak(struct ndr_pull *ndr, int ndr_flags, 
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_versions_0, 0);
 		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			libndr_flags _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
 			ndr->flags = _flags_save_DATA_BLOB;

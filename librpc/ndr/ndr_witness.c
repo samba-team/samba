@@ -26,7 +26,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr,
 {
 	uint32_t cntr_messages_0;
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 		if (ndr_flags & NDR_SCALARS) {
@@ -36,7 +36,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr,
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num));
 			NDR_CHECK(ndr_push_unique_ptr(ndr, r->messages));
 			if (r->messages) {
-				uint32_t _flags_save_witness_notifyResponse_message = ndr->flags;
+				libndr_flags _flags_save_witness_notifyResponse_message = ndr->flags;
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 					{
 						struct ndr_push *_ndr_messages;
@@ -60,7 +60,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr,
 
 _PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr, int ndr_flags, struct witness_notifyResponse *r)
 {
-	uint32_t _flags_save_STRUCT = ndr->flags;
+	libndr_flags _flags_save_STRUCT = ndr->flags;
 	ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
@@ -69,7 +69,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num));
 		{
-			uint32_t _flags_save_witness_notifyResponse_message = ndr->flags;
+			libndr_flags _flags_save_witness_notifyResponse_message = ndr->flags;
 			uint32_t _ptr_messages;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_messages));

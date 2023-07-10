@@ -34,11 +34,11 @@ struct ndr_pull_test_data {
 	ndr_print_fn_t print_fn;
 	ndr_print_function_t print_function;
 	int ndr_flags;
-	int flags;
+	libndr_flags flags;
 	enum ndr_err_code ndr_err;
 };
 
-static enum ndr_err_code torture_ndr_push_struct_blob_flags(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t flags, uint32_t ndr_flags, const void *p, ndr_push_flags_fn_t fn)
+static enum ndr_err_code torture_ndr_push_struct_blob_flags(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t flags, libndr_flags ndr_flags, const void *p, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -156,7 +156,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 	DATA_BLOB db,
 	size_t struct_size,
 	int ndr_flags,
-	int flags,
+	libndr_flags flags,
 	const char *check_fn_name,
 	bool (*check_fn) (struct torture_context *ctx, void *data))
 {
@@ -276,7 +276,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 					const char *db_out_name,
 					DATA_BLOB db_out,
 					size_t struct_size,
-					int flags,
+					libndr_flags flags,
 					const char *check_fn_name,
 					bool (*check_fn) (struct torture_context *ctx, void *data))
 {
@@ -345,7 +345,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 	DATA_BLOB db,
 	size_t struct_size,
 	int ndr_flags,
-	int flags,
+	libndr_flags flags,
 	enum ndr_err_code ndr_err)
 {
 	struct torture_test *test;

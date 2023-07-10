@@ -68,7 +68,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_xattr_DOSATTRIB(struct ndr_push *ndr,
 
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		{
-			uint32_t _flags_save_string = ndr->flags;
+			libndr_flags _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, attrib_hex));
 			ndr->flags = _flags_save_string;
@@ -90,7 +90,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_xattr_DOSATTRIB(struct ndr_pull *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		{
-			uint32_t _flags_save_string = ndr->flags;
+			libndr_flags _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->attrib_hex));
 			ndr->flags = _flags_save_string;

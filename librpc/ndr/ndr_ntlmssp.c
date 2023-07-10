@@ -35,11 +35,11 @@ _PUBLIC_ size_t ndr_ntlmssp_string_length(uint32_t negotiate_flags, const char *
 	return strlen(s);
 }
 
-_PUBLIC_ uint32_t ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_flags)
+_PUBLIC_ libndr_flags ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_flags)
 {
-	uint32_t flags = LIBNDR_FLAG_STR_NOTERM |
-			 LIBNDR_FLAG_STR_CHARLEN |
-			 LIBNDR_FLAG_REMAINING;
+	libndr_flags flags = LIBNDR_FLAG_STR_NOTERM |
+			     LIBNDR_FLAG_STR_CHARLEN |
+			     LIBNDR_FLAG_REMAINING;
 
 	if (!(negotiate_flags & NTLMSSP_NEGOTIATE_UNICODE)) {
 		flags |= LIBNDR_FLAG_STR_ASCII;

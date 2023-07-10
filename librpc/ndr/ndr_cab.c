@@ -254,7 +254,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags
 	uint32_t cntr_cffiles_0;
 	size_t processed_cfdata = 0;
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX|LIBNDR_FLAG_LITTLE_ENDIAN|LIBNDR_FLAG_NOALIGN);
 		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 
@@ -393,7 +393,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_cab_file(struct ndr_pull *ndr, int ndr_flags
 	size_t processed_cfdata = 0;
 	TALLOC_CTX *_mem_save_cfdata_0 = NULL;
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX|LIBNDR_FLAG_LITTLE_ENDIAN|LIBNDR_FLAG_NOALIGN);
 		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 		if (ndr_flags & NDR_SCALARS) {

@@ -72,7 +72,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_current, 0, ((r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, 0):0) - ((r->count > 0)?12:0)));
 		}
 		{
-			uint32_t _flags_save_AuthenticationInformationArray = ndr->flags;
+			libndr_flags _flags_save_AuthenticationInformationArray = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 			{
 				struct ndr_push *_ndr_previous;
@@ -129,7 +129,7 @@ _PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const c
 {
 	ndr_print_struct(ndr, name, "drsuapi_MSPrefixMap_Entry");
 	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
+		libndr_flags _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
 		ndr_print_uint16(ndr, "entryID", r->entryID);
