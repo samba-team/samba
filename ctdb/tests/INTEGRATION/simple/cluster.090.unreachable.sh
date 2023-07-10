@@ -30,7 +30,7 @@ pat="ctdb_control error: 'ctdb_control to disconnected node'|ctdb_control error:
 for i in ip disable enable "ban 0" unban listvars ; do
     try_command_on_node -v 0 ! $CTDB $i -n $test_node
 
-    if egrep -q "$pat" "$outfile" ; then
+    if grep -Eq "$pat" "$outfile" ; then
 	echo "OK: \"ctdb ${i}\" fails with expected \"disconnected node\" message"
     else
 	echo "BAD: \"ctdb ${i}\" does not fail with expected \"disconnected node\" message"

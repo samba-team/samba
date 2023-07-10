@@ -228,7 +228,7 @@ Showing software versions
 EOF
 show_all "uname -a"
 [ -x /bin/rpm ] && {
-    show_all "rpm -qa | egrep 'samba|ctdb|gpfs'"
+    show_all "rpm -qa | grep -E 'samba|ctdb|gpfs'"
 }
 [ -x /usr/bin/dpkg-query ] && {
     show_all "/usr/bin/dpkg-query --show 'ctdb'"

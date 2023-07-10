@@ -39,7 +39,7 @@ get_src_socket ()
 
     local pat="^${proto}6?[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+[^[:space:]]+[[:space:]]+${dst_socket//./\\.}[[:space:]]+ESTABLISHED[[:space:]]+${pid}/${prog}[[:space:]]*\$"
     out=$(netstat -tanp |
-	egrep "$pat" |
+	grep -E "$pat" |
 	awk '{ print $4 }')
 
     [ -n "$out" ]
