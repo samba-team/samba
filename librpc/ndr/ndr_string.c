@@ -722,6 +722,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, int nd
 		chset = CH_UTF16BE;
 	}
 
+	if ((byte_mul != 0) && (length > UINT32_MAX/byte_mul)) {
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "length overflow");
+	}
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 
 	str_len = ndr_string_n_length(ndr->data+ndr->offset, length, byte_mul);
