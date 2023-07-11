@@ -28,9 +28,17 @@
 #include <talloc.h>
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
-
-#define NUM_CHARSETS 7
+typedef enum {
+	CH_UTF16LE = 0,
+	CH_UTF16 = 0,
+	CH_UNIX,
+	CH_DOS,
+	CH_UTF8,
+	CH_UTF16BE,
+	CH_UTF16MUNGED,
+	/* The number of distinct character sets. */
+	NUM_CHARSETS
+} charset_t;
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
