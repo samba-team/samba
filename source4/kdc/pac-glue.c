@@ -808,7 +808,7 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 		/* Domain trust - we cannot check the sig, but we trust it for a correct PAC
 
 		   This is exactly where we should flag for SID
-		   validation when we do inter-foreest trusts
+		   validation when we do inter-forest trusts
 		 */
 		talloc_free(mem_ctx);
 		*is_trusted = true;

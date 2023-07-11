@@ -406,7 +406,7 @@ out:
 	return ret;
 }
 
-/* Resign (and reform, including possibly new groups) a PAC */
+/* Re-sign (and reform, including possibly new groups) a PAC */
 
 static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 					   krb5_const_principal _client_principal,

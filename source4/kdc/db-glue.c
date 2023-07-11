@@ -974,8 +974,8 @@ static krb5_error_code samba_kdc_get_entry_principal(
 	if (!is_kadmin_changepw) {
 		if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT && canon) {
 			/*
-			 * When requested to do so, ensure that the
-			 * both realm values in the principal are set
+			 * When requested to do so, ensure that both
+			 * the realm values in the principal are set
 			 * to the upper case, canonical realm
 			 */
 			code = smb_krb5_make_principal(context,
@@ -1177,7 +1177,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* Windows 2008 seems to enforce this (very sensible) rule by
 	 * default - don't allow offline attacks on a user's password
 	 * by asking for a ticket to them as a service (encrypted with
-	 * their probably patheticly insecure password) */
+	 * their probably pathetically insecure password) */
 
 	if (entry->flags.server
 	    && lpcfg_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
