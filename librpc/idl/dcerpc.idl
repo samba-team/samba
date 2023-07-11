@@ -48,8 +48,8 @@ interface dcerpc
 	} dcerpc_empty;
 
 	typedef [nodiscriminant] union {
-		[case(LIBNDR_FLAG_OBJECT_PRESENT)] GUID object;
-		[default] dcerpc_empty empty;
+		[default] GUID object;
+		[case(false)] dcerpc_empty empty;
 	} dcerpc_object;
 
 	typedef struct {

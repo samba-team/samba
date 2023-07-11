@@ -25,5 +25,5 @@ enum ndr_err_code ndr_pop_dcerpc_sec_verification_trailer(
 	struct dcerpc_sec_verification_trailer **_r);
 
 #ifndef NDR_DCERPC_REQUEST_OBJECT_PRESENT
-#define NDR_DCERPC_REQUEST_OBJECT_PRESENT (ndr->flags & LIBNDR_FLAG_OBJECT_PRESENT)
+#define NDR_DCERPC_REQUEST_OBJECT_PRESENT (!!(ndr->flags & LIBNDR_FLAG_OBJECT_PRESENT))
 #endif /* NDR_DCERPC_REQUEST_OBJECT_PRESENT */
