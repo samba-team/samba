@@ -40,4 +40,15 @@ bool conditional_ace_encode_binary(TALLOC_CTX *mem_ctx,
 				   struct ace_condition_script *program,
 				   DATA_BLOB *dest);
 
+struct ace_condition_script * ace_conditions_compile_sddl(TALLOC_CTX *mem_ctx,
+							  const char *sddl,
+							  const char **message,
+							  size_t *message_offset,
+							  size_t *consumed_length);
+
+char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
+			    struct ace_condition_script *program);
+
+char *sddl_from_conditional_ace(TALLOC_CTX *mem_ctx,
+				struct ace_condition_script *program);
 #endif /*_CONDITIONAL_ACE_H_*/
