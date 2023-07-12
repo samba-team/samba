@@ -197,7 +197,8 @@ static void print_status_one(struct ctdb_event_script *script)
 		       ctime(&script->begin.tv_sec));
 	}
 
-	if (script->result != 0 && script->result != -ENOEXEC) {
+	if ((script->result != 0 && script->result != -ENOEXEC) ||
+	    script->output != NULL) {
 		printf("  OUTPUT: %s\n",
 		       script->output == NULL ? "" : script->output);
 	}
