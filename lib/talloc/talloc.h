@@ -726,7 +726,7 @@ _PUBLIC_ size_t talloc_total_blocks(const void *ptr);
  *
  * @param[in]  p        The memory chunk you want to duplicate.
  *
- * @param[in]  size     Number of char's that you want copy.
+ * @param[in]  size     Number of chars that you want to copy.
  *
  * @return              The allocated memory chunk.
  *
