@@ -3051,6 +3051,7 @@ static int run_test(struct tevent_context *ev, struct loadparm_context *lp_ctx)
 	memset(open_handles, 0, options.max_open_handles * sizeof(open_handles[0]));
 	num_open_handles = 0;
 
+	/* reset the counts from previous runs */
 	for (i=0;i<ARRAY_SIZE(gen_ops);i++) {
 		gen_ops[i].count = 0;
 		gen_ops[i].success_count = 0;
