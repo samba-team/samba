@@ -32,3 +32,17 @@ bld.SAMBA_BINARY(
     ''',
     for_selftest=True
 )
+
+bld.SAMBA_BINARY(
+    'test_run_conditional_ace',
+    source='tests/test_run_conditional_ace.c',
+    deps='''
+        cmocka
+        talloc
+        samba-util
+        asn1util
+        NDR_SECURITY
+        samba-security
+    ''',
+    for_selftest=True
+)
