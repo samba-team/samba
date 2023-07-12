@@ -2277,6 +2277,21 @@
 	<para>Delete an existing site.</para>
 </refsect3>
 
+<refsect3>
+	<title>sites subnet create <replaceable>subnet</replaceable> <replaceable>site-of-subnet</replaceable> [options]</title>
+	<para>Create a new subnet.</para>
+</refsect3>
+
+<refsect3>
+	<title>sites subnet remove <replaceable>subnet</replaceable> [options]</title>
+	<para>Delete an existing subnet.</para>
+</refsect3>
+
+<refsect3>
+	<title>sites subnet set-site <replaceable>subnet</replaceable> <replaceable>site-of-subnet</replaceable> [options]</title>
+	<para>Assign a subnet to a site.</para>
+</refsect3>
+
 <refsect2>
 	<title>spn</title>
 	<para>Manage Service Principal Names (SPN).</para>
