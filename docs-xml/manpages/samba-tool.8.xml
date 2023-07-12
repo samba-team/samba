@@ -2268,6 +2268,24 @@
 </refsect2>
 
 <refsect3>
+	<title>sites list [options]</title>
+	<para>List sites.</para>
+	<variablelist>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				Output as JSON instead of a list
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>sites view <replaceable>site</replaceable> [options]</title>
+	<para>View site details.</para>
+</refsect3>
+
+<refsect3>
 	<title>sites create <replaceable>site</replaceable> [options]</title>
 	<para>Create a new site.</para>
 </refsect3>
@@ -2275,6 +2293,24 @@
 <refsect3>
 	<title>sites remove <replaceable>site</replaceable> [options]</title>
 	<para>Delete an existing site.</para>
+</refsect3>
+
+<refsect3>
+	<title>sites subnet list <replaceable>site</replaceable> [options]</title>
+	<para>List subnets for a site.</para>
+	<variablelist>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				Output as JSON instead of a list
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>sites subnet view <replaceable>subnet</replaceable> [options]</title>
+	<para>View subnet details.</para>
 </refsect3>
 
 <refsect3>
