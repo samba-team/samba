@@ -20,6 +20,7 @@
 
 """Test of Network Data Representation (NDR) marshalling and unmarshalling."""
 import samba
+import samba.tests
 import samba.ndr as ndr
 from samba.dcerpc import winbind, security, lsa
 
