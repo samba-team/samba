@@ -18,8 +18,11 @@
 
 #include "replace.h"
 #include "libcli/security/security.h"
+#include "libcli/security/conditional_ace.h"
+#include "libcli/security/claims-conversions.h"
 #include "lib/util/attr.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_conditional_ace.h"
 #include "lib/util/bytearray.h"
 #include "fuzzing/fuzzing.h"
 
@@ -29,21 +32,55 @@ static struct security_token token = {0};
 static struct dom_sid dom_sid = {0};
 
 /*
- * For this one we initialise a security token to have a few SIDs. The fuzz
- * strings contain SDDL that will be tested against this token in
- * se_access_check() or sec_access_check_ds() -- supposing they compile.
- *
- * When we introduce conditional ACEs and claims (soon!), we'll also add some
- * claims and device SIDs to the token.
+ * For this one we initialise a security token to have a few claims
+ * and SIDs. The fuzz strings contain SDDL that will be tested against
+ * this token in se_access_check() or sec_access_check_ds() --
+ * supposing they compile.
  */
 
 int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
 	size_t i;
-	bool ok;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct dom_sid *sid = NULL;
 
+	struct claim_def {
+		const char *type;
+		const char *name;
+		const char *claim_sddl;
+	} claims[] = {
+		{
+			"user",
+			"shoe size",
+			"44"
+		},
+		{
+			"user",
+			"©",
+			"{\"unknown\", \"\", \" ←ā\"}"
+		},
+		{
+			"device",
+			"©",
+			"{\"unknown\", \" \", \" ←ā\"}"
+		},
+		{
+			"device",
+			"least favourite groups",
+			"{SID(S-1-1-0),SID(S-1-5-3),SID(S-1-57777-333-33-33-2)}"
+		},
+		{
+			"local",
+			"birds",
+			"{\"tern\"}"
+		},
+	};
+
+	const char * device_sids[] = {
+		"S-1-1-0",
+		"S-1-333-66",
+		"S-1-2-3-4-5-6-7-8-9",
+	};
 	const char * user_sids[] = {
 		"S-1-333-66",
 		"S-1-16-8448",
@@ -51,7 +88,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 	};
 
 	for (i = 0; i < ARRAY_SIZE(user_sids); i++) {
-		sid = dom_sid_parse_talloc(mem_ctx, user_sids[i]);
+		sid = sddl_decode_sid(mem_ctx, &user_sids[i], NULL);
 		if (sid == NULL) {
 			abort();
 		}
@@ -59,6 +96,32 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 				 &token.sids,
 				 &token.num_sids);
 	}
+
+	for (i = 0; i < ARRAY_SIZE(device_sids); i++) {
+		sid = sddl_decode_sid(mem_ctx, &device_sids[i], NULL);
+		if (sid == NULL) {
+			abort();
+		}
+		add_sid_to_array(mem_ctx, sid,
+				 &token.device_sids,
+				 &token.num_device_sids);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(claims); i++) {
+		struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim = NULL;
+		struct claim_def c = claims[i];
+
+		claim = parse_sddl_literal_as_claim(mem_ctx,
+						    c.name,
+						    c.claim_sddl);
+		if (claim == NULL) {
+			abort();
+		}
+		add_claim_to_token(mem_ctx, &token, claim, c.type);
+	}
+
+	/* we also need a global domain SID */
+	string_to_sid(&dom_sid, device_sids[2]);
 	return 0;
 }
 
@@ -67,7 +130,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	struct security_descriptor *sd = NULL;
-	NTSTATUS status;
 	uint32_t access_desired;
 	uint32_t access_granted;
 	const char *sddl;
@@ -135,7 +197,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 			    NULL,
 			    NULL);
 #else
-	status = se_access_check(sd, &token, access_desired, &access_granted);
+	se_access_check(sd, &token, access_desired, &access_granted);
 #endif
 
 end:
