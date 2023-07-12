@@ -15,6 +15,15 @@ There are multiple output lines
 EOF
 	exit 0
 	;;
+"verbosemultilinenonl")
+	cat <<EOF
+Running event $1
+Multiple output lines
+
+EOF
+	printf 'No trailing newline'
+	exit 0
+	;;
 "verbosefailure") echo "args: $*"; exit 1 ;;
 "verbosemultilinefailure")
 	cat <<EOF
