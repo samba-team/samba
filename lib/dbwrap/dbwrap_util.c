@@ -156,50 +156,59 @@ struct dbwrap_change_uint32_atomic_context {
 	const char *keystr;
 	uint32_t *oldval;
 	uint32_t change_val;
+	NTSTATUS status;
 };
 
-static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
-						   void *private_data)
+static void dbwrap_change_uint32_atomic_action_fn(struct db_record *rec,
+						  TDB_DATA value,
+						  void *private_data)
 {
-	struct db_record *rec;
-	uint32_t val = (uint32_t)-1;
-	uint32_t v_store;
-	NTSTATUS ret;
-	struct dbwrap_change_uint32_atomic_context *state;
-	TDB_DATA value;
-
-	state = (struct dbwrap_change_uint32_atomic_context *)private_data;
-
-	rec = dbwrap_fetch_locked(db, talloc_tos(),
-				  string_term_tdb_data(state->keystr));
-	if (!rec) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	value = dbwrap_record_get_value(rec);
+	struct dbwrap_change_uint32_atomic_context *state = private_data;
+	uint8_t v_store[4];
+	TDB_DATA data = {
+		.dptr = v_store,
+		.dsize = sizeof(v_store),
+	};
+	uint32_t val = UINT32_MAX;
 
 	if (value.dptr == NULL) {
 		val = *(state->oldval);
 	} else if (value.dsize == sizeof(val)) {
-		val = IVAL(value.dptr, 0);
+		val = PULL_LE_U32(value.dptr, 0);
 		*(state->oldval) = val;
 	} else {
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+		state->status = NT_STATUS_UNSUCCESSFUL;
+		return;
 	}
 
 	val += state->change_val;
+	PUSH_LE_U32(v_store, 0, val);
 
-	SIVAL(&v_store, 0, val);
+	state->status = dbwrap_record_store(rec, data, TDB_REPLACE);
+}
 
-	ret = dbwrap_record_store(rec,
-				  make_tdb_data((const uint8_t *)&v_store,
-						sizeof(v_store)),
-				  TDB_REPLACE);
+static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
+						   void *private_data)
+{
+	struct dbwrap_change_uint32_atomic_context *state = private_data;
+	NTSTATUS status;
 
-done:
-	TALLOC_FREE(rec);
-	return ret;
+	status = dbwrap_do_locked(db,
+				  string_term_tdb_data(state->keystr),
+				  dbwrap_change_uint32_atomic_action_fn,
+				  state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dbwrap_do_locked() failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_DEBUG("dbwrap_change_uint32_atomic_action_fn() "
+			  "failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+	return NT_STATUS_OK;
 }
 
 NTSTATUS dbwrap_change_uint32_atomic_bystring(struct db_context *db,
