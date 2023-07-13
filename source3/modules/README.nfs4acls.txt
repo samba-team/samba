@@ -2,7 +2,7 @@ Configuring NFS4 ACLs in Samba3
 ===============================
 Created: Peter Somogyi, 2006-JUN-06
 Last modified: Alexander Werth, 2013-MAY-02
-Revision no.: 4 
+Revision no.: 4
 -------------------------------
 
 
@@ -74,7 +74,7 @@ NFS4 ACL's validity is checked by the system API, not by Samba.
 NFS4 ACL rights are enforced by the OS or filesystem, not by Samba.
 
 The flag INHERITED_ACE is never set (not required, as doesn't do WinNT/98/me, only since Win2k).
-Win2k GUI behaves strangely when detecting inheritance (sometimes it doesn't detect, 
+Win2k GUI behaves strangely when detecting inheritance (sometimes it doesn't detect,
 but after adding an ace it shows that - it's some GUI error).
 
 Unknown (unmappable) SIDs are not accepted.
