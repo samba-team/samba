@@ -100,7 +100,7 @@ static void nmbd_stdin_handler(struct tevent_context *ev,
 	if (read(0, &c, 1) != 1) {
 		struct messaging_context *msg = talloc_get_type_abort(
 			private_data, struct messaging_context);
-		
+
 		DBG_WARNING("EOF on stdin\n");
 		terminate(msg);
 	}
@@ -686,7 +686,7 @@ static void process(struct messaging_context *msg)
 		sync_check_completion();
 
 		/*
-		 * regularly sync with any other DMBs we know about 
+		 * regularly sync with any other DMBs we know about
 		 */
 
 		if (lp_enhanced_browsing())
@@ -952,7 +952,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 #ifdef HAVE_SETPGID
 	/*
-	 * If we're interactive we want to set our own process group for 
+	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
 	if (cmdline_daemon_cfg->interactive &&
@@ -1041,7 +1041,7 @@ static bool open_sockets(bool isdaemon, int port)
 		exit_daemon("NMBD failed when creating subnet lists", EACCES);
 	}
 
-	/* Load in any static local names. */ 
+	/* Load in any static local names. */
 	if (p_lmhosts) {
 		set_dyn_LMHOSTSFILE(p_lmhosts);
 	}
@@ -1054,7 +1054,7 @@ static bool open_sockets(bool isdaemon, int port)
 		exit_daemon( "NMBD failed when initialising WINS server.", EACCES);
 	}
 
-	/* 
+	/*
 	 * Register nmbd primary workgroup and nmbd names on all
 	 * the broadcast subnets, and on the WINS server (if specified).
 	 * Also initiate the startup of our primary workgroup (start
