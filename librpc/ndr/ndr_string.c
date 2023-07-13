@@ -165,7 +165,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 		converted_size = 0;
 		if (!as) {
 			return ndr_pull_error(ndr, NDR_ERR_ALLOC,
-					      "Failed to talloc_strndup() in zero-length ndr_string_pull()");
+					      "Failed to talloc_strndup() in zero-length ndr_pull_string()");
 		}
 	} else {
 		if (!do_convert) {
@@ -174,7 +174,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 					    conv_src_len);
 			if (!as) {
 				return ndr_pull_error(ndr, NDR_ERR_ALLOC,
-						      "Failed to talloc_strndup() in RAW8 ndr_string_pull()");
+						      "Failed to talloc_strndup() in RAW8 ndr_pull_string()");
 			}
 			converted_size = MIN(strlen(as)+1, conv_src_len);
 		} else if (!convert_string_talloc(ndr->current_mem_ctx, chset,
@@ -205,7 +205,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 						      "converted string "
 						      "(and therefore source string) "
 						      "despite "
-						      "LIBNDR_FLAG_NO_EMBEDDED_NUL\n",
+						      "LIBNDR_FLAG_STR_NO_EMBEDDED_NUL\n",
 						      strlen_of_unix_string);
 			}
 		}
@@ -222,7 +222,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 						      "converted string "
 						      "(and therefore source string) "
 						      "despite "
-						      "LIBNDR_FLAG_NO_EMBEDDED_NUL\n",
+						      "LIBNDR_FLAG_STR_NO_EMBEDDED_NUL\n",
 						      strlen_of_unix_string);
 			}
 		}
