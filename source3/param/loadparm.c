@@ -86,7 +86,7 @@
 #include <sys/sysctl.h>
 #endif
 
-bool bLoaded = false;
+bool b_loaded = false;
 
 /* the special value for the include parameter
  * to be interpreted not as a file name but to
@@ -3047,7 +3047,7 @@ void lp_add_one_printer(const char *name, const char *comment,
 
 bool lp_loaded(void)
 {
-	return (bLoaded);
+	return (b_loaded);
 }
 
 /***************************************************************************
@@ -4109,7 +4109,7 @@ static bool lp_load_ex(const char *pszFname,
 			  lp_password_server()));
 	}
 
-	bLoaded = true;
+	b_loaded = true;
 
 	/* Now we check we_are_a_wins_server and set szWINSserver to 127.0.0.1 */
 	/* if we_are_a_wins_server is true and we are in the client            */
