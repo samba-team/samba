@@ -274,7 +274,7 @@ static struct fio *fruit_get_complete_fio(vfs_handle_struct *handle,
 static int init_fruit_config(vfs_handle_struct *handle)
 {
 	struct fruit_config_data *config;
-	int enumval;
+	int enumval = -1;
 	const char *tm_size_str = NULL;
 
 	config = talloc_zero(handle->conn, struct fruit_config_data);
@@ -284,25 +284,8 @@ static int init_fruit_config(vfs_handle_struct *handle)
 		return -1;
 	}
 
-	/*
-	 * Versions up to Samba 4.5.x had a spelling bug in the
-	 * fruit:resource option calling lp_parm_enum with
-	 * "res*s*ource" (ie two s).
-	 *
-	 * In Samba 4.6 we accept both the wrong and the correct
-	 * spelling, in Samba 4.7 the bad spelling will be removed.
-	 */
 	enumval = lp_parm_enum(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
-			       "ressource", fruit_rsrc, FRUIT_RSRC_ADFILE);
-	if (enumval == -1) {
-		DEBUG(1, ("value for %s: resource type unknown\n",
-			  FRUIT_PARAM_TYPE_NAME));
-		return -1;
-	}
-	config->rsrc = (enum fruit_rsrc)enumval;
-
-	enumval = lp_parm_enum(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
-			       "resource", fruit_rsrc, enumval);
+			       "resource", fruit_rsrc, FRUIT_RSRC_ADFILE);
 	if (enumval == -1) {
 		DEBUG(1, ("value for %s: resource type unknown\n",
 			  FRUIT_PARAM_TYPE_NAME));
