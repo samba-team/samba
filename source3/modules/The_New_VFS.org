@@ -41,7 +41,7 @@ without =O_PATH= support other mechanisms are used described in more detail
 below.
 
 Path processing in Samba typically means processing client supplied paths by
-Samba's core path processing function =filename_convert()= which returs a
+Samba's core path processing function =filename_convert()= which returns a
 pointer to an object of type =struct smb_filename=. Pointers to such objects are
 then passed around, often passing many layers of code.
 
@@ -106,7 +106,7 @@ whenever VFS access is done in a piecemeal fashion.
 *** When to open with O_PATH
  In Samba the decision whether to call POSIX ~open()~ on a client pathname or
  whether to leave the low-level handle at -1 (what we call a stat-open) is based
- on the client requested SMB acccess mask.
+ on the client requested SMB access mask.
 
  The set of access rights that trigger an ~open()~ includes
  ~READ_CONTROL_ACCESS~. As a result, the open() will be done with at least
@@ -140,12 +140,12 @@ whenever VFS access is done in a piecemeal fashion.
  support ~O_PATH~ is needed.
 
  The way this is implemented on such systems is impersonating the root user for
- the ~open()~ syscall. In order to avoid privelege escalations security issues,
+ the ~open()~ syscall. In order to avoid privilege escalations security issues,
  we must carefully control the use these file-handles.
 
  The low level filehandle is stored in a public struct ~struct file_handle~ that
  is part of the widely used ~struct files_struct~. Consumers used to simply
- access the fd directly by derefencing pointers to ~struct files_struct~.
+ access the fd directly by dereferencing pointers to ~struct files_struct~.
 
  In order to guard access to such file-handles we do two things:
 
@@ -395,7 +395,7 @@ whenever VFS access is done in a piecemeal fashion.
  Callers use =openat_pathref_fsp()= to open a fsp on the parent directory.
 
 *** Path based VFS functions <<Path>>
- All path based VFS functtions  will be replaced by handle based variants using the
+ All path based VFS functions  will be replaced by handle based variants using the
  =smb_fname->fsp= provided by =filename_convert()=.
 
  - SMB_VFS_CHDIR()

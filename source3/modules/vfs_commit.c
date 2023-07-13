@@ -45,7 +45,7 @@
  *                          size of the file before transferring it. With this
  *                          option, we remember that hint, and commit after
  *                          writing in that file position. If the client
- *                          doesn't declare the size of file, commiting on EOF 
+ *                          doesn't declare the size of file, committing on EOF
  *                          is not triggered.
  *
  *          = growth        Commits after a write operation has made the file

@@ -782,7 +782,7 @@ static bool hpux_acl_sort(HPUX_ACL_T hpux_acl, int count)
  * structures.
  * Inputs:
  *
- * acl_count      - Count of ACLs in the array of ACL strucutres.
+ * acl_count      - Count of ACLs in the array of ACL structures.
  * aclp           - Array of ACL structures.
  * acl_type_count - Pointer to acl_types structure. Should already be
  *                  allocated.
@@ -1008,7 +1008,7 @@ or DEF_USER_OBJ or DEF_GROUP_OBJ or DEF_OTHER_OBJ\n"));
 	 * Sorting crieteria - First sort by ACL type. If there are multiple entries of
 	 * same ACL type, sort by ACL id.
 	 *
-	 * I am using the trival kind of sorting method here because, performance isn't
+	 * I am using the trivial kind of sorting method here because, performance isn't
 	 * really effected by the ACLs feature. More over there aren't going to be more
 	 * than 17 entries on HPUX.
 	 */

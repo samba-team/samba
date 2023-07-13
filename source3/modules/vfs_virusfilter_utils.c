@@ -649,7 +649,7 @@ bool virusfilter_io_readl(TALLOC_CTX *ctx,
 		}
 
 		/*
-		 * We read read_size bytes. Extend the useable
+		 * We read read_size bytes. Extend the usable
 		 * buffer length.
 		 */
 		io_h->r_len += read_size;

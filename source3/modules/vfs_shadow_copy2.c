@@ -864,7 +864,7 @@ static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
 	insertlen = talloc_get_size(insert)-1;
 
 	/*
-	 * Note: We deliberatly don't expensively initialize the
+	 * Note: We deliberately don't expensively initialize the
 	 * array with talloc_zero here: Putting zero into
 	 * converted[pathlen+insertlen] below is sufficient, because
 	 * in the following for loop, the insert string is inserted

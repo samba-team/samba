@@ -145,7 +145,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 
 	/*
 	 * dfs links returned have had '/' characters replaced with '\'.
-	 * Return them to '/' so we can have absoute path mapfilenames.
+	 * Return them to '/' so we can have absolute path mapfilenames.
 	 */
 	string_replace(mapfilename, '\\', '/');
 

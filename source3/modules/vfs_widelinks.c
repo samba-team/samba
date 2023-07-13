@@ -83,7 +83,7 @@
 
  idiom in the vfs functions.
 
- 2). The module hides the existance of symlinks by inside
+ 2). The module hides the existence of symlinks by inside
  lstat(), open(), and readdir() so long as it's not a POSIX
  pathname request (those requests *must* be aware of symlinks
  and the POSIX client has to follow them, it's expected that

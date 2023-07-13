@@ -24,7 +24,7 @@ typedef u_int aceflag4;
  * identifiers as numerical ids instead UTF8 strings in order to avoid wasting
  * CPU cycles for the costly conversion.
  *
- * Placed in a seperate field to avoid ever running into conflicts with newly
+ * Placed in a separate field to avoid ever running into conflicts with newly
  * defined NFSv4 flags.
  */
 

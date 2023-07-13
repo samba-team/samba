@@ -334,7 +334,7 @@ static bool aixjfs2_process_smbacl(vfs_handle_struct *handle,
 
 		memset(jfs2_ace, 0, entryLen);
 		jfs2_ace->entryLen = entryLen; /* won't store textual "who" */
-		jfs2_ace->aceType = aceprop->aceType; /* only ACCES|DENY supported by jfs2 */
+		jfs2_ace->aceType = aceprop->aceType; /* only ACCESS|DENY supported by jfs2 */
 		jfs2_ace->aceFlags = aceprop->aceFlags;
 		jfs2_ace->aceMask = aceprop->aceMask;
 		jfs2_ace->flags = (aceprop->flags&SMB_ACE4_ID_SPECIAL) ? ACE4_ID_SPECIAL : 0;

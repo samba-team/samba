@@ -569,7 +569,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	}
 
 	/*
-	 * Make sure we can later contruct an absolute pathname
+	 * Make sure we can later construct an absolute pathname
 	 */
 	if (dirname[0] != '/') {
 		return res;
@@ -656,7 +656,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		need_reset = true;
 	} else if (state->number_start != new_start) {
 		/*
-		 * If the digits started at a different possition
+		 * If the digits started at a different position
 		 * we better reset the queue
 		 */
 		DBG_PREFIX(state->reset_dbglvl, ("RESET: "

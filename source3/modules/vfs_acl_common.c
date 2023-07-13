@@ -311,7 +311,7 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 	} else {
 		/*
 		 * make_sec_acl() at the bottom of this function
-		 * dupliates new_ace_list
+		 * duplicates new_ace_list
 		 */
 		new_ace_list = talloc_zero_array(talloc_tos(),
 						 struct security_ace,
@@ -400,7 +400,7 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
  * and psd_from_fs set to false.
  *
  * Returning the underlying filesystem ACL in case no. 2 is really just an
- * optimisation, because some validations have to fetch the filesytem ACL as
+ * optimisation, because some validations have to fetch the filesystem ACL as
  * part of the validation, so we already have it available and callers might
  * need it as well.
  **/
@@ -973,8 +973,8 @@ NTSTATUS fset_nt_acl_common(
 	}
 
 	/* We store hashes of both the sys ACL blob and the NT
-	 * security desciptor mapped from that ACL so as to improve
-	 * our chances against some inadvertant change breaking the
+	 * security descriptor mapped from that ACL so as to improve
+	 * our chances against some inadvertent change breaking the
 	 * hash used */
 	status = create_sys_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash, 
 				     sys_acl_description, sys_acl_hash);

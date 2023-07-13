@@ -314,7 +314,7 @@ static int check_for_write_behind_translator(TALLOC_CTX *mem_ctx,
 
 	/*
 	 * file_lines_parse() plays horrible tricks with
-	 * the passed-in talloc pointers and the hierarcy
+	 * the passed-in talloc pointers and the hierarchy
 	 * which makes freeing hard to get right.
 	 *
 	 * As we know mem_ctx is freed by the caller, after

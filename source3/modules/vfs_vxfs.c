@@ -607,7 +607,7 @@ static int vxfs_fremove_xattr(struct vfs_handle_struct *handle,
 	/* Remove with new way */
 	ret_new = vxfs_removexattr_fd(fsp_get_io_fd(fsp), name);
 	/*
-	 * If both fail, return failuer else return whichever succeeded
+	 * If both fail, return failure else return whichever succeeded
 	 */
 	if (errno == ENOTSUP || errno == ENOSYS) {
 		errno = old_errno;

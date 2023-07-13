@@ -197,7 +197,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	 * become_root() is just as good anyway (tridge) 
 	 */
 
-	/* Also, AIX has DMAPI but no POSIX capablities support. In this case,
+	/* Also, AIX has DMAPI but no POSIX capabilities support. In this case,
 	 * we need to be root to do DMAPI manipulations.
 	 */
 	become_root();

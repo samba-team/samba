@@ -466,7 +466,7 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 			goto fail;
 		}
 	} else {
-		/* Normalize the stream type to upercase. */
+		/* Normalize the stream type to uppercase. */
 		if (!strupper_m(strrchr_m(stream_fname, ':') + 1)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto fail;

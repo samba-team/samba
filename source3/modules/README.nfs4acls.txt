@@ -69,7 +69,7 @@ General notes
 
 NFS4 handling logic is separated from AIX/jfs2 ACL parsing.
 
-Samba and its VFS modules dosn't reorder ACEs. Windows clients do that (and the smbcacl tool). MSDN also says deny ACEs must come first.
+Samba and its VFS modules don't reorder ACEs. Windows clients do that (and the smbcacl tool). MSDN also says deny ACEs must come first.
 NFS4 ACL's validity is checked by the system API, not by Samba.
 NFS4 ACL rights are enforced by the OS or filesystem, not by Samba.
 
@@ -83,7 +83,7 @@ TODOs
 =====
 - Creator Owner & Group SID handling (same way as posix)
 - the 4 generic rights bits support (GENERIC_RIGHT_READ_ACCESS, WRITE, EXEC, ALL)
-- chown & no ACL, but we have ONWER@ and GROUP@
+- chown & no ACL, but we have OWNER@ and GROUP@
 - DIALUP, ANONYMOUS, ... builtin SIDs
 - audit & alarm support - in theory it's forwarded so it should work, but currently there's no platform which supports them to test
 - support for a real NFS4 client (we don't have an accepted API yet)

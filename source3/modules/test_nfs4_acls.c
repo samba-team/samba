@@ -937,7 +937,7 @@ static void test_dacl_creator_to_nfs4(void **state)
 		if (creator_ace_flags[i].nfs4_flags == 0) {
 			/*
 			 * CREATOR OWNER and CREATOR GROUP not mapped
-			 * in thise case.
+			 * in this case.
 			 */
 			assert_null(smb_first_ace4(nfs4_acl));
 		} else {

@@ -1674,7 +1674,7 @@ static int snapper_get_shadow_copy_data(struct vfs_handle_struct *handle,
 		goto err_rsp_free;
 	}
 
-	/* start at end for decending order, do not include 0 (current) */
+	/* start at end for descending order, do not include 0 (current) */
 	lbl_off = 0;
 	for (i = num_snaps - 1; i > 0; i--) {
 		char *lbl = sc_data->labels[lbl_off++];
