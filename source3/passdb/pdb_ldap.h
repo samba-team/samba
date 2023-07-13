@@ -31,7 +31,7 @@
 struct ldapsam_privates {
 	struct smbldap_state *smbldap_state;
 
-	/* Former statics */
+	/* Former statistics */
 	LDAPMessage *result;
 	LDAPMessage *entry;
 	int index;

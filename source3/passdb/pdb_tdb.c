@@ -1306,7 +1306,7 @@ static bool tdbsam_is_responsible_for_builtin(struct pdb_methods *m)
 }
 
 /*********************************************************************
- Initialize the tdb sam backend.  Setup the dispath table of methods,
+ Initialize the tdb sam backend.  Setup the dispatch table of methods,
  open the tdb, etc...
 *********************************************************************/
 

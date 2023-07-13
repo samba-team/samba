@@ -3698,7 +3698,7 @@ static PyMethodDef py_pdb_methods[] = {
 		Get account policy information as a dictionary." },
 	{ "set_account_policy", py_pdb_set_account_policy, METH_VARARGS,
 		"get_account_policy(Mapping) -> None\n\n \
-		Set account policy settings from a dicionary." },
+		Set account policy settings from a dictionary." },
 	/* get_seq_num */
 	{ "search_users", py_pdb_search_users, METH_VARARGS,
 		"search_users(acct_flags) -> List\n\n \

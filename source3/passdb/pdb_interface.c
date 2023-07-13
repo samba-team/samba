@@ -253,7 +253,7 @@ struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx)
  *
  * @param[in]  sampass  The sam user to check.
  *
- * @return              True if the function was successfull, false on an error.
+ * @return              True if the function was successful, false on an error.
  */
 static bool pdb_try_account_unlock(struct samu *sampass)
 {

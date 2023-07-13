@@ -167,7 +167,7 @@ static bool pw_file_unlock(int fd, int *plock_depth)
 }
 
 /**************************************************************
- Intialize a smb_passwd struct
+ Initialize a smb_passwd struct
  *************************************************************/
 
 static void pdb_init_smb(struct smb_passwd *user)
@@ -283,7 +283,7 @@ Error was %s\n", pfile, strerror(errno) ));
 			 * by doing a stat on the filename and an fstat on the fd. If the
 			 * two inodes differ then someone did a rename between the open and
 			 * the lock. Back off and try the open again. Only do this 5 times to
-			 * prevent infinate loops. JRA.
+			 * prevent infinite loops. JRA.
 			 */
 
 			if (sys_stat(pfile, &sbuf1, false) != 0) {
@@ -1203,7 +1203,7 @@ static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
 	if (!IS_SAM_DEFAULT(sampass, PDB_USERSID)) {
 		rid = pdb_get_user_rid(sampass);
 
-		/* If the user specified a RID, make sure its able to be both stored and retreived */
+		/* If the user specified a RID, make sure its able to be both stored and retrieved */
 		if (rid == DOMAIN_RID_GUEST) {
 			struct passwd *passwd = Get_Pwnam_alloc(NULL, lp_guest_account());
 			if (!passwd) {

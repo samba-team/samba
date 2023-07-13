@@ -1049,7 +1049,7 @@ static bool init_samu_from_buffer_v0(struct samu *sampass, uint8_t *buf, uint32_
 		&lm_pw_len, &lm_pw_ptr,					/* B */
 		&nt_pw_len, &nt_pw_ptr,					/* B */
 		&acct_ctrl,						/* w */
-		&remove_me, /* remove on the next TDB_FORMAT upgarde */	/* d */
+		&remove_me, /* remove on the next TDB_FORMAT upgrade */	/* d */
 		&logon_divs,						/* w */
 		&hours_len,						/* d */
 		&hourslen, &hours,					/* B */
@@ -2102,7 +2102,7 @@ static uint32_t init_buffer_from_samu_v4(uint8_t **buf, struct samu *sampass, bo
 }
 
 /**********************************************************************
- Intialize a struct samu struct from a BYTE buffer of size len
+ Initialize a struct samu struct from a BYTE buffer of size len
  *********************************************************************/
 
 bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
@@ -2125,7 +2125,7 @@ bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
 }
 
 /**********************************************************************
- Intialize a BYTE buffer from a struct samu struct
+ Initialize a BYTE buffer from a struct samu struct
  *********************************************************************/
 
 uint32_t init_buffer_from_samu (uint8_t **buf, struct samu *sampass, bool size_only)
@@ -2408,7 +2408,7 @@ static bool get_trust_pw_clear2(const char *domain,
 	 * request to trusted domains are performed through our dc.)
 	 *
 	 * So we simply use our own domain name to retrieve the
-	 * machine account passowrd and ignore the request domain here.
+	 * machine account password and ignore the request domain here.
 	 */
 
 	pwd = secrets_fetch_machine_password(lp_workgroup(), &last_set_time, channel);

@@ -177,7 +177,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	const char *p;
 	const char **attrs;
 
-	/* Unfortunatly there is no proper way to detect syncrepl-support in
+	/* Unfortunately there is no proper way to detect syncrepl-support in
 	 * smbldap_connect_system(). The syncrepl OIDs are submitted for publication
 	 * but do not show up in the root-DSE yet. Neither we can query the
 	 * subschema-context for the syncProviderSubentry or syncConsumerSubentry
@@ -1684,7 +1684,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 }
 
 /********************************************************************
- Do the actual modification - also change a plaintext passord if
+ Do the actual modification - also change a plaintext password if
  it it set.
 **********************************************************************/
 

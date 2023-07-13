@@ -1804,7 +1804,7 @@ static NTSTATUS secrets_check_password_change(const struct secrets_domain_info1 
 	}
 
 	/*
-	 * Here we check that the given strucure still contains the
+	 * Here we check that the given structure still contains the
 	 * same secrets_domain_info1_change as currently stored.
 	 *
 	 * There's always a gap between secrets_prepare_password_change()

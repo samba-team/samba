@@ -32,7 +32,7 @@
 
 /**
  * @todo Redefine this to NULL, but this changes the API because
- *       much of samba assumes that the pdb_get...() funtions
+ *       much of samba assumes that the pdb_get...() functions
  *       return strings.  (ie not null-pointers).
  *       See also pdb_fill_default_sam().
  */
