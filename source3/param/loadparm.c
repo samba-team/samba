@@ -1708,7 +1708,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 			 pszPrintername);
 	lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 
-	/* set the browseable flag from the gloabl default */
+	/* set the browseable flag from the global default */
 	ServicePtrs[i]->browseable = sDefault.browseable;
 
 	/* Printers cannot be read_only. */
@@ -1784,7 +1784,7 @@ bool lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 /**************************************************************************
  Determine the canonical name for a parameter.
  Turn the value given into the inverse boolean expression when
- the synonym is an invers boolean synonym.
+ the synonym is an inverse boolean synonym.
 
  Return true if
  - parm_name is a valid parameter name and
@@ -1845,7 +1845,7 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse)
 
 	parm_num = lpcfg_map_parameter(pszParmName);
 	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_SYNONYM)) {
-		/* invalid, parametric or no canidate for synonyms ... */
+		/* invalid, parametric or no candidate for synonyms ... */
 		goto done;
 	}
 
@@ -3094,7 +3094,7 @@ void lp_killservice(int iServiceIn)
 }
 
 /***************************************************************************
- Save the curent values of all global and sDefault parameters into the
+ Save the current values of all global and sDefault parameters into the
  defaults union. This allows testparm to show only the
  changed (ie. non-default) parameters.
 ***************************************************************************/
@@ -3163,7 +3163,7 @@ static void lp_save_defaults(void)
 }
 
 /***********************************************************
- If we should send plaintext/LANMAN passwords in the clinet
+ If we should send plaintext/LANMAN passwords in the client
 ************************************************************/
 
 static void set_allowed_client_auth(void)
