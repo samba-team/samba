@@ -6,7 +6,7 @@ have_gssapi=False
 
 krb5_min_required_version = "1.9"
 
-# Requried versions
+# Required versions
 krb5_required_version = krb5_min_required_version
 if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     krb5_required_version = "1.19"
