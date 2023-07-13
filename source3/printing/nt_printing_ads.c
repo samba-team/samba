@@ -464,7 +464,7 @@ static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
 	}
 	ads_mod_str(ctx, mods, SPOOL_REG_VERSIONNUMBER, info_str);
 
-	/* empty strings in the mods list result in an attrubute error */
+	/* empty strings in the mods list result in an attribute error */
 	if (strlen(info2->drivername) != 0)
 		ads_mod_str(ctx, mods, SPOOL_REG_DRIVERNAME, info2->drivername);
 	if (strlen(info2->location) != 0)

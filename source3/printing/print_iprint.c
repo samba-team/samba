@@ -1008,7 +1008,7 @@ static int iprint_queue_get(const char *sharename,
 
 	*q = NULL;
 
-	/* HACK ALERT!!!  The porblem with support the 'printer name'
+	/* HACK ALERT!!!  The problem with support the 'printer name'
 	   option is that we key the tdb off the sharename.  So we will
 	   overload the lpq_command string to pass in the printername
 	   (which is basically what we do for non-cups printers ... using
@@ -1056,7 +1056,7 @@ static int iprint_queue_get(const char *sharename,
        /*
 	* For Linux iPrint servers from OES SP1 on, the iPrint server
 	* uses Unix time for job start times unless it detects the iPrint
-	* client in an http User-Agent header.  (This was done to accomodate
+	* client in an http User-Agent header.  (This was done to accommodate
 	* CUPS broken behavior.  According to RFC 2911, section 4.3.14, job
 	* start times are supposed to be relative to how long the printer has
 	* been up.)  Since libcups doesn't allow us to set that header before

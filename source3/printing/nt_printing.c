@@ -596,7 +596,7 @@ static int handle_ne_file(files_struct *fsp,
 			}
 
 			/*
-			 * Potential match data crosses buf boundry,
+			 * Potential match data crosses buf boundary,
 			 * move it to beginning of buf, and fill the
 			 * buf with as much as it will hold.
 			 */
@@ -1161,7 +1161,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	/*
 	 * This is a Microsoft'ism. See references in MSDN to VER_FILEVERSION
 	 * for more details. Version in this case is not just the version of the
-	 * file, but the version in the sense of kernal mode (2) vs. user mode
+	 * file, but the version in the sense of kernel mode (2) vs. user mode
 	 * (3) drivers. Other bits of the version fields are the version info.
 	 * JRR 010716
 	 */
@@ -1277,7 +1277,7 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	 * we can get .\driver.dll
 	 * or worse c:\windows\system\driver.dll !
 	 */
-	/* using an intermediate string to not have overlaping memcpy()'s */
+	/* using an intermediate string to not have overlapping memcpy()'s */
 
 	strip_driver_path(mem_ctx, *driver_path);
 	strip_driver_path(mem_ctx, *data_file);
@@ -1809,7 +1809,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		/* now check the error code */
 
 		if ( W_ERROR_IS_OK(werr) ) {
-			/* it's ok to remove the driver, we have other architctures left */
+			/* it's ok to remove the driver, we have other architectures left */
 			in_use = false;
 			talloc_free(driver);
 		}
@@ -2192,7 +2192,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 
 /*
 	A printer and a printer driver are 2 different things.
-	NT manages them separatelly, Samba does the same.
+	NT manages them separately, Samba does the same.
 	Why ? Simply because it's easier and it makes sense !
 
 	Now explanation: You have 3 printers behind your samba server,

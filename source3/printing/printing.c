@@ -1433,7 +1433,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 
 /****************************************************************************
  Update the internal database from the system print queue for a queue.
- obtain a lock on the print queue before proceeding (needed when mutiple
+ obtain a lock on the print queue before proceeding (needed when multiple
  smbd processes maytry to update the lpq cache concurrently).
 ****************************************************************************/
 
@@ -1705,7 +1705,7 @@ bool print_notify_register_pid(int snum)
 
 	/* if (snum == -1), then the change notify request was
 	   on a print server handle and we need to register on
-	   all print queus */
+	   all print queues */
 
 	if (snum == -1)
 	{
@@ -1887,7 +1887,7 @@ bool print_job_exists(const char* sharename, uint32_t jobid)
 }
 
 /****************************************************************************
- Return the device mode asigned to a specific print job.
+ Return the device mode assigned to a specific print job.
  Only valid for the process doing the spooling and when the job
  has not been spooled.
 ****************************************************************************/
@@ -1997,7 +1997,7 @@ static bool print_job_delete1(struct tevent_context *ev,
 
 	/* Hrm - we need to be able to cope with deleting a job before it
 	   has reached the spooler.  Just mark it as LPQ_DELETING and
-	   let the print_queue_update() code rmeove the record */
+	   let the print_queue_update() code remove the record */
 
 
 	if (pjob->sysjob == -1) {

@@ -340,8 +340,8 @@ parse lpq on an aix system
 
 Queue   Dev   Status    Job Files              User         PP %   Blks  Cp Rnk
 ------- ----- --------- --- ------------------ ---------- ---- -- ----- --- ---
-lazer   lazer READY
-lazer   lazer RUNNING   537 6297doc.A          kvintus@IE    0 10  2445   1   1
+laser   laser READY
+laser   laser RUNNING   537 6297doc.A          kvintus@IE    0 10  2445   1   1
               QUEUED    538 C.ps               root@IEDVB           124   1   2
               QUEUED    539 E.ps               root@IEDVB            28   1   3
               QUEUED    540 L.ps               root@IEDVB           172   1   4
