@@ -1305,7 +1305,7 @@ static NTSTATUS gensec_gse_session_info(struct gensec_security *gensec_security,
 					   &pac_blob);
 
 	/* IF we have the PAC - otherwise we need to get this
-	 * data from elsewere
+	 * data from elsewhere
 	 */
 	if (NT_STATUS_IS_OK(nt_status)) {
 		pac_blob_ptr = &pac_blob;

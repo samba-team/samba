@@ -33,7 +33,7 @@
 *
 * @param mem_ctx	The memory context the blob will be allocated on
 * @param ptype		The DCERPC packet type
-* @param pfc_flags	The DCERPC PFC Falgs
+* @param pfc_flags	The DCERPC PFC Flags
 * @param auth_length	The length of the trailing auth blob
 * @param call_id	The call ID
 * @param u		The payload of the packet
