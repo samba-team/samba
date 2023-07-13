@@ -404,7 +404,7 @@ do_init:
 
 	/*
 	 * There are potentially quite a few store operations which are all
-	 * indiviually wrapped in tdb transactions. Wrapping them in a single
+	 * individually wrapped in tdb transactions. Wrapping them in a single
 	 * transaction gives just a single transaction_commit() to actually do
 	 * its fsync()s. See tdb/common/transaction.c for info about nested
 	 * transaction behaviour.
@@ -775,7 +775,7 @@ WERROR regdb_init(void)
 	TALLOC_FREE(db_path);
 
 	regdb_refcount = 1;
-	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
+	DEBUG(10, ("regdb_init: registry db opened. refcount reset (%d)\n",
 		   regdb_refcount));
 
 	status = dbwrap_fetch_int32_bystring(regdb, REGDB_VERSION_KEYNAME,

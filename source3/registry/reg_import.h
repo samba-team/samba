@@ -153,7 +153,7 @@ typedef	WERROR (*reg_import_callback_setval_regval_blob_t)(
 
 /**
  * Type handling the output of a reg_import object.
- * It containes the functions to call and an opaque data pointer.
+ * It contains the functions to call and an opaque data pointer.
  */
 struct reg_import_callback {
 	/** Function called to open key */

@@ -50,7 +50,7 @@ static void cstr_unescape(char* val)
  * @param[out] ost outstream
  * @param[in]  name string
  *
- * @return numner of bytes written, -1 on error
+ * @return number of bytes written, -1 on error
  * @see srprs_val_name
  */
 static int cbuf_print_value_assign(cbuf* ost, const char* name) {

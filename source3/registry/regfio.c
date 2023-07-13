@@ -1170,7 +1170,7 @@ static bool next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk, b
 }
 
 /*******************************************************************
- Intialize the newly created REGF_BLOCK in *file and write the
+ Initialize the newly created REGF_BLOCK in *file and write the
  block header to disk
 *******************************************************************/
 
@@ -1190,7 +1190,7 @@ static bool init_regf_block( REGF_FILE *file )
 
 	unix_to_nt_time( &file->mtime, time(NULL) );
 
-	/* hard coded values...no diea what these are ... maybe in time */
+	/* hard coded values...no idea what these are ... maybe in time */
 
 	file->unknown1 = 0x2;
 	file->unknown2 = 0x1;
@@ -1427,7 +1427,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 }
 
 /*******************************************************************
- This acts as an interator over the subkeys defined for a given
+ This acts as an iterator over the subkeys defined for a given
  NK record.  Remember that offsets are from the *first* HBIN block.
 *******************************************************************/
 

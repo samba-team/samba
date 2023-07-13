@@ -103,7 +103,7 @@ typedef int (*reg_parse_callback_comment_t) (void* private_data,
 
 /**
  * Type handling the output of a reg_parse object.
- * It containes the functions to call and an opaque data pointer.
+ * It contains the functions to call and an opaque data pointer.
  */
 typedef struct reg_parse_callback {
 	reg_parse_callback_key_t key; /**< Function called on key found */

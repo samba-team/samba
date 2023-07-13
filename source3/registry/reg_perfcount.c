@@ -1400,7 +1400,7 @@ static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, struct PERF_DAT
 
 		/* Now do the counters */
 		/* If no instances, encode counter_data */
-		/* If instances, encode instace plus counter data for each instance */
+		/* If instances, encode instance plus counter data for each instance */
 		if(_reg_perfcount_marshall_perf_counters(ps, object, depth) == False)
 			return False;
 		if(object.NumInstances == PERF_NO_INSTANCES)

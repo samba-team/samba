@@ -19,7 +19,7 @@
 
 /**
  * @brief  Format registration entries (.reg) files.
- * A formater is a talloced incarnation of an opaque struct reg_format.
+ * A formatter is a talloced incarnation of an opaque struct reg_format.
  * It is fed with registry key's and value's and emits output by calling
  * writeline from its reg_format_callback.
  * @file   reg_format.h
@@ -39,7 +39,7 @@ struct regval_blob;
 
 
 /**
- * A Formater for registration entries (.reg) files.
+ * A Formatter for registration entries (.reg) files.
  *
  * It may be used as a reg_parse_callback, so the following is valid:
  * @code
@@ -65,7 +65,7 @@ typedef int (*reg_format_callback_writeline_t)(void* private_data,
 					       const char* line);
 /**
  * Type handling the output of a reg_format object.
- * It containes the functions to call and an opaque data pointer.
+ * It contains the functions to call and an opaque data pointer.
  */
 typedef struct reg_format_callback {
 	/**< Function called to write a line */
@@ -107,9 +107,9 @@ reg_format* reg_format_file(const void* talloc_ctx,
  * Format a registry key given as struct registry_key.
  * Create/Open or Delete
  *
- * @param f   the formater.
+ * @param f   the formatter.
  * @param key the key to output.
- * @param del wheter to format the deletion of the key
+ * @param del whether to format the deletion of the key
  *
  * @retval >= 0 on success.
  */
@@ -120,7 +120,7 @@ int reg_format_registry_key(reg_format* f,
 /**
  * Format a registry value given as struct registry_value.
  *
- * @param f    the formater.
+ * @param f    the formatter.
  * @param name the values name
  * @param val  the values value.
  *
@@ -133,7 +133,7 @@ int reg_format_registry_value(reg_format* f,
 /**
  * Format a registry value given as struct regval_blob.
  *
- * @param f    the formater.
+ * @param f    the formatter.
  * @param name the values name, if NULL use val->valname which is limited in size;
  * @param val  the values value.
  *
@@ -147,7 +147,7 @@ int reg_format_regval_blob(reg_format* f,
 /**
  * Format deletion of a registry value.
  *
- * @param f    the formater.
+ * @param f    the formatter.
  * @param name the values name
  *
  * @retval >= 0 on success.
@@ -159,7 +159,7 @@ int reg_format_value_delete(reg_format* f, const char* name);
 /**
  * Format a comment.
  *
- * @param f   the formater.
+ * @param f   the formatter.
  * @param txt the comment in UNIX charset, may not contain newlines.
  *
  * @retval >= 0 on success.
@@ -186,10 +186,10 @@ int reg_format_set_options(reg_format* f, const char* options);
  * Format a registry key.
  * Create/Open or Delete
  *
- * @param f   the formater
+ * @param f   the formatter
  * @param key the key to output
  * @param klen number of elements in key
- * @param del wheter to format the deletion of the key
+ * @param del whether to format the deletion of the key
  *
  * @retval >= 0 on success.
  *
@@ -202,7 +202,7 @@ int reg_format_key(reg_format* f,
 /**
  * Format a registry value.
  *
- * @param f    the formater
+ * @param f    the formatter
  * @param name the values name
  * @param type the values type
  * @param data the values value
