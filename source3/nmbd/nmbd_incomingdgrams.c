@@ -1,23 +1,23 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
    Copyright (C) Jeremy Allison 1994-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -50,38 +50,38 @@ void tell_become_backup(void)
       struct server_record *servrec;
       int num_servers = 0;
       int num_backups = 0;
-	  
+
       for (servrec = work->serverlist; servrec; servrec = servrec->next)
       {
         num_servers++;
-	      
+
         if (is_myname(servrec->serv.name))
           continue;
-	      
-        if (servrec->serv.type & SV_TYPE_BACKUP_BROWSER) 
+
+        if (servrec->serv.type & SV_TYPE_BACKUP_BROWSER)
         {
           num_backups++;
           continue;
         }
-	      
+
         if (servrec->serv.type & SV_TYPE_MASTER_BROWSER)
           continue;
-	      
+
         if (!(servrec->serv.type & SV_TYPE_POTENTIAL_BROWSER))
           continue;
-	      
-        DEBUG(3,("num servers: %d num backups: %d\n", 
+
+        DEBUG(3,("num servers: %d num backups: %d\n",
               num_servers, num_backups));
-	      
+
         /* make first server a backup server. thereafter make every
            tenth server a backup server */
         if (num_backups != 0 && (num_servers+9) / num_backups > 10)
           continue;
-	      
+
         DEBUG(2,("sending become backup to %s %s for %s\n",
              servrec->serv.name, inet_ntoa(subrec->bcast_ip),
              work->work_group));
-	      
+
         /* type 11 request from MYNAME(20) to WG(1e) for SERVER */
         do_announce_request(servrec->serv.name, work->work_group,
               ANN_BecomeBackup, 0x20, 0x1e, subrec->bcast_ip);
@@ -110,7 +110,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	ZERO_STRUCT(announce_name);
 
 	pull_ascii_fstring(comment, buf+31);
-  
+
 	pull_ascii_nstring(announce_name, sizeof(announce_name), buf+5);
 	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
@@ -162,11 +162,11 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 			if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
 				goto done;
 		}
-  
+
 		if((servrec = find_server_in_workgroup( work, announce_name))==NULL) {
 			/* If this server is not already in the workgroup, add it. */
-			create_server_on_workgroup(work, announce_name, 
-				servertype|SV_TYPE_LOCAL_LIST_ONLY, 
+			create_server_on_workgroup(work, announce_name,
+				servertype|SV_TYPE_LOCAL_LIST_ONLY,
 				ttl, comment);
 		} else {
 			/* Update the record. */
@@ -176,7 +176,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 		}
 	} else {
 		/*
-		 * This server is announcing it is going down. Remove it from the 
+		 * This server is announcing it is going down. Remove it from the
 		 * workgroup.
 		 */
 		if(!is_myname(announce_name) && (work != NULL) &&
@@ -309,7 +309,7 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 		 stop sending local master announcements. To fix this we send
 		 them a reset browser packet, with level 0x2 on the __SAMBA__
 		 name that only they should be listening to. */
-   
+
 		send_browser_reset( 0x2, "__SAMBA__" , 0x20, p->ip);
 
 		/* We should demote ourself and force an election. */
@@ -318,15 +318,15 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 
 		/* The actual election requests are handled in nmbd_election.c */
 		goto done;
-	}  
+	}
 
 	/* Find the server record on this workgroup. If it doesn't exist, add it. */
 
 	if(servertype != 0) {
 		if((servrec = find_server_in_workgroup( work, server_name))==NULL) {
 			/* If this server is not already in the workgroup, add it. */
-			create_server_on_workgroup(work, server_name, 
-				servertype|SV_TYPE_LOCAL_LIST_ONLY, 
+			create_server_on_workgroup(work, server_name,
+				servertype|SV_TYPE_LOCAL_LIST_ONLY,
 				ttl, comment);
 		} else {
 			/* Update the record. */
@@ -371,7 +371,7 @@ done:
   that machines local server list.
 ******************************************************************/
 
-void process_master_browser_announce(struct subnet_record *subrec, 
+void process_master_browser_announce(struct subnet_record *subrec,
                                      struct packet_struct *p,const char *buf)
 {
 	unstring local_master_name;
@@ -379,16 +379,16 @@ void process_master_browser_announce(struct subnet_record *subrec,
 	struct browse_cache_record *browrec;
 
 	pull_ascii_nstring(local_master_name,sizeof(local_master_name),buf);
-  
+
 	DEBUG(3,("process_master_browser_announce: Local master announce from %s IP %s.\n",
 		local_master_name, inet_ntoa(p->ip)));
-  
+
 	if (!lp_domain_master()) {
 		DEBUG(0,("process_master_browser_announce: Not configured as domain \
 master - ignoring master announce.\n"));
 		goto done;
 	}
-  
+
 	if((work = find_workgroup_on_subnet(subrec, lp_workgroup())) == NULL) {
 		DEBUG(0,("process_master_browser_announce: Cannot find workgroup %s on subnet %s\n",
 			lp_workgroup(), subrec->subnet_name));
@@ -594,7 +594,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
    */
 
   for (servrec = work->serverlist; servrec; servrec = servrec->next)
-  { 
+  {
     int len = PTR_DIFF(p, outbuf);
     if((sizeof(outbuf) - len) < 16)
       break;
@@ -659,7 +659,7 @@ void process_get_backup_list_request(struct subnet_record *subrec,
 	DEBUG(3,("process_get_backup_list_request: request from %s IP %s to %s.\n",
 		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
 		nmb_namestr(&dgram->dest_name)));
-  
+
 	/* We have to be a master browser, or a domain master browser
 		for the requested workgroup. That means it must be our
 		workgroup. */
@@ -676,7 +676,7 @@ subnet %s.\n", workgroup_name, search_subrec->subnet_name));
 		goto done;
 	}
 
-	/* 
+	/*
 	 * If the packet was sent to WORKGROUP<1b> instead
 	 * of WORKGROUP<1d> then it was unicast to us a domain master
 	 * browser. Change search subrec to unicast.
@@ -721,7 +721,7 @@ done:
   0x1 - Stop being a master browser and become a backup browser.
   0x2 - Discard browse lists, stop being a master browser, try again.
   0x4 - Stop being a master browser forever.
-         
+
 ******************************************************************/
 
 void process_reset_browser(struct subnet_record *subrec,
@@ -745,13 +745,13 @@ request from %s IP %s state=0x%X\n",
 			}
 		}
 	}
-  
+
 	/* Discard our browse lists. */
 	if (state & 0x2) {
 		/*
 		 * Calling expire_workgroups_and_servers with a -1
 		 * time causes all servers not marked with a PERMANENT_TTL
-		 * on the workgroup lists to be discarded, and all 
+		 * on the workgroup lists to be discarded, and all
 		 * workgroups with empty server lists to be discarded.
 		 * This means we keep our own server names and workgroup
 		 * as these have a PERMANENT_TTL.
@@ -759,7 +759,7 @@ request from %s IP %s state=0x%X\n",
 
 		expire_workgroups_and_servers(-1);
 	}
-  
+
 	/* Request to stop browsing altogether. */
 	if (state & 0x4)
 		DEBUG(1,("process_reset_browser: ignoring request to stop being a browser.\n"));
@@ -769,7 +769,7 @@ request from %s IP %s state=0x%X\n",
   Process an announcement request packet.
   We don't respond immediately, we just check it's a request for
   our workgroup and then set the flag telling the announce code
-  in nmbd_sendannounce.c:announce_my_server_names that an 
+  in nmbd_sendannounce.c:announce_my_server_names that an
   announcement is needed soon.
 ******************************************************************/
 
@@ -778,12 +778,12 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
 	unstring workgroup_name;
- 
+
 	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 	DEBUG(3,("process_announce_request: Announce request from %s IP %s to %s.\n",
 		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
 		nmb_namestr(&dgram->dest_name)));
-  
+
 	/* We only send announcement requests on our workgroup. */
 	if(strequal(workgroup_name, lp_workgroup()) == False) {
 		DEBUG(7,("process_announce_request: Ignoring announce request for workgroup %s.\n",
