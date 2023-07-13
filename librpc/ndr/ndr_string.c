@@ -321,8 +321,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 		c_len = d_len / byte_mul;
 	}
 
-	switch ((flags & LIBNDR_STRING_FLAGS) & ~LIBNDR_FLAG_STR_NOTERM) {
+	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
+	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
@@ -330,17 +331,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 		break;
 
 	case LIBNDR_FLAG_STR_LEN4:
+	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
 		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE4:
+	case LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
 		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2:
+	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, c_len));
 		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
 		break;
