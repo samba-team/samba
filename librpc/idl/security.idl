@@ -600,6 +600,45 @@ interface security
 		[switch_is(flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT)] security_ace_object_inherited_type inherited_type;
 	} security_ace_object;
 
+
+
+	/*
+	 * flags that might occur in
+	 * CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1.flags.
+	 *
+	 * Not all of them do anything. Conditional ACEs also use some
+	 * of these flags.
+	 */
+	typedef [bitmap32bit] bitmap {
+		CLAIM_SECURITY_ATTRIBUTE_NON_INHERITABLE =      1,
+		CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE = 2,
+		CLAIM_SECURITY_ATTRIBUTE_USE_FOR_DENY_ONLY    = 4, /*reserved*/
+		CLAIM_SECURITY_ATTRIBUTE_DISABLED_BY_DEFAULT  = 8,
+		CLAIM_SECURITY_ATTRIBUTE_DISABLED          = 0x10, /*reserved*/
+		CLAIM_SECURITY_ATTRIBUTE_MANDATORY         = 0x20,
+		/*
+		 * Conditional ACEs use some of the above flags in
+		 * combination with an internal one at the other end
+		 * of a 16 bit field (defined in conditional_ace.idl).
+		 * This next definition is warning us in case a clash
+		 * develops (which seems very unlikely).
+		 */
+		CLAIM_SECURITY_ATTRIBUTE_RESERVED_FOR_SAMBA = 0x8000
+	} claim_flags;
+
+	/*
+	 * These claim types for v1 claims mirror those of on-the-wire
+	 * PAC claims, but not conditional ace literal token types.
+	 */
+	typedef [public] enum {
+		CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64 = 0x0001,
+		CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64 =	0x0002,
+		CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING = 0x0003,
+		CLAIM_SECURITY_ATTRIBUTE_TYPE_SID = 0x0005,
+		CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN = 0x0006,
+		CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING = 0x0010
+	} security_claim_value_type;
+
 	typedef [public,nodiscriminant] union {
 		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] security_ace_object object;
 		[case(SEC_ACE_TYPE_ACCESS_DENIED_OBJECT)] security_ace_object object;
