@@ -2462,10 +2462,10 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 	/* Store a dummy placeholder. */
 	{
 		uint32_t tmp;
-		TDB_DATA dum;
-		dum.dptr = NULL;
-		dum.dsize = 0;
-		if (tdb_store(pdb->tdb, print_key(jobid, &tmp), dum,
+		TDB_DATA dummy = {
+			.dsize = 0,
+		};
+		if (tdb_store(pdb->tdb, print_key(jobid, &tmp), dummy,
 			      TDB_INSERT) != 0) {
 			DEBUG(3, ("allocate_print_jobid: "
 				  "jobid (%d) failed to store placeholder.\n",
