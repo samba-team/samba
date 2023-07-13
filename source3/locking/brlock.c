@@ -877,7 +877,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 
 	/*
 	 * Break oplocks while we hold a brl. Since lock() and unlock() calls
-	 * are not symetric with POSIX semantics, we cannot guarantee our
+	 * are not symmetric with POSIX semantics, we cannot guarantee our
 	 * contend_level2_oplocks_begin/end calls will be acquired and
 	 * released one-for-one as with Windows semantics. Therefore we only
 	 * call contend_level2_oplocks_begin if this is the first POSIX brl on

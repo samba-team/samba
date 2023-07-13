@@ -435,7 +435,7 @@ void locking_close_file(files_struct *fsp,
 		/*
 		 * Unlocks must trigger dbwrap_watch watchers,
 		 * normally in smbd_do_unlocking. Here it's done
-		 * implictly, we're closing the file and thus remove a
+		 * implicitly, we're closing the file and thus remove a
 		 * share mode. This will wake the waiters.
 		 */
 		brl_close_fnum(br_lck);

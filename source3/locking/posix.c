@@ -920,7 +920,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	}
 
 	/*
-	 * Windows is very strange. It allows read locks to be overlayed
+	 * Windows is very strange. It allows read locks to be overlaid
 	 * (even over a write lock), but leaves the write lock in force until the first
 	 * unlock. It also reference counts the locks. This means the following sequence :
 	 *
