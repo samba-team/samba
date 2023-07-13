@@ -57,7 +57,7 @@ void load_lmhosts_file(const char *fname)
 
 		ipaddr = ((struct sockaddr_in *)&ss)->sin_addr;
 
-		/* We find a relevent subnet to put this entry on, then add it. */
+		/* We find a relevant subnet to put this entry on, then add it. */
 		/* Go through all the broadcast subnets and see if the mask matches. */
 		for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 			if(same_net_v4(ipaddr, subrec->bcast_ip, subrec->mask_ip))

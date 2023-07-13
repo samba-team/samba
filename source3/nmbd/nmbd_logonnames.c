@@ -131,7 +131,7 @@ for workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
 static void become_logon_server(struct subnet_record *subrec,
                                 struct work_record *work)
 {
-	DEBUG(2,("become_logon_server: Atempting to become logon server for workgroup %s \
+	DEBUG(2,("become_logon_server: Attempting to become logon server for workgroup %s \
 on subnet %s\n", work->work_group,subrec->subnet_name));
 
 	DEBUG(3,("become_logon_server: go to first stage: register %s<1c> name\n",

@@ -95,7 +95,7 @@ const char *my_netbios_names(int i)
 }
 
 /****************************************************************************
- Fail funtion when registering my netbios names.
+ Fail function when registering my netbios names.
 **************************************************************************/
 
 static void my_name_register_failed(struct subnet_record *subrec,

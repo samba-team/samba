@@ -56,7 +56,7 @@ static void register_name_response(struct subnet_record *subrec,
 	fstrcpy(reg_name, inet_ntoa(register_ip));
 	
 	if (subrec == unicast_subnet) {
-		/* we know that this wins server is definately alive - for the moment! */
+		/* we know that this wins server is definitely alive - for the moment! */
 		wins_srv_alive(rrec->packet->ip, register_ip);
 	}
 

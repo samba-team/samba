@@ -148,7 +148,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 		unstrcpy(work_name,lp_workgroup());
 
 	/*
-	 * We are being very agressive here in adding a workgroup
+	 * We are being very aggressive here in adding a workgroup
 	 * name on the basis of a host announcing itself as being
 	 * in that workgroup. Maybe we should wait for the workgroup
 	 * announce instead ? JRA.
@@ -489,7 +489,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 		unstrcpy(work_name,lp_workgroup());
 
 	/*
-	 * We are being very agressive here in adding a workgroup
+	 * We are being very aggressive here in adding a workgroup
 	 * name on the basis of a host announcing itself as being
 	 * in that workgroup. Maybe we should wait for the workgroup
 	 * announce instead ? JRA.
@@ -589,7 +589,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
      workgroup. That's why this is commented out (tridge) */
 
   /*
-   * NB. Note that the struct work_record here is not neccessarily
+   * NB. Note that the struct work_record here is not necessarily
    * attached to the subnet *subrec.
    */
 

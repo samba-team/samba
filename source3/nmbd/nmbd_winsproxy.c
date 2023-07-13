@@ -111,7 +111,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 			if( same_net_v4( namerec->data.ip[i], orig_broadcast_subnet->myip,
 					orig_broadcast_subnet->mask_ip ) ) {
 				DEBUG( 5, ( "wins_proxy_name_query_request_success: name %s is a WINS \
-proxy name and is also on the same subnet (%s) as the requestor. \
+proxy name and is also on the same subnet (%s) as the requester. \
 Not replying.\n", nmb_namestr(&namerec->name), orig_broadcast_subnet->subnet_name ) );
 				return;
 			}

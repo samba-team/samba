@@ -214,7 +214,7 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
 	pull_ascii_nstring(name, sizeof(name), nmbname->name);
 
 	/* If the given ip is not ours, then we can't become a domain
-		controler as the name is already registered.
+		controller as the name is already registered.
 	*/
 
 	/* BUG note. Samba 1.9.16p11 servers seem to return the broadcast
@@ -344,7 +344,7 @@ static void become_domain_master_browser_wins(const char *workgroup_name)
 			}
 
 			/* Send out a query to establish whether there's a 
-			   domain master broswer registered with WINS. If not,
+			   domain master browser registered with WINS. If not,
 			   we can become a domain master browser. 
 			*/
 

@@ -494,7 +494,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
 			   or it's a Domain Master type. */
 
 			/*
-			 * If this is a WINS_PROXY_NAME, then ceck that none of the IP
+			 * If this is a WINS_PROXY_NAME, then check that none of the IP
 			 * addresses we are returning is on the same broadcast subnet
 			 * as the requesting packet. If it is then don't reply as the
 			 * actual machine will be replying also and we don't want two
@@ -504,7 +504,7 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
 			if (namerec->data.source == WINS_PROXY_NAME) {
 				for( i = 0; i < namerec->data.num_ips; i++) {
 					if (same_net_v4(namerec->data.ip[i], subrec->myip, subrec->mask_ip)) {
-						DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also on the same subnet (%s) as the requestor. Not replying.\n",
+						DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also on the same subnet (%s) as the requester. Not replying.\n",
 							 nmb_namestr(&namerec->name), subrec->subnet_name ));
 						return;
 					}

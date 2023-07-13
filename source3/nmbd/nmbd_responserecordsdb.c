@@ -49,7 +49,7 @@ void remove_response_record(struct subnet_record *subrec,
 {
 	/* It is possible this can be called twice,
 	   with a rrec pointer that has been freed. So
-	   before we inderect into rrec, search for it
+	   before we indirect into rrec, search for it
 	   on the responselist first. Bug #3617. JRA. */
 
 	struct response_record *p = NULL;

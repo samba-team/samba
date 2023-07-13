@@ -1034,7 +1034,7 @@ void wins_process_name_refresh_request( struct subnet_record *subrec,
  We have a locked pointer to the original packet stashed away in the
  userdata pointer. The success here is actually a failure as it means
  the client we queried wants to keep the name, so we must return
- a registration failure to the original requestor.
+ a registration failure to the original requester.
 ************************************************************************/
 
 static void wins_register_query_success(struct subnet_record *subrec,
@@ -1079,7 +1079,7 @@ static void wins_register_query_fail(struct subnet_record *subrec,
 
 	/*
 	 * We want to just add the name, as we now know the original owner
-	 * didn't want it. But we can't just do that as an arbitary
+	 * didn't want it. But we can't just do that as an arbitrary
 	 * amount of time may have taken place between the name query
 	 * request and this timeout/error response. So we check that
 	 * the name still exists and is in the same state - if so
@@ -1548,7 +1548,7 @@ static void wins_multihomed_register_query_success(struct subnet_record *subrec,
 
 	/*
 	 * We want to just add the new IP, as we now know the requesting
-	 * machine claims to own it. But we can't just do that as an arbitary
+	 * machine claims to own it. But we can't just do that as an arbitrary
 	 * amount of time may have taken place between the name query
 	 * request and this response. So we check that
 	 * the name still exists and is in the same state - if so

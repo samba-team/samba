@@ -274,7 +274,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 	 * address we do a Node status request, and look for the first
 	 * NAME<0x20> in the response, and take that as the server name.
 	 * We also keep a cache of the Domain Master Browser name for this
-	 * workgroup in the Workgroup struct, so that if the same IP addess
+	 * workgroup in the Workgroup struct, so that if the same IP address
 	 * is returned every time, we don't need to do the node status
 	 * request.
 	 */

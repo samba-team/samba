@@ -569,7 +569,7 @@ static void process(struct messaging_context *msg)
 		/*
 		 * If we are a local master browser, periodically
 		 * announce ourselves to the domain master browser.
-		 * This also deals with syncronising the domain master
+		 * This also deals with synchronising the domain master
 		 * browser server lists with ourselves as a local
 		 * master browser.
 		 * (nmbd_sendannounce.c)
@@ -578,14 +578,14 @@ static void process(struct messaging_context *msg)
 		announce_myself_to_domain_master_browser(t);
 
 		/*
-		 * Fullfill any remote announce requests.
+		 * Fulfill any remote announce requests.
 		 * (nmbd_sendannounce.c)
 		 */
 
 		announce_remote(t);
 
 		/*
-		 * Fullfill any remote browse sync announce requests.
+		 * Fulfill any remote browse sync announce requests.
 		 * (nmbd_sendannounce.c)
 		 */
 
@@ -601,7 +601,7 @@ static void process(struct messaging_context *msg)
 
 		/*
 		 * Scan the subnet namelists and server lists and
-		 * expire thos that have timed out.
+		 * expire those that have timed out.
 		 * (nmbd.c)
 		 */
 

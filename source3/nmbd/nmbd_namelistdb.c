@@ -306,7 +306,7 @@ void standard_success_register(struct subnet_record *subrec,
  Utility function automatically called when a name refresh or register 
  fails. Note that this is only ever called on a broadcast subnet with
  one IP address per name. This is why it can just delete the name 
- without enumerating the IP adresses. JRA.
+ without enumerating the IP addresses. JRA.
  ******************************************************************/
 
 void standard_fail_register( struct subnet_record   *subrec,
