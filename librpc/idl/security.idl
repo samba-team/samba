@@ -31,6 +31,7 @@ cpp_quote("#define dom_sid0 dom_sid")
 	 */
 	uuid("cbf7d408-2d6c-11e2-ae5b-0b5692790e18"),
 	version(0.0),
+	helper("../libcli/security/security.h"),
 	pyhelper("librpc/ndr/py_security.c"),
 	pointer_default(unique)
 ]
@@ -588,13 +589,18 @@ interface security
 		[default];
 	} security_ace_object_ctr;
 
-	typedef [public,nopull,gensize,nosize] struct {
+	typedef [public,nodiscriminant,gensize] union {
+		[default][flag(NDR_REMAINING)] DATA_BLOB ignored;
+	} security_ace_coda;
+
+	typedef [public,gensize,nosize] struct {
 		security_ace_type type;  /* SEC_ACE_TYPE_* */
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r,ndr->flags))] uint16 size;
 		uint32 access_mask;
 		[switch_is(type)] security_ace_object_ctr object;
 		dom_sid trustee;
+		[switch_is(type), subcontext(0), subcontext_size(ndr_subcontext_size_of_ace_coda(r, size, ndr->flags))] security_ace_coda coda;
 	} security_ace;
 
 	typedef enum {

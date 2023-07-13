@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    fast routines for getting the wire size of security objects
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Stefan Metzmacher 2006-2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,10 +25,14 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "../libcli/security/security.h"
 
+
 /*
-  return the wire size of a security_ace
-*/
-size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
+ * Find the wire size of a security_ace that has no trailing coda.
+ * This is used in ndr_pull_security_ace() generated from security.idl
+ * to work out where the coda starts (and in ndr_size_security_ace()
+ * just below).
+ */
+static size_t ndr_size_security_ace_core(const struct security_ace *ace, int flags)
 {
 	size_t ret;
 
@@ -56,35 +60,41 @@ size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 	return ret;
 }
 
-enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, struct security_ace *r)
+/*
+  return the wire size of a security_ace
+*/
+size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 {
-	if (ndr_flags & NDR_SCALARS) {
-		uint32_t start_ofs = ndr->offset;
-		uint32_t size = 0;
-		uint32_t pad = 0;
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_security_ace_type(ndr, NDR_SCALARS, &r->type));
-		NDR_CHECK(ndr_pull_security_ace_flags(ndr, NDR_SCALARS, &r->flags));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->access_mask));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, r->type));
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
-		size = ndr->offset - start_ofs;
-		if (r->size < size) {
-			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
-					      "ndr_pull_security_ace: r->size %u < size %u",
-					      (unsigned)r->size, size);
-		}
-		pad = r->size - size;
-		NDR_PULL_NEED_BYTES(ndr, pad);
-		ndr->offset += pad;
+	size_t ret = ndr_size_security_ace_core(ace, flags);
+
+	ret += ndr_size_security_ace_coda(&ace->coda, ace->type, flags);
+
+	return ret;
+}
+
+/*
+ * An ACE coda can't be bigger than the space allowed for by
+ * ace->size, so we need to check this from the context of the ACE.
+ *
+ * Usually the coda also can't be any smaller than the remaining
+ * space, because it is defined as a blob consuming everything it can.
+ *
+ * This is only used to find the size for the coda subcontext in
+ * security.idl.
+ */
+size_t ndr_subcontext_size_of_ace_coda(const struct security_ace *ace,
+				       size_t ace_size,
+				       int flags)
+{
+	size_t core_size;
+	if (ace_size == 0) {
+		return 0;
 	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, r->type));
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
+	core_size = ndr_size_security_ace_core(ace, flags);
+	if (ace_size < core_size) {
+		return 0;
 	}
-	return NDR_ERR_SUCCESS;
+	return ace_size - core_size;
 }
 
 /*
@@ -109,7 +119,7 @@ size_t ndr_size_security_descriptor(const struct security_descriptor *sd, int fl
 {
 	size_t ret;
 	if (!sd) return 0;
-	
+
 	ret = 20;
 	ret += ndr_size_dom_sid(sd->owner_sid, flags);
 	ret += ndr_size_dom_sid(sd->group_sid, flags);
@@ -177,7 +187,7 @@ enum ndr_err_code ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct 
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &num_auths));
 	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
 	if (sid->num_auths != num_auths) {
-		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad num_auths %u; should equal %u",
 				      num_auths, sid->num_auths);
 	}
@@ -248,8 +258,8 @@ enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const 
 	}
 
 	if (sid->num_auths > 5) {
-		return ndr_push_error(ndr, NDR_ERR_RANGE, 
-				      "dom_sid28 allows only up to 5 sub auth [%u]", 
+		return ndr_push_error(ndr, NDR_ERR_RANGE,
+				      "dom_sid28 allows only up to 5 sub auth [%u]",
 				      sid->num_auths);
 	}
 

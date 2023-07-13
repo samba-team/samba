@@ -67,6 +67,8 @@ void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum securi
 	t->access_mask = mask;
 
 	t->trustee = *sid;
+	t->coda.ignored.data = NULL;
+	t->coda.ignored.length = 0;
 }
 
 int nt_ace_inherit_comp(const struct security_ace *a1, const struct security_ace *a2)
