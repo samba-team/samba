@@ -9,12 +9,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -229,7 +229,7 @@ static int iprint_cache_add_printer(http_t *http,
 			  "security-enabled",
 			  "printer-info",
 			  "smb-enabled"
-			};       
+			};
 
 	request = ippNew();
 
@@ -269,7 +269,7 @@ static int iprint_cache_add_printer(http_t *http,
 	       /*
 		* Ignore printers that cannot be queried without credentials
 		*/
-		if (lastErr == IPP_FORBIDDEN || 
+		if (lastErr == IPP_FORBIDDEN ||
 		    lastErr == IPP_NOT_AUTHENTICATED ||
 		    lastErr == IPP_NOT_AUTHORIZED)
 			goto out;
@@ -345,7 +345,7 @@ static int iprint_cache_add_printer(http_t *http,
 		* disabled for the printer
 		*/
 
-		if (name != NULL && !secure && smb_enabled) 
+		if (name != NULL && !secure && smb_enabled)
 			pcap_cache_add_specific(pcache, name, info, NULL);
 	}
 
@@ -391,7 +391,7 @@ bool iprint_cache_reload(struct pcap_cache **_pcache)
 	http = httpConnect(iprint_server(), ippPort());
 #endif
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
+		DEBUG(0,("Unable to connect to iPrint server %s - %s\n",
 			 iprint_server(), strerror(errno)));
 		goto out;
 	}
@@ -523,7 +523,7 @@ static int iprint_job_delete(const char *sharename, const char *lprm_command, st
 	http = httpConnect(iprint_server(), ippPort());
 #endif
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
+		DEBUG(0,("Unable to connect to iPrint server %s - %s\n",
 			 iprint_server(), strerror(errno)));
 		goto out;
 	}
@@ -635,7 +635,7 @@ static int iprint_job_pause(int snum, struct printjob *pjob)
 	http = httpConnect(iprint_server(), ippPort());
 #endif
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
+		DEBUG(0,("Unable to connect to iPrint server %s - %s\n",
 			 iprint_server(), strerror(errno)));
 		goto out;
 	}
@@ -749,7 +749,7 @@ static int iprint_job_resume(int snum, struct printjob *pjob)
 	http = httpConnect(iprint_server(), ippPort());
 #endif
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
+		DEBUG(0,("Unable to connect to iPrint server %s - %s\n",
 			 iprint_server(), strerror(errno)));
 		goto out;
 	}
@@ -864,7 +864,7 @@ static int iprint_job_submit(int snum, struct printjob *pjob,
 	http = httpConnect(iprint_server(), ippPort());
 #endif
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
+		DEBUG(0,("Unable to connect to iPrint server %s - %s\n",
 			 iprint_server(), strerror(errno)));
 		goto out;
 	}
@@ -962,7 +962,7 @@ static int iprint_job_submit(int snum, struct printjob *pjob,
 static int iprint_queue_get(const char *sharename,
 			    enum printing_types printing_type,
 			    char *lpq_command,
-			    print_queue_struct **q, 
+			    print_queue_struct **q,
 			    print_status_struct *status)
 {
 	fstring		printername;
@@ -1008,10 +1008,10 @@ static int iprint_queue_get(const char *sharename,
 
 	*q = NULL;
 
-	/* HACK ALERT!!!  The porblem with support the 'printer name' 
-	   option is that we key the tdb off the sharename.  So we will 
-	   overload the lpq_command string to pass in the printername 
-	   (which is basically what we do for non-cups printers ... using 
+	/* HACK ALERT!!!  The porblem with support the 'printer name'
+	   option is that we key the tdb off the sharename.  So we will
+	   overload the lpq_command string to pass in the printername
+	   (which is basically what we do for non-cups printers ... using
 	   the lpq_command to get the queue listing). */
 
 	fstrcpy( printername, lpq_command );
@@ -1041,7 +1041,7 @@ static int iprint_queue_get(const char *sharename,
 	http = httpConnect(iprint_server(), ippPort());
 #endif
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
+		DEBUG(0,("Unable to connect to iPrint server %s - %s\n",
 			 iprint_server(), strerror(errno)));
 		goto out;
 	}
