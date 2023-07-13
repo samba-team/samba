@@ -19,7 +19,7 @@
 
 /*
  * This module supports JFS (POSIX) ACLs on VxFS (Veritas * Filesystem).
- * These are available on HP-UX 11.00 if JFS 3.3 is installed. 
+ * These are available on HP-UX 11.00 if JFS 3.3 is installed.
  * On HP-UX 11i (11.11 and above) these ACLs are supported out of
  * the box.
  *
@@ -39,8 +39,8 @@
  * and did similar adaptations as were done before, essentially
  * reusing the original internal aclsort functions.
  * The check for the presence of the acl() call has been adopted, and
- * a check for the presence of the aclsort() call has been added. 
- * 
+ * a check for the presence of the aclsort() call has been added.
+ *
  * Michael Adam <obnox@samba.org>
  *
  * ================================================================= */
@@ -52,13 +52,13 @@
 #include "modules/vfs_hpuxacl.h"
 
 
-/* 
- * including standard header <sys/aclv.h> 
+/*
+ * including standard header <sys/aclv.h>
  *
  * included here as a quick hack for the special HP-UX-situation:
  *
  * The problem is that, on HP-UX, jfs/posix acls are
- * defined in <sys/aclv.h>, while the deprecated hfs acls 
+ * defined in <sys/aclv.h>, while the deprecated hfs acls
  * are defined inside <sys/acl.h>.
  *
  */
@@ -73,7 +73,7 @@ typedef struct acl *HPUX_ACL_T;
 typedef int HPUX_ACL_TAG_T;   /* the type of an ACL entry */
 typedef ushort HPUX_PERM_T;
 
-/* Structure to capture the count for each type of ACE. 
+/* Structure to capture the count for each type of ACE.
  * (for hpux_internal_aclsort */
 struct hpux_acl_types {
 	int n_user;
@@ -108,8 +108,8 @@ struct hpux_acl_types {
 /* prototypes for private functions */
 
 static HPUX_ACL_T hpux_acl_init(int count);
-static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl, 
-		HPUX_ACL_T *solariacl, int *count, 
+static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
+		HPUX_ACL_T *solariacl, int *count,
 		SMB_ACL_TYPE_T type);
 static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpuxacl, int count,
 				     SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx);
@@ -117,7 +117,7 @@ static HPUX_ACL_TAG_T smb_tag_to_hpux_tag(SMB_ACL_TAG_T smb_tag);
 static SMB_ACL_TAG_T hpux_tag_to_smb_tag(HPUX_ACL_TAG_T hpux_tag);
 static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
 		HPUX_ACL_T add_acl, int add_count, SMB_ACL_TYPE_T type);
-static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpuxacl, 
+static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpuxacl,
 		int *count);
 static SMB_ACL_PERM_T hpux_perm_to_smb_perm(const HPUX_PERM_T perm);
 static HPUX_PERM_T smb_perm_to_hpux_perm(const SMB_ACL_PERM_T perm);
@@ -127,7 +127,7 @@ static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count);
 /* aclsort (internal) and helpers: */
 static bool hpux_acl_sort(HPUX_ACL_T acl, int count);
 static int hpux_internal_aclsort(int acl_count, int calclass, HPUX_ACL_T aclp);
-static void hpux_count_obj(int acl_count, HPUX_ACL_T aclp, 
+static void hpux_count_obj(int acl_count, HPUX_ACL_T aclp,
 		struct hpux_acl_types *acl_type_count);
 static void hpux_swap_acl_entries(HPUX_ACE_T *aclp0, HPUX_ACE_T *aclp1);
 static bool hpux_prohibited_duplicate_type(int acl_type);
@@ -148,11 +148,11 @@ static SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
 	HPUX_ACL_T hpux_acl = NULL;
 	const char *path_p = smb_fname->base_name;
 
-	DEBUG(10, ("hpuxacl_sys_acl_get_file called for file '%s'.\n", 
+	DEBUG(10, ("hpuxacl_sys_acl_get_file called for file '%s'.\n",
 		   path_p));
 
 	if(hpux_acl_call_present() == False) {
-		/* Looks like we don't have the acl() system call on HPUX. 
+		/* Looks like we don't have the acl() system call on HPUX.
 		 * May be the system doesn't have the latest version of JFS.
 		 */
 		goto done;
@@ -164,7 +164,7 @@ static SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	DEBUGADD(10, ("getting %s acl\n", 
+	DEBUGADD(10, ("getting %s acl\n",
 		      ((type == SMB_ACL_TYPE_ACCESS) ? "access" : "default")));
 
 	if (!hpux_acl_get_file(path_p, &hpux_acl, &count)) {
@@ -192,8 +192,8 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				 SMB_ACL_TYPE_T type,
 				 TALLOC_CTX *mem_ctx)
 {
-        /* 
-	 * HPUX doesn't have the facl call. Fake it using the path.... JRA. 
+        /*
+	 * HPUX doesn't have the facl call. Fake it using the path.... JRA.
 	 */
         /*
          * We know we're in the same conn context. So we
@@ -230,7 +230,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	}
 
 	if(hpux_acl_call_present() == False) {
-		/* Looks like we don't have the acl() system call on HPUX. 
+		/* Looks like we don't have the acl() system call on HPUX.
 		 * May be the system doesn't have the latest version of JFS.
 		 */
 		goto done;
@@ -241,7 +241,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 		DEBUG(10, ("invalid smb acl type given (%d).\n", type));
 		goto done;
 	}
-	DEBUGADD(10, ("setting %s acl\n", 
+	DEBUGADD(10, ("setting %s acl\n",
 		      ((type == SMB_ACL_TYPE_ACCESS) ? "access" : "default")));
 
 	if(!smb_acl_to_hpux_acl(theacl, &hpux_acl, &count, type)) {
@@ -269,11 +269,11 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 		 * that has _not_ been specified in "type" from the file first
 		 * and concatenate it with the acl provided.
 		 */
-		HPUX_ACL_T other_acl; 
+		HPUX_ACL_T other_acl;
 		int other_count;
 		SMB_ACL_TYPE_T other_type;
 
-		other_type = (type == SMB_ACL_TYPE_ACCESS) 
+		other_type = (type == SMB_ACL_TYPE_ACCESS)
 			? SMB_ACL_TYPE_DEFAULT
 			: SMB_ACL_TYPE_ACCESS;
 		DEBUGADD(10, ("getting acl from filesystem\n"));
@@ -283,11 +283,11 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 			goto done;
 		}
 		DEBUG(10, ("adding %s part of fs acl to given acl\n",
-			   ((other_type == SMB_ACL_TYPE_ACCESS) 
+			   ((other_type == SMB_ACL_TYPE_ACCESS)
 			    ? "access"
 			    : "default")));
 		if (!hpux_add_to_acl(&hpux_acl, &count, other_acl,
-					other_count, other_type)) 
+					other_count, other_type))
 		{
 			DEBUG(10, ("error adding other acl.\n"));
 			SAFE_FREE(other_acl);
@@ -321,7 +321,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 /*
- * set the access ACL on the file referred to by a fd 
+ * set the access ACL on the file referred to by a fd
  */
 int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
@@ -398,13 +398,13 @@ int hpuxacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return ret;
 }
 
-/* 
- * private functions 
+/*
+ * private functions
  */
 
 static HPUX_ACL_T hpux_acl_init(int count)
 {
-	HPUX_ACL_T hpux_acl = 
+	HPUX_ACL_T hpux_acl =
 		(HPUX_ACL_T)SMB_MALLOC(sizeof(HPUX_ACE_T) * count);
 	if (hpux_acl == NULL) {
 		errno = ENOMEM;
@@ -413,11 +413,11 @@ static HPUX_ACL_T hpux_acl_init(int count)
 }
 
 /*
- * Convert the SMB acl to the ACCESS or DEFAULT part of a 
+ * Convert the SMB acl to the ACCESS or DEFAULT part of a
  * hpux ACL, as desired.
  */
-static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl, 
-				   HPUX_ACL_T *hpux_acl, int *count, 
+static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
+				   HPUX_ACL_T *hpux_acl, int *count,
 				   SMB_ACL_TYPE_T type)
 {
 	bool ret = False;
@@ -442,12 +442,12 @@ static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
 		}
 		switch(hpux_entry.a_type) {
 		case USER:
-			DEBUG(10, ("got tag type USER with uid %d\n", 
+			DEBUG(10, ("got tag type USER with uid %d\n",
 				   smb_entry->info.user.uid));
 			hpux_entry.a_id = (uid_t)smb_entry->info.user.uid;
 			break;
 		case GROUP:
-			DEBUG(10, ("got tag type GROUP with gid %d\n", 
+			DEBUG(10, ("got tag type GROUP with gid %d\n",
 				   smb_entry->info.group.gid));
 			hpux_entry.a_id = (uid_t)smb_entry->info.group.gid;
 			break;
@@ -459,13 +459,13 @@ static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
 			hpux_entry.a_type |= ACL_DEFAULT;
 		}
 
-		hpux_entry.a_perm = 
+		hpux_entry.a_perm =
 			smb_perm_to_hpux_perm(smb_entry->a_perm);
 		DEBUG(10, ("assembled the following hpux ace:\n"));
 		DEBUGADD(10, (" - type: 0x%04x\n", hpux_entry.a_type));
 		DEBUGADD(10, (" - id: %d\n", hpux_entry.a_id));
 		DEBUGADD(10, (" - perm: o%o\n", hpux_entry.a_perm));
-		if (!hpux_add_to_acl(hpux_acl, count, &hpux_entry, 
+		if (!hpux_add_to_acl(hpux_acl, count, &hpux_entry,
 					1, type))
 		{
 			DEBUG(10, ("error adding acl entry\n"));
@@ -492,11 +492,11 @@ static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
 	return ret;
 }
 
-/* 
- * convert either the access or the default part of a 
+/*
+ * convert either the access or the default part of a
  * soaris acl to the SMB_ACL format.
  */
-static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpux_acl, int count, 
+static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpux_acl, int count,
 				     SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
@@ -530,7 +530,7 @@ static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpux_acl, int count,
 		sys_acl_set_qualifier(smb_entry, (void *)&hpux_acl[i].a_id);
 		smb_perm = hpux_perm_to_smb_perm(hpux_acl[i].a_perm);
 		if (sys_acl_set_permset(smb_entry, &smb_perm) != 0) {
-			DEBUG(10, ("invalid permset given: %d\n", 
+			DEBUG(10, ("invalid permset given: %d\n",
 				   hpux_acl[i].a_perm));
 			goto fail;
 		}
@@ -588,9 +588,9 @@ static SMB_ACL_TAG_T hpux_tag_to_smb_tag(HPUX_ACL_TAG_T hpux_tag)
 	SMB_ACL_TAG_T smb_tag = 0;
 
 	DEBUG(10, ("hpux_tag_to_smb_tag:\n"));
-	DEBUGADD(10, (" --> got hpux tag 0x%04x\n", hpux_tag)); 
+	DEBUGADD(10, (" --> got hpux tag 0x%04x\n", hpux_tag));
 
-	hpux_tag &= ~ACL_DEFAULT; 
+	hpux_tag &= ~ACL_DEFAULT;
 
 	switch (hpux_tag) {
 	case USER:
@@ -612,7 +612,7 @@ static SMB_ACL_TAG_T hpux_tag_to_smb_tag(HPUX_ACL_TAG_T hpux_tag)
 		smb_tag = SMB_ACL_MASK;
 		break;
 	default:
-		DEBUGADD(10, (" !!! unknown hpux tag type: 0x%04x\n", 
+		DEBUGADD(10, (" !!! unknown hpux tag type: 0x%04x\n",
 					hpux_tag));
 		break;
 	}
@@ -623,9 +623,9 @@ static SMB_ACL_TAG_T hpux_tag_to_smb_tag(HPUX_ACL_TAG_T hpux_tag)
 }
 
 
-/* 
- * The permission bits used in the following two permission conversion 
- * functions are same, but the functions make us independent of the concrete 
+/*
+ * The permission bits used in the following two permission conversion
+ * functions are same, but the functions make us independent of the concrete
  * permission data types.
  */
 static SMB_ACL_PERM_T hpux_perm_to_smb_perm(const HPUX_PERM_T perm)
@@ -648,7 +648,7 @@ static HPUX_PERM_T smb_perm_to_hpux_perm(const SMB_ACL_PERM_T perm)
 }
 
 
-static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl, 
+static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl,
 				 int *count)
 {
 	bool result = False;
@@ -656,11 +656,11 @@ static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl,
 
 	DEBUG(10, ("hpux_acl_get_file called for file '%s'\n", name));
 
-	/* 
+	/*
 	 * The original code tries some INITIAL_ACL_SIZE
 	 * and only did the ACL_CNT call upon failure
 	 * (for performance reasons).
-	 * For the sake of simplicity, I skip this for now. 
+	 * For the sake of simplicity, I skip this for now.
 	 *
 	 * NOTE: There is a catch here on HP-UX: acl with cmd parameter
 	 * ACL_CNT fails with errno EINVAL when called with a NULL
@@ -699,25 +699,25 @@ static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl,
  * Add entries to a hpux ACL.
  *
  * Entries are directly added to the hpuxacl parameter.
- * if memory allocation fails, this may result in hpuxacl 
- * being NULL. if the resulting acl is to be checked and is 
+ * if memory allocation fails, this may result in hpuxacl
+ * being NULL. if the resulting acl is to be checked and is
  * not valid, it is kept in hpuxacl but False is returned.
  *
- * The type of ACEs (access/default) to be added to the ACL can 
- * be selected via the type parameter. 
+ * The type of ACEs (access/default) to be added to the ACL can
+ * be selected via the type parameter.
  * I use the SMB_ACL_TYPE_T type here. Since SMB_ACL_TYPE_ACCESS
  * is defined as "0", this means that one can only add either
- * access or default ACEs from the given ACL, not both at the same 
- * time. If it should become necessary to add all of an ACL, one 
+ * access or default ACEs from the given ACL, not both at the same
+ * time. If it should become necessary to add all of an ACL, one
  * would have to replace this parameter by another type.
  */
 static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
-			       HPUX_ACL_T add_acl, int add_count, 
+			       HPUX_ACL_T add_acl, int add_count,
 			       SMB_ACL_TYPE_T type)
 {
 	int i;
 
-	if ((type != SMB_ACL_TYPE_ACCESS) && (type != SMB_ACL_TYPE_DEFAULT)) 
+	if ((type != SMB_ACL_TYPE_ACCESS) && (type != SMB_ACL_TYPE_DEFAULT))
 	{
 		DEBUG(10, ("invalid acl type given: %d\n", type));
 		errno = EINVAL;
@@ -727,7 +727,7 @@ static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
 		if (!_IS_OF_TYPE(add_acl[i], type)) {
 			continue;
 		}
-		ADD_TO_ARRAY(NULL, HPUX_ACE_T, add_acl[i], 
+		ADD_TO_ARRAY(NULL, HPUX_ACE_T, add_acl[i],
 			     hpux_acl, count);
 		if (hpux_acl == NULL) {
 			DEBUG(10, ("error enlarging acl.\n"));
@@ -739,11 +739,11 @@ static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
 }
 
 
-/* 
+/*
  * sort the ACL and check it for validity
  *
  * [original comment from lib/sysacls.c:]
- * 
+ *
  * if it's a minimal ACL with only 4 entries then we
  * need to recalculate the mask permissions to make
  * sure that they are the same as the GROUP_OBJ
@@ -786,9 +786,9 @@ static bool hpux_acl_sort(HPUX_ACL_T hpux_acl, int count)
  * aclp           - Array of ACL structures.
  * acl_type_count - Pointer to acl_types structure. Should already be
  *                  allocated.
- * Output: 
+ * Output:
  *
- * acl_type_count - This structure is filled up with counts of various 
+ * acl_type_count - This structure is filled up with counts of various
  *                  acl types.
  */
 
@@ -800,28 +800,28 @@ static void hpux_count_obj(int acl_count, HPUX_ACL_T aclp, struct hpux_acl_types
 
 	for(i=0;i<acl_count;i++) {
 		switch(aclp[i].a_type) {
-		case USER: 
+		case USER:
 			acl_type_count->n_user++;
 			break;
-		case USER_OBJ: 
+		case USER_OBJ:
 			acl_type_count->n_user_obj++;
 			break;
-		case DEF_USER_OBJ: 
+		case DEF_USER_OBJ:
 			acl_type_count->n_def_user_obj++;
 			break;
-		case GROUP: 
+		case GROUP:
 			acl_type_count->n_group++;
 			break;
-		case GROUP_OBJ: 
+		case GROUP_OBJ:
 			acl_type_count->n_group_obj++;
 			break;
-		case DEF_GROUP_OBJ: 
+		case DEF_GROUP_OBJ:
 			acl_type_count->n_def_group_obj++;
 			break;
-		case OTHER_OBJ: 
+		case OTHER_OBJ:
 			acl_type_count->n_other_obj++;
 			break;
-		case DEF_OTHER_OBJ: 
+		case DEF_OTHER_OBJ:
 			acl_type_count->n_def_other_obj++;
 			break;
 		case CLASS_OBJ:
@@ -836,14 +836,14 @@ static void hpux_count_obj(int acl_count, HPUX_ACL_T aclp, struct hpux_acl_types
 		case DEF_GROUP:
 			acl_type_count->n_def_group++;
 			break;
-		default: 
+		default:
 			acl_type_count->n_illegal_obj++;
 			break;
 		}
 	}
 }
 
-/* hpux_swap_acl_entries:  Swaps two ACL entries. 
+/* hpux_swap_acl_entries:  Swaps two ACL entries.
  *
  * Inputs: aclp0, aclp1 - ACL entries to be swapped.
  */
@@ -866,25 +866,25 @@ static void hpux_swap_acl_entries(HPUX_ACE_T *aclp0, HPUX_ACE_T *aclp1)
 }
 
 /* hpux_prohibited_duplicate_type
- * Identifies if given ACL type can have duplicate entries or 
+ * Identifies if given ACL type can have duplicate entries or
  * not.
  *
  * Inputs: acl_type - ACL Type.
  *
- * Outputs: 
+ * Outputs:
  *
- * Return.. 
+ * Return..
  *
  * True - If the ACL type matches any of the prohibited types.
  * False - If the ACL type doesn't match any of the prohibited types.
- */ 
+ */
 
 static bool hpux_prohibited_duplicate_type(int acl_type)
 {
 	switch(acl_type) {
 		case USER:
 		case GROUP:
-		case DEF_USER: 
+		case DEF_USER:
 		case DEF_GROUP:
 			return True;
 		default:
@@ -894,7 +894,7 @@ static bool hpux_prohibited_duplicate_type(int acl_type)
 
 /* hpux_get_needed_class_perm
  * Returns the permissions of a ACL structure only if the ACL
- * type matches one of the pre-determined types for computing 
+ * type matches one of the pre-determined types for computing
  * CLASS_OBJ permissions.
  *
  * Inputs: aclp - Pointer to ACL structure.
@@ -903,17 +903,17 @@ static bool hpux_prohibited_duplicate_type(int acl_type)
 static int hpux_get_needed_class_perm(struct acl *aclp)
 {
 	switch(aclp->a_type) {
-		case USER: 
-		case GROUP_OBJ: 
-		case GROUP: 
-		case DEF_USER_OBJ: 
+		case USER:
+		case GROUP_OBJ:
+		case GROUP:
+		case DEF_USER_OBJ:
 		case DEF_USER:
-		case DEF_GROUP_OBJ: 
+		case DEF_GROUP_OBJ:
 		case DEF_GROUP:
 		case DEF_CLASS_OBJ:
-		case DEF_OTHER_OBJ: 
+		case DEF_OTHER_OBJ:
 			return aclp->a_perm;
-		default: 
+		default:
 			return 0;
 	}
 }
@@ -974,14 +974,14 @@ static int hpux_internal_aclsort(int acl_count, int calclass, HPUX_ACL_T aclp)
 
 	hpux_count_obj(acl_count, aclp, &acl_obj_count);
 
-	/* There should be only one entry each of type USER_OBJ, GROUP_OBJ, 
-	 * CLASS_OBJ and OTHER_OBJ 
+	/* There should be only one entry each of type USER_OBJ, GROUP_OBJ,
+	 * CLASS_OBJ and OTHER_OBJ
 	 */
 
-	if ( (acl_obj_count.n_user_obj  != 1) || 
-		(acl_obj_count.n_group_obj != 1) || 
+	if ( (acl_obj_count.n_user_obj  != 1) ||
+		(acl_obj_count.n_group_obj != 1) ||
 		(acl_obj_count.n_class_obj != 1) ||
-		(acl_obj_count.n_other_obj != 1) ) 
+		(acl_obj_count.n_other_obj != 1) )
 	{
 		DEBUG(0,("hpux_internal_aclsort: More than one entry or no entries for \
 USER OBJ or GROUP_OBJ or OTHER_OBJ or CLASS_OBJ\n"));
@@ -992,25 +992,25 @@ USER OBJ or GROUP_OBJ or OTHER_OBJ or CLASS_OBJ\n"));
 	 * one of them each.
 	 */
 
-	if ( (acl_obj_count.n_def_user_obj  > 1) || 
-		(acl_obj_count.n_def_group_obj > 1) || 
-		(acl_obj_count.n_def_other_obj > 1) || 
-		(acl_obj_count.n_def_class_obj > 1) ) 
+	if ( (acl_obj_count.n_def_user_obj  > 1) ||
+		(acl_obj_count.n_def_group_obj > 1) ||
+		(acl_obj_count.n_def_other_obj > 1) ||
+		(acl_obj_count.n_def_class_obj > 1) )
 	{
 		DEBUG(0,("hpux_internal_aclsort: More than one entry for DEF_CLASS_OBJ \
 or DEF_USER_OBJ or DEF_GROUP_OBJ or DEF_OTHER_OBJ\n"));
 		return -1;
 	}
 
-	/* We now have proper number of OBJ and DEF_OBJ entries. Now sort the acl 
-	 * structures.  
+	/* We now have proper number of OBJ and DEF_OBJ entries. Now sort the acl
+	 * structures.
 	 *
 	 * Sorting crieteria - First sort by ACL type. If there are multiple entries of
 	 * same ACL type, sort by ACL id.
 	 *
-	 * I am using the trival kind of sorting method here because, performance isn't 
+	 * I am using the trival kind of sorting method here because, performance isn't
 	 * really effected by the ACLs feature. More over there aren't going to be more
-	 * than 17 entries on HPUX. 
+	 * than 17 entries on HPUX.
 	 */
 
 	for(i=0; i<acl_count;i++) {
@@ -1051,7 +1051,7 @@ or DEF_USER_OBJ or DEF_GROUP_OBJ or DEF_OTHER_OBJ\n"));
 }
 
 
-/* 
+/*
  * hpux_acl_call_present:
  *
  * This checks if the POSIX ACL system call is defined
@@ -1059,7 +1059,7 @@ or DEF_USER_OBJ or DEF_GROUP_OBJ or DEF_OTHER_OBJ\n"));
  * higher is installed. If acl() was called when it
  * isn't defined, it causes the process to core dump
  * so it is important to check this and avoid acl()
- * calls if it isn't there.                            
+ * calls if it isn't there.
  */
 
 static bool hpux_acl_call_present(void)
@@ -1091,13 +1091,13 @@ static bool hpux_acl_call_present(void)
 	return True;
 }
 
-/* 
- * runtime check for presence of aclsort library call. 
+/*
+ * runtime check for presence of aclsort library call.
  * same code as for acl call. if there are more of these,
  * a dispatcher function could be handy...
  */
 
-static bool hpux_aclsort_call_present(void) 
+static bool hpux_aclsort_call_present(void)
 {
 	shl_t handle = NULL;
 	void *value;
@@ -1112,7 +1112,7 @@ static bool hpux_aclsort_call_present(void)
 	ret_val = shl_findsym(&handle, "aclsort", TYPE_PROCEDURE, &value);
 	if (ret_val != 0) {
 		DEBUG(5, ("hpux_aclsort_call_present: shl_findsym "
-			"returned %d, errno = %d, error %s", 
+			"returned %d, errno = %d, error %s",
 			ret_val, errno, strerror(errno)));
 		DEBUG(5, ("hpux_aclsort_call_present: "
 			"aclsort() function not available.\n"));
@@ -1142,7 +1142,7 @@ static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
 		DEBUGADD(10, (" - which: %d\n", check_which));
 		if (check_which != -1) {
 			DEBUGADD(10, (" - invalid entry:\n"));
-			DEBUGADD(10, ("   * type: %d:\n", 
+			DEBUGADD(10, ("   * type: %d:\n",
 				      hpux_acl[check_which].a_type));
 			DEBUGADD(10, ("   * id: %d\n",
 				      hpux_acl[check_which].a_id));
