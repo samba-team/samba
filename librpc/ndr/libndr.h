@@ -170,6 +170,12 @@ struct ndr_print {
 		LIBNDR_FLAG_STR_RAW8 | \
 		0)
 
+#define LIBNDR_ENCODING_FLAGS		(0U | \
+		LIBNDR_FLAG_STR_ASCII | \
+		LIBNDR_FLAG_STR_UTF8 | \
+		LIBNDR_FLAG_STR_RAW8 | \
+		0)
+
 /*
  * Mark an element as SECRET, it won't be printed by
  * via ndr_print* unless NDR_PRINT_SECRETS is specified.

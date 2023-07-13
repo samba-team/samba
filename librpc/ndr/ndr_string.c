@@ -44,29 +44,36 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 		chset = CH_UTF16BE;
 	}
 
-	if (flags & LIBNDR_FLAG_STR_ASCII) {
-		chset = CH_DOS;
-		byte_mul = 1;
-		flags &= ~LIBNDR_FLAG_STR_ASCII;
-	}
-
 	/*
 	 * We will check this flag, but from the unmodified
 	 * ndr->flags, so just remove it from flags
 	 */
 	flags &= ~LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
 
-	if (flags & LIBNDR_FLAG_STR_UTF8) {
+	switch (flags & LIBNDR_ENCODING_FLAGS) {
+	case 0:
+		break;
+
+	case LIBNDR_FLAG_STR_ASCII:
+		chset = CH_DOS;
+		byte_mul = 1;
+		break;
+
+	case LIBNDR_FLAG_STR_UTF8:
 		chset = CH_UTF8;
 		byte_mul = 1;
-		flags &= ~LIBNDR_FLAG_STR_UTF8;
-	}
+		break;
 
-	if (flags & LIBNDR_FLAG_STR_RAW8) {
+	case LIBNDR_FLAG_STR_RAW8:
 		do_convert = 0;
 		byte_mul = 1;
-		flags &= ~LIBNDR_FLAG_STR_RAW8;
+		break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
+				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
+	flags &= ~LIBNDR_ENCODING_FLAGS;
 
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 	if (flags & LIBNDR_FLAG_STR_CHARLEN) {
@@ -260,29 +267,36 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 
 	s_len = s?strlen(s):0;
 
-	if (flags & LIBNDR_FLAG_STR_ASCII) {
-		chset = CH_DOS;
-		byte_mul = 1;
-		flags &= ~LIBNDR_FLAG_STR_ASCII;
-	}
-
 	/*
 	 * We will check this flag, but from the unmodified
 	 * ndr->flags, so just remove it from flags
 	 */
 	flags &= ~LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
 
-	if (flags & LIBNDR_FLAG_STR_UTF8) {
+	switch (flags & LIBNDR_ENCODING_FLAGS) {
+	case 0:
+		break;
+
+	case LIBNDR_FLAG_STR_ASCII:
+		chset = CH_DOS;
+		byte_mul = 1;
+		break;
+
+	case LIBNDR_FLAG_STR_UTF8:
 		chset = CH_UTF8;
 		byte_mul = 1;
-		flags &= ~LIBNDR_FLAG_STR_UTF8;
-	}
+		break;
 
-	if (flags & LIBNDR_FLAG_STR_RAW8) {
+	case LIBNDR_FLAG_STR_RAW8:
 		do_convert = 0;
 		byte_mul = 1;
-		flags &= ~LIBNDR_FLAG_STR_RAW8;
+		break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
+				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
+	flags &= ~LIBNDR_ENCODING_FLAGS;
 
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
