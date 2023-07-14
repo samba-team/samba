@@ -31,7 +31,7 @@ class TarFile(UnsafeTarFile):
         # New in version 3.11.4 (also has been backported)
         # https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extraction_filter
         # https://peps.python.org/pep-0706/
-        extraction_filter = staticmethod(tarfile.data_filter)
+        extraction_filter = staticmethod(tarfile.tar_filter)
     except AttributeError:
         def extract(self, member, path="", set_attrs=True, *,
                     numeric_owner=False):
