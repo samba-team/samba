@@ -2056,8 +2056,47 @@ bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *t
 	r.out.capabilities = &capabilities;
 	r.out.return_authenticator = &return_auth;
 
-	torture_comment(tctx, "Testing LogonGetCapabilities\n");
+	torture_comment(tctx, "Testing LogonGetCapabilities with query_level=0\n");
 
+	r.in.query_level = 0;
+	ZERO_STRUCT(return_auth);
+
+	/*
+	 * we need to operate on a temporary copy of creds
+	 * because dcerpc_netr_LogonGetCapabilities with
+	 * an unknown query level returns DCERPC_NCA_S_FAULT_INVALID_TAG
+	 * => NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
+	 * without looking a the authenticator.
+	 */
+	tmp_creds = *creds;
+	netlogon_creds_client_authenticator(&tmp_creds, &auth);
+
+	status = dcerpc_netr_LogonGetCapabilities_r(b, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE,
+				      "LogonGetCapabilities query_level=0 failed");
+
+	torture_comment(tctx, "Testing LogonGetCapabilities with query_level=3\n");
+
+	r.in.query_level = 3;
+	ZERO_STRUCT(return_auth);
+
+	/*
+	 * we need to operate on a temporary copy of creds
+	 * because dcerpc_netr_LogonGetCapabilities with
+	 * an unknown query level returns DCERPC_NCA_S_FAULT_INVALID_TAG
+	 * => NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
+	 * without looking a the authenticator.
+	 */
+	tmp_creds = *creds;
+	netlogon_creds_client_authenticator(&tmp_creds, &auth);
+
+	status = dcerpc_netr_LogonGetCapabilities_r(b, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE,
+				      "LogonGetCapabilities query_level=0 failed");
+
+	torture_comment(tctx, "Testing LogonGetCapabilities with query_level=1\n");
+
+	r.in.query_level = 1;
 	ZERO_STRUCT(return_auth);
 
 	/*
@@ -2074,6 +2113,42 @@ bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *t
 	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
 		return true;
 	}
+
+	*creds = tmp_creds;
+
+	torture_assert(tctx, netlogon_creds_client_check(creds,
+							 &r.out.return_authenticator->cred),
+		       "Credential chaining failed");
+
+	torture_assert_int_equal(tctx, creds->negotiate_flags,
+				 capabilities.server_capabilities,
+				 "negotiate flags");
+
+	torture_comment(tctx, "Testing LogonGetCapabilities with query_level=2\n");
+
+	r.in.query_level = 2;
+	ZERO_STRUCT(return_auth);
+
+	/*
+	 * we need to operate on a temporary copy of creds
+	 * because dcerpc_netr_LogonGetCapabilities with
+	 * an query level 2 may returns DCERPC_NCA_S_FAULT_INVALID_TAG
+	 * => NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
+	 * without looking a the authenticator.
+	 */
+	tmp_creds = *creds;
+	netlogon_creds_client_authenticator(&tmp_creds, &auth);
+
+	status = dcerpc_netr_LogonGetCapabilities_r(b, tctx, &r);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
+		/*
+		 * an server without KB5028166 returns
+		 * DCERPC_NCA_S_FAULT_INVALID_TAG =>
+		 * NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
+		 */
+		return true;
+	}
+	torture_assert_ntstatus_ok(tctx, status, "LogonGetCapabilities query_level=2 failed");
 
 	*creds = tmp_creds;
 
