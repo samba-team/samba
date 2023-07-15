@@ -2364,6 +2364,30 @@ static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_c
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
 
+	switch (r->in.query_level) {
+	case 1:
+		break;
+	case 2:
+		/*
+		 * Until we know the details behind KB5028166
+		 * just return DCERPC_NCA_S_FAULT_INVALID_TAG
+		 * like an unpatched Windows Server.
+		 */
+		FALL_THROUGH;
+	default:
+		/*
+		 * There would not be a way to marshall the
+		 * the response. Which would mean our final
+		 * ndr_push would fail an we would return
+		 * an RPC-level fault with DCERPC_FAULT_BAD_STUB_DATA.
+		 *
+		 * But it's important to match a Windows server
+		 * especially before KB5028166, see also our bug #15418
+		 * Otherwise Windows client would stop talking to us.
+		 */
+		DCESRV_FAULT(DCERPC_NCA_S_FAULT_INVALID_TAG);
+	}
+
 	status = dcesrv_netr_creds_server_step_check(dce_call,
 						     mem_ctx,
 						     r->in.computer_name,
@@ -2374,10 +2398,6 @@ static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_c
 		DEBUG(0,(__location__ " Bad credentials - error\n"));
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	if (r->in.query_level != 1) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
 
 	r->out.capabilities->server_capabilities = creds->negotiate_flags;
 
