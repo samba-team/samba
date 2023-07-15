@@ -1,0 +1,3 @@
+^samba3.rpc.schannel.*\.schannel\(nt4_dc
+^samba3.rpc.schannel.*\.schannel\(ad_dc
+^samba4.rpc.schannel.*\.schannel\(ad_dc
