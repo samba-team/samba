@@ -678,6 +678,12 @@ interface security
 		lsa_SystemAccessModeFlags rights_mask;
 	} security_token;
 
+        typedef [public] struct {
+                security_token token;
+                security_descriptor sd;
+                uint32 access_desired;
+        } security_token_descriptor_fuzzing_pair;
+
 	/* This is not yet sent over the network, but is simply defined in IDL */
 	typedef [public] struct {
 		uid_t uid;
