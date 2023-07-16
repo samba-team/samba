@@ -66,8 +66,6 @@ def _find_root():
 ROOT = None
 
 IGNORED_FILES = (
-    'examples/validchars/validchr.com',
-    'examples/tridge/smb.conf',
     'source3/selftest/ktest-krb5_ccache-2',
     'source3/selftest/ktest-krb5_ccache-3',
     'testdata/source-chars-bad.c',
