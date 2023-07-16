@@ -331,7 +331,7 @@ assert_service_name()
 ######################################################
 ctdb_check_directories_probe()
 {
-	while IFS="" read d; do
+	while IFS="" read -r d; do
 		case "$d" in
 		*%*)
 			continue
@@ -434,7 +434,7 @@ kill_tcp_connections()
 		_connections=""
 		_nl="
 "
-		while read _dst _src; do
+		while read -r _dst _src; do
 			_destport="${_dst##*:}"
 			__oneway=$_oneway
 			case $_destport in
@@ -618,7 +618,7 @@ drop_all_public_ips()
 {
 	# _x is intentionally ignored
 	# shellcheck disable=SC2034
-	while read _ip _x; do
+	while read -r _ip _x; do
 		case "$_ip" in
 		\#*) continue ;;
 		esac
@@ -919,7 +919,7 @@ nfs_callout_register()
 	_t=$("$CTDB_NFS_CALLOUT" "register")
 	if [ -n "$_t" ]; then
 		echo "$_t" |
-			while IFS="" read _op; do
+			while IFS="" read -r _op; do
 				touch "${nfs_callout_cache_ops}/${_op}"
 			done
 	else
@@ -932,7 +932,7 @@ nfs_callout()
 	# Re-run registration if $CTDB_NFS_CALLOUT has changed
 	_prev=""
 	if [ -r "$nfs_callout_cache_callout" ]; then
-		read _prev <"$nfs_callout_cache_callout"
+		read -r _prev <"$nfs_callout_cache_callout"
 	fi
 	if [ "$CTDB_NFS_CALLOUT" != "$_prev" ]; then
 		nfs_callout_register
