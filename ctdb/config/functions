@@ -2,9 +2,9 @@
 
 # utility functions for ctdb event scripts
 
-if [ -z "$CTDB_BASE" ] ; then
-    echo 'CTDB_BASE unset in CTDB functions file'
-    exit 1
+if [ -z "$CTDB_BASE" ]; then
+	echo 'CTDB_BASE unset in CTDB functions file'
+	exit 1
 fi
 export CTDB_BASE
 
@@ -16,24 +16,24 @@ CTDB="${CTDB:-/usr/local/bin/ctdb}"
 
 # Only (and always) override these variables in test code
 
-if [ -z "$CTDB_SCRIPT_VARDIR" ] ; then
-    CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/scripts"
+if [ -z "$CTDB_SCRIPT_VARDIR" ]; then
+	CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/scripts"
 fi
 
-if [ -z "$CTDB_SYS_ETCDIR" ] ; then
-    CTDB_SYS_ETCDIR="/etc"
+if [ -z "$CTDB_SYS_ETCDIR" ]; then
+	CTDB_SYS_ETCDIR="/etc"
 fi
 
-if [ -z "$CTDB_HELPER_BINDIR" ] ; then
-    CTDB_HELPER_BINDIR="/usr/local/libexec/ctdb"
+if [ -z "$CTDB_HELPER_BINDIR" ]; then
+	CTDB_HELPER_BINDIR="/usr/local/libexec/ctdb"
 fi
 
 #######################################
 # pull in a system config file, if any
 
-load_system_config ()
+load_system_config()
 {
-	for _i ; do
+	for _i; do
 
 		if [ -f "${CTDB_SYS_ETCDIR}/sysconfig/${_i}" ]; then
 			. "${CTDB_SYS_ETCDIR}/sysconfig/${_i}"
@@ -48,11 +48,11 @@ load_system_config ()
 # load_script_options [ component script ]
 #   script is an event script name relative to a component
 #   component is currently ignored
-load_script_options ()
+load_script_options()
 {
-	if [ $# -eq 2 ] ; then
+	if [ $# -eq 2 ]; then
 		_script="$2"
-	elif [ $# -eq 0  ] ; then
+	elif [ $# -eq 0 ]; then
 		_script=""
 	else
 		die "usage: load_script_options [ component script ]"
@@ -60,92 +60,93 @@ load_script_options ()
 
 	_options="${CTDB_BASE}/script.options"
 
-	if [ -r "$_options" ] ; then
+	if [ -r "$_options" ]; then
 		. "$_options"
 	fi
 
-	if [ -n "$_script" ] ; then
+	if [ -n "$_script" ]; then
 		_s="${CTDB_BASE}/events/legacy/${_script}"
 	else
 		_s="${0%.script}"
 	fi
 	_options="${_s}.options"
 
-	if [ -r "$_options" ] ; then
+	if [ -r "$_options" ]; then
 		. "$_options"
 	fi
 }
 
 ##############################################################
 
-die ()
+die()
 {
-    _msg="$1"
-    _rc="${2:-1}"
+	_msg="$1"
+	_rc="${2:-1}"
 
-    echo "$_msg" >&2
-    exit "$_rc"
+	echo "$_msg" >&2
+	exit "$_rc"
 }
 
 # Log given message or stdin to either syslog or a CTDB log file
 # $1 is the tag passed to logger if syslog is in use.
-script_log ()
+script_log()
 {
-    _tag="$1" ; shift
+	_tag="$1"
+	shift
 
-    case "$CTDB_LOGGING" in
-	file:*|"")
-	    if [ -n "$CTDB_LOGGING" ] ; then
-		_file="${CTDB_LOGGING#file:}"
-	    else
-		_file="/usr/local/var/log/log.ctdb"
-	    fi
-	    {
-		if [ -n "$*" ] ; then
-		    echo "$*"
+	case "$CTDB_LOGGING" in
+	file:* | "")
+		if [ -n "$CTDB_LOGGING" ]; then
+			_file="${CTDB_LOGGING#file:}"
 		else
-		    cat
+			_file="/usr/local/var/log/log.ctdb"
 		fi
-	    } >>"$_file"
-	    ;;
+		{
+			if [ -n "$*" ]; then
+				echo "$*"
+			else
+				cat
+			fi
+		} >>"$_file"
+		;;
 	*)
-	    # Handle all syslog:* variants here too.  There's no tool to do
-	    # the lossy things, so just use logger.
-	    logger -t "ctdbd: ${_tag}" "$@"
-	    ;;
-    esac
+		# Handle all syslog:* variants here too.  There's no tool to do
+		# the lossy things, so just use logger.
+		logger -t "ctdbd: ${_tag}" "$@"
+		;;
+	esac
 }
 
 # When things are run in the background in an eventscript then logging
 # output might get lost.  This is the "solution".  :-)
-background_with_logging ()
+background_with_logging()
 {
-    (
-	"$@" 2>&1 </dev/null |
-	script_log "${script_name}&"
-    )&
+	(
+		"$@" 2>&1 </dev/null |
+			script_log "${script_name}&"
+	) &
 
-    return 0
+	return 0
 }
 
 ##############################################################
 # check number of args for different events
-ctdb_check_args ()
+ctdb_check_args()
 {
-    case "$1" in
-	takeip|releaseip)
-	    if [ $# != 4 ]; then
-		echo "ERROR: must supply interface, IP and maskbits"
-		exit 1
-	    fi
-	    ;;
+	case "$1" in
+	takeip | releaseip)
+		if [ $# != 4 ]; then
+			echo "ERROR: must supply interface, IP and maskbits"
+			exit 1
+		fi
+		;;
 	updateip)
-	    if [ $# != 5 ]; then
-		echo "ERROR: must supply old interface, new interface, IP and maskbits"
-		exit 1
-	    fi
-	    ;;
-    esac
+		if [ $# != 5 ]; then
+			echo "ERROR: must supply old interface, new interface, IP and maskbits"
+			exit 1
+		fi
+		;;
+	esac
 }
 
 ##############################################################
@@ -153,7 +154,7 @@ ctdb_check_args ()
 detect_init_style()
 {
 	# only do detection if not already set:
-	if [ -n "$CTDB_INIT_STYLE" ] ; then
+	if [ -n "$CTDB_INIT_STYLE" ]; then
 		return
 	fi
 
@@ -170,100 +171,100 @@ detect_init_style()
 # simulate /sbin/service on platforms that don't have it
 # _service() makes it easier to hook the service() function for
 # testing.
-_service ()
+_service()
 {
-  _service_name="$1"
-  _op="$2"
+	_service_name="$1"
+	_op="$2"
 
-  # do nothing, when no service was specified
-  [ -z "$_service_name" ] && return
+	# do nothing, when no service was specified
+	[ -z "$_service_name" ] && return
 
-  if [ -x /sbin/service ]; then
-      $_nice /sbin/service "$_service_name" "$_op"
-  elif [ -x /usr/sbin/service ]; then
-      $_nice /usr/sbin/service "$_service_name" "$_op"
-  elif [ -x /bin/systemctl ]; then
-      $_nice /bin/systemctl "$_op" "$_service_name"
-  elif [ -x "${CTDB_SYS_ETCDIR}/init.d/${_service_name}" ]; then
-      $_nice "${CTDB_SYS_ETCDIR}/init.d/${_service_name}" "$_op"
-  elif [ -x "${CTDB_SYS_ETCDIR}/rc.d/init.d/${_service_name}" ]; then
-      $_nice "${CTDB_SYS_ETCDIR}/rc.d/init.d/${_service_name}" "$_op"
-  fi
+	if [ -x /sbin/service ]; then
+		$_nice /sbin/service "$_service_name" "$_op"
+	elif [ -x /usr/sbin/service ]; then
+		$_nice /usr/sbin/service "$_service_name" "$_op"
+	elif [ -x /bin/systemctl ]; then
+		$_nice /bin/systemctl "$_op" "$_service_name"
+	elif [ -x "${CTDB_SYS_ETCDIR}/init.d/${_service_name}" ]; then
+		$_nice "${CTDB_SYS_ETCDIR}/init.d/${_service_name}" "$_op"
+	elif [ -x "${CTDB_SYS_ETCDIR}/rc.d/init.d/${_service_name}" ]; then
+		$_nice "${CTDB_SYS_ETCDIR}/rc.d/init.d/${_service_name}" "$_op"
+	fi
 }
 
 service()
 {
-    _nice=""
-    _service "$@"
+	_nice=""
+	_service "$@"
 }
 
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
 nice_service()
 {
-    _nice="nice"
-    _service "$@"
+	_nice="nice"
+	_service "$@"
 }
 
 ######################################################
 # Cached retrieval of PNN from local node.  This never changes so why
 # open a client connection to the server each time this is needed?
-ctdb_get_pnn ()
+ctdb_get_pnn()
 {
-    _pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
-    if [ ! -f "$_pnn_file" ] ; then
-	$CTDB pnn >"$_pnn_file"
-    fi
+	_pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
+	if [ ! -f "$_pnn_file" ]; then
+		$CTDB pnn >"$_pnn_file"
+	fi
 
-    cat "$_pnn_file"
+	cat "$_pnn_file"
 }
 
 # Cached retrieval of private IP address from local node.  This never
 # changes.
-ctdb_get_ip_address ()
+ctdb_get_ip_address()
 {
-    _ip_addr_file="${CTDB_SCRIPT_VARDIR}/my-ip-address"
-    if [ ! -f "$_ip_addr_file" ] ; then
-	$CTDB -X nodestatus |
-	    awk -F '|' 'NR == 2 { print $3 }' >"$_ip_addr_file"
-    fi
+	_ip_addr_file="${CTDB_SCRIPT_VARDIR}/my-ip-address"
+	if [ ! -f "$_ip_addr_file" ]; then
+		$CTDB -X nodestatus |
+			awk -F '|' 'NR == 2 { print $3 }' >"$_ip_addr_file"
+	fi
 
-    cat "$_ip_addr_file"
+	cat "$_ip_addr_file"
 }
 
 # Cached retrieval of database options for use by event scripts.
 #
 # If the variables are already set then they should not be overwritten
 # - this should only happen during event script testing.
-ctdb_get_db_options ()
+ctdb_get_db_options()
 {
 	_db_opts_file="${CTDB_SCRIPT_VARDIR}/db_options.cache"
 
-	if [ ! -f "$_db_opts_file" ] ; then
+	if [ ! -f "$_db_opts_file" ]; then
 		{
 			ctdb_translate_option "database" \
-					      "volatile database directory" \
-					      "CTDB_DBDIR"
+				"volatile database directory" \
+				"CTDB_DBDIR"
 			ctdb_translate_option "database" \
-					      "persistent database directory" \
-					      "CTDB_DBDIR_PERSISTENT"
+				"persistent database directory" \
+				"CTDB_DBDIR_PERSISTENT"
 			ctdb_translate_option "database" \
-					      "state database directory" \
-					      "CTDB_DBDIR_STATE"
+				"state database directory" \
+				"CTDB_DBDIR_STATE"
 		} >"$_db_opts_file"
 	fi
 
 	. "$_db_opts_file"
 }
 
-ctdb_translate_option ()
+ctdb_translate_option()
 {
 	_section="$1"
 	_opt="$2"
 	_variable="$3"
 
 	# ctdb-config already prints an error if something goes wrong
-	_t=$("${CTDB_HELPER_BINDIR}/ctdb-config" get "$_section" "$_opt") || \
+	_t=$("${CTDB_HELPER_BINDIR}/ctdb-config" get "$_section" "$_opt") ||
 		exit $?
 	echo "${_variable}=\"${_t}\""
 }
@@ -272,51 +273,51 @@ ctdb_translate_option ()
 # wrapper around /proc/ settings to allow them to be hooked
 # for testing
 # 1st arg is relative path under /proc/, 2nd arg is value to set
-set_proc ()
+set_proc()
 {
-    echo "$2" >"/proc/$1"
+	echo "$2" >"/proc/$1"
 }
 
-set_proc_maybe ()
+set_proc_maybe()
 {
-    if [ -w "/proc/$1" ] ; then
-	set_proc "$1" "$2"
-    fi
+	if [ -w "/proc/$1" ]; then
+		set_proc "$1" "$2"
+	fi
 }
 
 ######################################################
 # wrapper around getting file contents from /proc/ to allow
 # this to be hooked for testing
 # 1st arg is relative path under /proc/
-get_proc ()
+get_proc()
 {
-    cat "/proc/$1"
+	cat "/proc/$1"
 }
 
 ######################################################
 # Print up to $_max kernel stack traces for processes named $_program
-program_stack_traces ()
+program_stack_traces()
 {
-    _prog="$1"
-    _max="${2:-1}"
+	_prog="$1"
+	_max="${2:-1}"
 
-    _count=1
-    for _pid in $(pidof "$_prog") ; do
-	[ "$_count" -le "$_max" ] || break
+	_count=1
+	for _pid in $(pidof "$_prog"); do
+		[ "$_count" -le "$_max" ] || break
 
-	# Do this first to avoid racing with process exit
-	_stack=$(get_proc "${_pid}/stack" 2>/dev/null)
-	if [ -n "$_stack" ] ; then
-	    echo "Stack trace for ${_prog}[${_pid}]:"
-	    echo "$_stack"
-	    _count=$((_count + 1))
-	fi
-    done
+		# Do this first to avoid racing with process exit
+		_stack=$(get_proc "${_pid}/stack" 2>/dev/null)
+		if [ -n "$_stack" ]; then
+			echo "Stack trace for ${_prog}[${_pid}]:"
+			echo "$_stack"
+			_count=$((_count + 1))
+		fi
+	done
 }
 
 ######################################################
 # Ensure $service_name is set
-assert_service_name ()
+assert_service_name()
 {
 	# service_name is set by the event script
 	# shellcheck disable=SC2154
@@ -330,15 +331,16 @@ assert_service_name ()
 ######################################################
 ctdb_check_directories_probe()
 {
-    while IFS="" read d ; do
-	case "$d" in
-	    *%*)
-		continue
-		;;
-	    *)
-		[ -d "${d}/." ] || return 1
-	esac
-    done
+	while IFS="" read d; do
+		case "$d" in
+		*%*)
+			continue
+			;;
+		*)
+			[ -d "${d}/." ] || return 1
+			;;
+		esac
+	done
 }
 
 ######################################################
@@ -347,10 +349,10 @@ ctdb_check_directories_probe()
 ######################################################
 ctdb_check_directories()
 {
-    ctdb_check_directories_probe || {
-	echo "ERROR: $service_name directory \"$d\" not available"
-	exit 1
-    }
+	ctdb_check_directories_probe || {
+		echo "ERROR: $service_name directory \"$d\" not available"
+		exit 1
+	}
 }
 
 ######################################################
@@ -362,12 +364,12 @@ ctdb_check_directories()
 # using the "ctdb checktcpport" command.
 ctdb_check_tcp_ports()
 {
-	if [ -z "$1" ] ; then
+	if [ -z "$1" ]; then
 		echo "INTERNAL ERROR: ctdb_check_tcp_ports - no ports specified"
 		exit 1
 	fi
 
-	for _p ; do  # process each function argument (port)
+	for _p; do # process each function argument (port)
 		_cmd="$CTDB checktcpport $_p"
 		_out=$($_cmd 2>&1)
 		_ret=$?
@@ -382,7 +384,7 @@ ctdb_check_tcp_ports()
 			;;
 		*)
 			echo "unexpected error (${_ret}) running \"${_cmd}\""
-			if [ -n "$_out" ] ; then
+			if [ -n "$_out" ]; then
 				echo "$_out"
 			fi
 			return $_ret
@@ -402,13 +404,13 @@ ctdb_check_unix_socket()
 {
 	_sockpath="$1"
 
-	if [ -z "$_sockpath" ] ; then
+	if [ -z "$_sockpath" ]; then
 		echo "ERROR: ctdb_check_unix_socket() requires socket path"
 		return 1
 	fi
 
 	_out=$(ss -l -x "src ${_sockpath}" | tail -n +2)
-	if [ -z "$_out" ] ; then
+	if [ -z "$_out" ]; then
 		echo "ERROR: ${service_name} not listening on ${_sockpath}"
 		return 1
 	fi
@@ -417,206 +419,206 @@ ctdb_check_unix_socket()
 ################################################
 # kill off any TCP connections with the given IP
 ################################################
-kill_tcp_connections ()
+kill_tcp_connections()
 {
-    _iface="$1"
-    _ip="$2"
+	_iface="$1"
+	_ip="$2"
 
-    _oneway=false
-    if [ "$3" = "oneway" ] ; then
-	_oneway=true
-    fi
+	_oneway=false
+	if [ "$3" = "oneway" ]; then
+		_oneway=true
+	fi
 
-    get_tcp_connections_for_ip "$_ip" | {
-	_killcount=0
-	_connections=""
-	_nl="
+	get_tcp_connections_for_ip "$_ip" | {
+		_killcount=0
+		_connections=""
+		_nl="
 "
-	while read _dst _src; do
-	    _destport="${_dst##*:}"
-	    __oneway=$_oneway
-	    case $_destport in
-		# we only do one-way killtcp for CIFS
-		139|445) __oneway=true ;;
-	    esac
+		while read _dst _src; do
+			_destport="${_dst##*:}"
+			__oneway=$_oneway
+			case $_destport in
+			# we only do one-way killtcp for CIFS
+			139 | 445) __oneway=true ;;
+			esac
 
-	    _connections="${_connections}${_nl}${_src} ${_dst}"
-	    if ! $__oneway ; then
-		_connections="${_connections}${_nl}${_dst} ${_src}"
-	    fi
+			_connections="${_connections}${_nl}${_src} ${_dst}"
+			if ! $__oneway; then
+				_connections="${_connections}${_nl}${_dst} ${_src}"
+			fi
 
-	    _killcount=$((_killcount + 1))
-	done
+			_killcount=$((_killcount + 1))
+		done
 
-	if [ $_killcount -eq 0 ] ; then
-	    return
-	fi
+		if [ $_killcount -eq 0 ]; then
+			return
+		fi
 
-	if [ -n "$CTDB_KILLTCP_DEBUGLEVEL" ]; then
-		_debuglevel="$CTDB_KILLTCP_DEBUGLEVEL"
-	else
-		_debuglevel="$CTDB_DEBUGLEVEL"
-	fi
-	echo "$_connections" | \
-		CTDB_DEBUGLEVEL="$_debuglevel" \
-			"${CTDB_HELPER_BINDIR}/ctdb_killtcp" "$_iface" || {
-		echo "Failed to kill TCP connections"
-		return
+		if [ -n "$CTDB_KILLTCP_DEBUGLEVEL" ]; then
+			_debuglevel="$CTDB_KILLTCP_DEBUGLEVEL"
+		else
+			_debuglevel="$CTDB_DEBUGLEVEL"
+		fi
+		echo "$_connections" |
+			CTDB_DEBUGLEVEL="$_debuglevel" \
+				"${CTDB_HELPER_BINDIR}/ctdb_killtcp" "$_iface" || {
+			echo "Failed to kill TCP connections"
+			return
+		}
+
+		_connections=$(get_tcp_connections_for_ip "$_ip")
+		if [ -z "$_connections" ]; then
+			_remaining=0
+		else
+			_remaining=$(echo "$_connections" | wc -l)
+		fi
+
+		_actually_killed=$((_killcount - _remaining))
+
+		_t="${_actually_killed}/${_killcount}"
+		echo "Killed ${_t} TCP connections to released IP $_ip"
+
+		if [ -n "$_connections" ]; then
+			echo "Remaining connections:"
+			echo "$_connections" | sed -e 's|^|  |'
+		fi
 	}
-
-	_connections=$(get_tcp_connections_for_ip "$_ip")
-	if [ -z "$_connections" ] ; then
-		_remaining=0
-	else
-		_remaining=$(echo "$_connections" | wc -l)
-	fi
-
-	_actually_killed=$((_killcount - _remaining))
-
-	_t="${_actually_killed}/${_killcount}"
-	echo "Killed ${_t} TCP connections to released IP $_ip"
-
-	if [ -n "$_connections" ] ; then
-		echo "Remaining connections:"
-		echo "$_connections" | sed -e 's|^|  |'
-	fi
-    }
 }
 
 ##################################################################
 # kill off the local end for any TCP connections with the given IP
 ##################################################################
-kill_tcp_connections_local_only ()
+kill_tcp_connections_local_only()
 {
-    kill_tcp_connections "$@" "oneway"
+	kill_tcp_connections "$@" "oneway"
 }
 
 ##################################################################
 # tickle any TCP connections with the given IP
 ##################################################################
-tickle_tcp_connections ()
+tickle_tcp_connections()
 {
-    _ip="$1"
+	_ip="$1"
 
-    # Get connections, both directions
-    _conns=$(get_tcp_connections_for_ip "$_ip" | \
-		    awk '{ print $1, $2 ; print $2, $1 }')
+	# Get connections, both directions
+	_conns=$(get_tcp_connections_for_ip "$_ip" |
+		awk '{ print $1, $2 ; print $2, $1 }')
 
-    echo "$_conns" | awk '{ print "Tickle TCP connection", $1, $2 }'
-    echo "$_conns" | ctdb tickle
+	echo "$_conns" | awk '{ print "Tickle TCP connection", $1, $2 }'
+	echo "$_conns" | ctdb tickle
 }
 
-get_tcp_connections_for_ip ()
+get_tcp_connections_for_ip()
 {
-    _ip="$1"
+	_ip="$1"
 
-    ss -tn state established "src [$_ip]" | awk 'NR > 1 {print $3, $4}'
+	ss -tn state established "src [$_ip]" | awk 'NR > 1 {print $3, $4}'
 }
 
 ########################################################
 
-add_ip_to_iface ()
+add_ip_to_iface()
 {
-    _iface=$1
-    _ip=$2
-    _maskbits=$3
+	_iface=$1
+	_ip=$2
+	_maskbits=$3
 
-    # Ensure interface is up
-    ip link set "$_iface" up || \
-	die "Failed to bringup interface $_iface"
+	# Ensure interface is up
+	ip link set "$_iface" up ||
+		die "Failed to bringup interface $_iface"
 
-    # Only need to define broadcast for IPv4
-    case "$_ip" in
-        *:*) _bcast=""      ;;
-	*)   _bcast="brd +" ;;
-    esac
-
-    # Intentionally unquoted multi-word value here
-    # shellcheck disable=SC2086
-    ip addr add "$_ip/$_maskbits" $_bcast dev "$_iface" || {
-	echo "Failed to add $_ip/$_maskbits on dev $_iface"
-	return 1
-    }
-
-    # Wait 5 seconds for IPv6 addresses to stop being tentative...
-    if [ -z "$_bcast" ] ; then
-	for _x in $(seq 1 10) ; do
-	    ip addr show to "${_ip}/128" | grep -q "tentative" || break
-	    sleep 0.5
-	done
-
-	# If the address was a duplicate then it won't be on the
-	# interface so flag an error.
-	_t=$(ip addr show to "${_ip}/128")
-	case "$_t" in
-	    "")
-		echo "Failed to add $_ip/$_maskbits on dev $_iface"
-		return 1
-		;;
-	    *tentative*|*dadfailed*)
-		echo "Failed to add $_ip/$_maskbits on dev $_iface"
-		ip addr del "$_ip/$_maskbits" dev "$_iface"
-		return 1
-		;;
+	# Only need to define broadcast for IPv4
+	case "$_ip" in
+	*:*) _bcast="" ;;
+	*) _bcast="brd +" ;;
 	esac
-    fi
+
+	# Intentionally unquoted multi-word value here
+	# shellcheck disable=SC2086
+	ip addr add "$_ip/$_maskbits" $_bcast dev "$_iface" || {
+		echo "Failed to add $_ip/$_maskbits on dev $_iface"
+		return 1
+	}
+
+	# Wait 5 seconds for IPv6 addresses to stop being tentative...
+	if [ -z "$_bcast" ]; then
+		for _x in $(seq 1 10); do
+			ip addr show to "${_ip}/128" | grep -q "tentative" || break
+			sleep 0.5
+		done
+
+		# If the address was a duplicate then it won't be on the
+		# interface so flag an error.
+		_t=$(ip addr show to "${_ip}/128")
+		case "$_t" in
+		"")
+			echo "Failed to add $_ip/$_maskbits on dev $_iface"
+			return 1
+			;;
+		*tentative* | *dadfailed*)
+			echo "Failed to add $_ip/$_maskbits on dev $_iface"
+			ip addr del "$_ip/$_maskbits" dev "$_iface"
+			return 1
+			;;
+		esac
+	fi
 }
 
 delete_ip_from_iface()
 {
-    _iface=$1
-    _ip=$2
-    _maskbits=$3
+	_iface=$1
+	_ip=$2
+	_maskbits=$3
 
-    # This could be set globally for all interfaces but it is probably
-    # better to avoid surprises, so limit it the interfaces where CTDB
-    # has public IP addresses.  There isn't anywhere else convenient
-    # to do this so just set it each time.  This is much cheaper than
-    # remembering and re-adding secondaries.
-    set_proc "sys/net/ipv4/conf/${_iface}/promote_secondaries" 1
+	# This could be set globally for all interfaces but it is probably
+	# better to avoid surprises, so limit it the interfaces where CTDB
+	# has public IP addresses.  There isn't anywhere else convenient
+	# to do this so just set it each time.  This is much cheaper than
+	# remembering and re-adding secondaries.
+	set_proc "sys/net/ipv4/conf/${_iface}/promote_secondaries" 1
 
-    ip addr del "$_ip/$_maskbits" dev "$_iface" || {
-	echo "Failed to del $_ip on dev $_iface"
-	return 1
-    }
+	ip addr del "$_ip/$_maskbits" dev "$_iface" || {
+		echo "Failed to del $_ip on dev $_iface"
+		return 1
+	}
 }
 
 # If the given IP is hosted then print 2 items: maskbits and iface
-ip_maskbits_iface ()
+ip_maskbits_iface()
 {
-    _addr="$1"
+	_addr="$1"
 
-    case "$_addr" in
+	case "$_addr" in
 	*:*) _bits=128 ;;
-	*)   _bits=32  ;;
-    esac
-    ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
-	awk 'NR == 1 { iface = $2; sub(":$", "", iface) ;
+	*) _bits=32 ;;
+	esac
+	ip addr show to "${_addr}/${_bits}" 2>/dev/null |
+		awk 'NR == 1 { iface = $2; sub(":$", "", iface) ;
 		       sub("@.*", "", iface) }
              $1 ~ /inet/ { mask = $2; sub(".*/", "", mask);
                            print mask, iface }'
 }
 
-drop_ip ()
+drop_ip()
 {
-    _addr="${1%/*}"  # Remove optional maskbits
+	_addr="${1%/*}" # Remove optional maskbits
 
-    # Intentional word splitting here
-    # shellcheck disable=SC2046
-    set -- $(ip_maskbits_iface "$_addr")
-    if [ -n "$1" ] ; then
-	_maskbits="$1"
-	_iface="$2"
-	echo "Removing public address $_addr/$_maskbits from device $_iface"
-	delete_ip_from_iface "$_iface" "$_addr" "$_maskbits" >/dev/null 2>&1
-    fi
+	# Intentional word splitting here
+	# shellcheck disable=SC2046
+	set -- $(ip_maskbits_iface "$_addr")
+	if [ -n "$1" ]; then
+		_maskbits="$1"
+		_iface="$2"
+		echo "Removing public address $_addr/$_maskbits from device $_iface"
+		delete_ip_from_iface "$_iface" "$_addr" "$_maskbits" >/dev/null 2>&1
+	fi
 }
 
-drop_all_public_ips ()
+drop_all_public_ips()
 {
 	# _x is intentionally ignored
 	# shellcheck disable=SC2034
-	while read _ip _x ; do
+	while read _ip _x; do
 		case "$_ip" in
 		\#*) continue ;;
 		esac
@@ -624,10 +626,10 @@ drop_all_public_ips ()
 	done <"${CTDB_BASE}/public_addresses"
 }
 
-flush_route_cache ()
+flush_route_cache()
 {
-    set_proc_maybe sys/net/ipv4/route/flush 1
-    set_proc_maybe sys/net/ipv6/route/flush 1
+	set_proc_maybe sys/net/ipv4/route/flush 1
+	set_proc_maybe sys/net/ipv6/route/flush 1
 }
 
 ########################################################
@@ -635,7 +637,7 @@ flush_route_cache ()
 
 # If the interface is a virtual one (e.g. VLAN) then get the
 # underlying interface
-interface_get_real ()
+interface_get_real()
 {
 	_iface="$1"
 
@@ -645,83 +647,82 @@ interface_get_real ()
 }
 
 # Check whether an interface is operational
-interface_monitor ()
+interface_monitor()
 {
-    _iface="$1"
+	_iface="$1"
 
-    _iface_info=$(ip -br link show "$_iface" 2>&1) || {
-	echo "ERROR: Monitored interface ${_iface} does not exist"
-	return 1
-    }
-
-
-    # If the interface is a virtual one (e.g. VLAN) then get the
-    # underlying interface.
-    _realiface=$(interface_get_real "${_iface_info%% *}")
-
-    if _bi=$(get_proc "net/bonding/${_realiface}" 2>/dev/null) ; then
-	# This is a bond: various monitoring strategies
-	echo "$_bi" | grep -q 'Currently Active Slave: None' && {
-	    echo "ERROR: No active slaves for bond device ${_realiface}"
-	    return 1
-	}
-	echo "$_bi" | grep -q '^MII Status: up' || {
-	    echo "ERROR: public network interface ${_realiface} is down"
-	    return 1
-	}
-	echo "$_bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
-	    # This works around a bug in the driver where the
-	    # overall bond status can be up but none of the actual
-	    # physical interfaces have a link.
-	    echo "$_bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
-		echo "ERROR: No active slaves for 802.ad bond device ${_realiface}"
+	_iface_info=$(ip -br link show "$_iface" 2>&1) || {
+		echo "ERROR: Monitored interface ${_iface} does not exist"
 		return 1
-	    }
 	}
 
-	return 0
-    else
-	# Not a bond
-	case "$_iface" in
-	    lo*)
-		# loopback is always working
-		return 0
-		;;
-	    ib*)
-		# we don't know how to test ib links
-		return 0
-		;;
-	    *)
-		ethtool "$_iface" | grep -q 'Link detected: yes' || {
-		    # On some systems, this is not successful when a
-		    # cable is plugged but the interface has not been
-		    # brought up previously. Bring the interface up
-		    # and try again...
-		    ip link set "$_iface" up
-		    ethtool "$_iface" | grep -q 'Link detected: yes' || {
-			echo "ERROR: No link on the public network interface ${_iface}"
+	# If the interface is a virtual one (e.g. VLAN) then get the
+	# underlying interface.
+	_realiface=$(interface_get_real "${_iface_info%% *}")
+
+	if _bi=$(get_proc "net/bonding/${_realiface}" 2>/dev/null); then
+		# This is a bond: various monitoring strategies
+		echo "$_bi" | grep -q 'Currently Active Slave: None' && {
+			echo "ERROR: No active slaves for bond device ${_realiface}"
 			return 1
-		    }
 		}
+		echo "$_bi" | grep -q '^MII Status: up' || {
+			echo "ERROR: public network interface ${_realiface} is down"
+			return 1
+		}
+		echo "$_bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
+			# This works around a bug in the driver where the
+			# overall bond status can be up but none of the actual
+			# physical interfaces have a link.
+			echo "$_bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
+				echo "ERROR: No active slaves for 802.ad bond device ${_realiface}"
+				return 1
+			}
+		}
+
 		return 0
-		;;
-	esac
-    fi
+	else
+		# Not a bond
+		case "$_iface" in
+		lo*)
+			# loopback is always working
+			return 0
+			;;
+		ib*)
+			# we don't know how to test ib links
+			return 0
+			;;
+		*)
+			ethtool "$_iface" | grep -q 'Link detected: yes' || {
+				# On some systems, this is not successful when a
+				# cable is plugged but the interface has not been
+				# brought up previously. Bring the interface up
+				# and try again...
+				ip link set "$_iface" up
+				ethtool "$_iface" | grep -q 'Link detected: yes' || {
+					echo "ERROR: No link on the public network interface ${_iface}"
+					return 1
+				}
+			}
+			return 0
+			;;
+		esac
+	fi
 }
 
 ########################################################
 # Simple counters
-_ctdb_counter_common ()
+_ctdb_counter_common()
 {
 	[ $# -le 1 ] || die "usage: _ctdb_counter_common [name]"
 
-	if [ $# -eq 1 ] ; then
+	if [ $# -eq 1 ]; then
 		_counter_name="${1}.failcount"
 	else
 		_counter_name="failcount"
 	fi
 
-	if [ -z "$script_state_dir" ] ; then
+	if [ -z "$script_state_dir" ]; then
 		die "ctdb_counter_* functions need ctdb_setup_state_dir()"
 	fi
 
@@ -729,31 +730,34 @@ _ctdb_counter_common ()
 }
 # Some code passes an argument
 # shellcheck disable=SC2120
-ctdb_counter_init () {
-    _ctdb_counter_common "$1"
+ctdb_counter_init()
+{
+	_ctdb_counter_common "$1"
 
-    : >"$_counter_file"
+	: >"$_counter_file"
 }
-ctdb_counter_incr () {
-    _ctdb_counter_common "$1"
+ctdb_counter_incr()
+{
+	_ctdb_counter_common "$1"
 
-    # unary counting using newlines!
-    echo >>"$_counter_file"
+	# unary counting using newlines!
+	echo >>"$_counter_file"
 }
-ctdb_counter_get () {
-    _ctdb_counter_common "$1"
-    # unary counting!
-    _val=$(wc -c < "$_counter_file" 2>/dev/null || echo 0)
-    # Strip leading spaces from output of wc (on freebsd)
-    # shellcheck disable=SC2086
-    echo $_val
+ctdb_counter_get()
+{
+	_ctdb_counter_common "$1"
+	# unary counting!
+	_val=$(wc -c <"$_counter_file" 2>/dev/null || echo 0)
+	# Strip leading spaces from output of wc (on freebsd)
+	# shellcheck disable=SC2086
+	echo $_val
 }
 
 ########################################################
 
 # ctdb_setup_state_dir <type> <name>
 #   Sets/creates script_state_dir)
-ctdb_setup_state_dir ()
+ctdb_setup_state_dir()
 {
 	[ $# -eq 2 ] || die "usage: ctdb_setup_state_dir <type> <name>"
 
@@ -762,127 +766,128 @@ ctdb_setup_state_dir ()
 
 	script_state_dir="${CTDB_SCRIPT_VARDIR}/${_type}/${_name}"
 
-	mkdir -p "$script_state_dir" || \
+	mkdir -p "$script_state_dir" ||
 		die "Error creating script state dir \"${script_state_dir}\""
 }
 
 ##################################################################
 # Reconfigure a service on demand
 
-_ctdb_service_reconfigure_common ()
+_ctdb_service_reconfigure_common()
 {
-	if [ -z "$script_state_dir" ] ; then
+	if [ -z "$script_state_dir" ]; then
 		die "ctdb_service_*_reconfigure() needs ctdb_setup_state_dir()"
 	fi
 
 	_ctdb_service_reconfigure_flag="${script_state_dir}/need_reconfigure"
 }
 
-ctdb_service_needs_reconfigure ()
+ctdb_service_needs_reconfigure()
 {
-    _ctdb_service_reconfigure_common
-    [ -e "$_ctdb_service_reconfigure_flag" ]
+	_ctdb_service_reconfigure_common
+	[ -e "$_ctdb_service_reconfigure_flag" ]
 }
 
-ctdb_service_set_reconfigure ()
+ctdb_service_set_reconfigure()
 {
-    _ctdb_service_reconfigure_common
-    : >"$_ctdb_service_reconfigure_flag"
+	_ctdb_service_reconfigure_common
+	: >"$_ctdb_service_reconfigure_flag"
 }
 
-ctdb_service_unset_reconfigure ()
+ctdb_service_unset_reconfigure()
 {
-    _ctdb_service_reconfigure_common
-    rm -f "$_ctdb_service_reconfigure_flag"
+	_ctdb_service_reconfigure_common
+	rm -f "$_ctdb_service_reconfigure_flag"
 }
 
-ctdb_service_reconfigure ()
+ctdb_service_reconfigure()
 {
-    echo "Reconfiguring service \"${service_name}\"..."
-    ctdb_service_unset_reconfigure
-    service_reconfigure || return $?
-    # Intentionally have this use $service_name as default
-    # shellcheck disable=SC2119
-    ctdb_counter_init
+	echo "Reconfiguring service \"${service_name}\"..."
+	ctdb_service_unset_reconfigure
+	service_reconfigure || return $?
+	# Intentionally have this use $service_name as default
+	# shellcheck disable=SC2119
+	ctdb_counter_init
 }
 
 # Default service_reconfigure() function does nothing.
-service_reconfigure ()
+service_reconfigure()
 {
-    :
+	:
 }
 
 # Default service_start() and service_stop() functions.
 
 # These may be overridden in an eventscript.
-service_start ()
+service_start()
 {
-    service "$service_name" start
+	service "$service_name" start
 }
 
-service_stop ()
+service_stop()
 {
-    service "$service_name" stop
+	service "$service_name" stop
 }
 
 ##################################################################
 
 # This exists only for backward compatibility with 3rd party scripts
 # that call it
-ctdb_standard_event_handler ()
+ctdb_standard_event_handler()
 {
-    :
+	:
 }
 
-iptables_wrapper ()
+iptables_wrapper()
 {
-    _family="$1" ; shift
-    if [ "$_family" = "inet6" ] ; then
-	_iptables_cmd="ip6tables"
-    else
-	_iptables_cmd="iptables"
-    fi
+	_family="$1"
+	shift
+	if [ "$_family" = "inet6" ]; then
+		_iptables_cmd="ip6tables"
+	else
+		_iptables_cmd="iptables"
+	fi
 
-    # iptables doesn't like being re-entered, so flock-wrap it.
-    flock -w 30 "${CTDB_SCRIPT_VARDIR}/iptables.flock" "$_iptables_cmd" "$@"
+	# iptables doesn't like being re-entered, so flock-wrap it.
+	flock -w 30 "${CTDB_SCRIPT_VARDIR}/iptables.flock" "$_iptables_cmd" "$@"
 }
 
 # AIX (and perhaps others?) doesn't have mktemp
 # type is commonly supported and more portable than which(1)
 # shellcheck disable=SC2039
-if ! type mktemp >/dev/null 2>&1 ; then
-    mktemp ()
-    {
-	_dir=false
-	if [ "$1" = "-d" ] ; then
-	    _dir=true
-	    shift
-	fi
-	_d="${TMPDIR:-/tmp}"
-	_hex10=$(dd if=/dev/urandom count=20 2>/dev/null | \
-	    cksum | \
-	    awk '{print $1}')
-	_t="${_d}/tmp.${_hex10}"
-	(
-	    umask 077
-	    if $_dir ; then
-		mkdir "$_t"
-	    else
-		: >"$_t"
-	    fi
-	)
-	echo "$_t"
-    }
+if ! type mktemp >/dev/null 2>&1; then
+	mktemp()
+	{
+		_dir=false
+		if [ "$1" = "-d" ]; then
+			_dir=true
+			shift
+		fi
+		_d="${TMPDIR:-/tmp}"
+		_hex10=$(dd if=/dev/urandom count=20 2>/dev/null |
+			cksum |
+			awk '{print $1}')
+		_t="${_d}/tmp.${_hex10}"
+		(
+			umask 077
+			if $_dir; then
+				mkdir "$_t"
+			else
+				: >"$_t"
+			fi
+		)
+		echo "$_t"
+	}
 fi
 
 ######################################################################
 # NFS callout handling
 
-nfs_callout_init ()
+nfs_callout_init()
 {
 	_state_dir="$1"
 
-	if [ -z "$CTDB_NFS_CALLOUT" ] ; then
+	if [ -z "$CTDB_NFS_CALLOUT" ]; then
 		CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-linux-kernel-callout"
 	fi
 	# Always export, for statd callout
@@ -892,10 +897,10 @@ nfs_callout_init ()
 	export CTDB_NFS_CALLOUT_STATE_DIR="${_state_dir}/callout-state"
 
 	# Export, if set, for use by clustered NFS callouts
-	if [ -n "$CTDB_NFS_STATE_FS_TYPE" ] ; then
+	if [ -n "$CTDB_NFS_STATE_FS_TYPE" ]; then
 		export CTDB_NFS_STATE_FS_TYPE
 	fi
-	if [ -n "$CTDB_NFS_STATE_MNT" ] ; then
+	if [ -n "$CTDB_NFS_STATE_MNT" ]; then
 		export CTDB_NFS_STATE_MNT
 	fi
 
@@ -904,47 +909,47 @@ nfs_callout_init ()
 	nfs_callout_cache_ops="${nfs_callout_cache}/ops"
 }
 
-nfs_callout_register ()
+nfs_callout_register()
 {
-    mkdir -p "$nfs_callout_cache_ops"
-    rm -f "$nfs_callout_cache_ops"/*
+	mkdir -p "$nfs_callout_cache_ops"
+	rm -f "$nfs_callout_cache_ops"/*
 
-    echo "$CTDB_NFS_CALLOUT" >"$nfs_callout_cache_callout"
+	echo "$CTDB_NFS_CALLOUT" >"$nfs_callout_cache_callout"
 
-    _t=$("$CTDB_NFS_CALLOUT" "register")
-    if [ -n "$_t" ] ; then
-	echo "$_t" |
-	    while IFS="" read _op ; do
-		touch "${nfs_callout_cache_ops}/${_op}"
-	    done
-    else
-	touch "${nfs_callout_cache_ops}/ALL"
-    fi
+	_t=$("$CTDB_NFS_CALLOUT" "register")
+	if [ -n "$_t" ]; then
+		echo "$_t" |
+			while IFS="" read _op; do
+				touch "${nfs_callout_cache_ops}/${_op}"
+			done
+	else
+		touch "${nfs_callout_cache_ops}/ALL"
+	fi
 }
 
-nfs_callout ()
+nfs_callout()
 {
-    # Re-run registration if $CTDB_NFS_CALLOUT has changed
-    _prev=""
-    if [ -r "$nfs_callout_cache_callout" ] ; then
-	read _prev <"$nfs_callout_cache_callout"
-    fi
-    if [ "$CTDB_NFS_CALLOUT" != "$_prev" ] ; then
-	nfs_callout_register
-    fi
+	# Re-run registration if $CTDB_NFS_CALLOUT has changed
+	_prev=""
+	if [ -r "$nfs_callout_cache_callout" ]; then
+		read _prev <"$nfs_callout_cache_callout"
+	fi
+	if [ "$CTDB_NFS_CALLOUT" != "$_prev" ]; then
+		nfs_callout_register
+	fi
 
-    # Run the operation if it is registered...
-    if [ -e "${nfs_callout_cache_ops}/${1}" ] || \
-	   [ -e "${nfs_callout_cache_ops}/ALL" ]; then
-	"$CTDB_NFS_CALLOUT" "$@"
-    fi
+	# Run the operation if it is registered...
+	if [ -e "${nfs_callout_cache_ops}/${1}" ] ||
+		[ -e "${nfs_callout_cache_ops}/ALL" ]; then
+		"$CTDB_NFS_CALLOUT" "$@"
+	fi
 }
 
 ########################################################
 # tickle handling
 ########################################################
 
-update_tickles ()
+update_tickles()
 {
 	_port="$1"
 
@@ -957,8 +962,8 @@ update_tickles ()
 
 	# IPs and port as ss filters
 	_ip_filter=""
-	for _ip in $_ips ; do
-	    _ip_filter="${_ip_filter}${_ip_filter:+ || }src [${_ip}]"
+	for _ip in $_ips; do
+		_ip_filter="${_ip_filter}${_ip_filter:+ || }src [${_ip}]"
 	done
 	_port_filter="sport == :${_port}"
 
@@ -975,26 +980,26 @@ update_tickles ()
 	# parsing and printing code, something needs to be done here
 	# for backward compatibility, so just delete the brackets.
 	ss -tn state established \
-	   "${_ip_filter:+( ${_ip_filter} )}" \
-	   "${_port_filter:+( ${_port_filter} )}" |
-	awk 'NR > 1 {print $4, $3}' |
-	tr -d '][' |
-	sort >"$_my_connections"
+		"${_ip_filter:+( ${_ip_filter} )}" \
+		"${_port_filter:+( ${_port_filter} )}" |
+		awk 'NR > 1 {print $4, $3}' |
+		tr -d '][' |
+		sort >"$_my_connections"
 
 	# Record our current tickles in a temporary file
 	_my_tickles="${tickledir}/${_port}.tickles.$$"
-	for _i in $_ips ; do
+	for _i in $_ips; do
 		$CTDB -X gettickles "$_i" "$_port" |
-		awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
+			awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
 	done |
-	sort >"$_my_tickles"
+		sort >"$_my_tickles"
 
 	# Add tickles for connections that we haven't already got tickles for
-	comm -23 "$_my_connections" "$_my_tickles" | \
+	comm -23 "$_my_connections" "$_my_tickles" |
 		$CTDB addtickle
 
 	# Remove tickles for connections that are no longer there
-	comm -13 "$_my_connections" "$_my_tickles" | \
+	comm -13 "$_my_connections" "$_my_tickles" |
 		$CTDB deltickle
 
 	rm -f "$_my_connections" "$_my_tickles"
@@ -1014,9 +1019,9 @@ update_tickles ()
 }
 
 [ -d "${CTDB_BASE}/rc.local.d" ] && {
-	for i in "${CTDB_BASE}/rc.local.d"/* ; do
+	for i in "${CTDB_BASE}/rc.local.d"/*; do
 		[ -x "$i" ] && . "$i"
 	done
 }
 
-script_name="${0##*/}"       # basename
+script_name="${0##*/}" # basename
