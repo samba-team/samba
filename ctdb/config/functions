@@ -95,6 +95,13 @@ script_log()
 	shift
 
 	case "$CTDB_LOGGING" in
+	file:)
+		if [ -n "$*" ] ; then
+			echo "$*"
+		else
+			cat
+		fi >&2
+		;;
 	file:* | "")
 		if [ -n "$CTDB_LOGGING" ]; then
 			_file="${CTDB_LOGGING#file:}"
