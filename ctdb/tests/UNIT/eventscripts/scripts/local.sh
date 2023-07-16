@@ -23,9 +23,7 @@ export CTDB="ctdb"
 # Force this to be absolute - event scripts can change directory
 CTDB_TEST_TMP_DIR=$(cd "$CTDB_TEST_TMP_DIR" && echo "$PWD")
 
-export CTDB_LOGGING="file:${CTDB_TEST_TMP_DIR}/log.ctdb"
-touch "${CTDB_LOGGING#file:}" ||
-	die "Unable to setup logging for \"$CTDB_LOGGING\""
+export CTDB_LOGGING="file:"
 
 if [ -d "${CTDB_TEST_SUITE_DIR}/etc" ]; then
 	cp -a "${CTDB_TEST_SUITE_DIR}/etc" "$CTDB_TEST_TMP_DIR"

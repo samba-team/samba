@@ -51,9 +51,4 @@ background_with_logging ()
     "$@" 2>&1 </dev/null | sed -e 's@^@\&@'
 }
 
-script_log ()
-{
-	cat
-}
-
 CTDB_INIT_STYLE="${EVENTSCRIPT_TESTS_INIT_STYLE:-redhat}"
