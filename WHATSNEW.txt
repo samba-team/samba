@@ -1,4 +1,75 @@
                    ===============================
+                   Release Notes for Samba 4.16.11
+                            July 19, 2023
+                   ===============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2022-2127:  When winbind is used for NTLM authentication, a maliciously
+                  crafted request can trigger an out-of-bounds read in winbind
+                  and possibly crash it.
+                  https://www.samba.org/samba/security/CVE-2022-2127.html
+
+o CVE-2023-34966: An infinite loop bug in Samba's mdssvc RPC service for
+                  Spotlight can be triggered by an unauthenticated attacker by
+                  issuing a malformed RPC request.
+                  https://www.samba.org/samba/security/CVE-2023-34966.html
+
+o CVE-2023-34967: Missing type validation in Samba's mdssvc RPC service for
+                  Spotlight can be used by an unauthenticated attacker to
+                  trigger a process crash in a shared RPC mdssvc worker process.
+                  https://www.samba.org/samba/security/CVE-2023-34967.html
+
+o CVE-2023-34968: As part of the Spotlight protocol Samba discloses the server-
+                  side absolute path of shares and files and directories in
+                  search results.
+                  https://www.samba.org/samba/security/CVE-2023-34968.html
+
+
+Changes since 4.16.10
+---------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15072: CVE-2022-2127.
+   * BUG 15340: CVE-2023-34966.
+   * BUG 15341: CVE-2023-34967.
+   * BUG 15388: CVE-2023-34968.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15072: CVE-2022-2127.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15072: CVE-2022-2127.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15418: Secure channel faulty since Windows 10/11 update 07/2023.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.16.10
                            March 29, 2023
                    ===============================
@@ -56,8 +127,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.16.9
                          February 16, 2023
