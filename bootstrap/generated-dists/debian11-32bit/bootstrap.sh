@@ -57,7 +57,6 @@ apt-get -y install \
     libicu-dev \
     libjansson-dev \
     libjs-jquery \
-    libjson-perl \
     libkeyutils-dev \
     libkrb5-dev \
     libldap2-dev \

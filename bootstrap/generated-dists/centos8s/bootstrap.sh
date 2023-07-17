@@ -82,7 +82,6 @@ yum install -y \
     perl \
     perl-Archive-Tar \
     perl-ExtUtils-MakeMaker \
-    perl-JSON \
     perl-Parse-Yapp \
     perl-Test-Simple \
     perl-generators \

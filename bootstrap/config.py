@@ -156,8 +156,6 @@ PKGS = [
 
     # perl
     ('libparse-yapp-perl', 'perl-Parse-Yapp'),
-    ('libjson-perl', 'perl-JSON'),
-    ('', 'perl-JSON-Parse'),
     ('perl-modules', ''),
     ('', 'perl-FindBin'),
     ('', 'perl-Archive-Tar'),

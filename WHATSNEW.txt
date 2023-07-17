@@ -16,6 +16,19 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Removed dependency on Perl JSON module
+--------------------------------------
+
+Distributions are advised that the Perl JSON package is no longer
+required by Samba builds that use the imported Heimdal.  The build
+instead uses Perl's JSON::PP built into recent perl5 versions.
+
+Current lists of packages required by Samba for major distributions
+are found in the bootstrap/generated-dists/ directory of a Samba
+source tree.  While there will be some differences - due to features
+chosen by packagers - comparing these lists with the build dependencies
+in a package may locate other dependencies we no longer require.
+
 
 REMOVED FEATURES
 ================
