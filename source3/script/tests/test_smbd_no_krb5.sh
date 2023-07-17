@@ -31,7 +31,7 @@ opt="--option=gensec:gse_krb5=yes -U${USERNAME}%${PASSWORD}"
 # check kerberos access
 test_smbclient "test_krb5" "ls" "//$SERVER/tmp" $opt --use-kerberos=required || failed=$(expr $failed + 1)
 
-# disbale krb5 globally so smbd won't accept it
+# disable krb5 globally so smbd won't accept it
 global_inject_conf=$(dirname $SMB_CONF_PATH)/global_inject.conf
 echo 'gensec:gse_krb5=no' >$global_inject_conf
 

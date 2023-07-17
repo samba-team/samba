@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Runs the smbtorture3 SMB2-SACL test
-# that requres SeSecurityPrivilege
+# that requires SeSecurityPrivilege
 # against Samba.
 #
 

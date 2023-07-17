@@ -14,7 +14,7 @@ SERVERCONFFILE="$2"
 NET="$3"
 CONFIGURATION="$4"
 
-# optional protocl, default to NT1
+# optional protocol, default to NT1
 if [ $# -gt 4 ]; then
 	PROTOCOL="$5"
 else

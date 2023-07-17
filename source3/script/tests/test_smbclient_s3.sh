@@ -551,7 +551,7 @@ EOF
 
     if [ $ret != 0 ] ; then
 	echo "$out"
-	echo "failed deleteing $filename_src with error $ret"
+	echo "failed deleting $filename_src with error $ret"
 	return 1
     fi
 
@@ -1142,7 +1142,7 @@ EOF
 	fi
 }
 
-# Test creating a stream on the root of the share directory filname - :foobar
+# Test creating a stream on the root of the share directory filename - :foobar
 test_toplevel_stream()
 {
 	tmpfile=$PREFIX/smbclient_interactive_prompt_commands

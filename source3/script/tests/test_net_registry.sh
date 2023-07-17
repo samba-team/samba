@@ -64,7 +64,7 @@ test_enumerate_no_key()
 {
 	${NETREG} enumerate
 	if test "x$?" = "x0"; then
-		echo "ERROR: enumerate succeeded without any key spcified"
+		echo "ERROR: enumerate succeeded without any key specified"
 		false
 	else
 		true
@@ -118,7 +118,7 @@ test_createkey()
 	EXPECTED="Keyname = ${SUBKEY}"
 	printf "%s\n" "$OUTPUT" | grep '^Keyname' | grep ${SUBKEY}
 	if test "x$?" != "x0"; then
-		echo "ERROR: did not find expexted '$EXPECTED' in output"
+		echo "ERROR: did not find expected '$EXPECTED' in output"
 		echo "output:"
 		printf "%s\n" "$OUTPUT"
 		false

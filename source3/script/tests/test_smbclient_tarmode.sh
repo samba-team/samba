@@ -165,7 +165,7 @@ test_tarmode_extraction()
 	# Extract tarfile with smbclient
 	if ! $SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
 		$ADDARGS -c "tarmode full" -Tx "$PREFIX/tarmode.tar"; then
-		echo "Couldn't extact tar file with tarmode -Tx"
+		echo "Couldn't extract tar file with tarmode -Tx"
 		false
 		return
 	fi

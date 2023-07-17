@@ -223,7 +223,7 @@ def main():
     env.smbcquotas = sys.argv[6]
     quota_script = os.path.join(os.path.dirname(sys.argv[0]),
                                 "getset_quota.py")
-    #copy the quota script to the evironment
+    #copy the quota script to the environment
     shutil.copy2(quota_script, env.envdir)
 
     env.quota_db = os.path.join(env.envdir, "quotas.db")

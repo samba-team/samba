@@ -1146,7 +1146,7 @@ Run smbclient with C<@args> passed as argument and return output.
 
 Each element of C<@args> becomes one escaped argument of smbclient.
 
-Host, share, user, password and the additionnal arguments provided on
+Host, share, user, password and the additional arguments provided on
 the command-line are already inserted.
 
 The output contains both the C<STDOUT> and C<STDERR>.
@@ -1204,7 +1204,7 @@ Run smbclient with C<@args> passed as argument and return output.
 
 Each element of C<@args> becomes one escaped argument of smbclient.
 
-Host, share, user, password and the additionnal arguments provided on
+Host, share, user, password and the additional arguments provided on
 the command-line are already inserted.
 
 The output contains both the C<STDOUT> and C<STDERR>.
@@ -1498,7 +1498,7 @@ sub attr {
 
 Return DOS attributes as a compact string.
 
-  Read-only, hiden, system, archive => "rhsa"
+  Read-only, hidden, system, archive => "rhsa"
 
 =cut
 sub attr_str {

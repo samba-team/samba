@@ -16,7 +16,7 @@ VFSTEST_PREFIX=vfstest
 VFSTEST_TMPDIR=$(mktemp -d ${PREFIX}/${VFSTEST_PREFIX}_XXXXXX)
 
 # We could pass in the --option=... via tests.py as ADDARGS
-# Atm i've choosen to specify them here:
+# Atm i've chosen to specify them here:
 
 MYARGS1="--option=vfsobjects=catia"
 MYARGS2="--option=catia:mappings=0x22:0xa8,0x2a:0xa4,0x2f:0xf8,0x3a:0xf7,0x3c:0xab,0x3e:0xbb,0x3f:0xbf,0x5c:0xff,0x7c:0xa6,0x20:0xb1"

@@ -24,7 +24,7 @@
 /*
  * Before calling a backend like smbspool, CUPS will set argv[0] to
  * the Device URI.  This program wraps a program like smbspool and
- * sets argv[0] to the device URI before exec()ing the acutal backend
+ * sets argv[0] to the device URI before exec()ing the actual backend
  * program.
  */
 

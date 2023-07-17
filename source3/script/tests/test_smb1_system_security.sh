@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Runs the smbtorture3 SMB1-SYSTEM-SECURITY test
-# that requres SeSecurityPrivilege against Samba.
+# that requires SeSecurityPrivilege against Samba.
 #
 
 if [ $# -lt 7 ]; then

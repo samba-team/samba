@@ -92,13 +92,13 @@ test_smbspool_authinforequired_unknown()
 }
 
 #
-# The test enviornment uses 'vlp' (virtual lp) as the printing backend.
+# The test environment uses 'vlp' (virtual lp) as the printing backend.
 #
 # When using the vlp backend the print job is only written to the database.
 # The job needs to removed manually using 'vlp lprm' command!
 #
 # This calls the 'vlp' command to check if the print job has been successfully
-# added to the database and also makes sure the temorary print file has been
+# added to the database and also makes sure the temporary print file has been
 # created.
 #
 # The function removes the print job from the vlp database if successful.
