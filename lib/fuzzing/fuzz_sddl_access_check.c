@@ -118,7 +118,26 @@ int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 	if (sd == NULL) {
 		goto end;
 	}
+
+#ifdef FUZZ_SEC_ACCESS_CHECK_DS
+	/*
+	 * The sec_access_check_ds() function has two arguments not found in
+	 * se_access_check, and also not found in our fuzzing examples.
+	 *
+	 * One is a struct object_tree, which is used for object ACE types.
+	 * The other is a SID, which is used as a default if an ACE lacks a
+	 * SID.
+	 */
+	sec_access_check_ds(sd,
+			    &token,
+			    access_desired,
+			    &access_granted,
+			    NULL,
+			    NULL);
+#else
 	status = se_access_check(sd, &token, access_desired, &access_granted);
+#endif
+
 end:
 	talloc_free(mem_ctx);
 	return 0;
