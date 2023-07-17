@@ -781,7 +781,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	 * | Floor 1 | Provides the RPC interface identifier. (e.g. UUID for |
 	 * |         | netlogon)                                             |
 	 * +---------+-------------------------------------------------------+
-	 * | Floor 2 | Transfer syntax (NDR endcoded)                        |
+	 * | Floor 2 | Transfer syntax (NDR encoded)                        |
 	 * +---------+-------------------------------------------------------+
 	 * | Floor 3 | RPC protocol identifier (ncacn_tcp_ip, ncacn_np, ...) |
 	 * +---------+-------------------------------------------------------+

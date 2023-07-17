@@ -1488,7 +1488,7 @@ void srv_spoolss_cleanup(void)
 }
 
 /**********************************************************************
- callback to receive a MSG_PRINTER_DRVUPGRADE message and interate
+ callback to receive a MSG_PRINTER_DRVUPGRADE message and iterate
  over all printers, upgrading ones as necessary
  This is now *ONLY* called inside the background lpq updater. JRA.
  **********************************************************************/
@@ -1513,7 +1513,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 
 	drivername = talloc_strndup(tmp_ctx, (const char *)data->data, data->length);
 	if (!drivername) {
-		DEBUG(0, ("do_drv_upgrade_printer: Out of memoery ?!\n"));
+		DEBUG(0, ("do_drv_upgrade_printer: Out of memory ?!\n"));
 		goto done;
 	}
 
@@ -2175,7 +2175,7 @@ static WERROR spoolss_dpd_version(TALLOC_CTX *mem_ctx,
 
 	/*
 	 * now delete any associated files if delete_files is
-	 * true. Even if this part failes, we return succes
+	 * true. Even if this part fails, we return success
 	 * because the driver doesn not exist any more
 	 */
 	if (delete_files) {
@@ -2552,7 +2552,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 	if (!chan) {
 		fstring unix_printer;
 
-		/* the +2 is to strip the leading 2 backslashs */
+		/* the +2 is to strip the leading 2 backslashes */
 		fstrcpy(unix_printer, printer + 2);
 
 		chan = talloc_zero(NULL, struct notify_back_channel);
@@ -5986,7 +5986,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.
-	 * when asked to send _only_ RAW datas, it tries to send datas
+	 * when asked to send _only_ RAW data, it tries to send data
 	 * in EMF format.
 	 *
 	 * So I add checks like in NT Server ...

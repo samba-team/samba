@@ -1576,7 +1576,7 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
  * Initialise a context per RPC bind
  *
  * This ends up being called for every tcon, because the client does a
- * RPC bind for every tcon, so this is acually a per tcon context.
+ * RPC bind for every tcon, so this is actually a per tcon context.
  **/
 NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		      struct tevent_context *ev,

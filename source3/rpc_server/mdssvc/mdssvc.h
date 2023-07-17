@@ -68,10 +68,10 @@ typedef enum {
 	SLQ_STATE_NEW,       /* Query received from client         */
 	SLQ_STATE_RUNNING,   /* Query dispatched to Tracker        */
 	SLQ_STATE_RESULTS,   /* Async Tracker query read           */
-	SLQ_STATE_FULL,	     /* the max amount of result has beed queued */
+	SLQ_STATE_FULL,	     /* the max amount of result has been queued */
 	SLQ_STATE_DONE,      /* Got all results from Tracker       */
 	SLQ_STATE_END,       /* Query results returned to client   */
-	SLQ_STATE_ERROR	     /* an error happended somewhere       */
+	SLQ_STATE_ERROR	     /* an error happened somewhere       */
 } slq_state_t;
 
 /* query structure */

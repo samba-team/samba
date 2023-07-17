@@ -7770,7 +7770,7 @@ NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
 	BURN_DATA(cdk_data);
 
 	/*
-	 * We must re-load the sam acount information under a mutex
+	 * We must re-load the sam account information under a mutex
 	 * lock to ensure we don't miss any concurrent account lockout
 	 * changes.
 	 */

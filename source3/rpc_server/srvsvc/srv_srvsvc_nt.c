@@ -1995,7 +1995,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	case 1005:
                 /* XP re-sets the csc policy even if it wasn't changed by the
 		   user, so we must compare it to see if it's what is set in
-		   smb.conf, so that we can contine other ops like setting
+		   smb.conf, so that we can continue other ops like setting
 		   ACLs on a share */
 		client_csc_policy = (info->info1005->dfs_flags &
 				     SHARE_1005_CSC_POLICY_MASK) >>

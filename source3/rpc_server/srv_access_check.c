@@ -41,10 +41,10 @@
  level of access for further checks.
 
  If the user has either of needed_priv_1 or needed_priv_2 then they
- get the rights in rights_mask in addition to any calulated rights.
+ get the rights in rights_mask in addition to any calculated rights.
 
  This handles the unusual case where we need to allow two different
- privileges to obtain exactly the same rights, which occours only in
+ privileges to obtain exactly the same rights, which occurs only in
  SAMR.
 ********************************************************************/
 

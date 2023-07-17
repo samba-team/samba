@@ -112,7 +112,7 @@ BOOL {
  *   MDSattribute1="hello"||MDSattribute2="hello"
  *
  * into a single SPARQL expression for the case where both
- * MDSattribute1 and MDSattribute2 map to the same SPARQL attibute,
+ * MDSattribute1 and MDSattribute2 map to the same SPARQL attribute,
  * which is eg the case for "*" and "kMDItemTextContent" which both
  * map to SPARQL "fts:match".
  */

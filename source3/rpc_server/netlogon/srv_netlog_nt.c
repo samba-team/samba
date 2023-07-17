@@ -932,7 +932,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	}
 
 	/*
-	 * If weak cryto is disabled, do not announce that we support RC4.
+	 * If weak crypto is disabled, do not announce that we support RC4.
 	 */
 	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
 		srv_flgs &= ~NETLOGON_NEG_ARCFOUR;

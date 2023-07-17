@@ -591,7 +591,7 @@ bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 	}
 #endif
 
-	/* A non-PAM password change just doen't make sense without a valid local user */
+	/* A non-PAM password change just doesn't make sense without a valid local user */
 
 	if (pass == NULL) {
 		DEBUG(0, ("chgpasswd: user %s doesn't exist in the UNIX password database.\n", name));
@@ -1238,7 +1238,7 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 				       &new_passwd);
 
 	/*
-	 * We must re-load the sam acount information under a mutex
+	 * We must re-load the sam account information under a mutex
 	 * lock to ensure we don't miss any concurrent account lockout
 	 * changes.
 	 */

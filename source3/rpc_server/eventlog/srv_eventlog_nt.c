@@ -423,7 +423,7 @@ static bool sync_eventlog_params(TALLOC_CTX *mem_ctx,
 		DEBUG( 4, ( "No open tdb! (%s)\n", info->logname ) );
 		goto done;
 	}
-	/* set resonable defaults.  512Kb on size and 1 week on time */
+	/* set reasonable defaults.  512Kb on size and 1 week on time */
 
 	uiMaxSize = 0x80000;
 	uiRetention = 604800;

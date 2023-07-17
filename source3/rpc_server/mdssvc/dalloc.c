@@ -109,7 +109,7 @@ const char *dalloc_get_name(const DALLOC_CTX *d, int i)
 /*
  * Get pointer to value from a DALLOC object
  *
- * Returns pointer to object from a DALLOC object. Nested object interation
+ * Returns pointer to object from a DALLOC object. Nested object integration
  * is supported by using the type string "DALLOC_CTX". Any other type string
  * designates the requested objects type.
  */
