@@ -1101,7 +1101,7 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
         plansmbtorture4testsuite(t, "nt4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
     elif t.startswith("rpc.lsa."):
-        # This avoids the rpc.lsa.* tests runing under ncacn_ip_tcp:
+        # This avoids the rpc.lsa.* tests running under ncacn_ip_tcp:
         # (there is rpc.lsa.secrets fails due to OpenPolicy2 for example)
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "rpc.mdssvc":
