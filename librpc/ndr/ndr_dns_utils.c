@@ -122,7 +122,7 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 		}
 		if (s - start > max_length) {
 			return ndr_push_error(ndr, NDR_ERR_STRING,
-					      "name > %zu character long",
+					      "name > %zu characters long",
 					      max_length);
 		}
 	}
