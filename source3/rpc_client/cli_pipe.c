@@ -761,7 +761,7 @@ struct rpc_api_pipe_state {
 	/* Incoming reply */
 	DATA_BLOB reply_pdu;
 	size_t reply_pdu_offset;
-	uint8_t endianess;
+	uint8_t endianness;
 };
 
 static void rpc_api_pipe_trans_done(struct tevent_req *subreq);
@@ -787,7 +787,7 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	state->expected_pkt_type = expected_pkt_type;
 	state->call_id = call_id;
-	state->endianess = DCERPC_DREP_LE;
+	state->endianness = DCERPC_DREP_LE;
 
 	/*
 	 * Ensure we're not sending too much.
@@ -965,15 +965,15 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		DEBUG(10,("rpc_api_pipe: On %s PDU data format is "
 			  "big-endian.\n",
 			  rpccli_pipe_txt(talloc_tos(), state->cli)));
-		state->endianess = 0x00; /* BIG ENDIAN */
+		state->endianness = 0x00; /* BIG ENDIAN */
 	}
 	/*
 	 * Check endianness on subsequent packets.
 	 */
-	if (state->endianess != state->pkt->drep[0]) {
+	if (state->endianness != state->pkt->drep[0]) {
 		DEBUG(0,("rpc_api_pipe: Error : Endianness changed from %s to "
 			 "%s\n",
-			 state->endianess?"little":"big",
+			 state->endianness?"little":"big",
 			 state->pkt->drep[0]?"little":"big"));
 		/*
 		 * TODO: do a real async disconnect ...

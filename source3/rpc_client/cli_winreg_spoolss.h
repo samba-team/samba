@@ -111,7 +111,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 
 /**
- * @brief Get the inforamtion of a printer stored in the registry.
+ * @brief Get the information of a printer stored in the registry.
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
@@ -218,7 +218,7 @@ WERROR winreg_set_printserver_secdesc(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  type     The type of the value to use.
  *
- * @param[in]  data     The data which sould be saved under the given value.
+ o @param[in]  data     The data which should be saved under the given value.
  *
  * @param[in]  data_size The size of the data.
  *
@@ -613,7 +613,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  core_driver_guid The core driver guid.
  *
- * @param[out] core_printer_driver The returned core printer driver definiton
+ * @param[out] core_printer_driver The returned core printer driver definition
  *
  * @return              On success WERR_OK, a corresponding DOS error is
  *                      something went wrong.

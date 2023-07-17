@@ -26,7 +26,7 @@ struct auth_session_info;
 struct dcerpc_binding_handle;
 
 /**
- * @brief Connect to the interal winreg server and open the given key.
+ * @brief Connect to the internal winreg server and open the given key.
  *
  * The function will create the needed subkeys if they don't exist.
  *
@@ -63,7 +63,7 @@ NTSTATUS dcerpc_winreg_int_openkey(TALLOC_CTX *mem_ctx,
 				   WERROR *pwerr);
 
 /**
- * @brief Connect to the interal winreg server and open the given key.
+ * @brief Connect to the internal winreg server and open the given key.
  *
  * The function will create the needed subkeys if they don't exist.
  *

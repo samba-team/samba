@@ -32,7 +32,7 @@
 /**
  * @brief Change the password of a user.
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
@@ -62,13 +62,13 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 /**
  * @brief Change the password of a user based on username.
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
  * @param[in]  srv_name_slash The server name with leading slashes.
  *
- * @param[in]  username The name of ther user.
+ * @param[in]  username The name of the user.
  *
  * @param[in]  newpassword The new password to set.
  *
@@ -96,15 +96,15 @@ NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
  * @brief Change the password of a user based on the user name given and using
  * blobs.
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
  * @param[in]  srv_name_slash The server name with leading slashes.
  *
- * @param[in]  username The name of ther user.
+ * @param[in]  username The name of the user.
  *
- * @param[in]  new_nt_password_blob The new password as a crypted blob.
+ * @param[in]  new_nt_password_blob The new password as a encrypted blob.
  *
  * @param[in]  old_nt_hash_enc_blob The old password as a hash encoded blob.
  *
@@ -137,13 +137,13 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 /**
  * @brief
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
  * @param[in]  srv_name_slash The server name with leading slashes.
  *
- * @param[in]  username The name of ther user.
+ * @param[in]  username The name of the user.
  *
  * @param[in]  newpassword The new password to set.
  *
@@ -195,16 +195,16 @@ NTSTATUS dcerpc_samr_chgpasswd_user4(struct dcerpc_binding_handle *h,
  *
  * @param[out] max_entries A pointer to store maximum entries value.
  *
- * @param[out] max_size A poiter to store the maximum size value.
+ * @param[out] max_size A pointer to store the maximum size value.
  */
 void dcerpc_get_query_dispinfo_params(int loop_count,
 				      uint32_t *max_entries,
 				      uint32_t *max_size);
 
 /**
- * @brief Try if we can connnect to samr.
+ * @brief Try if we can connect to samr.
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *

@@ -32,13 +32,13 @@
 /**
  * @brief Open a LSA policy.
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
  * @param[in]  sec_qos  Enable security quality of services.
  *
- * @param[in]  des_access The disired access rights to be granted.
+ * @param[in]  des_access The desired access rights to be granted.
  *
  * @param[out]  pol     A pointer to a rpc policy handle.
  *
@@ -60,13 +60,13 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 /**
  * @brief Open a LSA policy.
  *
- * @param[in]  h        The dcerpc binding hanlde to use.
+ * @param[in]  h        The dcerpc binding handle to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
  * @param[in]  sec_qos  Enable security quality of services.
  *
- * @param[in]  des_access The disired access rights to be granted.
+ * @param[in]  des_access The desired access rights to be granted.
  *
  * @param[out]  pol     A pointer to a rpc policy handle.
  *

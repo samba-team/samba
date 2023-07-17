@@ -566,7 +566,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user4(struct dcerpc_binding_handle *h,
 	return status;
 }
 
-/* This function returns the bizzare set of (max_entries, max_size) required
+/* This function returns the bizarre set of (max_entries, max_size) required
    for the QueryDisplayInfo RPC to actually work against a domain controller
    with large (10k and higher) numbers of users.  These values were
    obtained by inspection using ethereal and NT4 running User Manager. */

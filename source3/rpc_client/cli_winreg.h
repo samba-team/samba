@@ -27,7 +27,7 @@
  *
  * Get the data that is associated with the named value of a specified registry
  * open key. This function ensures that the key is a dword and converts it
- * corretly.
+ * correctly.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
@@ -328,7 +328,7 @@ NTSTATUS dcerpc_winreg_set_sd(TALLOC_CTX *mem_ctx,
  * @brief Add a value to the multi sz data.
  *
  * This reads the multi sz data from the given value and adds the data to the
- * multi sz. Then it saves it to the regsitry.
+ * multi sz. Then it saves it to the registry.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
@@ -393,9 +393,9 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
  *
  * @param[out] pnames A pointer to store all the names of the values we found.
  *
- * @param[out] _type A pointer to store all the types coresponding with the
+ * @param[out] _type A pointer to store all the types corresponding with the
  * 		     values found.
- * @param[out] pdata A pointer to store the data coresponding to the values.
+ * @param[out] pdata A pointer to store the data corresponding to the values.
  *
  * @param[out] pwerr A pointer to the WERROR. WERR_OK on success
  *		     WERR_OK on success, the corresponding DOS error
