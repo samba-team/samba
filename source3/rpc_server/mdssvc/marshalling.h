@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/mdssvc.h"
 
 #define MAX_SL_FRAGMENT_SIZE 0xFFFFF
+#define MAX_MDSCMD_SIZE 0xFFFFFF
 
 /* Can be ored and used as flags */
 #define SL_ENC_LITTLE_ENDIAN 1

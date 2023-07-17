@@ -667,12 +667,12 @@ static ssize_t sl_unpack_tag(const char *buf,
 	tag->count = val >> 32;
 	tag->length = tag->count * 8;
 
-	if (tag->size > MAX_SL_FRAGMENT_SIZE) {
+	if (tag->size > MAX_MDSCMD_SIZE) {
 		DEBUG(1,("%s: size limit %zu\n", __func__, tag->size));
 		return -1;
 	}
 
-	if (tag->length > MAX_SL_FRAGMENT_SIZE) {
+	if (tag->length > MAX_MDSCMD_SIZE) {
 		DEBUG(1,("%s: length limit %zu\n", __func__, tag->length));
 		return -1;
 	}
@@ -963,7 +963,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 			return -1;
 		}
 		slen = tag.size - 16 + tag.count;
-		if (slen > MAX_SL_FRAGMENT_SIZE) {
+		if (slen > MAX_MDSCMD_SIZE) {
 			return -1;
 		}
 
@@ -1312,7 +1312,7 @@ bool sl_unpack(DALLOC_CTX *query, const char *buf, size_t bufsize)
 	uint64_t toc_offset;
 	struct sl_tag toc_tag;
 
-	if (bufsize > MAX_SL_FRAGMENT_SIZE) {
+	if (bufsize > MAX_MDSCMD_SIZE) {
 		return false;
 	}
 
