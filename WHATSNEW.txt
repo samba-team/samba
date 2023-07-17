@@ -90,6 +90,24 @@ samba-tool domain schemaupgrade --schema=2019
 samba-tool domain functionalprep --function-level=2016
 samba-tool domain level raise --domain-level=2016 --forest-level=2016
 
+Updated GnuTLS requirement / in-tree cryptography removal
+----------------------------------------------------------
+
+Samba requires GnuTLS 3.6.13 and prefers GnuTLS 3.6.14 or later.
+
+This has allowed Samba to remove all of our in-tree cryptography,
+except that found in our Heimdal import.  Samba's runtime cryptography
+needs are now all provided by GnuTLS.
+
+(The GnuTLS vesion requirement is raised to 3.7.2 on systems without
+the Linux getrandom())
+
+We also use Python's cryptography module for our testing.
+
+The use of well known cryptography libraries makes Samba easier for
+end-users to validate and deploy, and for distributors to ship.  This
+is the end of a very long journey for Samba.
+
 
 REMOVED FEATURES
 ================
