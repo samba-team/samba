@@ -229,7 +229,7 @@ rekinit:
 
 		/* evil rises here, we refresh ticket failed,
 		 * but the ticket might be expired. Therefore,
-		 * When we refresh ticket failed, destory the
+		 * When we refresh ticket failed, destroy the
 		 * ticket */
 
 		ads_kdestroy(entry->ccname);

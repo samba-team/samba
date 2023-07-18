@@ -358,7 +358,7 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 			 * checking the sid.
 			 *
 			 * Note the wb_lookupsids_bulk() above
-			 * already catched special SIDs,
+			 * already caught special SIDs,
 			 * e.g. the unix and builtin domains.
 			 */
 			return &domains[i];

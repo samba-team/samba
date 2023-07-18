@@ -134,7 +134,7 @@ static void cached_internal_pipe_close(
 	 * Freeing samr_pipes closes the cached pipes.
 	 *
 	 * We can do a hard close because at the time of this commit
-	 * we only use sychronous calls to external pipes. So we can't
+	 * we only use synchronous calls to external pipes. So we can't
 	 * have any outstanding requests. Also, we don't set
 	 * dcerpc_binding_handle_set_sync_ev in winbind, so we don't
 	 * get nested event loops. Once we start to get async in

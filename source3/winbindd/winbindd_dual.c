@@ -2026,7 +2026,7 @@ static void flush_caches_noinit(void)
 	 * If domain is not initialized, it means it is never
 	 * used or never become online. look, wcache_invalidate_cache()
 	 * -> get_cache() -> init_dc_connection(). It causes a lot of traffic
-	 * for unused domains and large traffic for primay domain's DC if there
+	 * for unused domains and large traffic for primary domain's DC if there
 	 * are many domains..
 	 */
 

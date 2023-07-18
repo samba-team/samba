@@ -47,7 +47,7 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 		full_group_name = fill_domain_username_talloc(mem_ctx, dom_name,
 				     mapped_name, true);
 	}
-	/* Mapped to an aliase */
+	/* Mapped to an alias */
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
 		full_group_name = mapped_name;
 	}

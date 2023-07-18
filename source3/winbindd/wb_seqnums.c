@@ -29,7 +29,7 @@ struct wb_seqnums_state {
 
 	struct tevent_req **subreqs;
 	struct winbindd_domain **domains;
-	NTSTATUS *stati;
+	NTSTATUS *statuses;
 	uint32_t *seqnums;
 };
 
@@ -58,11 +58,11 @@ struct tevent_req *wb_seqnums_send(TALLOC_CTX *mem_ctx,
 				      state->num_domains);
 	state->domains = talloc_zero_array(state, struct winbindd_domain *,
 					   state->num_domains);
-	state->stati = talloc_array(state, NTSTATUS, state->num_domains);
+	state->statuses = talloc_array(state, NTSTATUS, state->num_domains);
 	state->seqnums = talloc_array(state, uint32_t, state->num_domains);
 
 	if ((state->subreqs == NULL) || (state->domains == NULL) ||
-	    (state->stati == NULL) || (state->seqnums == NULL)) {
+	    (state->statuses == NULL) || (state->seqnums == NULL)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return tevent_req_post(req, ev);
 	}
@@ -105,7 +105,7 @@ static void wb_seqnums_done(struct tevent_req *subreq)
 		/* found one */
 
 		state->subreqs[i] = NULL;
-		state->stati[i] = status;
+		state->statuses[i] = status;
 		if (NT_STATUS_IS_OK(status)) {
 			state->seqnums[i] = seqnum;
 
@@ -136,7 +136,7 @@ static void wb_seqnums_done(struct tevent_req *subreq)
 
 NTSTATUS wb_seqnums_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 int *num_domains, struct winbindd_domain ***domains,
-			 NTSTATUS **stati, uint32_t **seqnums)
+			 NTSTATUS **statuses, uint32_t **seqnums)
 {
 	struct wb_seqnums_state *state = tevent_req_data(
 		req, struct wb_seqnums_state);
@@ -147,7 +147,7 @@ NTSTATUS wb_seqnums_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	}
 	*num_domains = state->num_domains;
 	*domains = talloc_move(mem_ctx, &state->domains);
-	*stati = talloc_move(mem_ctx, &state->stati);
+	*statuses = talloc_move(mem_ctx, &state->statuses);
 	*seqnums = talloc_move(mem_ctx, &state->seqnums);
 	return NT_STATUS_OK;
 }

@@ -27,7 +27,7 @@ struct winbindd_show_sequence_state {
 
 	/* All domains */
 	int num_domains;
-	NTSTATUS *stati;
+	NTSTATUS *statuses;
 	struct winbindd_domain **domains;
 	uint32_t *seqnums;
 };
@@ -50,7 +50,7 @@ struct tevent_req *winbindd_show_sequence_send(TALLOC_CTX *mem_ctx,
 	}
 	state->one_domain = false;
 	state->domains = NULL;
-	state->stati = NULL;
+	state->statuses = NULL;
 	state->seqnums = NULL;
 
 	/* Ensure null termination */
@@ -112,7 +112,7 @@ static void winbindd_show_sequence_done_all(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = wb_seqnums_recv(subreq, state, &state->num_domains,
-				 &state->domains, &state->stati,
+				 &state->domains, &state->statuses,
 				 &state->seqnums);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -145,7 +145,7 @@ NTSTATUS winbindd_show_sequence_recv(struct tevent_req *req,
 	}
 
 	for (i=0; i<state->num_domains; i++) {
-		if (!NT_STATUS_IS_OK(state->stati[i])
+		if (!NT_STATUS_IS_OK(state->statuses[i])
 		    || (state->seqnums[i] == DOM_SEQUENCE_NONE)) {
 			extra_data = talloc_asprintf_append_buffer(
 				extra_data, "%s : DISCONNECTED\n",

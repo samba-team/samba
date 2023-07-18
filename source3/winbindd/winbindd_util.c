@@ -320,7 +320,7 @@ bool add_trusted_domain_from_auth(uint16_t validation_level,
 	bool ok;
 
 	/*
-	 * We got a successfull auth from a domain that might not yet be in our
+	 * We got a successful auth from a domain that might not yet be in our
 	 * domain list. If we're a member we trust our DC who authenticated the
 	 * user from that domain and add the domain to our list on-the-fly. If
 	 * we're a DC we rely on configured trusts and don't add on-the-fly.

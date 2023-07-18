@@ -298,7 +298,7 @@ static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
 
 		/*
 		 * NETLOGON_CONTROL_REDISCOVER
-		 * get's an optional \dcname appended to the domain name
+		 * gets an optional \dcname appended to the domain name
 		 */
 		p = strchr_m(domain_name, '\\');
 		if (p != NULL) {

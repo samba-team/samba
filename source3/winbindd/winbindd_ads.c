@@ -84,7 +84,7 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
  * @param[in]    target_realm     Realm of domain to connect to
  * @param[in]    target_dom_name  'workgroup' name of domain to connect to
  * @param[in]    ldap_server      DNS name of server to connect to
- * @param[in]    password         Our machine acount secret
+ * @param[in]    password         Our machine account secret
  * @param[in]    auth_realm       Realm of local domain for creating krb token
  * @param[in]    renewable        Renewable ticket time
  *
@@ -204,7 +204,7 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 
 	/*
 	 * At this point we only have the NetBIOS domain name.
-	 * Check if we can get server nam and realm from SAF cache
+	 * Check if we can get server name and realm from SAF cache
 	 * and the domain list.
 	 */
 	ldap_server = saf_fetch(tmp_ctx, dom_name);

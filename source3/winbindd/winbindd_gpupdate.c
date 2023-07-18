@@ -28,7 +28,7 @@
  *          interval in seconds
  *
  * Group Policy should be updated every 90 minutes in the background,
- * with a random offset between 0 and 30 minutes. This ensures mutiple
+ * with a random offset between 0 and 30 minutes. This ensures multiple
  * clients will not update at the same time.
  */
 #define GPUPDATE_INTERVAL       (90*60)

@@ -782,7 +782,7 @@ again:
 					entry, gidNumber, memctx);
 		}
 		if ( ! tmp) { /* wow very strange entry, how did it match ? */
-			DEBUG(5, ("Unprobable match on (%s), no uidNumber, "
+			DEBUG(5, ("Improbable match on (%s), no uidNumber, "
 				  "nor gidNumber returned\n", sidstr));
 			TALLOC_FREE(sidstr);
 			continue;
@@ -852,7 +852,7 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknwon/expired ones as unmapped */
+	/* mark all unknown/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
 		if (ids[i]->status != ID_MAPPED)
 			ids[i]->status = ID_UNMAPPED;

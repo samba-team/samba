@@ -1324,7 +1324,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	/*
 	 * We don't use the time element at this moment,
 	 * but we have to consume it, so that we don't
-	 * neet to change the disk format of the cache.
+	 * need to change the disk format of the cache.
 	 */
 	(void)centry_time(centry);
 

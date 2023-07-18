@@ -199,7 +199,7 @@ NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 	response->length += talloc_get_size(response->extra_data.data);
 
 	D_NOTICE("Winbind external command GETGRNAM end.\n"
-		 "Returning %"PRIu32" memmber(s).\n",
+		 "Returning %"PRIu32" member(s).\n",
 		 response->data.gr.num_gr_mem);
 
 	return NT_STATUS_OK;

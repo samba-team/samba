@@ -117,7 +117,7 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
-	/* initialize the status to avoid suprise */
+	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
@@ -147,7 +147,7 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
-	/* initialize the status to avoid suprise */
+	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}

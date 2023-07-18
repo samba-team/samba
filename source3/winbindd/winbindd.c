@@ -1398,7 +1398,7 @@ int main(int argc, const char **argv)
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
 	if ( !winbind_off() ) {
-		DEBUG(0,("Failed to disable recusive winbindd calls.  Exiting.\n"));
+		DEBUG(0,("Failed to disable recursive winbindd calls.  Exiting.\n"));
 		exit(1);
 	}
 

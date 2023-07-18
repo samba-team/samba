@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Winbind daemon - cached credentials funcions
+   Winbind daemon - cached credentials functions
 
    Copyright (C) Guenther Deschner 2005
 

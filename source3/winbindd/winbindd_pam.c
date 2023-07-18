@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Winbind daemon - pam auth funcions
+   Winbind daemon - pam auth functions
 
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter 2001
@@ -527,7 +527,7 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 	if (lp_winbind_use_krb5_enterprise_principals()) {
 		/*
 		 * If we use enterprise principals
-		 * we always go trough our primary domain
+		 * we always go through our primary domain
 		 * and follow the WRONG_REALM replies.
 		 */
 		flags &= ~WBFLAG_PAM_CONTACT_TRUSTDOM;
@@ -947,8 +947,8 @@ failed:
 	}
 
 	/* we could have created a new credential cache with a valid tgt in it
-	 * but we werent able to get or verify the service ticket for this
-	 * local host and therefor didn't get the PAC, we need to remove that
+	 * but we weren't able to get or verify the service ticket for this
+	 * local host and therefore didn't get the PAC, we need to remove that
 	 * cache entirely now */
 
 	krb5_ret = ads_kdestroy(cc);
@@ -1249,7 +1249,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 
 		if (!(my_info3->base.acct_flags & ACB_NORMAL)) {
-			DEBUG(0,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n",
+			DEBUG(0,("winbindd_dual_pam_auth_cached: what's wrong with that one?: 0x%08x\n",
 				my_info3->base.acct_flags));
 			result = NT_STATUS_LOGON_FAILURE;
 			goto out;
@@ -1891,7 +1891,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		/*
 		 * Handle the case where a NT4 DC does not fill in the acct_flags in
 		 * the samlogon reply info3. Yes, in 2021, there are still admins
-		 * arround with real NT4 DCs.
+		 * around with real NT4 DCs.
 		 *
 		 * We used to call dcerpc_samr_QueryUserInfo(level=16) to fetch
 		 * acct_flags, but as NT4 DCs reject authentication with workstation
@@ -2339,7 +2339,7 @@ NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
 		}
 
 		/* there are quite some NT_STATUS errors where there is no
-		 * point in retrying with a samlogon, we explictly have to take
+		 * point in retrying with a samlogon, we explicitly have to take
 		 * care not to increase the bad logon counter on the DC */
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCOUNT_DISABLED) ||
