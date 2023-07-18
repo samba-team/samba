@@ -1,7 +1,7 @@
 #
 # We expect all the MIT specific compatibility tests to fail on heimdal
 # kerberos
-^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_mit_
+^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.CompatabilityTests.test_mit_
 #
 # Heimdal currently fails the following MS-KILE client principal lookup
 # tests

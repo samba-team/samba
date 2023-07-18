@@ -50,10 +50,10 @@ MIT_ENC_AS_REP_PART_TYPE_TAG = 0x7A
 ENC_PA_REP_FLAG = 0x00010000
 
 
-class SimpleKerberosTests(KDCBaseTest):
+class CompatabilityTests(KDCBaseTest):
 
     def setUp(self):
-        super(SimpleKerberosTests, self).setUp()
+        super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 

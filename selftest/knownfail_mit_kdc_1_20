@@ -1,4 +1,4 @@
-^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_mit_pre_1_20_ticket_signature
+^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.CompatabilityTests.test_mit_pre_1_20_ticket_signature
 #
 # FAST tests
 # https://github.com/krb5/krb5/pull/1225#issuecomment-996418770

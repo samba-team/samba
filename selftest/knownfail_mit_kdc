@@ -1,7 +1,7 @@
 #
 # We expect all the heimdal specific compatibility tests to fail on MIT
 # kerberos
-^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_heimdal_
+^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.CompatabilityTests.test_heimdal_
 #
 # AS-REQ tests
 #
