@@ -305,7 +305,7 @@ static int net_cache_search(struct net_context *c, int argc, const char **argv)
  * List the contents of the cache
  *
  * @param c	A net_context structure
- * @param argv ignored in this functionailty
+ * @param argv ignored in this functionality
  * @return always returns 0
  **/
 static int net_cache_list(struct net_context *c, int argc, const char **argv)

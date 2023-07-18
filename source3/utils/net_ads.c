@@ -2039,7 +2039,7 @@ static int net_ads_dns_unregister(struct net_context *c,
 			   "net ads dns unregister [hostname]\n"
 			   "    %s\n",
 			 _("Usage:"),
-			 _("Remove all IP Address entires for a given\n"
+			 _("Remove all IP Address entries for a given\n"
                            "    hostname from the Active Directory server.\n"));
 		TALLOC_FREE(tmp_ctx);
 		return -1;
@@ -2641,7 +2641,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* we don't actually need a full connect, but it's the easy way to
-		fill in the KDC's addresss */
+		fill in the KDC's address */
 	ads_connect(ads);
 
 	if (!ads->config.realm) {

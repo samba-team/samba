@@ -1849,7 +1849,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 				  "createkey opened existing %s\n",
 				  service_name));
 
-			/* delete posibly existing value */
+			/* delete possibly existing value */
 			status = rpc_conf_del_value(frame,
 						    b,
 						    &key_hnd,
@@ -2149,7 +2149,7 @@ static NTSTATUS rpc_conf_setincludes_internal(struct net_context *c,
 			DEBUG(5, ("net rpc conf setincludes:"
 					"createkey opened existing %s\n", argv[0]));
 
-			/* delete posibly existing value */
+			/* delete possibly existing value */
 			status = rpc_conf_del_value(frame,
 						    b,
 						    &key_hnd,

@@ -348,7 +348,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 				O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnum_dst);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUGADD(1,("cannot create file %s on destination server: %s\n", 
+			DEBUGADD(1,("cannot create file %s on destination server: %s\n",
 				dst_name, nt_errstr(nt_status)));
 			goto out;
 		}
@@ -1166,9 +1166,9 @@ out:
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -1218,9 +1218,9 @@ NTSTATUS rpc_printer_list_internals(struct net_context *c,
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -1284,7 +1284,7 @@ done:
  * Publish print-queues with args-wrapper
  *
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -1439,9 +1439,9 @@ NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -1534,9 +1534,9 @@ done:
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -1697,9 +1697,9 @@ done:
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -1871,9 +1871,9 @@ done:
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -2094,9 +2094,9 @@ done:
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -2260,9 +2260,9 @@ done:
  * argc, argv which are passed through.
  *
  * @param c	A net_context structure
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped

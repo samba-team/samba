@@ -1194,7 +1194,7 @@ out:
  * Callback handler to handle child elements processed by cli_list,  we attempt
  * to propagate inheritable ace(s) to each child via the function
  * propagate_inherited_aces. Children that are themselves directories are passed
- * to cli_list again ( to decend the directory structure )
+ * to cli_list again ( to descend the directory structure )
  */
 static NTSTATUS cacl_set_cb(struct file_info *f,
 			   const char *mask, void *state)
@@ -1356,7 +1356,7 @@ out:
 
 
 /*
- * Wrapper around cl_list to decend the directory tree pointed to by 'filename',
+ * Wrapper around cl_list to descend the directory tree pointed to by 'filename',
  * helper callback function 'cacl_set_cb' handles the child elements processed
  * by cli_list.
  */
@@ -1445,7 +1445,7 @@ static int inheritance_cacl_set(char *filename,
 
 	/*
 	 * strictly speaking it could be considered an error if a file was
-	 * specificied with '--propagate-inheritance'. However we really want
+	 * specified with '--propagate-inheritance'. However we really want
 	 * to eventually get rid of '--propagate-inheritance' so we will be
 	 * more forgiving here and instead just exit early.
 	 */

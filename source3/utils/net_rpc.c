@@ -7498,7 +7498,7 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	return ret;
 }
 
-/* syncronise sam database via samsync rpc calls */
+/* synchronise sam database via samsync rpc calls */
 static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -7800,9 +7800,9 @@ int rpc_printer_migrate(struct net_context *c, int argc, const char **argv)
 			"forms",
 			rpc_printer_migrate_forms,
 			NET_TRANSPORT_RPC,
-			N_("Migrate froms to local server"),
+			N_("Migrate forms to local server"),
 			N_("net rpc printer migrate forms\n"
-			   "    Migrate froms to local server")
+			   "    Migrate forms to local server")
 		},
 		{
 			"printers",

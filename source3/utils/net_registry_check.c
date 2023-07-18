@@ -656,7 +656,7 @@ static bool srprs_path(const char **ptr, const char* prefix, char sep,
 	return true;
 }
 
-/* Fixme: this dosn't work in the general multibyte char case.
+/* Fixme: this doesn't work in the general multibyte char case.
    see string_replace()
 */
 static bool normalize_path_internal(char* path, char sep) {

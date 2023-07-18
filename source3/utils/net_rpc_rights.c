@@ -364,7 +364,7 @@ static NTSTATUS rpc_rights_list_internal(struct net_context *c,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	/* backwards compatibility; just list available privileges if no arguement */
+	/* backwards compatibility; just list available privileges if no argument */
 
 	if (argc == 0) {
 		status = enum_privileges(pipe_hnd, mem_ctx, &pol );

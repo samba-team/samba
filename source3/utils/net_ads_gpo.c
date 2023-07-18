@@ -316,7 +316,7 @@ Arguments:
 
 This function performs following operations:
 1. Create  talloc context using talloc_init
-2. Preform ads_startup()
+2. Perform ads_startup()
 3. Call ads_get_gpo() to retrieve gpo details inside 'struct GROUP_POLICY_OBJECT'
 4. Call dumps_gpo() to dump GPO on stdout
 */
