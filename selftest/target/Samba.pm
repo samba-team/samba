@@ -346,6 +346,8 @@ sub mk_krb5_conf($$)
  # This is especially required by samba3.raw.session krb5 and
  # reauth tests when not using Heimdal
  clockskew = 5
+ # To allow the FL 2000 DC to still work for now
+ allow_rc4 = yes
     ";
 	}
 
