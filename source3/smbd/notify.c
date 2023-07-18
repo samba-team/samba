@@ -644,7 +644,7 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 	rights = SEC_DIR_LIST|SEC_DIR_TRAVERSE;
 	p = strrchr_m(filepath, '/');
 	/*
-	 * Check each path component, exluding the share root.
+	 * Check each path component, excluding the share root.
 	 *
 	 * We could check all components including root using
 	 * a do { .. } while() loop, but IMHO the logic is clearer
@@ -823,7 +823,7 @@ static void notify_fsp(files_struct *fsp, struct timespec when,
 	}
 
 	string_replace(tmp, '/', '\\');
-	change->name = tmp;	
+	change->name = tmp;
 
 	change->when = when;
 	change->action = action;

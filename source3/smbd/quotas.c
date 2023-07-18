@@ -20,7 +20,7 @@
 
 /*
  * This is one of the most system dependent parts of Samba, and its
- * done a litle differently. Each system has its own way of doing
+ * done a little differently. Each system has its own way of doing
  * things :-(
  */
 
@@ -349,7 +349,7 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 	(*dfree) = (uint64_t)-1;
 	(*dsize) = (uint64_t)-1;
 
-	/* As we have select not to use quotas, allways fail */
+	/* As we have select not to use quotas, always fail */
 	return false;
 }
 #endif /* WITH_QUOTAS */

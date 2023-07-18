@@ -981,7 +981,7 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 		/*
 		 * It turns out that NT matches wildcards against
 		 * both long *and* short names. This may explain some
-		 * of the wildcard wierdness from old DOS clients
+		 * of the wildcard weirdness from old DOS clients
 		 * that some people have been seeing.... JRA.
 		 */
 		/* Force the mangling into 8.3. */
@@ -2318,7 +2318,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		 * what we have to send --metze:
 		 *
 		 * Unknown1: 		24 NULL bytes
-		 * Soft Quota Treshold: 8 bytes seems like uint64_t or so
+		 * Soft Quota Threshold: 8 bytes seems like uint64_t or so
 		 * Hard Quota Limit:	8 bytes seems like uint64_t or so
 		 * Quota Flags:		2 byte :
 		 * Unknown3:		6 NULL bytes

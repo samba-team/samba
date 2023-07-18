@@ -1024,7 +1024,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->op->status = NT_STATUS_OK;
 		state->op->global->disconnect_time = 0;
 
-		/* save the timout for later update */
+		/* save the timeout for later update */
 		state->durable_timeout_msec = state->op->global->durable_timeout_msec;
 
 		state->update_open = true;

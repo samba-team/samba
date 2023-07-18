@@ -89,7 +89,7 @@ struct cleanup_child {
 struct cleanupdb_traverse_state {
 	TALLOC_CTX *mem_ctx;
 	bool ok;
-	struct cleanup_child *childs;
+	struct cleanup_child *children;
 };
 
 static int cleanupdb_traverse_fn(const pid_t pid,
@@ -108,7 +108,7 @@ static int cleanupdb_traverse_fn(const pid_t pid,
 
 	child->pid = pid;
 	child->unclean = unclean;
-	DLIST_ADD(cleanup_state->childs, child);
+	DLIST_ADD(cleanup_state->children, child);
 
 	return 0;
 }
@@ -132,10 +132,10 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 	};
 
 	/*
-	 * This merely collect childs in a list, whatever we're
+	 * This merely collect children in a list, whatever we're
 	 * supposed to cleanup for every child, it has to take place
 	 * *after* the db traverse in a list loop. This is to minimize
-	 * locking interaction between the traverse and writers (ie
+	 * locking interaction between the traverse and writers (i.e.
 	 * the parent smbd).
 	 */
 	ret = cleanupdb_traverse_read(cleanupdb_traverse_fn, &cleanup_state);
@@ -150,7 +150,7 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 		return;
 	}
 
-	for (child = cleanup_state.childs;
+	for (child = cleanup_state.children;
 	     child != NULL;
 	     child = child->next)
 	{

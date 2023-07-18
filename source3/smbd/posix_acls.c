@@ -2108,7 +2108,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
  push to the end of the list. Note if the user was in no groups
  this maps to a specific allow nothing entry for this user.
 
- The common case from the NT ACL choser (userX deny all) is
+ The common case from the NT ACL chooser (userX deny all) is
  optimised so we don't do the group lookup - we just map to
  an allow nothing entry.
 
@@ -2137,7 +2137,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
  If there is no group Everyone allow entry then convert the
  group1 entry to a allow nothing entry and push to the end of the list.
 
- Note that the common case from the NT ACL choser (groupX deny all)
+ Note that the common case from the NT ACL chooser (groupX deny all)
  cannot be optimised here as we need to modify user entries who are
  in the group to change them to a deny all also.
 
@@ -2163,7 +2163,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
  group pass.
 
  The above algorithm took a *lot* of thinking about - hence this
- explaination :-). JRA.
+ explanation :-). JRA.
 ****************************************************************************/
 
 /****************************************************************************

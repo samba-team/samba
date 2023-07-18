@@ -986,7 +986,7 @@ static void smb1srv_update_crypto_flags(struct smbXsrv_session *session,
 		sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
 	} else if ((type == SMBecho) || (type == SMBsesssetupX)) {
 		/*
-		 * echo can be unsigned. Sesssion setup except final
+		 * echo can be unsigned. Session setup except final
 		 * session setup response too
 		 */
 		sign_flag &= ~SMBXSRV_PROCESSED_UNSIGNED_PACKET;
@@ -1029,7 +1029,7 @@ static void set_current_case_sensitive(connection_struct *conn, uint16_t flags)
 	switch (lp_case_sensitive(snum)) {
 	case Auto:
 		/*
-		 * We need this uglyness due to DOS/Win9x clients that lie
+		 * We need this ugliness due to DOS/Win9x clients that lie
 		 * about case insensitivity. */
 		ra_type = get_remote_arch();
 		if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {

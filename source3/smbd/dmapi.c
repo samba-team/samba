@@ -54,7 +54,7 @@ struct smbd_dmapi_context {
 };
 
 /*
-   Initialise DMAPI session. The session is persistant kernel state,
+   Initialise DMAPI session. The session is persistent kernel state,
    so it might already exist, in which case we merely want to
    reconnect to it. This function should be called as root.
 */
@@ -255,7 +255,7 @@ bool dmapi_destroy_session(void)
    This is default implementation of dmapi_file_flags() that is
    called from VFS is_offline() call to know whether file is offline.
    For GPFS-specific version see modules/vfs_tsmsm.c. It might be
-   that approach on quering existence of a specific attribute that
+   that approach on querying existence of a specific attribute that
    is used in vfs_tsmsm.c will work with other DMAPI-based HSM
    implementations as well.
 */
@@ -284,7 +284,7 @@ uint32_t dmapi_file_flags(const char * const path)
 		return 0;
 	}
 
-	/* AIX has DMAPI but no POSIX capablities support. In this case,
+	/* AIX has DMAPI but no POSIX capabilities support. In this case,
 	 * we need to be root to do DMAPI manipulations.
 	 */
 #ifndef HAVE_POSIX_CAPABILITIES

@@ -740,7 +740,7 @@ static void init_chartest( void )
  *
  *  Notes:  The input name is *not* tested for 8.3 compliance.  This must be
  *          done separately.  This function returns true if the name contains
- *          a magic character followed by excactly two characters from the
+ *          a magic character followed by exactly two characters from the
  *          basechars list (above), which in turn are followed either by the
  *          nul (end of string) byte or a dot (extension) or by a '/' (end of
  *          a directory name).

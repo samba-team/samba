@@ -495,7 +495,7 @@ struct smbXsrv_connection {
 			 *
 			 * This gets incremented when new credits are
 			 * granted and gets decremented when any credit
-			 * is comsumed.
+			 * is consumed.
 			 *
 			 * Note: the decrementing is different compared
 			 *       to seq_range.

@@ -131,7 +131,7 @@ int fsp_get_pathref_fd(const struct files_struct *fsp)
 void fsp_set_fd(struct files_struct *fsp, int fd)
 {
 	/*
-	 * Deliberatly allow setting an fd if the existing fd is the
+	 * Deliberately allow setting an fd if the existing fd is the
 	 * same. This happens if a VFS module assigns the fd to
 	 * fsp->fh->fd in its openat VFS function. The canonical place
 	 * where the assignment is done is in fd_open(), but some VFS

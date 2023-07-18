@@ -1999,7 +1999,7 @@ extern void build_options(bool screen);
 
 	/* Open the share_info.tdb here, so we don't have to open
 	   after the fork on every single connection.  This is a small
-	   performance improvment and reduces the total number of system
+	   performance improvement and reduces the total number of system
 	   fds used. */
 	status = share_info_db_init();
 	if (!NT_STATUS_IS_OK(status)) {

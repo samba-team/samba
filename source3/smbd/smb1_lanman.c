@@ -345,7 +345,7 @@ static bool init_package(struct pack_desc *p, int count, int subcount)
 		i = n = 0;
 #if 0
 		/*
-		 * This is the old error code we used. Aparently
+		 * This is the old error code we used. Apparently
 		 * WinNT/2k systems return ERRbuftoosmall (2123) and
 		 * OS/2 needs this. I'm leaving this here so we can revert
 		 * if needed. JRA.
@@ -866,7 +866,7 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("api_DosPrintQGetInfo uLevel=%d name=%s\n",uLevel,QueueName));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1,"zWrLh"))
 		return False;
 	if (!check_printq_info(&desc,uLevel,str2,str3)) {
@@ -1618,7 +1618,7 @@ static bool api_RNetServerEnum2(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
+	p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
 	p = *rdata;
 	f_len = fixed_len;
 	s_len = string_len;
@@ -1823,7 +1823,7 @@ static bool api_RNetServerEnum3(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
+	p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
 	p = *rdata;
 	f_len = fixed_len;
 	s_len = string_len;
@@ -2088,7 +2088,7 @@ static bool api_RNetShareGetInfo(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1,"zWrLh")) {
 		return False;
 	}
@@ -2271,7 +2271,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1,RAP_WShareAdd_REQ)) {
 		return False;
 	}
@@ -2622,7 +2622,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 
 	if ( strcmp(str1,"zWrLeh") != 0 )
 		return False;
@@ -2837,7 +2837,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp("B21",str2) != 0)
 		return False;
 
@@ -3198,7 +3198,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
 		return(False);
 
@@ -3323,7 +3323,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
 		return(False);
 
@@ -3506,7 +3506,7 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 
 	*rdata_len = 0;
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if ((strcmp(str1,"WWsTP")) ||
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
@@ -3647,7 +3647,7 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 
 	DEBUG(4,("NetServerGetInfo level %d\n",uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!prefix_ok(str1,"WrLh")) {
 		return False;
 	}
@@ -3823,7 +3823,7 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (!(level==10 && strcsequal(str1,"WrLh") && strcsequal(str2,"zzzBBzz"))) {
 		return False;
 	}
@@ -4502,7 +4502,7 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WWkstaUserLogon uLevel=%d name=%s\n",uLevel,name));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"OOWb54WrLh") != 0) {
 		return False;
 	}
@@ -4595,7 +4595,7 @@ static bool api_WAccessGetUserPerms(struct smbd_server_connection *sconn,
 	}
 	DEBUG(3,("WAccessGetUserPerms user=%s resource=%s\n",user,resource));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"zzh") != 0) {
 		return False;
 	}
@@ -4656,7 +4656,7 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,SVAL(p,0)));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"WWrLh") != 0) {
 		return False;
 	}
@@ -5004,7 +5004,7 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WPrintDestGetInfo uLevel=%d PrinterName=%s\n",uLevel,PrinterName));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"zWrLh") != 0) {
 		return False;
 	}
@@ -5137,7 +5137,7 @@ static bool api_WPrintDestEnum(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WPrintDestEnum uLevel=%d\n",uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"WrLeh") != 0) {
 		return False;
 	}
@@ -5241,7 +5241,7 @@ static bool api_WPrintDriverEnum(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WPrintDriverEnum uLevel=%d\n",uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"WrLeh") != 0) {
 		return False;
 	}
@@ -5304,7 +5304,7 @@ static bool api_WPrintQProcEnum(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WPrintQProcEnum uLevel=%d\n",uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"WrLeh") != 0) {
 		return False;
 	}
@@ -5369,7 +5369,7 @@ static bool api_WPrintPortEnum(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("WPrintPortEnum uLevel=%d\n",uLevel));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,"WrLeh") != 0) {
 		return False;
 	}
@@ -5451,7 +5451,7 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 	DEBUG(7,("RNetSessionEnum req string=%s\n",str1));
 	DEBUG(7,("RNetSessionEnum ret string=%s\n",str2));
 
-	/* check it's a supported varient */
+	/* check it's a supported variant */
 	if (strcmp(str1,RAP_NetSessionEnum_REQ) != 0) {
 		return False;
 	}

@@ -72,7 +72,7 @@ bool conn_snum_used(struct smbd_server_connection *sconn,
 
 /****************************************************************************
  Find first available connection slot, starting from a random position.
- The randomisation stops problems with the server dieing and clients
+ The randomisation stops problems with the server dying and clients
  thinking the server is still available.
 ****************************************************************************/
 

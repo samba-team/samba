@@ -588,7 +588,7 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 		 (unsigned int)state->setup_count));
 
 	/*
-	 * WinCE wierdness....
+	 * WinCE weirdness....
 	 */
 
 	local_machine_name = talloc_asprintf(state, "\\%s\\",

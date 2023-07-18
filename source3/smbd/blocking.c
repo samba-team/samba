@@ -476,7 +476,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 		 * We got NT_STATUS_RETRY,
 		 * we reset polling_msecs so that
 		 * that the retries based on LOCK_NOT_GRANTED
-		 * will later start with small intervalls again.
+		 * will later start with small intervals again.
 		 */
 		state->polling_msecs = 0;
 
@@ -522,7 +522,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	/*
 	 * We got LOCK_NOT_GRANTED, make sure
 	 * a following STATUS_RETRY will start
-	 * with short intervalls again.
+	 * with short intervals again.
 	 */
 	state->retry_msecs = 0;
 
@@ -751,7 +751,7 @@ static struct files_struct *smbd_smb1_brl_finish_by_mid_fn(
 /*
  * This walks the list of fsps, we store the blocked reqs attached to
  * them. It can be expensive, but this is legacy SMB1 and trying to
- * remember looking at traces I don't reall many of those calls.
+ * remember looking at traces I don't really see many of those calls.
  */
 
 bool smbd_smb1_brl_finish_by_mid(

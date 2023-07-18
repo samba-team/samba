@@ -762,7 +762,7 @@ static void assert_no_pending_aio(struct files_struct *fsp,
 		/*
 		 * fsp->aio_requests and the contents (fsp->aio_requests[x])
 		 * are both independently owned by fsp and are not in a
-		 * talloc heirarchy. This allows the fsp->aio_requests array to
+		 * talloc hierarchy. This allows the fsp->aio_requests array to
 		 * be reallocated independently of the array contents so it can
 		 * grow on demand.
 		 *

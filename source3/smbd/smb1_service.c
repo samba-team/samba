@@ -161,7 +161,7 @@ connection_struct *make_connection(struct smb_request *req,
 	}
 
 	/* Logic to try and connect to the correct [homes] share, preferably
-	   without too many getpwnam() lookups.  This is particulary nasty for
+	   without too many getpwnam() lookups.  This is particularly nasty for
 	   winbind usernames, where the share name isn't the same as unix
 	   username.
 	*/

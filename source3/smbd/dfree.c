@@ -180,7 +180,7 @@ dfree_done:
  Depending on the file system layout and file system features, the free space
  information can be different for different sub directories underneath a SMB
  share. Store the cache information in memcache using the query path as the
- key to accomodate this.
+ key to accommodate this.
 ****************************************************************************/
 
 struct dfree_cached_info {

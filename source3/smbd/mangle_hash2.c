@@ -30,7 +30,7 @@
   for simplicity, we only allow ascii characters in 8.3 names
  */
 
- /* hash alghorithm changed to FNV1 by idra@samba.org (Simo Sorce).
+ /* hash algorithm changed to FNV1 by idra@samba.org (Simo Sorce).
   * see http://www.isthe.com/chongo/tech/comp/fnv/index.html for a
   * discussion on Fowler / Noll / Vo (FNV) Hash by one of it's authors
   */

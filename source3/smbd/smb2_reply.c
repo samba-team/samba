@@ -188,10 +188,10 @@ NTSTATUS check_path_syntax(char *path, bool posix_path)
 			}
 			*d++ = *s++;
 		} else {
-			size_t siz;
+			size_t ch_size;
 			/* Get the size of the next MB character. */
-			next_codepoint(s,&siz);
-			switch(siz) {
+			next_codepoint(s,&ch_size);
+			switch(ch_size) {
 				case 5:
 					*d++ = *s++;
 					FALL_THROUGH;
@@ -233,7 +233,7 @@ NTSTATUS smb2_strip_dfs_path(const char *in_path, const char **out_path)
 	if (*path == '\0') {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	/* Stip any leading '\\' characters - MacOSX client behavior. */
+	/* Strip any leading '\\' characters - MacOSX client behavior. */
 	while (*path == '\\') {
 		path++;
 	}

@@ -494,7 +494,7 @@ static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
 }
 
 /****************************************************************************
- Write a securty descriptor into marshalled format.
+ Write a security descriptor into marshalled format.
 ****************************************************************************/
 
 static NTSTATUS smbd_marshall_security_desc(TALLOC_CTX *mem_ctx,
@@ -719,7 +719,7 @@ static enum ndr_err_code extract_sids_from_buf(TALLOC_CTX *mem_ctx,
 
 			offset += new_offset;
 
-			/* check if new offset is outside buffer boundry. */
+			/* check if new offset is outside buffer boundary. */
 			if (offset >= sidlistlength) {
 				DBG_ERR("bufsize 0x%x exceeded by "
                                         "new offset 0x%x)\n",

@@ -1097,7 +1097,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		 * MS-FSA 2.1.1.5 IsSparse
 		 *
 		 * This is a per stream attribute, but our backends don't
-		 * support it a consistent way, therefor just pretend
+		 * support it a consistent way, therefore just pretend
 		 * success and ignore the request.
 		 */
 		DBG_DEBUG("Ignoring request to set FILE_ATTRIBUTE_SPARSE on "

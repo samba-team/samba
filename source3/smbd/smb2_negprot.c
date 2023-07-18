@@ -995,7 +995,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
 
-	   OLD COMMENT : "we can't do this until we teach our sesssion setup parser to know
+	   OLD COMMENT : "we can't do this until we teach our session setup parser to know
 		   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)"
 
 	   Our sessionsetup code now handles raw NTLMSSP connects, so we can go

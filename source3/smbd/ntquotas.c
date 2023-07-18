@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   NT QUOTA suppport
+   NT QUOTA support
    Copyright (C) Stefan (metze) Metzmacher	2003
    
    This program is free software; you can redistribute it and/or modify

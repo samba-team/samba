@@ -867,7 +867,7 @@ static bool smb2_validate_message_id(struct smbXsrv_connection *xconn,
 		}
 	}
 
-	/* substract used credits */
+	/* subtract used credits */
 	xconn->smb2.credits.granted -= credit_charge;
 
 	return true;
@@ -2246,7 +2246,7 @@ static NTSTATUS smb2_get_new_nonce(struct smbXsrv_session *session,
 	 * nonce wrap, or the security of the whole
 	 * communication and the keys is destroyed.
 	 * We must drop the connection once we have
-	 * transfered too much data.
+	 * transferred too much data.
 	 *
 	 * NOTE: We assume nonces greater than 8 bytes.
 	 */
@@ -4385,7 +4385,7 @@ static void smbXsrv_pending_break_done(struct tevent_req *subreq)
 		status = smbXsrv_pending_break_submit(pb);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ABANDONED)) {
 			/*
-			 * If there's no remaing connection
+			 * If there's no remaining connection
 			 * there's no need to send a break again.
 			 */
 			goto remove;

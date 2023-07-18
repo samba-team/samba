@@ -642,7 +642,7 @@ static bool filename_split_lcomp(
 	}
 
 	/*
-	 * No slash, dir is emtpy
+	 * No slash, dir is empty
 	 */
 	dirname = talloc_strdup(mem_ctx, "");
 	if (dirname == NULL) {

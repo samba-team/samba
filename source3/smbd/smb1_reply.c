@@ -88,7 +88,7 @@ NTSTATUS smb1_strip_dfs_path(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	/* Stip any leading '/' characters - MacOSX client behavior. */
+	/* Strip any leading '/' characters - MacOSX client behavior. */
 	while (*path == '/') {
 		path++;
 	}
@@ -602,7 +602,7 @@ void reply_ioctl(struct smb_request *req)
 	p += 1;          /* Allow for alignment */
 
 	switch (ioctl_code) {
-		case IOCTL_QUERY_JOB_INFO:		    
+		case IOCTL_QUERY_JOB_INFO:
 		{
 			NTSTATUS status;
 			size_t len = 0;
@@ -1055,7 +1055,7 @@ void reply_dskattr(struct smb_request *req)
 		double total_space, free_space;
 		/* we need to scale this to a number that DOS6 can handle. We
 		   use floating point so we can handle large drives on systems
-		   that don't have 64 bit integers 
+		   that don't have 64 bit integers
 
 		   we end up displaying a maximum of 2G to DOS systems
 		*/
@@ -2864,7 +2864,7 @@ static void send_file_readbraw(connection_struct *conn,
 	ssize_t ret=0;
 
 	/*
-	 * We can only use sendfile on a non-chained packet 
+	 * We can only use sendfile on a non-chained packet
 	 * but we can use on a non-oplocked file. tridge proved this
 	 * on a train in Germany :-). JRA.
 	 * reply_readbraw has already checked the length.
@@ -3175,7 +3175,7 @@ void reply_lockread(struct smb_request *req)
 
 	/*
 	 * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
-	 * protocol request that predates the read/write lock concept. 
+	 * protocol request that predates the read/write lock concept.
 	 * Thus instead of asking for a read lock here we need to ask
 	 * for a write lock. JRA.
 	 * Note that the requested lock size is unaffected by max_send.
@@ -6943,7 +6943,7 @@ void reply_setattrE(struct smb_request *req)
 
 	reply_smb1_outbuf(req, 0, 0);
 
-	/* 
+	/*
 	 * Patch from Ray Frush <frush@engr.colostate.edu>
 	 * Sometimes times are sent as zero - ignore them.
 	 */

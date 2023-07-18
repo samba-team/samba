@@ -683,7 +683,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		}
 	}
 
-/* USER Activites: */
+/* USER Activities: */
 	if (!change_to_user_and_service(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
 		DBG_ERR("Can't become connected user!\n");
@@ -732,7 +732,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 * not permission problems.
 	 */
 	change_to_root_user();
-/* ROOT Activites: */
+/* ROOT Activities: */
 
 	/*
 	 * Canonicalise the connect

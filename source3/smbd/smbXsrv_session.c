@@ -1662,7 +1662,7 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 			 * We don't set a callback, as we just want to block the
 			 * wait queue and the talloc_free() of the session will
 			 * remove the item from the wait queue in order
-			 * to remove allow the connection to disapear.
+			 * to remove allow the connection to disappear.
 			 */
 			if (xconn_wait_queue != NULL) {
 				subreq = tevent_queue_wait_send(session,
@@ -1678,7 +1678,7 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 			}
 
 			/*
-			 * This is garanteed to set
+			 * This is guaranteed to set
 			 * session->status = NT_STATUS_USER_SESSION_DELETED
 			 * even if NULL is returned.
 			 */
@@ -2341,7 +2341,7 @@ NTSTATUS smb2srv_session_lookup_global(struct smbXsrv_client *client,
 	 * This means smb2_get_new_nonce() will return
 	 * NT_STATUS_ENCRYPTION_FAILED.
 	 *
-	 * But we intialize some random parts just in case...
+	 * But we initialize some random parts just in case...
 	 */
 	session->nonce_high_max = session->nonce_high = 0;
 	generate_nonce_buffer((uint8_t *)&session->nonce_high_random,

@@ -604,7 +604,7 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		 * We got NT_STATUS_RETRY,
 		 * we reset polling_msecs so that
 		 * that the retries based on LOCK_NOT_GRANTED
-		 * will later start with small intervalls again.
+		 * will later start with small intervals again.
 		 */
 		state->polling_msecs = 0;
 
@@ -665,7 +665,7 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 	/*
 	 * We got LOCK_NOT_GRANTED, make sure
 	 * a following STATUS_RETRY will start
-	 * with short intervalls again.
+	 * with short intervals again.
 	 */
 	state->retry_msecs = 0;
 

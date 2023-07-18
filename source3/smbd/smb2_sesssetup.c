@@ -334,7 +334,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		 * nonce wrap, or the security of the whole
 		 * communication and the keys is destroyed.
 		 * We must drop the connection once we have
-		 * transfered too much data.
+		 * transferred too much data.
 		 *
 		 * NOTE: We assume nonces greater than 8 bytes.
 		 */
