@@ -262,7 +262,11 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
                    ntlm=False,
                    spn=None,
                    allowed_rodc=None,
-                   cached=True):
+                   cached=None):
+        if cached is None:
+            # Policies and silos are rarely reused between accounts.
+            cached = assigned_policy is None and assigned_silo is None
+
         opts = {
             'kerberos_enabled': not ntlm,
             'spn': spn,
@@ -278,10 +282,8 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
             members += (member_of,)
         if assigned_policy is not None:
             opts['assigned_policy'] = str(assigned_policy.dn)
-            cached = False   # Policies are rarely reused between accounts.
         if assigned_silo is not None:
             opts['assigned_silo'] = str(assigned_silo.dn)
-            cached = False   # Silos are rarely reused between accounts.
         if allowed_rodc:
             opts['allowed_replication_mock'] = True
             opts['revealed_to_mock_rodc'] = True
