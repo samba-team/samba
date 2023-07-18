@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    DMAPI Support routines
 
@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -53,9 +53,9 @@ struct smbd_dmapi_context {
 	unsigned session_num;
 };
 
-/* 
-   Initialise DMAPI session. The session is persistant kernel state, 
-   so it might already exist, in which case we merely want to 
+/*
+   Initialise DMAPI session. The session is persistant kernel state,
+   so it might already exist, in which case we merely want to
    reconnect to it. This function should be called as root.
 */
 static int dmapi_init_session(struct smbd_dmapi_context *ctx)
@@ -82,7 +82,7 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 		talloc_free(tmp_ctx);
 		return -1;
 	}
- 
+
 
 	if (dm_init_service(&version) < 0) {
 		DEBUG(0, ("dm_init_service failed - disabling DMAPI\n"));
@@ -96,7 +96,7 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 	do {
 		dm_sessid_t *new_sessions;
 		nsessions *= 2;
-		new_sessions = talloc_realloc(tmp_ctx, sessions, 
+		new_sessions = talloc_realloc(tmp_ctx, sessions,
 						    dm_sessid_t, nsessions);
 		if (new_sessions == NULL) {
 			talloc_free(tmp_ctx);
@@ -130,7 +130,7 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 
 	/* No session already defined. */
 	if (ctx->session == DM_NO_SESSION) {
-		err = dm_create_session(DM_NO_SESSION, 
+		err = dm_create_session(DM_NO_SESSION,
 					session_name,
 					&ctx->session);
 		if (err < 0) {
@@ -150,8 +150,8 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
 	}
 
-	/* 
-	   Note that we never end the DMAPI session. It gets re-used if possiblie. 
+	/*
+	   Note that we never end the DMAPI session. It gets re-used if possiblie.
 	   DMAPI session is a kernel resource that is usually lives until server reboot
 	   and doesn't get destroed when an application finishes.
 
@@ -179,7 +179,7 @@ const void *dmapi_get_current_session(void)
 
 	return (void *)&dmapi_ctx->session;
 }
-	
+
 /*
   dmapi_have_session() must be the first DMAPI call you make in Samba. It will
   initialize DMAPI, if available, and tell you if you can get a DMAPI session.
@@ -224,7 +224,7 @@ bool dmapi_new_session(void)
 	return dmapi_ctx->session != DM_NO_SESSION;
 }
 
-/* 
+/*
     only call this when exiting from master smbd process. DMAPI sessions
     are long-lived kernel resources we ought to share across smbd processes.
     However, we must free them when all smbd processes are finished to
@@ -251,12 +251,12 @@ bool dmapi_destroy_session(void)
 }
 
 
-/* 
-   This is default implementation of dmapi_file_flags() that is 
+/*
+   This is default implementation of dmapi_file_flags() that is
    called from VFS is_offline() call to know whether file is offline.
    For GPFS-specific version see modules/vfs_tsmsm.c. It might be
    that approach on quering existence of a specific attribute that
-   is used in vfs_tsmsm.c will work with other DMAPI-based HSM 
+   is used in vfs_tsmsm.c will work with other DMAPI-based HSM
    implementations as well.
 */
 uint32_t dmapi_file_flags(const char * const path)
