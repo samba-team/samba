@@ -1458,6 +1458,25 @@ static PyObject *py_dsdb_check_and_update_fl(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_dc_operatingSystemVersion(PyObject *self, PyObject *args)
+{
+	const char *str = NULL;
+	int dc_level = 0;
+
+	if (!PyArg_ParseTuple(args, "i", &dc_level)) {
+		return NULL;
+	}
+
+	str = dsdb_dc_operatingSystemVersion(dc_level);
+	if (str == NULL) {
+		return PyErr_Format(PyExc_KeyError,
+				    "dsdb_dc_operatingSystemVersion(%d) failed",
+				    dc_level);
+	}
+
+	return PyUnicode_FromString(str);
+}
+
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
@@ -1550,6 +1569,11 @@ static PyMethodDef py_dsdb_methods[] = {
 	        "check_and_update_fl(ldb, lp) -> None\n"
 	  "Hook to run in testing the code run on samba server startup "
 	  "to validate and update DC functional levels"},
+	{ "dc_operatingSystemVersion",
+	        (PyCFunction)py_dsdb_dc_operatingSystemVersion,
+	        METH_VARARGS,
+	        "dsdb_dc_operatingSystemVersion(dc_level)"
+                " -> string name" },
 	{0}
 };
 
