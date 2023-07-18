@@ -3912,7 +3912,7 @@ static bool smb2_inode_matches(struct cli_state *cli,
 		return false;
 	}
 	if (test_ino != ino_tomatch) {
-		printf("%s: Inode missmatch, ino_tomatch (%s) "
+		printf("%s: Inode mismatch, ino_tomatch (%s) "
 			"ino=%"PRIu64" test (%s) "
 			"ino=%"PRIu64"\n",
 			__func__,

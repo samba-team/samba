@@ -1027,7 +1027,7 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	gid = atoi(argv[3]);
 	fd = atoi(argv[1]);
 	if (fd < 0 || fd >= 1024) {
-		printf("fchown: faliure=%d (file descriptor out of range)\n", EBADF);
+		printf("fchown: failure=%d (file descriptor out of range)\n", EBADF);
 		return NT_STATUS_OK;
 	}
 	if (vfs->files[fd] == NULL) {

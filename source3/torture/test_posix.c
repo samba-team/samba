@@ -1204,7 +1204,7 @@ bool run_posix_dir_default_acl_test(int dummy)
 		struct security_ace *ace = &sd->dacl->aces[i];
 		if (ace->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
 				  SEC_ACE_FLAG_CONTAINER_INHERIT)) {
-			printf("security descritor on directory %s already "
+			printf("security descriptor on directory %s already "
 				"contains inheritance flags\n",
 				dname);
 			sec_desc_print(NULL, stdout, sd, true);
@@ -1284,7 +1284,7 @@ bool run_posix_dir_default_acl_test(int dummy)
 	}
 
 	if (!got_inherit) {
-		printf("security descritor on directory %s does not "
+		printf("security descriptor on directory %s does not "
 			"contain inheritance flags\n",
 			dname);
 		sec_desc_print(NULL, stdout, sd, true);

@@ -133,7 +133,7 @@ static bool smb1_crtime_matches(struct cli_state *cli,
 	if (!equal) {
 		struct timeval_buf test_buf;
 		struct timeval_buf tomatch_buf;
-		printf("%s: crtime missmatch "
+		printf("%s: crtime mismatch "
 			"%s:crtime_tomatch=%s, %s:test_crtime = %s\n",
 			__func__,
 			match_pathname,
@@ -2089,7 +2089,7 @@ static NTSTATUS smb1_findfirst(TALLOC_CTX *mem_ctx,
 			   10, /* max returned param */
 			   NULL, /* data */
 			   0, /* num_data */
-			   SMB_BUFFER_SIZE_MAX, /* max retured data */
+			   SMB_BUFFER_SIZE_MAX, /* max returned data */
 			   /* Return values from here on.. */
 			   &recv_flags2, /* recv_flags2 */
 			   NULL, /* rsetup */
@@ -2188,7 +2188,7 @@ static bool test_smb1_findfirst_path(struct cli_state *cli,
 		bool match = strequal_m(finfo[i].name,
 					root_finfo[i].name);
 		if (!match) {
-			printf("%s:%d Missmatch. For %s, at position %zu, "
+			printf("%s:%d Mismatch. For %s, at position %zu, "
 			       "finfo[i].name = %s, "
 			       "root_finfo[i].name = %s\n",
 				__FILE__,
@@ -3229,7 +3229,7 @@ static bool test_smb1_open(struct cli_state *cli)
 	}
 	equal = (timespec_compare(&testfile_crtime, &open_crtime) == 0);
 	if (!equal) {
-		printf("%s:%d crtime missmatch of test file %s\n",
+		printf("%s:%d crtime mismatch of test file %s\n",
 			__FILE__,
 			__LINE__,
 			"\\BAD\\BAD\\openfile");
@@ -4005,7 +4005,7 @@ static NTSTATUS smb1_qpathinfo(struct cli_state *cli,
 			   2, /* max returned param */
 			   NULL, /* data */
 			   0, /* num_data */
-			   SMB_BUFFER_SIZE_MAX, /* max retured data */
+			   SMB_BUFFER_SIZE_MAX, /* max returned data */
 			   /* Return values from here on.. */
 			   NULL, /* recv_flags2 */
 			   NULL, /* rsetup */

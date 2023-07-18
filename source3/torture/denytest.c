@@ -1495,7 +1495,7 @@ bool torture_denytest1(int dummy)
 		correct = False;
 	}
 	
-	printf("finshed denytest1\n");
+	printf("finished denytest1\n");
 	return correct;
 }
 
@@ -1594,7 +1594,7 @@ bool torture_denytest2(int dummy)
 		correct = False;
 	}
 	
-	printf("finshed denytest2\n");
+	printf("finished denytest2\n");
 	return correct;
 }
 

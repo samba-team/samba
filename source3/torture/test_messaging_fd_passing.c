@@ -131,7 +131,7 @@ static bool fdpass2_child(int ready_fd)
 		goto done;
 	}
 
-	/* Tell the parent we are ready to receive mesages. */
+	/* Tell the parent we are ready to receive messages. */
 	bytes = write(ready_fd, &c, 1);
 	if (bytes != 1) {
 		perror("child: failed to write to ready_fd");
