@@ -1,0 +1,253 @@
+From bf2adac3a271fae551a726dc21dc9111bd7320be Mon Sep 17 00:00:00 2001
+From: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+Date: Mon, 17 Jul 2023 16:17:16 +1200
+Subject: [PATCH 1/2] libcli/security: save access check attempts for fuzz
+ examples
+
+If this patch is applied to a Samba tree, and the
+SAMBA_SAVE_ACCESS_CHECK_DIR environment variable points to a
+directory, the tokens and descriptors of all access checks will be
+stored in that directory in the form used by
+fuzz_security_token_vs_descriptor. This can be used to build up a
+corpus of seeds for the fuzzer.
+
+The steps to create the corpus go something like this:
+
+$ export SAMBA_SAVE_ACCESS_CHECK_DIR=/tmp/samba-seeds
+$ mkdir $SAMBA_SAVE_ACCESS_CHECK_DIR
+$ mkdir /tmp/final-seeds-go-here
+$ make test
+
+at this point you'd want to do something like this:
+
+$ for f in $SAMBA_SAVE_ACCESS_CHECK_DIR/*; do   \
+     cp -n $f /tmp/final-seeds-go-here/$(md5sum $f | cut -d' ' -f 1)  \
+  done
+
+but it takes way too long, so use the script in the second patch in
+this series, like so:
+
+$ script/find-unique-access-seeds \
+       $SAMBA_SAVE_ACCESS_CHECK_DIR \
+       /tmp/final-seeds-go-here/
+
+Think before applying this patch in production. It won't slow things
+down much, but it will capture your SIDs and ACLs.
+
+Signed-off-by: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+---
+ libcli/security/access_check.c | 76 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 76 insertions(+)
+
+diff --git a/libcli/security/access_check.c b/libcli/security/access_check.c
+index 81bacc90e78..9c3e4cfe966 100644
+--- a/libcli/security/access_check.c
++++ b/libcli/security/access_check.c
+@@ -24,6 +24,8 @@
+ #include "replace.h"
+ #include "lib/util/debug.h"
+ #include "libcli/security/security.h"
++#include "ndr/libndr.h"
++#include "gen_ndr/ndr_security.h"
+ 
+ /* Map generic access rights to object specific rights.  This technique is
+    used to give meaning to assigning read, write, execute and all access to
+@@ -103,6 +105,74 @@ void se_map_standard(uint32_t *access_mask, const struct standard_mapping *mappi
+ 	}
+ }
+ 
++
++static bool write_token_and_descriptor(const struct security_descriptor *sd,
++				       const struct security_token *token,
++				       uint32_t access_desired)
++{
++	/*
++	 * You should not be seeing this function in master or a release
++	 * branch! It should only be here if you have patched Samba to
++	 * generate fuzz seeds for fuzz_security_token_vs_descriptor.
++	 *
++	 * It hooks into access_check functions, saving copies of each access
++	 * request in a structure for use as a fuzz seed, into the directory
++	 * specified by the SAMBA_SAVE_ACCESS_CHECK_DIR environment variable.
++	 *
++	 * If the environment variable is not set, nothing will happen.
++	 *
++	 * A full `make test` saves about four million files, but only about
++	 * forty thousand of them are unique.
++	 */
++	FILE *f = NULL;
++	char buf[200];
++	int len;
++	DATA_BLOB blob = {0};
++	uint pid;
++	struct security_token_descriptor_fuzzing_pair p = {
++		.token = *token,
++		.sd = *sd,
++		.access_desired = access_desired
++	};
++	static size_t n = 0;
++	enum ndr_err_code ndr_err;
++	static const char *dir = NULL;
++	TALLOC_CTX *tmp_ctx = NULL;
++
++	if (dir == NULL) {
++		if (n == SIZE_MAX) {
++			return true;
++		}
++		dir = getenv("SAMBA_SAVE_ACCESS_CHECK_DIR");
++		if (dir == NULL) {
++			n = SIZE_MAX;
++			return false;
++		}
++	}
++	tmp_ctx = talloc_new(NULL);
++
++	n++;
++	ndr_err = ndr_push_struct_blob(
++		&blob, tmp_ctx, &p,
++		(ndr_push_flags_fn_t)ndr_push_security_token_descriptor_fuzzing_pair);
++	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
++		TALLOC_FREE(tmp_ctx);
++		return false;
++	}
++	pid = getpid();
++	len = snprintf(buf, sizeof(buf), "%s/%08u-%05zu.seed", dir, pid, n);
++	if (len >= sizeof(buf)) {
++		TALLOC_FREE(tmp_ctx);
++		return false;
++	}
++	f = fopen(buf, "w");
++	fwrite(blob.data, 1, blob.length, f);
++	fclose(f);
++	TALLOC_FREE(tmp_ctx);
++	return true;
++}
++
++
+ /*
+   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
+ */
+@@ -115,6 +185,8 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
+ 	bool have_owner_rights_ace = false;
+ 	unsigned i;
+ 
++	write_token_and_descriptor(sd, token, SEC_FLAG_MAXIMUM_ALLOWED);
++
+ 	if (sd->dacl == NULL) {
+ 		if (security_token_has_sid(token, sd->owner_sid)) {
+ 			switch (implicit_owner_rights) {
+@@ -211,6 +283,8 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor
+ 	bool am_owner = false;
+ 	bool have_owner_rights_ace = false;
+ 
++	write_token_and_descriptor(sd, token, access_desired);
++
+ 	*access_granted = access_desired;
+ 	bits_remaining = access_desired;
+ 
+@@ -528,6 +602,8 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
+ 	uint32_t bits_remaining;
+ 	struct dom_sid self_sid;
+ 
++	write_token_and_descriptor(sd, token, access_desired);
++
+ 	dom_sid_parse(SID_NT_SELF, &self_sid);
+ 
+ 	*access_granted = access_desired;
+-- 
+2.34.1
+
+
+From d79328bdac90ed16b9162cbfe10a4ed8bedbc073 Mon Sep 17 00:00:00 2001
+From: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+Date: Tue, 18 Jul 2023 16:07:11 +1200
+Subject: [PATCH 2/2] scripts: a script for deduplicating fuzz-seeds
+
+The previous patch adds a way to collect two million fuzz seeds, only
+a few thousand of which are unique. This script finds the unique ones.
+
+Some fuzzers like seeds to have names based on md5 hashes, so we do that.
+
+The naive technique takes ages.
+
+Signed-off-by: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+---
+ script/find-unique-access-seeds | 66 +++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+ create mode 100755 script/find-unique-access-seeds
+
+diff --git a/script/find-unique-access-seeds b/script/find-unique-access-seeds
+new file mode 100755
+index 00000000000..174e811ecd0
+--- /dev/null
++++ b/script/find-unique-access-seeds
+@@ -0,0 +1,66 @@
++#!/usr/bin/env python3
++#
++# Copyright (C) Catalyst IT Ltd. 2023
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <http://www.gnu.org/licenses/>.
++#
++"""USAGE: find-unique-access-seeds SRCDIR DESTDIR
++
++Copy the files in SRCDIR to DESTDIR with the name set to the
++md5sum of the contents. DESTDIR will thus have no duplicates.
++
++This is the same as going:
++
++    for f in $SRC/*; do
++         cp  $f $DEST/$(md5sum $f | cut -d' ' -f 1)
++    done
++
++but much more efficient.
++"""
++
++
++import sys
++import os
++from pathlib import Path
++from hashlib import md5
++
++
++def usage(ret):
++    print(__doc__)
++    exit(ret)
++
++
++def main():
++    if {'-h', '--help'}.intersection(sys.argv):
++        usage(0)
++    if len(sys.argv) != 3:
++        usage(1)
++
++    src, dest = sys.argv[1:]
++    sp = Path(src)
++    dp = Path(dest)
++
++    strings = set()
++
++    for filename in sp.iterdir():
++        with open(filename, 'rb') as f:
++            strings.add(f.read())
++
++    for s in strings:
++        name = md5(s).hexdigest()
++        with open(dp / name, "wb") as f:
++            f.write(s)
++
++
++main()
+-- 
+2.34.1
+
