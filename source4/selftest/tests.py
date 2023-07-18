@@ -1193,23 +1193,12 @@ for env in envs:
 
 have_fast_support = 1
 claims_support = 1
+
+# MIT
+kadmin_is_tgs = int('SAMBA4_USES_HEIMDAL' not in config_hash)
+
+# Heimdal
 compound_id_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
-if ('SAMBA4_USES_HEIMDAL' in config_hash or
-    'HAVE_MIT_KRB5_1_20' in config_hash):
-    tkt_sig_support = 1
-else:
-    tkt_sig_support = 0
-
-if 'SAMBA4_USES_HEIMDAL' in config_hash:
-    full_sig_support = 1
-else:
-    full_sig_support = 0
-
-if 'HAVE_MIT_KRB5_1_20' in config_hash:
-    kadmin_is_tgs = 1
-else:
-    kadmin_is_tgs = 0
-
 expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)
@@ -1243,8 +1232,6 @@ krb5_environ = {
     'FAST_SUPPORT': have_fast_support,
     'CLAIMS_SUPPORT': claims_support,
     'COMPOUND_ID_SUPPORT': compound_id_support,
-    'TKT_SIG_SUPPORT': tkt_sig_support,
-    'FULL_SIG_SUPPORT': full_sig_support,
     'EXPECT_PAC': expect_pac,
     'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
     'CHECK_CNAME': check_cname,

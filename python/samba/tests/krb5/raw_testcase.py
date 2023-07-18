@@ -717,13 +717,13 @@ class RawKerberosTest(TestCase):
         tkt_sig_support = samba.tests.env_get_var_value('TKT_SIG_SUPPORT',
                                                         allow_missing=True)
         if tkt_sig_support is None:
-            tkt_sig_support = '0'
+            tkt_sig_support = '1'
         cls.tkt_sig_support = bool(int(tkt_sig_support))
 
         full_sig_support = samba.tests.env_get_var_value('FULL_SIG_SUPPORT',
                                                          allow_missing=True)
         if full_sig_support is None:
-            full_sig_support = '0'
+            full_sig_support = '1'
         cls.full_sig_support = bool(int(full_sig_support))
 
         expect_pac = samba.tests.env_get_var_value('EXPECT_PAC',

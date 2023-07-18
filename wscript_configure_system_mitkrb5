@@ -9,7 +9,7 @@ krb5_min_required_version = "1.9"
 # Required versions
 krb5_required_version = krb5_min_required_version
 if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-    krb5_required_version = "1.19"
+    krb5_required_version = "1.21"
 
 def parse_version(v):
     return tuple(map(int, (v.split("."))))
@@ -98,10 +98,6 @@ if conf.env.KRB5_CONFIG:
     else:
         Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
 
-    if parse_version(krb5_version) < parse_version('1.20'):
-        conf.DEFINE('HAVE_MIT_KRB5_PRE_1_20', 1)
-    if parse_version(krb5_version) >= parse_version('1.20'):
-        conf.DEFINE('HAVE_MIT_KRB5_1_20', 1)
     conf.define('USING_SYSTEM_MITKRB5', '"%s"' % krb5_version)
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')

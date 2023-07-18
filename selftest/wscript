@@ -261,17 +261,10 @@ def cmd_testonly(opt):
 
     if CONFIG_GET(opt, 'USING_SYSTEM_KRB5') and CONFIG_GET(opt, 'MIT_KDC_PATH'):
         env.OPTIONS += " --exclude=${srcdir}/selftest/skip_mit_kdc"
-        if CONFIG_GET(opt, 'HAVE_MIT_KRB5_PRE_1_20'):
-            env.OPTIONS += " --exclude=${srcdir}/selftest/skip_mit_kdc_pre_1_20"
-
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_mit_kdc"
 
-        if CONFIG_GET(opt, 'HAVE_MIT_KRB5_PRE_1_20'):
-            env.FILTER_XFAIL += ' --expected-failures=${srcdir}/selftest/knownfail_mit_kdc_pre_1_20'
-
-        if CONFIG_GET(opt, 'HAVE_MIT_KRB5_1_20'):
-            env.FILTER_XFAIL += ' --expected-failures=${srcdir}/selftest/knownfail_mit_kdc_1_20'
+        env.FILTER_XFAIL += ' --expected-failures=${srcdir}/selftest/knownfail_mit_kdc_1_20'
     else:
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_heimdal_kdc"
