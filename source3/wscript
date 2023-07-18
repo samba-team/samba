@@ -43,7 +43,7 @@ def options(opt):
 # ------------------
 #
 # Most of the calls to opt.samba_add_onoff_option() implicitly
-# or explicity use default=True
+# or explicitly use default=True
 #
 # To assist users and distributors to build Samba with the full feature
 # set, the build system will abort if our dependent libraries and their
@@ -1244,7 +1244,7 @@ err:
             'HAVE_RW_HINTS',
             addmain=False,
             execute=True,
-            msg="Checking whether fcntl supports setting/geting hints")
+            msg="Checking whether fcntl supports setting/getting hints")
 
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
                                 define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
@@ -1561,7 +1561,7 @@ int main(void) {
                 execute=False,
                 local_include=False)
 
-        # For IRIX like dqb_isoftlimit instead of dqb_fsoftlimit in struc dqblk
+        # For IRIX like dqb_isoftlimit instead of dqb_fsoftlimit in struct dqblk
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_fsoftlimit', define='HAVE_DQB_FSOFTLIMIT',
                                 headers='sys/quota.h')
         #darwin style quota bytecount
@@ -1738,7 +1738,7 @@ int main(void) {
             # when we try to include both files.
             #
             # check if struct open_how is defined in liburing/compat.h
-            # itself and not via inclusing linux/openat2.h
+            # itself and not via including linux/openat2.h
             conf.CHECK_TYPE_IN('struct open_how', 'liburing/compat.h',
                                cflags='-D_LINUX_OPENAT2_H',
                                define='HAVE_STRUCT_OPEN_HOW_LIBURING_COMPAT_H')
