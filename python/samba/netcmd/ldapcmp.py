@@ -467,7 +467,8 @@ class LDAPObject(object):
                 "ipsecISAKMPReference", "ipsecFilterReference",
                 "msDs-masteredBy", "lastSetTime",
                 "ipsecNegotiationPolicyReference", "subRefs", "gPCFileSysPath",
-                "accountExpires", "invocationId", "operatingSystemVersion",
+                "accountExpires", "invocationId",
+                "operatingSystem", "operatingSystemVersion",
                 "oEMInformation", "schemaInfo",
                 # After Exchange preps
                 "targetAddress", "msExchMailboxGuid", "siteFolderGUID"]
