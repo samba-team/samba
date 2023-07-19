@@ -22,6 +22,9 @@
 #define _MDSSVC_MARSHALLING_H
 
 #include "dalloc.h"
+#include "libcli/util/ntstatus.h"
+#include "lib/util/data_blob.h"
+#include "librpc/gen_ndr/mdssvc.h"
 
 #define MAX_SL_FRAGMENT_SIZE 0xFFFFF
 
@@ -49,7 +52,11 @@ typedef struct {
  * Function declarations
  ******************************************************************************/
 
-extern ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize);
+extern NTSTATUS sl_pack_alloc(TALLOC_CTX *mem_ctx,
+			      DALLOC_CTX *d,
+			      struct mdssvc_blob *b,
+			      size_t max_fragment_size);
+
 extern bool sl_unpack(DALLOC_CTX *query, const char *buf, size_t bufsize);
 
 #endif

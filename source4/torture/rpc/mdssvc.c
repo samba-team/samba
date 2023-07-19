@@ -536,13 +536,6 @@ static bool test_mdssvc_invalid_ph_cmd(struct torture_context *tctx,
 	request_blob.length = 0;
 	request_blob.size = 0;
 
-	response_blob.spotlight_blob = talloc_array(state,
-						    uint8_t,
-						    0);
-	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
-				     ok, done, "dalloc_zero failed\n");
-	response_blob.size = 0;
-
 	status =  dcerpc_mdssvc_cmd(b,
 				    state,
 				    &ph,
@@ -564,6 +557,218 @@ static bool test_mdssvc_invalid_ph_cmd(struct torture_context *tctx,
 	torture_assert_ntstatus_equal_goto(
 		tctx, status, NT_STATUS_RPC_PROTOCOL_ERROR, ok, done,
 		"dcerpc_mdssvc_unknown1 failed\n");
+
+done:
+	return ok;
+}
+
+static uint8_t test_sl_unpack_loop_buf[] = {
+	0x34, 0x33, 0x32, 0x31, 0x33, 0x30, 0x64, 0x6d,
+	0x1d, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x02, 0x01, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00,
+	0x06, 0x00, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00,
+	0x66, 0x65, 0x74, 0x63, 0x68, 0x41, 0x74, 0x74,
+	0x72, 0x69, 0x62, 0x75, 0x74, 0x65, 0x73, 0x3a,
+	0x66, 0x6f, 0x72, 0x4f, 0x49, 0x44, 0x41, 0x72,
+	0x72, 0x61, 0x79, 0x3a, 0x63, 0x6f, 0x6e, 0x74,
+	0x65, 0x78, 0x74, 0x3a, 0x00, 0x00, 0x00, 0xea,
+	0x02, 0x00, 0x00, 0x84, 0x02, 0x00, 0x00, 0x00,
+	0x0a, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x02, 0x05, 0x00, 0x00, 0x00,
+	0x03, 0x00, 0x00, 0x07, 0x03, 0x00, 0x00, 0x00,
+	0x6b, 0x4d, 0x44, 0x49, 0x74, 0x65, 0x6d, 0x50,
+	0x61, 0x74, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x02, 0x06, 0x00, 0x00, 0x00,
+	0x03, 0x00, 0x00, 0x87, 0x08, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0xdd, 0x0a, 0x20, 0x00, 0x00, 0x6b,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x07, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00, 0x00,
+	0x02, 0x00, 0x00, 0x0a, 0x03, 0x00, 0x00, 0x00,
+	0x03, 0x00, 0x00, 0x0a, 0x03, 0x00, 0x00, 0x00,
+	0x04, 0x00, 0x00, 0x0c, 0x04, 0x00, 0x00, 0x00,
+	0x0e, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x00, 0x00,
+	0x0f, 0x00, 0x00, 0x0c, 0x03, 0x00, 0x00, 0x00,
+	0x13, 0x00, 0x00, 0x1a, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static bool test_mdssvc_sl_unpack_loop(struct torture_context *tctx,
+				       void *data)
+{
+	struct torture_mdsscv_state *state = talloc_get_type_abort(
+		data, struct torture_mdsscv_state);
+	struct dcerpc_binding_handle *b = state->p->binding_handle;
+	struct mdssvc_blob request_blob;
+	struct mdssvc_blob response_blob;
+	uint32_t device_id;
+	uint32_t unkn2;
+	uint32_t unkn9;
+	uint32_t fragment;
+	uint32_t flags;
+	NTSTATUS status;
+	bool ok = true;
+
+	device_id = UINT32_C(0x2f000045);
+	unkn2 = 23;
+	unkn9 = 0;
+	fragment = 0;
+	flags = UINT32_C(0x6b000001);
+
+	request_blob.spotlight_blob = test_sl_unpack_loop_buf;
+	request_blob.size = sizeof(test_sl_unpack_loop_buf);
+	request_blob.length = sizeof(test_sl_unpack_loop_buf);
+
+	status = dcerpc_mdssvc_cmd(b,
+				   state,
+				   &state->ph,
+				   0,
+				   device_id,
+				   unkn2,
+				   0,
+				   flags,
+				   request_blob,
+				   0,
+				   64 * 1024,
+				   1,
+				   64 * 1024,
+				   0,
+				   0,
+				   &fragment,
+				   &response_blob,
+				   &unkn9);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, done,
+		"dcerpc_mdssvc_unknown1 failed\n");
+
+done:
+	return ok;
+}
+
+static bool test_sl_dict_type_safety(struct torture_context *tctx,
+				     void *data)
+{
+	struct torture_mdsscv_state *state = talloc_get_type_abort(
+		data, struct torture_mdsscv_state);
+	struct dcerpc_binding_handle *b = state->p->binding_handle;
+	struct mdssvc_blob request_blob;
+	struct mdssvc_blob response_blob;
+	uint64_t ctx1 = 0xdeadbeef;
+	uint64_t ctx2 = 0xcafebabe;
+	uint32_t device_id;
+	uint32_t unkn2;
+	uint32_t unkn9;
+	uint32_t fragment;
+	uint32_t flags;
+	DALLOC_CTX *d = NULL;
+	sl_array_t *array1 = NULL, *array2 = NULL;
+	sl_dict_t *arg = NULL;
+	int result;
+	NTSTATUS status;
+	bool ok = true;
+
+	device_id = UINT32_C(0x2f000045);
+	unkn2 = 23;
+	unkn9 = 0;
+	fragment = 0;
+	flags = UINT32_C(0x6b000001);
+
+	d = dalloc_new(tctx);
+	torture_assert_not_null_goto(tctx, d,
+				     ok, done, "dalloc_new failed\n");
+
+	array1 = dalloc_zero(d, sl_array_t);
+	torture_assert_not_null_goto(tctx, array1,
+				     ok, done, "dalloc_zero failed\n");
+
+	array2 = dalloc_zero(d, sl_array_t);
+	torture_assert_not_null_goto(tctx, array2,
+				     ok, done, "dalloc_new failed\n");
+
+	result = dalloc_stradd(array2, "openQueryWithParams:forContext:");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_add_copy(array2, &ctx1, uint64_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_add_copy(array2, &ctx2, uint64_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	arg = dalloc_zero(array1, sl_dict_t);
+	torture_assert_not_null_goto(tctx, d,
+				     ok, done, "dalloc_zero failed\n");
+
+	result = dalloc_stradd(arg, "kMDQueryString");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_stradd(arg, "*");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_stradd(arg, "kMDScopeArray");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_stradd(arg, "AAAABBBB");
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_stradd failed\n");
+
+	result = dalloc_add(array1, array2, sl_array_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_add failed\n");
+
+	result = dalloc_add(array1, arg, sl_dict_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_add failed\n");
+
+	result = dalloc_add(d, array1, sl_array_t);
+	torture_assert_goto(tctx, result == 0,
+			    ok, done, "dalloc_add failed\n");
+
+	torture_comment(tctx, "%s", dalloc_dump(d, 0));
+
+	request_blob.spotlight_blob = talloc_array(tctx,
+						   uint8_t,
+						   64 * 1024);
+	torture_assert_not_null_goto(tctx, request_blob.spotlight_blob,
+				     ok, done, "dalloc_new failed\n");
+	request_blob.size = 64 * 1024;
+
+	status = sl_pack_alloc(tctx, d, &request_blob, 64 * 1024);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"sl_pack_alloc() failed\n");
+
+	status = dcerpc_mdssvc_cmd(b,
+				   state,
+				   &state->ph,
+				   0,
+				   device_id,
+				   unkn2,
+				   0,
+				   flags,
+				   request_blob,
+				   0,
+				   64 * 1024,
+				   1,
+				   64 * 1024,
+				   0,
+				   0,
+				   &fragment,
+				   &response_blob,
+				   &unkn9);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, done,
+		"dcerpc_mdssvc_cmd failed\n");
 
 done:
 	return ok;
@@ -628,7 +833,6 @@ static bool test_mdssvc_fetch_attr_unknown_cnid(struct torture_context *tctx,
 	const char *path_type = NULL;
 	uint64_t ino64;
 	NTSTATUS status;
-	ssize_t len;
 	int ret;
 	bool ok = true;
 
@@ -693,25 +897,9 @@ static bool test_mdssvc_fetch_attr_unknown_cnid(struct torture_context *tctx,
 	ret = dalloc_add(array, cnids, sl_cnids_t);
 	torture_assert_goto(tctx, ret == 0, ret, done, "dalloc_add failed\n");
 
-	request_blob.spotlight_blob = talloc_array(state,
-						   uint8_t,
-						   max_fragment_size);
-	torture_assert_not_null_goto(tctx, request_blob.spotlight_blob,
-				     ret, done, "dalloc_zero failed\n");
-	request_blob.size = max_fragment_size;
-
-	response_blob.spotlight_blob = talloc_array(state,
-						    uint8_t,
-						    max_fragment_size);
-	torture_assert_not_null_goto(tctx, response_blob.spotlight_blob,
-				     ret, done, "dalloc_zero failed\n");
-	response_blob.size = max_fragment_size;
-
-	len = sl_pack(d, (char *)request_blob.spotlight_blob, request_blob.size);
-	torture_assert_goto(tctx, len != -1, ret, done, "sl_pack failed\n");
-
-	request_blob.length = len;
-	request_blob.size = len;
+	status = sl_pack_alloc(tctx, d, &request_blob, max_fragment_size);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"sl_pack_alloc() failed\n");
 
 	status =  dcerpc_mdssvc_cmd(b,
 				    state,
@@ -839,6 +1027,14 @@ struct torture_suite *torture_rpc_mdssvc(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase,
 				      "fetch_unknown_cnid",
 				      test_mdssvc_fetch_attr_unknown_cnid);
+
+	torture_tcase_add_simple_test(tcase,
+				      "mdssvc_sl_unpack_loop",
+				      test_mdssvc_sl_unpack_loop);
+
+	torture_tcase_add_simple_test(tcase,
+				      "sl_dict_type_safety",
+				      test_sl_dict_type_safety);
 
 	return suite;
 }

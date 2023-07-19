@@ -189,6 +189,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_smb2_sharemode_init(suite));
 	torture_suite_add_1smb2_test(suite, "hold-oplock", test_smb2_hold_oplock);
 	torture_suite_add_suite(suite, torture_smb2_session_init(suite));
+	torture_suite_add_suite(suite, torture_smb2_session_req_sign_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_replay_init(suite));
 	torture_suite_add_simple_test(suite, "dosmode", torture_smb2_dosmode);
 	torture_suite_add_simple_test(suite, "async_dosmode", torture_smb2_async_dosmode);

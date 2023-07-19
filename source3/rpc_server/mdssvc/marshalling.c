@@ -78,6 +78,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query, const char *buf,
 			      ssize_t offset, size_t bufsize,
 			      int count, ssize_t toc_offset,
 			      int encoding);
+static ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize);
 
 /******************************************************************************
  * Wrapper functions for the *VAL macros with bound checking
@@ -1119,7 +1120,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 			sl_nil_t nil = 0;
 
 			subcount = tag.count;
-			if (subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			for (i = 0; i < subcount; i++) {
@@ -1147,7 +1148,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_INT64:
 			subcount = sl_unpack_ints(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1156,7 +1157,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_UUID:
 			subcount = sl_unpack_uuid(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1165,7 +1166,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_FLOAT:
 			subcount = sl_unpack_floats(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1174,7 +1175,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 
 		case SQ_TYPE_DATE:
 			subcount = sl_unpack_date(query, buf, offset, bufsize, encoding);
-			if (subcount == -1 || subcount > count) {
+			if (subcount < 1 || subcount > count) {
 				return -1;
 			}
 			offset += tag.size;
@@ -1190,11 +1191,7 @@ static ssize_t sl_unpack_loop(DALLOC_CTX *query,
 	return offset;
 }
 
-/******************************************************************************
- * Global functions for packing und unpacking
- ******************************************************************************/
-
-ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
+static ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
 {
 	ssize_t result;
 	char *toc_buf;
@@ -1272,6 +1269,34 @@ ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
 	len += 16 + (toc_index + 1 ) * 8;
 
 	return len;
+}
+
+/******************************************************************************
+ * Global functions for packing und unpacking
+ ******************************************************************************/
+
+NTSTATUS sl_pack_alloc(TALLOC_CTX *mem_ctx,
+		       DALLOC_CTX *d,
+		       struct mdssvc_blob *b,
+		       size_t max_fragment_size)
+{
+	ssize_t len;
+
+	b->spotlight_blob = talloc_zero_array(mem_ctx,
+					      uint8_t,
+					      max_fragment_size);
+	if (b->spotlight_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	len = sl_pack(d, (char *)b->spotlight_blob, max_fragment_size);
+	if (len == -1) {
+		return NT_STATUS_DATA_ERROR;
+	}
+
+	b->length = len;
+	b->size = len;
+	return NT_STATUS_OK;
 }
 
 bool sl_unpack(DALLOC_CTX *query, const char *buf, size_t bufsize)

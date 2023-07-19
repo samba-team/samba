@@ -365,12 +365,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
-	/*
-	 * We use xconn->smb2.signing_mandatory set up via
-	 * srv_init_signing() -> smb2_srv_init_signing().
-	 * This calls lpcfg_server_signing_allowed() to get the correct
-	 * defaults, e.g. signing_required for an ad_dc.
-	 */
 	if (xconn->smb2.signing_mandatory) {
 		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
 	}

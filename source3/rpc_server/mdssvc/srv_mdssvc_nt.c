@@ -81,6 +81,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 		loadparm_s3_global_substitution();
 	int snum;
 	char *outpath = discard_const_p(char, r->out.share_path);
+	char *fake_path = NULL;
 	char *path;
 	NTSTATUS status;
 
@@ -98,8 +99,17 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 
 	path = lp_path(talloc_tos(), lp_sub, snum);
 	if (path == NULL) {
-		DBG_ERR("Couldn't create policy handle for %s\n",
+		DBG_ERR("Couldn't create path for %s\n",
 			r->in.share_name);
+		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+		return;
+	}
+
+	fake_path = talloc_asprintf(p->mem_ctx, "/%s", r->in.share_name);
+	if (fake_path == NULL) {
+		DBG_ERR("Couldn't create fake share path for %s\n",
+			r->in.share_name);
+		talloc_free(path);
 		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 		return;
 	}
@@ -112,18 +122,20 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_VOLUME)) {
 		ZERO_STRUCTP(r->out.handle);
 		talloc_free(path);
+		talloc_free(fake_path);
 		return;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Couldn't create policy handle for %s\n",
 			r->in.share_name);
 		talloc_free(path);
+		talloc_free(fake_path);
 		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 		return;
 	}
 
-	strlcpy(outpath, path, 1024);
-	talloc_free(path);
+	strlcpy(outpath, fake_path, 1024);
+	talloc_free(fake_path);
 	return;
 }
 
@@ -164,7 +176,6 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
 	bool ok;
-	char *rbuf;
 	struct mds_ctx *mds_ctx;
 	NTSTATUS status;
 
@@ -221,18 +232,13 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 		return;
 	}
 
-	rbuf = talloc_zero_array(p->mem_ctx, char, r->in.max_fragment_size1);
-	if (rbuf == NULL) {
-		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-		return;
-	}
-	r->out.response_blob->spotlight_blob = (uint8_t *)rbuf;
-	r->out.response_blob->size = r->in.max_fragment_size1;
-
 	/* We currently don't use fragmentation at the mdssvc RPC layer */
 	*r->out.fragment = 0;
 
-	ok = mds_dispatch(mds_ctx, &r->in.request_blob, r->out.response_blob);
+	ok = mds_dispatch(mds_ctx,
+			  &r->in.request_blob,
+			  r->out.response_blob,
+			  r->in.max_fragment_size1);
 	if (ok) {
 		*r->out.unkn9 = 0;
 	} else {

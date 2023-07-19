@@ -52,7 +52,6 @@ struct dcesrv_context;
 
 /* The following definitions come from smbd/smb2_signing.c */
 
-bool smb2_srv_init_signing(struct smbXsrv_connection *conn);
 bool srv_init_signing(struct smbXsrv_connection *conn);
 
 /* The following definitions come from smbd/aio.c  */

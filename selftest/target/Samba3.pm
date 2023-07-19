@@ -1294,6 +1294,7 @@ sub setup_ad_member_idmap_rid
 	# values required for tests to succeed
 	create krb5 conf = no
         map to guest = bad user
+	server signing = required
 ";
 
 	my $ret = $self->provision(

@@ -26,9 +26,12 @@
 #include "lib/param/param.h"
 #include "smb2_signing.h"
 
-bool smb2_srv_init_signing(struct smbXsrv_connection *conn)
+bool srv_init_signing(struct smbXsrv_connection *conn)
 {
-	struct loadparm_context *lp_ctx = loadparm_init_s3(conn, loadparm_s3_helpers());
+	struct loadparm_context *lp_ctx = NULL;
+	bool ok = true;
+
+	lp_ctx = loadparm_init_s3(conn, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DBG_DEBUG("loadparm_init_s3 failed\n");
 		return false;
@@ -39,19 +42,11 @@ bool smb2_srv_init_signing(struct smbXsrv_connection *conn)
 	 * It is always allowed and desired, whatever the smb.conf says.
 	 */
 	(void)lpcfg_server_signing_allowed(lp_ctx, &conn->smb2.signing_mandatory);
-	talloc_unlink(conn, lp_ctx);
-	return true;
-}
 
-bool srv_init_signing(struct smbXsrv_connection *conn)
-{
 #if defined(WITH_SMB1SERVER)
-	if (conn->protocol >= PROTOCOL_SMB2_02) {
+	ok = smb1_srv_init_signing(lp_ctx, conn);
 #endif
-		return smb2_srv_init_signing(conn);
-#if defined(WITH_SMB1SERVER)
-	} else {
-		return smb1_srv_init_signing(conn);
-	}
-#endif
+
+	talloc_unlink(conn, lp_ctx);
+	return ok;
 }
