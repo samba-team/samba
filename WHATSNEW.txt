@@ -108,7 +108,24 @@ The use of well known cryptography libraries makes Samba easier for
 end-users to validate and deploy, and for distributors to ship.  This
 is the end of a very long journey for Samba.
 
+Revocation support in Heimdal KDC for PKINIT certificates
+---------------------------------------------------------
 
+Samba will now correctly honour the revocation of 'smart card'
+certificates used for PKINIT Kerberos authentication.
+
+This list is reloaded each time the file changes, so no further action
+other than replacing the file is required.  The additional krb5.conf
+option is:
+
+ [kdc]
+	pkinit_revoke = FILE:/path/to/crl.pem
+
+Information on the "Smart Card login" feature as a whole is at:
+ https://wiki.samba.org/index.php/Samba_AD_Smart_Card_Login
+
+
+================
 REMOVED FEATURES
 ================
 
