@@ -886,6 +886,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	/* r->in.negotiate_flags is an aliased pointer to r->out.negotiate_flags,
 	 * so use a copy to avoid destroying the client values. */
 	uint32_t in_neg_flags = *r->in.negotiate_flags;
+	uint32_t neg_flags = 0;
 	const char *fn;
 	struct loadparm_context *lp_ctx = p->dce_call->conn->dce_ctx->lp_ctx;
 	struct dom_sid sid;
@@ -902,7 +903,6 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	 * an error or not.
 	 */
 
-	/* 0x000001ff */
 	srv_flgs = NETLOGON_NEG_ACCOUNT_LOCKOUT |
 		   NETLOGON_NEG_PERSISTENT_SAMREPL |
 		   NETLOGON_NEG_ARCFOUR |
@@ -912,20 +912,10 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		   NETLOGON_NEG_MULTIPLE_SIDS |
 		   NETLOGON_NEG_REDO |
 		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL |
-		   NETLOGON_NEG_PASSWORD_SET2;
-
-	/* Ensure we support strong (128-bit) keys. */
-	if (in_neg_flags & NETLOGON_NEG_STRONG_KEYS) {
-		srv_flgs |= NETLOGON_NEG_STRONG_KEYS;
-	}
-
-	if (in_neg_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		srv_flgs |= NETLOGON_NEG_SUPPORTS_AES;
-	}
-
-	if (in_neg_flags & NETLOGON_NEG_SCHANNEL) {
-		srv_flgs |= NETLOGON_NEG_SCHANNEL;
-	}
+		   NETLOGON_NEG_PASSWORD_SET2 |
+		   NETLOGON_NEG_STRONG_KEYS |
+		   NETLOGON_NEG_SUPPORTS_AES |
+		   NETLOGON_NEG_SCHANNEL;
 
 	/*
 	 * Support authentication of trusted domains.
@@ -947,6 +937,8 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		srv_flgs &= ~NETLOGON_NEG_ARCFOUR;
 	}
 
+	neg_flags = in_neg_flags & srv_flgs;
+
 	switch (dce_call->pkt.u.request.opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE:
 			fn = "_netr_ServerAuthenticate";
@@ -959,6 +951,19 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 			break;
 		default:
 			return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		if (!(neg_flags & NETLOGON_NEG_SUPPORTS_AES)) {
+			DBG_NOTICE("%s: no AES support negotiated from client %s\n",
+				   fn, r->in.computer_name);
+			/*
+			 * Here we match Windows 2012 and return no flags.
+			 */
+			neg_flags = 0;
+			status = NT_STATUS_DOWNGRADE_DETECTED;
+			goto out;
+		}
 	}
 
 	/* We use this as the key to store the creds: */
@@ -1000,7 +1005,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 					   &mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
-					   srv_flgs);
+					   neg_flags);
 	if (!creds) {
 		DEBUG(0,("%s: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
@@ -1032,7 +1037,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 
   out:
 
-	*r->out.negotiate_flags = srv_flgs;
+	*r->out.negotiate_flags = neg_flags;
 	return status;
 }
 
