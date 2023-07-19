@@ -418,6 +418,7 @@ wbcErr wbcCtxAuthenticateUserEx(struct wbcContext *ctx,
 				 params->domain_name,
 				 sep_response.data.info.winbind_separator,
 				 params->account_name);
+			winbindd_free_response(&sep_response);
 		} else {
 			strncpy(request.data.auth.user,
 				params->account_name,
