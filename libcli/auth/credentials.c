@@ -1407,9 +1407,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_copy(
 		return NULL;
 	}
 
-	creds->sequence			= creds_in->sequence;
-	creds->negotiate_flags		= creds_in->negotiate_flags;
-	creds->secure_channel_type	= creds_in->secure_channel_type;
+	*creds = *creds_in;
 
 	creds->computer_name = talloc_strdup(creds, creds_in->computer_name);
 	if (!creds->computer_name) {
@@ -1431,11 +1429,6 @@ struct netlogon_creds_CredentialState *netlogon_creds_copy(
 		}
 		*creds->ex = *creds_in->ex;
 	}
-
-	memcpy(creds->session_key, creds_in->session_key, sizeof(creds->session_key));
-	memcpy(creds->seed.data, creds_in->seed.data, sizeof(creds->seed.data));
-	memcpy(creds->client.data, creds_in->client.data, sizeof(creds->client.data));
-	memcpy(creds->server.data, creds_in->server.data, sizeof(creds->server.data));
 
 	return creds;
 }
