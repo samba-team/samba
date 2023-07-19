@@ -100,9 +100,15 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_users_domstate *d = &state->domains[i];
-
-		d->subreq = wb_query_user_list_send(
-			state->domains, ev, d->domain);
+		/*
+		 * Use "state" as a talloc memory context since it has type
+		 * "struct tevent_req". This is needed to make tevent call depth
+		 * tracking working as expected.
+		 * After calling wb_query_user_list_send(), re-parent back to
+		 * "state->domains" to make TALLOC_FREE(state->domains) working.
+		 */
+		d->subreq = wb_query_user_list_send(state, ev, d->domain);
+		d->subreq = talloc_reparent(state, state->domains, d->subreq);
 		if (tevent_req_nomem(d->subreq, req)) {
 			TALLOC_FREE(state->domains);
 			return tevent_req_post(req, ev);
