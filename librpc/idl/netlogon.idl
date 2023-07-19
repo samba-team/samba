@@ -1236,7 +1236,7 @@ interface netlogon
 	/* Function 0x15 */
 	typedef [switch_type(uint32)] union {
 		[case(1)] netr_NegotiateFlags server_capabilities;
-		[case(2)] netr_NegotiateFlags server_capabilities;
+		[case(2)] netr_NegotiateFlags requested_flags;
 	} netr_Capabilities;
 
 	NTSTATUS netr_LogonGetCapabilities(
