@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "librpc/gen_ndr/ndr_schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../libcli/security/dom_sid.h"
 #include "lib/util/util_str_escape.h"
@@ -1408,32 +1409,17 @@ struct netlogon_creds_CredentialState *netlogon_creds_copy(
 	const struct netlogon_creds_CredentialState *creds_in)
 {
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	enum ndr_err_code ndr_err;
 
 	if (!creds) {
 		return NULL;
 	}
 
-	*creds = *creds_in;
-
-	creds->computer_name = talloc_strdup(creds, creds_in->computer_name);
-	if (!creds->computer_name) {
-		talloc_free(creds);
+	ndr_err = ndr_deepcopy_struct(netlogon_creds_CredentialState,
+				      creds_in, creds, creds);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(creds);
 		return NULL;
-	}
-	creds->account_name = talloc_strdup(creds, creds_in->account_name);
-	if (!creds->account_name) {
-		talloc_free(creds);
-		return NULL;
-	}
-
-	if (creds_in->ex != NULL) {
-		creds->ex = talloc_zero(creds,
-			struct netlogon_creds_CredentialState_extra_info);
-		if (creds->ex == NULL) {
-			talloc_free(creds);
-			return NULL;
-		}
-		*creds->ex = *creds_in->ex;
 	}
 
 	return creds;
