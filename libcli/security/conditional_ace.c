@@ -1750,7 +1750,8 @@ static bool composite_relational_operator(const struct ace_condition_token *op,
 
 	/* negate the NOTs */
 	if (op->type == CONDITIONAL_ACE_TOKEN_NOT_CONTAINS ||
-	    op->type == CONDITIONAL_ACE_TOKEN_NOT_ANY_OF) {
+	    op->type == CONDITIONAL_ACE_TOKEN_NOT_ANY_OF)
+	{
 		answer = !answer;
 	}
 
