@@ -778,7 +778,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		/*
 		 * Private Header for Constructed Type
 		 */
-		/* length - will be updated latter */
+		/* length - will be updated later */
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d",
@@ -958,7 +958,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 		/*
 		 * Private Header for Constructed Type
 		 */
-		/* length - will be updated latter */
+		/* length - will be updated later */
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, subndr->offset));
 
 		/* reserved */
