@@ -3117,7 +3117,7 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
                                        assigned_policy=policy)
 
-        # Show that authentication is allowed.
+        # Show that obtaining a service ticket is allowed.
         self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
