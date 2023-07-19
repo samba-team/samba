@@ -362,7 +362,7 @@ enum ndr_compression_alg {
 			uint32_t _missing = n - _available; \
 			ndr->relative_highest_offset = _missing; \
 		} \
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u (%s)", (unsigned)n, __location__); \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %zu (%s)", (size_t)n, __location__); \
 	} \
 } while(0)
 
@@ -380,7 +380,7 @@ enum ndr_compression_alg {
 			return ndr_pull_error( \
 				ndr, \
 				NDR_ERR_BUFSIZE, \
-				"Pull align (overflow) %u", (unsigned)n); \
+				"Pull align (overflow) %zu", (size_t)n); \
 		} \
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
@@ -389,7 +389,7 @@ enum ndr_compression_alg {
 			uint32_t _missing = ndr->offset - ndr->data_size; \
 			ndr->relative_highest_offset = _missing; \
 		} \
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", (unsigned)n); \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %zu", (size_t)n); \
 	} \
 } while(0)
 
