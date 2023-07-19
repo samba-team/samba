@@ -67,10 +67,10 @@ char *sddl_from_conditional_ace(TALLOC_CTX *mem_ctx,
 
 #define IS_LITERAL_TOKEN(x)						\
 	((IS_INT_TOKEN(x) ||						\
-	  (x->type) == CONDITIONAL_ACE_TOKEN_UNICODE ||		\
-	  (x->type) == CONDITIONAL_ACE_TOKEN_OCTET_STRING ||		\
-	  (x->type) == CONDITIONAL_ACE_TOKEN_SID ||			\
-	  (x->type) == CONDITIONAL_ACE_TOKEN_COMPOSITE) &&		\
+	  ((x)->type) == CONDITIONAL_ACE_TOKEN_UNICODE ||		\
+	  ((x)->type) == CONDITIONAL_ACE_TOKEN_OCTET_STRING ||		\
+	  ((x)->type) == CONDITIONAL_ACE_TOKEN_SID ||			\
+	  ((x)->type) == CONDITIONAL_ACE_TOKEN_COMPOSITE) &&		\
 	 (! IS_DERIVED_TOKEN(x)))
 
 struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *parse_sddl_literal_as_claim(
