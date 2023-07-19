@@ -27,7 +27,6 @@
  * that can be handled locally.
  */
 
-#define TEVENT_DEPRECATED 1
 #include "includes.h"
 #include "winbindd.h"
 #include "rpc_client/rpc_client.h"
