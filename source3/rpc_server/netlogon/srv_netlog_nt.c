@@ -2317,12 +2317,7 @@ NTSTATUS _netr_LogonGetCapabilities(struct pipes_struct *p,
 	case 1:
 		break;
 	case 2:
-		/*
-		 * Until we know the details behind KB5028166
-		 * just return DCERPC_NCA_S_FAULT_INVALID_TAG
-		 * like an unpatched Windows Server.
-		 */
-		FALL_THROUGH;
+		break;
 	default:
 		/*
 		 * There would not be a way to marshall the
@@ -2350,7 +2345,15 @@ NTSTATUS _netr_LogonGetCapabilities(struct pipes_struct *p,
 		return status;
 	}
 
-	r->out.capabilities->server_capabilities = creds->negotiate_flags;
+	switch (r->in.query_level) {
+	case 1:
+		r->out.capabilities->server_capabilities = creds->negotiate_flags;
+		break;
+	case 2:
+		r->out.capabilities->requested_flags =
+			creds->ex->client_requested_flags;
+		break;
+	}
 
 	return NT_STATUS_OK;
 }
