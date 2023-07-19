@@ -1417,9 +1417,6 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	NTSTATUS result;
 	bool ok;
-	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
-	TDB_DATA data;
 	bool downgraded;
 
 	if (state->try_auth3) {
@@ -1518,20 +1515,8 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, state, state->creds,
-		(ndr_push_flags_fn_t)ndr_push_netlogon_creds_CredentialState);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	data.dptr = blob.data;
-	data.dsize = blob.length;
-
-	status = dbwrap_store(state->context->db.ctx,
-			      state->context->db.key_data,
-			      data, TDB_REPLACE);
+	status = netlogon_creds_cli_store_internal(state->context,
+						   state->creds);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
