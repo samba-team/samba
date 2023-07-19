@@ -1393,6 +1393,32 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLO
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code
+_ndr_deepcopy_struct(ndr_push_flags_fn_t push_fn,
+		     const void *src,
+		     ndr_pull_flags_fn_t pull_fn,
+		     TALLOC_CTX *dst_mem, void *dst)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB blob = { .length = 0, };
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(&blob, frame, src, push_fn);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return ndr_err;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(&blob, dst_mem, dst, pull_fn);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return ndr_err;
+	}
+
+	TALLOC_FREE(frame);
+	return NDR_ERR_SUCCESS;
+}
+
 /*
  * pull a struct from a blob using NDR
  *

@@ -676,7 +676,7 @@ bld.SAMBA_LIBRARY('ndr',
     header_path= [('*gen_ndr*', 'gen_ndr')],
     vnum='6.0.0',
     abi_directory='ABI',
-    abi_match='!ndr_table_* ndr_* GUID_* _ndr_pull_error* _ndr_push_error*',
+    abi_match='!ndr_table_* ndr_* GUID_* _ndr_pull_error* _ndr_push_error* _ndr_deepcopy_*',
     )
 
 bld.SAMBA_LIBRARY('dcerpc-binding',

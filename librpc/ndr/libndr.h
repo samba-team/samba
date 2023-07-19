@@ -759,6 +759,16 @@ enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blob,
 enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, uint32_t level, ndr_pull_flags_fn_t fn);
 enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, uint32_t level, ndr_pull_flags_fn_t fn);
 
+enum ndr_err_code _ndr_deepcopy_struct(ndr_push_flags_fn_t push_fn,
+				       const void *src,
+				       ndr_pull_flags_fn_t pull_fn,
+				       TALLOC_CTX *dst_mem, void *dst);
+#define ndr_deepcopy_struct(type, src, dst_mem, dst) \
+	_ndr_deepcopy_struct((ndr_push_flags_fn_t)ndr_push_ ## type, \
+			     src, \
+			     (ndr_pull_flags_fn_t)ndr_pull_ ## type, \
+			     dst_mem, dst)
+
 /* from libndr_basic.h */
 #define NDR_SCALAR_PROTO(name, type) \
 enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, ndr_flags_type ndr_flags, type v); \
