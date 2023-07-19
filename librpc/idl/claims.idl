@@ -63,7 +63,7 @@ interface claims
 		[size_is(value_count), string, charset(UTF16)] wchar_t **values;
 	} CLAIM_STRING;
 
-	typedef [switch_type(CLAIM_TYPE),nodiscriminant,flag(NDR_ALIGN8)] union {
+	typedef [switch_type(CLAIM_TYPE),flag(NDR_ALIGN8)] union {
 		[case(CLAIM_TYPE_INT64)] CLAIM_INT64 claim_int64;
 		[case(CLAIM_TYPE_UINT64)] CLAIM_UINT64 claim_uint64;
 		[case(CLAIM_TYPE_STRING)] CLAIM_STRING claim_string;
