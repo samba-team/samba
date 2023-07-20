@@ -98,6 +98,33 @@ samba-tool domain schemaupgrade --schema=2019
 samba-tool domain functionalprep --function-level=2016
 samba-tool domain level raise --domain-level=2016 --forest-level=2016
 
+Kerberos Armoring (FAST) Support for Windows clients
+----------------------------------------------------
+
+In domains where the domain controller functional level is set, as
+above, to 2012, 2012_R2 or 2016, Windows clients will, if configured
+via GPO, use FAST to protect user passwords between (in particular) a
+workstation and the KDC on the AD DC.  This is a significant security
+improvement, as weak passwords in an AS-REQ are no longer available
+for offline attack.
+
+Claims compression in the AD PAC
+--------------------------------
+
+Samba as an AD DC will compress "AD claims" using the same compression
+algorithm as Microsoft Windows.
+
+Resource SID compression in the AD PAC
+--------------------------------------
+
+Samba as an AD DC will now correctly populate the various PAC group
+membership buffers, splitting global and local groups correctly.
+
+Additionally, Samba marshals Resource SIDs, being local groups in the
+member server's own domain, to only consume a header and 4 bytes per
+group in the PAC, not a full-length SID worth of space each.  This is
+known as "Resource SID compression".
+
 New samba-tool support for silos, claims, sites and subnets.
 ------------------------------------------------------------
 
