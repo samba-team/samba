@@ -16,6 +16,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H
+#define LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H
 
 
 bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
@@ -32,3 +34,5 @@ bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 			struct security_token *token,
 			struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 			const char *claim_type);
+
+#endif /* LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H */
