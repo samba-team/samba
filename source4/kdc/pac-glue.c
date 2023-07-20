@@ -1276,6 +1276,11 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 	} else {
+		if (skdc_entry == NULL) {
+			ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+			goto out;
+		}
+
 		/*
 		 * In this case the RWDC discards the PAC an RODC generated.
 		 * Windows adds the asserted_identity in this case too.
@@ -1286,22 +1291,11 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		 * SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY
 		 * here.
 		 */
-		enum samba_asserted_identity asserted_identity =
-			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
-		const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_EXCLUDE;
-		const enum samba_compounded_auth compounded_auth =
-			SAMBA_COMPOUNDED_AUTH_EXCLUDE;
-
-		if (skdc_entry == NULL) {
-			ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-			goto out;
-		}
-
 		nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 						       skdc_entry,
-						       asserted_identity,
-						       claims_valid,
-						       compounded_auth,
+						       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+						       SAMBA_CLAIMS_VALID_EXCLUDE,
+						       SAMBA_COMPOUNDED_AUTH_EXCLUDE,
 						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
@@ -2055,18 +2049,13 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 
 	union PAC_INFO info;
 
-	enum samba_asserted_identity asserted_identity =
-		SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
-	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
-	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
-
 	frame = talloc_stackframe();
 
 	nt_status = samba_kdc_get_user_info_dc(frame,
 					       device,
-					       asserted_identity,
-					       claims_valid,
-					       compounded_auth,
+					       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+					       SAMBA_CLAIMS_VALID_INCLUDE,
+					       SAMBA_COMPOUNDED_AUTH_EXCLUDE,
 					       &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",

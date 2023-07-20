@@ -122,8 +122,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		(is_s4u2self) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
-	const enum samba_claims_valid claims_valid = SAMBA_CLAIMS_VALID_INCLUDE;
-	const enum samba_compounded_auth compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
 	struct authn_audit_info *server_audit_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -150,8 +148,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 					       skdc_entry,
 					       asserted_identity,
-					       claims_valid,
-					       compounded_auth,
+					       SAMBA_CLAIMS_VALID_INCLUDE,
+					       SAMBA_COMPOUNDED_AUTH_EXCLUDE,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
