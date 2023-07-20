@@ -1,5 +1,5 @@
 /*
-  Fuzz access chcek using SDDL strings and a known token
+  Fuzz access check using SDDL strings and a known token
   Copyright (C) Catalyst IT 2023
 
   This program is free software; you can redistribute it and/or modify
@@ -92,7 +92,7 @@ int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 	 * the tail is just junk that comes along for the ride.
 	 *
 	 * 3. Even if there is a case where the end of the SDDL is part of the
-	 * mask, the evolution stategy is very likely to try a different mask,
+	 * mask, the evolution strategy is very likely to try a different mask,
 	 * because it likes to add junk on the end.
 	 *
 	 * But still, you ask, WHY? So that the seeds from here can be shared
