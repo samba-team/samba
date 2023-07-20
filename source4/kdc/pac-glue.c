@@ -250,10 +250,7 @@ NTSTATUS samba_get_claims_blob(TALLOC_CTX *mem_ctx,
 			       const struct ldb_message *principal,
 			       DATA_BLOB *client_claims_data)
 {
-	union PAC_INFO client_claims;
 	int ret;
-
-	ZERO_STRUCT(client_claims);
 
 	*client_claims_data = data_blob_null;
 
