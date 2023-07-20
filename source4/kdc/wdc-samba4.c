@@ -116,7 +116,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		talloc_get_type_abort(server->context,
 		struct samba_kdc_entry);
 	bool is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
-	/* Only include resource groups in a service ticket. */
 	enum auth_group_inclusion group_inclusion;
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	enum samba_asserted_identity asserted_identity =
