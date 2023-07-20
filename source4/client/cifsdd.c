@@ -31,7 +31,7 @@
 
 const char * const PROGNAME = "cifsdd";
 
-#define SYNTAX_EXIT_CODE	 1	/* Invokation syntax or logic error. */
+#define SYNTAX_EXIT_CODE	 1	/* Invocation syntax or logic error. */
 #define EOM_EXIT_CODE		 9	/* Out of memory error. */
 #define FILESYS_EXIT_CODE	10	/* File manipulation error. */
 #define IOERROR_EXIT_CODE	11	/* Error during IO phase. */
