@@ -198,6 +198,18 @@ shell scripts around the client tools of MIT or Heimdal Kerberos.
 Samba's independently written python testsuite has been extended to
 validate KDC behaviour for PKINIT.
 
+Require encrypted connection to modify unicodePwd on the AD DC
+--------------------------------------------------------------
+
+Setting the password on an AD account on should never be attempted
+over a plaintext or signed-only LDAP connection.  If the unicodePwd
+(or userPassword) attribute is modified without encryption (as seen by
+Samba), the request will be rejected.  This is to encourage the
+administrator to use an encrypted connection in the future.
+
+NOTE WELL: If Samba is accessed via a TLS frontend or load balancer,
+the LDAP request will be regarded as plaintext.
+
 
 ================
 REMOVED FEATURES
