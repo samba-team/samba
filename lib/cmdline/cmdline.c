@@ -21,6 +21,7 @@
 #include "auth/gensec/gensec.h"
 #include "libcli/smb/smb_util.h"
 #include "cmdline_private.h"
+#include "lib/util/util_process.h"
 
 #include <samba/version.h>
 
@@ -296,6 +297,7 @@ poptContext samba_popt_get_context(const char * name,
 		return NULL;
 	}
 #endif
+	process_save_binary_name(name);
 	return poptGetContext(name, argc, argv, options, flags);
 }
 

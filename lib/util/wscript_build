@@ -79,6 +79,7 @@ bld.SAMBA_SUBSYSTEM('smb-panic',
                     source='''
                     fault.c
                     signal.c
+                    util_process.c
                     ''',
                     deps='''
                     replace
@@ -97,7 +98,6 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                     util.c
                     idtree.c
                     substitute.c
-                    util_process.c
                     util_strlist.c
                     strv_util.c
                     bitmap.c

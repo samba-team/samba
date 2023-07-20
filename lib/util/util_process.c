@@ -26,11 +26,19 @@
 #include <sys/prctl.h>
 #endif
 
+/*
+ * These variables are static so that we can print them in access them
+ * with process_get_short_title() and process_get_long_title().  The
+ * purpose of this is to allow smb_panic_log() to print them.
+ */
+static char short_comment[16] = {0,};
+static char long_comment[256] = {0,};
+static char binary_name[256];
+
 void process_set_title(const char *short_format, const char *long_format, ...)
 {
 #if defined(HAVE_PRCTL) && defined(PR_SET_NAME)
 	if (short_format != NULL) {
-		char short_comment[16] = {0,};
 		va_list ap;
 
 		va_start(ap, long_format);
@@ -42,7 +50,6 @@ void process_set_title(const char *short_format, const char *long_format, ...)
 #endif
 
 	if (long_format != NULL) {
-		char long_comment[256] = {0,};
 		va_list ap;
 
 		va_start(ap, long_format);
@@ -52,6 +59,33 @@ void process_set_title(const char *short_format, const char *long_format, ...)
 		setproctitle("%s", long_comment);
 	}
 }
+
+const char *process_get_short_title(void)
+{
+	return short_comment;
+}
+
+const char *process_get_long_title(void)
+{
+	return long_comment;
+}
+
+/*
+ * This is just for debugging in a panic, so we don't want to do
+ * anything more than return a fixed pointer, so we save a copy to a
+ * static variable.
+ */
+void process_save_binary_name(const char *progname)
+{
+	strlcpy(binary_name, progname, sizeof(binary_name));
+}
+
+/* Samba binaries will set this during popt handling */
+const char *process_get_saved_binary_name(void)
+{
+	return binary_name;
+}
+
 
 int prctl_set_comment(const char *comment_format, ...)
 {

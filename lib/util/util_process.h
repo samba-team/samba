@@ -47,4 +47,38 @@ int prctl_set_comment(const char *comment_format, ...) PRINTF_ATTRIBUTE(1,2);
 void process_set_title(const char *short_format, const char *long_format, ...)
 	PRINTF_ATTRIBUTE(1,3) PRINTF_ATTRIBUTE(2,3);
 
+/**
+ * @brief Get the process comment name set from process_set_title()
+ *
+ * @return              process comment name
+ */
+const char *process_get_short_title(void);
+
+/**
+ * @brief Get the process longname set from process_set_title()
+ *
+ * @return              process longname
+ */
+const char *process_get_long_title(void);
+
+/*
+ * @brief Save the binary name for later printing in smb_panic()
+ *
+ * @param[in]  progname        The binary name at process startup
+ *
+ * This is just for debugging in a panic, so we don't want to do
+ * anything more than return a fixed pointer, so we save a copy to a
+ * static variable.
+ */
+void process_save_binary_name(const char *progname);
+
+/**
+ * @brief Get the binary name set at startup process_save_binary_name()
+ *
+ * @return              binary name set at startup
+ */
+/* Samba binaries will set this during popt handling */
+const char *process_get_saved_binary_name(void);
+
+
 #endif
