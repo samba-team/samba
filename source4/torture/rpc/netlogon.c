@@ -2041,6 +2041,7 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 */
 bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *tctx,
 				struct cli_credentials *credentials,
+				uint32_t requested_flags,
 				struct netlogon_creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -2158,8 +2159,8 @@ bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *t
 							 &r.out.return_authenticator->cred),
 		       "Credential chaining failed");
 
-	torture_assert_int_equal(tctx, creds->negotiate_flags,
-				 capabilities.server_capabilities,
+	torture_assert_int_equal(tctx, requested_flags,
+				 capabilities.requested_flags,
 				 "negotiate flags");
 
 	return true;
