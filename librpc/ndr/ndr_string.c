@@ -164,7 +164,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		} else if (!convert_string_talloc(ndr->current_mem_ctx, chset,
 					   CH_UNIX, ndr->data + ndr->offset,
 					   conv_src_len * byte_mul,
-					   (void **)(void *)&as,
+					   &as,
 					   &converted_size)) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
 					      "Bad character conversion with flags 0x%x", flags);
@@ -243,7 +243,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 		d_len = s_len;
 		dest = (uint8_t *)talloc_strndup(ndr, s, s_len);
 	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
-				   (void **)(void *)&dest, &d_len))
+					  &dest, &d_len))
 	{
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV,
 				      "Bad character push conversion with flags 0x%x", flags);
@@ -697,7 +697,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 
 	if (!convert_string_talloc(ndr->current_mem_ctx, chset, CH_UNIX,
 				   ndr->data+ndr->offset, length*byte_mul,
-				   discard_const_p(void *, var),
+				   var,
 				   &converted_size))
 	{
 		return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
@@ -735,7 +735,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, int nd
 
 	if (!convert_string_talloc(ndr->current_mem_ctx, chset, CH_UNIX,
 				   ndr->data+ndr->offset, str_len*byte_mul,
-				   discard_const_p(void *, var),
+				   var,
 				   &converted_size))
 	{
 		return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
