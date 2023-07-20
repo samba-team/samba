@@ -90,7 +90,7 @@ static int net_offlinejoin_provision_usage(struct net_context *c, int argc, cons
 	d_printf(_("\tdomain=<DOMAIN>\t\t\t\tDefines AD Domain to join\n"));
 	d_printf(_("\tmachine_name=<MACHINE_NAME>\t\tDefines the machine account name\n"));
 	d_printf(_("\tmachine_account_ou=<OU>\t\t\tDefines the machine account organizational unit DN\n"));
-	d_printf(_("\tdcname=<DCNAME>\t\t\t\tSpecifices a Domain Controller to join to\n"));
+	d_printf(_("\tdcname=<DCNAME>\t\t\t\tSpecify a Domain Controller to join to\n"));
 	d_printf(_("\tdefpwd\t\t\t\t\tUse default machine account password\n"));
 	d_printf(_("\treuse\t\t\t\t\tReuse existing machine account in AD\n"));
 	d_printf(_("\tsavefile=<FILENAME>\t\t\tFile to store the ODJ data\n"));
