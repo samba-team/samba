@@ -137,6 +137,14 @@ option is:
 Information on the "Smart Card login" feature as a whole is at:
  https://wiki.samba.org/index.php/Samba_AD_Smart_Card_Login
 
+Protocol level testsuite for (Smart Card Logon) PKINIT
+------------------------------------------------------
+
+Previously Samba's PKINIT support in the KDC was tested by use of
+shell scripts around the client tools of MIT or Heimdal Kerberos.
+Samba's independently written python testsuite has been extended to
+validate KDC behaviour for PKINIT.
+
 
 ================
 REMOVED FEATURES
