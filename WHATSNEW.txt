@@ -129,6 +129,14 @@ The use of well known cryptography libraries makes Samba easier for
 end-users to validate and deploy, and for distributors to ship.  This
 is the end of a very long journey for Samba.
 
+Updated Heimdal import
+----------------------
+
+Samba's Heimdal branch (known as lorikeet-heimdal) has been updated to
+the current pre-8.0 (master) tree from upstream Heimdal, ensuring that
+this vendored copy, included in our release remains as close as
+possible to the current upstream code.
+
 Revocation support in Heimdal KDC for PKINIT certificates
 ---------------------------------------------------------
 
