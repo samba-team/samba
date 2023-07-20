@@ -1976,7 +1976,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 			$self->pidl("int $counter;");
 			if (ArrayDynamicallyAllocated($e, $l)) {
 				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_GET_SIZE($py_var));");
-				$self->pidl("if (!$var_name) { $fail; }");
+				$self->pidl("if (!$var_name) { $fail }");
 				$self->pidl("talloc_set_name_const($var_name, \"ARRAY: $var_name\");");
 			} else {
 				$self->pidl("if (ARRAY_SIZE($var_name) != PyList_GET_SIZE($py_var)) {");
