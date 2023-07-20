@@ -98,6 +98,16 @@ samba-tool domain schemaupgrade --schema=2019
 samba-tool domain functionalprep --function-level=2016
 samba-tool domain level raise --domain-level=2016 --forest-level=2016
 
+Improved KDC Auditing
+---------------------
+
+As part of the auditing required to allow successful deployment of
+Authentication Policies and Authentication Silos, our KDC now provides
+Samba-style JSON audit logging of all issued Kerberos tickets,
+including if they would fail a policy that is not yet enforced.
+Additionally most failures are audited, (after the initial
+pre-validation of the request).
+
 Kerberos Armoring (FAST) Support for Windows clients
 ----------------------------------------------------
 
