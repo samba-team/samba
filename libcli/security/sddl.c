@@ -555,7 +555,7 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 	if (acl == NULL) return NULL;
 	acl->revision = SECURITY_ACL_REVISION_ADS;
 
-	if (isupper(sddl[0]) && sddl[1] == ':') {
+	if (isupper((unsigned char)sddl[0]) && sddl[1] == ':') {
 		/* its an empty ACL */
 		return acl;
 	}
