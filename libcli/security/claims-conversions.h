@@ -19,6 +19,12 @@
 #ifndef LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H
 #define LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H
 
+#include "replace.h"
+#include <talloc.h>
+
+struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1;
+struct ace_condition_token;
+struct security_token;
 
 bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 			   const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
