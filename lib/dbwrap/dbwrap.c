@@ -154,7 +154,7 @@ const char *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
 static void debug_lock_order(int level)
 {
 	int i;
-	DEBUG(level, ("lock order: "));
+	DEBUG(level, ("lock order:"));
 	for (i=0; i<DBWRAP_LOCK_ORDER_MAX; i++) {
 		DEBUGADD(level,
 			 (" %d:%s",
