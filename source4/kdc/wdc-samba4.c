@@ -369,7 +369,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 				      NULL,
 				      &key->key);
 		if (ret != 0) {
-			DEBUG(1, ("PAC KDC signature failed to verify\n"));
+			DBG_WARNING("PAC KDC signature failed to verify\n");
 			goto out;
 		}
 
@@ -580,7 +580,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 						     &ctype,
 						     &rodc_id);
 		if (ret != 0) {
-			DEBUG(1, ("Failed to get PAC checksum info\n"));
+			DBG_WARNING("Failed to get PAC checksum info\n");
 			return ret;
 		}
 

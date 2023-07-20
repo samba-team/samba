@@ -102,7 +102,7 @@ static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx,
                                                   "dreplsrv",
                                                   &ndr_table_irpc);
         if (irpc_handle == NULL) {
-                DEBUG(1,(__location__ ": Unable to get binding handle for dreplsrv\n"));
+                DBG_WARNING("Unable to get binding handle for dreplsrv\n");
                 TALLOC_FREE(tmp_ctx);
                 return;
         }
@@ -2034,7 +2034,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	/* Must have found a cleartext or MD4 password */
 	if (num_keys == 0) {
-		DEBUG(1,(__location__ ": no usable key found\n"));
+		DBG_WARNING("no usable key found\n");
 		krb5_clear_error_message(context);
 		ret = SDB_ERR_NOENTRY;
 		goto out;
@@ -2647,18 +2647,18 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 				       "%s", filter);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			DEBUG(10, ("Failed to find an entry for %s filter:%s\n",
-				  name1, filter));
+			DBG_DEBUG("Failed to find an entry for %s filter:%s\n",
+				  name1, filter);
 			return SDB_ERR_NOENTRY;
 		}
 		if (lret == LDB_ERR_CONSTRAINT_VIOLATION) {
-			DEBUG(10, ("Failed to find unique entry for %s filter:%s\n",
-				  name1, filter));
+			DBG_DEBUG("Failed to find unique entry for %s filter:%s\n",
+				  name1, filter);
 			return SDB_ERR_NOENTRY;
 		}
 		if (lret != LDB_SUCCESS) {
-			DEBUG(0, ("Failed single search for %s - %s\n",
-				  name1, ldb_errstring(kdc_db_ctx->samdb)));
+			DBG_ERR("Failed single search for %s - %s\n",
+				name1, ldb_errstring(kdc_db_ctx->samdb));
 			return SDB_ERR_NOENTRY;
 		}
 		return 0;
@@ -3274,8 +3274,8 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 				       " krb5_unparse_name() failed!");
 		return ret;
 	}
-	DEBUG(10,("samba_kdc_check_s4u2proxy: client[%s] for target[%s]\n",
-		 client_dn, tmp));
+	DBG_DEBUG("client[%s] for target[%s]\n",
+		  client_dn, tmp);
 
 	target_principal_name = talloc_strdup(mem_ctx, tmp);
 	SAFE_FREE(tmp);
@@ -3315,8 +3315,8 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		goto bad_option;
 	}
 
-	DEBUG(10,("samba_kdc_check_s4u2proxy: client[%s] allowed target[%s]\n",
-		 client_dn, target_principal_name));
+	DBG_DEBUG("client[%s] allowed target[%s]\n",
+		  client_dn, target_principal_name);
 	talloc_free(mem_ctx);
 	return 0;
 
@@ -3550,7 +3550,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  NULL,
 					  0);
 	if (kdc_db_ctx->samdb == NULL) {
-		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot open samdb for KDC backend!\n"));
+		DBG_WARNING("Cannot open samdb for KDC backend!\n");
 		talloc_free(kdc_db_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -3558,8 +3558,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	/* Find out our own krbtgt kvno */
 	ldb_ret = samdb_rodc(kdc_db_ctx->samdb, &kdc_db_ctx->rodc);
 	if (ldb_ret != LDB_SUCCESS) {
-		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine if we are an RODC in KDC backend: %s\n",
-			  ldb_errstring(kdc_db_ctx->samdb)));
+		DBG_WARNING("Cannot determine if we are an RODC in KDC backend: %s\n",
+			    ldb_errstring(kdc_db_ctx->samdb));
 		talloc_free(kdc_db_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -3569,8 +3569,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		struct ldb_dn *account_dn;
 		struct ldb_dn *server_dn = samdb_server_dn(kdc_db_ctx->samdb, kdc_db_ctx);
 		if (!server_dn) {
-			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine server DN in KDC backend: %s\n",
-				  ldb_errstring(kdc_db_ctx->samdb)));
+			DBG_WARNING("Cannot determine server DN in KDC backend: %s\n",
+				    ldb_errstring(kdc_db_ctx->samdb));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -3578,8 +3578,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		ldb_ret = samdb_reference_dn(kdc_db_ctx->samdb, kdc_db_ctx, server_dn,
 					     "serverReference", &account_dn);
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine server account in KDC backend: %s\n",
-				  ldb_errstring(kdc_db_ctx->samdb)));
+			DBG_WARNING("Cannot determine server account in KDC backend: %s\n",
+				    ldb_errstring(kdc_db_ctx->samdb));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -3588,8 +3588,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					     "msDS-KrbTgtLink", &kdc_db_ctx->krbtgt_dn);
 		talloc_free(account_dn);
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine RODC krbtgt account in KDC backend: %s\n",
-				  ldb_errstring(kdc_db_ctx->samdb)));
+			DBG_WARNING("Cannot determine RODC krbtgt account in KDC backend: %s\n",
+				    ldb_errstring(kdc_db_ctx->samdb));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -3600,18 +3600,18 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					  "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=*))");
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot read krbtgt account %s in KDC backend to get msDS-SecondaryKrbTgtNumber: %s: %s\n",
-				  ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
-				  ldb_errstring(kdc_db_ctx->samdb),
-				  ldb_strerror(ldb_ret)));
+			DBG_WARNING("Cannot read krbtgt account %s in KDC backend to get msDS-SecondaryKrbTgtNumber: %s: %s\n",
+				    ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
+				    ldb_errstring(kdc_db_ctx->samdb),
+				    ldb_strerror(ldb_ret));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 		my_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
 		if (my_krbtgt_number == -1) {
-			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot read msDS-SecondaryKrbTgtNumber from krbtgt account %s in KDC backend: got %d\n",
-				  ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
-				  my_krbtgt_number));
+			DBG_WARNING("Cannot read msDS-SecondaryKrbTgtNumber from krbtgt account %s in KDC backend: got %d\n",
+				    ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
+				    my_krbtgt_number);
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -3628,7 +3628,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  "(&(objectClass=user)(samAccountName=krbtgt))");
 
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("samba_kdc_setup_db_ctx: could not find own KRBTGT in DB: %s\n", ldb_errstring(kdc_db_ctx->samdb)));
+			DBG_WARNING("could not find own KRBTGT in DB: %s\n", ldb_errstring(kdc_db_ctx->samdb));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}

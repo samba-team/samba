@@ -104,8 +104,8 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 				      lpcfg_realm(mki_ctx->task->lp_ctx),
 				      NULL);
 	if (code != 0) {
-		DEBUG(0, ("Failed to create krbtgt@%s principal!\n",
-			  lpcfg_realm(mki_ctx->task->lp_ctx)));
+		DBG_ERR("Failed to create krbtgt@%s principal!\n",
+			lpcfg_realm(mki_ctx->task->lp_ctx));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -118,8 +118,8 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 			       &sentry);
 	krb5_free_principal(mki_ctx->krb5_context, principal);
 	if (code != 0) {
-		DEBUG(0, ("Failed to fetch krbtgt@%s principal entry!\n",
-			  lpcfg_realm(mki_ctx->task->lp_ctx)));
+		DBG_ERR("Failed to fetch krbtgt@%s principal entry!\n",
+			lpcfg_realm(mki_ctx->task->lp_ctx));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 

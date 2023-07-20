@@ -222,7 +222,7 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 #endif
 				   NULL);
 	if (subreq == NULL) {
-		DEBUG(0, ("Failed to start MIT KDC as child daemon\n"));
+		DBG_ERR("Failed to start MIT KDC as child daemon\n");
 
 		task_server_terminate(task,
 				      "Failed to startup mitkdc task",
@@ -232,7 +232,7 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 
 	tevent_req_set_callback(subreq, mitkdc_server_done, task);
 
-	DEBUG(5,("Started krb5kdc process\n"));
+	DBG_INFO("Started krb5kdc process\n");
 
 	status = samba_setup_mit_kdc_irpc(task);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -241,7 +241,7 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 				      true);
 	}
 
-	DEBUG(5,("Started irpc service for kdc_server\n"));
+	DBG_INFO("Started irpc service for kdc_server\n");
 
 	kdc = talloc_zero(task, struct kdc_server);
 	if (kdc == NULL) {
@@ -342,7 +342,7 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 		return status;
 	}
 
-	DEBUG(5,("Started kpasswd service for kdc_server\n"));
+	DBG_INFO("Started kpasswd service for kdc_server\n");
 
 	return NT_STATUS_OK;
 }
@@ -360,10 +360,10 @@ static void mitkdc_server_done(struct tevent_req *subreq)
 
 	ret = samba_runcmd_recv(subreq, &sys_errno);
 	if (ret != 0) {
-		DEBUG(0, ("The MIT KDC daemon died with exit status %d\n",
-			  sys_errno));
+		DBG_ERR("The MIT KDC daemon died with exit status %d\n",
+			sys_errno);
 	} else {
-		DEBUG(0,("The MIT KDC daemon exited normally\n"));
+		DBG_ERR("The MIT KDC daemon exited normally\n");
 	}
 
 	task_server_terminate(task, "mitkdc child process exited", true);

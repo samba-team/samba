@@ -1081,7 +1081,7 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	krb5_error_code code = 0;
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(1,("mit_samba_kpasswd_change_password called with: %s\n", pwd));
+	DBG_WARNING("mit_samba_kpasswd_change_password called with: %s\n", pwd);
 #endif
 
 	tmp_ctx = talloc_named(ctx, 0, "mit_samba_kpasswd_change_password");
@@ -1093,8 +1093,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 						 p->msg,
 						 &user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("samba_kdc_get_user_info_from_db failed: %s\n",
-			nt_errstr(status)));
+		DBG_WARNING("samba_kdc_get_user_info_from_db failed: %s\n",
+			    nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
@@ -1107,8 +1107,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 					    &ctx->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("auth_generate_session_info failed: %s\n",
-			nt_errstr(status)));
+		DBG_WARNING("auth_generate_session_info failed: %s\n",
+			    nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
@@ -1118,7 +1118,7 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	if (!convert_string_talloc(tmp_ctx, CH_UTF8, CH_UTF16,
 				   pwd, strlen(pwd),
 				   &password.data, &password.length)) {
-		DEBUG(1,("convert_string_talloc failed\n"));
+		DBG_WARNING("convert_string_talloc failed\n");
 		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
@@ -1133,8 +1133,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 					       &error_string,
 					       &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("samdb_kpasswd_change_password failed: %s\n",
-			nt_errstr(status)));
+		DBG_WARNING("samdb_kpasswd_change_password failed: %s\n",
+			    nt_errstr(status));
 		code = KADM5_PASS_Q_GENERIC;
 		krb5_set_error_message(ctx->context, code, "%s", error_string);
 		goto out;

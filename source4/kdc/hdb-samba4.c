@@ -405,7 +405,7 @@ static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 						  &ndr_table_winbind);
 
 	if (irpc_handle == NULL) {
-		DEBUG(0, ("No winbind_server running!\n"));
+		DBG_ERR("No winbind_server running!\n");
 		return;
 	}
 

@@ -62,10 +62,10 @@ NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(3, ("Changing password of %s\\%s (%s)\n",
-		  session_info->info->domain_name,
-		  session_info->info->account_name,
-		  dom_sid_string(mem_ctx, &session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
+	DBG_NOTICE("Changing password of %s\\%s (%s)\n",
+		   session_info->info->domain_name,
+		   session_info->info->account_name,
+		   dom_sid_string(mem_ctx, &session_info->security_token->sids[PRIMARY_USER_SID_INDEX]));
 
 	/* Performs the password change */
 	status = samdb_set_password_sid(samdb,

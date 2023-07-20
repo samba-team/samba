@@ -51,7 +51,7 @@ static WERROR kdc_proxy_get_writeable_dcs(struct kdc_server *kdc, TALLOC_CTX *me
 	if (count == 0) {
 		/* we don't have any DCs to replicate with. Very
 		   strange for a RODC */
-		DEBUG(1,(__location__ ": No replication sources for RODC in KDC proxy\n"));
+		DBG_WARNING("No replication sources for RODC in KDC proxy\n");
 		talloc_free(reps);
 		return WERR_DS_DRA_NO_REPLICA;
 	}
@@ -190,8 +190,8 @@ static void kdc_udp_proxy_resolve_done(struct composite_context *csubreq)
 
 	status = resolve_name_recv(csubreq, state, &state->proxy.ip);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Unable to resolve proxy[%s] - %s\n",
-			state->proxy.name.name, nt_errstr(status)));
+		DBG_ERR("Unable to resolve proxy[%s] - %s\n",
+			state->proxy.name.name, nt_errstr(status));
 		kdc_udp_next_proxy(req);
 		return;
 	}
@@ -450,8 +450,8 @@ static void kdc_tcp_proxy_resolve_done(struct composite_context *csubreq)
 
 	status = resolve_name_recv(csubreq, state, &state->proxy.ip);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Unable to resolve proxy[%s] - %s\n",
-			state->proxy.name.name, nt_errstr(status)));
+		DBG_ERR("Unable to resolve proxy[%s] - %s\n",
+			state->proxy.name.name, nt_errstr(status));
 		kdc_tcp_next_proxy(req);
 		return;
 	}
