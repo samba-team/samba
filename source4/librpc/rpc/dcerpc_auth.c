@@ -181,7 +181,7 @@ static void bind_auth_next_step(struct composite_context *c)
 	 * of the system.  Even if the other end accepts, if GENSEC
 	 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
 	 * feeding it blobs, or else the remote host/attacker might
-	 * avoid mutal authentication requirements.
+	 * avoid mutual authentication requirements.
 	 *
 	 * Likewise, you must not feed GENSEC too much (after the OK),
 	 * it doesn't like that either
@@ -433,7 +433,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	 * of the system.  Even if the other end accepts, if GENSEC
 	 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
 	 * feeding it blobs, or else the remote host/attacker might
-	 * avoid mutal authentication requirements.
+	 * avoid mutual authentication requirements.
 	 *
 	 * Likewise, you must not feed GENSEC too much (after the OK),
 	 * it doesn't like that either
