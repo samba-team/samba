@@ -310,6 +310,10 @@ static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 		sid = NULL;
 
 	text = sddl_encode(NULL, desc, sid);
+	if (text == NULL) {
+		PyErr_SetString(PyExc_ValueError, "Unable to encode SDDL");
+		return NULL;
+	}
 
 	ret = PyUnicode_FromString(text);
 
