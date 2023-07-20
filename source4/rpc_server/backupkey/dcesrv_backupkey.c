@@ -1655,7 +1655,7 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 	 * and mackey values are unique for this operation, and
 	 * discovering these (by reversing the RC4 over the
 	 * attacker-controlled data) does not return something able to
-	 * be used to decyrpt the encrypted data of other users
+	 * be used to decrypt the encrypted data of other users
 	 */
 	generate_random_buffer(server_side_wrapped.r2, sizeof(server_side_wrapped.r2));
 
