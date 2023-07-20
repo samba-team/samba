@@ -3472,10 +3472,10 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 			&ordered);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_LOGON_SERVERS)
 			&& sitename) {
-		DBG_NOTICE("no server for name %s available"
-			" in site %s, fallback to all servers\n",
-			domain,
-			sitename);
+		DBG_WARNING("No server for domain '%s' available"
+			    " in site '%s', fallback to all servers\n",
+			    domain,
+			    sitename);
 		status = get_dc_list(ctx,
 				domain,
 				NULL,
