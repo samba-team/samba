@@ -313,7 +313,7 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 
 
 static bool ace_int_to_claim_v1_int(TALLOC_CTX *mem_ctx,
-				    struct ace_condition_token *tok,
+				    const struct ace_condition_token *tok,
 				    struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 				    size_t offset)
 {
@@ -328,7 +328,7 @@ static bool ace_int_to_claim_v1_int(TALLOC_CTX *mem_ctx,
 
 
 static bool ace_string_to_claim_v1_string(TALLOC_CTX *mem_ctx,
-					  struct ace_condition_token *tok,
+					  const struct ace_condition_token *tok,
 					  struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 					  size_t offset)
 {
@@ -344,7 +344,7 @@ static bool ace_string_to_claim_v1_string(TALLOC_CTX *mem_ctx,
 
 
 static bool ace_sid_to_claim_v1_sid(TALLOC_CTX *mem_ctx,
-				    struct ace_condition_token *tok,
+				    const struct ace_condition_token *tok,
 				    struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 				    size_t offset)
 {
@@ -368,7 +368,7 @@ static bool ace_sid_to_claim_v1_sid(TALLOC_CTX *mem_ctx,
 
 static bool ace_octet_string_to_claim_v1_octet_string(
 	TALLOC_CTX *mem_ctx,
-	struct ace_condition_token *tok,
+	const struct ace_condition_token *tok,
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 	size_t offset)
 {
@@ -391,7 +391,7 @@ static bool ace_octet_string_to_claim_v1_octet_string(
 
 
 static bool ace_token_to_claim_v1_offset(TALLOC_CTX *mem_ctx,
-					 struct ace_condition_token *tok,
+					 const struct ace_condition_token *tok,
 					 struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 					 size_t offset)
 {
@@ -427,7 +427,7 @@ static bool ace_token_to_claim_v1_offset(TALLOC_CTX *mem_ctx,
 
 bool ace_token_to_claim_v1(TALLOC_CTX *mem_ctx,
 			   const char *name,
-			   struct ace_condition_token *tok,
+			   const struct ace_condition_token *tok,
 			   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **claim,
 			   uint32_t flags)
 {
@@ -591,7 +591,7 @@ bool ace_token_to_claim_v1(TALLOC_CTX *mem_ctx,
 static bool claim_v1_copy(
 	TALLOC_CTX *mem_ctx,
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *dest,
-	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *src)
+	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *src)
 {
 	DATA_BLOB blob = {0};
 	enum ndr_err_code ndr_err;
@@ -626,7 +626,7 @@ static bool claim_v1_copy(
 
 bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 			struct security_token *token,
-			struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
+			const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 			const char *claim_type)
 {
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *tmp = NULL;

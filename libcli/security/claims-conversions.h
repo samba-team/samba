@@ -26,13 +26,13 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 
 bool ace_token_to_claim_v1(TALLOC_CTX *mem_ctx,
 			   const char *name,
-			   struct ace_condition_token *tok,
+			   const struct ace_condition_token *tok,
 			   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **claim,
 			   uint32_t flags);
 
 bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 			struct security_token *token,
-			struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
+			const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 			const char *claim_type);
 
 #endif /* LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H */
