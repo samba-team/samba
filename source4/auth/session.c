@@ -270,7 +270,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 /* Fill out the auth_session_info with a cli_credentials based on the
  * auth_session_info we were forwarded over named pipe forwarding.
  *
- * NOTE: The stucture members of session_info_transport are stolen
+ * NOTE: The structure members of session_info_transport are stolen
  * with talloc_move() into auth_session_info for long term use
  */
 struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
@@ -409,7 +409,7 @@ NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
 }
 
 
-/* Produce a session_info for an arbitary DN or principal in the local
+/* Produce a session_info for an arbitrary DN or principal in the local
  * DB, assuming the local DB holds all the groups
  *
  * Supply either a principal or a DN

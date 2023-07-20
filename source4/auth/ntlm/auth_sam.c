@@ -494,7 +494,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		 * samdb_result_passwords_from_history() currently
 		 * does not fail for missing attributes, it only sets
 		 * nt_history_pwd = NULL, so "break" and fall down to
-		 * the bad password count upate if this happens
+		 * the bad password count update if this happens
 		 */
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			break;

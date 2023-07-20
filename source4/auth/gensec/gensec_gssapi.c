@@ -343,7 +343,7 @@ static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_securi
 		DEBUG(2, ("Error obtaining ticket we require to contact %s: (possibly due to clock skew between us and the KDC) %s\n", gensec_gssapi_state->target_principal, error_string));
 		return NT_STATUS_TIME_DIFFERENCE_AT_DC;
 	default:
-		DEBUG(1, ("Aquiring initiator credentials failed: %s\n", error_string));
+		DEBUG(1, ("Acquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1511,7 +1511,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 					   &pac_blob);
 	
 	/* IF we have the PAC - otherwise we need to get this
-	 * data from elsewere - local ldb, or (TODO) lookup of some
+	 * data from elsewhere - local ldb, or (TODO) lookup of some
 	 * kind... 
 	 */
 	if (NT_STATUS_IS_OK(nt_status)) {

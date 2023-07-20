@@ -77,7 +77,7 @@ source code, as follows:
       glue layer, so the main part of the port to MIT is
       to replace hdb-samba4 with a similar glue layer
       that's designed for MIT's code.
-    * Samba4's PAC requirements are implemeneted in
+    * Samba4's PAC requirements are implemented in
       source4/kdc/pac-glue.c
     * Both of the above two layers are Heimdal plugins, and
       both get loaded in source4/kdc/kdc.c
@@ -115,9 +115,9 @@ source code, as follows:
         occur on Windows:
           * Lower-to-upper case conversion, because Windows domain
             names are usually in upper case;
-          * An unrecognizable subsitution of names, such as might
+          * An unrecognizable substitution of names, such as might
             happen when a user requests a ticket for a NetBIOS domain
-            name, but gets back a ticket for the corresponging FQDN.
+            name, but gets back a ticket for the corresponding FQDN.
         As developers, we should test if the AD KDC's name-canonical-
         isation can be turned off with the KDCOption flags in the
         AS-REQ or TGS-REQ;  Windows clients always send the
@@ -280,11 +280,11 @@ source code, as follows:
      c. Turn on MIT-krb 1.7'sPAC handling.
         In addition, I have added a new interface hdb_fetch_ex(),
         which returns a structure including a private data-pointer,
-        which may be used by the windc plugin inferface functions.
+        which may be used by the windc plugin interface functions.
         The windc plugin provides the hook for the PAC.
      d. Samba4 needsaccess control hooks in the Heimdal&   MIT
         KDCs.  We need to lockout accounts (eg, after 10 failed PW-
-        attemps), and perform other controls.  This is standard
+        attempts), and perform other controls.  This is standard
         AD behavior, that Samba4 needs to get right, whether
         Heimdal or MIT-krb is doing the ticket work.
         - If PADL doesn't publish their patch for this,
@@ -413,7 +413,7 @@ when using Kerberos and GSSAPI libraries
    c. Make sure Samba4'sportable socket API   works:
       * An important detail in the use of libkdc is that we use samba4's
         own socket lib.  This allows the KDC code to be as portable as
-        the rest of samba, but more importantly it ensures consistancy
+        the rest of samba, but more importantly it ensures consistency
         in the handling of requests, binding to sockets etc.
       * To handle TCP, we use of our socket layer in much the same way as
         we deal with TCP for CIFS.  Tridge created a generic packet handling

@@ -296,7 +296,7 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 		DEBUG(3, ("Error preparing credentials we require to contact %s : %s\n", principal, error_string));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
-		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentials failed: %s\n", error_string));
+		DEBUG(1, ("gensec_krb5_start: Acquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -612,7 +612,7 @@ static NTSTATUS gensec_krb5_update_internal(struct gensec_security *gensec_secur
 			server_in_keytab = NULL;
 		}
 
-		/* Parse the GSSAPI wrapping, if it's there... (win2k3 allows it to be omited) */
+		/* Parse the GSSAPI wrapping, if it's there... (win2k3 allows it to be omitted) */
 		if (gensec_krb5_state->gssapi
 		    && gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
 			inbuf.data = (char *)unwrapped_in.data;

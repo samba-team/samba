@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Winbind authentication mechnism
+   Winbind authentication mechanism
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Andrew Bartlett 2001 - 2002

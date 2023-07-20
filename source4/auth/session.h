@@ -61,7 +61,7 @@ NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
 						  struct loadparm_context *lp_ctx,
 						  struct auth_session_info_transport **transport_out);
 
-/* Produce a session_info for an arbitary DN or principal in the local
+/* Produce a session_info for an arbitrary DN or principal in the local
  * DB, assuming the local DB holds all the groups
  *
  * Supply either a principal or a DN

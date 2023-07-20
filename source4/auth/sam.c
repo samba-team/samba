@@ -88,7 +88,7 @@ const char *user_attrs[] = {
 	 * This ordering (having msDS-ResultantPSO first) is
 	 * important.  By processing this attribute first it is
 	 * available in the operational module for the other PSO
-	 * attribute calcuations to use.
+	 * attribute calculations to use.
 	 */
 	"msDS-ResultantPSO",
 
@@ -1387,7 +1387,7 @@ error:
  * level is raised to DS_BEHAVIOR_WIN2003 or higher, is calculated as
  * 14 days minus a random percentage of 5 days", but we aren't doing
  * that. The blogosphere seems to think that this randomised update
- * happens everytime, but [MS-ADA1] doesn't agree.
+ * happens every time, but [MS-ADA1] doesn't agree.
  *
  * Dochelp referred us to the following blog post:
  * http://blogs.technet.com/b/askds/archive/2009/04/15/the-lastlogontimestamp-attribute-what-it-was-designed-for-and-how-it-works.aspx

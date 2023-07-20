@@ -305,7 +305,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(struct smb_krb5_context *
 		 * from the start (otherwise we may miss a socket
 		 * drop) and mark as AUTOCLOSE along with the fde */
 
-		/* Ths is equivilant to EVENT_FD_READABLE(smb_krb5->fde) */
+		/* This is equivalent to EVENT_FD_READABLE(smb_krb5->fde) */
 		smb_krb5->fde = tevent_add_fd(ev, smb_krb5->sock,
 					      socket_get_fd(smb_krb5->sock),
 					      TEVENT_FD_READ,

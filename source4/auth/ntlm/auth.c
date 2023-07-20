@@ -99,7 +99,7 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t cha
  *
  * @param auth_ctx Supplies the challenges and some other data. 
  *                  Must be created with auth_context_create(), and the challenges should be 
- *                  filled in, either at creation or by calling the challenge geneation 
+ *                  filled in, either at creation or by calling the challenge generation 
  *                  function auth_get_challenge().  
  *
  * @param user_info Contains the user supplied components, including the passwords.
@@ -542,7 +542,7 @@ static NTSTATUS auth_check_password_wrapper_recv(struct tevent_req *req,
 
  /* Wrapper because we don't want to expose all callers to needing to
   * know that session_info is generated from the main ldb, and because
-  * we need to break a depenency loop between the DCE/RPC layer and the
+  * we need to break a dependency loop between the DCE/RPC layer and the
   * generation of unix tokens via IRPC */
 static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_context,
 						   TALLOC_CTX *mem_ctx,
