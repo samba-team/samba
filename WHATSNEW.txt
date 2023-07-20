@@ -90,6 +90,19 @@ samba-tool domain schemaupgrade --schema=2019
 samba-tool domain functionalprep --function-level=2016
 samba-tool domain level raise --domain-level=2016 --forest-level=2016
 
+New samba-tool support for silos, claims, sites and subnets.
+------------------------------------------------------------
+
+samba-tool can now list, show, add and manipulate Authentication Silos
+(silos) and Active Directory Authentication Claims (claims).
+
+samba-tool can now list and show Active Directory sites and subnets.
+
+A new Object Relational Model (ORM) based architecture, similar to
+that used with Django, has been built to make adding new samba-tool
+subcommands simpler and more consistent, with JSON output available
+standard on these new commands.
+
 Updated GnuTLS requirement / in-tree cryptography removal
 ----------------------------------------------------------
 
