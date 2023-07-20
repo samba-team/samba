@@ -844,7 +844,7 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	/* find and decyrpt the session keys, return in parameters above */
+	/* find and decrypt the session keys, return in parameters above */
 	if (validation_level == 6) {
 		/* they aren't encrypted! */
 	} else if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
