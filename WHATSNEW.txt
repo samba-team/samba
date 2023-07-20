@@ -64,6 +64,14 @@ Kerberos Claims, Authentication Silos and NTLM authentication policies
 An initial, partial implementation of Active Directory Functional
 Level 2012, 2012R2 and 2016 is available in this release.
 
+In particular Samba will issue Active Directory "Claims" in the PAC,
+for member servers that support these, and honour in-directory
+configuration for Authentication Policies and Authentication Silos.
+
+The primary limitation is that while Samba can read and write claims
+in the directory, and populate the PAC, Samba does not yet use them
+for access control decisions.
+
 While we continue to develop these features, existing domains can
 test the feature by selecting the functional level in provision or
 raising the DC functional level by setting
