@@ -135,8 +135,9 @@ void samba_cmdline_set_machine_account_fn(
 	cli_credentials_set_machine_account_fn = fn;
 }
 
-void samba_cmdline_burn(int argc, char *argv[])
+bool samba_cmdline_burn(int argc, char *argv[])
 {
+	bool burnt = false;
 	bool found = false;
 	bool is_user = false;
 	char *p = NULL;
@@ -146,7 +147,7 @@ void samba_cmdline_burn(int argc, char *argv[])
 	for (i = 0; i < argc; i++) {
 		p = argv[i];
 		if (p == NULL) {
-			return;
+			return false;
 		}
 
 		if (strncmp(p, "-U", 2) == 0) {
@@ -181,8 +182,10 @@ void samba_cmdline_burn(int argc, char *argv[])
 			memset_s(p, strlen(p), '\0', strlen(p));
 			found = false;
 			is_user = false;
+			burnt = true;
 		}
 	}
+	return burnt;
 }
 
 static bool is_popt_table_end(const struct poptOption *o)
