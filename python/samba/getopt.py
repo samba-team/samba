@@ -29,7 +29,7 @@ from samba.credentials import (
     MUST_USE_KERBEROS,
 )
 import sys
-
+from samba._glue import get_burnt_commandline
 
 OptionError = optparse.OptionValueError
 
@@ -40,6 +40,25 @@ class SambaOptions(optparse.OptionGroup):
     def __init__(self, parser):
         from samba import fault_setup
         fault_setup()
+
+        # This removes passwords from the commandline via
+        # setproctitle() but makes no change to python sys.argv so we
+        # can continue to process as normal
+        #
+        # get_burnt_commandline returns None if no change is needed
+        new_proctitle = get_burnt_commandline(sys.argv)
+        if new_proctitle is not None:
+            try:
+                import setproctitle
+                setproctitle.setproctitle(new_proctitle)
+
+            except ModuleNotFoundError:
+                msg = ("WARNING: Using passwords on command line is insecure. "
+                       "Installing the setproctitle python module will hide "
+                       "these from shortly after program start.\n")
+                sys.stderr.write(msg)
+                sys.stderr.flush()
+
         from samba.param import LoadParm
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
         self.add_option("-s", "--configfile", action="callback",
@@ -203,53 +222,6 @@ class CredentialsOptions(optparse.OptionGroup):
                          help="DEPRECATED: Migrate to --use-kerberos", callback=self._set_kerberos_legacy)
         self.creds = Credentials()
 
-    def _ensure_secure_proctitle(self, opt_str, secret_data, data_type="password"):
-        """ Make sure no sensitive data (e.g. password) resides in proctitle. """
-        import re
-        try:
-            import setproctitle
-        except ModuleNotFoundError:
-            msg = ("WARNING: Using %s on command line is insecure. "
-                    "Please install the setproctitle python module.\n"
-                    % data_type)
-            sys.stderr.write(msg)
-            sys.stderr.flush()
-            return False
-        # Regex to search and replace secret data + option with.
-        #   .*[ ]+  -> Before the option must be one or more spaces.
-        #   [= ]    -> The option and the secret data might be separated by space
-        #              or equal sign.
-        #   [ ]*.*  -> After the secret data might be one, many or no space.
-        pass_opt_re_str = "(.*[ ]+)(%s[= ]%s)([ ]*.*)" % (opt_str, secret_data)
-        pass_opt_re = re.compile(pass_opt_re_str)
-        # Get current proctitle.
-        cur_proctitle = setproctitle.getproctitle()
-        # Make sure we build the correct regex.
-        if not pass_opt_re.match(cur_proctitle):
-            msg = ("Unable to hide %s in proctitle. This is most likely "
-                    "a bug!\n" % data_type)
-            sys.stderr.write(msg)
-            sys.stderr.flush()
-            return False
-        # String to replace secret data with.
-        secret_data_replacer = "xxx"
-        # Build string to replace secret data and option with. And as we dont
-        # want to change anything else than the secret data within the proctitle
-        # we have to check if the option was passed with space or equal sign as
-        # separator.
-        opt_pass_with_eq = "%s=%s" % (opt_str, secret_data)
-        opt_pass_part = re.sub(pass_opt_re_str, r'\2', cur_proctitle)
-        if opt_pass_part == opt_pass_with_eq:
-            replace_str = "%s=%s" % (opt_str, secret_data_replacer)
-        else:
-            replace_str = "%s %s" % (opt_str, secret_data_replacer)
-        # Build new proctitle:
-        new_proctitle = re.sub(pass_opt_re_str,
-                            r'\1' + replace_str + r'\3',
-                            cur_proctitle)
-        # Set new proctitle.
-        setproctitle.setproctitle(new_proctitle)
-
     def _add_option(self, *args1, **kwargs):
         if self.special_name is None:
             return self.add_option(*args1, **kwargs)
@@ -269,7 +241,6 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.set_domain(arg)
 
     def _set_password(self, option, opt_str, arg, parser):
-        self._ensure_secure_proctitle(opt_str, arg, "password")
         self.creds.set_password(arg)
         self.ask_for_password = False
         self.machine_pass = False
