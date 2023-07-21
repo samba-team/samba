@@ -168,6 +168,9 @@ bool samba_cmdline_burn(int argc, char *argv[])
 		} else if (strncmp(p, "--password", 10) == 0) {
 			ulen = 10;
 			found = true;
+		} else if (strncmp(p, "--newpassword", 13) == 0) {
+			ulen = 13;
+			found = true;
 		}
 
 		if (found) {
