@@ -85,10 +85,12 @@ pytalloc_util = bld.pyembed_libname('pytalloc-util')
 pyparam_util = bld.pyembed_libname('pyparam_util')
 pyldb_util = bld.pyembed_libname('pyldb-util')
 pycredentials = 'pycredentials'
+libpython = bld.pyembed_libname('LIBPYTHON')
+
 bld.SAMBA_PYTHON('pyauth',
         source='pyauth.c',
         public_deps='auth_system_session',
-        deps='samdb %s %s %s %s auth4' % (pytalloc_util, pyparam_util, pyldb_util, pycredentials),
+        deps=f'samdb {pytalloc_util} {pyparam_util} {pyldb_util} {pycredentials} {libpython} auth4',
         realname='samba/auth.so'
         )
 

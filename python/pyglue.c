@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include "version.h"
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
