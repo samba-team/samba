@@ -149,6 +149,10 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			return false;
 		}
 
+		/*
+		 * Take care that this list must be in longest-match
+		 * first order
+		 */
 		if (strncmp(p, "-U", 2) == 0) {
 			ulen = 2;
 			found = true;
@@ -157,6 +161,9 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			ulen = 6;
 			found = true;
 			is_user = true;
+		} else if (strncmp(p, "--password2", 11) == 0) {
+			ulen = 11;
+			found = true;
 		} else if (strncmp(p, "--password", 10) == 0) {
 			ulen = 10;
 			found = true;
