@@ -335,6 +335,14 @@
 	to <constant>smbd</constant>.</para></listitem>
 	</varlistentry>
 
+	<varlistentry>
+	<term>reload-certs</term>
+	<listitem><para>Instruct the LDAP server of a Samba AD DC to
+	reload the TLS certificates protecting ldaps:// connections. This
+	message can only be sent
+	to <constant>ldap_server</constant>.</para></listitem>
+	</varlistentry>
+
 </variablelist>
 </refsect1>
 
