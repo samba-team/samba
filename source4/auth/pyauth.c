@@ -350,40 +350,6 @@ static PyObject *py_session_info_set_unix(PyObject *module,
 }
 
 
-static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
-					const char *paramname)
-{
-	const char **ret;
-	Py_ssize_t i;
-	if (!PyList_Check(list)) {
-		PyErr_Format(PyExc_TypeError, "%s is not a list", paramname);
-		return NULL;
-	}
-	ret = talloc_array(NULL, const char *, PyList_Size(list)+1);
-	if (ret == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	for (i = 0; i < PyList_Size(list); i++) {
-		const char *value;
-		Py_ssize_t size;
-		PyObject *item = PyList_GetItem(list, i);
-		if (!PyUnicode_Check(item)) {
-			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
-			return NULL;
-		}
-		value = PyUnicode_AsUTF8AndSize(item, &size);
-		if (value == NULL) {
-			talloc_free(ret);
-			return NULL;
-		}
-		ret[i] = talloc_strndup(ret, value, size);
-	}
-	ret[i] = NULL;
-	return ret;
-}
-
 static PyObject *PyAuthContext_FromContext(struct auth4_context *auth_context)
 {
 	return pytalloc_reference(&PyAuthContext, auth_context);
