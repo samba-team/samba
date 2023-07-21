@@ -450,27 +450,69 @@ static bool sddl_decode_guid(const char *str, struct GUID *guid)
   return true on success, false on failure
   note that this routine modifies the string
 */
-static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str,
+static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
+			    struct security_ace *ace,
+			    char **sddl_copy,
 			    struct sddl_transition_state *state)
 {
-	const char *tok[6];
+	const char *tok[7];
 	const char *s;
-	int i;
 	uint32_t v;
 	struct dom_sid *sid;
 	bool ok;
 	size_t len;
-
+	size_t count = 0;
+	char *str = *sddl_copy;
 	ZERO_STRUCTP(ace);
 
-	/* parse out the 6 tokens */
+	if (*str != '(') {
+		return false;
+	}
+	str++;
+	/*
+	 * First we split apart the 6 tokens.
+	 *
+	 * 0.		 ace type
+	 * 1.		 ace flags
+	 * 2.		 access mask
+	 * 3.		 object guid
+	 * 4.		 inherit guid
+	 * 5.		 sid
+	 *
+	 */
 	tok[0] = str;
-	for (i=0;i<5;i++) {
-		char *ptr = strchr(str, ';');
-		if (ptr == NULL) return false;
-		*ptr = 0;
-		str = ptr+1;
-		tok[i+1] = str;
+	while (*str != '\0') {
+		if (*str == ';') {
+			*str = '\0';
+			str++;
+			count++;
+			tok[count] = str;
+			if (count == 6) {
+				/*
+				 * When we get conditional or resource ACEs,
+				 * this will set a flag and break;
+				 * for now we just...
+				 */
+				return false;
+			}
+			continue;
+		}
+		/*
+		 * we are not expecting a ')' in the 6 sections of an
+		 * ordinary ACE, except ending the last one.
+		 */
+		if (*str == ')') {
+			count++;
+			*str = '\0';
+			str++;
+			break;
+		}
+		str++;
+	}
+	if (count != 6) {
+		/* we hit the '\0' or ')' before all of ';;;;;)' */
+		DBG_WARNING("malformed ACE with only %zu ';'\n", count);
+		return false;
 	}
 
 	/* parse ace type */
@@ -528,6 +570,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	if (*s != '\0') {
 		return false;
 	}
+	*sddl_copy = str;
 	return true;
 }
 
@@ -546,13 +589,16 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 					    struct sddl_transition_state *state)
 {
 	const char *sddl = *sddlp;
+	char *sddl_copy = NULL;
+	char *aces_start = NULL;
 	struct security_acl *acl;
 	size_t len;
-
 	*flags = 0;
 
 	acl = talloc_zero(sd, struct security_acl);
-	if (acl == NULL) return NULL;
+	if (acl == NULL) {
+		return NULL;
+	}
 	acl->revision = SECURITY_ACL_REVISION_ADS;
 
 	if (isupper((unsigned char)sddl[0]) && sddl[1] == ':') {
@@ -567,31 +613,48 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 	}
 	sddl += len;
 
-	/* now the ACEs */
-	while (*sddl == '(') {
-		char *astr;
-		len = strcspn(sddl+1, ")");
-		astr = talloc_strndup(acl, sddl+1, len);
-		if (astr == NULL || sddl[len+1] != ')') {
-			talloc_free(acl);
-			return NULL;
-		}
+	if (sddl[0] != '(') {
+		/* it is empty apart from the flags. */
+		*sddlp = sddl;
+		return acl;
+	}
+
+	/*
+	 * now the ACEs
+	 *
+	 * For this we make a copy of the rest of the SDDL, which the ACE
+	 * tokeniser will mutilate by putting '\0' where it finds ';'.
+	 *
+	 * We need to copy the rest of the SDDL string because it is not
+	 * possible in general to find where an ACL ends if there are
+	 * conditional ACEs.
+	 */
+
+	sddl_copy = talloc_strdup(acl, sddl);
+	if (sddl_copy == NULL) {
+		TALLOC_FREE(acl);
+		return NULL;
+	}
+	aces_start = sddl_copy;
+
+	while (*sddl_copy == '(') {
+		bool ok;
 		acl->aces = talloc_realloc(acl, acl->aces, struct security_ace,
 					   acl->num_aces+1);
 		if (acl->aces == NULL) {
 			talloc_free(acl);
 			return NULL;
 		}
-		if (!sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces],
-				     astr, state)) {
+		ok = sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces],
+				     &sddl_copy, state);
+		if (!ok) {
 			talloc_free(acl);
 			return NULL;
 		}
-		talloc_free(astr);
-		sddl += len+2;
 		acl->num_aces++;
 	}
-
+	sddl += sddl_copy - aces_start;
+	TALLOC_FREE(aces_start);
 	(*sddlp) = sddl;
 	return acl;
 }
