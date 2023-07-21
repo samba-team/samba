@@ -215,6 +215,11 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 			}
 
 			break;
+
+		default:
+			DBG_WARNING("ACE type %d is not handled\n", ace->type);
+			TALLOC_FREE(tmp_acl);
+			return NULL;
 		}
 
 		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
@@ -327,6 +332,9 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 				case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
 					tmp_ace->type = SEC_ACE_TYPE_SYSTEM_AUDIT;
 					break;
+                                default:
+                                        /* all the _CALLBACK types */
+                                        break;
 				}
 			}
 
