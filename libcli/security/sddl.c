@@ -856,10 +856,7 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 		}
 	}
 
-	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
-	    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
-	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
-	    ace->type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+	if (sec_ace_object(ace->type)) {
 		const struct security_ace_object *object = &ace->object.object;
 
 		if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
