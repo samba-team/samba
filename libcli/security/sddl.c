@@ -1021,10 +1021,32 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 		goto failed;
 	}
 
-	sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s",
-			       sddl_type, sddl_flags, sddl_mask, sddl_object,
-			       sddl_iobject, sddl_trustee);
+	if (sec_ace_callback(ace->type)) {
+		/* encode the conditional part */
+		struct ace_condition_script *s = NULL;
+		const char *sddl_conditions = NULL;
 
+		s = parse_conditional_ace(tmp_ctx, ace->coda.conditions);
+
+		if (s == NULL) {
+			goto failed;
+		}
+
+		sddl_conditions = sddl_from_conditional_ace(tmp_ctx, s);
+		if (sddl_conditions == NULL) {
+			goto failed;
+		}
+
+		sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s;%s",
+				       sddl_type, sddl_flags, sddl_mask,
+				       sddl_object, sddl_iobject,
+				       sddl_trustee, sddl_conditions);
+
+	} else {
+		sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s",
+				       sddl_type, sddl_flags, sddl_mask,
+				       sddl_object, sddl_iobject, sddl_trustee);
+	}
 failed:
 	talloc_free(tmp_ctx);
 	return sddl;
