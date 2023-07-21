@@ -72,16 +72,16 @@ error:
 	return false;
 }
 
-const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
-				 const char *paramname)
+char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
+			   const char *paramname)
 {
-	const char **ret;
+	char **ret;
 	Py_ssize_t i;
 	if (!PyList_Check(list)) {
 		PyErr_Format(PyExc_TypeError, "%s is not a list", paramname);
 		return NULL;
 	}
-	ret = talloc_array(NULL, const char *, PyList_Size(list)+1);
+	ret = talloc_array(NULL, char *, PyList_Size(list)+1);
 	if (ret == NULL) {
 		PyErr_NoMemory();
 		return NULL;
