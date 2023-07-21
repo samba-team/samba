@@ -1041,7 +1041,20 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 				       sddl_type, sddl_flags, sddl_mask,
 				       sddl_object, sddl_iobject,
 				       sddl_trustee, sddl_conditions);
+	} else if (sec_ace_resource(ace->type)) {
+		/* encode the resource part */
+		const char *coda = NULL;
+		coda = sddl_resource_attr_from_claim(tmp_ctx,
+						     &ace->coda.claim);
 
+		if (coda == NULL) {
+			DBG_WARNING("resource ACE has invalid claim\n");
+			goto failed;
+		}
+		sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s;%s",
+				       sddl_type, sddl_flags, sddl_mask,
+				       sddl_object, sddl_iobject,
+				       sddl_trustee, coda);
 	} else {
 		sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s",
 				       sddl_type, sddl_flags, sddl_mask,
