@@ -22,13 +22,13 @@
 import optparse
 import os
 from contextlib import contextmanager
-from samba.getopt import CredentialsOptions
+from samba.getopt import CredentialsOptions, SambaOptions
 import samba.tests
 import setproctitle
 import sys
 
 password_opt = '--password=super_secret_password'
-clear_password_opt = '--password=xxx'
+clear_password_opt = '--password '
 
 @contextmanager
 def auth_fle_opt(auth_file_path, long_opt=True):
@@ -48,11 +48,17 @@ class CredentialsOptionsTests(samba.tests.TestCase):
     def setUp(self):
         super(samba.tests.TestCase, self).setUp()
         self.old_proctitle = setproctitle.getproctitle()
-        setproctitle.setproctitle('%s %s' % (self.old_proctitle, password_opt))
-        sys.argv.append(password_opt)
+
+        # We must append two options to get the " " we look for in the
+        # test after the redacted password
+        sys.argv.extend([password_opt, "--realm=samba.org"])
 
     def test_clear_proctitle_password(self):
         parser = optparse.OptionParser()
+
+        # The password burning is on the SambaOptions __init__()
+        sambaopts = SambaOptions(parser)
+        parser.add_option_group(sambaopts)
         credopts = CredentialsOptions(parser)
         parser.add_option_group(credopts)
         (opts, args) = parser.parse_args()
