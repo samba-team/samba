@@ -367,7 +367,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 	struct tevent_context *ev;
 	struct ldb_context *ldb = NULL;
 	NTSTATUS nt_status;
-	const char **methods;
+	const char *const *methods;
 
 	const char *const kwnames[] = {"lp_ctx", "ldb", "methods", NULL};
 
@@ -413,7 +413,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 		    mem_ctx, ev, NULL, lp_ctx, &auth_context);
 	} else {
 		if (py_methods != Py_None) {
-			methods = PyList_AsStringList(mem_ctx, py_methods, "methods");
+			methods = (const char * const *)PyList_AsStringList(mem_ctx, py_methods, "methods");
 			if (methods == NULL) {
 				talloc_free(mem_ctx);
 				return NULL;

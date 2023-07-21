@@ -26,8 +26,8 @@ bool py_update_path(void);
 /* discard signature of 'func' in favour of 'target_sig' */
 #define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
 
-const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
-				 const char *paramname);
+char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
+			   const char *paramname);
 
 #endif /* __SAMBA_PYTHON_MODULES_H__ */ 
 
