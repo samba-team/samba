@@ -33,4 +33,7 @@ char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
 struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 				const struct dom_sid *domain_sid);
 
+char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+		      const struct dom_sid *domain_sid);
+
 #endif /* __SDDL_H__ */

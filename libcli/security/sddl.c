@@ -784,8 +784,8 @@ failed:
 /*
   encode a sid in SDDL format
 */
-static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-			     struct sddl_transition_state *state)
+static char *sddl_transition_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+					struct sddl_transition_state *state)
 {
 	bool in_machine = dom_sid_in_domain(state->machine_sid, sid);
 	bool in_domain = dom_sid_in_domain(state->domain_sid, sid);
@@ -829,6 +829,23 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 
 	return talloc_strdup(mem_ctx, sidstr);
 }
+
+char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+		      const struct dom_sid *domain_sid)
+{
+	struct sddl_transition_state state = {
+		/*
+		 * TODO: verify .machine_rid values really belong to
+		 * to the machine_sid on a member, once
+		 * we pass machine_sid from the caller...
+		 */
+		.machine_sid = domain_sid,
+		.domain_sid = domain_sid,
+		.forest_sid = domain_sid,
+	};
+	return sddl_transition_encode_sid(mem_ctx, sid, &state);
+}
+
 
 
 /*
@@ -890,7 +907,7 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 		}
 	}
 
-	sddl_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, state);
+	sddl_trustee = sddl_transition_encode_sid(tmp_ctx, &ace->trustee, state);
 	if (sddl_trustee == NULL) {
 		goto failed;
 	}
@@ -976,14 +993,14 @@ char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 	tmp_ctx = talloc_new(mem_ctx);
 
 	if (sd->owner_sid != NULL) {
-		char *sid = sddl_encode_sid(tmp_ctx, sd->owner_sid, &state);
+		char *sid = sddl_transition_encode_sid(tmp_ctx, sd->owner_sid, &state);
 		if (sid == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "O:%s", sid);
 		if (sddl == NULL) goto failed;
 	}
 
 	if (sd->group_sid != NULL) {
-		char *sid = sddl_encode_sid(tmp_ctx, sd->group_sid, &state);
+		char *sid = sddl_transition_encode_sid(tmp_ctx, sd->group_sid, &state);
 		if (sid == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "G:%s", sid);
 		if (sddl == NULL) goto failed;
