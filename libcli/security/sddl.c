@@ -65,7 +65,7 @@ static bool sddl_map_flag(
 */
 static bool sddl_map_flags(const struct flag_map *map, const char *str,
 			   uint32_t *pflags, size_t *plen,
-                           bool unknown_flag_is_part_of_next_thing)
+			   bool unknown_flag_is_part_of_next_thing)
 {
 	const char *str0 = str;
 	if (plen != NULL) {
@@ -92,15 +92,15 @@ static bool sddl_map_flags(const struct flag_map *map, const char *str,
 	 * For ACL flags, unknown_flag_is_part_of_next_thing is set,
 	 * and we expect some more stuff that isn't flags.
 	 *
-         * For ACE flags, unknown_flag_is_part_of_next_thing is unset,
-         * and the flags have been tokenised into their own little
-         * string. We don't expect anything here, even whitespace.
-         */
-        if (*str == '\0' || unknown_flag_is_part_of_next_thing) {
-                return true;
-        }
+	 * For ACE flags, unknown_flag_is_part_of_next_thing is unset,
+	 * and the flags have been tokenised into their own little
+	 * string. We don't expect anything here, even whitespace.
+	 */
+	if (*str == '\0' || unknown_flag_is_part_of_next_thing) {
+		return true;
+	}
 	DBG_WARNING("Unknown flag - '%s' in '%s'\n", str, str0);
-        return false;
+	return false;
 }
 
 
@@ -210,8 +210,8 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 	if (strncmp(sddl, "S-", 2) == 0) {
 		struct dom_sid *sid = NULL;
 		char *sid_str = NULL;
-                const char *end = NULL;
-                bool ok;
+		const char *end = NULL;
+		bool ok;
 		size_t len = strspn(sddl + 2, "-0123456789ABCDEFabcdefxX") + 2;
 		if (len < 5) { /* S-1-x */
 			return NULL;
@@ -229,23 +229,23 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 		if (sid_str == NULL) {
 			return NULL;
 		}
-                sid = talloc(mem_ctx, struct dom_sid);
-                if (sid == NULL) {
+		sid = talloc(mem_ctx, struct dom_sid);
+		if (sid == NULL) {
 			TALLOC_FREE(sid_str);
-                        return NULL;
-                };
-                ok = dom_sid_parse_endp(sid_str, sid, &end);
-                if (!ok) {
+			return NULL;
+		};
+		ok = dom_sid_parse_endp(sid_str, sid, &end);
+		if (!ok) {
 			DBG_WARNING("could not parse SID '%s'\n", sid_str);
 			TALLOC_FREE(sid_str);
-                        TALLOC_FREE(sid);
-                        return NULL;
-                }
+			TALLOC_FREE(sid);
+			return NULL;
+		}
 		if (end - sid_str != len) {
 			DBG_WARNING("trailing junk after SID '%s'\n", sid_str);
 			TALLOC_FREE(sid_str);
-                        TALLOC_FREE(sid);
-                        return NULL;
+			TALLOC_FREE(sid);
+			return NULL;
 		}
 		TALLOC_FREE(sid_str);
 		(*sddlp) += len;
@@ -370,7 +370,7 @@ static char *sddl_match_file_rights(TALLOC_CTX *mem_ctx,
 static bool sddl_decode_access(const char *str, uint32_t *pmask)
 {
 	const char *str0 = str;
-        char *end = NULL;
+	char *end = NULL;
 	uint32_t mask = 0;
 	unsigned long long numeric_mask;
 	int err;
@@ -445,10 +445,10 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 		mask |= flags;
 		str += len;
 	}
-        if (*str != '\0') {
+	if (*str != '\0') {
 		DBG_WARNING("Bad characters in '%s'\n", str0);
-                return false;
-        }
+		return false;
+	}
 	*pmask = mask;
 	return true;
 }
@@ -456,10 +456,10 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
 
 static bool sddl_decode_guid(const char *str, struct GUID *guid)
 {
-        if (strlen(str) != 36) {
-                return false;
-        }
-        return parse_guid_string(str, guid);
+	if (strlen(str) != 36) {
+		return false;
+	}
+	return parse_guid_string(str, guid);
 }
 
 
@@ -859,7 +859,6 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 	struct GUID_txt_buf object_buf, iobject_buf;
 	const char *sddl_type="", *sddl_flags="", *sddl_mask="",
 		*sddl_object="", *sddl_iobject="", *sddl_trustee="";
-
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -906,7 +905,6 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 				&iobject_buf);
 		}
 	}
-
 	sddl_trustee = sddl_transition_encode_sid(tmp_ctx, &ace->trustee, state);
 	if (sddl_trustee == NULL) {
 		goto failed;
