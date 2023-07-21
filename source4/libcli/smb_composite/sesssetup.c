@@ -212,7 +212,7 @@ static void request_handler(struct smbcli_request *req)
 			 * vital to the security of the system.  Even if the other end
 			 * accepts, if GENSEC claims 'MORE_PROCESSING_REQUIRED' then
 			 * you must keep feeding it blobs, or else the remote
-			 * host/attacker might avoid mutal authentication
+			 * host/attacker might avoid mutual authentication
 			 * requirements */
 
 			subreq = gensec_update_send(state, c->event_ctx,
