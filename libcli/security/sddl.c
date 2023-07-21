@@ -307,8 +307,22 @@ static const struct flag_map ace_types[] = {
 	{ "OD", SEC_ACE_TYPE_ACCESS_DENIED_OBJECT },
 	{ "OU", SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT },
 	{ "OL", SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT },
-	{ "A",  SEC_ACE_TYPE_ACCESS_ALLOWED },
-	{ "D",  SEC_ACE_TYPE_ACCESS_DENIED },
+	{ "A",	SEC_ACE_TYPE_ACCESS_ALLOWED },
+	{ "D",	SEC_ACE_TYPE_ACCESS_DENIED },
+
+	{ "XA", SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK },
+	{ "XD", SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK },
+	{ "ZA", SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT },
+	/*
+	 * SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT exists but has
+	 * no SDDL flag.
+	 *
+	 * ZA and XU are switched in [MS-DTYP] as of version 36.0,
+	 * but this should be corrected in later versions.
+	 */
+	{ "XU", SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK },
+
+	{ "RA", SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE },
 	{ NULL, 0 }
 };
 
