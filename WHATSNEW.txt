@@ -210,6 +210,16 @@ administrator to use an encrypted connection in the future.
 NOTE WELL: If Samba is accessed via a TLS frontend or load balancer,
 the LDAP request will be regarded as plaintext.
 
+Samba AD TLS Certificates can be reloaded
+-----------------------------------------
+
+The TLS certificates used for Samba's AD DC LDAP server were
+previously only read on startup, and this meant that when then expired
+it was required to restart Samba, disrupting service to other users.
+
+ smbcontrol ldap_server reload-certs
+
+This will now allow these certificates to be reloaded 'on the fly'
 
 ================
 REMOVED FEATURES
