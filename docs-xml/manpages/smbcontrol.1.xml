@@ -305,7 +305,7 @@
 	<term>idmap</term>
 	<listitem><para>Notify about changes of id mapping. Can be sent
 	to <constant>smbd</constant> or (not implemented yet) <constant>winbindd</constant>.
-	</para></listitem>
+	</para>
 
 	<variablelist>
 	  <varlistentry>
@@ -325,6 +325,7 @@
 	    the id is currently in use.</para></listitem>
 	  </varlistentry>
 	</variablelist>
+	</listitem>
 	</varlistentry>
 
 	<varlistentry>
