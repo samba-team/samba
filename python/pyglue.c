@@ -26,6 +26,7 @@
 #include "lib/socket/netif.h"
 #include "lib/util/debug.h"
 #include "librpc/ndr/ndr_private.h"
+#include "lib/cmdline/cmdline.h"
 
 void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
@@ -462,6 +463,62 @@ static PyObject *py_strstr_m(PyObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *py_get_burnt_commandline(PyObject *self, PyObject *args)
+{
+	PyObject *cmdline_as_list, *ret;
+	char *burnt_cmdline = NULL;
+	Py_ssize_t i, argc;
+	char **argv = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	bool burnt;
+
+	if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &cmdline_as_list))
+	{
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	argc = PyList_GET_SIZE(cmdline_as_list);
+
+	if (argc == 0) {
+		TALLOC_FREE(frame);
+		Py_RETURN_NONE;
+	}
+
+	argv = PyList_AsStringList(frame, cmdline_as_list, "sys.argv");
+	if (argv == NULL) {
+		return NULL;
+	}
+
+	burnt = samba_cmdline_burn(argc, argv);
+	if (!burnt) {
+		TALLOC_FREE(frame);
+		Py_RETURN_NONE;
+	}
+
+	for (i = 0; i < argc; i++) {
+		if (i == 0) {
+			burnt_cmdline = talloc_strdup(frame,
+						      argv[i]);
+		} else {
+			burnt_cmdline
+				= talloc_asprintf_append(burnt_cmdline,
+							 " %s",
+							 argv[i]);
+		}
+		if (burnt_cmdline == NULL) {
+			PyErr_NoMemory();
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+	}
+
+	ret = PyUnicode_FromString(burnt_cmdline);
+	TALLOC_FREE(frame);
+
+	return ret;
+}
+
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"generate_random_str(len) -> string\n"
@@ -521,6 +578,8 @@ static PyMethodDef py_misc_methods[] = {
 		METH_NOARGS, "is Samba built with selftest enabled?" },
 	{ "ndr_token_max_list_size", (PyCFunction)py_ndr_token_max_list_size,
 		METH_NOARGS, "How many NDR internal tokens is too many for this build?" },
+	{ "get_burnt_commandline", (PyCFunction)py_get_burnt_commandline,
+		METH_VARARGS, "Return a redacted commandline to feed to setproctitle (None if no redaction required)" },
 	{0}
 };
 
