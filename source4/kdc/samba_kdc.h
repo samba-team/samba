@@ -72,6 +72,6 @@ struct samba_kdc_entry {
 
 extern struct hdb_method hdb_samba4_interface;
 
-#define CHANGEPW_LIFETIME 60*2 /* 2 minutes */
+#define CHANGEPW_LIFETIME (60*2) /* 2 minutes */
 
 #endif /* _SAMBA_KDC_H_ */
