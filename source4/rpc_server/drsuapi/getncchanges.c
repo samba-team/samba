@@ -3507,9 +3507,10 @@ allowed:
 			getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
 		}
 
-		DEBUG(8,(__location__ ": %s object %s\n",
+		DEBUG(8,(__location__ ": %s object %s new tmp_highest_usn=%" PRIu64 "\n",
 			 new_objs ? "replicating" : "skipping send of",
-			 ldb_dn_get_linearized(msg->dn)));
+			 ldb_dn_get_linearized(msg->dn),
+			 r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn));
 
 		getnc_state->total_links += (getnc_state->la_count - old_la_index);
 
