@@ -1229,3 +1229,4 @@ class DcConnection:
         (self.drs, self.drs_handle) = drs_base._ds_bind(dnsname_dc)
         (self.default_hwm, utdv) = drs_base._get_highest_hwm_utdv(ldb_dc)
         self.default_utdv = utdv
+        self.dnsname_dc = dnsname_dc
