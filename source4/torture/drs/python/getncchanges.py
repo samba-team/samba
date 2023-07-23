@@ -51,20 +51,12 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         self.ou = str(samba.tests.create_test_ou(self.test_ldb_dc,
                                                  "getncchanges." + self.id().rsplit(".", 1)[1]))
 
+        self.addCleanup(self.ldb_dc2.delete, self.ou, ["tree_delete:1"])
+
         self.base_dn = self.test_ldb_dc.get_default_basedn()
 
         self.default_conn = DcConnection(self, self.ldb_dc2, self.dnsname_dc2)
         self.set_dc_connection(self.default_conn)
-
-    def tearDown(self):
-        super(DrsReplicaSyncIntegrityTestCase, self).tearDown()
-        # tidyup groups and users
-        try:
-            self.ldb_dc2.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as e:
-            (enum, string) = e.args
-            if enum == ldb.ERR_NO_SUCH_OBJECT:
-                pass
 
     def init_test_state(self):
         self.rxd_dn_list = []
