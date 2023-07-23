@@ -49,7 +49,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         self.set_test_ldb_dc(self.ldb_dc2)
 
         self.ou = str(samba.tests.create_test_ou(self.test_ldb_dc,
-                                                 "getncchanges"))
+                                                 "getncchanges." + self.id().rsplit(".", 1)[1]))
+
         self.base_dn = self.test_ldb_dc.get_default_basedn()
 
         self.default_conn = DcConnection(self, self.ldb_dc2, self.dnsname_dc2)
