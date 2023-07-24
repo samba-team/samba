@@ -19,11 +19,13 @@ load_script_options
 
 ctdb_setup_state_dir "service" "$service_name"
 
+port_21="vsftpd listening on TCP port 21"
+
 case "$1" in
 startup)
 	service "$service_name" stop > /dev/null 2>&1
 	service "$service_name" start
-	ctdb_counter_init
+	failcount_init "$port_21"
 	;;
 
 shutdown)
@@ -42,15 +44,12 @@ ipreallocated)
 
 monitor)
 	if ctdb_check_tcp_ports 21 ; then
-		ctdb_counter_init
+		failcount_reset "$port_21"
 	else
-		ctdb_counter_incr
-		num_fails=$(ctdb_counter_get)
-		if [ "$num_fails" -ge 2 ] ; then
-			die "ERROR: ${num_fails} consecutive failures for vsftpd, marking node unhealthy"
-		elif [ "$num_fails" -eq 1 ] ; then
-			echo "WARNING: vsftpd not listening but less than 2 consecutive failures, not unhealthy yet"
-		fi
+		# Set defaults, if unset
+		: "${CTDB_VSFTPD_MONITOR_THRESHOLDS:=1:2}"
+
+		failcount_incr "$port_21" "$CTDB_VSFTPD_MONITOR_THRESHOLDS"
 	fi
 	;;
 esac
