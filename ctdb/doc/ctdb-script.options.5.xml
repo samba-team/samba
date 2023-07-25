@@ -20,51 +20,58 @@
   <refsect1>
     <title>DESCRIPTION</title>
 
-    <para>
-      Each CTDB script has 2 possible locations for its configuration options:
-    </para>
+    <refsect2>
+      <title>Location</title>
+      <para>
+	Each CTDB script has 2 possible locations for its configuration options:
+      </para>
 
-    <variablelist>
+      <variablelist>
 
-      <varlistentry>
-	<term>
-	  <filename>/usr/local/etc/ctdb/script.options</filename>
-	</term>
-	<listitem>
-	  <para>
-	    This is a catch-all global file for general purpose
-	    scripts and for options that are used in multiple event
-	    scripts.
-	  </para>
-	</listitem>
-      </varlistentry>
+	<varlistentry>
+	  <term>
+	    <filename>/usr/local/etc/ctdb/script.options</filename>
+	  </term>
+	  <listitem>
+	    <para>
+	      This is a catch-all global file for general purpose
+	      scripts and for options that are used in multiple event
+	      scripts.
+	    </para>
+	  </listitem>
+	</varlistentry>
 
-      <varlistentry>
-	<term>
-	  <parameter>SCRIPT</parameter>.options
-	</term>
-	<listitem>
-	  <para>
-	    That is, options for
-	    <filename><parameter>SCRIPT</parameter></filename> are
-	    placed in a file alongside the script, with a ".script"
-	    suffix added.  This style is usually recommended for event
-	    scripts.
-	  </para>
+	<varlistentry>
+	  <term>
+	    <parameter>SCRIPT</parameter>.options
+	  </term>
+	  <listitem>
+	    <para>
+	      That is, options for
+	      <filename><parameter>SCRIPT</parameter></filename> are
+	      placed in a file alongside the script, with a ".script"
+	      suffix added.  This style is usually recommended for event
+	      scripts.
+	    </para>
 
-	  <para>
-	    Options in this script-specific file override those in
-	    the global file.
-	  </para>
-	</listitem>
-      </varlistentry>
+	    <para>
+	      Options in this script-specific file override those in
+	      the global file.
+	    </para>
+	  </listitem>
+	</varlistentry>
 
-    </variablelist>
+      </variablelist>
+    </refsect2>
 
-    <para>
-      These files should include simple shell-style variable
-      assignments and shell-style comments.
-    </para>
+    <refsect2>
+      <title>Contents</title>
+
+      <para>
+	These files should include simple shell-style variable
+	assignments and shell-style comments.
+      </para>
+    </refsect2>
 
   </refsect1>
 
