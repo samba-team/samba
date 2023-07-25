@@ -6958,9 +6958,12 @@ class GPOTests(tests.TestCase):
 
     def test_gp_user_scripts_ext(self):
         local_path = self.lp.cache_path('gpo_cache')
-        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
-        reg_pol = os.path.join(local_path, policies, guid,
+        guids = ['{31B2F340-016D-11D2-945F-00C04FB984F9}',
+                 '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
+        reg_pol = os.path.join(local_path, policies, guids[0],
                                'USER/REGISTRY.POL')
+        reg_pol2 = os.path.join(local_path, policies, guids[1],
+                                'USER/REGISTRY.POL')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -6993,6 +6996,18 @@ class GPOTests(tests.TestCase):
             ret = stage_file(reg_pol, ndr_pack(stage))
             self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
 
+            # Stage the other Registry.pol
+            stage = preg.file()
+            e2 = preg.entry()
+            e2.keyname = keyname
+            e2.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+            e2.type = 1
+            e2.data = b'echo this is a second policy'
+            stage.num_entries = 1
+            stage.entries = [e2]
+            ret = stage_file(reg_pol2, ndr_pack(stage))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol2)
+
             # Process all gpos, intentionally skipping the privilege drop
             ext.process_group_policy([], gpos)
             # Dump the fake crontab setup for testing
@@ -7001,13 +7016,31 @@ class GPOTests(tests.TestCase):
             entry = b'%s %s' % (sections[keyname], e.data.encode())
             self.assertIn(entry, crontab,
                 'The crontab entry was not installed')
+            entry2 = b'%s %s' % (sections[keyname], e2.data.encode())
+            self.assertIn(entry2, crontab,
+                'The crontab entry was not installed')
+
+            # Force apply with removal of second GPO
+            gp_db = store.get_gplog(os.environ.get('DC_USERNAME'))
+            del_gpos = gp_db.get_applied_settings([guids[1]])
+            rgpos = [gpo for gpo in gpos if gpo.name != guids[1]]
+            ext.process_group_policy(del_gpos, rgpos)
+
+            # Dump the fake crontab setup for testing
+            p = Popen(['crontab', '-l'], stdout=PIPE)
+            crontab, _ = p.communicate()
+
+            # Ensure the first entry remains, and the second entry is removed
+            self.assertIn(entry, crontab,
+                'The first crontab entry was not found')
+            self.assertNotIn(entry2, crontab,
+                'The second crontab entry was still present')
 
             # Check that a call to gpupdate --rsop also succeeds
             ret = rsop(self.lp)
             self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
             # Remove policy
-            gp_db = store.get_gplog(os.environ.get('DC_USERNAME'))
             del_gpos = get_deleted_gpos_list(gp_db, [])
             ext.process_group_policy(del_gpos, [])
             # Dump the fake crontab setup for testing
@@ -7016,8 +7049,9 @@ class GPOTests(tests.TestCase):
             self.assertNotIn(entry, crontab,
                 'Unapply failed to cleanup crontab entry')
 
-            # Unstage the Registry.pol file
+            # Unstage the Registry.pol files
             unstage_file(reg_pol)
+            unstage_file(reg_pol2)
 
     def test_gp_firefox_ext(self):
         local_path = self.lp.cache_path('gpo_cache')
