@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) Catalyst IT Ltd. 2023
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+"""USAGE: extract-sddl-seeds SRCDIR SDDLDIR
+
+SRCDIR should have fuzz_security_token_vs_descriptor seeds.
+
+SDDLDIR will end up with SDDL strings representing the security
+descriptors in the seeds, along with 4 trailing bytes representing an
+access mask. This is the format used by the SDDL fuzzers.
+"""
+
+
+import sys
+sys.path.insert(0, "bin/python")
+
+from pathlib import Path
+from hashlib import md5
+from samba.ndr import ndr_unpack, ndr_pack
+from samba.dcerpc.security import token_descriptor_fuzzing_pair
+
+
+def usage(ret):
+    print(__doc__)
+    exit(ret)
+
+
+def main():
+    if {'-h', '--help'}.intersection(sys.argv):
+        usage(0)
+    if len(sys.argv) != 3:
+        usage(1)
+
+    src, dest = sys.argv[1:]
+    sp = Path(src)
+    dp = Path(dest)
+
+    raw_strings = set()
+    sddl_strings = set()
+
+    for filename in sp.iterdir():
+        with open(filename, 'rb') as f:
+            raw_strings.add(f.read())
+
+    for s in raw_strings:
+        pair = ndr_unpack(s)
+        sd = pair.sd.as_sddl()
+        mask = pair.access_desired
+        b = sd.encode() + mask.to_bytes(4, 'little')
+        sddl_strings.add(b)
+
+    for s in sddl_strings:
+        name = md5(s).hexdigest()
+        with open(dp / name, "wb") as f:
+            f.write(s)
+
+
+main()
