@@ -5136,3 +5136,110 @@ bool run_smb2_dfs_filename_leading_backslash(int dummy)
 	(void)smb2_dfs_delete(cli, dfs_filename_slash);
 	return retval;
 }
+
+bool run_smb2_invalid_pipename(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	const char *unknown_pipe = "badpipe";
+	const char *invalid_pipe = "../../../../../../../../../badpipe";
+
+	printf("Starting SMB2-INVALID-PIPENAME\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, "IPC$", "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Try and connect to an unknown pipename. */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				unknown_pipe,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_FILE_READ_DATA|
+					SEC_FILE_WRITE_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL, /* struct smb2_create_blobs * */
+				NULL); /* struct symlink_reparse_struct */
+	/* We should get NT_STATUS_OBJECT_NAME_NOT_FOUND */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("%s:%d smb2cli_create on name %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			unknown_pipe,
+			nt_errstr(status));
+		return false;
+	}
+
+	/* Try and connect to an invalid pipename containing unix separators. */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				invalid_pipe,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_FILE_READ_DATA|
+					SEC_FILE_WRITE_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL, /* struct smb2_create_blobs * */
+				NULL); /* struct symlink_reparse_struct */
+	/*
+	 * We should still get NT_STATUS_OBJECT_NAME_NOT_FOUND
+	 * (tested against Windows 2022).
+	 */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("%s:%d smb2cli_create on name %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			invalid_pipe,
+			nt_errstr(status));
+		return false;
+	}
+	return true;
+}
