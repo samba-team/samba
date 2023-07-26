@@ -608,10 +608,9 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_tcon_globalB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		DBG_WARNING("smbXsrv_tcon_global_verify_record: "
-			 "key '%s' ndr_pull_struct_blob - %s\n",
-			 tdb_data_dbg(key),
-			 nt_errstr(status));
+		DBG_WARNING("key '%s' ndr_pull_struct_blob - %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(status));
 		TALLOC_FREE(frame);
 		return;
 	}
@@ -622,10 +621,9 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 	}
 
 	if (global_blob.version != SMBXSRV_VERSION_0) {
-		DBG_ERR("smbXsrv_tcon_global_verify_record: "
-			 "key '%s' use unsupported version %u\n",
-			 tdb_data_dbg(key),
-			 global_blob.version);
+		DBG_ERR("key '%s' use unsupported version %u\n",
+			tdb_data_dbg(key),
+			global_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_tcon_globalB, &global_blob);
 		TALLOC_FREE(frame);
 		return;
@@ -636,10 +634,9 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 	exists = serverid_exists(&global->server_id);
 	if (!exists) {
 		struct server_id_buf idbuf;
-		DBG_NOTICE("smbXsrv_tcon_global_verify_record: "
-			 "key '%s' server_id %s does not exist.\n",
-			 tdb_data_dbg(key),
-			 server_id_str_buf(global->server_id, &idbuf));
+		DBG_NOTICE("key '%s' server_id %s does not exist.\n",
+			   tdb_data_dbg(key),
+			   server_id_str_buf(global->server_id, &idbuf));
 		if (DEBUGLVL(DBGLVL_NOTICE)) {
 			NDR_PRINT_DEBUG(smbXsrv_tcon_globalB, &global_blob);
 		}
@@ -689,9 +686,9 @@ static NTSTATUS smbXsrv_tcon_global_store(struct smbXsrv_tcon_global0 *global)
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_tcon_globalB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
-		DBG_WARNING("smbXsrv_tcon_global_store: key '%s' ndr_push - %s\n",
-			 tdb_data_dbg(key),
-			 nt_errstr(status));
+		DBG_WARNING("key '%s' ndr_push - %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(status));
 		TALLOC_FREE(global->db_rec);
 		return status;
 	}
@@ -699,16 +696,15 @@ static NTSTATUS smbXsrv_tcon_global_store(struct smbXsrv_tcon_global0 *global)
 	val = make_tdb_data(blob.data, blob.length);
 	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("smbXsrv_tcon_global_store: key '%s' store - %s\n",
-			 tdb_data_dbg(key),
-			 nt_errstr(status));
+		DBG_WARNING("key '%s' store - %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(status));
 		TALLOC_FREE(global->db_rec);
 		return status;
 	}
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
-		DBG_DEBUG("smbXsrv_tcon_global_store: key '%s' stored\n",
-			  tdb_data_dbg(key));
+		DBG_DEBUG("key '%s' stored\n", tdb_data_dbg(key));
 		NDR_PRINT_DEBUG(smbXsrv_tcon_globalB, &global_blob);
 	}
 
@@ -723,9 +719,8 @@ static int smbXsrv_tcon_destructor(struct smbXsrv_tcon *tcon)
 
 	status = smbXsrv_tcon_disconnect(tcon, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("smbXsrv_tcon_destructor: "
-			  "smbXsrv_tcon_disconnect() failed - %s\n",
-			  nt_errstr(status));
+		DBG_ERR("smbXsrv_tcon_disconnect() failed - %s\n",
+			nt_errstr(status));
 	}
 
 	TALLOC_FREE(tcon->global);
@@ -831,10 +826,9 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 
 	status = smbXsrv_tcon_global_store(global);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("smbXsrv_tcon_create: "
-			 "global_id (0x%08x) store failed - %s\n",
-			 tcon->global->tcon_global_id,
-			 nt_errstr(status));
+		DBG_ERR("global_id (0x%08x) store failed - %s\n",
+			tcon->global->tcon_global_id,
+			nt_errstr(status));
 		TALLOC_FREE(tcon);
 		return status;
 	}
@@ -845,8 +839,8 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 			.info.info0 = tcon,
 		};
 
-		DBG_DEBUG("smbXsrv_tcon_create: global_id (0x%08x) stored\n",
-			 tcon->global->tcon_global_id);
+		DBG_DEBUG("global_id (0x%08x) stored\n",
+			  tcon->global->tcon_global_id);
 		NDR_PRINT_DEBUG(smbXsrv_tconB, &tcon_blob);
 	}
 
@@ -860,9 +854,9 @@ NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon)
 	NTSTATUS status;
 
 	if (tcon->global->db_rec != NULL) {
-		DBG_ERR("smbXsrv_tcon_update(0x%08x): "
-			  "Called with db_rec != NULL'\n",
-			  tcon->global->tcon_global_id);
+		DBG_ERR("update(0x%08x): "
+			"Called with db_rec != NULL'\n",
+			tcon->global->tcon_global_id);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -876,10 +870,9 @@ NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon)
 
 	status = smbXsrv_tcon_global_store(tcon->global);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("smbXsrv_tcon_update: "
-			 "global_id (0x%08x) store failed - %s\n",
-			 tcon->global->tcon_global_id,
-			 nt_errstr(status));
+		DBG_ERR("global_id (0x%08x) store failed - %s\n",
+			tcon->global->tcon_global_id,
+			nt_errstr(status));
 		return status;
 	}
 
@@ -889,7 +882,7 @@ NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon)
 			.info.info0 = tcon,
 		};
 
-		DBG_DEBUG("smbXsrv_tcon_update: global_id (0x%08x) stored\n",
+		DBG_DEBUG("global_id (0x%08x) stored\n",
 			  tcon->global->tcon_global_id);
 		NDR_PRINT_DEBUG(smbXsrv_tconB, &tcon_blob);
 	}
@@ -918,11 +911,11 @@ NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid)
 		ok = chdir_current_service(tcon->compat);
 		if (!ok) {
 			status = NT_STATUS_INTERNAL_ERROR;
-			DBG_ERR("smbXsrv_tcon_disconnect(0x%08x, '%s'): "
-				  "chdir_current_service() failed: %s\n",
-				  tcon->global->tcon_global_id,
-				  tcon->global->share_name,
-				  nt_errstr(status));
+			DBG_ERR("disconnect(0x%08x, '%s'): "
+				"chdir_current_service() failed: %s\n",
+				tcon->global->tcon_global_id,
+				tcon->global->share_name,
+				nt_errstr(status));
 			/*
 			 * We must call close_cnum() on
 			 * error, as the caller is going
@@ -959,12 +952,12 @@ NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid)
 		if (!NT_STATUS_IS_OK(status)) {
 			TDB_DATA key = dbwrap_record_get_key(global_rec);
 
-			DBG_ERR("smbXsrv_tcon_disconnect(0x%08x, '%s'): "
-				  "failed to delete global key '%s': %s\n",
-				  tcon->global->tcon_global_id,
-				  tcon->global->share_name,
-				  tdb_data_dbg(key),
-				  nt_errstr(status));
+			DBG_ERR("disconnect(0x%08x, '%s'): "
+				"failed to delete global key '%s': %s\n",
+				tcon->global->tcon_global_id,
+				tcon->global->share_name,
+				tdb_data_dbg(key),
+				nt_errstr(status));
 			error = status;
 		}
 	}
@@ -985,12 +978,12 @@ NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid)
 		if (!NT_STATUS_IS_OK(status)) {
 			TDB_DATA key = dbwrap_record_get_key(local_rec);
 
-			DBG_ERR("smbXsrv_tcon_disconnect(0x%08x, '%s'): "
-				  "failed to delete local key '%s': %s\n",
-				  tcon->global->tcon_global_id,
-				  tcon->global->share_name,
-				  tdb_data_dbg(key),
-				  nt_errstr(status));
+			DBG_ERR("disconnect(0x%08x, '%s'): "
+				"failed to delete local key '%s': %s\n",
+				tcon->global->tcon_global_id,
+				tcon->global->share_name,
+				tdb_data_dbg(key),
+				nt_errstr(status));
 			error = status;
 		}
 		table->local.num_tcons -= 1;
@@ -1027,17 +1020,15 @@ static NTSTATUS smbXsrv_tcon_disconnect_all(struct smbXsrv_tcon_table *table,
 				 smbXsrv_tcon_disconnect_all_callback,
 				 &state, &count);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("smbXsrv_tcon_disconnect_all: "
-			  "dbwrap_traverse() failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("dbwrap_traverse() failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
 	if (!NT_STATUS_IS_OK(state.first_status)) {
-		DBG_ERR("smbXsrv_tcon_disconnect_all: "
-			  "count[%d] errors[%d] first[%s]\n",
-			  count, state.errors,
-			  nt_errstr(state.first_status));
+		DBG_ERR("count[%d] errors[%d] first[%s]\n",
+			count,
+			state.errors,
+			nt_errstr(state.first_status));
 		return state.first_status;
 	}
 
