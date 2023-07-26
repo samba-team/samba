@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Kerberos utility functions for GENSEC
-   
+
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -221,7 +221,7 @@ done:
 
 /**
  * Return a freshly allocated ccache (destroyed by destructor on child
- * of parent_ctx), for a given set of client credentials 
+ * of parent_ctx), for a given set of client credentials
  */
 
  krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
@@ -353,7 +353,7 @@ done:
 			return EINVAL;
 		} else {
 			/* No password available, try to use a keyblock instead */
-			
+
 			krb5_keyblock keyblock;
 			const struct samr_Password *mach_pwd;
 			mach_pwd = cli_credentials_get_nt_hash(credentials, mem_ctx);
@@ -368,9 +368,9 @@ done:
 			}
 			ret = smb_krb5_keyblock_init_contents(smb_krb5_context->krb5_context,
 						 ENCTYPE_ARCFOUR_HMAC,
-						 mach_pwd->hash, sizeof(mach_pwd->hash), 
+						 mach_pwd->hash, sizeof(mach_pwd->hash),
 						 &keyblock);
-			
+
 			if (ret == 0) {
 				ret = smb_krb5_kinit_keyblock_ccache(smb_krb5_context->krb5_context,
 								     ccache,
@@ -416,7 +416,7 @@ done:
 		DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
 		krb5_set_real_time(smb_krb5_context->krb5_context, t + time_offset + 1, 0);
 	}
-	
+
 	if (ret == KRB5KDC_ERR_PREAUTH_FAILED && cli_credentials_wrong_password(credentials)) {
 		ret = kinit_to_ccache(parent_ctx,
 				      credentials,
