@@ -234,65 +234,6 @@ dump OK
             self.fail(e)
         self.assertEqual(actual, expected)
 
-    def test_ndrdump_fuzzed_IOXIDResolver_ResolveOxid(self):
-        expected = '''pull returned Character Conversion Error
-'''
-        try:
-            actual = self.check_exit_code(
-                'ndrdump --debug-stdout IOXIDResolver ResolveOxid out ' +\
-                '--base64-input --input=' +\
-                'c87PMf7CBAUAAAAADgQMBASjfPqKw0KPld6DY87PMfQ=',
-                2)
-        except BlackboxProcessError as e:
-            self.fail(e)
-        self.assertRegex(actual.decode('utf8'), expected + "$")
-
-    def test_ndrdump_fuzzed_IOXIDResolver_ResolveOxid2(self):
-        expected = '''pull returned Buffer Size Error
-'''
-        try:
-            actual = self.check_exit_code(
-                'ndrdump --debug-stdout IOXIDResolver ResolveOxid2 out ' +\
-                '--base64-input --input=' +\
-                'AAAAAQ0K9Q0AAAAAAAAAA6ampqampqampqampqampqampqampqamNAAAAAAtNDQ=',
-                2)
-        except BlackboxProcessError as e:
-            self.fail(e)
-        self.assertRegex(actual.decode('utf8'), expected + "$")
-
-    def test_ndrdump_fuzzed_IOXIDResolver_ServerAlive2(self):
-        expected = b'''pull returned Success
-WARNING! 46 unread bytes
-[0000] 0D 36 0A 0A 0A 0A 0A 00   00 00 00 00 00 00 03 00   .6...... ........
-[0010] 00 00 01 00 00 33 39 36   31 36 31 37 37 36 38 34   .....396 16177684
-[0020] 32 34 FC 85 AC 49 0B 61   87 0A 0A 0A F5 00         24...I.a ......
-    ServerAlive: struct ServerAlive
-        out: struct ServerAlive
-            result                   : DOS code 0x01000000
-dump OK
-'''
-        try:
-            actual = self.check_output(
-                'ndrdump --debug-stdout IOXIDResolver ServerAlive out ' +\
-                '--base64-input --input=' +\
-                'AAAAAQ02CgoKCgoAAAAAAAAAAwAAAAEAADM5NjE2MTc3Njg0MjT8haxJC2GHCgoK9QA=')
-        except BlackboxProcessError as e:
-            self.fail(e)
-        self.assertEqual(actual, expected)
-
-    def test_ndrdump_fuzzed_IRemoteActivation_RemoteActivation(self):
-        expected = '''pull returned Buffer Size Error
-'''
-        try:
-            actual = self.check_exit_code(
-                'ndrdump --debug-stdout IRemoteActivation RemoteActivation out ' +\
-                '--base64-input --input=' +\
-                'AAAAAQAAAAAAAABKAAD/AAAAAP4AAAAAAAAASgAAAAAAAAABIiIjIiIiIiIiIiIiIiMiAAAAAAD/AAAAAAAA',
-                2)
-        except BlackboxProcessError as e:
-            self.fail(e)
-        self.assertRegex(actual.decode('utf8'), expected + "$")
-
     def test_ndrdump_fuzzed_ntlmsssp_AUTHENTICATE_MESSAGE(self):
         expected = open(self.data_path("fuzzed_ntlmssp-AUTHENTICATE_MESSAGE.txt")).read()
         try:

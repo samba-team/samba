@@ -193,8 +193,6 @@ Build.BuildContext.SAMBA_NDR_FUZZ = SAMBA_NDR_FUZZ
 
 # fuzz_ndr_X is generated from the list if IDL fed to PIDL
 # however there are exceptions to the normal pattern
-bld.SAMBA_NDR_FUZZ('IOXIDResolver') # oxidresolver.idl
-bld.SAMBA_NDR_FUZZ('IRemoteActivation') # remact.idl
 bld.SAMBA_NDR_FUZZ('iremotewinspool') # winspool.idl
 bld.SAMBA_NDR_FUZZ('FileServerVssAgent') # fsvrp.idl
 bld.SAMBA_NDR_FUZZ('lsarpc') # lsa.idl
@@ -214,33 +212,6 @@ bld.SAMBA_NDR_FUZZ('netinterface')
 bld.SAMBA_NDR_FUZZ('sparse')
 bld.SAMBA_NDR_FUZZ('resiliency')
 bld.SAMBA_NDR_FUZZ('trim')
-
-# WMI tables
-bld.SAMBA_NDR_FUZZ('IWbemClassObject')
-bld.SAMBA_NDR_FUZZ('IWbemServices')
-bld.SAMBA_NDR_FUZZ('IEnumWbemClassObject')
-bld.SAMBA_NDR_FUZZ('IWbemContext')
-bld.SAMBA_NDR_FUZZ('IWbemLevel1Login')
-bld.SAMBA_NDR_FUZZ('IWbemWCOSmartEnum')
-bld.SAMBA_NDR_FUZZ('IWbemFetchSmartEnum')
-bld.SAMBA_NDR_FUZZ('IWbemCallResult')
-bld.SAMBA_NDR_FUZZ('IWbemObjectSink')
-
-# DCOM tables
-bld.SAMBA_NDR_FUZZ('dcom_Unknown')
-bld.SAMBA_NDR_FUZZ('IUnknown')
-bld.SAMBA_NDR_FUZZ('IClassFactory')
-bld.SAMBA_NDR_FUZZ('IRemUnknown')
-bld.SAMBA_NDR_FUZZ('IClassActivator')
-bld.SAMBA_NDR_FUZZ('ISCMLocalActivator')
-bld.SAMBA_NDR_FUZZ('IMachineLocalActivator')
-bld.SAMBA_NDR_FUZZ('ILocalObjectExporter')
-bld.SAMBA_NDR_FUZZ('ISystemActivator')
-bld.SAMBA_NDR_FUZZ('IRemUnknown2')
-bld.SAMBA_NDR_FUZZ('IDispatch')
-bld.SAMBA_NDR_FUZZ('IMarshal')
-bld.SAMBA_NDR_FUZZ('ICoffeeMachine')
-bld.SAMBA_NDR_FUZZ('IStream')
 
 # Specific struct or function on the interface
 

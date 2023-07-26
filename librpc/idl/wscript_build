@@ -52,24 +52,6 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     options='--header --ndr-parser --client --python --server',
                     output_dir='../gen_ndr')
 
-# DCOM stuff
-
-# The interface names here are not the same as the IDL name, so the
-# auto-generation of the fuzzer fails to link
-bld.SAMBA_PIDL_LIST('PIDL',
-                    '''oxidresolver.idl remact.idl''',
-                    options='--header --ndr-parser --client',
-                    output_dir='../gen_ndr',
-                    generate_fuzzers=False)
-
-# The interface names here are not the same as the IDL name, so the
-# auto-generation of the fuzzer fails to link
-bld.SAMBA_PIDL_LIST('PIDL',
-                    'wmi.idl dcom.idl',
-                    options='--header --ndr-parser --server --client --dcom-proxy --com-header',
-                    output_dir='../gen_ndr',
-                    generate_fuzzers=False)
-
 # DCE/RPC protocols which Samba does not implement a client or server
 # for.  We don't generate a fuzzer for these as they are unreachable
 #

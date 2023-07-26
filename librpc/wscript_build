@@ -150,26 +150,6 @@ bld.SAMBA_SUBSYSTEM('NDR_ORPC',
     public_deps='ndr'
     )
 
-bld.SAMBA_SUBSYSTEM('NDR_OXIDRESOLVER',
-    source='gen_ndr/ndr_oxidresolver.c',
-    public_deps='ndr NDR_ORPC'
-    )
-
-bld.SAMBA_SUBSYSTEM('NDR_REMACT',
-    source='gen_ndr/ndr_remact.c',
-    public_deps='ndr NDR_ORPC'
-    )
-
-bld.SAMBA_SUBSYSTEM('NDR_DCOM',
-    source='gen_ndr/ndr_dcom.c',
-    public_deps='ndr NDR_SECURITY NDR_ORPC'
-    )
-
-bld.SAMBA_SUBSYSTEM('NDR_WMI',
-    source='ndr/ndr_wmi.c gen_ndr/ndr_wmi.c',
-    public_deps='ndr NDR_SECURITY NDR_DCOM'
-    )
-
 bld.SAMBA_SUBSYSTEM('NDR_WZCSVC',
     source='gen_ndr/ndr_wzcsvc.c',
     public_deps='ndr'
@@ -619,7 +599,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_MDSSVC',
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
     deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_NEGOEX NDR_SCHANNEL NDR_MGMT
-    NDR_DNSSERVER NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
+    NDR_DNSSERVER NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV
     NDR_KRB5CCACHE''',
     private_library=True,
