@@ -15845,6 +15845,10 @@ static struct {
 		.fn    = run_smb2_quota1,
 	},
 	{
+		.name  = "SMB2-INVALID-PIPENAME",
+		.fn    = run_smb2_invalid_pipename,
+	},
+	{
 		.name  = "SMB2-STREAM-ACL",
 		.fn    = run_smb2_stream_acl,
 	},
