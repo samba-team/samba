@@ -4,8 +4,5 @@ samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegri
 samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_chain\(promoted_dc\)
 samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_and_anc\(promoted_dc\)
 samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_multivalued_links\(promoted_dc\)
+# Samba chooses to always increment the USN for the NC root at the point where it would otherwise show up.
 samba4.drs.getncchanges.python\(.*\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_nc_is_first_nc_change_only\(
-samba4.drs.getncchanges.python\(.*\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_nc_is_first\(
-samba4.drs.getncchanges.python\(.*\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_nc_is_first_mid\(
-samba4.drs.getncchanges.python\(.*\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_nc_is_first_start_zero\(
-samba4.drs.getncchanges.python\(.*\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_nc_is_first_start_zero_nc_change\(
