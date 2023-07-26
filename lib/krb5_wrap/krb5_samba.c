@@ -1690,15 +1690,20 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 	ZERO_STRUCT(cursor);
 	ZERO_STRUCT(kt_entry);
 
-	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	if (ret == KRB5_KT_END || ret == ENOENT ) {
-		/* no entries */
-		return 0;
-	}
-
+	/*
+	 * Start with talloc_new() and only then call krb5_kt_start_seq_get().
+	 * If any of them fails, the cleanup code is simpler.
+	 */
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
 		return ENOMEM;
+	}
+
+	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+	if (ret == KRB5_KT_END || ret == ENOENT ) {
+		/* no entries */
+		talloc_free(tmp_ctx);
+		return 0;
 	}
 
 	DEBUG(3, (__location__ ": Will try to delete old keytab entries\n"));
