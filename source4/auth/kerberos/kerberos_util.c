@@ -468,6 +468,21 @@ krb5_error_code smb_krb5_get_keytab_container(TALLOC_CTX *mem_ctx,
 	krb5_keytab keytab;
 	krb5_error_code ret;
 
+	/*
+	 * Start with talloc(), talloc_reference() and only then call
+	 * krb5_kt_resolve(). If any of them fails, the cleanup code is simpler.
+	 */
+	*ktc = talloc(mem_ctx, struct keytab_container);
+	if (!*ktc) {
+		return ENOMEM;
+	}
+
+	(*ktc)->smb_krb5_context = talloc_reference(*ktc, smb_krb5_context);
+	if ((*ktc)->smb_krb5_context == NULL) {
+		TALLOC_FREE(*ktc);
+		return ENOMEM;
+	}
+
 	if (opt_keytab) {
 		keytab = opt_keytab;
 	} else {
@@ -478,16 +493,11 @@ krb5_error_code smb_krb5_get_keytab_container(TALLOC_CTX *mem_ctx,
 				 smb_get_krb5_error_message(
 					smb_krb5_context->krb5_context,
 					ret, mem_ctx)));
+			TALLOC_FREE(*ktc);
 			return ret;
 		}
 	}
 
-	*ktc = talloc(mem_ctx, struct keytab_container);
-	if (!*ktc) {
-		return ENOMEM;
-	}
-
-	(*ktc)->smb_krb5_context = talloc_reference(*ktc, smb_krb5_context);
 	(*ktc)->keytab = keytab;
 	(*ktc)->password_based = false;
 	talloc_set_destructor(*ktc, free_keytab_container);
