@@ -551,11 +551,6 @@ struct tevent_req *local_np_connect_send(
 	{
 		DBG_DEBUG("attempt to connect to invalid pipe pathname %s\n",
 			lower_case_pipename);
-		/*
-		 * For now, panic the server until we have
-		 * the test code in place.
-		 */
-		SMB_ASSERT(false);
 		tevent_req_error(req, ENOENT);
 		return tevent_req_post(req, ev);
 	}
