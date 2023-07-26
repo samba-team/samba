@@ -78,8 +78,6 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_MSGSVC
                     NDR_WINSIF
                     NDR_MGMT
-                    NDR_OXIDRESOLVER
-                    NDR_REMACT
                     NDR_WZCSVC
                     NDR_BROWSER
                     NDR_W32TIME

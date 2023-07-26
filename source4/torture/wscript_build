@@ -113,8 +113,6 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/epmapper.c
                         rpc/winreg.c
                         rpc/initshutdown.c
-                        rpc/oxidresolve.c
-                        rpc/remact.c
                         rpc/mgmt.c
                         rpc/scanner.c
                         rpc/countcalls.c
@@ -153,7 +151,6 @@ bld.SAMBA_MODULE('torture_rpc',
                       dcerpc-samr
                       RPC_NDR_WINREG
                       RPC_NDR_INITSHUTDOWN
-                      RPC_NDR_OXIDRESOLVER
                       RPC_NDR_EVENTLOG
                       RPC_NDR_ECHO
                       RPC_NDR_SVCCTL
@@ -168,8 +165,6 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_SRVSVC
                       RPC_NDR_WKSSVC
                       RPC_NDR_DSSETUP
-                      RPC_NDR_REMACT
-                      RPC_NDR_OXIDRESOLVER
                       RPC_NDR_NTSVCS
                       %s
                       LIBCLI_AUTH

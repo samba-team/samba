@@ -107,8 +107,6 @@
 ^samba4.ntvfs.cifs.*.base.smb
 ^samba4.ntvfs.cifs.*.raw.
 ^samba4.rpc.samsync
-^samba4.rpc.remact							# Not provided by Samba 4
-^samba4.rpc.oxidresolve						# Not provided by Samba 4
 ^samba4.rpc.eventlog						# Not provided by Samba 4
 ^samba4.rpc.initshutdown					# Not provided by Samba 4
 ^samba4.rpc.spoolss						# Not provided by Samba 4

@@ -570,16 +570,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_MGMT',
     deps='tevent NDR_MGMT'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_OXIDRESOLVER',
-    source='gen_ndr/ndr_oxidresolver_c.c',
-    public_deps='dcerpc-binding NDR_OXIDRESOLVER'
-    )
-
-bld.SAMBA_SUBSYSTEM('RPC_NDR_REMACT',
-    source='gen_ndr/ndr_remact_c.c',
-    public_deps='dcerpc-binding NDR_REMACT'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NTSVCS',
     source='gen_ndr/ndr_ntsvcs_c.c',
     public_deps='dcerpc-binding ndr-standard'
