@@ -1559,25 +1559,10 @@ void check_log_size( void )
 static void Debug1(const char *msg, size_t msg_len)
 {
 	int old_errno = errno;
-	enum debug_logtype logtype = state.logtype;
 
 	debug_count++;
 
-	if (state.settings.debug_syslog_format == DEBUG_SYSLOG_FORMAT_ALWAYS) {
-		switch(state.logtype) {
-		case DEBUG_STDOUT:
-		case DEBUG_STDERR:
-		case DEBUG_DEFAULT_STDOUT:
-		case DEBUG_DEFAULT_STDERR:
-			/* Behave the same as logging to a file */
-			logtype = DEBUG_FILE;
-			break;
-		default:
-			break;
-		}
-	}
-
-	switch(logtype) {
+	switch(state.logtype) {
 	case DEBUG_CALLBACK:
 		debug_callback_log(msg, msg_len, current_msg_level);
 		break;
@@ -1585,13 +1570,18 @@ static void Debug1(const char *msg, size_t msg_len)
 	case DEBUG_STDERR:
 	case DEBUG_DEFAULT_STDOUT:
 	case DEBUG_DEFAULT_STDERR:
-		if (dbgc_config[DBGC_ALL].fd > 0) {
-			ssize_t ret;
-			do {
-				ret = write(dbgc_config[DBGC_ALL].fd,
-					    msg,
-					    msg_len);
-			} while (ret == -1 && errno == EINTR);
+		if (state.settings.debug_syslog_format ==
+		    DEBUG_SYSLOG_FORMAT_ALWAYS) {
+			debug_file_log(current_msg_level, msg, msg_len);
+		} else {
+			if (dbgc_config[DBGC_ALL].fd > 0) {
+				ssize_t ret;
+				do {
+					ret = write(dbgc_config[DBGC_ALL].fd,
+						    msg,
+						    msg_len);
+				} while (ret == -1 && errno == EINTR);
+			}
 		}
 		break;
 	case DEBUG_FILE:
