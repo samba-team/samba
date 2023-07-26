@@ -56,6 +56,24 @@ static krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
 		 return 0;
 	}
 
+	/*
+	 * Start with talloc(), talloc_reference() and only then call
+	 * krb5_parse_name(). If any of them fails, the cleanup code is simpler.
+	 */
+	mem_ctx = talloc(parent_ctx, struct principal_container);
+	if (!mem_ctx) {
+		(*error_string) = error_message(ENOMEM);
+		return ENOMEM;
+	}
+
+	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx,
+						     smb_krb5_context);
+	if (mem_ctx->smb_krb5_context == NULL) {
+		(*error_string) = error_message(ENOMEM);
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
 	ret = krb5_parse_name(smb_krb5_context->krb5_context,
 			      princ_string, princ);
 
@@ -63,19 +81,12 @@ static krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
 		(*error_string) = smb_get_krb5_error_message(
 						smb_krb5_context->krb5_context,
 						ret, parent_ctx);
+		talloc_free(mem_ctx);
 		return ret;
-	}
-
-	mem_ctx = talloc(parent_ctx, struct principal_container);
-	if (!mem_ctx) {
-		(*error_string) = error_message(ENOMEM);
-		return ENOMEM;
 	}
 
 	/* This song-and-dance effectivly puts the principal
 	 * into talloc, so we can't loose it. */
-	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx,
-						     smb_krb5_context);
 	mem_ctx->principal = *princ;
 	talloc_set_destructor(mem_ctx, free_principal);
 	return 0;
