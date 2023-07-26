@@ -127,6 +127,7 @@ bool run_smb2_dfs_filename_leading_backslash(int dummy);
 bool run_smb1_dfs_paths(int dummy);
 bool run_smb1_dfs_search_paths(int dummy);
 bool run_smb1_dfs_operations(int dummy);
+bool run_smb1_dfs_check_badpath(int dummy);
 bool run_list_dir_async_test(int dummy);
 bool run_delete_on_close_non_empty(int dummy);
 bool run_delete_on_close_nonwrite_delete_yes_test(int dummy);

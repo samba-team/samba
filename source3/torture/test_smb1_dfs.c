@@ -3814,6 +3814,26 @@ static bool test_smb1_chkpath(struct cli_state *cli)
 	return retval;
 }
 
+/*
+ * Test BUG: https://bugzilla.samba.org/show_bug.cgi?id=15419
+ */
+
+static bool test_smb1_chkpath_bad(struct cli_state *cli)
+{
+	NTSTATUS status;
+
+	status = smb1_chkpath(cli, "\\x//\\/");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("%s:%d SMB1chkpath of %s failed (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\x//\\/",
+			nt_errstr(status));
+		return false;
+	}
+	return true;
+}
+
 static NTSTATUS smb1_ctemp(struct cli_state *cli,
 			   const char *path,
 			   char **tmp_path)
@@ -4229,4 +4249,40 @@ bool run_smb1_dfs_operations(int dummy)
 	/* Delete anything we made. */
 	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\file");
 	return retval;
+}
+
+/*
+ * Test BUG: https://bugzilla.samba.org/show_bug.cgi?id=15419
+ */
+
+bool run_smb1_dfs_check_badpath(int dummy)
+{
+	struct cli_state *cli = NULL;
+	bool dfs_supported = false;
+
+	printf("Starting SMB1-DFS-CHECK-BADPATH\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	/* Ensure this is a DFS share. */
+	dfs_supported = smbXcli_conn_dfs_supported(cli->conn);
+	if (!dfs_supported) {
+		printf("Server %s does not support DFS\n",
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+	dfs_supported = smbXcli_tcon_is_dfs_share(cli->smb1.tcon);
+	if (!dfs_supported) {
+		printf("Share %s does not support DFS\n",
+			cli->share);
+		return false;
+	}
+
+	return test_smb1_chkpath_bad(cli);
 }
