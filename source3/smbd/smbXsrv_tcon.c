@@ -1015,16 +1015,13 @@ static int smbXsrv_tcon_disconnect_all_callback(struct db_record *local_rec,
 static NTSTATUS smbXsrv_tcon_disconnect_all(struct smbXsrv_tcon_table *table,
 					    uint64_t vuid)
 {
-	struct smbXsrv_tcon_disconnect_all_state state;
+	struct smbXsrv_tcon_disconnect_all_state state = { .vuid = vuid };
 	NTSTATUS status;
 	int count = 0;
 
 	if (table == NULL) {
 		return NT_STATUS_OK;
 	}
-
-	ZERO_STRUCT(state);
-	state.vuid = vuid;
 
 	status = dbwrap_traverse(table->local.db_ctx,
 				 smbXsrv_tcon_disconnect_all_callback,
