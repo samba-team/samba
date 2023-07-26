@@ -261,6 +261,7 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 		(*error_string) = talloc_asprintf(cred, "failed to unparse principal from ccache: %s\n",
 						  smb_get_krb5_error_message(ccache->smb_krb5_context->krb5_context,
 									     ret, cred));
+		krb5_free_principal(ccache->smb_krb5_context->krb5_context, princ);
 		return ret;
 	}
 
