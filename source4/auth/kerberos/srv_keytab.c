@@ -236,10 +236,10 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 			        krb5_keytab *_keytab,
 				const char **perror_string)
 {
-	krb5_keytab keytab;
+	krb5_keytab keytab = NULL;
 	krb5_error_code ret;
 	bool found_previous = false;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	krb5_principal *principals = NULL;
 	uint32_t num_principals = 0;
 	char *upper_realm;
@@ -262,15 +262,16 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	if (!tmp_ctx) {
 		*perror_string = talloc_strdup(parent_ctx,
 					      "Failed to allocate memory context");
-		return ENOMEM;
+		ret = ENOMEM;
+		goto done;
 	}
 
 	upper_realm = strupper_talloc(tmp_ctx, realm);
 	if (upper_realm == NULL) {
 		*perror_string = talloc_strdup(parent_ctx,
 					      "Cannot allocate memory to upper case realm");
-		talloc_free(tmp_ctx);
-		return ENOMEM;
+		ret = ENOMEM;
+		goto done;
 	}
 
 	ret = smb_krb5_create_principals_array(tmp_ctx,
