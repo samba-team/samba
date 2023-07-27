@@ -88,13 +88,8 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 	 * * taillor the function to the particular needs of backup protocol
 	 */
 
-	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(ldb));
+	system_dn = samdb_system_container_dn(ldb, frame);
 	if (system_dn == NULL) {
-		talloc_free(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
 		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
