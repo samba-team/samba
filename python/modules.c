@@ -102,6 +102,11 @@ char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 			return NULL;
 		}
 		ret[i] = talloc_strndup(ret, value, size);
+		if (ret[i] == NULL) {
+			PyErr_NoMemory();
+			talloc_free(ret);
+			return NULL;
+		}
 	}
 	ret[i] = NULL;
 	return ret;
