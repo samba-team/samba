@@ -93,6 +93,7 @@ char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 		PyObject *item = PyList_GetItem(list, i);
 		if (!PyUnicode_Check(item)) {
 			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
+			talloc_free(ret);
 			return NULL;
 		}
 		value = PyUnicode_AsUTF8AndSize(item, &size);
