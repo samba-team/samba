@@ -1241,6 +1241,25 @@ struct ldb_dn *samdb_infrastructure_dn(struct ldb_context *sam_ctx, TALLOC_CTX *
        return new_dn;
 }
 
+struct ldb_dn *samdb_system_container_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
+{
+	struct ldb_dn *new_dn = NULL;
+	bool ok;
+
+	new_dn = ldb_dn_copy(mem_ctx, ldb_get_default_basedn(sam_ctx));
+	if (new_dn == NULL) {
+		return NULL;
+	}
+
+	ok = ldb_dn_add_child_fmt(new_dn, "CN=System");
+	if (!ok) {
+		TALLOC_FREE(new_dn);
+		return NULL;
+	}
+
+	return new_dn;
+}
+
 struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_dn *new_dn;
