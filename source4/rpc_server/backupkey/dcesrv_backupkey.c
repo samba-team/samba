@@ -100,9 +100,9 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search(ldb, mem_ctx, &res, system_dn, LDB_SCOPE_SUBTREE, attrs,
+	ret = ldb_search(ldb, frame, &res, system_dn, LDB_SCOPE_SUBTREE, attrs,
 			   "(&(cn=%s)(objectclass=secret))",
-			   ldb_binary_encode_string(mem_ctx, name2));
+			   ldb_binary_encode_string(frame, name2));
 
 	if (ret != LDB_SUCCESS ||  res->count != 0 ) {
 		DEBUG(2, ("Secret %s already exists !\n", name2));
@@ -202,7 +202,7 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search(ldb, mem_ctx, &res, system_dn, LDB_SCOPE_SUBTREE, attrs,
+	ret = ldb_search(ldb, tmp_mem, &res, system_dn, LDB_SCOPE_SUBTREE, attrs,
 			   "(&(cn=%s Secret)(objectclass=secret))",
 			   ldb_binary_encode_string(tmp_mem, name));
 
