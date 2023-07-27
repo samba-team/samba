@@ -331,7 +331,7 @@ static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 		DEBUG(5, ("smb_gss_krb5_import_cred ccache[%s] failed with [%s] -"
 			  "the caller may retry after a kinit.\n",
 			  ccache, gse_errstr(gse_ctx, gss_maj, gss_min)));
-		SAFE_FREE(ccache);
+		krb5_free_string(gse_ctx->k5ctx, ccache);
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
