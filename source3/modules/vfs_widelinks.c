@@ -348,7 +348,7 @@ static int widelinks_openat(vfs_handle_struct *handle,
 {
 	struct vfs_open_how how = *_how;
 	struct widelinks_config *config = NULL;
-
+	int ret;
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
 				struct widelinks_config,
@@ -365,11 +365,33 @@ static int widelinks_openat(vfs_handle_struct *handle,
 		how.flags = (how.flags & ~O_NOFOLLOW);
 	}
 
-	return SMB_VFS_NEXT_OPENAT(handle,
+	ret = SMB_VFS_NEXT_OPENAT(handle,
 				   dirfsp,
 				   smb_fname,
 				   fsp,
 				   &how);
+	if (config->is_dfs_share && ret == -1 && errno == ENOENT) {
+		struct smb_filename *full_fname = NULL;
+		int lstat_ret;
+
+		full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+				dirfsp,
+				smb_fname);
+		if (full_fname == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		lstat_ret = SMB_VFS_NEXT_LSTAT(handle,
+				full_fname);
+		if (lstat_ret != -1 &&
+		    VALID_STAT(full_fname->st) &&
+		    S_ISLNK(full_fname->st.st_ex_mode)) {
+			fsp->fsp_name->st = full_fname->st;
+		}
+		TALLOC_FREE(full_fname);
+		errno = ENOENT;
+	}
+	return ret;
 }
 
 static struct vfs_fn_pointers vfs_widelinks_fns = {
