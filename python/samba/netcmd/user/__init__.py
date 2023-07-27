@@ -57,6 +57,7 @@ from samba.common import get_bytes
 from samba.common import get_string
 
 from .add import cmd_user_add
+from .delete import cmd_user_delete
 
 # python[3]-gpgme is abandoned since ubuntu 1804 and debian 9
 # have to use python[3]-gpg instead
@@ -194,67 +195,6 @@ virtual_attributes_help  = "The attributes to display (comma separated). "
 virtual_attributes_help += "Possible supported virtual attributes: %s" % ", ".join(sorted(virtual_attributes.keys()))
 if len(disabled_virtual_attributes) != 0:
     virtual_attributes_help += "Unsupported virtual attributes: %s" % ", ".join(sorted(disabled_virtual_attributes.keys()))
-
-
-class cmd_user_delete(Command):
-    """Delete a user.
-
-This command deletes a user account from the Active Directory domain.  The username specified on the command is the sAMAccountName.
-
-Once the account is deleted, all permissions and memberships associated with that account are deleted.  If a new user account is added with the same name as a previously deleted account name, the new user does not have the previous permissions.  The new account user will be assigned a new security identifier (SID) and permissions and memberships will have to be added.
-
-The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
-
-Example1:
-samba-tool user delete User1 -H ldap://samba.samdom.example.com --username=administrator --password=passw1rd
-
-Example1 shows how to delete a user in the domain against a remote LDAP server.  The -H parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to issue the command on that server.
-
-Example2:
-sudo samba-tool user delete User2
-
-Example2 shows how to delete a user in the domain against the local server.   sudo is used so a user may run the command as root.
-
-"""
-    synopsis = "%prog <username> [options]"
-
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
-    ]
-
-    takes_args = ["username"]
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-    }
-
-    def run(self, username, credopts=None, sambaopts=None, versionopts=None,
-            H=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
-
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
-
-        filter = ("(&(sAMAccountName=%s)(sAMAccountType=805306368))" %
-                  ldb.binary_encode(username))
-
-        try:
-            res = samdb.search(base=samdb.domain_dn(),
-                               scope=ldb.SCOPE_SUBTREE,
-                               expression=filter,
-                               attrs=["dn"])
-            user_dn = res[0].dn
-        except IndexError:
-            raise CommandError('Unable to find user "%s"' % (username))
-
-        try:
-            samdb.delete(user_dn)
-        except Exception as e:
-            raise CommandError('Failed to remove user "%s"' % username, e)
-        self.outf.write("Deleted user %s\n" % username)
 
 
 class cmd_user_list(Command):
