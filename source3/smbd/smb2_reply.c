@@ -335,6 +335,7 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 		char *share = NULL;
 		char *remaining_path = NULL;
 		char path_sep = 0;
+		char *p = NULL;
 
 		if (posix_pathnames && (dst[0] == '/')) {
 			path_sep = dst[0];
@@ -386,6 +387,16 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 			goto local_path;
 		}
 		/*
+		 * Ensure the server name does not contain
+		 * any possible path components by converting
+		 * them to _'s.
+		 */
+		for (p = server + 1; p < share; p++) {
+			if (*p == '/' || *p == '\\') {
+				*p = '_';
+			}
+		}
+		/*
 		 * It's a well formed DFS path with
 		 * at least server and share components.
 		 * Replace the slashes with '/' and
@@ -400,11 +411,31 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 		remaining_path = strchr(share+1, path_sep);
 		if (remaining_path == NULL) {
 			/*
+			 * Ensure the share name does not contain
+			 * any possible path components by converting
+			 * them to _'s.
+			 */
+			for (p = share + 1; *p; p++) {
+				if (*p == '/' || *p == '\\') {
+					*p = '_';
+				}
+			}
+			/*
 			 * If no remaining path this was
 			 * a bare /server/share path. Just return.
 			 */
 			*err = NT_STATUS_OK;
 			return ret;
+		}
+		/*
+		 * Ensure the share name does not contain
+		 * any possible path components by converting
+		 * them to _'s.
+		 */
+		for (p = share + 1; p < remaining_path; p++) {
+			if (*p == '/' || *p == '\\') {
+				*p = '_';
+			}
 		}
 		*remaining_path = '/';
 		dst = remaining_path + 1;
