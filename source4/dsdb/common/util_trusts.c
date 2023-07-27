@@ -2459,13 +2459,8 @@ NTSTATUS dsdb_trust_search_tdo(struct ldb_context *sam_ctx,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(sam_ctx));
+	system_dn = samdb_system_container_dn(sam_ctx, frame);
 	if (system_dn == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2617,13 +2612,8 @@ NTSTATUS dsdb_trust_search_tdo_by_sid(struct ldb_context *sam_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(sam_ctx));
+	system_dn = samdb_system_container_dn(sam_ctx, frame);
 	if (system_dn == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2794,13 +2784,8 @@ NTSTATUS dsdb_trust_search_tdos(struct ldb_context *sam_ctx,
 
 	*res = NULL;
 
-	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(sam_ctx));
+	system_dn = samdb_system_container_dn(sam_ctx, frame);
 	if (system_dn == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
