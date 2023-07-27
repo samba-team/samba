@@ -998,17 +998,18 @@ static int get_pso_count(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 {
 	static const char * const attrs[] = { NULL };
 	int ret;
-	struct ldb_dn *domain_dn = NULL;
 	struct ldb_dn *psc_dn = NULL;
 	struct ldb_result *res = NULL;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	bool psc_ok;
 
 	*pso_count = 0;
-	domain_dn = ldb_get_default_basedn(ldb);
-	psc_dn = ldb_dn_new_fmt(mem_ctx, ldb,
-			        "CN=Password Settings Container,CN=System,%s",
-				ldb_dn_get_linearized(domain_dn));
+	psc_dn = samdb_system_container_dn(ldb, mem_ctx);
 	if (psc_dn == NULL) {
+		return ldb_oom(ldb);
+	}
+	psc_ok = ldb_dn_add_child_fmt(psc_dn, "CN=Password Settings Container");
+	if (psc_ok == false) {
 		return ldb_oom(ldb);
 	}
 
@@ -1077,8 +1078,8 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	int i;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	char *sid_filter = NULL;
-	struct ldb_dn *domain_dn = NULL;
 	struct ldb_dn *psc_dn = NULL;
+	bool psc_ok;
 	const char *attrs[] = {
 		"msDS-PasswordSettingsPrecedence",
 		"objectGUID",
@@ -1104,11 +1105,12 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	}
 
 	/* only PSOs located in the Password Settings Container are valid */
-	domain_dn = ldb_get_default_basedn(ldb);
-	psc_dn = ldb_dn_new_fmt(mem_ctx, ldb,
-			        "CN=Password Settings Container,CN=System,%s",
-				ldb_dn_get_linearized(domain_dn));
+	psc_dn = samdb_system_container_dn(ldb, mem_ctx);
 	if (psc_dn == NULL) {
+		return ldb_oom(ldb);
+	}
+	psc_ok = ldb_dn_add_child_fmt(psc_dn, "CN=Password Settings Container");
+	if (psc_ok == false) {
 		return ldb_oom(ldb);
 	}
 
