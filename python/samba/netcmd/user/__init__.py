@@ -38,7 +38,6 @@ from samba import (
     generate_random_password,
     Ldb,
 )
-from samba.net import Net
 
 from samba.netcmd import (
     Command,
@@ -63,54 +62,8 @@ from .delete import cmd_user_delete
 from .disable import cmd_user_disable
 from .enable import cmd_user_enable
 from .list import cmd_user_list
+from .password import cmd_user_password
 from .setexpiry import cmd_user_setexpiry
-
-
-class cmd_user_password(Command):
-    """Change password for a user account (the one provided in authentication).
-"""
-
-    synopsis = "%prog [options]"
-
-    takes_options = [
-        Option("--newpassword", help="New password", type=str),
-    ]
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-    }
-
-    def run(self, credopts=None, sambaopts=None, versionopts=None,
-            newpassword=None):
-
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-
-        # get old password now, to get the password prompts in the right order
-        old_password = creds.get_password()
-
-        net = Net(creds, lp, server=credopts.ipaddress)
-
-        password = newpassword
-        while True:
-            if password is not None and password != '':
-                break
-            password = getpass("New Password: ")
-            passwordverify = getpass("Retype Password: ")
-            if not password == passwordverify:
-                password = None
-                self.outf.write("Sorry, passwords do not match.\n")
-
-        try:
-            if not isinstance(password, str):
-                password = password.decode('utf8')
-            net.change_password(password)
-        except Exception as msg:
-            # FIXME: catch more specific exception
-            raise CommandError("Failed to change password : %s" % msg)
-        self.outf.write("Changed password OK\n")
 
 
 class cmd_user_getgroups(Command):
