@@ -150,7 +150,7 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 	ret = 0;
 
 out:
-	SAFE_FREE(enctypes);
+	krb5_free_enctypes(krbctx, enctypes);
 	return ret;
 }
 
