@@ -58,6 +58,7 @@ from samba.common import get_string
 
 from .add import cmd_user_add
 from .delete import cmd_user_delete
+from .disable import cmd_user_disable
 from .enable import cmd_user_enable
 
 # python[3]-gpgme is abandoned since ubuntu 1804 and debian 9
@@ -278,44 +279,6 @@ class cmd_user_list(Command):
                 continue
 
             self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
-
-
-class cmd_user_disable(Command):
-    """Disable a user."""
-
-    synopsis = "%prog (<username>|--filter <filter>) [options]"
-
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
-        Option("--filter", help="LDAP Filter to set password on", type=str),
-    ]
-
-    takes_args = ["username?"]
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-    }
-
-    def run(self, username=None, sambaopts=None, credopts=None,
-            versionopts=None, filter=None, H=None):
-        if username is None and filter is None:
-            raise CommandError("Either the username or '--filter' must be specified!")
-
-        if filter is None:
-            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
-
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
-
-        samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)
-        try:
-            samdb.disable_account(filter)
-        except Exception as msg:
-            raise CommandError("Failed to disable user '%s': %s" % (username or filter, msg))
 
 
 class cmd_user_setexpiry(Command):
