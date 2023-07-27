@@ -52,10 +52,10 @@ from samba.netcmd import (
     CommandError,
     SuperCommand,
     Option,
+    common
 )
 from samba.common import get_bytes
 from samba.common import get_string
-from . import common
 
 # python[3]-gpgme is abandoned since ubuntu 1804 and debian 9
 # have to use python[3]-gpg instead
