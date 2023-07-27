@@ -536,12 +536,12 @@ static PyMethodDef py_misc_methods[] = {
 		METH_VARARGS, "generate_random_machine_password(min, max) -> string\n"
 		"Generate random password "
 		"(based on random utf16 characters converted to utf8 or "
-		"random ascii characters if 'unix charset' is not 'utf8')"
+		"random ascii characters if 'unix charset' is not 'utf8') "
 		"with a length >= min (at least 14) and <= max (at most 255)." },
 	{ "check_password_quality", (PyCFunction)py_check_password_quality,
 		METH_VARARGS, "check_password_quality(pass) -> bool\n"
-		"Check password quality against Samba's check_password_quality,"
-		"the implementation of Microsoft's rules:"
+		"Check password quality against Samba's check_password_quality, "
+		"the implementation of Microsoft's rules: "
 		"http://msdn.microsoft.com/en-us/subscriptions/cc786468%28v=ws.10%29.aspx"
 	},
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
