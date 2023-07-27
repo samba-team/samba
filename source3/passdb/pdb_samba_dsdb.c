@@ -3317,9 +3317,13 @@ static NTSTATUS pdb_samba_dsdb_set_trusted_domain(struct pdb_methods *methods,
 		goto out;
 	}
 
-	msg->dn = ldb_dn_copy(tmp_ctx, base_dn);
+	msg->dn = samdb_system_container_dn(state->ldb, tmp_ctx);
+	if (msg->dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
-	ok = ldb_dn_add_child_fmt(msg->dn, "cn=%s,cn=System", td->domain_name);
+	ok = ldb_dn_add_child_fmt(msg->dn, "cn=%s", td->domain_name);
 	if (!ok) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -3544,13 +3548,13 @@ static NTSTATUS pdb_samba_dsdb_del_trusted_domain(struct pdb_methods *methods,
 		return NT_STATUS_OK;
 	}
 
-	tdo_dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->ldb));
+	tdo_dn = samdb_system_container_dn(state->ldb, tmp_ctx);
 	if (tdo_dn == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	ok = ldb_dn_add_child_fmt(tdo_dn, "cn=%s,cn=System", domain);
+	ok = ldb_dn_add_child_fmt(tdo_dn, "cn=%s", domain);
 	if (!ok) {
 		TALLOC_FREE(tmp_ctx);
 		status = NT_STATUS_NO_MEMORY;
