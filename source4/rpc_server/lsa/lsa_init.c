@@ -146,12 +146,8 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 
 	/* work out the system_dn - useful for so many calls its worth
 	   fetching here */
-	state->system_dn = ldb_dn_copy(state, state->domain_dn);
+	state->system_dn = samdb_system_container_dn(state->sam_ldb, state);
 	if (state->system_dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!ldb_dn_add_child_fmt(state->system_dn, "CN=System")) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
