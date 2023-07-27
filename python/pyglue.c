@@ -491,6 +491,7 @@ static PyObject *py_get_burnt_commandline(PyObject *self, PyObject *args)
 
 	argv = PyList_AsStringList(frame, cmdline_as_list, "sys.argv");
 	if (argv == NULL) {
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
