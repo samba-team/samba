@@ -170,6 +170,10 @@ krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_con
 void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #endif
 
+#if !defined(HAVE_KRB5_FREE_ENCTYPES)
+void krb5_free_enctypes(krb5_context context, krb5_enctype *val);
+#endif
+
 /* Stub out initialize_krb5_error_table since it is not present in all
  * Kerberos implementations. If it's not present, it's not necessary to
  * call it.
