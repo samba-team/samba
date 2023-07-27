@@ -1589,7 +1589,7 @@ static PyObject *py_ccache_name(PyObject *self, PyObject *unused)
 				    ccc->ccache, &name);
 	if (ret == 0) {
 		py_name = PyString_FromStringOrNULL(name);
-		SAFE_FREE(name);
+		krb5_free_string(ccc->smb_krb5_context->krb5_context, name);
 	} else {
 		PyErr_SetString(PyExc_RuntimeError,
 				"Failed to get ccache name");
