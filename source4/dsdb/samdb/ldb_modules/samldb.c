@@ -5390,13 +5390,8 @@ static int check_rename_constraints(struct ldb_message *msg,
 
 	/* Objects under CN=System */
 
-	dn1 = ldb_dn_copy(ac, ldb_get_default_basedn(ldb));
+	dn1 = samdb_system_container_dn(ldb, ac);
 	if (dn1 == NULL) return ldb_oom(ldb);
-
-	if ( ! ldb_dn_add_child_fmt(dn1, "CN=System")) {
-		talloc_free(dn1);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	if ((ldb_dn_compare_base(dn1, olddn) == 0) &&
 	    (ldb_dn_compare_base(dn1, newdn) != 0)) {
