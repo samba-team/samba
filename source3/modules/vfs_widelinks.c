@@ -106,6 +106,7 @@
 
 struct widelinks_config {
 	bool active;
+	bool is_dfs_share;
 	char *cwd;
 };
 
@@ -134,7 +135,8 @@ static int widelinks_connect(struct vfs_handle_struct *handle,
 		DBG_ERR("vfs_widelinks module loaded with "
 			"widelinks = no\n");
 	}
-
+	config->is_dfs_share =
+		(lp_host_msdfs() && lp_msdfs_root(SNUM(handle->conn)));
         SMB_VFS_HANDLE_SET_DATA(handle,
 				config,
 				NULL, /* free_fn */
