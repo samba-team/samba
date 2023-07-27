@@ -171,6 +171,7 @@ conf.CHECK_FUNCS('''
        krb5_get_prompt_types
        krb5_mk_req_extended krb5_kt_compare
        krb5_free_enctypes
+       krb5_free_string
        ''',
      lib='krb5 k5crypto',
      headers='krb5.h')

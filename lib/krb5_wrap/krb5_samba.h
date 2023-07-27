@@ -174,6 +174,10 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 void krb5_free_enctypes(krb5_context context, krb5_enctype *val);
 #endif
 
+#if !defined(HAVE_KRB5_FREE_STRING)
+void krb5_free_string(krb5_context context, char *val);
+#endif
+
 /* Stub out initialize_krb5_error_table since it is not present in all
  * Kerberos implementations. If it's not present, it's not necessary to
  * call it.

@@ -120,6 +120,12 @@ void krb5_free_enctypes(krb5_context context, krb5_enctype *val) {
 }
 #endif
 
+#if !defined(HAVE_KRB5_FREE_STRING)
+void krb5_free_string(krb5_context context, char *val) {
+	SAFE_FREE(val);
+}
+#endif
+
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
 const krb5_data *krb5_princ_component(krb5_context context,
 				      krb5_principal principal, int i);
