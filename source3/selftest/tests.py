@@ -1725,6 +1725,16 @@ if have_cluster_support:
          "$SERVERCONFFILE",
          "$SERVER_IP"])
 
+plantestsuite("samba3.blackbox.smbclient-bug15435",
+              "fileserver",
+              [os.path.join(samba3srcdir, "script/tests/test_bug15435_widelink_dfs.sh"),
+               "$SERVER",
+               "$SERVER_IP",
+               "$USERNAME",
+               "$PASSWORD",
+               smbclient3,
+               configuration])
+
 plantestsuite(
     "samba3.net_lookup_ldap",
     "ad_dc:local",
