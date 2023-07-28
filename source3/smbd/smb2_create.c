@@ -954,7 +954,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		smbd_smb2_create_after_exec(req);
 		if (!tevent_req_is_in_progress(req)) {
-			return req;
+			return tevent_req_post(req, state->ev);
 		}
 
 		smbd_smb2_create_finish(req);
@@ -1033,7 +1033,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		smbd_smb2_create_after_exec(req);
 		if (!tevent_req_is_in_progress(req)) {
-			return req;
+			return tevent_req_post(req, state->ev);
 		}
 
 		smbd_smb2_create_finish(req);
@@ -1144,7 +1144,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	smbd_smb2_create_after_exec(req);
 	if (!tevent_req_is_in_progress(req)) {
-		return req;
+		return tevent_req_post(req, state->ev);
 	}
 
 	smbd_smb2_create_finish(req);
@@ -1706,7 +1706,6 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 fail:
 	close_file_free(state->smb1req, &state->result, ERROR_CLOSE);
 	tevent_req_nterror(req, status);
-	tevent_req_post(req, state->ev);
 }
 
 static void smbd_smb2_create_finish(struct tevent_req *req)
