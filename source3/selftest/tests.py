@@ -1673,6 +1673,16 @@ plantestsuite(
      "",
      "-b $PREFIX/clusteredmember/unclists/tmp.txt -N 5 -o 10"])
 
+plantestsuite("samba3.blackbox.smbclient-bug15435",
+              "fileserver",
+              [os.path.join(samba3srcdir, "script/tests/test_bug15435_widelink_dfs.sh"),
+               "$SERVER",
+               "$SERVER_IP",
+               "$USERNAME",
+               "$PASSWORD",
+               smbclient3,
+               configuration])
+
 plantestsuite(
     "samba3.net_machine_account",
     "clusteredmember",
