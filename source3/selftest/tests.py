@@ -1701,6 +1701,17 @@ plantestsuite("samba3.blackbox.smbclient-mget",
                "$PASSWORD",
                "valid_users"])
 
+plantestsuite("samba3.blackbox.smbclient-bug15435",
+              "fileserver",
+              [os.path.join(samba3srcdir, "script/tests/test_bug15435_widelink_dfs.sh"),
+               "$SERVER",
+               "$SERVER_IP",
+               "$USERNAME",
+               "$PASSWORD",
+               smbclient3,
+               configuration])
+
+
 if have_cluster_support:
     t = "readdir-timestamp"
     plantestsuite(
