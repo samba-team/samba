@@ -3023,6 +3023,11 @@ sub provision($$)
 	msdfs root = yes
 	msdfs shuffle referrals = yes
 	guest ok = yes
+[msdfs-share-wl]
+	path = $msdfs_shrdir
+	msdfs root = yes
+	wide links = yes
+	guest ok = yes
 [msdfs-share2]
 	path = $msdfs_shrdir2
 	msdfs root = yes
