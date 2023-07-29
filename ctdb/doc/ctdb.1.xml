@@ -646,10 +646,10 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 	    <para>
 	      The output is the list of event scripts executed.
 	      Each line shows the name, status, duration and start time
-	      for each script.
+	      for each script.  Output from each script is shown.
 	    </para>
 	    <para>
-	      Example
+	      Example #1
 	    </para>
 	    <screen>
 # ctdb event status legacy monitor
@@ -670,6 +670,28 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 60.nfs               OK         0.376 Sat Dec 17 19:39:12 2016
 70.iscsi             OK         0.009 Sat Dec 17 19:39:12 2016
 91.lvs               OK         0.007 Sat Dec 17 19:39:12 2016
+	    </screen>
+
+	    <para>
+	      Example #2
+	    </para>
+	    <screen>
+# ctdb event status legacy monitor
+00.ctdb              OK         0.011 Sat Dec 17 19:40:46 2016
+01.reclock           OK         0.010 Sat Dec 17 19:40:46 2016
+05.system            OK         0.030 Sat Dec 17 19:40:46 2016
+06.nfs               OK         0.014 Sat Dec 17 19:40:46 2016
+10.interface         OK         0.041 Sat Dec 17 19:40:46 2016
+11.natgw             OK         0.008 Sat Dec 17 19:40:46 2016
+11.routing           OK         0.007 Sat Dec 17 19:40:46 2016
+13.per_ip_routing    OK         0.007 Sat Dec 17 19:40:46 2016
+20.multipathd        OK         0.007 Sat Dec 17 19:40:46 2016
+31.clamd             OK         0.007 Sat Dec 17 19:40:46 2016
+40.vsftpd            OK         0.013 Sat Dec 17 19:40:46 2016
+41.httpd             OK         0.015 Sat Dec 17 19:40:46 2016
+49.winbind           OK         0.022 Sat Dec 17 19:40:46 2016
+50.samba             ERROR      0.077 Sat Dec 17 19:40:46 2016
+  OUTPUT: ERROR: samba tcp port 445 is not responding
 	    </screen>
 	  </listitem>
 	</varlistentry>
@@ -741,37 +763,15 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
     <refsect2>
       <title>scriptstatus</title>
       <para>
-	This command displays which event scripts where run in the previous
-	monitoring cycle and the result of each script. If a script
-	failed with an error, causing the node to become unhealthy,
-	the output from that script is also shown.
+	This is an alias for <command>ctdb event status legacy
+	<optional>EVENT</optional></command>, where EVENT defaults to
+	<command>monitor</command>.
       </para>
       <para>
 	This command is deprecated.  It's provided for backward
-	compatibility.  In place of <command>ctdb scriptstatus</command>,
-	use <command>ctdb event status</command>.
+	compatibility.  Use <command>ctdb event status</command>
+	instead.
       </para>
-      <refsect3>
-	<title>Example</title>
-	<screen>
-# ctdb scriptstatus
-00.ctdb              OK         0.011 Sat Dec 17 19:40:46 2016
-01.reclock           OK         0.010 Sat Dec 17 19:40:46 2016
-05.system            OK         0.030 Sat Dec 17 19:40:46 2016
-06.nfs               OK         0.014 Sat Dec 17 19:40:46 2016
-10.interface         OK         0.041 Sat Dec 17 19:40:46 2016
-11.natgw             OK         0.008 Sat Dec 17 19:40:46 2016
-11.routing           OK         0.007 Sat Dec 17 19:40:46 2016
-13.per_ip_routing    OK         0.007 Sat Dec 17 19:40:46 2016
-20.multipathd        OK         0.007 Sat Dec 17 19:40:46 2016
-31.clamd             OK         0.007 Sat Dec 17 19:40:46 2016
-40.vsftpd            OK         0.013 Sat Dec 17 19:40:46 2016
-41.httpd             OK         0.015 Sat Dec 17 19:40:46 2016
-49.winbind           OK         0.022 Sat Dec 17 19:40:46 2016
-50.samba             ERROR      0.077 Sat Dec 17 19:40:46 2016
-  OUTPUT: ERROR: samba tcp port 445 is not responding
-      </screen>
-      </refsect3>
     </refsect2>
 
     <refsect2>
