@@ -4,9 +4,9 @@
 Some of our fuzzers generate SDDL strings with trailing garbage.
 
 This script converts them into the JSON format used by
-windws-sddl-tests.py, though it doesn't parse the SDDL, mapping all
+windows-sddl-tests.py, though it doesn't parse the SDDL, mapping all
 strings to an empty list. The idea is you can feed this through
-windws-sddl-tests.py or something else to get the correct bytes.
+windows-sddl-tests.py or something else to get the correct bytes.
 
 Valid and invalid strings are treated alike, so long as they are
 utf-8. The JSON is un-indented, but structurally equivalent to this:

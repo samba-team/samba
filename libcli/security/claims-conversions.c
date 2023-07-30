@@ -46,7 +46,7 @@
  *
  * We don't support the format used by the Win32 API function
  * AddResourceAttributeAce(), which is called CLAIM_SECURITY_ATTRIBUTE_V1.
- * Nobody has ever used that function in public, and it the format is not used
+ * Nobody has ever used that function in public, and the format is not used
  * on the wire.
  */
 

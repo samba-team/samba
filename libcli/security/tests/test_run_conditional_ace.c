@@ -263,7 +263,7 @@ static void test_composite_different_order_with_SID_dupes(void **state)
 static void test_composite_mixed_types(void **state)
 {
 	/*
-	 * If the conditional ACE composite hasa mixed types, it can
+	 * If the conditional ACE composite has mixed types, it can
 	 * never equal a claim, which only has one type.
 	 */
 	INIT()
@@ -513,7 +513,7 @@ static void test_Device_claim_contains_Resource_claim(void **state)
 }
 
 
-static void test_device_claim_comtains_resource_claim(void **state)
+static void test_device_claim_contains_resource_claim(void **state)
 {
 	INIT();
 	USER_SIDS("WD", "AA");
@@ -635,7 +635,7 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_resource_ace_multi),
 		cmocka_unit_test(test_resource_ace_multi_any_of),
 		cmocka_unit_test(test_user_claim_eq_device_claim),
-		cmocka_unit_test(test_device_claim_comtains_resource_claim),
+		cmocka_unit_test(test_device_claim_contains_resource_claim),
 		cmocka_unit_test(test_device_claim_eq_resource_claim),
 		cmocka_unit_test(test_Device_claim_contains_Resource_claim),
 		cmocka_unit_test(test_not_Not_Contains_1),

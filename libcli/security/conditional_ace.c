@@ -33,7 +33,7 @@
  * Conditional ACE logic truth tables.
  *
  * Conditional ACES use a ternary logic, with "unknown" as well as true and
- * false. The ultmate meaning of unknown depends on the context; in a deny
+ * false. The ultimate meaning of unknown depends on the context; in a deny
  * ace, unknown means yes, in an allow ace, unknown means no. That is, we
  * treat unknown results with maximum suspicion.
  *
@@ -744,7 +744,7 @@ static bool resource_claim_lookup(
 	 * If there is no matching resource ACE, a NULL result is returned,
 	 * which should compare UNKNOWN to anything. The NULL will have the
 	 * CONDITIONAL_ACE_FLAG_NULL_MEANS_ERROR flag set if it seems failure
-	 * is not simply due to the sought claim not existing. This useful for
+	 * is not simply due to the sought claim not existing. This is useful for
 	 * the Exists and Not_Exists operators.
 	 */
 	size_t i;
@@ -1468,7 +1468,7 @@ static bool compare_composites(const struct ace_condition_token *op,
 	 * that. This means we can't short-cut by comparing the
 	 * lengths.
 	 *
-	 * THe extra sad thing is we might have to do it both ways
+	 * The extra sad thing is we might have to do it both ways
 	 * round. For example, comparing {a, a, b, a} to {a, b, c}, we
 	 * find all of the first group in the second, but that doesn't
 	 * mean all of the second are in the first.
@@ -2005,7 +2005,7 @@ int run_conditional_ace(TALLOC_CTX *mem_ctx,
  * other error in running it. The *result parameter is set to
  * ACE_CONDITION_FALSE, ACE_CONDITION_TRUE, or ACE_CONDITION_UNKNOWN.
  *
- * ACE_CONDITION_UNKNOWN should be treated pessimistically, as if were
+ * ACE_CONDITION_UNKNOWN should be treated pessimistically, as if it were
  * TRUE for deny ACEs, and FALSE for allow ACEs.
  *
  * @param[in] ace - the ACE being processed.

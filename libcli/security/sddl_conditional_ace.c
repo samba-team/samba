@@ -1203,7 +1203,7 @@ char *sddl_from_conditional_ace(TALLOC_CTX *mem_ctx,
 			 * [MS-DTYP]. MS-DTYP uses 'LHS' to describe the
 			 * operand of unary operators even though they are
 			 * always displayed on the right of the operator. It
-			 * which makes everything much simpler to use rhs
+			 * makes everything much simpler to use rhs
 			 * instead.
 			 */
 			n_trees--;
@@ -1953,7 +1953,7 @@ static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 	if (expecting_bare_sids) {
 		/*
 		 *  This flag is set for a resource ACE which doesn't have the
-		 *  SID() wrapper around the the SID string, and not for a
+		 *  SID() wrapper around the SID string, and not for a
 		 *  conditional ACE, which must have the "SID(...)".
 		 *
 		 * The resource ACE doesn't need this because there is no
@@ -2779,7 +2779,7 @@ static bool check_resource_attr_type(struct ace_condition_token *tok, char c)
 	 * etc).
 	 *
 	 * We're sticking to the [IUSDXB] codes rather than using converting
-	 * earlier to tok->type (whereby this who thing becomes "if (tok->type
+	 * earlier to tok->type (whereby this whole thing becomes "if (tok->type
 	 * == type)") to enable bounds checks on the various integer types.
 	 */
 	switch(c) {
@@ -3173,7 +3173,7 @@ static bool write_resource_attr_from_token(struct sddl_write_context *ctx,
 		return sddl_write_unicode(ctx, tok);
 
 	case CONDITIONAL_ACE_TOKEN_SID:
-		/* unlike conditional ACE, SID does not had "SID()" wrapper. */
+		/* unlike conditional ACE, SID does not have a "SID()" wrapper. */
 		sid = sddl_encode_sid(ctx->mem_ctx, &tok->data.sid.sid, NULL);
 		if (sid == NULL) {
 			return false;
