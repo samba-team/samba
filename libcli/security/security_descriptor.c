@@ -554,6 +554,93 @@ static bool security_ace_object_equal(const struct security_ace_object *object1,
 	return true;
 }
 
+
+static bool security_ace_claim_equal(const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim1,
+				     const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim2)
+{
+	uint32_t i;
+
+	if (claim1 == claim2) {
+		return true;
+	}
+	if (claim1 == NULL || claim2 == NULL) {
+		return false;
+	}
+	if (claim1->name != NULL && claim2->name != NULL) {
+		if (strcasecmp_m(claim1->name, claim2->name) != 0) {
+			return false;
+		}
+	} else if (claim1->name != NULL || claim2->name != NULL) {
+		return false;
+	}
+	if (claim1->value_type != claim2->value_type) {
+		return false;
+	}
+	if (claim1->flags != claim2->flags) {
+		return false;
+	}
+	if (claim1->value_count != claim2->value_count) {
+		return false;
+	}
+	for (i = 0; i < claim1->value_count; ++i) {
+		const union claim_values *values1 = claim1->values;
+		const union claim_values *values2 = claim2->values;
+
+		switch (claim1->value_type) {
+		case CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64:
+			if (values1[i].int_value != NULL && values2[i].int_value != NULL) {
+				if (*values1[i].int_value != *values2[i].int_value) {
+					return false;
+				}
+			} else if (values1[i].int_value != NULL || values2[i].int_value != NULL) {
+				return false;
+			}
+			break;
+		case CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64:
+		case CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN:
+			if (values1[i].uint_value != NULL && values2[i].uint_value != NULL) {
+				if (*values1[i].uint_value != *values2[i].uint_value) {
+					return false;
+				}
+			} else if (values1[i].uint_value != NULL || values2[i].uint_value != NULL) {
+				return false;
+			}
+			break;
+		case CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING:
+			if (values1[i].string_value != NULL && values2[i].string_value != NULL) {
+				if (strcasecmp_m(values1[i].string_value, values2[i].string_value) != 0) {
+					return false;
+				}
+			} else if (values1[i].string_value != NULL || values2[i].string_value != NULL) {
+				return false;
+			}
+			break;
+		case CLAIM_SECURITY_ATTRIBUTE_TYPE_SID:
+			if (values1[i].sid_value != NULL && values2[i].sid_value != NULL) {
+				if (data_blob_cmp(values1[i].sid_value, values2[i].sid_value) != 0) {
+					return false;
+				}
+			} else if (values1[i].sid_value != NULL || values2[i].sid_value != NULL) {
+				return false;
+			}
+			break;
+		case CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING:
+			if (values1[i].octet_value != NULL && values2[i].octet_value != NULL) {
+				if (data_blob_cmp(values1[i].octet_value, values2[i].octet_value) != 0) {
+					return false;
+				}
+			} else if (values1[i].octet_value != NULL || values2[i].octet_value != NULL) {
+				return false;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	return true;
+}
+
 /*
   compare two security ace structures
 */
@@ -575,16 +662,28 @@ bool security_ace_equal(const struct security_ace *ace1,
 	if (ace1->access_mask != ace2->access_mask) {
 		return false;
 	}
-	if ((ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT
-	     || ace1->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT
-	     || ace1->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT
-	     || ace1->type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT)
-	    && !security_ace_object_equal(&ace1->object.object,
-					  &ace2->object.object)) {
+	if (sec_ace_object(ace1->type) &&
+	    !security_ace_object_equal(&ace1->object.object,
+				       &ace2->object.object))
+	{
 		return false;
 	}
 	if (!dom_sid_equal(&ace1->trustee, &ace2->trustee)) {
 		return false;
+	}
+
+	if (sec_ace_callback(ace1->type)) {
+		if (data_blob_cmp(&ace1->coda.conditions, &ace2->coda.conditions) != 0) {
+			return false;
+		}
+	} else if (sec_ace_resource(ace1->type)) {
+		if (!security_ace_claim_equal(&ace1->coda.claim, &ace2->coda.claim)) {
+			return false;
+		}
+	} else {
+		/*
+		 * Don’t require ace1->coda.ignored to match ace2->coda.ignored.
+		 */
 	}
 
 	return true;
