@@ -56,6 +56,16 @@ ok <<EOF
 EOF
 simple_test status random verbosemultilinenonl
 
+ok_null
+simple_test run 10 random verbosenewlinesonly
+
+ok <<EOF
+01.disabled          DISABLED  
+02.enabled           OK         DURATION DATETIME
+  OUTPUT: 
+EOF
+simple_test status random verbosenewlinesonly
+
 required_result 8 <<EOF
 Event verbosemultilinefailure in random failed
 EOF

@@ -203,7 +203,6 @@ static void print_status_one(struct ctdb_event_script *script)
 		const char *t = script->output == NULL ? "" : script->output;
 		size_t len = strlen(t);
 		char output[len+1];
-		size_t p;
 		char *t1, *t2;
 
 		strlcpy(output, t, sizeof(output));
@@ -212,10 +211,10 @@ static void print_status_one(struct ctdb_event_script *script)
 		 * Strip trailing newlines, they are clutter and
 		 * interfere with multi-line detection
 		 */
-		p = len - 1;
-		while (p >= 0 && output[p] == '\n') {
-			output[p] = '\0';
-			p--;
+		t1 = output + len - 1;
+		while (t1 >= output && *t1 == '\n') {
+			*t1 = '\0';
+			t1--;
 		}
 
 		/* If the output is a single line then print it inline */

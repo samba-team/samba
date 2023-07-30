@@ -24,6 +24,14 @@ EOF
 	printf 'No trailing newline'
 	exit 0
 	;;
+"verbosenewlinesonly")
+	cat <<EOF
+
+
+
+EOF
+	exit 0
+	;;
 "verbosefailure") echo "args: $*"; exit 1 ;;
 "verbosemultilinefailure")
 	cat <<EOF
