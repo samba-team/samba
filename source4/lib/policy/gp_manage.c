@@ -127,6 +127,7 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 		status = security_descriptor_dacl_add(fs_sd, ace);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to add a dacl to file system security descriptor\n"));
+			TALLOC_FREE(fs_sd);
 			return status;
 		}
 
