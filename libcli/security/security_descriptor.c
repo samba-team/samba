@@ -312,15 +312,8 @@ static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 	ARRAY_INSERT_ELEMENT(acl->aces, acl->num_aces, *ace, idx);
 	acl->num_aces++;
 
-	switch (acl->aces[idx].type) {
-	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-	case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-	case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
-	case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+	if (sec_ace_object(acl->aces[idx].type)) {
 		acl->revision = SECURITY_ACL_REVISION_ADS;
-		break;
-	default:
-		break;
 	}
 
 	if (add_to_sacl) {
@@ -425,15 +418,9 @@ static NTSTATUS security_descriptor_acl_del(struct security_descriptor *sd,
 	acl->revision = SECURITY_ACL_REVISION_NT4;
 
 	for (i=0;i<acl->num_aces;i++) {
-		switch (acl->aces[i].type) {
-		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
-		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+		if (sec_ace_object(acl->aces[i].type)) {
 			acl->revision = SECURITY_ACL_REVISION_ADS;
-			return NT_STATUS_OK;
-		default:
-			break; /* only for the switch statement */
+			break;
 		}
 	}
 
@@ -502,15 +489,9 @@ static NTSTATUS security_descriptor_acl_del_ace(struct security_descriptor *sd,
 	acl->revision = SECURITY_ACL_REVISION_NT4;
 
 	for (i=0;i<acl->num_aces;i++) {
-		switch (acl->aces[i].type) {
-		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
-		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+		if (sec_ace_object(acl->aces[i].type)) {
 			acl->revision = SECURITY_ACL_REVISION_ADS;
-			return NT_STATUS_OK;
-		default:
-			break; /* only for the switch statement */
+			break;
 		}
 	}
 
