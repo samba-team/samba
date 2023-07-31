@@ -205,7 +205,7 @@ static void dns_lookup_done(struct tevent_req *subreq)
 
 	if (i == state->num_nameservers) {
 		/* should never happen */
-		DBG_WARNING("Failed to find subreq");
+		DBG_WARNING("Failed to find subreq\n");
 		tevent_req_error(req, EINVAL);
 		return;
 	}

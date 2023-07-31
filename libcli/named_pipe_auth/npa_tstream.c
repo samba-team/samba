@@ -1213,7 +1213,7 @@ reply:
 	ndr_err = ndr_push_struct_blob(&out, state, &pipe_reply,
 			(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_rep);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(2, ("Error encoding structure: %s",
+		DEBUG(2, ("Error encoding structure: %s\n",
 			  ndr_map_error2string(ndr_err)));
 		tevent_req_error(req, EIO);
 		return;
@@ -1235,7 +1235,7 @@ reply:
 				     state->plain,
 				     &state->out_iov, 1);
 	if (tevent_req_nomem(subreq, req)) {
-		DEBUG(0, ("no memory for tstream_writev_send"));
+		DEBUG(0, ("no memory for tstream_writev_send\n"));
 		return;
 	}
 

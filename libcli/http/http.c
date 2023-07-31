@@ -208,7 +208,7 @@ static bool http_parse_response_line(struct http_read_response_state *state)
 	}
 
 	if (code == 0) {
-		DEBUG(0, ("%s: Bad response code '%d'", __func__, code));
+		DEBUG(0, ("%s: Bad response code '%d'\n", __func__, code));
 		status = false;
 		goto error;
 	}
@@ -330,7 +330,7 @@ static enum http_read_status http_parse_buffer(struct http_read_response_state *
 			/* All read */
 			return HTTP_ALL_DATA_READ;
 		default:
-			DEBUG(0, ("%s: Illegal parser state %d", __func__,
+			DEBUG(0, ("%s: Illegal parser state %d\n", __func__,
 				  state->parser_state));
 			break;
 	}

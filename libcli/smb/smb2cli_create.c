@@ -206,7 +206,7 @@ static NTSTATUS smb2cli_parse_symlink_error_response(
 
 	symlink_length = IVAL(buf, 0);
 	if (symlink_length != (buflen-4)) {
-		DBG_DEBUG("symlink_length=%"PRIu32", (buflen-4)=%zu",
+		DBG_DEBUG("symlink_length=%"PRIu32", (buflen-4)=%zu\n",
 			  symlink_length, buflen-4);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
