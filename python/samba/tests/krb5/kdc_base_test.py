@@ -780,8 +780,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             self.assertFalse(force, 'should not fail with force=True')
             self.assertEqual(num, ldb.ERR_ENTRY_ALREADY_EXISTS)
         else:
-            # Save the claim DN so it can be deleted in tearDown()
-            self.test_accounts.append(str(claim_dn))
+            # Save the claim DN so it can be deleted in tearDownClass()
+            self.accounts.append(str(claim_dn))
 
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
