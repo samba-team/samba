@@ -132,8 +132,8 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 	call->in.data = buf;
 	call->in.length = len;
 
-	DEBUG(10,("Received krb5 UDP packet of length %lu from %s\n",
-		 (long)call->in.length,
+	DEBUG(10,("Received krb5 UDP packet of length %zu from %s\n",
+		 call->in.length,
 		 tsocket_address_string(call->src, call)));
 
 	/* Call krb5 */
@@ -281,8 +281,8 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(10,("Received krb5 TCP packet of length %lu from %s\n",
-		 (long) call->in.length,
+	DEBUG(10,("Received krb5 TCP packet of length %zu from %s\n",
+		 call->in.length,
 		 tsocket_address_string(kdc_conn->conn->remote_address, call)));
 
 	/* skip length header */
