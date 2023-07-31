@@ -72,7 +72,7 @@ char *log_escape(TALLOC_CTX *frame, const char *in)
 
 	encoded = talloc_array( frame, char, size);
 	if (encoded == NULL) {
-		DBG_ERR( "Out of memory allocating encoded string");
+		DBG_ERR( "Out of memory allocating encoded string\n");
 		return NULL;
 	}
 

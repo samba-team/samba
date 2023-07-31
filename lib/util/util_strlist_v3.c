@@ -63,7 +63,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 
 	s = talloc_strdup(list, string);
 	if (s == NULL) {
-		DEBUG(0,("str_list_make: Unable to allocate memory"));
+		DEBUG(0,("str_list_make: Unable to allocate memory\n"));
 		TALLOC_FREE(list);
 		return NULL;
 	}
@@ -99,7 +99,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 						   lsize + 1);
 			if (tmp == NULL) {
 				DEBUG(0,("str_list_make: "
-					"Unable to allocate memory"));
+					"Unable to allocate memory\n"));
 				TALLOC_FREE(list);
 				return NULL;
 			}

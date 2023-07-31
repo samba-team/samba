@@ -145,7 +145,7 @@ char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, size_t maxlen, FILE *f)
 
 			m = maxlen * 2;
 			if (m < maxlen) {
-				DBG_ERR("length overflow");
+				DBG_ERR("length overflow\n");
 				TALLOC_FREE(s);
 				return NULL;
 			}
