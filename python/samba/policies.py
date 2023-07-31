@@ -78,8 +78,7 @@ class RegistryGroupPolicies(object):
 
         # Create a file system security descriptor
         domain_sid = security.dom_sid(self.samdb.get_domain_sid())
-        sddl = dsacl2fsacl(ds_sd, domain_sid)
-        self.fs_sd = security.descriptor.from_sddl(sddl, domain_sid)
+        self.fs_sd = dsacl2fsacl(ds_sd, domain_sid, as_sddl=False)
 
     def __load_registry_pol(self, pol_file):
         try:
