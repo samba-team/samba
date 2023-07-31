@@ -5312,9 +5312,11 @@ int dsdb_search_dn(struct ldb_context *ldb,
 	int ret;
 	struct ldb_request *req;
 	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
-	res = talloc_zero(mem_ctx, struct ldb_result);
+	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
 	}
 
@@ -5328,13 +5330,13 @@ int dsdb_search_dn(struct ldb_context *ldb,
 				   ldb_search_default_callback,
 				   NULL);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
 	ret = dsdb_request_add_controls(req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -5345,11 +5347,26 @@ int dsdb_search_dn(struct ldb_context *ldb,
 
 	talloc_free(req);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
+		DBG_INFO("flags=0x%08x %s -> %s (%s)\n",
+			 dsdb_flags,
+			 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+							       basedn,
+							       1):"NULL",
+			 ldb_errstring(ldb), ldb_strerror(ret));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	*_result = res;
+	DBG_DEBUG("flags=0x%08x %s -> %d\n",
+		  dsdb_flags,
+		  basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+							basedn,
+							1):"NULL",
+		  res->count);
+
+	*_result = talloc_steal(mem_ctx, res);
+
+	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
 
