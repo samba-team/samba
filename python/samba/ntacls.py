@@ -300,17 +300,33 @@ def dsacl2fsacl(dssddl, sid, as_sddl=True):
     fdescr.type = ref.type
     fdescr.revision = ref.revision
     aces = ref.dacl.aces
+
     for i in range(0, len(aces)):
         ace = aces[i]
-        if ace.type in (security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT,
-                        security.SEC_ACE_TYPE_ACCESS_ALLOWED) and str(ace.trustee) != security.SID_BUILTIN_PREW2K:
-           #    if fdescr.type & security.SEC_DESC_DACL_AUTO_INHERITED:
-            ace.flags = ace.flags | security.SEC_ACE_FLAG_OBJECT_INHERIT | security.SEC_ACE_FLAG_CONTAINER_INHERIT
-            if str(ace.trustee) == security.SID_CREATOR_OWNER:
-                # For Creator/Owner the IO flag is set as this ACE has only a sense for child objects
-                ace.flags = ace.flags | security.SEC_ACE_FLAG_INHERIT_ONLY
-            ace.access_mask = ldapmask2filemask(ace.access_mask)
-            fdescr.dacl_add(ace)
+
+        # Only apply allowed and deny ACEs, as they are the only ones
+        # we can map to filesystem aces.
+        #
+        # In future we may need to include resource based aces...
+        allowed_ace_types = [
+            security.SEC_ACE_TYPE_ACCESS_ALLOWED,
+            security.SEC_ACE_TYPE_ACCESS_DENIED,
+        ]
+        if not ace.type in allowed_ace_types:
+            continue
+
+        # Don't add the allow for SID_BUILTIN_PREW2K as in
+        # gp_create_gpt_security_descriptor()
+        if str(ace.trustee) == security.SID_BUILTIN_PREW2K:
+            continue
+
+        ace.flags = ace.flags | security.SEC_ACE_FLAG_OBJECT_INHERIT | security.SEC_ACE_FLAG_CONTAINER_INHERIT
+        if str(ace.trustee) == security.SID_CREATOR_OWNER:
+            # For Creator/Owner the IO flag is set as this ACE has only a sense for child objects
+            ace.flags = ace.flags | security.SEC_ACE_FLAG_INHERIT_ONLY
+
+        ace.access_mask = ldapmask2filemask(ace.access_mask)
+        fdescr.dacl_add(ace)
 
     if not as_sddl:
         return fdescr
