@@ -4261,7 +4261,7 @@ static int get_pso_data_callback(struct ldb_request *req,
 		}
 
 		if (ac->pso_res != NULL) {
-			DBG_ERR("Too many PSO results for %s",
+			DBG_ERR("Too many PSO results for %s\n",
 				ldb_dn_get_linearized(ac->search_res->message->dn));
 			talloc_free(ac->pso_res);
 		}
@@ -4360,7 +4360,7 @@ static struct ldb_request * build_pso_data_request(struct ph_context *ac)
 
 	/* log errors, but continue with the default domain settings */
 	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Error %d constructing PSO query for user %s", ret,
+		DBG_ERR("Error %d constructing PSO query for user %s\n", ret,
 			ldb_dn_get_linearized(ac->search_res->message->dn));
 	}
 	LDB_REQ_SET_LOCATION(pso_req);

@@ -1562,7 +1562,7 @@ int dsdb_get_expected_new_values(TALLOC_CTX *mem_ctx,
 			el_count++;
 			tmp = val_count + msg->elements[i].num_values;
 			if (unlikely(tmp < val_count)) {
-				DBG_ERR("too many values for one element!");
+				DBG_ERR("too many values for one element!\n");
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			val_count = tmp;

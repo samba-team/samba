@@ -5270,7 +5270,7 @@ static int replmd_name_modify(struct replmd_replicated_request *ar,
 				 DSDB_FLAG_OWN_MODULE|DSDB_FLAG_REPLICATED_UPDATE,
 				 req);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to modify rDN/name of DN being DRS renamed '%s' - %s",
+		DEBUG(0,(__location__ ": Failed to modify rDN/name of DN being DRS renamed '%s' - %s\n",
 			 ldb_dn_get_linearized(dn),
 			 ldb_errstring(ldb_module_get_ctx(ar->module))));
 		return ret;
@@ -5282,7 +5282,7 @@ static int replmd_name_modify(struct replmd_replicated_request *ar,
 
 failed:
 	talloc_free(msg);
-	DEBUG(0,(__location__ ": Failed to setup modify rDN/name of DN being DRS renamed '%s'",
+	DEBUG(0,(__location__ ": Failed to setup modify rDN/name of DN being DRS renamed '%s'\n",
 		 ldb_dn_get_linearized(dn)));
 	return LDB_ERR_OPERATIONS_ERROR;
 }
@@ -5345,7 +5345,7 @@ static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_re
 
 		ret = dsdb_module_modify(ar->module, msg, DSDB_FLAG_OWN_MODULE, req);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to modify lastKnownParent of lostAndFound DN '%s' - %s",
+			DEBUG(0,(__location__ ": Failed to modify lastKnownParent of lostAndFound DN '%s' - %s\n",
 				 ldb_dn_get_linearized(msg->dn),
 				 ldb_errstring(ldb_module_get_ctx(ar->module))));
 			return ret;

@@ -3775,7 +3775,7 @@ int samdb_dns_host_name(struct ldb_context *sam_ctx, const char **host_name)
 	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, NULL, attrs, 0);
 
 	if (res == NULL || res->count != 1 || ret != LDB_SUCCESS) {
-		DEBUG(0, ("Failed to get rootDSE for dnsHostName: %s",
+		DEBUG(0, ("Failed to get rootDSE for dnsHostName: %s\n",
 			  ldb_errstring(sam_ctx)));
 		TALLOC_FREE(tmp_ctx);
 		return ret;
@@ -3785,7 +3785,7 @@ int samdb_dns_host_name(struct ldb_context *sam_ctx, const char **host_name)
 						 "dnsHostName",
 						 NULL);
 	if (_host_name == NULL) {
-		DEBUG(0, ("Failed to get dnsHostName from rootDSE"));
+		DEBUG(0, ("Failed to get dnsHostName from rootDSE\n"));
 		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -5742,7 +5742,7 @@ WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
 		*fsmo_role_dn = samdb_partitions_dn(ldb, tmp_ctx);
 		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Naming Master object - %s",
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Naming Master object - %s\n",
 				 ldb_errstring(ldb)));
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -5752,7 +5752,7 @@ WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
 		*fsmo_role_dn = samdb_infrastructure_dn(ldb, tmp_ctx);
 		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s",
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s\n",
 				 ldb_errstring(ldb)));
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -5761,14 +5761,14 @@ WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
 	case DREPL_RID_MASTER:
 		ret = samdb_rid_manager_dn(ldb, tmp_ctx, fsmo_role_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, (__location__ ": Failed to find RID Manager object - %s", ldb_errstring(ldb)));
+			DEBUG(0, (__location__ ": Failed to find RID Manager object - %s\n", ldb_errstring(ldb)));
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
 		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s",
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s\n",
 				 ldb_errstring(ldb)));
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -5778,7 +5778,7 @@ WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
 		*fsmo_role_dn = ldb_get_schema_basedn(ldb);
 		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s",
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s\n",
 				 ldb_errstring(ldb)));
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -5788,7 +5788,7 @@ WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
 		*fsmo_role_dn = ldb_get_default_basedn(ldb);
 		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Pd Master object - %s",
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Pd Master object - %s\n",
 				 ldb_errstring(ldb)));
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -5813,7 +5813,7 @@ const char *samdb_dn_to_dnshostname(struct ldb_context *ldb,
 			     LDB_SCOPE_BASE,
 			     attrs, NULL);
 	if (ldb_ret != LDB_SUCCESS) {
-		DEBUG(4, ("Failed to find dNSHostName for dn %s, ldb error: %s",
+		DEBUG(4, ("Failed to find dNSHostName for dn %s, ldb error: %s\n",
 			  ldb_dn_get_linearized(server_dn), ldb_errstring(ldb)));
 		return NULL;
 	}
@@ -6065,7 +6065,7 @@ static struct ldb_result *lookup_user_pso(struct ldb_context *sam_ldb,
 			 * log the error. The caller should fallback to using
 			 * the default domain password settings
 			 */
-			DBG_ERR("Error retrieving msDS-ResultantPSO %s for %s",
+			DBG_ERR("Error retrieving msDS-ResultantPSO %s for %s\n",
 				ldb_dn_get_linearized(pso_dn),
 				ldb_dn_get_linearized(user_msg->dn));
 		}

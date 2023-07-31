@@ -341,7 +341,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 		werr = dsdb_schema_pfm_add_entry(working_schema->prefixmap,
 						 rm->bin_oid, &rm->id, NULL);
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,(__location__ ": Failed to merge remote prefixMap: %s",
+			DEBUG(0,(__location__ ": Failed to merge remote prefixMap: %s\n",
 				 win_errstr(werr)));
 			talloc_free(working_schema);
 			return werr;
@@ -356,7 +356,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 						object_count,
 						first_object);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s",
+		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s\n",
 			  __location__, win_errstr(werr)));
 		talloc_free(working_schema);
 		return werr;
@@ -499,7 +499,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 				DEBUG(0, ("Unxpectedly got secret value %s on %s from DRS server\n",
 					  e->name, ldb_dn_get_linearized(msg->dn)));
 			} else {
-				DEBUG(0, ("Unxpectedly got secret value on %s from DRS server",
+				DEBUG(0, ("Unxpectedly got secret value on %s from DRS server\n",
 					  ldb_dn_get_linearized(msg->dn)));
 			}
 		} else if (!W_ERROR_IS_OK(status)) {
@@ -530,19 +530,19 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		if (a->attid == DRSUAPI_ATTID_name) {
 			const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
 			if (rdn_val == NULL) {
-				DEBUG(0, ("Unxpectedly unable to get RDN from %s for validation",
+				DEBUG(0, ("Unxpectedly unable to get RDN from %s for validation\n",
 					  ldb_dn_get_linearized(msg->dn)));
 				return WERR_FOOBAR;
 			}
 			if (e->num_values != 1) {
-				DEBUG(0, ("Unxpectedly got wrong number of attribute values (got %u, expected 1) when checking RDN against name of %s",
+				DEBUG(0, ("Unxpectedly got wrong number of attribute values (got %u, expected 1) when checking RDN against name of %s\n",
 					  e->num_values,
 					  ldb_dn_get_linearized(msg->dn)));
 				return WERR_FOOBAR;
 			}
 			if (data_blob_cmp(rdn_val,
 					  &e->values[0]) != 0) {
-				DEBUG(0, ("Unxpectedly got mismatching RDN values when checking RDN against name of %s",
+				DEBUG(0, ("Unxpectedly got mismatching RDN values when checking RDN against name of %s\n",
 					  ldb_dn_get_linearized(msg->dn)));
 				return WERR_FOOBAR;
 			}

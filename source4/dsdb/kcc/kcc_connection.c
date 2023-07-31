@@ -215,13 +215,13 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 
 	list = talloc(tmp_ctx, struct kcc_connection_list);
 	if (!list) {
-		DEBUG(0, ("out of memory"));
+		DEBUG(0, ("out of memory\n"));
 		return NULL;
 	}
 	list->servers = talloc_array(list, struct kcc_connection,
 				     res->count);
 	if (!list->servers) {
-		DEBUG(0, ("out of memory"));
+		DEBUG(0, ("out of memory\n"));
 		talloc_free(tmp_ctx);
 		return NULL;
 	}

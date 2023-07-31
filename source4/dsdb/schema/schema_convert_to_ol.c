@@ -150,7 +150,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 			break;
 		default:
 			talloc_free(mem_ctx);
-			DEBUG(0,(__location__ " Wrong type of target %u!", (unsigned)target));
+			DEBUG(0,(__location__ " Wrong type of target %u!\n", (unsigned)target));
 			return NULL;
 		}
 		talloc_free(mem_ctx);
@@ -285,7 +285,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 		break;
 	default:
 		talloc_free(mem_ctx);
-		DEBUG(0,(__location__ " Wrong type of target %u!", (unsigned)target));
+		DEBUG(0,(__location__ " Wrong type of target %u!\n", (unsigned)target));
 		return NULL;
 	}
 
@@ -366,7 +366,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 			break;
 		default:
 			talloc_free(mem_ctx);
-			DEBUG(0,(__location__ " Wrong type of target %u!", (unsigned)target));
+			DEBUG(0,(__location__ " Wrong type of target %u!\n", (unsigned)target));
 			return NULL;
 		}
 	}

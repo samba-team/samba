@@ -543,7 +543,7 @@ failure:
 	 * so it needs to be freed to prevent a leak.
 	 */
 	json_free(&value);
-	DBG_ERR("unable to add ldb value to JSON audit message");
+	DBG_ERR("unable to add ldb value to JSON audit message\n");
 	return -1;
 }
 

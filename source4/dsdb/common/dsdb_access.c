@@ -44,9 +44,9 @@ void dsdb_acl_debug(struct security_descriptor *sd,
 		      int level)
 {
 	if (denied) {
-		DEBUG(level, ("Access on %s denied", ldb_dn_get_linearized(dn)));
+		DEBUG(level, ("Access on %s denied\n", ldb_dn_get_linearized(dn)));
 	} else {
-		DEBUG(level, ("Access on %s granted", ldb_dn_get_linearized(dn)));
+		DEBUG(level, ("Access on %s granted\n", ldb_dn_get_linearized(dn)));
 	}
 
 	DEBUG(level,("Security context: %s\n",

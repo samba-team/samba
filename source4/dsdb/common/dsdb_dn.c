@@ -244,7 +244,7 @@ struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return NULL;
 	}
 	if (ldb_dn_validate(dsdb_dn->dn) == false) {
-		DEBUG(10, ("could not parse %.*s as a %s DN",
+		DEBUG(10, ("could not parse %.*s as a %s DN\n",
 			   (int)dn_blob->length, dn_blob->data,
 			   dn_oid));
 		return NULL;

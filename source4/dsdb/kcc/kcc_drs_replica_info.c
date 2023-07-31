@@ -56,14 +56,14 @@ static WERROR get_linked_attribute_value_stamp(TALLOC_CTX *mem_ctx, struct ldb_c
 	ret = dsdb_search_dn(samdb, mem_ctx, &res, dn, attrs,
 			     DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_REVEAL_INTERNALS);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, (__location__ ": Failed search for attribute %s on %s",
+		DEBUG(0, (__location__ ": Failed search for attribute %s on %s\n",
 				linked_attr_name, ldb_dn_get_linearized(dn)));
 		return WERR_INTERNAL_ERROR;
 	}
 
 	attr_ext_dn = ldb_msg_find_attr_as_dn(samdb, mem_ctx, res->msgs[0], linked_attr_name);
 	if (!attr_ext_dn) {
-		DEBUG(0, (__location__ ": Failed search for attribute %s on %s",
+		DEBUG(0, (__location__ ": Failed search for attribute %s on %s\n",
 				linked_attr_name, ldb_dn_get_linearized(dn)));
 		return WERR_INTERNAL_ERROR;
 	}
@@ -73,21 +73,21 @@ static WERROR get_linked_attribute_value_stamp(TALLOC_CTX *mem_ctx, struct ldb_c
 
 	ntstatus = dsdb_get_extended_dn_uint32(attr_ext_dn, attr_version, "RMD_VERSION");
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"",
+		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"\n",
 				"RMD_VERSION", ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
 		return WERR_INTERNAL_ERROR;
 	}
 
 	ntstatus = dsdb_get_extended_dn_nttime(attr_ext_dn, attr_change_time, "RMD_CHANGETIME");
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"",
+		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"\n",
 				"RMD_CHANGETIME", ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
 		return WERR_INTERNAL_ERROR;
 	}
 
 	ntstatus = dsdb_get_extended_dn_uint32(attr_ext_dn, attr_version, "RMD_ORIGINATING_USN");
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"",
+		DEBUG(0, (__location__ ": Could not extract component %s from dn \"%s\"\n",
 				"RMD_ORIGINATING_USN", ldb_dn_get_extended_linearized(mem_ctx, attr_ext_dn, 1)));
 		return WERR_INTERNAL_ERROR;
 	}
@@ -108,7 +108,7 @@ static WERROR get_repl_prop_metadata_ctr(TALLOC_CTX *mem_ctx,
 
 	ret = ldb_search(samdb, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS || res->count != 1) {
-		DEBUG(0, (__location__ ": Failed search for replPropertyMetaData attribute on %s",
+		DEBUG(0, (__location__ ": Failed search for replPropertyMetaData attribute on %s\n",
 			  ldb_dn_get_linearized(dn)));
 		return WERR_INTERNAL_ERROR;
 	}
@@ -156,7 +156,7 @@ static WERROR get_dn_from_invocation_id(TALLOC_CTX *mem_ctx,
 	ret = dsdb_search_one(samdb, invocation_id_str, &msg, ldb_get_config_basedn(samdb), LDB_SCOPE_SUBTREE,
 			      attrs_invocation, 0, "(&(objectClass=nTDSDSA)(invocationId=%s))", invocation_id_str);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, (__location__ ": Failed search for the object DN under %s whose invocationId is %s",
+		DEBUG(0, (__location__ ": Failed search for the object DN under %s whose invocationId is %s\n",
 			  invocation_id_str, ldb_dn_get_linearized(ldb_get_config_basedn(samdb))));
 		talloc_free(invocation_id_str);
 		return WERR_INTERNAL_ERROR;
