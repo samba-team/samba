@@ -739,7 +739,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 			info.info0 = &ctr0->array[i];
@@ -780,7 +780,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 			info.info1 = &ctr1->array[i];
@@ -824,7 +824,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 			info.info2 = &ctr2->array[i];
@@ -868,7 +868,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 			info.info501 = &ctr501->array[i];
@@ -912,7 +912,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 			info.info502 = &ctr502->array[i];
@@ -1835,7 +1835,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 			
@@ -1887,7 +1887,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 
@@ -1941,7 +1941,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 
@@ -1995,7 +1995,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
-				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
+				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration\n", snames[i]));
 				return WERR_GEN_FAILURE;
 			}
 

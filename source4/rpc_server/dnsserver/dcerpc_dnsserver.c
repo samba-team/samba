@@ -128,7 +128,7 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 
 	dsstate->samdb = dcesrv_samdb_connect_as_user(dsstate, dce_call);
 	if (dsstate->samdb == NULL) {
-		DEBUG(0,("dnsserver: Failed to open samdb"));
+		DEBUG(0,("dnsserver: Failed to open samdb\n"));
 		goto failed;
 	}
 
@@ -165,7 +165,7 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 				dsstate->zones_count++;
 			} else {
 				/* Ignore duplicate zone */
-				DEBUG(3,("dnsserver: Ignoring duplicate zone '%s' from '%s'",
+				DEBUG(3,("dnsserver: Ignoring duplicate zone '%s' from '%s'\n",
 					 z->name, ldb_dn_get_linearized(z->zone_dn)));
 			}
 			z = znext;
@@ -801,7 +801,7 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 		return WERR_OK;
 	}
 
-	DEBUG(0,("dnsserver: Invalid server operation %s", operation));
+	DEBUG(0,("dnsserver: Invalid server operation %s\n", operation));
 	return WERR_DNS_ERROR_INVALID_PROPERTY;
 }
 
@@ -1073,7 +1073,7 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 		return WERR_OK;
 	}
 
-	DEBUG(0,("dnsserver: Invalid zone operation %s", operation));
+	DEBUG(0,("dnsserver: Invalid zone operation %s\n", operation));
 	return WERR_DNS_ERROR_INVALID_PROPERTY;
 
 }
@@ -1206,11 +1206,11 @@ static WERROR dnsserver_operate_server(struct dnsserver_state *dsstate,
 	}
 
 	if (valid_operation) {
-		DEBUG(0, ("dnsserver: server operation '%s' not implemented", operation));
+		DEBUG(0, ("dnsserver: server operation '%s' not implemented\n", operation));
 		return WERR_CALL_NOT_IMPLEMENTED;
 	}
 
-	DEBUG(0, ("dnsserver: invalid server operation '%s'", operation));
+	DEBUG(0, ("dnsserver: invalid server operation '%s'\n", operation));
 	return WERR_DNS_ERROR_INVALID_PROPERTY;
 }
 
@@ -1489,11 +1489,11 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 	}
 
 	if (valid_operation) {
-		DEBUG(0, ("dnsserver: server complex operation '%s' not implemented", operation));
+		DEBUG(0, ("dnsserver: server complex operation '%s' not implemented\n", operation));
 		return WERR_CALL_NOT_IMPLEMENTED;
 	}
 
-	DEBUG(0, ("dnsserver: invalid server complex operation '%s'", operation));
+	DEBUG(0, ("dnsserver: invalid server complex operation '%s'\n", operation));
 	return WERR_DNS_ERROR_INVALID_PROPERTY;
 }
 
@@ -1579,11 +1579,11 @@ static WERROR dnsserver_operate_zone(struct dnsserver_state *dsstate,
 	}
 
 	if (valid_operation) {
-		DEBUG(0, ("dnsserver: zone operation '%s' not implemented", operation));
+		DEBUG(0, ("dnsserver: zone operation '%s' not implemented\n", operation));
 		return WERR_CALL_NOT_IMPLEMENTED;
 	}
 
-	DEBUG(0, ("dnsserver: invalid zone operation '%s'", operation));
+	DEBUG(0, ("dnsserver: invalid zone operation '%s'\n", operation));
 	return WERR_DNS_ERROR_INVALID_PROPERTY;
 }
 
@@ -1608,7 +1608,7 @@ static WERROR dnsserver_complex_operate_zone(struct dnsserver_state *dsstate,
 		}
 	}
 
-	DEBUG(0,("dnsserver: Invalid zone operation %s", operation));
+	DEBUG(0,("dnsserver: Invalid zone operation %s\n", operation));
 	return WERR_DNS_ERROR_INVALID_PROPERTY;
 }
 

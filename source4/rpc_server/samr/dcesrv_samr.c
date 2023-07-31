@@ -1120,7 +1120,7 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 	d_state = h->data;
 
 	if (d_state->builtin) {
-		DEBUG(5, ("Cannot create a domain group in the BUILTIN domain"));
+		DEBUG(5, ("Cannot create a domain group in the BUILTIN domain\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1471,7 +1471,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	d_state = h->data;
 
 	if (d_state->builtin) {
-		DEBUG(5, ("Cannot create a user in the BUILTIN domain"));
+		DEBUG(5, ("Cannot create a user in the BUILTIN domain\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
 		/* Domain trust accounts must be created by the LSA calls */
@@ -1778,7 +1778,7 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call,
 		}
 
 		if (ac->num_entries == 0) {
-			DBG_WARNING("No users in domain %s",
+			DBG_WARNING("No users in domain %s\n",
 				    ldb_dn_get_linearized(d_state->domain_dn));
 			talloc_free(ac);
 
@@ -1895,7 +1895,7 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 	d_state = h->data;
 
 	if (d_state->builtin) {
-		DEBUG(5, ("Cannot create a domain alias in the BUILTIN domain"));
+		DEBUG(5, ("Cannot create a domain alias in the BUILTIN domain\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

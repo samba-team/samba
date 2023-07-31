@@ -407,7 +407,7 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 
 	default:
 		memcpy(&dns->data, &dnsp->data, sizeof(union DNS_RPC_RECORD_DATA));
-		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d", dnsp->wType));
+		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d\n", dnsp->wType));
 	}
 
 }
@@ -654,7 +654,7 @@ WERROR dns_to_dnsp_convert(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns,
 
 	default:
 		memcpy(&dnsp->data, &dns->data, sizeof(union dnsRecordData));
-		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d", dns->wType));
+		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d\n", dns->wType));
 	}
 
 	*out_dnsp = dnsp;
@@ -797,7 +797,7 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 	for (i=0; i<res->count; i++) {
 		ptr = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
 		if (ptr == NULL) {
-			DBG_ERR("dnsserver: dns record has no name (%s)",
+			DBG_ERR("dnsserver: dns record has no name (%s)\n",
 				ldb_dn_get_linearized(res->msgs[i]->dn));
 			goto failed;
 		}
@@ -974,7 +974,7 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 
 	ptr = ldb_msg_find_attr_as_string(msg, "name", NULL);
 	if (ptr == NULL) {
-		DBG_ERR("dnsserver: dns record has no name (%s)",
+		DBG_ERR("dnsserver: dns record has no name (%s)\n",
 			ldb_dn_get_linearized(msg->dn));
 		return WERR_INTERNAL_DB_ERROR;
 	}
@@ -993,7 +993,7 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&el->values[j], mem_ctx, &dnsp_rec,
 					(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(0, ("dnsserver: Unable to parse dns record (%s)", ldb_dn_get_linearized(msg->dn)));
+			DEBUG(0, ("dnsserver: Unable to parse dns record (%s)\n", ldb_dn_get_linearized(msg->dn)));
 			return WERR_INTERNAL_DB_ERROR;
 		}
 

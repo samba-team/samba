@@ -1804,7 +1804,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 						      collect_objects_attrs,
 						      NULL);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Manager object %s - %s",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Manager object %s - %s\n",
 				  ldb_dn_get_linearized(search_dn),
 				  ldb_errstring(b_state->sam_ctx)));
 			TALLOC_FREE(frame);
@@ -1812,7 +1812,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		}
 
 		if ((*search_res)->count != 1) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Manager object %s - %u objects returned",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Manager object %s - %u objects returned\n",
 				  ldb_dn_get_linearized(search_dn),
 				  (*search_res)->count));
 			TALLOC_FREE(frame);
@@ -1845,7 +1845,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		ret = samdb_reference_dn(b_state->sam_ctx, frame, server_dn,
 					 "serverReference", &machine_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to find serverReference in %s - %s",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to find serverReference in %s - %s\n",
 				  ldb_dn_get_linearized(server_dn),
 				  ldb_errstring(b_state->sam_ctx)));
 			TALLOC_FREE(frame);
@@ -1855,7 +1855,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		ret = samdb_reference_dn(b_state->sam_ctx, frame, machine_dn,
 					 "rIDSetReferences", &rid_set_dn);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to find rIDSetReferences in %s - %s",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to find rIDSetReferences in %s - %s\n",
 				  ldb_dn_get_linearized(server_dn),
 				  ldb_errstring(b_state->sam_ctx)));
 			TALLOC_FREE(frame);
@@ -1870,7 +1870,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 						      collect_objects_attrs,
 						      NULL);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Set object %s - %s",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Set object %s - %s\n",
 				  ldb_dn_get_linearized(rid_set_dn),
 				  ldb_errstring(b_state->sam_ctx)));
 			TALLOC_FREE(frame);
@@ -1878,7 +1878,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		}
 
 		if (search_res2->count != 1) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Set object %s - %u objects returned",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Set object %s - %u objects returned\n",
 				  ldb_dn_get_linearized(rid_set_dn),
 				  search_res2->count));
 			TALLOC_FREE(frame);
@@ -1892,7 +1892,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 						      collect_objects_attrs,
 						      NULL);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get server object %s - %s",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get server object %s - %s\n",
 				  ldb_dn_get_linearized(server_dn),
 				  ldb_errstring(b_state->sam_ctx)));
 			TALLOC_FREE(frame);
@@ -1900,7 +1900,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		}
 
 		if (search_res3->count != 1) {
-			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get server object %s - %u objects returned",
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get server object %s - %u objects returned\n",
 				  ldb_dn_get_linearized(server_dn),
 				  search_res3->count));
 			TALLOC_FREE(frame);
@@ -2052,7 +2052,7 @@ static WERROR getncchanges_get_sorted_array(const struct drsuapi_DsReplicaLinked
 	*ret_array = NULL;
 	guid_array = talloc_array(mem_ctx, struct la_for_sorting, link_count);
 	if (guid_array == NULL) {
-		DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", link_count));
+		DEBUG(0, ("Out of memory allocating %u linked attributes for sorting\n", link_count));
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -3612,7 +3612,7 @@ allowed:
 		r->out.ctr->ctr6.linked_attributes_count = link_count;
 		r->out.ctr->ctr6.linked_attributes = talloc_array(r->out.ctr, struct drsuapi_DsReplicaLinkedAttribute, link_count);
 		if (r->out.ctr->ctr6.linked_attributes == NULL) {
-			DEBUG(0, ("Out of memory allocating %u linked attributes for output", link_count));
+			DEBUG(0, ("Out of memory allocating %u linked attributes for output\n", link_count));
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 

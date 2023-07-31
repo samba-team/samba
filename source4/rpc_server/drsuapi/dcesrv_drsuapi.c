@@ -493,7 +493,7 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 			case DRSUAPI_DS_NAME_FORMAT_LIST_SITES:
 			case DRSUAPI_DS_NAME_FORMAT_UPN_AND_ALTSECID:
 			case DRSUAPI_DS_NAME_FORMAT_UPN_FOR_LOGON:
-				DBG_ERR("DsCrackNames: Unsupported operation requested: %X",
+				DBG_ERR("DsCrackNames: Unsupported operation requested: %X\n",
 					  r->in.req->req1.format_offered);
 				return WERR_OK;
 			case DRSUAPI_DS_NAME_FORMAT_LIST_INFO_FOR_SERVER:

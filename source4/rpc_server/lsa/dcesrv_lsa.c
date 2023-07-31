@@ -2876,7 +2876,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 	if (ret != 1) {
-		DEBUG(3, ("searching for account rights for SID: %s failed: %s",
+		DEBUG(3, ("searching for account rights for SID: %s failed: %s\n",
 			  dom_sid_string(mem_ctx, r->in.sid),
 			  ldb_errstring(state->pdb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -3020,7 +3020,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 			talloc_free(msg);
 			return NT_STATUS_OK;
 		}
-		DEBUG(3, ("Could not %s attributes from %s: %s",
+		DEBUG(3, ("Could not %s attributes from %s: %s\n",
 			  LDB_FLAG_MOD_TYPE(ldb_flag) == LDB_FLAG_MOD_DELETE ? "delete" : "add",
 			  ldb_dn_get_linearized(msg->dn), ldb_errstring(state->pdb)));
 		talloc_free(msg);

@@ -94,7 +94,7 @@ static NTSTATUS dcesrv_init_endpoints(struct task_server *task,
 	if (use_single_process) {
 		model_ops = process_model_startup("single");
 		if (model_ops == NULL) {
-			DBG_ERR("Unable to load single process model");
+			DBG_ERR("Unable to load single process model\n");
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 	} else {
