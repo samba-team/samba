@@ -3440,7 +3440,9 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	}
 
 	el->flags = flags;
-	el->name = talloc_strdup(el, name);
+	if (name != NULL) {
+		el->name = talloc_strdup(el, name);
+	}
 
 	ret = PyObject_New(PyLdbMessageElementObject, type);
 	if (ret == NULL) {
