@@ -3165,6 +3165,11 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 	}
 
 	me->name = talloc_strdup(me, attr_name);
+	if (me->name == NULL) {
+		PyErr_NoMemory();
+		talloc_free(me);
+		return NULL;
+	}
 	me->flags = flags;
 	if (PyBytes_Check(set_obj) || PyUnicode_Check(set_obj)) {
 		me->num_values = 1;
@@ -3442,6 +3447,10 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	el->flags = flags;
 	if (name != NULL) {
 		el->name = talloc_strdup(el, name);
+		if (el->name == NULL) {
+			talloc_free(mem_ctx);
+			return PyErr_NoMemory();
+		}
 	}
 
 	ret = PyObject_New(PyLdbMessageElementObject, type);
@@ -4363,10 +4372,14 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 		TALLOC_FREE(ops);
 		return NULL;
 	}
-	Py_INCREF(input);
 
 	ops->name = talloc_strdup(ops, name);
 	Py_XDECREF(tmp);
+	if (ops->name == NULL) {
+		TALLOC_FREE(ops);
+		return PyErr_NoMemory();
+	}
+	Py_INCREF(input);
 	ops->private_data = input;
 	ops->init_context = py_module_init;
 	ops->search = py_module_search;
