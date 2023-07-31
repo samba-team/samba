@@ -341,7 +341,7 @@ int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 		return 0;
 	}
 	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to delete empty record."));
+		DEBUG(DEBUG_ERR,("Failed to delete empty record.\n"));
 		return -1;
 	}
 	return 0;

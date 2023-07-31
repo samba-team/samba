@@ -395,7 +395,7 @@ static void ctdb_set_culprit_count(struct ctdb_recoverd *rec,
 				   struct ctdb_banning_state,
 				   len);
 		if (t == NULL) {
-			DBG_WARNING("Memory allocation error");
+			DBG_WARNING("Memory allocation error\n");
 			return;
 		}
 		rec->banning_state = t;
@@ -1943,7 +1943,7 @@ static void force_election(struct ctdb_recoverd *rec)
 
 	ret = send_election_request(rec);
 	if (ret!=0) {
-		DBG_ERR("Failed to initiate leader election");
+		DBG_ERR("Failed to initiate leader election\n");
 		return;
 	}
 
