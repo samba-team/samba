@@ -4363,10 +4363,10 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 		TALLOC_FREE(ops);
 		return NULL;
 	}
-	Py_XDECREF(tmp);
 	Py_INCREF(input);
 
 	ops->name = talloc_strdup(ops, name);
+	Py_XDECREF(tmp);
 	ops->private_data = input;
 	ops->init_context = py_module_init;
 	ops->search = py_module_search;
