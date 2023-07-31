@@ -5277,6 +5277,27 @@ int dsdb_replace(struct ldb_context *ldb, struct ldb_message *msg, uint32_t dsdb
 	return dsdb_modify(ldb, msg, dsdb_flags);
 }
 
+const char *dsdb_search_scope_as_string(enum ldb_scope scope)
+{
+	const char *scope_str;
+
+	switch (scope) {
+	case LDB_SCOPE_BASE:
+		scope_str = "BASE";
+		break;
+	case LDB_SCOPE_ONELEVEL:
+		scope_str = "ONE";
+		break;
+	case LDB_SCOPE_SUBTREE:
+		scope_str = "SUB";
+		break;
+	default:
+		scope_str = "<Invalid scope>";
+		break;
+	}
+	return scope_str;
+}
+
 
 /*
   search for attrs on one DN, allowing for dsdb_flags controls

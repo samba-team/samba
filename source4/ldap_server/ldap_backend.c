@@ -770,15 +770,12 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	switch (req->scope) {
 	case LDAP_SEARCH_SCOPE_BASE:
-		scope_str = "BASE";
 		scope = LDB_SCOPE_BASE;
 		break;
 	case LDAP_SEARCH_SCOPE_SINGLE:
-		scope_str = "ONE";
 		scope = LDB_SCOPE_ONELEVEL;
 		break;
 	case LDAP_SEARCH_SCOPE_SUB:
-		scope_str = "SUB";
 		scope = LDB_SCOPE_SUBTREE;
 		break;
 	default:
@@ -790,6 +787,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 					 "%s. Invalid scope", errstr);
 		goto reply;
 	}
+	scope_str = dsdb_search_scope_as_string(scope);
+
 	DEBUG(10,("SearchRequest: scope: [%s]\n", scope_str));
 
 	if (req->num_attributes >= 1) {
