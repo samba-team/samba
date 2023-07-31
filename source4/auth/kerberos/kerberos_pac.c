@@ -90,11 +90,11 @@
 	}
 
 	if (!kdc_checksum) {
-		DEBUG(2, ("Invalid PAC constructed for signing, no KDC checksum present!"));
+		DEBUG(2, ("Invalid PAC constructed for signing, no KDC checksum present!\n"));
 		return EINVAL;
 	}
 	if (!srv_checksum) {
-		DEBUG(2, ("Invalid PAC constructed for signing, no SRV checksum present!"));
+		DEBUG(2, ("Invalid PAC constructed for signing, no SRV checksum present!\n"));
 		return EINVAL;
 	}
 

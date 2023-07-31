@@ -223,11 +223,11 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (is_ipaddress(hostname)) {
-		DEBUG(2, ("Cannot do krb5 to an IP address"));
+		DEBUG(2, ("Cannot do krb5 to an IP address\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (strcmp(hostname, "localhost") == 0) {
-		DEBUG(2, ("krb5 to 'localhost' does not make sense"));
+		DEBUG(2, ("krb5 to 'localhost' does not make sense\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 			
