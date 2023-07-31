@@ -3550,7 +3550,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  NULL,
 					  0);
 	if (kdc_db_ctx->samdb == NULL) {
-		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot open samdb for KDC backend!"));
+		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot open samdb for KDC backend!\n"));
 		talloc_free(kdc_db_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}

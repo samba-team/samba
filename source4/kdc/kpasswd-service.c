@@ -84,7 +84,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 
 	is_inet = tsocket_address_is_inet(remote_addr, "ip");
 	if (!is_inet) {
-		DBG_WARNING("Invalid remote IP address");
+		DBG_WARNING("Invalid remote IP address\n");
 		goto done;
 	}
 
@@ -99,7 +99,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 					       (struct sockaddr *)&remote_ss,
 					       sizeof(struct sockaddr_storage));
 	if (socklen < 0) {
-		DBG_WARNING("Invalid remote IP address");
+		DBG_WARNING("Invalid remote IP address\n");
 		goto done;
 	}
 #endif
@@ -109,7 +109,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 					       (struct sockaddr *)&local_ss,
 					       sizeof(struct sockaddr_storage));
 	if (socklen < 0) {
-		DBG_WARNING("Invalid local IP address");
+		DBG_WARNING("Invalid local IP address\n");
 		goto done;
 	}
 
