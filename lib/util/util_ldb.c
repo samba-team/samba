@@ -56,9 +56,9 @@ int gendb_search_v(struct ldb_context *ldb,
 			 expr?"%s":NULL, expr);
 
 	if (ret == LDB_SUCCESS) {
-		DEBUG(6,("gendb_search_v: %s %s -> %d\n",
+		DBG_DEBUG("%s %s -> %d\n",
 			 basedn?ldb_dn_get_linearized(basedn):"NULL",
-			 expr?expr:"NULL", res->count));
+			 expr?expr:"NULL", res->count);
 
 		ret = res->count;
 		if (msgs != NULL) {
@@ -69,8 +69,8 @@ int gendb_search_v(struct ldb_context *ldb,
 		ret = 0;
 		if (msgs != NULL) *msgs = NULL;
 	} else {
-		DEBUG(4,("gendb_search_v: search failed: %s\n",
-					ldb_errstring(ldb)));
+		DBG_INFO("search failed: %s\n",
+			 ldb_errstring(ldb));
 		ret = -1;
 		if (msgs != NULL) *msgs = NULL;
 	}
