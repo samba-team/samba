@@ -729,7 +729,7 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		oid_blob = data_blob_const(blob->ctr.dsdb.mappings[i].oid.binary_oid,
 					   blob->ctr.dsdb.mappings[i].oid.length);
 		if (!ber_read_partial_OID_String(blob, oid_blob, &partial_oid)) {
-			DEBUG(0, ("ber_read_partial_OID failed on prefixMap item with id: 0x%X",
+			DEBUG(0, ("ber_read_partial_OID failed on prefixMap item with id: 0x%X\n",
 				  blob->ctr.dsdb.mappings[i].id_prefix));
 			goto failed;
 		}
