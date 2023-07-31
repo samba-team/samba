@@ -453,8 +453,8 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		return KRB5KDC_ERR_SVC_UNAVAILABLE;
 	}
 
-	DEBUG(10, ("Encrypted credential BLOB (len %zu) with alg %d\n",
-		  cred_info_blob->length, (int)pac_cred_info.encryption_type));
+	DEBUG(10, ("Encrypted credential BLOB (len %zu) with alg %"PRId32"\n",
+		  cred_info_blob->length, pac_cred_info.encryption_type));
 	dump_data_pw("PAC_CREDENTIAL_INFO",
 		      cred_info_blob->data, cred_info_blob->length);
 
@@ -551,8 +551,8 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		return KRB5KDC_ERR_SVC_UNAVAILABLE;
 	}
 
-	DEBUG(10, ("Encrypted credential BLOB (len %zu) with alg %d\n",
-		  cred_info_blob->length, (int)pac_cred_info.encryption_type));
+	DEBUG(10, ("Encrypted credential BLOB (len %zu) with alg %"PRId32"\n",
+		  cred_info_blob->length, pac_cred_info.encryption_type));
 	dump_data_pw("PAC_CREDENTIAL_INFO",
 		      cred_info_blob->data, cred_info_blob->length);
 
