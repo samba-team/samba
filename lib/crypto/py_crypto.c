@@ -131,14 +131,14 @@ static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
 	return result;
 }
 
-static PyObject *py_crypto_set_relax_mode(PyObject *module)
+static PyObject *py_crypto_set_relax_mode(PyObject *module, PyObject *Py_UNUSED(ignored))
 {
 	GNUTLS_FIPS140_SET_LAX_MODE();
 
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_crypto_set_strict_mode(PyObject *module)
+static PyObject *py_crypto_set_strict_mode(PyObject *module, PyObject *Py_UNUSED(ignored))
 {
 	GNUTLS_FIPS140_SET_STRICT_MODE();
 

@@ -669,7 +669,7 @@ PyTypeObject PyLoadparmService = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-static PyObject *py_data_dir(PyObject *self)
+static PyObject *py_data_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
         return PyUnicode_FromString(dyn_DATADIR);
 }

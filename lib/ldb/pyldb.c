@@ -494,7 +494,8 @@ static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
 	return PyUnicode_FromString(ldb_dn_get_casefold(self->dn));
 }
 
-static PyObject *py_ldb_dn_get_linearized(PyLdbDnObject *self)
+static PyObject *py_ldb_dn_get_linearized(PyLdbDnObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	return PyUnicode_FromString(ldb_dn_get_linearized(self->dn));
 }
