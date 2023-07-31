@@ -1890,7 +1890,7 @@ _PUBLIC_ NTSTATUS netlogon_creds_session_encrypt(
 	 * NETLOGON pipe session key .
 	 */
 	if (all_zero(data.data, data.length)) {
-		DBG_ERR("Supplied data all zeros, could leak session key");
+		DBG_ERR("Supplied data all zeros, could leak session key\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
@@ -1902,7 +1902,7 @@ _PUBLIC_ NTSTATUS netlogon_creds_session_encrypt(
 						      data.data,
 						      data.length);
 	} else {
-		DBG_ERR("Unsupported encryption option negotiated");
+		DBG_ERR("Unsupported encryption option negotiated\n");
 		status = NT_STATUS_NOT_SUPPORTED;
 	}
 	if (!NT_STATUS_IS_OK(status)) {

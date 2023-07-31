@@ -697,7 +697,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	   matches.
 	*/
 	if (!base->domain_sid) {
-		DEBUG(0, ("Cannot operate on a Netlogon Validation without a domain SID"));
+		DEBUG(0, ("Cannot operate on a Netlogon Validation without a domain SID\n"));
 		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -899,7 +899,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		*/
 		if (rg->domain_sid == NULL) {
 			talloc_free(user_info_dc);
-			DEBUG(0, ("Cannot operate on a PAC without a resource domain SID"));
+			DEBUG(0, ("Cannot operate on a PAC without a resource domain SID\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
