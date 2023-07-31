@@ -5445,17 +5445,39 @@ int dsdb_search(struct ldb_context *ldb,
 	}
 
 	if (ret != LDB_SUCCESS) {
+		DBG_INFO("%s flags=0x%08x %s %s -> %s (%s)\n",
+			 dsdb_search_scope_as_string(scope),
+			 dsdb_flags,
+			 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+							       basedn,
+							       1):"NULL",
+			 expression?expression:"NULL",
+			 ldb_errstring(ldb), ldb_strerror(ret));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
 	if (dsdb_flags & DSDB_SEARCH_ONE_ONLY) {
 		if (res->count == 0) {
+			DBG_INFO("%s SEARCH_ONE_ONLY flags=0x%08x %s %s -> %u results\n",
+				 dsdb_search_scope_as_string(scope),
+				 dsdb_flags,
+				 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+								       basedn,
+								       1):"NULL",
+				 expression?expression:"NULL", res->count);
 			talloc_free(tmp_ctx);
 			ldb_reset_err_string(ldb);
 			return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 		}
 		if (res->count != 1) {
+			DBG_INFO("%s SEARCH_ONE_ONLY flags=0x%08x %s %s -> %u (expected 1) results\n",
+				 dsdb_search_scope_as_string(scope),
+				 dsdb_flags,
+				 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+								       basedn,
+								       1):"NULL",
+				 expression?expression:"NULL", res->count);
 			talloc_free(tmp_ctx);
 			ldb_reset_err_string(ldb);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -5463,8 +5485,16 @@ int dsdb_search(struct ldb_context *ldb,
 	}
 
 	*_result = talloc_steal(mem_ctx, res);
-	talloc_free(tmp_ctx);
 
+	DBG_DEBUG("%s flags=0x%08x %s %s -> %d\n",
+		  dsdb_search_scope_as_string(scope),
+		  dsdb_flags,
+		  basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+							basedn,
+							1):"NULL",
+		  expression?expression:"NULL",
+		  res->count);
+	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
 
