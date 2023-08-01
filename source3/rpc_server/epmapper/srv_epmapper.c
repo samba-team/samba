@@ -812,7 +812,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	/* We only talk to sane transports */
 	transport = dcerpc_transport_by_tower(&r->in.map_tower->tower);
 	if (transport == NCA_UNKNOWN) {
-		DEBUG(2, ("epm_Map: Client requested unknown transport with"
+		DEBUG(2, ("epm_Map: Client requested unknown transport with "
 			  "levels: "));
 		for (i = 2; i < r->in.map_tower->tower.num_floors; i++) {
 			DEBUG(2, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
