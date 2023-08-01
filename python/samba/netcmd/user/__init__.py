@@ -35,10 +35,10 @@ from .disable import cmd_user_disable
 from .edit import cmd_user_edit
 from .enable import cmd_user_enable
 from .getgroups import cmd_user_getgroups
-from .getpassword import cmd_user_getpassword, cmd_user_syncpasswords
 from .list import cmd_user_list
 from .move import cmd_user_move
 from .password import cmd_user_password
+from .readpasswords import cmd_user_getpassword, cmd_user_syncpasswords
 from .rename import cmd_user_rename
 from .sensitive import cmd_user_sensitive
 from .setexpiry import cmd_user_setexpiry

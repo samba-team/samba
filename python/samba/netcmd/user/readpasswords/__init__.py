@@ -1,6 +1,6 @@
 # user management
 #
-# user syncpasswords command
+# user readpasswords commands
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
 # Copyright Theresa Halloran 2011 <theresahalloran@gmail.com>
@@ -35,7 +35,7 @@ from samba.ndr import ndr_unpack
 from samba.common import get_bytes
 from samba.netcmd import CommandError, Option
 
-from .common import (
+from ..common import (
     GetPasswordCommand,
     gpg_decrypt,
     decrypt_samba_gpg_help,
