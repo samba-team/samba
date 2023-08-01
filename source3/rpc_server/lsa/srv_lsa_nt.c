@@ -2056,7 +2056,7 @@ NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
 
 	if (td->netbios_name == NULL || *td->netbios_name == '\0') {
 		struct dom_sid_buf buf;
-		DEBUG(10, ("Missing netbios name for for trusted domain %s.\n",
+		DEBUG(10, ("Missing netbios name for trusted domain %s.\n",
 			   dom_sid_str_buf(r->in.dom_sid, &buf)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
