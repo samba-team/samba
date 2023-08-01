@@ -811,8 +811,8 @@ _PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 	case CH_DOS:
 	case CH_UNIX:
 		return strlen((const char *)var)+1;
+	default:
+		/* Fallback, this should never happen */
+		return strlen((const char *)var)+1;
 	}
-
-	/* Fallback, this should never happen */
-	return strlen((const char *)var)+1;
 }
