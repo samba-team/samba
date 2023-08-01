@@ -25,7 +25,7 @@
 #include "util_tdb.h"
 #include "lib/util/bitmap.h"
 #include "lib/util/strv.h"
-#include "libcli/smb/reparse_symlink.h"
+#include "libcli/smb/reparse.h"
 
 #define FILE_HANDLE_OFFSET 0x1000
 

@@ -28,7 +28,7 @@
 #include "../lib/util/memcache.h"
 #include "../librpc/gen_ndr/open_files.h"
 #include "lib/util/string_wrappers.h"
-#include "libcli/smb/reparse_symlink.h"
+#include "libcli/smb/reparse.h"
 
 /*
    This module implements directory related functions for Samba.

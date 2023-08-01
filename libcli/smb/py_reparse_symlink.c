@@ -22,6 +22,7 @@
 #include "python/py3compat.h"
 #include "libcli/util/pyerrors.h"
 #include "reparse.h"
+#include "reparse_symlink.h"
 #include "smb_constants.h"
 
 static PyObject *py_reparse_put(PyObject *module, PyObject *args)

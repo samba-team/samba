@@ -20,8 +20,14 @@
 
 #include <talloc.h>
 #include "replace.h"
-#include "libcli/smb/reparse_symlink.h"
 #include "libcli/util/ntstatus.h"
+
+struct symlink_reparse_struct {
+	uint16_t unparsed_path_length; /* reserved for the reparse point */
+	char *substitute_name;
+	char *print_name;
+	uint32_t flags;
+};
 
 struct nfs_reparse_data_buffer {
 	uint64_t type;

@@ -51,6 +51,7 @@ c = libsmb.Conn("127.0.0.1",
 #include "python/modules.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/smb/smb2_negotiate_context.h"
+#include "libcli/smb/reparse.h"
 #include "libcli/smb/reparse_symlink.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
