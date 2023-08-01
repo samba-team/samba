@@ -2645,8 +2645,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 						frame);
 		local  = tsocket_address_string(dce_call->conn->local_address,
 						frame);
-		DBG_ERR(("Bad credentials - "
-		         "computer[%s] remote[%s] local[%s]\n"),
+		DBG_ERR("Bad credentials - "
+			"computer[%s] remote[%s] local[%s]\n",
 			log_escape(frame, r->in.computer_name),
 			remote,
 			local);
