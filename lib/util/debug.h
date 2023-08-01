@@ -57,7 +57,7 @@ bool dbgsetclass(int level, int cls);
  *   #define DBGC_CLASS DBGC_<your class name here>
  *
  * at the start of the file (after #include "includes.h") will default to
- * using index zero, so it will behaive just like it always has.
+ * using index zero, so it will behave just like it always has.
  */
 #define DBGC_ALL		0 /* index equivalent to DEBUGLEVEL */
 
@@ -202,7 +202,7 @@ void debuglevel_set_class(size_t idx, int level);
 /**
  * @brief DEBUGLF is same as DEBUG with explicit location and function arguments
  *
- * To be used when passing location and function of a caller appearig earlier in
+ * To be used when passing location and function of a caller appearing earlier in
  * the call stack instead of some helper function.
  *
  * @code
