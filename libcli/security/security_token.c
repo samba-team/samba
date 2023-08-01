@@ -113,7 +113,7 @@ size_t security_token_count_flag_sids(const struct security_token *token,
 		const struct dom_sid *sid = &token->sids[i];
 		int cmp;
 
-		if ((size_t)sid->num_auths != num_auths_expected) {
+		if (sid->num_auths != num_auths_expected) {
 			continue;
 		}
 
