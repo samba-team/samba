@@ -1275,7 +1275,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 							&obj_dn,
 							NULL);
 	if (ret != LDB_SUCCESS) {
-		DBG_ERR("RevealSecretRequest for for invalid DN %s\n",
+		DBG_ERR("RevealSecretRequest for invalid DN %s\n",
 			 drs_ObjectIdentifier_to_debug_string(mem_ctx, ncRoot));
 		goto failed;
 	}
