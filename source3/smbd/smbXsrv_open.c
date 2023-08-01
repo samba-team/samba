@@ -1486,7 +1486,7 @@ do_delete:
 	state->status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_WARNING("[global: 0x%08x] "
-			    "failed to delete record"
+			    "failed to delete record "
 			    "from %s: %s\n",
 			    state->global_id,
 			    dbwrap_name(dbwrap_record_get_db(rec)),
