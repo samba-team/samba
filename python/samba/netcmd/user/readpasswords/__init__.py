@@ -41,6 +41,7 @@ from ..common import (
     decrypt_samba_gpg_help,
     virtual_attributes_help
 )
+from .show import cmd_user_show
 
 
 class cmd_user_getpassword(GetPasswordCommand):

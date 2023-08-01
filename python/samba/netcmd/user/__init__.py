@@ -38,13 +38,13 @@ from .getgroups import cmd_user_getgroups
 from .list import cmd_user_list
 from .move import cmd_user_move
 from .password import cmd_user_password
-from .readpasswords import cmd_user_getpassword, cmd_user_syncpasswords
+from .readpasswords import (cmd_user_getpassword, cmd_user_show,
+                            cmd_user_syncpasswords)
 from .rename import cmd_user_rename
 from .sensitive import cmd_user_sensitive
 from .setexpiry import cmd_user_setexpiry
 from .setpassword import cmd_user_setpassword
 from .setprimarygroup import cmd_user_setprimarygroup
-from .show import cmd_user_show
 from .unlock import cmd_user_unlock
 
 

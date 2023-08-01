@@ -25,7 +25,7 @@ from samba.auth import system_session
 from samba.netcmd import Option, common
 from samba.samdb import SamDB
 
-from .common import GetPasswordCommand
+from ..common import GetPasswordCommand
 
 
 class cmd_user_show(GetPasswordCommand):
