@@ -1440,7 +1440,7 @@ static NTSTATUS open_file(
 						dirfsp,
 						fsp,
 						false,
-						access_mask);
+						open_access_mask);
 
 				if (!NT_STATUS_IS_OK(status)) {
 					DBG_DEBUG("smbd_check_access_rights_fsp"
@@ -1634,7 +1634,7 @@ static NTSTATUS open_file(
 			status = smbd_check_access_rights_fsp(dirfsp,
 							      fsp,
 							      false,
-							      access_mask);
+							      open_access_mask);
 
 			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
 			    posix_open &&
