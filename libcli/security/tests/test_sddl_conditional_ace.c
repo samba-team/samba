@@ -590,6 +590,8 @@ static void test_round_trips(void **state)
 		 "Device_Member_of{SID(BA), 7, 1, 3} "
 		 "|| Exists hooly)"),
 		("(!(!(!(!(!((!(x==1))))))))"),
+		("(@User.a == {})"),
+		("(Member_of{})"),
 		("(Member_of {SID(S-1-33-5), "
 		 "SID(BO)} && @Device.Bitlocker)"),
 		"(@USER.ad://ext/AuthenticationSilo == \"siloname\")",
@@ -786,6 +788,12 @@ static void test_a_number_of_invalid_strings(void **state)
 		("(@Device.%002e == 3)"),
 		("(@Device.%002f == 3)"),
 		("(@Device.%003a == 3)"),
+		/* trailing comma in composite */
+		"(Member_of{SID(AA),})",
+		/* missing comma between elements of a composite */
+		"(Member_of{SID(AA) SID(AC)})",
+		/* unexpected comma in composite */
+		"(Member_of{,})",
 	};
 	size_t i, length;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);

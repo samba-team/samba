@@ -2409,6 +2409,7 @@ static bool parse_composite(struct ace_condition_sddl_compiler_context *comp)
 	 * where write_sddl_token() writes.
 	 */
 	bool ok;
+	bool first = true;
 	struct ace_condition_token token = {
 		.type = CONDITIONAL_ACE_TOKEN_COMPOSITE
 	};
@@ -2451,9 +2452,9 @@ static bool parse_composite(struct ace_condition_sddl_compiler_context *comp)
 	 * in this loop we are looking for:
 	 *
 	 * a) possible whitespace.
-	 * b) a literal
+	 * b) a comma (or terminating '}')
 	 * c) more possible whitespace
-	 * d) a comma (or terminating '}')
+	 * d) a literal
 	 *
 	 * Failures use a goto to reset comp->target, just in case we ever try
 	 * continuing after error.
@@ -2464,6 +2465,25 @@ static bool parse_composite(struct ace_condition_sddl_compiler_context *comp)
 		if (! ok) {
 			goto fail;
 		}
+		c = comp->sddl[comp->offset];
+		if (c == '}') {
+			comp->offset++;
+			break;
+		}
+		if (!first) {
+			if (c != ',') {
+				comp_error(comp,
+					   "malformed composite (expected comma)");
+				goto fail;
+			}
+			comp->offset++;
+
+			ok = eat_whitespace(comp, false);
+			if (! ok) {
+				goto fail;
+			}
+		}
+		first = false;
 		if (*comp->target_len >= alloc_size) {
 			comp_error(comp,
 				   "Too many tokens in composite "
@@ -2475,21 +2495,6 @@ static bool parse_composite(struct ace_condition_sddl_compiler_context *comp)
 		if (!ok) {
 			goto fail;
 		}
-		ok = eat_whitespace(comp, false);
-		if (! ok) {
-			goto fail;
-		}
-		c = comp->sddl[comp->offset];
-		if (c == '}') {
-			comp->offset++;
-			break;
-		}
-		if (c != ',') {
-			comp_error(comp,
-				   "malformed composite (expected comma)");
-			goto fail;
-		}
-		comp->offset++;
 	}
 	comp->target = old_target;
 	comp->target_len = old_target_len;
@@ -2869,6 +2874,7 @@ static bool parse_resource_attr_list(
 	 * - SIDs are not written with SID(...) around them.
 	 */
 	bool ok;
+	bool first = true;
 	struct ace_condition_token composite = {
 		.type = CONDITIONAL_ACE_TOKEN_COMPOSITE
 	};
@@ -2904,9 +2910,9 @@ static bool parse_resource_attr_list(
 	 * in this loop we are looking for:
 	 *
 	 * a) possible whitespace.
-	 * b) a literal, of the right type (checked after)
+	 * b) a comma (or terminating ')')
 	 * c) more possible whitespace
-	 * d) a comma
+	 * d) a literal, of the right type (checked after)
 	 *
 	 * Failures use a goto to reset comp->target, just in case we ever try
 	 * continuing after error.
@@ -2917,6 +2923,24 @@ static bool parse_resource_attr_list(
 		if (! ok) {
 			goto fail;
 		}
+		c = comp->sddl[comp->offset];
+		if (c == ')') {
+			break;
+		}
+		if (!first) {
+			if (c != ',') {
+				comp_error(comp,
+					   "malformed composite (expected comma)");
+				goto fail;
+			}
+			comp->offset++;
+
+			ok = eat_whitespace(comp, false);
+			if (! ok) {
+				goto fail;
+			}
+		}
+		first = false;
 		if (*comp->target_len >= alloc_size) {
 			comp_error(comp,
 				   "Too many tokens in composite "
@@ -2939,21 +2963,6 @@ static bool parse_resource_attr_list(
 		if (! ok) {
 			goto fail;
 		}
-
-		ok = eat_whitespace(comp, false);
-		if (! ok) {
-			goto fail;
-		}
-		c = comp->sddl[comp->offset];
-		if (c == ')') {
-			break;
-		}
-		if (c != ',') {
-			comp_error(comp,
-				   "malformed composite (expected comma)");
-			goto fail;
-		}
-		comp->offset++;
 	}
 	comp->target = old_target;
 	comp->target_len = old_target_len;
