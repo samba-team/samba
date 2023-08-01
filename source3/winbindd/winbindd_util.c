@@ -821,7 +821,7 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 	NTSTATUS can_migrate = pdb_get_trust_credentials(domain->name,
 							 NULL, domain, &creds);
 	if (!NT_STATUS_IS_OK(can_migrate)) {
-		DEBUG(0, ("Failed to fetch our own, local AD domain join "
+		DEBUG(0, ("Failed to fetch our own local AD domain join "
 			"password for winbindd's internal use, both from "
 			"secrets.tdb and secrets.ldb: %s\n",
 			nt_errstr(can_migrate)));
@@ -845,7 +845,7 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 		   false /* do_delete: Do not delete */);
 	TALLOC_FREE(creds);
 	if (ok == false) {
-		DEBUG(0, ("Failed to write our our own, "
+		DEBUG(0, ("Failed to write our own "
 			  "local AD domain join password for "
 			  "winbindd's internal use into secrets.tdb\n"));
 		return false;
@@ -1093,7 +1093,7 @@ bool init_domain_list(void)
 		struct samr_Password current_nt_hash;
 
 		if (pdb_domain_info == NULL) {
-			DEBUG(0, ("Failed to fetch our own, local AD "
+			DEBUG(0, ("Failed to fetch our own local AD "
 				"domain info from sam.ldb\n"));
 			return false;
 		}
@@ -1120,7 +1120,7 @@ bool init_domain_list(void)
 					    &domain);
 		TALLOC_FREE(pdb_domain_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to add our own, local AD "
+			DBG_ERR("Failed to add our own local AD "
 				"domain to winbindd's internal list\n");
 			return false;
 		}
@@ -1142,7 +1142,7 @@ bool init_domain_list(void)
 			ok = migrate_secrets_tdb_to_ldb(domain);
 
 			if (!ok) {
-				DEBUG(0, ("Failed to migrate our own, "
+				DEBUG(0, ("Failed to migrate our own "
 					  "local AD domain join password for "
 					  "winbindd's internal use into "
 					  "secrets.tdb\n"));
@@ -1153,7 +1153,7 @@ bool init_domain_list(void)
 					       &account_name,
 					       &sec_chan_type);
 			if (!ok) {
-				DEBUG(0, ("Failed to find our our own, just "
+				DEBUG(0, ("Failed to find our own just "
 					  "written local AD domain join "
 					  "password for winbindd's internal "
 					  "use in secrets.tdb\n"));
