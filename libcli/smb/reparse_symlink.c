@@ -23,7 +23,7 @@
 #include "replace.h"
 #include "reparse_symlink.h"
 #include "lib/util/charset/charset.h"
-#include "lib/util/byteorder.h"
+#include "lib/util/bytearray.h"
 #include "libcli/smb/smb_constants.h"
 #include "libcli/smb/smb_util.h"
 #include "lib/util/debug.h"
@@ -180,18 +180,18 @@ int symlink_reparse_buffer_parse(TALLOC_CTX *mem_ctx,
 		DBG_DEBUG("srclen = %zu, expected >= 20\n", srclen);
 		return EINVAL;
 	}
-	if (IVAL(src, 0) != IO_REPARSE_TAG_SYMLINK) {
+	if (PULL_LE_U32(src, 0) != IO_REPARSE_TAG_SYMLINK) {
 		DBG_DEBUG("Got ReparseTag %8.8x, expected %8.8x\n",
-			  IVAL(src, 0),
+			  PULL_LE_U32(src, 0),
 			  IO_REPARSE_TAG_SYMLINK);
 		return EINVAL;
 	}
 
-	reparse_data_length	= SVAL(src, 4);
-	substitute_name_offset	= SVAL(src, 8);
-	substitute_name_length	= SVAL(src, 10);
-	print_name_offset	= SVAL(src, 12);
-	print_name_length	= SVAL(src, 14);
+	reparse_data_length	= PULL_LE_U16(src, 4);
+	substitute_name_offset	= PULL_LE_U16(src, 8);
+	substitute_name_length	= PULL_LE_U16(src, 10);
+	print_name_offset	= PULL_LE_U16(src, 12);
+	print_name_length	= PULL_LE_U16(src, 14);
 
 	if (reparse_data_length < 12) {
 		DBG_DEBUG("reparse_data_length = %"PRIu16", expected >= 12\n",
