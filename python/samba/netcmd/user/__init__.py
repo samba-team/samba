@@ -21,15 +21,6 @@ from samba.netcmd import SuperCommand
 
 from .add import cmd_user_add
 from .add_unix_attrs import cmd_user_add_unix_attrs
-from .common import (
-    GetPasswordCommand,
-    disabled_virtual_attributes,
-    decrypt_samba_gpg_help,
-    get_crypt_value,
-    gpg_decrypt,
-    virtual_attributes,
-    virtual_attributes_help
-)
 from .delete import cmd_user_delete
 from .disable import cmd_user_disable
 from .edit import cmd_user_edit

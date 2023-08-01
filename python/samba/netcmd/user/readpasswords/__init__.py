@@ -35,7 +35,7 @@ from samba.ndr import ndr_unpack
 from samba.common import get_bytes
 from samba.netcmd import CommandError, Option
 
-from ..common import (
+from .common import (
     GetPasswordCommand,
     gpg_decrypt,
     decrypt_samba_gpg_help,
