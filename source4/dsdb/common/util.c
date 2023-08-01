@@ -3700,7 +3700,7 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bo
 	}
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(1,(("Failed to find our own NTDS Settings object by objectGUID=%s!\n"),
+		DEBUG(1,("Failed to find our own NTDS Settings object by objectGUID=%s!\n",
 			 GUID_string(tmp_ctx, objectGUID)));
 		*is_rodc = false;
 		talloc_free(tmp_ctx);
