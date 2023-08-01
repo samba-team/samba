@@ -50,13 +50,13 @@ void security_token_debug(int dbg_class, int dbg_lev, const struct security_toke
 		return;
 	}
 
-	DEBUGC(dbg_class, dbg_lev, ("Security token SIDs (%lu):\n",
-				       (unsigned long)token->num_sids));
+	DEBUGC(dbg_class, dbg_lev, ("Security token SIDs (%"PRIu32"):\n",
+				       token->num_sids));
 	for (i = 0; i < token->num_sids; i++) {
 		struct dom_sid_buf sidbuf;
 		DEBUGADDC(dbg_class,
 			  dbg_lev,
-			  ("  SID[%3lu]: %s\n", (unsigned long)i,
+			  ("  SID[%3"PRIu32"]: %s\n", i,
 			   dom_sid_str_buf(&token->sids[i], &sidbuf)));
 	}
 
