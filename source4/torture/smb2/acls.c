@@ -2989,6 +2989,148 @@ done:
 	return ret;
 }
 
+static bool test_overwrite_read_only_file(struct torture_context *tctx,
+					  struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	struct smb2_create c;
+	const char *fname = BASEDIR "\\test_overwrite_read_only_file.txt";
+	struct smb2_handle handle = {{0}};
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_descriptor *sd = NULL, *sd_orig = NULL;
+	const char *owner_sid = NULL;
+	int i;
+	bool ret = true;
+
+	struct tcase {
+		int disposition;
+		const char *disposition_string;
+		NTSTATUS expected_status;
+	} tcases[] = {
+#define TCASE(d, s) {				\
+		.disposition = d,		\
+		.disposition_string = #d,	\
+		.expected_status = s,		\
+	}
+		TCASE(NTCREATEX_DISP_OPEN, NT_STATUS_OK),
+		TCASE(NTCREATEX_DISP_SUPERSEDE, NT_STATUS_ACCESS_DENIED),
+		TCASE(NTCREATEX_DISP_OVERWRITE, NT_STATUS_ACCESS_DENIED),
+		TCASE(NTCREATEX_DISP_OVERWRITE_IF, NT_STATUS_ACCESS_DENIED),
+	};
+#undef TCASE
+
+	ret = smb2_util_setup_dir(tctx, tree, BASEDIR);
+	torture_assert_goto(tctx, ret, ret, done, "smb2_util_setup_dir not ok");
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_STD_READ_CONTROL |
+			SEC_STD_WRITE_DAC |
+			SEC_STD_WRITE_OWNER,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+			NTCREATEX_SHARE_ACCESS_WRITE,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = c.out.file.handle;
+
+	torture_comment(tctx, "get the original sd\n");
+
+	ZERO_STRUCT(q);
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = handle;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+
+	status = smb2_getinfo_file(tree, tctx, &q);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+	sd_orig = q.query_secdesc.out.sd;
+
+	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
+
+	sd = security_descriptor_dacl_create(tctx,
+					0, NULL, NULL,
+					owner_sid,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_FILE_READ_DATA,
+					0,
+					NULL);
+
+	ZERO_STRUCT(set);
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = handle;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+
+	status = smb2_setinfo_file(tree, &set);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	smb2_util_close(tree, handle);
+	ZERO_STRUCT(handle);
+
+	for (i = 0; i < ARRAY_SIZE(tcases); i++) {
+		torture_comment(tctx, "Verify open with %s dispostion\n",
+				tcases[i].disposition_string);
+
+		c = (struct smb2_create) {
+			.in.create_disposition = tcases[i].disposition,
+			.in.desired_access = SEC_FILE_READ_DATA,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+			.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+			.in.fname = fname,
+		};
+
+		status = smb2_create(tree, tctx, &c);
+		smb2_util_close(tree, c.out.file.handle);
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, tcases[i].expected_status, ret, done,
+			"smb2_create failed\n");
+	};
+
+	torture_comment(tctx, "put back original sd\n");
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_STD_WRITE_DAC,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = c.out.file.handle;
+
+	ZERO_STRUCT(set);
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = handle;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd_orig;
+
+	status = smb2_setinfo_file(tree, &set);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	smb2_util_close(tree, handle);
+	ZERO_STRUCT(handle);
+
+done:
+	smb2_util_close(tree, handle);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 /*
    basic testing of SMB2 ACLs
 */
@@ -3017,6 +3159,7 @@ struct torture_suite *torture_smb2_acls_init(TALLOC_CTX *ctx)
 			test_deny1);
 	torture_suite_add_1smb2_test(suite, "MXAC-NOT-GRANTED",
 			test_mxac_not_granted);
+	torture_suite_add_1smb2_test(suite, "OVERWRITE_READ_ONLY_FILE", test_overwrite_read_only_file);
 
 	suite->description = talloc_strdup(suite, "SMB2-ACLS tests");
 
