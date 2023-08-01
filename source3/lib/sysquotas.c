@@ -454,18 +454,18 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 		DBG_NOTICE("Running command "
 			"%s %s %d %d "
-			"%u %llu %llu "
-			"%llu %llu %llu\n",
+			"%"PRIu32" %"PRIu64" %"PRIu64" "
+			"%"PRIu64" %"PRIu64" %"PRIu64"\n",
 			set_quota_command,
 			path,
 			qtype,
 			_id,
 			dp->qflags,
-			(long long unsigned)dp->softlimit,
-			(long long unsigned)dp->hardlimit,
-			(long long unsigned)dp->isoftlimit,
-			(long long unsigned)dp->ihardlimit,
-			(long long unsigned)dp->bsize);
+			dp->softlimit,
+			dp->hardlimit,
+			dp->isoftlimit,
+			dp->ihardlimit,
+			dp->bsize);
 
 		lines = file_lines_ploadv(talloc_tos(), argl, NULL);
 		TALLOC_FREE(argl);
