@@ -914,7 +914,7 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 				r->out.resp,
 				(ndr_push_flags_fn_t)ndr_push_dfs_referral_resp);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(2,(__location__ ":NDR marchalling of domain deferral response failed\n"));
+		DEBUG(2,(__location__ ":NDR marshalling of domain referral response failed\n"));
 		talloc_free(r);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
