@@ -344,7 +344,7 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 	case DCERPC_PKT_AUTH3:
 		pdu = "AUTH3";
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(4, ("GENSEC not finished at at %s\n", pdu));
+			DEBUG(4, ("GENSEC not finished at %s\n", pdu));
 			return NT_STATUS_RPC_SEC_PKG_ERROR;
 		}
 		break;
