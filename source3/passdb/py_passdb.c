@@ -3668,7 +3668,7 @@ static PyMethodDef py_pdb_methods[] = {
 		Add user to group." },
 	{ "del_groupmem", py_pdb_del_groupmem, METH_VARARGS,
 		"del_groupmem(group_rid, member_rid) -> None\n\n \
-		Remove user from from group." },
+		Remove user from group." },
 	{ "create_alias", py_pdb_create_alias, METH_VARARGS,
 		"create_alias(alias_name) -> alias_rid\n\n \
 		Create alias entry." },
