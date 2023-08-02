@@ -1828,8 +1828,8 @@ bool dsdb_is_subclass_of(const struct dsdb_schema *schema,
 }
 
 /* Fix the DN so that the relative attribute names are in upper case so that the DN:
-   cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
-   CN=Adminstrator,CN=users,DC=samba,DC=example,DC=com
+   cn=Administrator,cn=users,dc=samba,dc=example,dc=com becomes
+   CN=Administrator,CN=users,DC=samba,DC=example,DC=com
 */
 int dsdb_fix_dn_rdncase(struct ldb_context *ldb, struct ldb_dn *dn)
 {

@@ -1410,14 +1410,14 @@ static int objectclass_do_delete(struct oc_context *ac)
 								   "isCriticalSystemObject", false);
 		if (isCriticalSystemObject) {
 			/*
-			 * Following the explaination from Microsoft
+			 * Following the explanation from Microsoft
 			 * https://lists.samba.org/archive/cifs-protocol/2011-August/002046.html
 			 * "I finished the investigation on this behavior.
 			 * As per MS-ADTS 3.1.5.5.7.2 , when a tree deletion is performed ,
 			 * every object in the tree will be checked to see if it has isCriticalSystemObject
 			 * set to TRUE, including the root node on which the delete operation is performed
 			 * But there is an exception  if the root object is a SAM specific objects(3.1.1.5.2.3 MS-ADTS)
-			 * Its deletion is done through SAM manger and isCriticalSystemObject attribute is not checked
+			 * Its deletion is done through SAM manager and isCriticalSystemObject attribute is not checked
 			 * The root node of the tree delete in your case is CN=ARES,OU=Domain Controllers,DC=w2k8r2,DC=home,DC=matws,DC=net
 			 * which is a SAM object  with  user class.  Therefore the tree deletion is performed without any error
 			 */

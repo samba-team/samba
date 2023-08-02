@@ -43,7 +43,7 @@ struct dirsync_context {
 	/*
 	 * We keep a track of the number of attributes that we
 	 * add just for the need of the implementation
-	 * it will be usefull to track then entries that needs not to
+	 * it will be useful to track then entries that needs not to
 	 * be returned because there is no real change
 	 */
 
@@ -84,7 +84,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	bool namereturned = false;
 	bool nameasked = false;
 	NTSTATUS status;
-	/* Ajustment for the added attributes, it will reduce the number of
+	/* Adjustment for the added attributes, it will reduce the number of
 	 * expected to be here attributes*/
 	unsigned int delta = 0;
 	const char **myaccept = NULL;
@@ -122,7 +122,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	/*
 	 * if objectGUID is asked and we are dealing for the referrals entries and
 	 * the usn searched is 0 then we didn't count the objectGUID as an automatically
-	 * returned attribute, do to so we increament delta.
+	 * returned attribute, do to so we increment delta.
 	 */
 	if (referral == true &&
 			ldb_attr_in_list(req->op.search.attrs, "objectGUID") &&
@@ -214,7 +214,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 		/*
 		 * We expect to find the GUID in the object,
 		 * if it turns out not to be the case sometime
-		 * well will uncomment the code bellow
+		 * well will uncomment the code below
 		 */
 		SMB_ASSERT(guidfound == true);
 		/*
@@ -847,7 +847,7 @@ static int dirsync_search_callback(struct ldb_request *req, struct ldb_reply *ar
 		/* Skip the ldap(s):// so up to 8 chars,
 		 * we don't care to be precise as the goal is to be in
 		 * the name of DC, then we search the next '/'
-		 * as it will be the last char before the DN of the referal
+		 * as it will be the last char before the DN of the referral
 		 */
 		if (strncmp(ares->referral, "ldap://", 7) == 0) {
 			tmp = ares->referral + 7;
@@ -944,7 +944,7 @@ static int dirsync_search_callback(struct ldb_request *req, struct ldb_reply *ar
 		}
 
 		/*
-		 * When outputing flags is used to say more results.
+		 * When outputting flags is used to say more results.
 		 * For the moment we didn't honnor the size info */
 
 		control->flags = 0;

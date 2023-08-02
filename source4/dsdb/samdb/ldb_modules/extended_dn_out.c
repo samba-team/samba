@@ -93,8 +93,8 @@ static bool add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 	return true;
 }
 
-/* Inject the extended DN components, so the DN cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
-   <GUID=541203ae-f7d6-47ef-8390-bfcf019f9583>;<SID=S-1-5-21-4177067393-1453636373-93818737-500>;cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com */
+/* Inject the extended DN components, so the DN cn=Administrator,cn=users,dc=samba,dc=example,dc=com becomes
+   <GUID=541203ae-f7d6-47ef-8390-bfcf019f9583>;<SID=S-1-5-21-4177067393-1453636373-93818737-500>;cn=Administrator,cn=users,dc=samba,dc=example,dc=com */
 
 static int inject_extended_dn_out(struct ldb_reply *ares,
 				  struct ldb_context *ldb,

@@ -552,7 +552,7 @@ failure:
  *
  * Build a JSON object containing all the attributes in an ldb_message.
  * The attributes are keyed by attribute name, the values of "secret attributes"
- * are supressed.
+ * are suppressed.
  *
  * {
  * 	"password":{

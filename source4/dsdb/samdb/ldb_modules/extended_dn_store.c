@@ -279,7 +279,7 @@ static int extended_dn_handle_fpo_attr(struct extended_dn_replace_list *os)
 	}
 
 	/*
-	 * dsdb_module_search_dn() garantees exactly one result message
+	 * dsdb_module_search_dn() guarantees exactly one result message
 	 * on success.
 	 */
 	ret = extended_replace_dn(os, res->msgs[0]->dn);
@@ -513,7 +513,7 @@ static int extended_store_replace(struct extended_dn_context *ac,
 
 	if (is_delete && !ldb_dn_has_extended(os->dsdb_dn->dn)) {
 		/* NO need to figure this DN out, this element is
-		 * going to be deleted anyway, and becuase it's not
+		 * going to be deleted anyway, and because it's not
 		 * extended, we have enough information to do the
 		 * delete */
 		talloc_free(os);

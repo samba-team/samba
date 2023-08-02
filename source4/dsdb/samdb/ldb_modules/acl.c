@@ -2255,7 +2255,7 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_FLAG_AS_SYSTEM |
 				    DSDB_SEARCH_SHOW_RECYCLED, req);
-	/* we sould be able to find the parent */
+	/* we should be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",
 			  ldb_dn_get_linearized(req->op.rename.olddn)));
@@ -2451,7 +2451,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_FLAG_AS_SYSTEM |
 				    DSDB_SEARCH_SHOW_RECYCLED, req);
-	/* we sould be able to find the parent */
+	/* we should be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",
 			  ldb_dn_get_linearized(req->op.rename.olddn)));

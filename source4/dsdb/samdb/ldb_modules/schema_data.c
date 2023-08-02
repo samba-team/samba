@@ -389,7 +389,7 @@ static int schema_data_del(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/*
-	 * normaly the DACL will prevent delete
+	 * normally the DACL will prevent delete
 	 * with LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS
 	 * above us.
 	 */
@@ -566,7 +566,7 @@ static int schema_data_search_callback(struct ldb_request *req, struct ldb_reply
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
 	}
-	/* Only entries are interesting, and we handle the case of the parent seperatly */
+	/* Only entries are interesting, and we handle the case of the parent separately */
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:

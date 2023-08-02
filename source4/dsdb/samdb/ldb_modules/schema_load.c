@@ -239,7 +239,7 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	 * We update right now the last refresh timestamp so that if
 	 * the schema partition hasn't change we don't keep on retrying.
 	 * Otherwise if the timestamp was update only when the schema has
-	 * actually changed (and therefor completely reloaded) we would
+	 * actually changed (and therefore completely reloaded) we would
 	 * continue to hit the database to get the highest USN.
 	 */
 

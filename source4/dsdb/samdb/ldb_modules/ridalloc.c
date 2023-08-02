@@ -611,7 +611,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 		if (nridset.alloc_pool == nridset.prev_pool) {
 			/*
 			 * if we are the RID Manager,
-			 * we can get a new pool localy.
+			 * we can get a new pool locally.
 			 * Otherwise we fail the operation and
 			 * ask async for a new pool.
 			 */
@@ -655,7 +655,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 	    nridset.alloc_pool == nridset.prev_pool) {
 		/*
 		 * if we are the RID Manager,
-		 * we can get a new pool localy.
+		 * we can get a new pool locally.
 		 * Otherwise we fail the operation and
 		 * ask async for a new pool.
 		 */

@@ -249,7 +249,7 @@ static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 	status = dsdb_expand_nested_groups(ldb, &account_sid_blob,
 					   true, /* We don't want to add the object's SID itself,
-						    it's not returend in this attribute */
+						    it's not returned in this attribute */
 					   filter,
 					   mem_ctx, groupSIDs, num_groupSIDs);
 

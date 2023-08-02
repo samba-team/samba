@@ -1302,7 +1302,7 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 
 	/*
 	 * the following ones are guessed depending on the technet2 article
-	 * but not reproducable on a w2k3 server
+	 * but not reproducible on a w2k3 server
 	 */
 	/* sAMAccountName with "Digest" realm */
 		{
@@ -1551,7 +1551,7 @@ static int setup_primary_userPassword_hash(
 	};
 #endif
 
-	/* Genrate a random password salt */
+	/* Generate a random password salt */
 	salt = generate_random_str_list(frame,
 					SHA_SALT_SIZE,
 					SHA_SALT_PERMITTED_CHARS);
@@ -1560,7 +1560,7 @@ static int setup_primary_userPassword_hash(
 		return ldb_oom(ldb);
 	}
 
-	/* determine the hashing algoritm and number of rounds*/
+	/* determine the hashing algorithm and number of rounds*/
 	if (!parse_scheme(scheme, &algorithm, &rounds)) {
 		ldb_asprintf_errstring(
 			ldb,
@@ -2740,7 +2740,7 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 	 * OK, horrible semantics ahead.
 	 *
 	 * - We need to abort any existing transaction
-	 * - create a transaction arround the badPwdCount update
+	 * - create a transaction around the badPwdCount update
 	 * - re-open the transaction so the upper layer
 	 *   doesn't know what happened.
 	 *
@@ -3116,7 +3116,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		if (krb5_ret == ENOENT) {
 			/*
 			 * If there is no old AES hash (perhaps an imported DB with
-			 * just unicodePwd) then we just wont have an old
+			 * just unicodePwd) then we just won't have an old
 			 * password to compare to if there is no NT hash
 			 */
 			break;
@@ -4009,7 +4009,7 @@ static int setup_io(struct ph_context *ac,
 		if (krb5_ret == ENOENT) {
 			/*
 			 * If there is no old AES hash (perhaps an imported DB with
-			 * just unicodePwd) then we just wont have an old
+			 * just unicodePwd) then we just won't have an old
 			 * password to compare to if there is no NT hash
 			 */
 			return LDB_SUCCESS;

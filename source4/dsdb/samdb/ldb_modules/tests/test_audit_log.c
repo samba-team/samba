@@ -1909,7 +1909,7 @@ static void test_transaction_hr(void **state)
 
 /*
  * minimal unit test of commit_failure_hr, that ensures
- * that all the expected conten is in the log entry.
+ * that all the expected content is in the log entry.
  */
 static void test_commit_failure_hr(void **state)
 {

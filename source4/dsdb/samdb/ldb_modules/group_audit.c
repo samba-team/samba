@@ -318,7 +318,7 @@ enum dn_compare_result {
  *
  * Compare two parsed_dn structures, using GUID ordering.
  * To avoid the overhead of parsing the DN's this function does a binary
- * compare first. The DN's tre only parsed if they are not equal at a binary
+ * compare first. The DN's are only parsed if they are not equal at a binary
  * level.
  *
  * @param ctx talloc context that will own the parsed dsdb_dn
@@ -518,7 +518,7 @@ static void log_primary_group_change(
 		if (request->operation == LDB_ADD) {
 			/*
 			 * Have just added a user, generate a groupChange
-			 * message indicating the user has been added to thier
+			 * message indicating the user has been added to their
 			 * new PrimaryGroup.
 			 */
 		}

@@ -246,7 +246,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		}
 		backend_dir = backend_path;
 
-		/* Failure is quite reasonable, it might alredy exist */
+		/* Failure is quite reasonable, it might already exist */
 		mkdir(backend_dir, 0700);
 	}
 

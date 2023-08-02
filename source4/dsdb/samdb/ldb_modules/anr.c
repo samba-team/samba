@@ -226,7 +226,7 @@ static int anr_replace_value(struct anr_context *ac,
 }
 
 /*
-  replace any occurances of an attribute with a new, generated attribute tree
+  replace any occurrences of an attribute with a new, generated attribute tree
 */
 static int anr_replace_subtrees(struct anr_context *ac,
 				struct ldb_parse_tree *tree,

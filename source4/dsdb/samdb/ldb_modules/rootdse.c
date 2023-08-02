@@ -86,7 +86,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	char *dn_string;
 	const char *no_attrs[] = { NULL };
 	struct ldb_result *res;
-	struct ldb_extended_dn_control *edn;
+	struct ldb_extended_dn_control *ext_dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_context *ldb;
 	int edn_type = 0;
@@ -95,9 +95,9 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 
 	ldb = ldb_module_get_ctx(module);
 
-	edn = talloc_get_type(edn_control->data, struct ldb_extended_dn_control);
-	if (edn) {
-		edn_type = edn->type;
+	ext_dn = talloc_get_type(edn_control->data, struct ldb_extended_dn_control);
+	if (ext_dn) {
+		edn_type = ext_dn->type;
 	}
 
 	el = ldb_msg_find_element(msg, attrname);
@@ -528,7 +528,7 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 				    ldb_dn_get_extended_linearized(ac, attr_dn, 1),
 				    ldb_errstring(ldb));
 			/*
-			 * Provide a meaninful error string but not
+			 * Provide a meaningful error string but not
 			 * confidential DB contents possibly in the
 			 * original string
 			 */
@@ -547,11 +547,11 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 
 		talloc_steal(el->values, res->msgs[0]->dn);
 		if (edn_control) {
-			struct ldb_extended_dn_control *edn;
+			struct ldb_extended_dn_control *ext_dn;
 			int edn_type = 0;
-			edn = talloc_get_type(edn_control->data, struct ldb_extended_dn_control);
-			if (edn != NULL) {
-				edn_type = edn->type;
+			ext_dn = talloc_get_type(edn_control->data, struct ldb_extended_dn_control);
+			if (ext_dn != NULL) {
+				edn_type = ext_dn->type;
 			}
 			el->values[0].data  = (uint8_t *)ldb_dn_get_extended_linearized(el->values,
 											res->msgs[0]->dn,

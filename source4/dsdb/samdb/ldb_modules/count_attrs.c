@@ -335,7 +335,7 @@ static int count_attrs_search_callback(struct ldb_request *req,
 			/*
 			 * This next bit is like the merge stage of a
 			 * mergesort, but instead of merging we only detect
-			 * absense or presence.
+			 * absence or presence.
 			 */
 			i = 0;
 			j = 0;

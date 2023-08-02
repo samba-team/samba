@@ -93,7 +93,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 	}
 
 	/* choose the highest of the 3 - see pdb_ldap.c for an
-	 * explaination */
+	 * explanation */
 	rid = sambaNextRid;
 	if ((sambaNextUserRid != (uint32_t) -1) && (sambaNextUserRid > rid)) {
 		rid = sambaNextUserRid;

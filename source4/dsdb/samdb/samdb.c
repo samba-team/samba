@@ -198,7 +198,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* The caller may have requested simple privilages, for example if there isn't a local DB */
+	/* The caller may have requested simple privileges, for example if there isn't a local DB */
 	if (session_info_flags & AUTH_SESSION_INFO_SIMPLE_PRIVILEGES) {
 		/* Shortcuts to prevent recursion and avoid lookups */
 		if (ptoken->sids == NULL) {

@@ -283,7 +283,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 
 
 /*
-  windows ldap searchs don't allow a baseDN with more
+  windows ldap searches don't allow a baseDN with more
   than one extended component, or an extended
   component and a string DN
 

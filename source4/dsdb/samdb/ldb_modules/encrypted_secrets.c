@@ -380,7 +380,7 @@ static const gnutls_datum_t convert_from_data_blob(DATA_BLOB blob) {
  * @param ldb ldb context, to allow logging.
  * @param es  the encrypted secret
  *
- * @return The gnutls algoritm number, or 0 if there is no match.
+ * @return The gnutls algorithm number, or 0 if there is no match.
  *
  */
 static int gnutls_get_algorithm(struct ldb_context *ldb,
@@ -567,7 +567,7 @@ error_exit:
  * @brief Decrypt data encrypted using an aead algorithm.
  *
  * Decrypt the data in ed and insert it into ev. The data was encrypted
- * with one of the gnutls aead compatable algorithms.
+ * with one of the gnutls aead compatible algorithms.
  *
  * @param err  Pointer to an error code, set to:
  *             LDB_SUCESS               If the value was successfully decrypted

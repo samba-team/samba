@@ -388,7 +388,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 /*
  * This function will workout the filtering parameter in order to be able to do
- * the adapted search when the incomming format is format_functional.
+ * the adapted search when the incoming format is format_functional.
  * This boils down to defining the search_dn (passed as pointer to ldb_dn *) and the
  * ldap filter request.
  * Main input parameters are:
@@ -881,7 +881,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 }
 
 /* Subcase of CrackNames.  It is possible to translate a LDAP-style DN
- * (FQDN_1779) into a canoical name without actually searching the
+ * (FQDN_1779) into a canonical name without actually searching the
  * database */
 
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,

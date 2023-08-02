@@ -1236,7 +1236,7 @@ static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
 	ac->op_controls = talloc_steal(ac, ares->controls);
 	ac->op_response = talloc_steal(ac, ares->response);
 
-	/* If we have modfies to make, this is the time to do them for modify and delete */
+	/* If we have modifies to make, this is the time to do them for modify and delete */
 	ret = la_queue_mod_request(ac);
 
 	if (ret != LDB_SUCCESS) {

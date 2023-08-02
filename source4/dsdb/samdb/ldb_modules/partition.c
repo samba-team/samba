@@ -145,7 +145,7 @@ static int partition_req_callback(struct ldb_request *req,
 
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (partition_ctrl && (ac->num_requests == 1 || ares->type == LDB_REPLY_ENTRY)) {
-		/* If we didn't fan this request out to mulitple partitions,
+		/* If we didn't fan this request out to multiple partitions,
 		 * or this is an individual search result, we can
 		 * deterministically tell the caller what partition this was
 		 * written to (repl_meta_data likes to know) */
@@ -432,7 +432,7 @@ static int partition_copy_all_callback_action(
 		return search_ret;
 	}
 
-	/* now delete the object in the other partitions, if requried
+	/* now delete the object in the other partitions, if required
 	*/
 	if (search_ret == LDB_ERR_NO_SUCH_OBJECT) {
 		for (i=0; data->partitions && data->partitions[i]; i++) {

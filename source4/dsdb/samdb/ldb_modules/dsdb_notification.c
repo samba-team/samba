@@ -143,7 +143,7 @@ static int dsdb_notification_filter_search(struct ldb_module *module,
 	/*
 	 * The ldap_control_handler() decode_flag_request for
 	 * LDB_CONTROL_NOTIFICATION_OID. This makes sure
-	 * notification_control->data is NULL when comming from
+	 * notification_control->data is NULL when coming from
 	 * the client.
 	 */
 	if (control->data == NULL) {
