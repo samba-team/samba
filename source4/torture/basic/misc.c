@@ -641,7 +641,7 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 		if(state->readcnt < state->lpcfg_params->writeblocks){
 			state->readcnt++;	
 		}else{
-			/*start reading from begin of file*/
+			/*start reading from beginning of file*/
 			state->readcnt=0;
 		}
 		req = smb_raw_read_send(state->cli,&rd);
