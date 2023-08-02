@@ -264,7 +264,7 @@ int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 }
 
 /*
-  search the sam for multipe records each giving a single string attribute
+  search the sam for multiple records each giving a single string attribute
   return the number of matches, or -1 on error
 */
 int samdb_search_string_multiple(struct ldb_context *sam_ldb,
@@ -4643,7 +4643,7 @@ int dsdb_normalise_dn_and_find_nc_root(struct ldb_context *samdb,
 
 	if (!has_extended && !has_normal_components) {
 		return ldb_error(samdb, LDB_ERR_NO_SUCH_OBJECT,
-				 "Request for NC root for rootDSE (\"\") deined.");
+				 "Request for NC root for rootDSE (\"\") denied.");
 	}
 
 	tmp_ctx = talloc_new(samdb);
@@ -6527,7 +6527,7 @@ struct dsdb_count_domain_context {
 };
 
 /*
- * @brief ldb aysnc callback for dsdb_domain_count.
+ * @brief ldb async callback for dsdb_domain_count.
  *
  * count the number of records in the database matching an LDAP query,
  * optionally filtering for domain membership.

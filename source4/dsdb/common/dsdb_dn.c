@@ -391,10 +391,10 @@ char *drs_ObjectIdentifier_to_debug_string(TALLOC_CTX *mem_ctx,
 /*
  * Safely convert a drsuapi_DsReplicaObjectIdentifier into an LDB DN
  *
- * We need to have GUID and SID prority and not allow extended
+ * We need to have GUID and SID priority and not allow extended
  * components in the DN.
  *
- * We must also totally honour the prority even if the string DN is not valid or able to parse as a DN.
+ * We must also totally honour the priority even if the string DN is not valid or able to parse as a DN.
  */
 static struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
 						 struct ldb_context *ldb,
@@ -502,7 +502,7 @@ static struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
 				    "drs_ObjectIdentifier as an "
 				    "extended LDB DN "
 				    "(GUIDs and SIDs should be in the "
-				    ".guid and .sid IDL elelements, "
+				    ".guid and .sid IDL elements, "
 				    "not in the string\n",
 				    ldb_dn_get_extended_linearized(mem_ctx,
 								   new_dn,
@@ -523,10 +523,10 @@ static struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
  * Safely convert a drsuapi_DsReplicaObjectIdentifier into a validated
  * LDB DN of an existing DB entry, and/or find the NC root
  *
- * We need to have GUID and SID prority and not allow extended
+ * We need to have GUID and SID priority and not allow extended
  * components in the DN.
  *
- * We must also totally honour the prority even if the string DN is
+ * We must also totally honour the priority even if the string DN is
  * not valid or able to parse as a DN.
  *
  * Finally, we must return the DN as found in the DB, as otherwise a

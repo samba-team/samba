@@ -1286,7 +1286,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 	 * First we copy every record and remove possible trailing dots
 	 * from dns names.
 	 *
-	 * We also NULL out dublicates. The first one wins and
+	 * We also NULL out duplicates. The first one wins and
 	 * we keep 'count' as is. This is required in order to
 	 * provide the correct index for collision records.
 	 */
