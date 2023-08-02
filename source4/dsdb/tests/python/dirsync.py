@@ -338,7 +338,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertEqual(len(res.msgs[0]), 3)
 
     def test_dirsync_othernc(self):
-        """Check that dirsync return information for entries that are normaly referrals (ie. other NCs)"""
+        """Check that dirsync return information for entries that are normally referrals (ie. other NCs)"""
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(objectclass=configuration)",
                                     attrs=["name"],
@@ -459,7 +459,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delete_force(self.ldb_admin, ouname)
 
     def test_dirsync_linkedattributes(self):
-        """Check that dirsync returnd deleted objects too"""
+        """Check that dirsync returned deleted objects too"""
         # Let's search for members
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
         res = self.ldb_simple.search(self.base_dn,
@@ -541,7 +541,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertEqual(len(res[0].get("member")), 0)
 
     def test_dirsync_deleted_items(self):
-        """Check that dirsync returnd deleted objects too"""
+        """Check that dirsync returned deleted objects too"""
         # Let's create an OU
         ouname = "OU=testou3,%s" % self.base_dn
         self.ouname = ouname
@@ -712,7 +712,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         self.assertIn(b">;<SID=010500000000000515", resEX0[0]["member"][0])
 
     def test_dirsync_deleted_items(self):
-        """Check that dirsync returnd deleted objects too"""
+        """Check that dirsync returned deleted objects too"""
         # Let's create an OU
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
         ouname = "OU=testou3,%s" % self.base_dn

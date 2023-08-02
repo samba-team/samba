@@ -3775,7 +3775,7 @@ class SamTests(samba.tests.TestCase):
     def test_protected_sid_objects(self):
         """Test deletion of objects with RID < 1000"""
         # a list of some well-known sids
-        # objects in Builtin are aready covered by objectclass
+        # objects in Builtin are already covered by objectclass
         protected_list = [
             ["CN=Domain Admins", "CN=Users,"],
             ["CN=Schema Admins", "CN=Users,"],

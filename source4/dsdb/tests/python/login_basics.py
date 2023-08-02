@@ -75,7 +75,7 @@ class BasicUserAuthTests(BasePasswordTestCase):
             ldap_url = self.host_url
             print("Performs a lockout attempt against LDAP using NTLM")
 
-        # get the intial logon values for this user
+        # get the initial logon values for this user
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
