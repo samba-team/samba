@@ -496,7 +496,7 @@ static bool test_low_referral_level(struct torture_context *tctx,
 	torture_assert_ntstatus_equal(tctx,
 		   dfs_cli_do_call(cli->tree, &r),
 		   NT_STATUS_UNSUCCESSFUL,
-		   "Unexpected STATUS for invalid deferral retquest");
+		   "Unexpected STATUS for invalid referral request");
 
 	return true;
 }
