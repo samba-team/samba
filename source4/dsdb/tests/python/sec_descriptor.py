@@ -571,7 +571,6 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
-        desc = self.sd_utils.read_sd_on_dn(object_dn)
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -598,7 +597,6 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
-        desc = self.sd_utils.read_sd_on_dn(object_dn)
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -697,13 +695,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
-        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         try:
             class_dn = self.create_schema_class(_ldb)
-        except LdbError as e3:
+        except LdbError:
             self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -998,7 +995,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         try:
             self.create_configuration_specifier(_ldb, object_dn)
-        except LdbError as e3:
+        except LdbError:
             self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1140,7 +1137,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         try:
             self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
-        except LdbError as e3:
+        except LdbError:
             self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1166,7 +1163,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         try:
             self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
-        except LdbError as e3:
+        except LdbError:
             self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)

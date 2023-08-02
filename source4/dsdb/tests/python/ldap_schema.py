@@ -229,7 +229,6 @@ name: """ + object_name + """
         self.assertTrue("replPropertyMetaData" in obj_res[0])
         val = obj_res[0]["replPropertyMetaData"][0]
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
-        obj = repl.ctr
 
         # Windows 2000 functional level won't have this.  It is too
         # hard to work it out from the prefixmap however, so we skip
@@ -306,7 +305,6 @@ instanceType: 4
         """Testing creating a duplicate attribute"""
         rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
-        attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.2." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
@@ -349,7 +347,6 @@ systemOnly: FALSE
         """Testing creating a duplicate attribute and class"""
         rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
-        attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.3." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
@@ -393,7 +390,6 @@ systemOnly: FALSE
         """Testing creating a duplicate attribute"""
         rand = str(random.randint(1, 100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
-        attr_ldap_display_name = attr_name.replace("-", "")
         attributeID = "1.3.6.1.4.1.7165.4.6.1.6.4." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
