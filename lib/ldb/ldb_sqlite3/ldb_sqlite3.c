@@ -380,12 +380,12 @@ static char *parsetree_to_sql(struct ldb_module *module,
 					value.data);
 
 	case LDB_OP_GREATER:
-		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(mem_ctx, t->u.comparison.attr);
 		if (attr == NULL) return NULL;
 		a = ldb_schema_attribute_by_name(ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		a->syntax->canonicalise_fn(ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(ldb, mem_ctx, &(t->u.comparison.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -399,12 +399,12 @@ static char *parsetree_to_sql(struct ldb_module *module,
 					attr);
 
 	case LDB_OP_LESS:
-		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(mem_ctx, t->u.comparison.attr);
 		if (attr == NULL) return NULL;
 		a = ldb_schema_attribute_by_name(ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		a->syntax->canonicalise_fn(ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(ldb, mem_ctx, &(t->u.comparison.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -431,12 +431,12 @@ static char *parsetree_to_sql(struct ldb_module *module,
 					attr);
 
 	case LDB_OP_APPROX:
-		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(mem_ctx, t->u.comparison.attr);
 		if (attr == NULL) return NULL;
 		a = ldb_schema_attribute_by_name(ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		a->syntax->canonicalise_fn(ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(ldb, mem_ctx, &(t->u.comparison.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
