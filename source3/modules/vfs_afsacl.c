@@ -723,7 +723,7 @@ static bool mappable_sid(const struct dom_sid *sid)
 
 	string_to_sid(&domain_sid, "S-1-5-21");
 
-	if (sid_compare_domain(sid, &domain_sid) == 0)
+	if (dom_sid_compare_domain(sid, &domain_sid) == 0)
 		return true;
 
 	return false;
