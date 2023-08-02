@@ -681,6 +681,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		struct ldb_control *ext_ctrl;
 		struct ldb_control **controls;
 		static const char * const attrs[1] = { NULL };
+		void *ref = NULL;
 
 		if (paged_ctrl->size == 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -739,7 +740,25 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		ac->store->expr = talloc_steal(ac->store, req->op.search.tree);
+		/*
+		 * LDB does not have a function to take a full copy of
+		 * this, but at least take a shallow copy
+		 */
+		ac->store->expr = ldb_parse_tree_copy_shallow(ac->store,
+							      req->op.search.tree);
+
+		if (ac->store->expr == NULL) {
+			return ldb_operr(ldb);
+		}
+
+		/*
+		 * As the above is only a shallow copy, take a
+		 * reference to ensure the values are kept around
+		 */
+		ref = talloc_reference(ac->store, req->op.search.tree);
+		if (ref == NULL) {
+			return ldb_module_oom(module);
+		}
 		ac->store->expr_str = ldb_filter_from_tree(ac->store,
 							  req->op.search.tree);
 		if (ac->store->expr_str == NULL) {
