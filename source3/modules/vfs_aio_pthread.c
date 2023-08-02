@@ -475,7 +475,8 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 		aio_allow_open = false;
 	}
 
-	if (fsp->conn->sconn->client->server_multi_channel_enabled) {
+	if (fsp->conn->sconn->client != NULL &&
+	    fsp->conn->sconn->client->server_multi_channel_enabled) {
 		/*
 		 * This module is not compatible with multi channel yet.
 		 */
