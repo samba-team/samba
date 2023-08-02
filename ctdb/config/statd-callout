@@ -220,8 +220,8 @@ notify)
 
 	# Delete the notification list for statd, we don't want it to
 	# ping any clients
-	rm -f /var/lib/nfs/statd/sm/*
-	rm -f /var/lib/nfs/statd/sm.bak/*
+	dir=$(find_statd_sm_dir)
+	rm -f "${dir}/"* "${dir}.bak/"*
 
 	# We must also let some time pass between stopping and
 	# restarting the lock manager.  Otherwise there is a window
