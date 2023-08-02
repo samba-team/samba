@@ -175,7 +175,10 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
 	ptoken->sids = talloc_array(ptoken, struct dom_sid, num_sids + 6 /* over-allocate */);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
+	if (ptoken->sids == NULL) {
+		talloc_free(ptoken);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ptoken->num_sids = 0;
 
@@ -191,7 +194,10 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 
 		if (check_sid_idx == ptoken->num_sids) {
 			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
-			NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
+			if (ptoken->sids == NULL) {
+				talloc_free(ptoken);
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			ptoken->sids[ptoken->num_sids] = sids[i].sid;
 			ptoken->num_sids++;

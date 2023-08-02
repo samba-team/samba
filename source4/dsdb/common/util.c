@@ -3439,6 +3439,7 @@ WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs, 0);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* partition hasn't been replicated yet */
+		talloc_free(tmp_ctx);
 		return WERR_OK;
 	}
 	if (ret != LDB_SUCCESS) {
@@ -4733,6 +4734,7 @@ int dsdb_normalise_dn_and_find_nc_root(struct ldb_context *samdb,
 			ldb_asprintf_errstring(samdb,
 					       "Request for NC root for %s failed to return any results.",
 					       ldb_dn_get_linearized(dn));
+			talloc_free(tmp_ctx);
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 		*normalised_dn = context.dn;
@@ -4912,6 +4914,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 			/* we always store as version 2, and
 			 * replUpToDateVector is not replicated
 			 */
+			talloc_free(r);
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
