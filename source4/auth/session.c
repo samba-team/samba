@@ -220,6 +220,10 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	}
 
 	session_info->info = talloc_reference(session_info, user_info_dc->info);
+	if (session_info->info == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	session_info->torture = talloc_zero(session_info, struct auth_user_info_torture);
 	if (session_info->torture == NULL) {
