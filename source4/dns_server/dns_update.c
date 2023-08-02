@@ -54,7 +54,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 	bool found = false;
 	struct dnsp_DnssrvRpcRecord *rec = NULL;
 	struct dnsp_DnssrvRpcRecord *ans;
-	uint16_t acount;
+	uint16_t a_count;
 
 	size_t host_part_len = 0;
 
@@ -82,19 +82,19 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 		if (pr->rr_type == DNS_QTYPE_ALL) {
 			/*
 			 */
-			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &a_count);
 			if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
 				return DNS_ERR(NAME_ERROR);
 			}
 			W_ERROR_NOT_OK_RETURN(werror);
 
-			if (acount == 0) {
+			if (a_count == 0) {
 				return DNS_ERR(NAME_ERROR);
 			}
 		} else {
 			/*
 			 */
-			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &a_count);
 			if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
 				return DNS_ERR(NXRRSET);
 			}
@@ -103,7 +103,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 			}
 			W_ERROR_NOT_OK_RETURN(werror);
 
-			for (i = 0; i < acount; i++) {
+			for (i = 0; i < a_count; i++) {
 				if (ans[i].wType == (enum dns_record_type) pr->rr_type) {
 					found = true;
 					break;
@@ -130,14 +130,14 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 		if (pr->rr_type == DNS_QTYPE_ALL) {
 			/*
 			 */
-			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &a_count);
 			if (W_ERROR_EQUAL(werror, WERR_OK)) {
 				return DNS_ERR(YXDOMAIN);
 			}
 		} else {
 			/*
 			 */
-			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &a_count);
 			if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
 				werror = WERR_OK;
 			}
@@ -145,7 +145,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 				werror = WERR_OK;
 			}
 
-			for (i = 0; i < acount; i++) {
+			for (i = 0; i < a_count; i++) {
 				if (ans[i].wType == (enum dns_record_type) pr->rr_type) {
 					found = true;
 					break;
@@ -170,7 +170,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 
 	*final_result = false;
 
-	werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+	werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &a_count);
 	if (W_ERROR_EQUAL(werror, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
 		return DNS_ERR(NXRRSET);
 	}
@@ -182,10 +182,10 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 	rec = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
 	W_ERROR_HAVE_NO_MEMORY(rec);
 
-	werror = dns_rr_to_dnsp(rec, pr, rec, dns_name_is_static(ans, acount));
+	werror = dns_rr_to_dnsp(rec, pr, rec, dns_name_is_static(ans, a_count));
 	W_ERROR_NOT_OK_RETURN(werror);
 
-	for (i = 0; i < acount; i++) {
+	for (i = 0; i < a_count; i++) {
 		if (dns_record_match(rec, &ans[i])) {
 			found = true;
 			break;

@@ -912,7 +912,7 @@ WERROR dns_get_zone_properties(struct ldb_context *samdb,
 			/*
 			 * If we can't pull it, then there is no valid
 			 * data to load into the zone, so ignore this
-			 * as Micosoft does.  Windows can load an
+			 * as Microsoft does.  Windows can load an
 			 * invalid property with a zero length into
 			 * the dnsProperty attribute.
 			 */
