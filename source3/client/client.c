@@ -42,6 +42,7 @@
 #include "lib/util/string_wrappers.h"
 #include "lib/cmdline/cmdline.h"
 #include "libcli/smb/reparse.h"
+#include "lib/param/param.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -6237,7 +6238,8 @@ static int process(const char *base_directory)
  Handle a -L query.
 ****************************************************************************/
 
-static int do_host_query(const char *query_host)
+static int do_host_query(struct loadparm_context *lp_ctx,
+			 const char *query_host)
 {
 	NTSTATUS status;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
@@ -6287,7 +6289,7 @@ static int do_host_query(const char *query_host)
 
 		cli_shutdown(cli);
 		d_printf("Reconnecting with SMB1 for workgroup listing.\n");
-		lp_set_cmdline("client max protocol", "NT1");
+		lpcfg_set_cmdline(lp_ctx, "client max protocol", "NT1");
 		status = cli_cm_open(talloc_tos(), NULL,
 				     query_host,
 				     "IPC$",
@@ -6528,6 +6530,7 @@ int main(int argc,char *argv[])
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
 
 	if (!client_set_cur_dir("\\")) {
 		exit(ENOMEM);
@@ -6542,7 +6545,8 @@ int main(int argc,char *argv[])
 		DBG_ERR("Failed to init cmdline parser!\n");
 		exit(ENOMEM);
 	}
-	lp_set_cmdline("log level", "1");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "1");
 
 	/* skip argv(0) */
 	pc = samba_popt_get_context(getprogname(),
@@ -6713,7 +6717,9 @@ int main(int argc,char *argv[])
 	}
 
 	if(new_name_resolve_order)
-		lp_set_cmdline("name resolve order", new_name_resolve_order);
+		lpcfg_set_cmdline(lp_ctx,
+				  "name resolve order",
+				  new_name_resolve_order);
 
 	if (!tar_to_process(tar_ctx) && !query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);
@@ -6747,7 +6753,7 @@ int main(int argc,char *argv[])
 			sscanf(p, "%x", &name_type);
 		}
 
-		rc = do_host_query(qhost);
+		rc = do_host_query(lp_ctx, qhost);
 	} else if (message) {
 		rc = do_message_op(creds);
 	} else if (process(base_directory)) {
