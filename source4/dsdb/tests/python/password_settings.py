@@ -300,7 +300,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
         self.set_attribute(group2, "member", group1)
         self.assert_PSO_applied(user, group2_pso)
 
-        # add another level to the group heirachy & check this PSO takes effect
+        # add another level to the group hierarchy & check this PSO takes effect
         self.set_attribute(group3, "member", group2)
         self.assert_PSO_applied(user, group3_pso)
 
@@ -727,7 +727,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
     # the msDS-ResultantPSO attribute on a user that doesn't exist yet (it
     # won't have any group membership or PSOs applied directly against it yet).
     # In theory it's possible to still get an applicable PSO via the user's
-    # primaryGroupID (i.e. 'Domain Users' by default). However, testing aginst
+    # primaryGroupID (i.e. 'Domain Users' by default). However, testing against
     # Windows shows that the PSO doesn't take effect during the user add
     # operation. (However, the Windows GUI tools presumably adds the user in 2
     # steps, because it does enforce the PSO for users added via the GUI).

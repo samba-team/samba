@@ -689,7 +689,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
 
     # Tests for SCHEMA
 
-    # Defalt descriptor tests ##################################################################
+    # Default descriptor tests ##################################################################
 
     def test_130(self):
         user_name = "testuser1"
@@ -949,7 +949,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
 
     # Tests for CONFIGURATION
 
-    # Defalt descriptor tests ##################################################################
+    # Default descriptor tests ##################################################################
 
     def test_160(self):
         user_name = "testuser1"
@@ -2531,7 +2531,7 @@ class RightsAttributesTests(DescriptorTests):
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        # user whould have no rights at all
+        # user should have no rights at all
         self.assertEqual(len(res), 1)
         self.assertEqual(str(res[0]["sDRightsEffective"][0]), "0")
         # give the user Write DACL and see what happens
@@ -2539,7 +2539,7 @@ class RightsAttributesTests(DescriptorTests):
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        # user whould have DACL_SECURITY_INFORMATION
+        # user should have DACL_SECURITY_INFORMATION
         self.assertEqual(len(res), 1)
         self.assertEqual(str(res[0]["sDRightsEffective"][0]), ("%d") % SECINFO_DACL)
         # give the user Write Owners and see what happens
@@ -2547,14 +2547,14 @@ class RightsAttributesTests(DescriptorTests):
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
+        # user should have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEqual(len(res), 1)
         self.assertEqual(str(res[0]["sDRightsEffective"][0]), ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER))
-        # no way to grant security privilege bu adding ACE's so we use a memeber of Domain Admins
+        # no way to grant security privilege bu adding ACE's so we use a member of Domain Admins
         _ldb = self.get_ldb_connection("testuser_attr2", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
-        # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
+        # user should have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
         self.assertEqual(len(res), 1)
         self.assertEqual(str(res[0]["sDRightsEffective"][0]),
                           ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER | SECINFO_SACL))

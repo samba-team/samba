@@ -228,7 +228,7 @@ class AclAddTests(AclTests):
         self.assertEqual(len(res), 0)
 
     def test_add_u1(self):
-        """Testing OU with the rights of Doman Admin not creator of the OU """
+        """Testing OU with the rights of Domain Admin not creator of the OU """
         self.assert_top_ou_deleted()
         # Change descriptor for top level OU
         self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
@@ -241,7 +241,7 @@ class AclAddTests(AclTests):
         self.ldb_notowner.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
                                    grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         # Make sure we HAVE created the two objects -- user and group
-        # !!! We should not be able to do that, but however beacuse of ACE ordering our inherited Deny ACE
+        # !!! We should not be able to do that, but however because of ACE ordering our inherited Deny ACE
         # !!! comes after explicit (A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA) that comes from somewhere
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
         self.assertGreater(len(res), 0)
@@ -302,7 +302,7 @@ class AclAddTests(AclTests):
         self.assertEqual(len(res), 0)
 
     def test_add_u4(self):
-        """ 4 Testing OU with the rights of Doman Admin creator of the OU"""
+        """ 4 Testing OU with the rights of Domain Admin creator of the OU"""
         self.assert_top_ou_deleted()
         self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
@@ -4298,7 +4298,7 @@ class AclDeleteTests(AclTests):
         self.assertEqual(len(res), 0)
 
     def test_delete_u3(self):
-        """User indentified by SID has RIGHT_DELETE to another User object"""
+        """User identified by SID has RIGHT_DELETE to another User object"""
         user_dn = self.get_user_dn("test_delete_user1")
         # Create user that we try to delete
         self.ldb_admin.newuser("test_delete_user1", self.user_pass)
@@ -4589,7 +4589,7 @@ class AclCARTests(AclTests):
         minPwdAge = self.ldb_admin.get_minPwdAge()
         # Reset the "minPwdAge" as it was before
         self.addCleanup(self.ldb_admin.set_minPwdAge, minPwdAge)
-        # Set it temporarely to "0"
+        # Set it temporarily to "0"
         self.ldb_admin.set_minPwdAge("0")
 
         self.user_with_wp = "acl_car_user1"
@@ -5041,7 +5041,7 @@ class AclUndeleteTests(AclTests):
         self.sd_utils.dacl_add_ace(self.deleted_dn2, mod)
         self.undelete_deleted(self.deleted_dn2, self.testuser2_dn)
 
-        # attempt undelete with simultanious addition of url, WP to which is denied
+        # attempt undelete with simultaneous addition of url, WP to which is denied
         mod = "(OD;;WP;9a9a0221-4a5b-11d1-a9c3-0000f80367c1;;%s)" % str(self.sid)
         self.sd_utils.dacl_add_ace(self.deleted_dn3, mod)
         try:

@@ -153,7 +153,7 @@ class StaticTokenTest(samba.tests.TestCase):
         extra_sidset = set(extra_sids)
 
         if len(missing_sidset.symmetric_difference(extra_sidset)):
-            print("dn token sids unexpeted")
+            print("dn token sids unexpected")
             print("tokengroups: %s" % dn_tokengroups)
             print("user sids: %s" % self.user_sids)
             print("actual difference: %s" % missing_sidset)
@@ -427,7 +427,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         extra_sidset = set(extra_sids)
 
         if len(missing_sidset.symmetric_difference(extra_sidset)):
-            print("dn token sids unexpeted")
+            print("dn token sids unexpected")
             print("tokengroups: %s" % dn_tokengroups)
             print("user sids: %s" % self.user_sids)
             print("actual difference: %s" % missing_sidset)

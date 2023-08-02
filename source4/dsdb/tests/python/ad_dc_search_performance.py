@@ -180,7 +180,7 @@ class UserTests(samba.tests.TestCase):
         maybe_not = ['!(', '']
         joiners = ['&', '|']
 
-        # The number of permuations is 18432, which is not huge but
+        # The number of permutations is 18432, which is not huge but
         # would take hours to search. So we take a sample.
         all_permutations = list(itertools.product(joiners,
                                                   classes, classes,

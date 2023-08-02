@@ -722,7 +722,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
 
         self.attr_filters = [None, ["*"], ["name"]]
 
-        # Note dirsync behaviour is slighty different for the attribute under
+        # Note dirsync behaviour is slightly different for the attribute under
         # test - when you have full access rights, it only returns the objects
         # that actually have this attribute (i.e. it doesn't return an empty
         # message with just the DN). So we add the 'name' attribute into the

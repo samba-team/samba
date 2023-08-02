@@ -210,7 +210,7 @@ name: """ + object_name + """
                               expression="(%s=S:5:ABCDE)" % self.dn_string_attribute)
         self.assertEqual(len(res), 0)
 
-        # search by DN+Stirng
+        # search by DN+String
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=S:5:ABCDE:%s)" % (self.dn_string_attribute, self.base_dn))
@@ -293,7 +293,7 @@ name: """ + object_name + """
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_dn_binary(self):
-        # add obeject with correct value
+        # add object with correct value
         object_name1 = "obj-DN-Binary1" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
                                      self.dn_binary_attribute, ": B:4:1234:" + self.base_dn)
