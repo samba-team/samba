@@ -286,7 +286,7 @@ bool sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid 
 		return false;
 	}
 
-	if (sid_compare_domain(exp_dom_sid, sid)!=0){
+	if (dom_sid_compare_domain(exp_dom_sid, sid)!=0){
 		*rid=(-1);
 		return false;
 	}
