@@ -155,7 +155,7 @@ class BasicTests(samba.tests.TestCase):
             (num, _) = e.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
-        # We cannot instanciate from an abstract object class ("connectionPoint"
+        # We cannot instantiate from an abstract object class ("connectionPoint"
         # or "leaf"). In the first case we use "connectionPoint" (subclass of
         # "leaf") to prevent a naming violation - this returns us a
         # "ERR_UNWILLING_TO_PERFORM" since it is not structural. In the second
@@ -178,7 +178,7 @@ class BasicTests(samba.tests.TestCase):
             (num, _) = e.args
             self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
-        # Objects instanciated using "satisfied" abstract classes (concrete
+        # Objects instantiated using "satisfied" abstract classes (concrete
         # subclasses) are allowed
         self.ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -214,7 +214,7 @@ class BasicTests(samba.tests.TestCase):
             "objectClass": "person"})
 
         # We can remove derivation classes of the structural objectclass
-        # but they're going to be readded afterwards
+        # but they're going to be re-added afterwards
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("top", FLAG_MOD_DELETE,
@@ -1824,7 +1824,7 @@ delete: description
         delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
     def test_groupType_int32(self):
-        """Test groupType (int32) behaviour (should appear to be casted to a 32 bit signed integer before comparsion)"""
+        """Test groupType (int32) behaviour (should appear to be casted to a 32 bit signed integer before comparison)"""
 
         res1 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
                           attrs=["groupType"], expression="groupType=2147483653")
@@ -2158,7 +2158,7 @@ servicePrincipalName: host/ldaptest2computer29
             "givenname": "testy",
             "sn": "ldap user2"})
 
-        # Testing Ambigious Name Resolution
+        # Testing Ambiguous Name Resolution
         # Testing ldb.search for (&(anr=ldap testy)(objectClass=user))
         res = ldb.search(expression="(&(anr=ldap testy)(objectClass=user))")
         self.assertEqual(len(res), 3, "Found only %d of 3 for (&(anr=ldap testy)(objectClass=user))" % len(res))
@@ -2402,7 +2402,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
 
         # Testing ldb.search for (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group)) to check subtree renames and linked attributes"
         res = ldb.search(self.base_dn, expression="(&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group))", scope=SCOPE_SUBTREE)
-        self.assertEqual(len(res), 1, "Could not find (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group)), perhaps linked attributes are not consistant with subtree renames?")
+        self.assertEqual(len(res), 1, "Could not find (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group)), perhaps linked attributes are not consistent with subtree renames?")
 
         # Testing ldb.rename (into itself) of cn=ldaptestcontainer2," + self.base_dn + " to cn=ldaptestcontainer,cn=ldaptestcontainer2," + self.base_dn
         try:
@@ -3002,7 +3002,7 @@ nTSecurityDescriptor: """ + sddl
             delete_force(self.ldb, user_dn)
         #
         # Test modify_ldif() with SDDL security descriptor input
-        # New desctiptor test
+        # New descriptor test
         #
         try:
             self.ldb.add_ldif("""
