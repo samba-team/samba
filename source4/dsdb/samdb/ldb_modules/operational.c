@@ -1696,10 +1696,14 @@ static int operational_present(struct ldb_parse_tree *tree, void *private_contex
 	struct operational_present_ctx *ctx = private_context;
 	switch (tree->operation) {
 	case LDB_OP_EQUALITY:
+		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
+			ctx->found_operational = true;
+		}
+		break;
 	case LDB_OP_GREATER:
 	case LDB_OP_LESS:
 	case LDB_OP_APPROX:
-		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
+		if (ldb_attr_cmp(tree->u.comparison.attr, ctx->attr) == 0) {
 			ctx->found_operational = true;
 		}
 		break;

@@ -5902,10 +5902,14 @@ bool dsdb_attr_in_parse_tree(struct ldb_parse_tree *tree,
        case LDB_OP_NOT:
                return dsdb_attr_in_parse_tree(tree->u.isnot.child, attr);
        case LDB_OP_EQUALITY:
+               if (ldb_attr_cmp(tree->u.equality.attr, attr) == 0) {
+                       return true;
+               }
+               return false;
        case LDB_OP_GREATER:
        case LDB_OP_LESS:
        case LDB_OP_APPROX:
-               if (ldb_attr_cmp(tree->u.equality.attr, attr) == 0) {
+               if (ldb_attr_cmp(tree->u.comparison.attr, attr) == 0) {
                        return true;
                }
                return false;
