@@ -330,24 +330,6 @@ ssize_t sid_parse(const uint8_t *inbuf, size_t len, struct dom_sid *sid)
 	return ndr_size_dom_sid(sid, 0);
 }
 
-/*****************************************************************
- See if 2 SIDs are in the same domain
- this just compares the leading sub-auths
-*****************************************************************/
-
-int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2)
-{
-	int n, i;
-
-	n = MIN(sid1->num_auths, sid2->num_auths);
-
-	for (i = n-1; i >= 0; --i)
-		if (sid1->sub_auths[i] != sid2->sub_auths[i])
-			return sid1->sub_auths[i] - sid2->sub_auths[i];
-
-	return dom_sid_compare_auth(sid1, sid2);
-}
-
 /********************************************************************
  Add SID to an array of SIDs
 ********************************************************************/
