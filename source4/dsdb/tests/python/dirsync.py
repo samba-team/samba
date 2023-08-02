@@ -452,7 +452,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         control4 = str(":".join(ctl))
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
-                                    controls=[control3])
+                                    controls=[control4])
 
         self.assertTrue(res[0].get("parentGUID") is not None)
         self.assertTrue(res[0].get("name") is not None)
