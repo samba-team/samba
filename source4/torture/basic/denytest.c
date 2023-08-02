@@ -2640,7 +2640,7 @@ bool torture_createx_access_exhaustive(struct torture_context *tctx,
 		data_file_fd = open(data_file, O_WRONLY|O_CREAT|O_TRUNC, 0666);
 		if (data_file_fd < 0) {
 			torture_result(tctx, TORTURE_FAIL,
-				"(%s): data file open failedu: %s!",
+				"(%s): data file open failed: %s!",
 				__location__, strerror(errno));
 			ret = false;
 			goto done;
