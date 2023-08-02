@@ -286,7 +286,7 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 	/*
 	 * This filter is a bit strange, but the idea is to filter for
 	 * objects that need to have tombstones expunged without
-	 * bringing a potentially large databse all into memory.  To
+	 * bringing a potentially large database all into memory.  To
 	 * do that, we could use callbacks, but instead we use a
 	 * custom match rule to triage the objects during the search,
 	 * and ideally avoid memory allocation for most of the

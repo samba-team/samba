@@ -500,7 +500,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 			 * tombstone time as hours since the start of 1601,
 			 * not in NTTIME ten-millionths of a second units.
 			 *
-			 * We can accomodate these bad values by noting that
+			 * We can accommodate these bad values by noting that
 			 * all the realistic timestamps in that measurement
 			 * fall within the first *second* of NTTIME, that is,
 			 * before 1601-01-01 00:00:01; and that these
