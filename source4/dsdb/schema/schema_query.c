@@ -267,7 +267,7 @@ const char **merge_attr_list(TALLOC_CTX *mem_ctx,
 
 /*
   Return a merged list of the attributes of exactly one class (not
-  considering subclasses, auxillary classes etc)
+  considering subclasses, auxiliary classes etc)
 */
 
 const char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass, enum dsdb_attr_list_query query)
@@ -496,7 +496,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 	 * * unsorted:     The remaining objectClasses
 	 *
 	 * The process is a matter of filtering objectClasses up from
-	 * unsorted into sorted.  Order is irrelevent in the later 3 'bins'.
+	 * unsorted into sorted.  Order is irrelevant in the later 3 'bins'.
 	 *
 	 * We start with 'top' (found and promoted to parent_class
 	 * initially).  Then we find (in unsorted) all the direct

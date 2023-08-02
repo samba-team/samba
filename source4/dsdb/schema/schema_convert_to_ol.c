@@ -25,7 +25,7 @@
 
 #undef strcasecmp
 
-#define SEPERATOR "\n  "
+#define SEPARATOR "\n  "
 
 struct attr_map {
 	char *old_attr;
@@ -126,7 +126,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		}
 
 		schema_entry = schema_class_description(mem_ctx, target,
-							SEPERATOR,
+							SEPARATOR,
 							oid,
 							name,
 							NULL,
@@ -339,7 +339,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 
 		schema_entry = schema_attribute_description(mem_ctx,
 							    target,
-							    SEPERATOR,
+							    SEPARATOR,
 							    oid,
 							    name,
 							    equality,
