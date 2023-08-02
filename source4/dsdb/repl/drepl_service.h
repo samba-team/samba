@@ -87,7 +87,7 @@ struct dreplsrv_partition {
 	struct drsuapi_DsReplicaObjectIdentifier nc;
 
 	/* 
-	 * uptodate vector needs to be updated before and after each DsGetNCChanges() call
+	 * up-to-date vector needs to be updated before and after each DsGetNCChanges() call
 	 *
 	 * - before: we need to use our own invocationId together with our highestCommittedUSN
 	 * - after: we need to merge in the remote uptodatevector, to avoid reading it again

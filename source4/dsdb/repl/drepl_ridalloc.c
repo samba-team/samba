@@ -214,7 +214,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 
 	ret = samdb_dn_is_our_ntdsa(ldb, fsmo_role_dn, &is_us);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find detrmine if %s is our ntdsDsa object - %s\n",
+		DEBUG(0,(__location__ ": Failed to find determine if %s is our ntdsDsa object - %s\n",
 			 ldb_dn_get_linearized(fsmo_role_dn), ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
