@@ -172,6 +172,17 @@ ${CTDB_MY_PUBLIC_IPS_CACHE}
 EOF
 }
 
+# Used via 'grep -F -f "$persistent_db_grep_filter"' to match database
+# keys currently hosted public IPs
+persistent_db_grep_filter="${statd_callout_state_dir}/.grep_filter"
+
+persistent_db_make_grep_filter()
+{
+	while read -r _ip; do
+		echo "statd-state@${_ip}@"
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE" >"$persistent_db_grep_filter"
+}
+
 ############################################################
 
 case "$1" in
@@ -180,25 +191,28 @@ startup)
 	;;
 
 update)
-	cd "$statd_callout_queue_dir" ||
-		die "Failed to change directory to \"${statd_callout_queue_dir}\""
-	files=$(echo statd-state@*)
-	if [ "$files" = "statd-state@*" ]; then
+	files="${statd_callout_state_dir}/.file_list"
+	find "$statd_callout_queue_dir" -name "statd-state@*" >"$files"
+	if [ ! -s "$files" ]; then
 		# No files!
+		rm "$files"
 		exit 0
 	fi
-	sed_expr=$(awk '{
-		ip = $1; gsub(/\./, "\\.", ip);
-		printf "/statd-state@%s@/p\n", ip }' "$CTDB_MY_PUBLIC_IPS_CACHE")
-	# Intentional multi-word expansion for multiple files
-	# shellcheck disable=SC2086
-	items=$(sed -n "$sed_expr" $files)
-	if [ -n "$items" ]; then
-		if echo "$items" | $CTDB ptrans "$statd_callout_db"; then
-			# shellcheck disable=SC2086
-			rm $files
+
+	persistent_db_make_grep_filter
+
+	# Use cat instead of direct grep since POSIX grep does not
+	# have -h
+	items="${statd_callout_state_dir}/.items"
+	xargs cat <"$files" | grep -F -f "$persistent_db_grep_filter" >"$items"
+
+	if [ -s "$items" ]; then
+		if $CTDB ptrans "$statd_callout_db" <"$items"; then
+			xargs rm -f <"$files"
 		fi
 	fi
+
+	rm -f "$files" "$persistent_db_grep_filter" "$items"
 	;;
 
 notify)
@@ -222,21 +236,27 @@ notify)
 	sleep 2
 	"$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
 
-	# Construct a sed expression to take catdb output and produce pairs of:
-	#   server-IP client-IP
-	# but only for the server-IPs that are hosted on this node.
-	sed_expr=$(awk '{
-		       ip = $1; gsub(/\./, "\\.", ip);
-		       printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }' \
-			       "$CTDB_MY_PUBLIC_IPS_CACHE")
+	persistent_db_make_grep_filter
 
-	statd_state=$($CTDB catdb "$statd_callout_db" |
-		sed -n "$sed_expr" |
-		sort)
-	[ -n "$statd_state" ] || exit 0
+	# Produce "server-IP client-IP" per-line in .statd_state
+	statd_state="${statd_callout_state_dir}/.statd_state"
+	$CTDB catdb "$statd_callout_db" |
+		sed -n -e 's|^key([0-9]*) = "\([^"]*\)".*|\1|p' |
+		grep -F -f "$persistent_db_grep_filter" |
+		sed -e 's|statd-state@\([^@]*\)@\(.*\)|\1 \2|' |
+		sort >"$statd_state"
 
-	echo "$statd_state" | send_notifies
-	echo "$statd_state" | delete_records
+	rm -f "$persistent_db_grep_filter"
+
+	if [ ! -s "$statd_state" ]; then
+		rm -f "$statd_state"
+		exit 0
+	fi
+
+	send_notifies <"$statd_state"
+	delete_records <"$statd_state"
+
+	rm -f "$statd_state"
 
 	# Remove any stale touch files (i.e. for IPs not currently
 	# hosted on this node and created since the last "update").
