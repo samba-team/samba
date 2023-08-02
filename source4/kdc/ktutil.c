@@ -31,7 +31,7 @@ static void smb_krb5_err(TALLOC_CTX *mem_ctx,
 	char *krb5_err_str = smb_get_krb5_error_message(context,
 							code,
 							mem_ctx);
-	printf("%s: %s\n", msg, krb5_err_str ? krb5_err_str : "UNKOWN");
+	printf("%s: %s\n", msg, krb5_err_str ? krb5_err_str : "UNKNOWN");
 
 	talloc_free(mem_ctx);
 	exit(exit_code);

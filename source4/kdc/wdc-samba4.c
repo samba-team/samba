@@ -317,7 +317,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 	 * RODC, then we need to regenerate the PAC - we can't trust
 	 * it, and confirm that the RODC was permitted to print this ticket
 	 *
-	 * Becasue of the samba_kdc_validate_pac_blob() step we can be
+	 * Because of the samba_kdc_validate_pac_blob() step we can be
 	 * sure that the record in 'client' matches the SID in the
 	 * original PAC.
 	 */

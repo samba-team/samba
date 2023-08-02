@@ -1079,7 +1079,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	uint32_t supported_session_etypes;
 	uint32_t available_enctypes = 0;
 	/*
-	 * also lagacy enctypes are announced,
+	 * also legacy enctypes are announced,
 	 * but effectively restricted by kdc_enctypes
 	 */
 	uint32_t domain_enctypes = ENC_RC4_HMAC_MD5 | ENC_RSA_MD5 | ENC_CRC32;
@@ -3517,7 +3517,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	 * authenticate the KDC to the LDAP server is highly likely to
 	 * be circular.
 	 *
-	 * In future we may set this up to use EXERNAL and SSL
+	 * In future we may set this up to use EXTERNAL and SSL
 	 * certificates, for now it will almost certainly be NTLMSSP_SET_USERNAME
 	*/
 

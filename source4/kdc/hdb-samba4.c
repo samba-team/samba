@@ -984,7 +984,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			 * from the password history, so we don't
 			 * update the badPwdCount, but still return
 			 * PREAUTH_FAILED and need to forward to
-			 * a RWDC in order to produce an autoritative
+			 * a RWDC in order to produce an authoritative
 			 * response for the client.
 			 */
 			status = NT_STATUS_WRONG_PASSWORD;

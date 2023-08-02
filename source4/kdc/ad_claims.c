@@ -506,7 +506,7 @@ static int fill_claim_entry(TALLOC_CTX *mem_ctx,
 }
 
 /*
- * Determine wheter a claim applies to the most specific objectClass of the
+ * Determine whether a claim applies to the most specific objectClass of the
  * principal.
  */
 static int claim_applies_to_class(TALLOC_CTX *mem_ctx,
