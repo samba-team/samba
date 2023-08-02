@@ -625,7 +625,7 @@ typedef void (*tevent_debug_fn)(void *context,
  * Set destination for tevent debug messages
  *
  * As of version 0.15.0 the invocation of
- * the debug function for indiviual messages
+ * the debug function for individual messages
  * is limited by the current max_debug_level,
  * which means TEVENT_DEBUG_TRACE messages
  * are not passed by default:
