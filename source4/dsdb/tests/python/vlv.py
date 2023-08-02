@@ -1754,6 +1754,27 @@ class PagedResultsTestsRW(PagedResultsTests):
             (enum, estr) = e.args
             self.assertEqual(enum, ldb.ERR_UNSUPPORTED_CRITICAL_EXTENSION)
 
+    def test_anr_paged(self):
+        """Testing behaviour with anr= searches and paged_results set.
+
+        A problematic combination, as anr involves filter rewriting
+
+        """
+        prefix = "anr"
+        num_users = 5
+        users = [self.create_user(i, num_users, prefix=prefix)
+                 for i in range(num_users)]
+        expr = f"(|(anr={prefix})(&(objectClass=user)(facsimileTelephoneNumber={prefix}*)))"
+
+        results, cookie = self.paged_search(expr, page_size=1)
+        self.assertEqual(len(results), 1)
+
+        results, cookie = self.paged_search(expr, page_size=2, cookie=cookie)
+        self.assertEqual(len(results), 2)
+
+        results, cookie = self.paged_search(expr, page_size=2, cookie=cookie)
+        self.assertEqual(len(results), 2)
+
 
 if "://" not in host:
     if os.path.isfile(host):
