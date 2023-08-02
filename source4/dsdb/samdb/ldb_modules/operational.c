@@ -1556,6 +1556,7 @@ struct operational_context {
 	struct ldb_request *req;
 	enum ldb_scope scope;
 	const char * const *attrs;
+	struct ldb_parse_tree *tree;
 	struct op_controls_flags* controls_flags;
 	struct op_attributes_operations *list_operations;
 	unsigned int list_operations_size;
@@ -1681,12 +1682,57 @@ static struct op_attributes_operations* operation_get_op_list(TALLOC_CTX *ctx,
 	return list;
 }
 
+struct operational_present_ctx {
+	const char *attr;
+	bool found_operational;
+};
+
+/*
+  callback to determine if an operational attribute (needing
+  replacement) is in use at all
+ */
+static int operational_present(struct ldb_parse_tree *tree, void *private_context)
+{
+	struct operational_present_ctx *ctx = private_context;
+	switch (tree->operation) {
+	case LDB_OP_EQUALITY:
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_APPROX:
+		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
+			ctx->found_operational = true;
+		}
+		break;
+	case LDB_OP_SUBSTRING:
+		if (ldb_attr_cmp(tree->u.substring.attr, ctx->attr) == 0) {
+			ctx->found_operational = true;
+		}
+		break;
+	case LDB_OP_PRESENT:
+		if (ldb_attr_cmp(tree->u.present.attr, ctx->attr) == 0) {
+			ctx->found_operational = true;
+		}
+		break;
+	case LDB_OP_EXTENDED:
+		if (tree->u.extended.attr &&
+		    ldb_attr_cmp(tree->u.extended.attr, ctx->attr) == 0) {
+			ctx->found_operational = true;
+		}
+		break;
+	default:
+		break;
+	}
+	return LDB_SUCCESS;
+}
+
+
 static int operational_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct operational_context *ac;
 	struct ldb_request *down_req;
 	const char **search_attrs = NULL;
+	struct operational_present_ctx ctx;
 	unsigned int i, a;
 	int ret;
 
@@ -1707,15 +1753,44 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ac->scope = req->op.search.scope;
 	ac->attrs = req->op.search.attrs;
 
-	/*  FIXME: We must copy the tree and keep the original
-	 *  unmodified. SSS */
-	/* replace any attributes in the parse tree that are
-	   searchable, but are stored using a different name in the
-	   backend */
+	ctx.found_operational = false;
+
+	/*
+	 * find any attributes in the parse tree that are searchable,
+	 * but are stored using a different name in the backend, so we
+	 * only duplicate the memory when needed
+	 */
 	for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
-		ldb_parse_tree_attr_replace(req->op.search.tree,
-					    parse_tree_sub[i].attr,
-					    parse_tree_sub[i].replace);
+		ctx.attr = parse_tree_sub[i].attr;
+
+		ldb_parse_tree_walk(req->op.search.tree,
+				    operational_present,
+				    &ctx);
+		if (ctx.found_operational) {
+			break;
+		}
+	}
+
+	if (ctx.found_operational) {
+
+		ac->tree = ldb_parse_tree_copy_shallow(ac,
+						       req->op.search.tree);
+
+		if (ac->tree == NULL) {
+			return ldb_operr(ldb);
+		}
+
+		/* replace any attributes in the parse tree that are
+		   searchable, but are stored using a different name in the
+		   backend */
+		for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
+			ldb_parse_tree_attr_replace(ac->tree,
+						    parse_tree_sub[i].attr,
+						    parse_tree_sub[i].replace);
+		}
+	} else {
+		/* Avoid allocating a copy if we do not need to */
+		ac->tree = req->op.search.tree;
 	}
 
 	ac->controls_flags = talloc(ac, struct op_controls_flags);
@@ -1795,7 +1870,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
-					req->op.search.tree,
+					ac->tree,
 					/* use new set of attrs if any */
 					search_attrs == NULL?req->op.search.attrs:search_attrs,
 					req->controls,
