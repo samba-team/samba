@@ -1,21 +1,21 @@
-/* 
+/*
    schema conversion routines
 
    Copyright (C) Andrew Bartlett 2006-2008
-  
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -38,8 +38,8 @@ struct oid_map {
 };
 
 static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *schema, const char *print_class,
-				    enum dsdb_schema_convert_target target, 
-				    const char **attrs_skip, const struct attr_map *attr_map, const struct oid_map *oid_map) 
+				    enum dsdb_schema_convert_target target,
+				    const char **attrs_skip, const struct attr_map *attr_map, const struct oid_map *oid_map)
 {
 	char *out = append_to_string;
 	const struct dsdb_class *objectclass;
@@ -66,7 +66,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		};
 		unsigned int j;
 		unsigned int attr_idx;
-		
+
 		if (!mem_ctx) {
 			DEBUG(0, ("Failed to create new talloc context\n"));
 			return NULL;
@@ -84,7 +84,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 				break;
 			}
 		}
-		
+
 		/* We might have been asked to remap this name, due to a conflict */
 		for (j=0; name && attr_map && attr_map[j].old_attr; j++) {
 			if (strcasecmp(name, attr_map[j].old_attr) == 0) {
@@ -92,7 +92,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 				break;
 			}
 		}
-		
+
 		/* We might have been asked to remap this subClassOf, due to a conflict */
 		for (j=0; subClassOf && attr_map && attr_map[j].old_attr; j++) {
 			if (strcasecmp(subClassOf, attr_map[j].old_attr) == 0) {
@@ -100,36 +100,36 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 				break;
 			}
 		}
-		
+
 		may = dsdb_full_attribute_list(mem_ctx, schema, &objectclass_name_as_el, DSDB_SCHEMA_ALL_MAY);
 
 		for (j=0; may && may[j]; j++) {
-			/* We might have been asked to remap this name, due to a conflict */ 
-			for (attr_idx=0; attr_map && attr_map[attr_idx].old_attr; attr_idx++) { 
-				if (strcasecmp(may[j], attr_map[attr_idx].old_attr) == 0) { 
-					may[j] =  attr_map[attr_idx].new_attr; 
-					break;				
-				}					
-			}						
+			/* We might have been asked to remap this name, due to a conflict */
+			for (attr_idx=0; attr_map && attr_map[attr_idx].old_attr; attr_idx++) {
+				if (strcasecmp(may[j], attr_map[attr_idx].old_attr) == 0) {
+					may[j] =  attr_map[attr_idx].new_attr;
+					break;
+				}
+			}
 		}
 
 		must = dsdb_full_attribute_list(mem_ctx, schema, &objectclass_name_as_el, DSDB_SCHEMA_ALL_MUST);
 
 		for (j=0; must && must[j]; j++) {
-			/* We might have been asked to remap this name, due to a conflict */ 
-			for (attr_idx=0; attr_map && attr_map[attr_idx].old_attr; attr_idx++) { 
-				if (strcasecmp(must[j], attr_map[attr_idx].old_attr) == 0) { 
-					must[j] =  attr_map[attr_idx].new_attr; 
-					break;				
-				}					
-			}						
+			/* We might have been asked to remap this name, due to a conflict */
+			for (attr_idx=0; attr_map && attr_map[attr_idx].old_attr; attr_idx++) {
+				if (strcasecmp(must[j], attr_map[attr_idx].old_attr) == 0) {
+					must[j] =  attr_map[attr_idx].new_attr;
+					break;
+				}
+			}
 		}
 
-		schema_entry = schema_class_description(mem_ctx, target, 
+		schema_entry = schema_class_description(mem_ctx, target,
 							SEPERATOR,
-							oid, 
+							oid,
 							name,
-							NULL, 
+							NULL,
 							subClassOf,
 							objectClassCategory,
 							must,
@@ -156,11 +156,11 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		talloc_free(mem_ctx);
 	} while (0);
 
-	
+
 	for (objectclass=schema->classes; objectclass; objectclass = objectclass->next) {
-		if (ldb_attr_cmp(objectclass->subClassOf, print_class) == 0 
+		if (ldb_attr_cmp(objectclass->subClassOf, print_class) == 0
 		    && ldb_attr_cmp(objectclass->lDAPDisplayName, print_class) != 0) {
-			out = print_schema_recursive(out, schema, objectclass->lDAPDisplayName, 
+			out = print_schema_recursive(out, schema, objectclass->lDAPDisplayName,
 						     target, attrs_skip, attr_map, oid_map);
 		}
 	}
@@ -168,7 +168,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 }
 
 /* Routine to linearise our internal schema into the format that
-   OpenLDAP and Fedora DS use for their backend.  
+   OpenLDAP and Fedora DS use for their backend.
 
    The 'mappings' are of a format like:
 
@@ -183,7 +183,7 @@ attributeTypes:samba4AttributeTypes
 */
 
 
-char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str, const char *mappings) 
+char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str, const char *mappings)
 {
 	/* Read list of attributes to skip, OIDs to map */
 	TALLOC_CTX *mem_ctx = talloc_new(ldb);
@@ -311,7 +311,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 				break;
 			}
 		}
-		
+
 		if (attribute->syntax) {
 			/* We might have been asked to remap this oid,
 			 * due to a conflict, or lack of
@@ -324,7 +324,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 					break;
 				}
 			}
-			
+
 			equality = attribute->syntax->equality;
 			substring = attribute->syntax->substring;
 		}
@@ -336,16 +336,16 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 				break;
 			}
 		}
-		
-		schema_entry = schema_attribute_description(mem_ctx, 
-							    target, 
-							    SEPERATOR, 
-							    oid, 
-							    name, 
-							    equality, 
-							    substring, 
-							    syntax, 
-							    single_value, 
+
+		schema_entry = schema_attribute_description(mem_ctx,
+							    target,
+							    SEPERATOR,
+							    oid,
+							    name,
+							    equality,
+							    substring,
+							    syntax,
+							    single_value,
 							    false,
 							    NULL, NULL,
 							    NULL, NULL,
