@@ -10436,18 +10436,6 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 		goto done;
 	}
 
-#if 0 /* FIXME - gd */
-	/* housekeeping information in the reply */
-
-	/* Fix from Martin Zielinski <mz@seh.de> - ensure
-	 * the hand marshalled container size is a multiple
-	 * of 4 bytes for RPC alignment.
-	 */
-
-	if (needed % 4) {
-		needed += 4-(needed % 4);
-	}
-#endif
 	*r->out.count	= count;
 	*r->out.info	= info;
 
