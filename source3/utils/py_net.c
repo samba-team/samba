@@ -53,7 +53,7 @@ static WERROR check_ads_config(struct loadparm_context *lp_ctx)
 	}
 
 	if ( lpcfg_security(lp_ctx) == SEC_ADS && !*lpcfg_realm(lp_ctx)) {
-		d_fprintf(stderr, _("realm must be set in in %s for ADS "
+		d_fprintf(stderr, _("realm must be set in %s for ADS "
 			  "join to succeed.\n"), get_dyn_CONFIGFILE());
 		return WERR_INVALID_PARAMETER;
 	}

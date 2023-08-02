@@ -937,7 +937,7 @@ msgstr ""
 
 #: ../../utils/net_ads.c:1093
 #, c-format
-msgid "realm must be set in in %s for ADS join to succeed.\n"
+msgid "realm must be set in %s for ADS join to succeed.\n"
 msgstr ""
 
 #: ../../utils/net_ads.c:1126
