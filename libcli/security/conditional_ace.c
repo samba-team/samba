@@ -2055,6 +2055,7 @@ bool conditional_ace_encode_binary(TALLOC_CTX *mem_ctx,
 		data[j] = tok->type;
 		j++;
 		if (j >= alloc_size) {
+			DBG_ERR("program exceeds %zu bytes\n", alloc_size);
 			goto error;
 		}
 
@@ -2132,16 +2133,19 @@ bool conditional_ace_encode_binary(TALLOC_CTX *mem_ctx,
 			goto error;
 		}
 		if (consumed == -1) {
+			DBG_ERR("program exceeds %zu bytes\n", alloc_size);
 			goto error;
 		}
 		j += consumed;
 		if (j >= alloc_size) {
+			DBG_ERR("program exceeds %zu bytes\n", alloc_size);
 			goto error;
 		}
 	}
 	/* align to a 4 byte boundary */
 	required_size = (j + 3) & ~((size_t)3);
 	if (required_size > alloc_size) {
+		DBG_ERR("program exceeds %zu bytes\n", alloc_size);
 		goto error;
 	}
 	while (j < required_size) {
