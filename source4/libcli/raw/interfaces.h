@@ -68,7 +68,7 @@ struct smb2_lease_break {
 struct ntvfs_handle;
 
 /*
- * a generic container for file handles or file pathes
+ * a generic container for file handles or file paths
  * for qfileinfo/setfileinfo and qpathinfo/setpathinfo
 */
 union smb_handle_or_path {
@@ -1389,7 +1389,7 @@ enum smb_open_level {
 union smb_open {
 /* 
  * because the *.out.file structs are not aligned to the same offset for each level
- * we provide a hepler macro that should be used to find the current smb_handle structure
+ * we provide a helper macro that should be used to find the current smb_handle structure
  */
 #define SMB_OPEN_OUT_FILE(op, file) do { \
 	switch (op->generic.level) { \
@@ -1455,11 +1455,11 @@ union smb_open {
 			const char *fname;
 
 			/* these last 2 elements are only used in the
-			   NTTRANS varient of the call */
+			   NTTRANS variant of the call */
 			struct security_descriptor *sec_desc;
 			struct smb_ea_list *ea_list;
 
-			/* some optional parameters from the SMB2 varient */
+			/* some optional parameters from the SMB2 variant */
 			bool query_maximal_access;
 			bool query_on_disk_id;
 
@@ -2055,7 +2055,7 @@ union smb_lock {
 				uint32_t pid; /* 16 bits in SMB1 */
 				uint64_t offset;
 				uint64_t count;
-			} *locks; /* unlocks are first in the arrray */
+			} *locks; /* unlocks are first in the array */
 		} in;
 	} generic, lockx;
 

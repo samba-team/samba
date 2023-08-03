@@ -334,7 +334,7 @@ try_logon_again:
 	}
 
 	/* reset the original gensec_features (on the credentials
-	 * context, so we don't tatoo it ) */
+	 * context, so we don't tattoo it ) */
 	cli_credentials_set_gensec_features(creds,
 					    old_gensec_features,
 					    CRED_SPECIFIED);

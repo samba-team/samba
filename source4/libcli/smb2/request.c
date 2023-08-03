@@ -554,7 +554,7 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
   pull a uint16_t ofs/ uint32_t length/blob triple from a data blob
   the ptr points to the start of the offset/length pair
   
-  In this varient the uint16_t is padded by an extra 2 bytes, making
+  In this variant the uint16_t is padded by an extra 2 bytes, making
   the size aligned on 4 byte boundary
 */
 NTSTATUS smb2_pull_o16As32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)

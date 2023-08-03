@@ -1,5 +1,5 @@
 /*
-  a composite API for quering file system information
+  a composite API for querying file system information
 */
 
 #include "includes.h"

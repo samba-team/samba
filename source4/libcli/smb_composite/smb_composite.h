@@ -166,7 +166,7 @@ NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem
 
 /*
   generic session setup interface that takes care of which
-  session setup varient to use
+  session setup variant to use
 */
 struct smb_composite_sesssetup {
 	struct {

@@ -93,7 +93,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 {	
 	switch (level) {
 	case RAW_FILEINFO_BASIC_INFORMATION:
-		/* some servers return 40 bytes and some 36. w2k3 return 40, so thats
+		/* some servers return 40 bytes and some 36. w2k3 return 40, so that's
 		   what we should do, but we need to accept 36 */
 		if (blob->length != 36) {
 			FINFO_CHECK_SIZE(40);
@@ -794,7 +794,7 @@ _PUBLIC_ NTSTATUS smb_raw_pathinfo_recv(struct smbcli_request *req,
 			       TALLOC_CTX *mem_ctx,
 			       union smb_fileinfo *parms)
 {
-	/* recv is idential to fileinfo */
+	/* recv is identical to fileinfo */
 	return smb_raw_fileinfo_recv(req, mem_ctx, parms);
 }
 

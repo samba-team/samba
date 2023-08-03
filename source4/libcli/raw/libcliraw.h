@@ -173,7 +173,7 @@ struct smbcli_session {
 	   the user to control these for torture testing */
 	uint16_t flags2;
 
-	/* the spnego context if we use extented security */
+	/* the spnego context if we use extended security */
 	struct gensec_security *gensec;
 
 	struct smbcli_session_options {
@@ -245,7 +245,7 @@ struct smbcli_request {
 	struct smb_nttrans nttrans;
 
 	/* information on what to do with a reply when it is received
-	   asyncronously. If this is not setup when a reply is received then
+	   asynchronously. If this is not setup when a reply is received then
 	   the reply is discarded
 
 	   The private pointer is private to the caller of the client

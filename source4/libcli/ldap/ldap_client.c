@@ -52,7 +52,7 @@ static int ldap_connection_destructor(struct ldap_connection *conn)
 }
 
 /**
-  create a new ldap_connection stucture. The event context is optional
+  create a new ldap_connection structure. The event context is optional
 */
 
 _PUBLIC_ struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 

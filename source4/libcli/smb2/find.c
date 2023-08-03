@@ -92,7 +92,7 @@ NTSTATUS smb2_find(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 
 
 /*
-  a varient of smb2_find_recv that parses the resulting blob into
+  a variant of smb2_find_recv that parses the resulting blob into
   smb_search_data structures
 */
 NTSTATUS smb2_find_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
@@ -167,7 +167,7 @@ NTSTATUS smb2_find_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 }
 
 /*
-  a varient of smb2_find that parses the resulting blob into
+  a variant of smb2_find that parses the resulting blob into
   smb_search_data structures
 */
 NTSTATUS smb2_find_level(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,

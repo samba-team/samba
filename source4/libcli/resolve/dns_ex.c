@@ -242,7 +242,7 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 	if (qtype == QTYPE_AAAA && a_num == 0) {
 		/*
 		* DNS server didn't returned A when asked for AAAA records.
-		* Most of the server do it, let's ask for A specificaly.
+		* Most of the server do it, let's ask for A specifically.
 		*/
 		err = dns_lookup(tmp_ctx, name, QTYPE_A, &reply);
 		if (ERR_DNS_IS_OK(err)) {

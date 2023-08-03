@@ -113,7 +113,7 @@ static void request_handler(struct smbcli_request *req)
 		/* This doesn't work, as this only happens on old
 		 * protocols, where this comparison won't match. */
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
-			/* we neet to reset the vuid for a new try */
+			/* we need to reset the vuid for a new try */
 			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_old(c, session,
@@ -611,8 +611,8 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 
 /*
   composite session setup function that hides the details of all the
-  different session setup varients, including the multi-pass nature of
-  the spnego varient
+  different session setup variants, including the multi-pass nature of
+  the spnego variant
 */
 struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *session,
 						       struct smb_composite_sesssetup *io)
@@ -642,7 +642,7 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	talloc_set_destructor(state, sesssetup_state_destructor);
 
-	/* no session setup at all in earliest protocol varients */
+	/* no session setup at all in earliest protocol variants */
 	if (session->transport->negotiate.protocol < PROTOCOL_LANMAN1) {
 		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 			composite_error(c, NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);

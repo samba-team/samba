@@ -292,7 +292,7 @@
 
 /*
  * Global value meaning that the smb_uid field should be
- * ingored (in share level security and protocol level == CORE)
+ * ignored (in share level security and protocol level == CORE)
  */
 
 #define UID_FIELD_INVALID 0
