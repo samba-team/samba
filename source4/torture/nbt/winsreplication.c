@@ -161,13 +161,13 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 
 	assoc_stop.in.assoc_ctx	= associate1.out.assoc_ctx;
 	assoc_stop.in.reason	= 4;
-	torture_comment(tctx, "Send a association stop request (conn1), reson: %u\n", assoc_stop.in.reason);
+	torture_comment(tctx, "Send a association stop request (conn1), reason: %u\n", assoc_stop.in.reason);
 	status = wrepl_associate_stop(wrepl_socket1, &assoc_stop);
 	CHECK_STATUS(tctx, status, NT_STATUS_END_OF_FILE);
 
 	assoc_stop.in.assoc_ctx	= associate2.out.assoc_ctx;
 	assoc_stop.in.reason	= 0;
-	torture_comment(tctx, "Send a association stop request (conn2), reson: %u\n", assoc_stop.in.reason);
+	torture_comment(tctx, "Send a association stop request (conn2), reason: %u\n", assoc_stop.in.reason);
 	status = wrepl_associate_stop(wrepl_socket2, &assoc_stop);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
