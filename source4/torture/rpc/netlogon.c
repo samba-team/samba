@@ -2292,7 +2292,7 @@ static bool test_ServerReqChallengeGlobal(struct torture_context *tctx,
 
 /*
  * Test the re-use of the challenge is not possible on a third
- * connection, after first useing it second one.
+ * connection, after first using it second one.
  */
 
 static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,

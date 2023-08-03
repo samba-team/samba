@@ -3636,7 +3636,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 		torture_assert_int_not_equal(tctx, t_kvno, 0, assertion_message);
 	} else {
 		assertion_message = talloc_asprintf(ctx,
-				"krbtgt_referral_ticket(%s) kvno(NULL) exptected(%u) current(%u)",
+				"krbtgt_referral_ticket(%s) kvno(NULL) expected(%u) current(%u)",
 				krbtgt_trust_realm_string,
 				(unsigned)expected_kvno,(unsigned)kvno);
 		torture_comment(tctx, "%s\n", assertion_message);

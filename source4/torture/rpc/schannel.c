@@ -215,14 +215,14 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 			netlogon_creds_arcfour_crypt(creds, base->LMSessKey.key, 8);
 		}
 
-		DEBUG(1,("decryped keys validation_level %d\n",
+		DEBUG(1,("decrypted keys validation_level %d\n",
 			validation_levels[i]));
 
 		dump_data(1, base->key.key, 16);
 		dump_data(1, base->LMSessKey.key, 8);
 
 		if (!can_do_validation_6) {
-			/* we cant compare against unencrypted keys */
+			/* we can't compare against unencrypted keys */
 			continue;
 		}
 
@@ -420,14 +420,14 @@ static bool test_netlogon_ex_bug14932(struct dcerpc_pipe *p,
 			netlogon_creds_arcfour_crypt(creds, base->LMSessKey.key, 8);
 		}
 
-		DEBUG(1,("decryped keys validation_level %d\n",
+		DEBUG(1,("decrypted keys validation_level %d\n",
 			validation_levels[i]));
 
 		dump_data(1, base->key.key, 16);
 		dump_data(1, base->LMSessKey.key, 8);
 
 		if (!can_do_validation_6) {
-			/* we cant compare against unencrypted keys */
+			/* we can't compare against unencrypted keys */
 			continue;
 		}
 

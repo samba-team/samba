@@ -1116,7 +1116,7 @@ static bool test_lmv2_ntlm_break_lm_no_dom(struct samlogon_state *samlogon_state
 }
 
 /*
- * Test the NTLM2 response (extra challenge in LM feild)
+ * Test the NTLM2 response (extra challenge in LM field)
  *
  * This test is the same as the 'break LM' test, but checks that the
  * server implements NTLM2 session security in the right place
@@ -1838,7 +1838,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				     creds = cli_credentials_get_netlogon_creds(machine_credentials),
 				     ret,
 				     failed,
-				     "obtaining credentails");
+				     "obtaining credentials");
 
 	{
 

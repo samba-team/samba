@@ -54,7 +54,7 @@ enum test_wrong {
 
 /* Our very special and valued secret */
 /* No need to put const as we cast the array in uint8_t
- * we will get a warning about the discared const
+ * we will get a warning about the discarded const
  */
 static const char secret[] = "tata yoyo mais qu'est ce qu'il y a sous ton grand chapeau ?";
 
@@ -188,7 +188,7 @@ static struct dom_sid *get_user_sid(struct torture_context *tctx,
  * the version depends on the version parameter
  * the structure is returned as a blob.
  * The broken flag is to indicate if we want
- * to create a non conform to specification structre
+ * to create a non conform to specification structure
  */
 static DATA_BLOB *create_unencryptedsecret(TALLOC_CTX *mem_ctx,
 					   bool broken,
@@ -216,7 +216,7 @@ static DATA_BLOB *create_unencryptedsecret(TALLOC_CTX *mem_ctx,
 		if (broken) {
 			/* The magic value is correctly set by the NDR push
 			 * but we want to test the behavior of the server
-			 * if a differrent value is provided
+			 * if a different value is provided
 			 */
 			((uint8_t*)blob->data)[4] = 79; /* A great year !!! */
 		}
@@ -241,7 +241,7 @@ static DATA_BLOB *create_unencryptedsecret(TALLOC_CTX *mem_ctx,
 			/*
 			 * The magic value is correctly set by the NDR push
 			 * but we want to test the behavior of the server
-			 * if a differrent value is provided
+			 * if a different value is provided
 			 */
 			((uint8_t*)blob->data)[4] = 79; /* A great year !!! */
 		}
@@ -252,7 +252,7 @@ static DATA_BLOB *create_unencryptedsecret(TALLOC_CTX *mem_ctx,
 
 /*
  * Create an access check structure, the format depends on the version parameter.
- * If broken is specified then we create a stucture that isn't conform to the
+ * If broken is specified then we create a structure that isn't conform to the
  * specification.
  *
  * If the structure can't be created then NULL is returned.

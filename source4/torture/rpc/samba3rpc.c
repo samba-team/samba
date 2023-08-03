@@ -282,7 +282,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	torture_assert(torture, smbXcli_conn_is_connected(cli->transport->conn),
 		       "smb still connected");
 	torture_assert(torture, !dcerpc_binding_handle_is_connected(lsa_handle),
-		       "dcerpc disonnected");
+		       "dcerpc disconnected");
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		torture_comment(torture, "dcerpc_lsa_OpenPolicy2 with wrong vuid gave %s, "

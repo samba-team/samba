@@ -147,7 +147,7 @@ static const struct PAC_BUFFER *get_pac_buffer(const struct PAC_DATA *pac_data,
 	return pac_buf;
 }
 
-/* Also happens to be a really good one-step verfication of our Kerberos stack */
+/* Also happens to be a really good one-step verification of our Kerberos stack */
 
 static bool netlogon_validate_pac(struct torture_context *tctx,
 				  struct dcerpc_pipe *p1,
@@ -1099,7 +1099,7 @@ static bool test_S4U2Self(struct torture_context *tctx,
 		torture_assert_u32_equal(tctx, netlogon_user_info_dc->sids[i].attrs, s4u2self_session_info->torture->dc_sids[k].attrs, "Different domain group attrs for S4U2Self");
 		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s4u2self_session_info->torture->dc_sids[k].sid), "Returned BUILTIN domain in groups for S4U2Self");
 		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->torture->dc_sids[j].sid), "Returned BUILTIN domain in groups kinit-based PAC");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_user_info_dc->sids[i].sid), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_user_info_dc->sids[i].sid), "Returned BUILTIN domain in groups from NETLOGON SamLogon reply");
 	}
 
 	return true;

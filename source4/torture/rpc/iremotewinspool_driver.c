@@ -672,7 +672,7 @@ static bool test_CopyDriverFiles(struct torture_context *tctx,
 	status = smbcli_mkdir(ctx->dinfo->cli->tree, ctx->dinfo->print_upload_guid_dir);
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "Failed to create upload directory");
 
-	/* Walk the provided torture option driver_path file tree, creating the directory heirarchy and
+	/* Walk the provided torture option driver_path file tree, creating the directory hierarchy and
 	 * copying all files to print$/{GUID}/ share */
 	ret = tftw(tctx, ctx->dinfo->local_driver_path, copy_driver_files, TFTW_MAX_DEPTH, ctx->dinfo);
 	torture_assert_int_equal_goto(tctx, ret, 0, ok, done, "Failed to copy driver files to print$/{GUID}/ dir");

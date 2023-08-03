@@ -690,7 +690,7 @@ bool test_QuerySitesByCost(struct torture_context *tctx,
 					 "dcerpc_drsuapi_QuerySitesByCost");
 		torture_assert_int_equal(tctx,
 					 r.out.ctr->ctr1.info[1].site_cost, -1,
-					 "dcerpc_drsuapi_QuerySitesByCost exptected site cost");
+					 "dcerpc_drsuapi_QuerySitesByCost expected site cost");
 	}
 
 	return true;

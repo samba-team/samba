@@ -89,7 +89,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 					       NT_STATUS_CONNECTION_RESET);
 
 		torture_assert(torture, !dcerpc_binding_handle_is_connected(p->binding_handle),
-			       "dcerpc disonnected");
+			       "dcerpc disconnected");
 
 		return ret;
 	}

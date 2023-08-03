@@ -2975,7 +2975,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 			}
 		}
 
-		/* We tested the order of precendence which is as follows:
+		/* We tested the order of precedence which is as follows:
 
 		* pwd min_age
 		* pwd length
@@ -5742,7 +5742,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 				ret = false;
 			}
 
-			/* Try a compleatly random password */
+			/* Try a completely random password */
 			if (!test_ChangePasswordRandomBytes(p, tctx, base_acct_name, user_handle, &password)) {
 				ret = false;
 			}

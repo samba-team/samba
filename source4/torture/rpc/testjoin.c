@@ -637,7 +637,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 		cli_credentials_set_secure_channel_type(*machine_credentials,
 							SEC_CHAN_WKSTA);
 	} else {
-		DEBUG(0, ("Invalid account type specificed to torture_join_domain\n"));
+		DEBUG(0, ("Invalid account type specified to torture_join_domain\n"));
 		talloc_free(*machine_credentials);
 		return NULL;
 	}

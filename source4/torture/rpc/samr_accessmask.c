@@ -326,12 +326,12 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 		printf("Connect5 failed - %s\n", nt_errstr(status));
 		return false;
 	}
-	/* disconnec the user */
+	/* disconnect the user */
 	talloc_free(test_p);
 
 
 	/* read the sequrity descriptor back. it should not have changed
-	 * eventhough samr_SetSecurity returned SUCCESS
+	 * even though samr_SetSecurity returned SUCCESS
 	 */
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QuerySecurity_r(b, tctx, &qs),
 		"QuerySecurity failed");
@@ -359,7 +359,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 
 /*
  * test if the ACLs are enforced for users.
- * a normal testuser only gets the rights provided in hte ACL for
+ * a normal testuser only gets the rights provided in the ACL for
  * Everyone   which does not include the SAMR_ACCESS_SHUTDOWN_SERVER
  * right.  If the ACLs are checked when a user connects
  * a testuser that requests the accessmask with only this bit set
@@ -398,7 +398,7 @@ static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
 	}
 	printf(" OK\n");
 
-	/* disconnec the user */
+	/* disconnect the user */
 	talloc_free(test_p);
 
 	return ret;
