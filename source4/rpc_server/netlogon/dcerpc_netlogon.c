@@ -217,7 +217,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	reject_des_client = !allow_nt4_crypto;
 
 	/*
-	 * If weak cryto is disabled, do not announce that we support RC4.
+	 * If weak crypto is disabled, do not announce that we support RC4.
 	 */
 	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
 		/* Without RC4 and DES we require AES */
@@ -494,7 +494,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		       NETLOGON_NEG_AUTHENTICATED_RPC;
 
 	/*
-	 * If weak cryto is disabled, do not announce that we support RC4.
+	 * If weak crypto is disabled, do not announce that we support RC4.
 	 */
 	if (lpcfg_weak_crypto(dce_call->conn->dce_ctx->lp_ctx) ==
 	    SAMBA_WEAK_CRYPTO_DISALLOWED) {
@@ -1428,7 +1428,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 			return NT_STATUS_OK;
 		}
 
-		/* Until we get an implemetnation of these other packages */
+		/* Until we get an implementation of these other packages */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	default:
@@ -1872,7 +1872,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 		}
 
 		/*
-		 * TODO: Should we also varify that only valid
+		 * TODO: Should we also verify that only valid
 		 *       netbios name characters are used?
 		 */
 	}
@@ -2872,7 +2872,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 		ZERO_STRUCTP(domain_info);
 
-		/* Informations about the local and trusted domains */
+		/* Information about the local and trusted domains */
 
 		status = fill_our_one_domain_info(mem_ctx,
 						  our_tdo,

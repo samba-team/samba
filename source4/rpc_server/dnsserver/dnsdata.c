@@ -664,7 +664,7 @@ fail_nomemory:
 	return WERR_NOT_ENOUGH_MEMORY;
 }
 
-/* Intialize tree with given name as the root */
+/* Initialize tree with given name as the root */
 static struct dns_tree *dns_tree_init(TALLOC_CTX *mem_ctx, const char *name, void *data)
 {
 	struct dns_tree *tree;

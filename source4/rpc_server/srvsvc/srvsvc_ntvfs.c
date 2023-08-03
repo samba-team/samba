@@ -66,7 +66,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 		return status;
 	}
 
-#if 0 /* TODO: fix access cecking */
+#if 0 /* TODO: fix access checking */
 	if (!socket_check_access(dce_call->connection->socket, 
 				 scfg->name, 
 				 share_string_list_option(scfg, SHARE_HOSTS_ALLOW), 
@@ -107,7 +107,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	talloc_set_destructor(c, srvsvc_ntvfs_ctx_destructor);
 
 	/*
-	 * NOTE: we only set the addr callbacks as we're not interesseted in oplocks or in getting file handles
+	 * NOTE: we only set the addr callbacks as we're not interested in oplocks or in getting file handles
 	 */
 	local_address = dcesrv_connection_get_local_address(dce_call->conn);
 	remote_address = dcesrv_connection_get_remote_address(dce_call->conn);

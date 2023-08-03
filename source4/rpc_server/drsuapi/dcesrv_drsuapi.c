@@ -150,7 +150,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	/*
 	 * The "process identifier" of the client.
-	 * According to the WSPP docs, sectin 5.35, this is
+	 * According to the WSPP docs, section 5.35, this is
 	 * for informational and debugging purposes only.
 	 * The assignment is implementation specific.
 	 */

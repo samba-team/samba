@@ -230,7 +230,7 @@ struct ldb_context *dcesrv_samdb_connect_session_info(
 
 	/*
 	 * We need to make sure every argument
-	 * stays arround for the lifetime of 'samdb',
+	 * stays around for the lifetime of 'samdb',
 	 * typically it is allocated on the scope of
 	 * an assoc group, so we can't reference dce_call->conn,
 	 * as the assoc group may stay when the current connection

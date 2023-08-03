@@ -1165,7 +1165,7 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 	NTSTATUS status;
 
 	/*
-	 * here we basicaly need to return our certificate
+	 * here we basically need to return our certificate
 	 * search for lsa secret BCKUPKEY_PREFERRED first
 	 */
 

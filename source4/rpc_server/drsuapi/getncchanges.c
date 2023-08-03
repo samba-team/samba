@@ -761,7 +761,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 		v = ldb_msg_find_attr_as_string(msg, "isDeleted", "FALSE");
 		if (strncmp(v, "TRUE", 4) == 0) {
 			/*
-			  * Note: we skip the transmition of the deleted link even if the other part used to
+			  * Note: we skip the transmission of the deleted link even if the other part used to
 			  * know about it because when we transmit the deletion of the object, the link will
 			  * be deleted too due to deletion of object where link points and Windows do so.
 			  */
@@ -769,7 +769,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 				v = ldb_msg_find_attr_as_string(msg, "isRecycled", "FALSE");
 				/*
 				 * On Windows 2008R2 isRecycled is always present even if FL or DL are < FL 2K8R2
-				 * if it join an existing domain with deleted objets, it firsts impose to have a
+				 * if it join an existing domain with deleted objects, it firsts impose to have a
 				 * schema with the is-Recycled object and for all deleted objects it adds the isRecycled
 				 * either during initial replication or after the getNCChanges.
 				 * Behavior of samba has been changed to always have this attribute if it's present in the schema.
@@ -1945,7 +1945,7 @@ static void dcesrv_drsuapi_update_highwatermark(const struct ldb_message *msg,
 		 *
 		 * If this object has changed lately we better
 		 * let the destination dsa refetch the change.
-		 * This is better than the risk of loosing some
+		 * This is better than the risk of losing some
 		 * objects or linked attributes.
 		 */
 		return;

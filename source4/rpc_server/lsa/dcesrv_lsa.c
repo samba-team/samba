@@ -2529,7 +2529,7 @@ static NTSTATUS dcesrv_lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_ca
 					 struct lsa_CloseTrustedDomainEx *r)
 {
 	/* The result of a bad hair day from an IDL programmer?  Not
-	 * implmented in Win2k3.  You should always just lsa_Close
+	 * implemented in Win2k3.  You should always just lsa_Close
 	 * anyway. */
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -3241,7 +3241,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	case SECURITY_ADMINISTRATOR:
 		break;
 	default:
-		/* Users and annonymous are not allowed create secrets */
+		/* Users and anonymous are not allowed create secrets */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3409,7 +3409,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	case SECURITY_ADMINISTRATOR:
 		break;
 	default:
-		/* Users and annonymous are not allowed to access secrets */
+		/* Users and anonymous are not allowed to access secrets */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3695,7 +3695,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 	case SECURITY_ADMINISTRATOR:
 		break;
 	default:
-		/* Users and annonymous are not allowed to read secrets */
+		/* Users and anonymous are not allowed to read secrets */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

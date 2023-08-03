@@ -1448,7 +1448,7 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 
   This call uses transactions to ensure we don't get a new conflicting
   user while we are processing this, and to ensure the user either
-  completly exists, or does not.
+  completely exists, or does not.
 */
 static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_CreateUser2 *r)
