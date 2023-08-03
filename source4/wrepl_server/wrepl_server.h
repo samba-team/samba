@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    WINS Replication server
-   
+
    Copyright (C) Stefan Metzmacher	2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -89,7 +89,7 @@ struct wreplsrv_out_connection {
 		uint16_t peer_major;
 	} assoc_ctx;
 
-	/* 
+	/*
 	 * the client socket to the partner,
 	 * NULL if not yet connected
 	 */
@@ -123,7 +123,7 @@ struct wreplsrv_partner {
 	/* the ip-address of the partner */
 	const char *address;
 
-	/* 
+	/*
 	 * as wins partners identified by ip-address, we need to use a specific source-ip
 	 *  when we want to connect to the partner
 	 */
@@ -200,7 +200,7 @@ struct wreplsrv_owner {
 	struct wrepl_wins_owner owner;
 
 	/* can be NULL if this owner isn't a configure partner */
-	struct wreplsrv_partner *partner; 
+	struct wreplsrv_partner *partner;
 };
 
 /*
@@ -224,19 +224,19 @@ struct wreplsrv_service {
 		/* the last wins config db seqnumber we know about */
 		uint64_t seqnumber;
 
-		/* 
-		 * the interval (in secs) till an active record will be marked as RELEASED 
+		/*
+		 * the interval (in secs) till an active record will be marked as RELEASED
 		 */
 		uint32_t renew_interval;
 
-		/* 
+		/*
 		 * the interval (in secs) a record remains in RELEASED state,
 		 * before it will be marked as TOMBSTONE
 		 * (also known as extinction interval)
 		 */
 		uint32_t tombstone_interval;
 
-		/* 
+		/*
 		 * the interval (in secs) a record remains in TOMBSTONE state,
 		 * before it will be removed from the database.
 		 * See also 'tombstone_extra_timeout'.
@@ -244,7 +244,7 @@ struct wreplsrv_service {
 		 */
 		uint32_t tombstone_timeout;
 
-		/* 
+		/*
 		 * the interval (in secs) a record remains in TOMBSTONE state,
 		 * even after 'tombstone_timeout' passes the current timestamp.
 		 * this is the minimum uptime of the wrepl service, before
@@ -253,18 +253,18 @@ struct wreplsrv_service {
 		 */
 		uint32_t tombstone_extra_timeout;
 
-		/* 
+		/*
 		 * the interval (in secs) till a replica record will be verified
 		 * with the owning wins server
 		 */
 		uint32_t verify_interval;
 
-		/* 
+		/*
 		 * the interval (in secs) till a do a database cleanup
 		 */
 		uint32_t scavenging_interval;
 
-		/* 
+		/*
 		 * the interval (in secs) to the next periodic processing
 		 * (this is the maximun interval)
 		 */
@@ -279,7 +279,7 @@ struct wreplsrv_service {
 
 	/*
 	 * this is our local wins_owner entry, this is also in the table list
-	 * but we need a pointer to it, because we need to update it on each 
+	 * but we need a pointer to it, because we need to update it on each
 	 * query to wreplsrv_find_owner(), as the local records can be added
 	 * to the wins.ldb from external tools and the winsserver
 	 */
@@ -311,7 +311,7 @@ struct wreplsrv_service {
 		/*
 		 * are we currently inside a scavenging run
 		 */
-		bool processing;	
+		bool processing;
 	} scavenging;
 };
 
