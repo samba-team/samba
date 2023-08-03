@@ -442,7 +442,7 @@ static bool test_unknowndomain(struct torture_context *tctx,
 	torture_assert_ntstatus_equal(tctx,
 		   dfs_cli_do_call(cli->tree, &r2),
 		   NT_STATUS_INVALID_PARAMETER,
-		   "Get DC Domain didn't return exptected error code");
+		   "Get DC Domain didn't return expected error code");
 
 	return true;
 }
