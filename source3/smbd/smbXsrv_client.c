@@ -555,7 +555,6 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	uint32_t seqnum = 0;
 	struct server_id last_server_id = { .pid = 0, };
 
-	TALLOC_FREE(state->filter_subreq);
 	SMB_ASSERT(state->db_rec == NULL);
 	state->db_rec = smbXsrv_client_global_fetch_locked(table->global.db_ctx,
 							   &client_guid,
@@ -636,6 +635,7 @@ verify_again:
 	SMB_ASSERT(last_server_id.pid == 0);
 	last_server_id = global->server_id;
 
+	TALLOC_FREE(state->filter_subreq);
 	if (procid_is_local(&global->server_id)) {
 		subreq = messaging_filtered_read_send(state,
 						      state->ev,
