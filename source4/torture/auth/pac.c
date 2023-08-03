@@ -41,7 +41,7 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	struct PAC_LOGON_INFO *logon_info;
 	union netr_Validation validation;
 
-	/* Generate a nice, arbitary keyblock */
+	/* Generate a nice, arbitrary keyblock */
 	uint8_t server_bytes[16];
 	uint8_t krbtgt_bytes[16];
 	krb5_keyblock server_keyblock;
