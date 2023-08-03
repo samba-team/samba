@@ -22,7 +22,7 @@ class wintest():
         self.parser = optparse.OptionParser("wintest")
 
     def check_prerequesites(self):
-        self.info("Checking prerequesites")
+        self.info("Checking prerequisites")
         self.setvar('HOSTNAME', self.cmd_output("hostname -s").strip())
         if os.getuid() != 0:
             raise Exception("You must run this script as root")

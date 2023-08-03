@@ -295,7 +295,7 @@ def test_dcpromo(t, vm):
     t.retry_cmd("%s -L ${HOSTNAME}.${LCREALM} -Utest3%%${PASSWORD3} -k no" % (smbclient), ['Sharename', 'IPC'])
     t.retry_cmd("%s -L ${HOSTNAME}.${LCREALM} -Utest3%%${PASSWORD3} -k yes" % (smbclient), ['Sharename', 'IPC'])
 
-    t.info("Checking propogation of user deletion")
+    t.info("Checking propagation of user deletion")
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
@@ -404,7 +404,7 @@ def test_dcpromo_rodc(t, vm):
 
 
 def prep_join_as_dc(t, vm):
-    '''start VM and shutdown Samba in preperation to join a windows domain as a DC'''
+    '''start VM and shutdown Samba in preparation to join a windows domain as a DC'''
     t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool domain join DC")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
@@ -478,7 +478,7 @@ def test_join_as_dc(t, vm):
     t.retry_cmd("%s -L ${HOSTNAME}.${WIN_REALM} -Utest3%%${PASSWORD3} -k no" % (smbclient), ['Sharename', 'IPC'])
     t.retry_cmd("%s -L ${HOSTNAME}.${WIN_REALM} -Utest3%%${PASSWORD3} -k yes" % (smbclient), ['Sharename', 'IPC'])
 
-    t.info("Checking propogation of user deletion")
+    t.info("Checking propagation of user deletion")
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${WIN_REALM}%${WIN_PASS}')
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
@@ -557,7 +557,7 @@ def test_join_as_rodc(t, vm):
     t.info("Checking if new users propagate to windows")
     t.cmd_contains('bin/samba-tool user add test2 ${PASSWORD2}', ['No RID Set DN'])
 
-    t.info("Checking propogation of user deletion")
+    t.info("Checking propagation of user deletion")
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
