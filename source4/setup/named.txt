@@ -30,7 +30,7 @@ chcon -t named_conf_t ${DNS_KEYTAB_ABS}
 #    compatible with access to the dns/sam.ldb files that database
 #    access and updates require.  Additionally, the DLZ plugin is
 #    linked to a large number of Samba shared libraries and loads
-#    additonal plugins.
+#    additional plugins.
 
 #
 # Steps for BIND 9.x.x using BIND9_FLATFILE ------------------------------
