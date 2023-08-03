@@ -594,7 +594,7 @@ struct ldapsrv_context {
 	int extended_type;
 	bool attributesonly;
 	struct ldb_control **controls;
-	size_t count; /* For notificaiton only */
+	size_t count; /* For notification only */
 };
 
 static int ldap_server_search_callback(struct ldb_request *req, struct ldb_reply *ares)
