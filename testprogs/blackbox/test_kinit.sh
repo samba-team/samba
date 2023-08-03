@@ -103,7 +103,7 @@ test_smbclient "Test login with kerberos ccache (initial)" \
 rm -f "${KRB5CCNAME_PATH}"
 
 ###########################################################
-### Test kinit with enterprice principal
+### Test kinit with enterprise principal
 ###########################################################
 
 testit "kinit with password (enterprise style)" \
@@ -216,7 +216,7 @@ test_smbclient "Test login with new user kerberos ccache" \
 rm -f "${KRB5CCNAME_PATH}"
 
 ###########################################################
-### Test kinit fter changing password with samba-tool
+### Test kinit after changing password with samba-tool
 ###########################################################
 
 NEW_USERPASS="testPaSS@34%"

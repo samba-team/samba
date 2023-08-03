@@ -1,5 +1,5 @@
 #!/bin/sh
-# Blackbox tests for diabing NTLMSSP for ldap clinet connections
+# Blackbox tests for diabing NTLMSSP for ldap client connections
 # Copyright (c) 2022      Pavel Filipenský <pfilipen@redhat.com>
 
 if [ $# -lt 2 ]; then

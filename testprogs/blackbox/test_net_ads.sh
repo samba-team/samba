@@ -142,7 +142,7 @@ found_ad=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $service
 found_keytab=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $service | wc -l)
 # test after create that a spn that exists in the keytab but shouldn't
 # be written to the AD.
-testit "test spn service doensn't exist in AD but is present in keytab file after keytab create" test $found_ad -eq 0 -a $found_keytab -gt 1 || failed=$(expr $failed + 1)
+testit "test spn service doesn't exist in AD but is present in keytab file after keytab create" test $found_ad -eq 0 -a $found_keytab -gt 1 || failed=$(expr $failed + 1)
 
 # SPN parser is very basic but does detect some illegal combination
 

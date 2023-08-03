@@ -16,7 +16,7 @@ Currently the real build target is named "testspoolss.exe". Run
 
     nmake /f Makefile
 
-to build the testspoolss.exe. After a successfull build you may want to clean up
+to build the testspoolss.exe. After a successful build you may want to clean up
 temporary files:
 
     nmake /f Makefile cleantmp
