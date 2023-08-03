@@ -327,7 +327,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.assertCmdSuccess(result, out, err)
 
     def test_offline_manual_seized_ridalloc_with_dbcheck(self):
-        """Peform the same actions as test_offline_samba_tool_seized_ridalloc,
+        """Perform the same actions as test_offline_samba_tool_seized_ridalloc,
         but do not create the RID set. Confirm that dbcheck correctly creates
         the RID Set.
 
@@ -379,7 +379,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             shutil.rmtree(targetdir, ignore_errors=True)
 
     def test_offline_manual_seized_ridalloc_add_user(self):
-        """Peform the same actions as test_offline_samba_tool_seized_ridalloc,
+        """Perform the same actions as test_offline_samba_tool_seized_ridalloc,
         but do not create the RID set. Confirm that user-add correctly creates
         the RID Set."""
         fsmo_dn = ldb.Dn(self.ldb_dc1, "CN=RID Manager$,CN=System," + self.ldb_dc1.domain_dn())
@@ -427,7 +427,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             shutil.rmtree(targetdir, ignore_errors=True)
 
     def test_offline_manual_seized_ridalloc_add_user_as_admin(self):
-        """Peform the same actions as test_offline_samba_tool_seized_ridalloc,
+        """Perform the same actions as test_offline_samba_tool_seized_ridalloc,
         but do not create the RID set. Confirm that user-add correctly creates
         the RID Set."""
         fsmo_dn = ldb.Dn(self.ldb_dc1, "CN=RID Manager$,CN=System," + self.ldb_dc1.domain_dn())

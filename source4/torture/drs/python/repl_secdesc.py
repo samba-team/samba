@@ -310,7 +310,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                       self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn))
 
         # Rename new_ou (l2) to under self.ou (this must happen second).  If the
-        # inheritence between l3 and l4 is name-based, this could
+        # inheritance between l3 and l4 is name-based, this could
         # break.
 
         # The tree is now self.ou -> l2 -> l3 -> l4

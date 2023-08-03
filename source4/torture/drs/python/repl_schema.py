@@ -298,7 +298,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self._check_object(a_dn)
 
     def test_attribute_on_ou(self):
-        """Simple test having an OU with a custome attribute replicated correctly
+        """Simple test having an OU with a custom attribute replicated correctly
 
         This ensures that the server
         """

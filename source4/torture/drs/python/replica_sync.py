@@ -87,7 +87,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=False)
 
     def test_ReplDisabled(self):
-        """Tests we cann't replicate when replication is disabled"""
+        """Tests we can't replicate when replication is disabled"""
         self._disable_inbound_repl(self.dnsname_dc1)
 
         ccache_name = self.get_creds_ccache_name()

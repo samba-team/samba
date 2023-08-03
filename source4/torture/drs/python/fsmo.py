@@ -83,7 +83,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         cur_master = ''
         retries = int(self.fsmo_wait_max_time / self.fsmo_wait_sleep_time) + 1
         for i in range(0, retries):
-            # check if master has been transfered
+            # check if master has been transferred
             res = ldb_dc.search(role_dn,
                                 scope=SCOPE_BASE, attrs=["fSMORoleOwner"])
             assert len(res) == 1, "Only one fSMORoleOwner value expected!"
@@ -103,7 +103,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         print("Testing for %s role transfer from %s to %s" % (role, self.dnsname_dc1, self.dnsname_dc2))
 
         self._net_fsmo_role_transfer(DC=self.dnsname_dc2, role=role)
-        # check if the role is transfered
+        # check if the role is transferred
         (res, master) = self._wait_for_role_transfer(ldb_dc=self.ldb_dc2,
                                                      role_dn=role_dn,
                                                      master=self.dsServiceName_dc2)
@@ -113,7 +113,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         # dc1 gets back the role from dc2
         print("Testing for %s role transfer from %s to %s" % (role, self.dnsname_dc2, self.dnsname_dc1))
         self._net_fsmo_role_transfer(DC=self.dnsname_dc1, role=role)
-        # check if the role is transfered
+        # check if the role is transferred
         (res, master) = self._wait_for_role_transfer(ldb_dc=self.ldb_dc1,
                                                      role_dn=role_dn,
                                                      master=self.dsServiceName_dc1)
@@ -123,7 +123,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         # dc1 keeps the role
         print("Testing for no-op %s role transfer from %s to %s" % (role, self.dnsname_dc2, self.dnsname_dc1))
         self._net_fsmo_role_transfer(DC=self.dnsname_dc1, role=role, noop=True)
-        # check if the role is transfered
+        # check if the role is transferred
         (res, master) = self._wait_for_role_transfer(ldb_dc=self.ldb_dc1,
                                                      role_dn=role_dn,
                                                      master=self.dsServiceName_dc1)

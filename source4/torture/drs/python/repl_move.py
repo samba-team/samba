@@ -2451,7 +2451,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
 
     def test_ReplicateAddInConflictOU_time(self):
-        """Verifies how an object is replicated between two DCs, when created in an ambigious location
+        """Verifies how an object is replicated between two DCs, when created in an ambiguous location
            This test should verify that:
             - Without replication, two conflicting objects can be created
             - force the conflict resolution algorithm so we know which copy will win
@@ -2486,7 +2486,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # object something to be under on both DCs.
 
         # We sleep between the two adds so that DC1 adds second, and
-        # so wins the conflict resoution due to a later creation time
+        # so wins the conflict resolution due to a later creation time
         # (modification timestamp on the name attribute).
         self.ldb_dc2.add(self.ou2)
         time.sleep(1)
@@ -2496,7 +2496,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         new_dn.add_base(self.ou2_dn)
         self.ldb_dc1.rename(user_dn, new_dn)
 
-        # Now that we have renamed the user (and so bumpted the
+        # Now that we have renamed the user (and so bumped the
         # usnChanged), bump the value on the OUs.
         msg = ldb.Message()
         msg.dn = self.ou2_dn
@@ -2531,7 +2531,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
 
     def test_ReplicateAddInConflictOU2(self):
-        """Verifies how an object is replicated between two DCs, when created in an ambigious location
+        """Verifies how an object is replicated between two DCs, when created in an ambiguous location
            This test should verify that:
             - Without replication, two conflicting objects can be created
             - force the conflict resolution algorithm so we know which copy will win
@@ -2573,7 +2573,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         new_dn.add_base(self.ou2_dn)
         self.ldb_dc1.rename(user_dn, new_dn)
 
-        # Now that we have renamed the user (and so bumpted the
+        # Now that we have renamed the user (and so bumped the
         # usnChanged), bump the value on the OUs.
         msg = ldb.Message()
         msg.dn = self.ou2_dn

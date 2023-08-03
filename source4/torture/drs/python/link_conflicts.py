@@ -206,7 +206,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
                                    scope=SCOPE_BASE, attrs=["managedBy"])
 
-        # check the object has only have one occurence of the single-valued
+        # check the object has only have one occurrence of the single-valued
         # attribute and it matches on both DCs
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
@@ -253,7 +253,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
                                    scope=SCOPE_BASE, attrs=["managedBy"])
 
-        # check the object has only have one occurence of the single-valued
+        # check the object has only have one occurrence of the single-valued
         # attribute and it matches on both DCs
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
@@ -657,7 +657,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
                                    scope=SCOPE_BASE, attrs=["managedBy"])
 
-        # check the object has only have one occurence of the single-valued
+        # check the object has only have one occurrence of the single-valued
         # attribute and it matches on both DCs
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 
@@ -713,7 +713,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
                                    scope=SCOPE_BASE, attrs=["managedBy"])
 
-        # check the object has only have one occurence of the single-valued
+        # check the object has only have one occurrence of the single-valued
         # attribute and it matches on both DCs
         self.assert_attrs_match(res1, res2, "managedBy", 1)
 

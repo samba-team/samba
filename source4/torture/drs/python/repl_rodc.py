@@ -696,7 +696,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
             if list_1[i].attid in changed_attributes:
                 # We do the changes too quickly, so unless we put sleeps
-                # inbetween calls, these remain the same. Checking the USNs
+                # in between calls, these remain the same. Checking the USNs
                 # is enough.
                 pass
                 #self.assertTrue(list_1[i].originating_change_time < list_2[i].originating_change_time)
