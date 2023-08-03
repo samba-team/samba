@@ -115,9 +115,9 @@ bool torture_ldap_sort(struct torture_context *torture)
 				while( *(cur_txt) && *(prev_txt) && cur_len && prev_len ) {
 					j = toupper_m(*(prev_txt))-toupper_m(*(cur_txt));
 					if ( j > 0 ) {
-						/* Just check that is not due to trailling white space in prev_txt
+						/* Just check that is not due to trailing white space in prev_txt
 						 * That is to say *cur_txt = 0 and prev_txt = 20 */
-						/* Remove trailling whitespace */
+						/* Remove trailing whitespace */
 						while ( *prev_txt == ' ' ) { prev_txt++; prev_len--;}
 						while ( *cur_txt == ' ' ) { cur_txt++; cur_len--;}
 						/* Now that potential whitespace are removed if we are at the end
