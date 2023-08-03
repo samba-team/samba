@@ -1,258 +1,180 @@
 # Test SDDL strings on Windows
 #
+#
 # Copyright (c) 2023 Catalyst IT
 #
 # GPLv3+.
 #
-# This uses the Python ctypes module to access the sddl.h functions.
+# This uses the Python win32 module to access
+# ConvertStringSecurityDescriptorToSecurityDescriptor and the like. To
+# install this, you need to go
+#
+# pip install pywin32
+#
+# or something like that.
 
-from ctypes import WINFUNCTYPE
-from ctypes import create_string_buffer, byref, windll, c_void_p, pointer
-from ctypes.wintypes import LPCSTR, PULONG, LPVOID, DWORD, BOOL, ULONG
+import argparse
+from difflib import SequenceMatcher
+from collections import defaultdict
+import sys
+import json
 
-f = windll.advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorA
-#f.restype = BOOL
-f.argtypes = (LPCSTR, DWORD, LPVOID, PULONG)
-
-err = windll.kernel32.GetLastError
-set_err = windll.kernel32.SetLastError
-
-def check_sddl(sddl):
-    out_size = PULONG()
-    out_bytes = LPVOID()
-    _sddl = sddl.encode('utf8')
-    #print(_sddl, DWORD(1), out_bytes, out_size)
-    ok = f(_sddl, 1, out_bytes, out_size)
-    if not ok:
-        #breakpoint()
-        e = err()
-        if e != 87:
-            print(e)
-        set_err(0)
-    return ok
+try:
+    import win32security as w
+except ImportError:
+    print("This test script is meant to be run on Windows using the pywin32 module.")
+    print("To install this module, try:\n")
+    print("pip install pywin32")
+    sys.exit(1)
 
 
-def check_sddl_powershell(sddl):
-    import subprocess
-    p = subprocess.run(['powershell.exe',
-                        #'-windowstyle', 'hidden',
-                        #'-executionpolicy', 'bypass',
-                        #'-noninteractive',
-                         'ConvertFrom-SddlString',
-                         '-Sddl',
-                         '"' + sddl.replace(';', '`;') + '"',
-                        '-type', 'ActiveDirectoryRights',
-                        ],
-                       capture_output=True
-                       )
-    print()
-    stderr = p.stderr.decode()
-    stdout = p.stdout.decode()
-    if 'Exception' in stderr:
-        print(sddl)
-        if 'security descriptor object is invalid'  not in stderr:
-            print(stdout)
-            print(stderr)
-            return None # probably ok
+# This is necessary for ANSI colour escapes to work in Powershell.
+import os
+os.system('')
 
-        return False
+RED = "\033[1;31m"
+GREEN = "\033[1;32m"
+DARK_YELLOW = "\033[0;33m"
+C_NORMAL = "\033[0m"
 
-    #print(stdout)
-    return True
+def c_RED(s):
+    return f"{RED}{s}{C_NORMAL}"
+def c_GREEN(s):
+    return f"{GREEN}{s}{C_NORMAL}"
+def c_DY(s):
+    return f"{DARK_YELLOW}{s}{C_NORMAL}"
+
+
+def read_strings(files):
+    """Try to read as JSON a JSON dictionary first, then secondly in the bespoke
+        sddl-in -> sddl-out
+    format used by other Samba SDDL test programs on Windows.
+    """
+    pairs = []
+    for filename in files:
+        with open(filename) as f:
+            try:
+                data = json.load(f)
+                print(f"loading {filename} as JSON")
+                for k, v in data.items():
+                    if not v or not isinstance(v, str):
+                        v = k
+                    pairs.append((k, v))
+                continue
+            except json.JSONDecodeError:
+                pass
+
+            print(f"loading {filename} as 'a -> b' style")
+            for line in f:
+                line = line.rstrip()
+                if line.startswith('#') or line == '':
+                    continue
+                # note: if the line does not have ' -> ', we expect a
+                # perfect round trip.
+                o, _, c = line.partition(' -> ')
+                if c == '':
+                    c = o
+                pairs.append((o, c))
+
+    return pairs
+
+
+def colourdiff(a, b):
+    out = []
+    a = a.replace(' ', '␠')
+    b = b.replace(' ', '␠')
+
+    s = SequenceMatcher(None, a, b)
+    for op, al, ar, bl, br in s.get_opcodes():
+        if op == 'equal':
+            out.append(a[al: ar])
+        elif op == 'delete':
+            out.append(c_RED(a[al: ar]))
+        elif op == 'insert':
+            out.append(c_GREEN(b[bl: br]))
+        elif op == 'replace':
+            out.append(c_RED(a[al: ar]))
+            out.append(c_GREEN(b[bl: br]))
+        else:
+            print(f'unknown op {op}!')
+
+    return ''.join(out)
+
+
+def no_print(*args, **kwargs):
+    pass
 
 
 def main():
-    cases = [
-        "awoivhewo42u",
-        "D:(A;OICI;GA;;;WD)",
-        "",
-        "O:BAG:BAD:",
-        "O:BAG:DAD:",
-        "O:BAG:baD:",
-        "O:baG:BAD:",
-        "O:BAG:BUS:",
-        "O:BAD:BAG:",
-        "O:BAG:MUD:",
-        "G:BAO:BUS:",
-        "O:BAG:BUS:",
-        "D:(A;;CC;;;BA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)",
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--export-bytes', const='sddl_bytes.json', nargs='?',
+                        help='write JSON file containing SD bytes')
+    parser.add_argument('--quiet', action='store_true',
+                        help='avoid printing to sdtout')
+    parser.add_argument('files', nargs='+', help='read these files')
 
-        "D:(A;;GA;;;SY)",
+    args = parser.parse_args()
 
-        "D:(A;;GA;;;RS)",
+    if args.quiet:
+        global print
+        print = no_print
 
-        "D:(A;;RP;;;WD)",
-        "D:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)",
-        "D:(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)",
-        "D:(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)",
-        "D:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)",
-        "D:(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)",
-        "D:(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)",
-        "D:(A;;RPLCLORC;;;AU)",
-        "D:(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)",
-        "D:(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)",
-        "D:(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)",
-        "D:(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)",
-        "D:(A;CI;LC;;;RU)",
-        "D:(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)",
-        "D:(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(A;;RPRC;;;RU)",
-        "D:(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)",
-        "D:(A;;LCRPLORC;;;ED)",
-        "D:(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)",
-        "D:(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)",
-        "D:(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)",
-        "D:(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)",
-        "D:(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)",
-        "D:(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)",
-        "D:(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)",
-        "D:(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)",
-        "D:(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)",
-        "S:(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)",
-        "S:(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)",
-        "S:(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)",
-        "S:(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)",
-        "S:(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)",
-        "S:(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)",
-        "S:(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)",
-        "S:(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)S:(AU;SA;WDWOWP;;;WD)",
-        "S:(AU;SA;CR;;;BA)",
-        "S:(AU;SA;CR;;;DU)",
-        "S:(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)",
-        "S:(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)",
-        "D:(A;;RPLCLORC;;;DA)",
-        "S:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "S:(A;;RPLCLORC;;;AU)",
+    cases = read_strings(args.files)
+    parseable_cases = []
+    unparseable_cases = []
+    unserializeable_cases = []
+    round_trip_failures = []
+    exceptions = defaultdict(list)
+    bytes_json = {}
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "S:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)",
-        "S:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "S:(A;;RPCRLCLORCSDDT;;;CO)",
-        "S:(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)",
-        "S:(A;;RPLCLORC;;;AU)",
-        "S:(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)",
-        "S:(A;;CCDC;;;PS)",
-        "S:(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)",
-        "S:(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)",
-        "S:(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;PS)",
-        "S:(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)",
-        "S:(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;PS)",
-        "S:(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;CO)",
-        "D:(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;CO)",
-        "D:(OA;;WP;3e0abfd0-126a-11d0-a060-00aa006c33ed;bf967a86-0de6-11d0-a285-00aa003049e2;CO)",
-        "D:(OA;;WP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967a86-0de6-11d0-a285-00aa003049e2;CO)",
-        "D:(OA;;WP;bf967950-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)",
-        "D:(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)",
-        "D:(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)",
+    print(f"{len(set(cases))}/{len(cases)} unique pairs, "
+          f"{len(set(x[0] for x in cases))}/{len(cases)} unique strings")
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)",
-        "D:(A;;RPLCLORC;;;PS)",
-        "D:(OA;;CR;ab721a55-1e2f-11d0-9819-00aa0040529b;;AU)",
-        "D:(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)",
+    for a, b in sorted(set(cases)):
+        try:
+            sd = w.ConvertStringSecurityDescriptorToSecurityDescriptor(a, 1)
+        except Exception as e:
+            print(a)
+            exceptions[f"{e} parse"].append(a)
+            print(c_RED(e))
+            unparseable_cases.append(a)
+            continue
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)S:(AU;SA;CRWP;;;WD)",
+        parseable_cases.append(a)
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)",
-        "D:(A;;RPLCLORC;;;PS)",
-        "D:(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)",
-        "D:(OA;;CR;ab721a54-1e2f-11d0-9819-00aa0040529b;;PS)",
-        "D:(OA;;CR;ab721a56-1e2f-11d0-9819-00aa0040529b;;PS)",
-        "D:(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)",
-        "D:(OA;;RPWP;E45795B2-9455-11d1-AEBD-0000F80367C1;;PS)",
-        "D:(OA;;RPWP;E45795B3-9455-11d1-AEBD-0000F80367C1;;PS)",
-        "D:(OA;;RP;037088f8-0ae1-11d2-b422-00a0c968f939;;RS)",
-        "D:(OA;;RP;4c164200-20c0-11d0-a768-00aa006e0529;;RS)",
-        "D:(OA;;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;;RS)",
-        "D:(A;;RC;;;AU)",
-        "D:(OA;;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;;AU)",
-        "D:(OA;;RP;77B5B886-944A-11d1-AEBD-0000F80367C1;;AU)",
-        "D:(OA;;RP;E45795B3-9455-11d1-AEBD-0000F80367C1;;AU)",
-        "D:(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)",
-        "D:(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)",
-        "D:(OA;;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;;RS)",
-        "D:(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)",
-        "D:(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)",
-        "D:(OA;;WPRP;6db69a1c-9422-11d1-aebd-0000f80367c1;;S-1-5-32-561)",
+        try:
+            # maybe 0xffff is an incorrect guess -- it gives use v2 (NT), not v4 (AD)
+            c = w.ConvertSecurityDescriptorToStringSecurityDescriptor(sd, 1, 0xffff)
+        except Exception as e:
+            print(f"could sot serialize '{sd}': {e}")
+            print(f" derived from       '{a}'")
+            exceptions[f"{e} serialize"].append(a)
+            unserializeable_cases.append(a)
+            continue
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
+        if args.export_bytes:
+            bytes_json[c] = list(bytes(sd))
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
-        "D:(A;;LCRPLORC;;;ED)",
+        if c != b:
+            round_trip_failures.append((a, b, c))
+            exceptions["mismatch"].append(a)
+            #print(f"{c_GREEN(a)} -> {c_DY(c)}")
+            print(colourdiff(b, c))
+            print(c_DY(f"{b} -> {c}"))
 
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(OA;;CCDC;bf967a86-0de6-11d0-a285-00aa003049e2;;AO)",
-        "D:(OA;;CCDC;bf967aba-0de6-11d0-a285-00aa003049e2;;AO)",
-        "D:(OA;;CCDC;bf967a9c-0de6-11d0-a285-00aa003049e2;;AO)",
-        "D:(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)",
-        "D:(A;;RPLCLORC;;;AU)",
-        "D:(A;;LCRPLORC;;;ED)",
-        "D:(OA;;CCDC;4828CC14-1437-45bc-9B07-AD6F015E5F28;;AO)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
+    for k, v in exceptions.items():
+        print(f"{k}: {len(v)}")
 
-        "D:(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
+    print(f"{len(unparseable_cases)} failed to parsed")
+    print(f"{len(parseable_cases)} successfully parsed")
+    print(f"{len(unserializeable_cases)} of these failed to re-serialize")
+    print(f"{len(round_trip_failures)} of these failed to round trip")
+    #for p in parseable_cases:
+    #    print(f"«{c_GREEN(p)}»")
 
-        "D:S:",
-        "D:PS:",
-
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)",
-        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)",
-        "D:(A;;RPLCLORC;;;AU)",
-
-        "S:D:P",
-    ]
-    good_cases = []
-    bad_cases = []
-    uncertain_cases = []
-    print(len(cases))
-    print(len(set(cases)))
-    for case in set(cases):
-        res = check_sddl_powershell(case)
-        #res = check_sddl(case)
-        if res:
-            print(f"good: {case}")
-            good_cases.append(case)
-        elif res is None:
-            print(f"unknown: {case}")
-            uncertain_cases.append(case)
-        else:
-            bad_cases.append(case)
-
-    print(f"{len(bad_cases)} bad")
-    for c in bad_cases:
-        print(f"BAD: {c}")
-
-    print(f"{len(uncertain_cases)} uncertain")
-    for c in uncertain_cases:
-        print(f"MAYBE: {c}")
-
-    print(f"{len(good_cases)} good")
-    for c in good_cases:
-        print(f"GOOD: {c}")
-
+    if args.export_bytes:
+        with open(args.export_bytes, 'w') as f:
+            json.dump(bytes_json, f)
+        print(f"wrote bytes to {args.export_bytes}")
 
 main()
