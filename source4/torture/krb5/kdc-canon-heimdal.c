@@ -144,7 +144,7 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 /* Check to see if we can pass the PAC across to the NETLOGON server for validation */
 
-/* Also happens to be a really good one-step verfication of our Kerberos stack */
+/* Also happens to be a really good one-step verification of our Kerberos stack */
 
 static bool test_accept_ticket(struct torture_context *tctx,
 			       struct cli_credentials *credentials,
@@ -762,7 +762,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	}
 
 	/*
-	 * Confirm gettting a ticket to pass to the server, running
+	 * Confirm getting a ticket to pass to the server, running
 	 * either the TEST_TGS_REQ or TEST_SELF_TRUST_TGS_REQ stage.
 	 *
 	 * This triggers the client to attempt to get a
@@ -868,7 +868,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	}
 
 	/*
-	 * Confirm gettting a ticket to pass to the server, running
+	 * Confirm getting a ticket to pass to the server, running
 	 * the TEST_TGS_REQ_HOST, TEST_TGS_REQ_HOST_SRV_INST, TEST_TGS_REQ_HOST_SRV_HST stage
 	 *
 	 * This triggers the client to attempt to get a
@@ -1002,7 +1002,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	}
 
 	/*
-	 * Confirm gettting a ticket for the same krbtgt/realm that we
+	 * Confirm getting a ticket for the same krbtgt/realm that we
 	 * got back with the initial ticket, running the
 	 * TEST_TGS_REQ_KRBTGT stage.
 	 *

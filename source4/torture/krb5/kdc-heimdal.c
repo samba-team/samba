@@ -410,7 +410,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		break;
 
 		/*
-		 * Confirm correct error codes when we deliberatly send the wrong password
+		 * Confirm correct error codes when we deliberately send the wrong password
 		 */
 	case TORTURE_KRB5_TEST_BREAK_PW:
 		if (test_context->packet_count == 0) {
@@ -435,7 +435,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		break;
 
 		/*
-		 * Confirm correct error codes when we deliberatly skew the client clock
+		 * Confirm correct error codes when we deliberately skew the client clock
 		 */
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		if (test_context->packet_count == 0) {
