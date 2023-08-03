@@ -249,7 +249,7 @@ struct wreplsrv_service {
 		 * even after 'tombstone_timeout' passes the current timestamp.
 		 * this is the minimum uptime of the wrepl service, before
 		 * we start delete tombstones. This is to prevent deletion of
-		 * tombstones, without replacte them.
+		 * tombstones, without replicating them.
 		 */
 		uint32_t tombstone_extra_timeout;
 
@@ -266,7 +266,7 @@ struct wreplsrv_service {
 
 		/*
 		 * the interval (in secs) to the next periodic processing
-		 * (this is the maximun interval)
+		 * (this is the maximum interval)
 		 */
 		uint32_t periodic_interval;
 	} config;

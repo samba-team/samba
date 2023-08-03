@@ -111,7 +111,7 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service,
 	service->config.scavenging_interval=lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","scavenging_interval",
 							service->config.renew_interval/2);
 
-	/* the maximun interval to the next periodic processing event */
+	/* the maximum interval to the next periodic processing event */
 	service->config.periodic_interval = lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","periodic_interval", 15);
 
 	return NT_STATUS_OK;
