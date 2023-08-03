@@ -521,7 +521,7 @@ static bool test_replay_dhv2_oplock2(struct torture_context *tctx,
 	io.in.timeout = UINT32_MAX;
 
 	/*
-	 * Adapt the response to the exepected values
+	 * Adapt the response to the expected values
 	 */
 	ref2 = ref1;
 	ref2.out.oplock_level = smb2_util_oplock_level("");
@@ -1876,7 +1876,7 @@ done:
  * It won't pass against Windows as it returns
  * NT_STATUS_SHARING_VIOLATION to the replay (after
  * 35 seconds), and this tests reports NT_STATUS_IO_TIMEOUT,
- * as it expectes a NT_STATUS_FILE_NOT_AVAILABLE within 5 seconds.
+ * as it expects a NT_STATUS_FILE_NOT_AVAILABLE within 5 seconds.
  * see test_dhv2_pending1n_vs_violation_lease_close_windows().
  */
 static bool test_dhv2_pending1n_vs_violation_lease_close_sane(struct torture_context *tctx,
@@ -1952,7 +1952,7 @@ static bool test_dhv2_pending1n_vs_violation_lease_close_windows(struct torture_
  * It won't pass against Windows as it returns
  * NT_STATUS_SHARING_VIOLATION to the replay (after
  * 35 seconds), and this tests reports NT_STATUS_IO_TIMEOUT,
- * as it expectes a NT_STATUS_FILE_NOT_AVAILABLE within 5 seconds.
+ * as it expects a NT_STATUS_FILE_NOT_AVAILABLE within 5 seconds.
  * see test_dhv2_pending1n_vs_violation_lease_ack_windows().
  */
 static bool test_dhv2_pending1n_vs_violation_lease_ack_sane(struct torture_context *tctx,

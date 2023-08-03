@@ -1185,7 +1185,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "freeze-thaw", test_freeze_thaw);
 
 	/*
-	 * Testing of delayed write-time udpates
+	 * Testing of delayed write-time updates
 	 */
 	torture_suite_add_1smb2_test(suite, "delayed-write-vs-seteof", test_delayed_write_vs_seteof);
 	torture_suite_add_1smb2_test(suite, "delayed-write-vs-flush", test_delayed_write_vs_flush);

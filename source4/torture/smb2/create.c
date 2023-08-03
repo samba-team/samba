@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    SMB2 create test suite
 
    Copyright (C) Andrew Tridgell 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -143,7 +143,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
 	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
-	io.in.share_access = 
+	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
@@ -174,7 +174,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	io.in.file_attributes = FILE_ATTRIBUTE_VOLUME;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
-	
+
 	io.in.create_disposition = NTCREATEX_DISP_CREATE;
 	io.in.desired_access = 0x08000000;
 	status = smb2_create(tree, tctx, &io);
@@ -320,7 +320,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes    = 0;
 	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
-	io.in.share_access = 
+	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = 0;
@@ -333,7 +333,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 
 	io.in.fname = FNAME;
 	io.in.file_attributes = 0x8040;
-	io.in.share_access = 
+	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_READ;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
@@ -358,7 +358,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	io.in.share_access = 0;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
-	
+
 	smb2_deltree(tree, FNAME);
 
 	return true;
@@ -379,7 +379,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
 	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
-	io.in.share_access = 
+	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
@@ -397,7 +397,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 
 	torture_comment(tctx, "Testing alloc size\n");
 	/* FIXME We use 1M cause that's the rounded size of Samba.
-	 * We should ask the server for the cluser size and calulate it
+	 * We should ask the server for the cluster size and calculate it
 	 * correctly. */
 	io.in.alloc_size = 0x00100000;
 	status = smb2_create(tree, tctx, &io);
@@ -547,7 +547,7 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	smb2_deltree(tree, FNAME);
-	
+
 	return true;
 }
 
@@ -587,7 +587,7 @@ static bool test_create_acl_ext(struct torture_context *tctx, struct smb2_tree *
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
 	io.in.create_disposition = NTCREATEX_DISP_CREATE;
-	io.in.share_access = 
+	io.in.share_access =
 		NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
@@ -604,7 +604,7 @@ static bool test_create_acl_ext(struct torture_context *tctx, struct smb2_tree *
 
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.file.handle = io.out.file.handle;
-	q.query_secdesc.in.secinfo_flags = 
+	q.query_secdesc.in.secinfo_flags =
 		SECINFO_OWNER |
 		SECINFO_GROUP |
 		SECINFO_DACL;
@@ -664,7 +664,7 @@ static bool test_create_acl_ext(struct torture_context *tctx, struct smb2_tree *
 
 	FAIL_UNLESS(smb2_util_verify_sd(tctx, tree, io.out.file.handle, sd));
 	FAIL_UNLESS(smb2_util_verify_attrib(tctx, tree, io.out.file.handle, attrib));
-	
+
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	status = delete_func(tree, FNAME);
@@ -1769,7 +1769,7 @@ static bool test_twrp_write(struct torture_context *tctx, struct smb2_tree *tree
 	setenv("TZ", "GMT", 1);
 
 	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
-	 * effect if it is greather than 1. */
+	 * effect if it is greater than 1. */
 	ZERO_STRUCT(tm);
 
 	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
@@ -1873,7 +1873,7 @@ static bool test_twrp_stream(struct torture_context *tctx,
 	setenv("TZ", "GMT", 1);
 
 	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
-	 * effect if it is greather than 1. */
+	 * effect if it is greater than 1. */
 	ZERO_STRUCT(tm);
 
 	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
@@ -1936,7 +1936,7 @@ static bool test_twrp_openroot(struct torture_context *tctx, struct smb2_tree *t
 	setenv("TZ", "GMT", 1);
 
 	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
-	 * effect if it is greather than 1. */
+	 * effect if it is greater than 1. */
 	ZERO_STRUCT(tm);
 
 	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
@@ -1995,7 +1995,7 @@ static bool test_twrp_listdir(struct torture_context *tctx,
 	setenv("TZ", "GMT", 1);
 
 	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
-	 * effect if it is greather than 1. */
+	 * effect if it is greater than 1. */
 	ZERO_STRUCT(tm);
 
 	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
@@ -2431,7 +2431,7 @@ static bool test_fileid(struct torture_context *tctx,
 
 	/*
 	 * Do some modifications on the stream (IO, setinfo), verifying File-ID
-	 * after earch step.
+	 * after each step.
 	 */
 	create = (struct smb2_create) {
 		.in.desired_access = SEC_FILE_ALL,
@@ -2757,7 +2757,7 @@ static bool test_fileid_dir(struct torture_context *tctx,
 
 	/*
 	 * Do some modifications on the stream (IO, setinfo), verifying File-ID
-	 * after earch step.
+	 * after each step.
 	 */
 	create = (struct smb2_create) {
 		.in.desired_access = SEC_FILE_ALL,

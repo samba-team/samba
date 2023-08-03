@@ -723,7 +723,7 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 	f.in.max_response_size  = 1024*1024;
 	f.in.level              = level;
 
-	/* The search should start from the beginning everytime */
+	/* The search should start from the beginning every time */
 	f.in.continue_flags = SMB2_CONTINUE_FLAG_RESTART;
 	if (cont_type == CONT_REOPEN) {
 		f.in.continue_flags = SMB2_CONTINUE_FLAG_REOPEN;

@@ -644,7 +644,7 @@ static bool test_smb2_oplock_exclusive5(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	torture_comment(tctx, "second open with attributes only and "
-			"NTCREATEX_DISP_OVERWRITE_IF dispostion causes "
+			"NTCREATEX_DISP_OVERWRITE_IF disposition causes "
 			"oplock break\n");
 
 	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
@@ -2001,7 +2001,7 @@ static bool test_smb2_oplock_batch13(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	torture_comment(tctx, "second open with attributes only and "
-			"NTCREATEX_DISP_OVERWRITE dispostion causes "
+			"NTCREATEX_DISP_OVERWRITE disposition causes "
 			"oplock break\n");
 
 	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
@@ -2080,7 +2080,7 @@ static bool test_smb2_oplock_batch14(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	torture_comment(tctx, "second open with attributes only and "
-			"NTCREATEX_DISP_SUPERSEDE dispostion causes "
+			"NTCREATEX_DISP_SUPERSEDE disposition causes "
 			"oplock break\n");
 
 	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
@@ -2234,7 +2234,7 @@ static bool test_smb2_oplock_batch16(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	torture_comment(tctx, "second open with attributes only and "
-			"NTCREATEX_DISP_OVERWRITE_IF dispostion causes "
+			"NTCREATEX_DISP_OVERWRITE_IF disposition causes "
 			"oplock break\n");
 
 	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;

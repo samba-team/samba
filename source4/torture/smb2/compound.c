@@ -2185,7 +2185,7 @@ static bool test_compound_async_flush_close(struct torture_context *tctx,
 	 * crash on the close. The sleeps are required to
 	 * make test test for a crash reliable, as we ensure
 	 * the pthread fsync internally finishes and accesses
-	 * freed memory. Without them the test occassionally
+	 * freed memory. Without them the test occasionally
 	 * passes as we disconnect before the pthread fsync
 	 * finishes.
 	 */
@@ -2298,7 +2298,7 @@ static bool test_compound_async_flush_flush(struct torture_context *tctx,
 	 * crash on the close. The sleeps are required to
 	 * make test test for a crash reliable, as we ensure
 	 * the pthread fsync internally finishes and accesses
-	 * freed memory. Without them the test occassionally
+	 * freed memory. Without them the test occasionally
 	 * passes as we disconnect before the pthread fsync
 	 * finishes.
 	 */

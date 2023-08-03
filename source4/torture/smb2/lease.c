@@ -402,7 +402,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
  * - is strictly a superset of lease1, and
  * - can held together with lease2.
  *
- * In that case, the resuling lease state of the upgraded lease1
+ * In that case, the resulting lease state of the upgraded lease1
  * is the state requested in the upgrade. lease2 is not broken
  * and remains unchanged.
  *

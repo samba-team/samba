@@ -62,7 +62,7 @@ static void torture_smb2_tree_disconnect_timer(struct tevent_context *ev,
 
 /*
  * Check that Samba3 correctly deals with conflicting local posix byte range
- * locks on an underlying file via "normal" SMB2 (without posix extentions).
+ * locks on an underlying file via "normal" SMB2 (without posix extensions).
  *
  * Note: This test depends on "posix locking = yes".
  * Note: To run this test, use "--option=torture:localdir=<LOCALDIR>"

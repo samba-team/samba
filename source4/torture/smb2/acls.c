@@ -1734,10 +1734,10 @@ static bool test_sd_flags_vs_chown(struct torture_context *tctx,
 			CHECK_SECURITY_DESCRIPTOR(q.query_secdesc.out.sd, sd2);
 
 			/*
-			 * Check that changing ownder doesn't affect SD flags.
+			 * Check that changing owner doesn't affect SD flags.
 			 *
-			 * Do this by first changing ownder to world and then
-			 * back to the original ownder. Afterwards compare SD,
+			 * Do this by first changing owner to world and then
+			 * back to the original owner. Afterwards compare SD,
 			 * should be the same.
 			 */
 			owner_sd->owner_sid = &world_sid;

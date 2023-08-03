@@ -76,7 +76,7 @@ static bool torture_smb2_acl_xattr(struct torture_context *tctx,
 					"torture_smb2_testfile failed\n");
 
 	/*
-	 * 1. Set an EA, so we have somthing to list
+	 * 1. Set an EA, so we have something to list
 	 */
 	ZERO_STRUCT(ea);
 	ea.name.s = "void";

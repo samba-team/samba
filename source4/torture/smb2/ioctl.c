@@ -3240,7 +3240,7 @@ static NTSTATUS test_sparse_get(struct torture_context *torture,
 
 /*
  * Manually test setting and clearing sparse flag. Intended for file system
- * specifc tests to toggle the flag through SMB and check the status in the
+ * specific tests to toggle the flag through SMB and check the status in the
  * file system.
  */
 bool test_ioctl_set_sparse(struct torture_context *tctx)
@@ -5609,7 +5609,7 @@ static bool test_ioctl_trim_simple(struct torture_context *torture,
 
 	torture_assert_int_equal(torture, trim_rsp.num_ranges_processed, 1, "");
 
-	/* second half of the file should remain consitent */
+	/* second half of the file should remain consistent */
 	ok = check_pattern(torture, tree, tmp_ctx, fh, trim_chunk_len,
 			   trim_chunk_len, trim_chunk_len);
 	torture_assert(torture, ok, "non-trimmed range inconsistent");
