@@ -188,7 +188,7 @@ show_streams:
 }
 
 /*
-  test bahavior of streams on directories
+  test behavior of streams on directories
 */
 static bool test_stream_dir(struct torture_context *tctx,
 			   struct smbcli_state *cli)

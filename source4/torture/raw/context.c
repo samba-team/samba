@@ -153,7 +153,7 @@ static bool test_session(struct torture_context *tctx,
 			CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 		}
 
-		torture_comment(tctx, "create a fouth anonymous security context on the same transport, without extended security\n");
+		torture_comment(tctx, "create a fourth anonymous security context on the same transport, without extended security\n");
 		session4 = smbcli_session_init(cli->transport, tctx, false, options);
 
 		session4->vuid = vuid3;

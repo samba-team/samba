@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -82,7 +82,7 @@ static char *filename(TALLOC_CTX *ctx, int i)
 /*
   called when a loadfile completes
  */
-static void loadfile_callback(struct composite_context *ctx) 
+static void loadfile_callback(struct composite_context *ctx)
 {
 	struct offline_state *state = ctx->async.private_data;
 	NTSTATUS status;
@@ -90,7 +90,7 @@ static void loadfile_callback(struct composite_context *ctx)
 
 	status = smb_composite_loadfile_recv(ctx, state->mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to read file '%s' - %s\n", 
+		printf("Failed to read file '%s' - %s\n",
 		       state->loadfile->in.fname, nt_errstr(status));
 		test_failed++;
 		return;
@@ -98,7 +98,7 @@ static void loadfile_callback(struct composite_context *ctx)
 
 	/* check the data is correct */
 	if (state->loadfile->out.size != FILE_SIZE) {
-		printf("Wrong file size %u - expected %u\n", 
+		printf("Wrong file size %u - expected %u\n",
 		       state->loadfile->out.size, FILE_SIZE);
 		test_failed++;
 		return;
@@ -106,15 +106,15 @@ static void loadfile_callback(struct composite_context *ctx)
 
 	for (i=0;i<FILE_SIZE;i++) {
 		if (state->loadfile->out.data[i] != 1+(state->fnumber % 255)) {
-			printf("Bad data in file %u (got %u expected %u)\n", 
-			       state->fnumber, 
+			printf("Bad data in file %u (got %u expected %u)\n",
+			       state->fnumber,
 			       state->loadfile->out.data[i],
 			       1+(state->fnumber % 255));
 			test_failed++;
 			return;
 		}
 	}
-	
+
 	talloc_steal(state->loadfile, state->loadfile->out.data);
 
 	state->count++;
@@ -130,14 +130,14 @@ static void loadfile_callback(struct composite_context *ctx)
 /*
   called when a savefile completes
  */
-static void savefile_callback(struct composite_context *ctx) 
+static void savefile_callback(struct composite_context *ctx)
 {
 	struct offline_state *state = ctx->async.private_data;
 	NTSTATUS status;
 
 	status = smb_composite_savefile_recv(ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to save file '%s' - %s\n", 
+		printf("Failed to save file '%s' - %s\n",
 		       state->savefile->in.fname, nt_errstr(status));
 		test_failed++;
 	}
@@ -155,14 +155,14 @@ static void savefile_callback(struct composite_context *ctx)
 /*
   called when a setoffline completes
  */
-static void setoffline_callback(struct smbcli_request *req) 
+static void setoffline_callback(struct smbcli_request *req)
 {
 	struct offline_state *state = req->async.private_data;
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to set offline file '%s' - %s\n", 
+		printf("Failed to set offline file '%s' - %s\n",
 		       state->fname, nt_errstr(status));
 		test_failed++;
 	}
@@ -179,7 +179,7 @@ static void setoffline_callback(struct smbcli_request *req)
 /*
   called when a getoffline completes
  */
-static void getoffline_callback(struct smbcli_request *req) 
+static void getoffline_callback(struct smbcli_request *req)
 {
 	struct offline_state *state = req->async.private_data;
 	NTSTATUS status;
@@ -188,10 +188,10 @@ static void getoffline_callback(struct smbcli_request *req)
 	ZERO_STRUCT(io);
 
 	io.getattr.level = RAW_FILEINFO_GETATTR;
-	
+
 	status = smb_raw_pathinfo_recv(req, state->mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to get offline file '%s' - %s\n", 
+		printf("Failed to get offline file '%s' - %s\n",
 		       state->fname, nt_errstr(status));
 		test_failed++;
 	}
@@ -225,7 +225,7 @@ static void test_offline(struct offline_state *state)
 	}
 
 	state->op = (enum offline_op) (random() % OP_ENDOFLIST);
-	
+
 	state->fnumber = random() % torture_numops;
 	talloc_free(state->fname);
 	state->fname = filename(state->mem_ctx, state->fnumber);
@@ -236,7 +236,7 @@ static void test_offline(struct offline_state *state)
 	case OP_LOADFILE:
 		state->loadfile = talloc_zero(state->mem_ctx, struct smb_composite_loadfile);
 		state->loadfile->in.fname = state->fname;
-	
+
 		ctx = smb_composite_loadfile_send(state->tree, state->loadfile);
 		if (ctx == NULL) {
 			printf("Failed to setup loadfile for %s\n", state->fname);
@@ -256,7 +256,7 @@ static void test_offline(struct offline_state *state)
 		state->savefile->in.data  = talloc_size(state->savefile, FILE_SIZE);
 		state->savefile->in.size  = FILE_SIZE;
 		memset(state->savefile->in.data, 1+(state->fnumber%255), FILE_SIZE);
-	
+
 		ctx = smb_composite_savefile_send(state->tree, state->savefile);
 		if (ctx == NULL) {
 			printf("Failed to setup savefile for %s\n", state->fname);
@@ -275,7 +275,7 @@ static void test_offline(struct offline_state *state)
 		io.setattr.level = RAW_SFILEINFO_SETATTR;
 		io.setattr.in.attrib = FILE_ATTRIBUTE_OFFLINE;
 		io.setattr.in.file.path = state->fname;
-		/* make the file 1 hour old, to get past mininum age restrictions 
+		/* make the file 1 hour old, to get past minimum age restrictions
 		   for HSM systems */
 		io.setattr.in.write_time = time(NULL) - 60*60;
 
@@ -284,7 +284,7 @@ static void test_offline(struct offline_state *state)
 			printf("Failed to setup setoffline for %s\n", state->fname);
 			test_failed = true;
 		}
-		
+
 		state->req->async.fn = setoffline_callback;
 		state->req->async.private_data = state;
 		break;
@@ -301,7 +301,7 @@ static void test_offline(struct offline_state *state)
 			printf("Failed to setup getoffline for %s\n", state->fname);
 			test_failed = true;
 		}
-		
+
 		state->req->async.fn = getoffline_callback;
 		state->req->async.private_data = state;
 		break;
@@ -325,16 +325,16 @@ static void echo_completion(struct smbcli_request *req)
 	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
 		talloc_free(state->tree);
 		state->tree = NULL;
-		num_connected--;	
+		num_connected--;
 		DEBUG(0,("lost connection\n"));
 		test_failed++;
 	}
 }
 
-static void report_rate(struct tevent_context *ev, struct tevent_timer *te, 
+static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 			struct timeval t, void *private_data)
 {
-	struct offline_state *state = talloc_get_type(private_data, 
+	struct offline_state *state = talloc_get_type(private_data,
 							struct offline_state);
 	int i;
 	uint32_t total=0, total_offline=0, total_online=0;
@@ -343,7 +343,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 		if (timeval_elapsed(&state[i].tv_start) > latencies[state[i].op]) {
 			latencies[state[i].op] = timeval_elapsed(&state[i].tv_start);
 		}
-		state[i].lastcount = state[i].count;		
+		state[i].lastcount = state[i].count;
 		total_online += state[i].online_count;
 		total_offline += state[i].offline_count;
 	}
@@ -386,7 +386,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 	}
 }
 
-/* 
+/*
    test offline file handling
 */
 bool torture_test_offline(struct torture_context *torture)
@@ -471,7 +471,7 @@ bool torture_test_offline(struct torture_context *torture)
 		test_offline(&state[i]);
 	}
 
-	tv = timeval_current();	
+	tv = timeval_current();
 
 	if (progress) {
 		tevent_add_timer(torture->ev, state, timeval_current_ofs(1, 0), report_rate, state);
@@ -490,12 +490,12 @@ bool torture_test_offline(struct torture_context *torture)
 	printf("\nWaiting for completion\n");
 	test_finished = true;
 	for (i=0;i<numstates;i++) {
-		while (state[i].loadfile || 
+		while (state[i].loadfile ||
 		       state[i].savefile ||
 		       state[i].req) {
 			tevent_loop_once(torture->ev);
 		}
-	}	
+	}
 
 	printf("worst latencies: set_lat=%.1f get_lat=%.1f save_lat=%.1f load_lat=%.1f\n",
 	       worst_latencies[OP_SETOFFLINE],

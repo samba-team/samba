@@ -628,7 +628,7 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 
 	ZERO_STRUCT(break_info);
 
-	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE_IF dispostion causes oplock break\n");
+	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE_IF disposition causes oplock break\n");
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_ATTRIBUTE|SEC_STD_SYNCHRONIZE;
@@ -2303,7 +2303,7 @@ static bool test_raw_oplock_batch13(struct torture_context *tctx, struct smbcli_
 
 	ZERO_STRUCT(break_info);
 
-	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE dispostion causes oplock break\n");
+	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE disposition causes oplock break\n");
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -2379,7 +2379,7 @@ static bool test_raw_oplock_batch14(struct torture_context *tctx, struct smbcli_
 
 	ZERO_STRUCT(break_info);
 
-	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_SUPERSEDE dispostion causes oplock break\n");
+	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_SUPERSEDE disposition causes oplock break\n");
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -2531,7 +2531,7 @@ static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_
 
 	ZERO_STRUCT(break_info);
 
-	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE_IF dispostion causes oplock break\n");
+	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE_IF disposition causes oplock break\n");
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |

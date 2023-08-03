@@ -2367,7 +2367,7 @@ done:
   to grant. For example:
 
   A blocked lock request containing 2 locks
-  will be satified before a subsequent blocked
+  will be satisfied before a subsequent blocked
   lock request over one of the same regions,
   even if that region is then unlocked. E.g.
 
@@ -2508,7 +2508,7 @@ done:
   For example:
 
   A blocked lock request containing 2 locks
-  will be satified before a subsequent blocked
+  will be satisfied before a subsequent blocked
   lock request over one of the same regions,
   even if that region is then unlocked. But
   a lock of a different region goes through. E.g.

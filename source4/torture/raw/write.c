@@ -747,7 +747,7 @@ static bool test_bad_write(struct torture_context *tctx,
         if (!smbcli_request_receive(req)) {
 		torture_fail_goto(tctx,
 			done,
-			talloc_asprintf(tctx, "Reveive failed\n"));
+			talloc_asprintf(tctx, "Receive failed\n"));
 	}
 
 	/*

@@ -776,7 +776,7 @@ static void receive_lock_result(struct smbcli_request *req)
 
 /*
  * Check that Samba3 correctly deals with conflicting local posix byte range
- * locks on an underlying file via "normal" SMB1 (without unix extentions).
+ * locks on an underlying file via "normal" SMB1 (without unix extensions).
  *
  * Note: This test depends on "posix locking = yes".
  * Note: To run this test, use "--option=torture:localdir=<LOCALDIR>"
