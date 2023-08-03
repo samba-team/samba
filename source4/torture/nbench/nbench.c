@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture tester - NBENCH test
    Copyright (C) Andrew Tridgell 1997-2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -63,7 +63,7 @@ static bool run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	char *cname;
 	FILE *f;
 	bool correct = true;
-	double target_rate = torture_setting_double(tctx, "targetrate", 0);	
+	double target_rate = torture_setting_double(tctx, "targetrate", 0);
 	int n = 0;
 	int ret;
 
@@ -107,7 +107,7 @@ again:
 		}
 
 		all_string_sub(line, "client1", cname, sizeof(line));
-		
+
 		params = params0 = const_str_list(
 					str_list_make_shell(NULL, line, " "));
 		i = str_list_length(params);
@@ -157,7 +157,7 @@ again:
 		DEBUG(9,("run_netbench(%d): %s %s\n", client, params[0], params[1]));
 
 		if (!strcmp(params[0],"NTCreateX")) {
-			NB_RETRY(nb_createx(params[1], ival(params[2]), ival(params[3]), 
+			NB_RETRY(nb_createx(params[1], ival(params[2]), ival(params[3]),
 					    ival(params[4]), status));
 		} else if (!strcmp(params[0],"Close")) {
 			NB_RETRY(nb_close(ival(params[1]), status));
@@ -180,24 +180,24 @@ again:
 		} else if (!read_only && !strcmp(params[0],"SET_FILE_INFORMATION")) {
 			NB_RETRY(nb_sfileinfo(ival(params[1]), ival(params[2]), status));
 		} else if (!strcmp(params[0],"FIND_FIRST")) {
-			NB_RETRY(nb_findfirst(params[1], ival(params[2]), 
+			NB_RETRY(nb_findfirst(params[1], ival(params[2]),
 					      ival(params[3]), ival(params[4]), status));
 		} else if (!read_only && !strcmp(params[0],"WriteX")) {
-			NB_RETRY(nb_writex(ival(params[1]), 
+			NB_RETRY(nb_writex(ival(params[1]),
 					   ival(params[2]), ival(params[3]), ival(params[4]),
 					   status));
 		} else if (!read_only && !strcmp(params[0],"Write")) {
-			NB_RETRY(nb_write(ival(params[1]), 
+			NB_RETRY(nb_write(ival(params[1]),
 					  ival(params[2]), ival(params[3]), ival(params[4]),
 					  status));
 		} else if (!strcmp(params[0],"LockX")) {
-			NB_RETRY(nb_lockx(ival(params[1]), 
+			NB_RETRY(nb_lockx(ival(params[1]),
 					  ival(params[2]), ival(params[3]), status));
 		} else if (!strcmp(params[0],"UnlockX")) {
-			NB_RETRY(nb_unlockx(ival(params[1]), 
+			NB_RETRY(nb_unlockx(ival(params[1]),
 					    ival(params[2]), ival(params[3]), status));
 		} else if (!strcmp(params[0],"ReadX")) {
-			NB_RETRY(nb_readx(ival(params[1]), 
+			NB_RETRY(nb_readx(ival(params[1]),
 					  ival(params[2]), ival(params[3]), ival(params[4]),
 					  status));
 		} else if (!strcmp(params[0],"Flush")) {
@@ -214,7 +214,7 @@ again:
 		}
 
 		talloc_free(params0);
-		
+
 		if (nb_tick()) goto done;
 	}
 
@@ -230,7 +230,7 @@ done:
 	if (!torture_close_connection(cli)) {
 		correct = false;
 	}
-	
+
 	return correct;
 }
 
@@ -271,12 +271,12 @@ bool torture_nbench(struct torture_context *torture)
 
 	nbio_shmem(torture_nprocs, timelimit, warmup);
 
-	printf("Running for %d seconds with load '%s' and warmup %d secs\n", 
+	printf("Running for %d seconds with load '%s' and warmup %d secs\n",
 	       timelimit, loadfile, warmup);
 
 	/* we need to reset SIGCHLD here as the name resolution
 	   library may have changed it. We rely on correct signals
-	   from childs in the main torture code which reaps
+	   from children in the main torture code which reaps
 	   children. This is why smbtorture BENCH-NBENCH was sometimes
 	   failing */
 	signal(SIGCHLD, SIG_DFL);
