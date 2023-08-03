@@ -488,6 +488,7 @@ struct smb2srv_client_mc_negprot_state {
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	struct db_record *db_rec;
+	struct server_id sent_server_id;
 	uint64_t watch_instance;
 	uint32_t last_seqnum;
 	struct tevent_req *filter_subreq;
@@ -529,6 +530,8 @@ struct tevent_req *smb2srv_client_mc_negprot_send(TALLOC_CTX *mem_ctx,
 	state->smb2req = smb2req;
 
 	tevent_req_set_cleanup_fn(req, smb2srv_client_mc_negprot_cleanup);
+
+	server_id_set_disconnected(&state->sent_server_id);
 
 	smb2srv_client_mc_negprot_next(req);
 
@@ -625,6 +628,30 @@ verify_again:
 		return;
 	}
 
+	if (server_id_equal(&state->sent_server_id, &global->server_id)) {
+		/*
+		 * We hit a race with other concurrent connections,
+		 * which have woken us.
+		 *
+		 * We already sent the pass or drop message to
+		 * the process, so we need to wait for a
+		 * response and not pass the connection
+		 * again! Otherwise the process would
+		 * receive the same tcp connection via
+		 * more than one file descriptor and
+		 * create more than one smbXsrv_connection
+		 * structure for the same tcp connection,
+		 * which means the client would see more
+		 * than one SMB2 negprot response to its
+		 * single SMB2 netprot request and we
+		 * as server get the session keys and
+		 * message id validation wrong
+		 */
+		goto watch_again;
+	}
+
+	server_id_set_disconnected(&state->sent_server_id);
+
 	/*
 	 * If last_server_id is set, we expect
 	 * smbXsrv_client_global_verify_record()
@@ -660,6 +687,7 @@ verify_again:
 			 */
 			goto verify_again;
 		}
+		state->sent_server_id = global->server_id;
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
@@ -674,10 +702,13 @@ verify_again:
 			 */
 			goto verify_again;
 		}
+		state->sent_server_id = global->server_id;
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
 	}
+
+watch_again:
 
 	/*
 	 * If the record changed, but we are not happy with the change yet,
