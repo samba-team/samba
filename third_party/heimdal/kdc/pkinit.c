@@ -1978,10 +1978,10 @@ _kdc_pk_validate_freshness_token(astgs_request_t r,
 			 token_time, sizeof(token_time), TRUE);
 
 	kdc_log(r->context, r->config, 4, "Freshness token has too large time skew: "
-		"time in token %s is out by %ld > %ld seconds — %s",
+		"time in token %s is out by %ld > %jd seconds — %s",
 		token_time,
 		time_diff,
-		r->context->max_skew,
+		(intmax_t)(r->context->max_skew),
 		r->cname);
 
 	r->e_text = NULL;
