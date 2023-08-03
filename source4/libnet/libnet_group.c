@@ -336,7 +336,7 @@ static void continue_name_found(struct composite_context *ctx)
 	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type_abort(c->private_data, struct group_info_state);
 
-	/* receive SID assiociated with name found */
+	/* receive SID associated with name found */
 	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
 	if (!composite_is_ok(c)) return;
 

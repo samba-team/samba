@@ -616,7 +616,7 @@ struct composite_context* libnet_DomainOpen_send(struct libnet_context *ctx,
 
 	switch (io->in.type) {
 	case DOMAIN_LSA:
-		/* reques to open a policy handle on \pipe\lsarpc */
+		/* request to open a policy handle on \pipe\lsarpc */
 		c = libnet_DomainOpenLsa_send(ctx, mem_ctx, io, monitor);
 		break;
 
