@@ -699,7 +699,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	/* make sure we won't go through nss_winbind */
 	if (!winbind_off()) {
 		TALLOC_FREE(state);
-		exit_daemon("Samba failed to disable recusive "
+		exit_daemon("Samba failed to disable recursive "
 			"winbindd calls.", EACCES);
 		/*
 		 * return is never reached but is here to satisfy static
