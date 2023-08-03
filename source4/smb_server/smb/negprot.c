@@ -35,7 +35,7 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 {
 	NTSTATUS nt_status;
 
-	/* muliple negprots are not premitted */
+	/* multiple negprots are not premitted */
 	if (smb_conn->negotiate.auth_context) {
 		DEBUG(3,("get challenge: is this a secondary negprot?  auth_context is non-NULL!\n"));
 		return NT_STATUS_FOOBAR;

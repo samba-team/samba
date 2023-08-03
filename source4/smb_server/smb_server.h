@@ -119,7 +119,7 @@ struct smbsrv_session {
 	} statistics;
 };
 
-/* we need a forward declaration of the ntvfs_ops strucutre to prevent
+/* we need a forward declaration of the ntvfs_ops structure to prevent
    include recursion */
 struct ntvfs_context;
 
@@ -373,7 +373,7 @@ struct smbsrv_connection {
 		bool nt_status_support;
 	} config;
 
-	/* some statictics for the management tools */
+	/* some statistics for the management tools */
 	struct {
 		/* the time when the client connects */
 		struct timeval connect_time;
