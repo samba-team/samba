@@ -1503,7 +1503,7 @@ failed:
 		smbcli_unlink(cli1->tree, fnames[i]);
 	}
 		
-	torture_comment(tctx, "finshed denytest1 (%d failures)\n", failures);
+	torture_comment(tctx, "finished denytest1 (%d failures)\n", failures);
 	return correct;
 }
 
@@ -1600,7 +1600,7 @@ failed:
 		smbcli_unlink(cli1->tree, fnames[i]);
 	}
 
-	torture_comment(tctx, "finshed denytest2 (%d failures)\n", failures);
+	torture_comment(tctx, "finished denytest2 (%d failures)\n", failures);
 	return correct;
 }
 
@@ -1899,7 +1899,7 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 failed:
 	smbcli_unlink(cli1->tree, fname);
 	
-	torture_comment(tctx, "finshed ntdenytest (%d failures)\n", failures);
+	torture_comment(tctx, "finished ntdenytest (%d failures)\n", failures);
 	return correct;
 }
 

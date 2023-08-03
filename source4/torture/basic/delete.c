@@ -2232,7 +2232,7 @@ static bool deltest21(struct torture_context *tctx)
 	}
 
 	/* On slow build farm machines it might happen that they are not fast
-	 * enogh to delete the file for this test */
+	 * enough to delete the file for this test */
 	smb_msleep(200);
 
 	/* File should not be there. */
