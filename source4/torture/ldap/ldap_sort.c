@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    Test LDB attribute functions
-   
+
    Copyright (C) Andrew Bartlet <abartlet@samba.org> 2008-2009
    Copyright (C) Matthieu Patou <mat@matws.net> 2009
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.	If not, see <http://www.gnu.org/licenses/>.
 */
@@ -53,8 +53,8 @@ bool torture_ldap_sort(struct torture_context *torture)
 	const char *cur_txt = NULL;
 	int cur_len = 0;
 	struct ldb_dn *dn;
-		 
-		 
+
+
 	/* TALLOC_CTX* ctx;*/
 
 	url = talloc_asprintf(torture, "ldap://%s/", host);
@@ -115,12 +115,12 @@ bool torture_ldap_sort(struct torture_context *torture)
 				while( *(cur_txt) && *(prev_txt) && cur_len && prev_len ) {
 					j = toupper_m(*(prev_txt))-toupper_m(*(cur_txt));
 					if ( j > 0 ) {
-						/* Just check that is not due to trailling white space in prev_txt 
+						/* Just check that is not due to trailling white space in prev_txt
 						 * That is to say *cur_txt = 0 and prev_txt = 20 */
 						/* Remove trailling whitespace */
 						while ( *prev_txt == ' ' ) { prev_txt++; prev_len--;}
 						while ( *cur_txt == ' ' ) { cur_txt++; cur_len--;}
-						/* Now that potential whitespace are removed if we are at the end 
+						/* Now that potential whitespace are removed if we are at the end
 						 * of the cur_txt then it means that in fact strings were identical
 						 */
 						torture_assert(torture, *cur_txt && *prev_txt, "Data wrongly sorted");
@@ -142,14 +142,14 @@ bool torture_ldap_sort(struct torture_context *torture)
 						else
 						{
 							break;
-						} 
+						}
 					}
 				}
 				if ( ret != 1 ) {
 					break;
 				}
 			}
-			prev = cur; 
+			prev = cur;
 		}
 
 	}
