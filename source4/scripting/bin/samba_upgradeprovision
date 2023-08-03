@@ -93,7 +93,7 @@ __docformat__ = "restructuredText"
 
 # Attributes that are never copied from the reference provision (even if they
 # do not exist in the destination object).
-# This is most probably because they are populated automatcally when object is
+# This is most probably because they are populated automatically when object is
 # created
 # This also apply to imported object from reference provision
 replAttrNotCopied = [   "dn", "whenCreated", "whenChanged", "objectGUID",
@@ -256,7 +256,7 @@ def populate_links(samdb, schemadn):
     """Populate an array with all the back linked attributes
 
     This attributes that are modified automatically when
-    front attibutes are changed
+    front attributes are changed
 
     :param samdb: A LDB object for sam.ldb file
     :param schemadn: DN of the schema for the partition"""
@@ -801,8 +801,8 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
         if not e in hash:
             # We put in the blacklist all the element that are in the "revealed"
             # result and not in the "standard" result
-            # This element are links that were removed before and so that
-            # we don't wan't to readd
+            # These elements are links that were removed before. We don't want
+            # to readd them.
             blacklist[e] = 1
 
     for e in ref_value:
@@ -824,7 +824,7 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
         :param delta: A message diff object
         :param att: An attribute
         :param message: A function to print messages
-        :param reference: A message object for the current entry comming from
+        :param reference: A message object for the current entry coming from
                             the reference provision.
         :param current: A message object for the current entry commin from
                             the current provision.
@@ -1447,7 +1447,7 @@ def sync_calculated_attributes(samdb, names):
 # 6) get reference provision paths
 # 7) open reference provision ldbs
 # 8) setup helpers data that will help the update process
-# 9) (SKIPPED) we no longer update the privilege ldb by copying the one of referecence provision to
+# 9) (SKIPPED) we no longer update the privilege ldb by copying the one of reference provision to
 #    the current provision, because a shutil.copy would break the transaction locks both databases are under
 #    and this database has not changed between 2009 and Samba 4.0.3 in Feb 2013 (at least)
 # 10)get the oemInfo field, this field contains information about the different
@@ -1455,7 +1455,7 @@ def sync_calculated_attributes(samdb, names):
 # 11)Depending on if the --very-old-pre-alpha9 flag is set the following things are done
 #    A) When alpha9 or alphaxx not specified (default)
 #       The base sam.ldb file is updated by looking at the difference between
-#       referrence one and the current one. Everything is copied with the
+#       reference one and the current one. Everything is copied with the
 #       exception of lastProvisionUSN attributes.
 #    B) Other case (it reflect that that provision was done before alpha9)
 #       The base sam.ldb of the reference provision is copied over
@@ -1484,8 +1484,8 @@ def sync_calculated_attributes(samdb, names):
 # 18)Rebuilt SD if the flag indicate to do so
 # 19)Check difference between SD of reference provision and those of the
 #    current provision. The check is done by getting the sddl representation
-#    of the SD. Each sddl in chuncked into parts (user,group,dacl,sacl)
-#    Each part is verified separetly, for dacl and sacl ACL is splited into
+#    of the SD. Each sddl in chunked into parts (user,group,dacl,sacl)
+#    Each part is verified separately, for dacl and sacl ACL is split into
 #    ACEs and each ACE is verified separately (so that a permutation in ACE
 #    didn't raise as an error).
 # 20)The oemInfo field is updated to add information about the fact that the
@@ -1507,12 +1507,12 @@ def sync_calculated_attributes(samdb, names):
 # the available DN of objects
 # If the string representation of a DN in reference provision is
 # equal to the string representation of a DN in current provision
-# (without taking care of case) then the object is flaged as being
+# (without taking care of case) then the object is flagged as being
 # present. If the object is not present in current provision the object
-# is being flaged as missing in current provision. Object present in current
+# is being flagged as missing in current provision. Object present in current
 # provision but not in reference provision are ignored.
 # Once the list of objects present and missing is done, the deleted object
-# containers are created in the differents partitions (if missing)
+# containers are created in the different partitions (if missing)
 #
 # Then the function add_missing_entries is called
 # This function will go through the list of missing entries by calling
@@ -1526,7 +1526,7 @@ def sync_calculated_attributes(samdb, names):
 
 # The function add_missing_object will first check if the object can be created.
 # That is to say that it didn't depends other not yet created objects
-# If requisit can't be fullfilled it exists with 0
+# If requisite can't be fulfilled it exists with 0
 # Then it will try to create the missing entry by creating doing
 # an ldb_message_diff between the object in the reference provision and
 # an empty object.
@@ -1544,7 +1544,7 @@ def sync_calculated_attributes(samdb, names):
 # This function handle first case mismatch so that the DN in the current
 # provision have the same case as in reference provision
 
-# It will then construct an associative array consiting of attributes as
+# It will then construct an associative array consisting of attributes as
 # key and invocationid as value( if the originating invocation id is
 # different from the invocation id of the current DC the value is -1 instead).
 
@@ -1559,7 +1559,7 @@ def sync_calculated_attributes(samdb, names):
 #   do not update it.
 # Otherwise (case the range of provision modified attribute is not present) it
 # use the following process:
-#  All attributes that need to be added are accepted at the exeption of those
+#  All attributes that need to be added are accepted at the exception of those
 #   listed in hashOverwrittenAtt, in this case the attribute needs to have the
 #   correct flags specified.
 #  For attributes that need to be modified or removed, a check is performed

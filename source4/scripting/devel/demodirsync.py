@@ -37,7 +37,7 @@ def printdirsync(ctl):
             cookie = ndr_unpack(drsblobs.ldapControlDirSyncCookie, base64.b64decode(arr[3]))
             print("DC's NTDS guid: %s " % cookie.blob.guid1)
             print("highest usn %s" % cookie.blob.highwatermark.highest_usn)
-            print("tmp higest usn %s" % cookie.blob.highwatermark.tmp_highest_usn)
+            print("tmp highest usn %s" % cookie.blob.highwatermark.tmp_highest_usn)
             print("reserved usn %s" % cookie.blob.highwatermark.reserved_usn)
             if cookie.blob.extra_length > 0:
                 print("highest usn in extra %s" % cookie.blob.extra.ctr.cursors[0].highest_usn)
