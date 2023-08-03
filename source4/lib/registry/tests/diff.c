@@ -213,7 +213,7 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 	error = r2_ctx->ops->get_predefined_key(r2_ctx, HKEY_LOCAL_MACHINE, &key);
 	torture_assert_werr_ok(tctx, error, "Opening HKEY_LOCAL_MACHINE failed");
 	error = r2_ctx->ops->create_key(r2_ctx, key, "Software", NULL, NULL, &newkey);
-	torture_assert_werr_ok(tctx, error, "Creating HKLM\\Sofware failed");
+	torture_assert_werr_ok(tctx, error, "Creating HKLM\\Software failed");
 	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Microsoft", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\Software\\Microsoft failed");
 	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Windows", NULL, NULL, &newkey);

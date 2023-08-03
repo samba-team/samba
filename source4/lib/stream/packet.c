@@ -531,7 +531,7 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
   call send_callback.  
 
   Useful for operations that must occur after sending a message, such
-  as the switch to SASL encryption after as sucessful LDAP bind relpy.
+  as the switch to SASL encryption after as successful LDAP bind reply.
 */
 _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob,
 				       packet_send_callback_fn_t send_callback, 

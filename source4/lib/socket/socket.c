@@ -253,7 +253,7 @@ _PUBLIC_ NTSTATUS socket_send(struct socket_context *sock,
 			return STATUS_MORE_ENTRIES;
 		}
 		/* The random size sends are incompatible with TLS and SASL
-		 * sockets, which require re-sends to be consistant */
+		 * sockets, which require re-sends to be consistent */
 		if (!(sock->flags & SOCKET_FLAG_ENCRYPT)) {
 			blob2.length = 1+(random() % blob2.length);
 		} else {
@@ -443,7 +443,7 @@ _PUBLIC_ int socket_get_fd(struct socket_context *sock)
 /*
   call dup() on a socket, and close the old fd. This is used to change
   the fd to the lowest available number, to make select() more
-  efficient (select speed depends on the maxiumum fd number passed to
+  efficient (select speed depends on the maximum fd number passed to
   it)
 */
 _PUBLIC_ NTSTATUS socket_dup(struct socket_context *sock)
