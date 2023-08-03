@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (lock.l_len < 0x100000004LL) {
-		fprintf(stderr,"ERROR: settign lock overflowed\n");
+		fprintf(stderr,"ERROR: setting lock overflowed\n");
 		exit(1);
 	}
 
