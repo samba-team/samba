@@ -72,7 +72,7 @@ static bool torture_libnetapi_initialize(struct torture_context *tctx)
 	status = libnetapi_init(&ctx);
 
 	torture_assert(tctx, ctx != NULL, "Failed to get a libnetapi_ctx");
-	torture_assert_int_equal(tctx, status, 0, "libnetapi_init failed despite alredy being set up");
+	torture_assert_int_equal(tctx, status, 0, "libnetapi_init failed despite already being set up");
 
 	libnetapi_free(ctx);
 

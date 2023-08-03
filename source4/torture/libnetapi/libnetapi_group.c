@@ -449,7 +449,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 		goto out;
 	}
 
-	/* set it again via exlicit member set */
+	/* set it again via explicit member set */
 
 	status = test_netgroupsetusers(tctx, hostname, groupname2, 0, 1, &username);
 	if (status) {
