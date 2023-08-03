@@ -1,6 +1,6 @@
 This is the 'CIFS on CIFS' backend for Samba. It provides a NTVFS
 backend that talks to a remote CIFS server. The primary aim of this
-backend is for debugging and development, although some poeple may
+backend is for debugging and development, although some people may
 find it useful as a CIFS gateway.
 
 There are two modes of operation: Password specified and delegated

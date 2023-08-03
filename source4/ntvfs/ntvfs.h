@@ -275,7 +275,7 @@ struct ntvfs_request {
 	 */
 	uint64_t client_caps;
 
-	/* some statictics for the management tools */
+	/* some statistics for the management tools */
 	struct {
 		/* the system time when the request arrived */
 		struct timeval request_time;

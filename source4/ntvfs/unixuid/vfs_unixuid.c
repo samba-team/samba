@@ -1,7 +1,7 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
-   a pass-thru NTVFS module to setup a security context using unix
+   A pass-through NTVFS module to setup a security context using unix
    uid/gid
 
    Copyright (C) Andrew Tridgell 2004
@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -120,7 +120,7 @@ static int unixuid_event_nesting_hook(struct tevent_context *ev,
 		*(struct security_unix_token **)stack_ptr = sec_ctx;
 		if (samba_seteuid(0) != 0 || samba_setegid(0) != 0) {
 			DEBUG(0,("%s: Failed to change to root\n", location));
-			return -1;			
+			return -1;
 		}
 	} else {
 		/* called when we come out of a nesting level */
@@ -138,7 +138,7 @@ static int unixuid_event_nesting_hook(struct tevent_context *ev,
 		status = set_unix_security(sec_ctx);
 		talloc_free(sec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("%s: Failed to revert security context (%s)\n", 
+			DEBUG(0,("%s: Failed to revert security context (%s)\n",
 				 location, nt_errstr(status)));
 			return -1;
 		}
@@ -245,11 +245,11 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	priv->last_token = NULL;
 	ntvfs->private_data = priv;
 
-	tevent_loop_set_nesting_hook(ntvfs->ctx->event_ctx, 
+	tevent_loop_set_nesting_hook(ntvfs->ctx->event_ctx,
 				     unixuid_event_nesting_hook,
 				     &unixuid_nesting_level);
 
-	/* we don't use PASS_THRU_REQ here, as the connect operation runs with 
+	/* we don't use PASS_THRU_REQ here, as the connect operation runs with
 	   root privileges. This allows the backends to setup any database
 	   links they might need during the connect. */
 	status = ntvfs_next_connect(ntvfs, req, tcon);
@@ -269,7 +269,7 @@ static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs)
 	ntvfs->private_data = NULL;
 
 	status = ntvfs_next_disconnect(ntvfs);
- 
+
 	return status;
 }
 
@@ -520,7 +520,7 @@ static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
   async setup
 */
 static NTSTATUS unixuid_async_setup(struct ntvfs_module_context *ntvfs,
-				    struct ntvfs_request *req, 
+				    struct ntvfs_request *req,
 				    void *private_data)
 {
 	NTSTATUS status;
@@ -573,7 +573,7 @@ static NTSTATUS unixuid_lock(struct ntvfs_module_context *ntvfs,
   set info on a open file
 */
 static NTSTATUS unixuid_setfileinfo(struct ntvfs_module_context *ntvfs,
-				   struct ntvfs_request *req, 
+				   struct ntvfs_request *req,
 				   union smb_setfileinfo *info)
 {
 	NTSTATUS status;
@@ -610,12 +610,12 @@ static NTSTATUS unixuid_lpq(struct ntvfs_module_context *ntvfs,
 	return status;
 }
 
-/* 
+/*
    list files in a directory matching a wildcard pattern
 */
 static NTSTATUS unixuid_search_first(struct ntvfs_module_context *ntvfs,
-				    struct ntvfs_request *req, union smb_search_first *io, 
-				    void *search_private, 
+				    struct ntvfs_request *req, union smb_search_first *io,
+				    void *search_private,
 				    bool (*callback)(void *, const union smb_search_data *))
 {
 	NTSTATUS status;
@@ -627,8 +627,8 @@ static NTSTATUS unixuid_search_first(struct ntvfs_module_context *ntvfs,
 
 /* continue a search */
 static NTSTATUS unixuid_search_next(struct ntvfs_module_context *ntvfs,
-				   struct ntvfs_request *req, union smb_search_next *io, 
-				   void *search_private, 
+				   struct ntvfs_request *req, union smb_search_next *io,
+				   void *search_private,
 				   bool (*callback)(void *, const union smb_search_data *))
 {
 	NTSTATUS status;
@@ -707,18 +707,18 @@ NTSTATUS ntvfs_unixuid_init(TALLOC_CTX *ctx)
 	ops.name = "unixuid";
 
 	/* we register under all 3 backend types, as we are not type specific */
-	ops.type = NTVFS_DISK;	
+	ops.type = NTVFS_DISK;
 	ret = ntvfs_register(&ops, &vers);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 
-	ops.type = NTVFS_PRINT;	
+	ops.type = NTVFS_PRINT;
 	ret = ntvfs_register(&ops, &vers);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 
-	ops.type = NTVFS_IPC;	
+	ops.type = NTVFS_IPC;
 	ret = ntvfs_register(&ops, &vers);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
-	
+
 failed:
 	return ret;
 }

@@ -173,7 +173,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
    hash a string of the specified length. The string does not need to be
    null terminated 
 
-   hash alghorithm changed to FNV1 by idra@samba.org (Simo Sorce).
+   hash algorithm changed to FNV1 by idra@samba.org (Simo Sorce).
    see http://www.isthe.com/chongo/tech/comp/fnv/index.html for a
    discussion on Fowler / Noll / Vo (FNV) Hash by one of it's authors
 */

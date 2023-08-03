@@ -226,7 +226,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 
 	/*
 	 * disable async requests in the wildcard case
-	 * untill we have proper tests for this
+	 * until we have proper tests for this
 	 */
 	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 

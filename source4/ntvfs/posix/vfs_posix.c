@@ -160,7 +160,7 @@ static int pvfs_state_destructor(struct pvfs_state *pvfs)
 
 	/* 
 	 * make sure we cleanup files and searches before anything else
-	 * because there destructors need to acess the pvfs_state struct
+	 * because there destructors need to access the pvfs_state struct
 	 */
 	for (f=pvfs->files.list; f; f=fn) {
 		fn = f->next;
@@ -356,7 +356,7 @@ static NTSTATUS pvfs_trans(struct ntvfs_module_context *ntvfs,
 }
 
 /*
-  initialialise the POSIX disk backend, registering ourselves with the ntvfs subsystem
+  initialise the POSIX disk backend, registering ourselves with the ntvfs subsystem
  */
 NTSTATUS ntvfs_posix_init(TALLOC_CTX *ctx)
 {

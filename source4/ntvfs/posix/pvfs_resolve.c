@@ -314,7 +314,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			if (p > p_start && (p[1] == '\\' || p[1] == '\0')) {
-				/* see if it is definately a "\\" or
+				/* see if it is definitely a "\\" or
 				 * a trailing "\". If it is then fail here,
 				 * and let the next layer up try again after
 				 * pvfs_reduce_name() if it wants to. This is
@@ -353,7 +353,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 		case '|':
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		case '.':
-			/* see if it is definately a .. or
+			/* see if it is definitely a .. or
 			   . component. If it is then fail here, and
 			   let the next layer up try again after
 			   pvfs_reduce_name() if it wants to. This is

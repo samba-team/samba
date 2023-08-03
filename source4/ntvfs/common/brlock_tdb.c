@@ -39,11 +39,11 @@
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies
   a file. For a local posix filesystem this will usually be a combination
   of the device and inode numbers of the file, but it can be anything 
-  that uniquely idetifies a file for locking purposes, as long
+  that uniquely identifies a file for locking purposes, as long
   as it is applied consistently.
 */
 
-/* this struct is typicaly attached to tcon */
+/* this struct is typically attached to tcon */
 struct brl_context {
 	struct db_context *db;
 	struct server_id server;
@@ -248,7 +248,7 @@ static NTSTATUS brl_tdb_lock_failed(struct brl_handle *brlh, struct lock_struct 
 	/* 
 	 * if the notify_ptr is non NULL,
 	 * it means that we're at the end of a pending lock
-	 * and the real lock is requested after the timout went by
+	 * and the real lock is requested after the timeout went by
 	 * In this case we need to remember the last_lock and always
 	 * give FILE_LOCK_CONFLICT
 	 */

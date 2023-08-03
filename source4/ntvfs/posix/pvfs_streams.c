@@ -426,7 +426,7 @@ static NTSTATUS pvfs_stream_load(struct pvfs_state *pvfs,
 }
 
 /*
-  the equvalent of pread() on a stream
+  the equivalent of pread() on a stream
 */
 ssize_t pvfs_stream_read(struct pvfs_state *pvfs,
 			 struct pvfs_file_handle *h, void *data, size_t count, off_t offset)
@@ -455,7 +455,7 @@ ssize_t pvfs_stream_read(struct pvfs_state *pvfs,
 
 
 /*
-  the equvalent of pwrite() on a stream
+  the equivalent of pwrite() on a stream
 */
 ssize_t pvfs_stream_write(struct pvfs_state *pvfs,
 			  struct pvfs_file_handle *h, const void *data, size_t count, off_t offset)
@@ -514,7 +514,7 @@ ssize_t pvfs_stream_write(struct pvfs_state *pvfs,
 }
 
 /*
-  the equvalent of truncate() on a stream
+  the equivalent of truncate() on a stream
 */
 NTSTATUS pvfs_stream_truncate(struct pvfs_state *pvfs,
 			      struct pvfs_filename *name, int fd, off_t length)
