@@ -770,10 +770,10 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Should find an GUID on extended DN");
 	
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "SID"), sid_blob, 
-				       "Extended DN SID incorect");
+				       "Extended DN SID incorrect");
 
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "GUID"), guid_blob, 
-				       "Extended DN GUID incorect");
+				       "Extended DN GUID incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_linearized(dn), dn_str, 
 				 "linearized DN incorrect");
@@ -818,10 +818,10 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Failed to set a SID on DN");
 
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "SID"), sid_blob, 
-				       "Extended DN SID incorect");
+				       "Extended DN SID incorrect");
 
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "GUID"), guid_blob, 
-				       "Extended DN GUID incorect");
+				       "Extended DN GUID incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_linearized(dn), "cn=users,dc=samba,dc=org", 
 				 "linearized DN incorrect");
@@ -859,7 +859,7 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Should find an GUID on this DN");
 	
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "GUID"), guid_blob, 
-				       "Extended DN GUID incorect");
+				       "Extended DN GUID incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_linearized(dn), "", 
 				 "linearized DN incorrect");
@@ -894,7 +894,7 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Should find an GUID on this DN");
 	
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "GUID"), guid_blob, 
-				       "Extended DN GUID incorect");
+				       "Extended DN GUID incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_linearized(dn), "", 
 				 "linearized DN incorrect");
@@ -919,7 +919,7 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Should find an SID on this DN");
 	
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "SID"), sid_blob, 
-				       "Extended DN SID incorect");
+				       "Extended DN SID incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_linearized(dn), "", 
 				 "linearized DN incorrect");
@@ -954,7 +954,7 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Should find an SID on this DN");
 	
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_extended_component(dn, "SID"), sid_blob, 
-				       "Extended DN SID incorect");
+				       "Extended DN SID incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_linearized(dn), "", 
 				 "linearized DN incorrect");
