@@ -1714,7 +1714,7 @@ static bool test_dlz_bind9_aging(struct torture_context *tctx)
 	 * Step 13. Check that the record timeouts are *mostly* zero.
 	 * Step 14. Turn aging off
 	 * Step 15. Update, setting timestamps to zero
-	 * Step 16. Check that the timestmaps are all zero.
+	 * Step 16. Check that the timestamps are all zero.
 	 * Step 17. Reset to non-zero via ldb, with aging still off.
 	 * Step 18. Update with aging off. Nothing should change.
 	 * Step 19. Check that the timestamps didn't change.
@@ -2073,7 +2073,7 @@ static bool test_dlz_bind9_aging(struct torture_context *tctx)
 	 *    2 is 7 days + 3 hours, and should be renewed
 	 *
 	 * NOTE: the ldb record order is different from the insertion order,
-	 * but it should stay the same betweeen searches.
+	 * but it should stay the same between searches.
 	 */
 	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
 			      LDB_SCOPE_BASE, attrs,
@@ -2176,7 +2176,7 @@ static bool test_dlz_bind9_aging(struct torture_context *tctx)
 	/*
 	 * Step 12. Do updates on some records, zeroing their timestamps
 	 *
-	 * Zero means static. A single zero timestmap is infectious, so other
+	 * Zero means static. A single zero timestamp is infectious, so other
 	 * records get it when they are updated.
 	 */
 
@@ -2274,7 +2274,7 @@ static bool test_dlz_bind9_aging(struct torture_context *tctx)
 
 
 	/*
-	 * Step 16. Check that the timestmaps are all zero.
+	 * Step 16. Check that the timestamps are all zero.
 	 */
 	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
 			      LDB_SCOPE_BASE, attrs,
