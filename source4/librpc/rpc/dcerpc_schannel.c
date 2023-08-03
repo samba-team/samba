@@ -504,7 +504,7 @@ static void continue_bind_auth(struct composite_context *ctx)
 }
 
 /*
-  Stage 4 of auth_schannel: Get the Logon Capablities and verify them.
+  Stage 4 of auth_schannel: Get the Logon Capabilities and verify them.
 */
 static void continue_get_capabilities(struct tevent_req *subreq)
 {
@@ -567,7 +567,7 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 		return;
 	}
 
-	/* TODO: Add downgrade dectection. */
+	/* TODO: Add downgrade detection. */
 
 	composite_done(c);
 }

@@ -139,7 +139,7 @@ struct dcerpc_pipe {
 
 	/*
 	 * Set for the timeout in dcerpc_pipe_connect_b_send(), to
-	 * allow the timeout not to destory the stack during a nested
+	 * allow the timeout not to destroy the stack during a nested
 	 * event loop caused by gensec_update()
 	 */
 	bool inhibit_timeout_processing;
