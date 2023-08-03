@@ -1733,7 +1733,7 @@ planoldpythontestsuite(env, "ridalloc_exop",
 # That is why this test is run on the isolated environment and not on
 # those connected with ad_dc (vampiredc/promoteddc)
 #
-# The chgdcpass enviroment is likewise isolated and emulates Samba 4.5
+# The chgdcpass environment is likewise isolated and emulates Samba 4.5
 # with regard to GET_ANC
 
 env = 'schema_pair_dc'
@@ -1828,7 +1828,7 @@ for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # A side-effect of the getncchanges tests is that they will create hundreds of
-# tombstone objects, so run them last to avoid interferring with (and slowing
+# tombstone objects, so run them last to avoid interfering with (and slowing
 # down) the other DRS tests
 for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite(env, "getncchanges",
