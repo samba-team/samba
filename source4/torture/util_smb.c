@@ -303,7 +303,7 @@ void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
 }
 
 /*
-  dump file infor by name
+  dump file info by name
 */
 void torture_all_info(struct smbcli_tree *tree, const char *fname)
 {

@@ -733,7 +733,7 @@ int main(int argc, const char *argv[])
 
 		/* At this point, we should just have a target string,
 		 * followed by a series of test names. Unless we are in
-		 * shell mode, in which case we don't need anythig more.
+		 * shell mode, in which case we don't need anything more.
 		 */
 
 		if (argc_new < 3) {
