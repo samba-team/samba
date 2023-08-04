@@ -30,7 +30,8 @@
 bool ipalloc_deterministic(struct ipalloc_state *ipalloc_state)
 {
 	struct public_ip_list *t;
-	int i, numnodes;
+	int i;
+	uint32_t numnodes;
 
 	numnodes = ipalloc_state->num;
 
