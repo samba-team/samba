@@ -228,7 +228,7 @@ class cmd_domain_schema_upgrade(Command):
         try:
             from samba.ms_schema_markdown import read_ms_markdown
         except ImportError as e:
-            self.outf.write("Exception in importing markdown: %s" % e)
+            self.outf.write("Exception in importing markdown: %s\n" % e)
             raise CommandError('Failed to import module markdown')
         from samba.schema import Schema
 
