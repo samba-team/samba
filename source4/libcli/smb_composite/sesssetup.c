@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -57,18 +57,18 @@ static int sesssetup_state_destructor(struct sesssetup_state *state)
 }
 
 static NTSTATUS session_setup_old(struct composite_context *c,
-				  struct smbcli_session *session, 
+				  struct smbcli_session *session,
 				  struct smb_composite_sesssetup *io,
-				  struct smbcli_request **req); 
+				  struct smbcli_request **req);
 static NTSTATUS session_setup_nt1(struct composite_context *c,
-				  struct smbcli_session *session, 
+				  struct smbcli_session *session,
 				  struct smb_composite_sesssetup *io,
-				  struct smbcli_request **req); 
+				  struct smbcli_request **req);
 static NTSTATUS session_setup_spnego_restart(struct composite_context *c,
 					     struct smbcli_session *session,
 					     struct smb_composite_sesssetup *io);
 static NTSTATUS session_setup_spnego(struct composite_context *c,
-				     struct smbcli_session *session, 
+				     struct smbcli_session *session,
 				     struct smb_composite_sesssetup *io,
 				     struct smbcli_request **req);
 static void smb_composite_sesssetup_spnego_done1(struct tevent_req *subreq);
@@ -116,8 +116,8 @@ static void request_handler(struct smbcli_request *req)
 			/* we neet to reset the vuid for a new try */
 			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
-				nt_status = session_setup_old(c, session, 
-							      state->io, 
+				nt_status = session_setup_old(c, session,
+							      state->io,
 							      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
 					talloc_free(check_req);
@@ -141,8 +141,8 @@ static void request_handler(struct smbcli_request *req)
 			/* we need to reset the vuid for a new try */
 			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
-				nt_status = session_setup_nt1(c, session, 
-							      state->io, 
+				nt_status = session_setup_nt1(c, session,
+							      state->io,
 							      &state->req);
 				if (NT_STATUS_IS_OK(nt_status)) {
 					talloc_free(check_req);
@@ -313,9 +313,9 @@ static void request_handler(struct smbcli_request *req)
   send a nt1 style session setup
 */
 static NTSTATUS session_setup_nt1(struct composite_context *c,
-				  struct smbcli_session *session, 
+				  struct smbcli_session *session,
 				  struct smb_composite_sesssetup *io,
-				  struct smbcli_request **req) 
+				  struct smbcli_request **req)
 {
 	NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
 	struct sesssetup_state *state = talloc_get_type(c->private_data,
@@ -349,10 +349,10 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.os           = "Unix";
 	state->setup.nt1.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 
-	cli_credentials_get_ntlm_username_domain(io->in.credentials, state, 
+	cli_credentials_get_ntlm_username_domain(io->in.credentials, state,
 						 &state->setup.nt1.in.user,
 						 &state->setup.nt1.in.domain);
-	
+
 
 	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
 		if (!cli_credentials_is_anonymous(io->in.credentials) &&
@@ -366,9 +366,9 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state, 
-							      &flags, 
-							      session->transport->negotiate.secblob, 
+		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state,
+							      &flags,
+							      session->transport->negotiate.secblob,
 							      NULL, /* server_timestamp */
 							      names_blob,
 							      &state->setup.nt1.in.password1,
@@ -422,9 +422,9 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
   old style session setup (pre NT1 protocol level)
 */
 static NTSTATUS session_setup_old(struct composite_context *c,
-				  struct smbcli_session *session, 
+				  struct smbcli_session *session,
 				  struct smb_composite_sesssetup *io,
-				  struct smbcli_request **req) 
+				  struct smbcli_request **req)
 {
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data,
@@ -445,10 +445,10 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	state->setup.old.in.sesskey = io->in.sesskey;
 	state->setup.old.in.os      = "Unix";
 	state->setup.old.in.lanman  = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
-	cli_credentials_get_ntlm_username_domain(io->in.credentials, state, 
+	cli_credentials_get_ntlm_username_domain(io->in.credentials, state,
 						 &state->setup.old.in.user,
 						 &state->setup.old.in.domain);
-	
+
 	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
 		DATA_BLOB names_blob = data_blob_null;
 		int flags = 0;
@@ -461,9 +461,9 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 
 		flags |= CLI_CRED_LANMAN_AUTH;
 
-		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state, 
-							      &flags, 
-							      session->transport->negotiate.secblob, 
+		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state,
+							      &flags,
+							      session->transport->negotiate.secblob,
 							      NULL, /* server_timestamp */
 							      names_blob,
 							      &state->setup.old.in.password,
@@ -483,7 +483,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 		/* could match windows client and return 'cannot logon from this workstation', but it just confuses everybody */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	*req = smb_raw_sesssetup_send(session, &state->setup);
 	if (!*req) {
 		return NT_STATUS_NO_MEMORY;
@@ -509,7 +509,7 @@ static NTSTATUS session_setup_spnego_restart(struct composite_context *c,
 
 	status = gensec_set_credentials(session->gensec, io->in.credentials);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client credentials: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC client credentials: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
@@ -517,14 +517,14 @@ static NTSTATUS session_setup_spnego_restart(struct composite_context *c,
 	status = gensec_set_target_hostname(session->gensec,
 			smbXcli_conn_remote_name(session->transport->conn));
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
 
 	status = gensec_set_target_service(session->gensec, "cifs");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC target service: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
@@ -614,7 +614,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
   different session setup varients, including the multi-pass nature of
   the spnego varient
 */
-struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *session, 
+struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *session,
 						       struct smb_composite_sesssetup *io)
 {
 	struct composite_context *c;
@@ -691,9 +691,9 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 		return c;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
 	    NT_STATUS_IS_OK(status)) {
-		composite_continue_smb(c, state->req, request_handler, c);	
+		composite_continue_smb(c, state->req, request_handler, c);
 		return c;
 	}
 
@@ -858,7 +858,7 @@ NTSTATUS smb_composite_sesssetup_recv(struct composite_context *c)
 }
 
 /*
-  sync version of smb_composite_sesssetup 
+  sync version of smb_composite_sesssetup
 */
 NTSTATUS smb_composite_sesssetup(struct smbcli_session *session, struct smb_composite_sesssetup *io)
 {
