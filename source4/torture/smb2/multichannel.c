@@ -31,6 +31,7 @@
 #include "lib/cmdline/cmdline.h"
 #include "libcli/security/security.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/socket/socket.h"
 #include "lib/param/param.h"
 #include "lib/events/events.h"
 #include "oplock_break_handler.h"
@@ -2343,6 +2344,315 @@ done:
 	return ret;
 }
 
+/*
+ * Test channel merging race
+ * This is a regression test for
+ * https://bugzilla.samba.org/show_bug.cgi?id=15346
+ */
+struct test_multichannel_bug_15346_conn;
+
+struct test_multichannel_bug_15346_state {
+	struct torture_context *tctx;
+	struct test_multichannel_bug_15346_conn *conns;
+	size_t num_conns;
+	size_t num_ready;
+	bool asserted;
+	bool looping;
+};
+
+struct test_multichannel_bug_15346_conn {
+	struct test_multichannel_bug_15346_state *state;
+	size_t idx;
+	struct smbXcli_conn *smbXcli;
+	struct tevent_req *nreq;
+	struct tevent_req *ereq;
+};
+
+static void test_multichannel_bug_15346_ndone(struct tevent_req *subreq);
+static void test_multichannel_bug_15346_edone(struct tevent_req *subreq);
+
+static void test_multichannel_bug_15346_ndone(struct tevent_req *subreq)
+{
+	struct test_multichannel_bug_15346_conn *conn =
+		(struct test_multichannel_bug_15346_conn *)
+		tevent_req_callback_data_void(subreq);
+	struct test_multichannel_bug_15346_state *state = conn->state;
+	struct torture_context *tctx = state->tctx;
+	NTSTATUS status;
+	bool ok = false;
+
+	SMB_ASSERT(conn->nreq == subreq);
+	conn->nreq = NULL;
+
+	status = smbXcli_negprot_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, asserted,
+					"smbXcli_negprot_recv failed");
+
+	torture_comment(tctx, "conn[%zu]: negprot done\n", conn->idx);
+
+	conn->ereq = smb2cli_echo_send(conn->smbXcli,
+				       tctx->ev,
+				       conn->smbXcli,
+				       state->num_conns * 2 * 1000);
+	torture_assert_goto(tctx, conn->ereq != NULL, ok, asserted,
+			    "smb2cli_echo_send");
+	tevent_req_set_callback(conn->ereq,
+				test_multichannel_bug_15346_edone,
+				conn);
+
+	return;
+
+asserted:
+	SMB_ASSERT(!ok);
+	state->asserted = true;
+	state->looping = false;
+	return;
+}
+
+static void test_multichannel_bug_15346_edone(struct tevent_req *subreq)
+{
+	struct test_multichannel_bug_15346_conn *conn =
+		(struct test_multichannel_bug_15346_conn *)
+		tevent_req_callback_data_void(subreq);
+	struct test_multichannel_bug_15346_state *state = conn->state;
+	struct torture_context *tctx = state->tctx;
+	NTSTATUS status;
+	bool ok = false;
+
+	SMB_ASSERT(conn->ereq == subreq);
+	conn->ereq = NULL;
+
+	status = smb2cli_echo_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, asserted,
+					"smb2cli_echo_recv failed");
+
+	torture_comment(tctx, "conn[%zu]: echo done\n", conn->idx);
+
+	state->num_ready += 1;
+	if (state->num_ready < state->num_conns) {
+		return;
+	}
+
+	state->looping = false;
+	return;
+
+asserted:
+	SMB_ASSERT(!ok);
+	state->asserted = true;
+	state->looping = false;
+	return;
+}
+
+static bool test_multichannel_bug_15346(struct torture_context *tctx,
+					struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct resolve_context *resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx);
+	const char *socket_options = lpcfg_socket_options(tctx->lp_ctx);
+	struct gensec_settings *gsettings = NULL;
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct test_multichannel_bug_15346_state *state = NULL;
+	uint32_t server_capabilities;
+	struct smb2_handle root_handle = {{0}};
+	size_t i;
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_fail(tctx,
+			     "SMB 3.X Dialect family required for Multichannel"
+			     " tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(
+					tree1->session->transport->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_fail(tctx,
+			     "Server does not support multichannel.");
+	}
+
+	torture_comment(tctx, "Testing for BUG 15346\n");
+
+	state = talloc_zero(tctx, struct test_multichannel_bug_15346_state);
+	torture_assert_goto(tctx, state != NULL, ret, done,
+			    "talloc_zero");
+	state->tctx = tctx;
+
+	gsettings = lpcfg_gensec_settings(state, tctx->lp_ctx);
+	torture_assert_goto(tctx, gsettings != NULL, ret, done,
+			    "lpcfg_gensec_settings");
+
+	/*
+	 * 32 is the W2K12R2 and W2K16 limit
+	 * add 31 additional connections
+	 */
+	state->num_conns = 31;
+	state->conns = talloc_zero_array(state,
+				  struct test_multichannel_bug_15346_conn,
+				  state->num_conns);
+	torture_assert_goto(tctx, state->conns != NULL, ret, done,
+			    "talloc_zero_array");
+
+	/*
+	 * First we open additional the tcp connections
+	 */
+
+	for (i = 0; i < state->num_conns; i++) {
+		struct test_multichannel_bug_15346_conn *conn = &state->conns[i];
+		struct socket_context *sock = NULL;
+		uint16_t port = 445;
+		struct smbcli_options options = transport1->options;
+
+		conn->state = state;
+		conn->idx = i;
+
+		status = socket_connect_multi(state->conns,
+					      host,
+					      1, &port,
+					      resolve_ctx,
+					      tctx->ev,
+					      &sock,
+					      &port);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"socket_connect_multi failed");
+
+		conn->smbXcli = smbXcli_conn_create(state->conns,
+					sock->fd,
+					host,
+					SMB_SIGNING_OFF,
+					0,
+					&options.client_guid,
+					options.smb2_capabilities,
+					&options.smb3_capabilities);
+		torture_assert_goto(tctx, conn->smbXcli != NULL, ret, done,
+				    "smbXcli_conn_create failed");
+		sock->fd = -1;
+		TALLOC_FREE(sock);
+	}
+
+	/*
+	 * Now prepare the async SMB2 Negotiate requests
+	 */
+	for (i = 0; i < state->num_conns; i++) {
+		struct test_multichannel_bug_15346_conn *conn = &state->conns[i];
+
+		conn->nreq = smbXcli_negprot_send(conn->smbXcli,
+						  tctx->ev,
+						  conn->smbXcli,
+						  state->num_conns * 2 * 1000,
+						  smbXcli_conn_protocol(transport1->conn),
+						  smbXcli_conn_protocol(transport1->conn),
+						  33, /* max_credits */
+						  NULL);
+		torture_assert_goto(tctx, conn->nreq != NULL, ret, done, "smbXcli_negprot_send");
+		tevent_req_set_callback(conn->nreq,
+					test_multichannel_bug_15346_ndone,
+					conn);
+	}
+
+	/*
+	 * now we loop until all negprot and the first round
+	 * of echos are done.
+	 */
+	state->looping = true;
+	while (state->looping) {
+		torture_assert_goto(tctx, tevent_loop_once(tctx->ev) == 0,
+				    ret, done, "tevent_loop_once");
+	}
+
+	if (state->asserted) {
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * No we check that the connections are still usable
+	 */
+	for (i = 0; i < state->num_conns; i++) {
+		struct test_multichannel_bug_15346_conn *conn = &state->conns[i];
+
+		torture_comment(tctx, "conn[%zu]: checking echo again1\n", conn->idx);
+
+		status = smb2cli_echo(conn->smbXcli, 1000);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2cli_echo failed");
+	}
+
+	status = smb2_util_roothandle(tree1, &root_handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_roothandle failed");
+
+	/*
+	 * No we check that the connections are still usable
+	 */
+	for (i = 0; i < state->num_conns; i++) {
+		struct test_multichannel_bug_15346_conn *conn = &state->conns[i];
+		struct smbcli_options options = transport1->options;
+		struct smb2_session *session = NULL;
+		struct smb2_tree *tree = NULL;
+		union smb_fileinfo io;
+
+		torture_comment(tctx, "conn[%zu]: checking session bind\n", conn->idx);
+
+		/*
+		 * Prepare smb2_{tree,session,transport} structures
+		 * for the existing connection.
+		 */
+		options.only_negprot = true;
+		status = smb2_connect_ext(state->conns,
+					  host,
+					  NULL, /* ports */
+					  share,
+					  resolve_ctx,
+					  samba_cmdline_get_creds(),
+					  &conn->smbXcli,
+					  0, /* previous_session_id */
+					  &tree,
+					  tctx->ev,
+					  &options,
+					  socket_options,
+					  gsettings);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_connect_ext failed");
+		conn->smbXcli = tree->session->transport->conn;
+
+		session = smb2_session_channel(tree->session->transport,
+					       lpcfg_gensec_settings(tree, tctx->lp_ctx),
+					       tree,
+					       tree1->session);
+		torture_assert_goto(tctx, session != NULL, ret, done,
+				    "smb2_session_channel failed");
+
+		status = smb2_session_setup_spnego(session,
+						   samba_cmdline_get_creds(),
+						   0 /* previous_session_id */);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_session_setup_spnego failed");
+
+		/*
+		 * Fix up the bound smb2_tree
+		 */
+		tree->session = session;
+		tree->smbXcli = tree1->smbXcli;
+
+		ZERO_STRUCT(io);
+		io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+		io.generic.in.file.handle = root_handle;
+
+		status = smb2_getinfo_file(tree, tree, &io);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_getinfo_file failed");
+	}
+
+ done:
+	talloc_free(state);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
@@ -2352,10 +2662,13 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 								   "oplocks");
 	struct torture_suite *suite_leases = torture_suite_create(ctx,
 								  "leases");
+	struct torture_suite *suite_bugs = torture_suite_create(ctx,
+								"bugs");
 
 	torture_suite_add_suite(suite, suite_generic);
 	torture_suite_add_suite(suite, suite_oplocks);
 	torture_suite_add_suite(suite, suite_leases);
+	torture_suite_add_suite(suite, suite_bugs);
 
 	torture_suite_add_1smb2_test(suite_generic, "interface_info",
 				     test_multichannel_interface_info);
@@ -2377,6 +2690,8 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 				     test_multichannel_lease_break_test3);
 	torture_suite_add_1smb2_test(suite_leases, "test4",
 				     test_multichannel_lease_break_test4);
+	torture_suite_add_1smb2_test(suite_bugs, "bug_15346",
+				     test_multichannel_bug_15346);
 
 	suite->description = talloc_strdup(suite, "SMB2 Multichannel tests");
 
