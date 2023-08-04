@@ -47,6 +47,7 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
         source='''ndr/ndr.c
+                  ndr/dcerpc.c
                   ndr/winreg.c
                   ndr/atsvc.c
                   ndr/lsa.c
