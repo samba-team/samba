@@ -283,6 +283,17 @@ MonitorInterval=20
 	      with care when addresses are defined across multiple
 	      networks.
 	    </para>
+	    <para>
+	      You can override automatic the "home" node allocation by
+	      creating a file "home_nodes" next to the
+	      "public_addresses" file. As an example the following
+	      "home_nodes" file assigns the address 192.168.1.1 to
+	      node 0 and 192.168.1.2 to node 2:
+	    </para>
+	    <screen format="linespecific">
+	      192.168.1.1 0
+	      192.168.1.2 2
+            </screen>
 	  </listitem>
 	</varlistentry>
 	<varlistentry>
