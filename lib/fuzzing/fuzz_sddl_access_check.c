@@ -103,7 +103,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 	 * all.
 	 */
 	for (i = len - 1; i >= 0; i--) {
-		if (input[i] != 0) {
+		if (input[i] == 0) {
 			break;
 		}
 	}
