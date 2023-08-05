@@ -28,7 +28,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 }
 
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
         /*
 	 * we allow compressed to be 25% bigger than decompressed.

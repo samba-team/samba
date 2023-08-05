@@ -29,7 +29,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 	return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	TALLOC_CTX *mem_ctx;
 	struct conv_options opt;

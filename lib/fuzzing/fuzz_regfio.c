@@ -36,7 +36,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 	return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	REGF_FILE* regfile;
 	REGF_NK_REC *nk, *subkey;

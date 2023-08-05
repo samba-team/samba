@@ -46,7 +46,7 @@ CMP_FN(uint64_t)
 
 #define MAX_SIZE (1024 * 1024)
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	samba_compare_fn_t fn;

@@ -26,7 +26,7 @@
 char buf[MAX_LENGTH + 1];
 
 
-int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	struct packet_struct *p = NULL;
 	struct in_addr ip = {

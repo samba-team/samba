@@ -34,7 +34,7 @@ static char * possibly_truncate(uint8_t *input, size_t len)
 }
 
 
-int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	TALLOC_CTX *mem_ctx = talloc_init(__FUNCTION__);
 	struct ldb_val val = {0};

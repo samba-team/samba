@@ -28,7 +28,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 }
 
 
-int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	struct security_token_descriptor_fuzzing_pair p = {0};

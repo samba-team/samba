@@ -28,7 +28,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 #define MAX_LENGTH (1024 * 1024)
 char line[MAX_LENGTH + 1];
 
-int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	enum printing_types printing_type;
 	print_queue_struct pq_buf = {0};

@@ -24,7 +24,7 @@
 char buf[MAX_LENGTH + 1];
 
 
-int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	struct dcerpc_binding *binding = NULL;

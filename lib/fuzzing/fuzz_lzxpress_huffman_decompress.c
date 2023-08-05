@@ -28,7 +28,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 static uint8_t output[1024 * 1024] = {0};
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	size_t target_len;
 	if (len < 4) {

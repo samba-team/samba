@@ -25,6 +25,6 @@
 
 /* Prototypes for fuzzing interface */
 int LLVMFuzzerInitialize(int *argc, char ***argv);
-int LLVMFuzzerTestOneInput(uint8_t * buf, size_t len);
+int LLVMFuzzerTestOneInput(const uint8_t * buf, size_t len);
 
 #endif /* _SAMBA_FUZZING_H */

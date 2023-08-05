@@ -25,7 +25,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 	return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	static uint8_t output[1024 * 1024] = {0};
 

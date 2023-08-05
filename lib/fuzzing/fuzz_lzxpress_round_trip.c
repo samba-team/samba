@@ -25,7 +25,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 	return 0;
 }
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	static uint8_t compressed[1024 * 1280] = {0};
 	static uint8_t decompressed[1024 * 1024] = {0};

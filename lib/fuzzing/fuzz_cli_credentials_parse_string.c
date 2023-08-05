@@ -25,7 +25,7 @@ char buf[MAX_LENGTH + 1];
 const enum credentials_obtained obtained = CRED_UNINITIALISED;
 
 
-int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	struct cli_credentials *credentials = NULL;

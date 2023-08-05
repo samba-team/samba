@@ -29,7 +29,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 #define MAX_SIZE (1024 * 1024)
 
-int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
 	static uint8_t *output;
 	size_t output_len;
