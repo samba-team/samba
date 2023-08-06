@@ -185,7 +185,7 @@ class cmd_domain_demote(Command):
         if (len(res) != 1):
             if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
                 self.errf.write(
-                    "Error while demoting, re-enabling inbound replication")
+                    "Error while demoting, re-enabling inbound replication\n")
                 dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
                 nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
                 samdb.modify(nmsg)
@@ -208,7 +208,7 @@ class cmd_domain_demote(Command):
         except Exception as e:
             if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
                 self.errf.write(
-                    "Error while demoting, re-enabling inbound replication")
+                    "Error while demoting, re-enabling inbound replication\n")
                 dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
                 nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
                 samdb.modify(nmsg)
