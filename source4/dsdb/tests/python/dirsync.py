@@ -458,7 +458,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertTrue(res[0].get("name") is not None)
         delete_force(self.ldb_admin, ouname)
 
-    def test_dirsync_linkedattributes(self):
+    def test_dirsync_linkedattributes_OBJECT_SECURITY(self):
         """Check that dirsync returned deleted objects too"""
         # Let's search for members
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
@@ -585,9 +585,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
                                     controls=controls)
 
-
-class ExtendedDirsyncTests(SimpleDirsyncTests):
-
     def test_dirsync_linkedattributes_range(self):
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
         res = self.ldb_admin.search(self.base_dn,
@@ -711,7 +708,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         self.assertIn(b"<GUID=", resEX0[0]["member"][0])
         self.assertIn(b">;<SID=010500000000000515", resEX0[0]["member"][0])
 
-    def test_dirsync_deleted_items(self):
+    def test_dirsync_deleted_items_OBJECT_SECURITY(self):
         """Check that dirsync returned deleted objects too"""
         # Let's create an OU
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
