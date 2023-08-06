@@ -742,6 +742,18 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertEqual(guid2, guid)
         self.assertEqual(str(res[0].dn), "")
 
+    def test_dirsync_unicodePwd(self):
+        res = self.ldb_admin.search(self.base_dn,
+                                    attrs=["unicodePwd", "supplementalCredentials", "samAccountName"],
+                                    expression="(samAccountName=krbtgt)",
+                                    controls=["dirsync:1:0:0"])
+
+        self.assertTrue(len(res) == 1)
+        # This form ensures this is a case insensitive comparison
+        self.assertTrue("samAccountName" in res[0])
+        self.assertTrue(res[0].get("samAccountName"))
+        self.assertTrue(res[0].get("unicodePwd") is None)
+        self.assertTrue(res[0].get("supplementalCredentials") is None)
 
 if not getattr(opts, "listtests", False):
     lp = sambaopts.get_loadparm()
