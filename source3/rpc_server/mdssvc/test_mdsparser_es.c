@@ -264,6 +264,7 @@ int main(int argc, const char *argv[])
 	int opt;
 	bool ok;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 
 	smb_init_locale();
 
@@ -275,7 +276,8 @@ int main(int argc, const char *argv[])
 		TALLOC_FREE(frame);
 		exit(1);
 	}
-	lp_set_cmdline("log level", "1");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "1");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
