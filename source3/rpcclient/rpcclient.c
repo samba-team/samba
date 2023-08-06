@@ -37,6 +37,7 @@
 #include "cmdline_contexts.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "lib/cmdline/cmdline.h"
+#include "lib/param/param.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -331,7 +332,8 @@ static NTSTATUS cmd_debuglevel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	if (argc == 2) {
-		lp_set_cmdline("log level", argv[1]);
+		struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
+		lpcfg_set_cmdline(lp_ctx, "log level", argv[1]);
 	}
 
 	printf("debuglevel is %d\n", DEBUGLEVEL);
@@ -1164,6 +1166,7 @@ out_free:
 	const char *binding_string = NULL;
 	const char *host;
 	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
 	bool ok;
 
 	/* make sure the vars that get altered (4th field) are in
@@ -1194,7 +1197,8 @@ out_free:
 	if (!ok) {
 		DBG_ERR("Failed to init cmdline parser!\n");
 	}
-	lp_set_cmdline("log level", "0");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 
 	/* Parse options */
 	pc = samba_popt_get_context(getprogname(),
