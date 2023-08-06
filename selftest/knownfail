@@ -151,7 +151,7 @@
 ^samba4.smb2.acls.*.inheritflags
 ^samba4.smb2.acls.*.owner
 ^samba4.smb2.acls.*.ACCESSBASED
-^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
+^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.SimpleDirsyncTests.test_dirsync_deleted_items_OBJECT_SECURITY
 #^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.*
 ^samba4.libsmbclient.opendir.(NT1|SMB3).opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
