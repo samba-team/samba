@@ -21,6 +21,7 @@
 #include "source3/include/includes.h"
 #include "popt.h"
 #include "lib/cmdline/cmdline.h"
+#include "lib/param/param.h"
 #include "client.h"
 #include "libsmb/proto.h"
 #include "clifuse.h"
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
 {
 	const char **argv_const = discard_const_p(const char *, argv);
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 	poptContext pc;
 	int opt, ret;
 	int port = 0;
@@ -78,8 +80,9 @@ int main(int argc, char *argv[])
 		TALLOC_FREE(frame);
 		exit(1);
 	}
-	lp_set_cmdline("client min protocol", "SMB2");
-	lp_set_cmdline("client max protocol", "SMB3_11");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "client min protocol", "SMB2");
+	lpcfg_set_cmdline(lp_ctx, "client max protocol", "SMB3_11");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
