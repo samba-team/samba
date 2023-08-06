@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/cmdline/cmdline.h"
+#include "lib/param/param.h"
 
 int main(int argc, const char **argv)
 {
@@ -46,6 +47,7 @@ int main(int argc, const char **argv)
 	};
 
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 
 	smb_init_locale();
 
@@ -57,7 +59,8 @@ int main(int argc, const char **argv)
 		TALLOC_FREE(frame);
 		exit(ENOMEM);
 	}
-	lp_set_cmdline("log level", "0");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
