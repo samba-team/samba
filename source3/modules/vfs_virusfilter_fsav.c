@@ -400,7 +400,7 @@ static virusfilter_result virusfilter_fsav_scan(
 						 "UNKNOWN ERROR");
 		} else {
 			result = VIRUSFILTER_RESULT_ERROR;
-			DBG_ERR("fsavd: SCANFILE: Invalid reply: %s\t",
+			DBG_ERR("fsavd: SCANFILE: Invalid reply: %s\n",
 				reply_token);
 			report = talloc_asprintf(talloc_tos(),
 						 "Scanner communication error");
