@@ -274,7 +274,7 @@ bool check_arg_bool(const char * name)
 		return(arg->arg_val.bval);
 	}
 
-	DEBUG(0, ("invalid argument name: %s", name));
+	DEBUG(0, ("invalid argument name: %s\n", name));
 	SMB_ASSERT(0);
 	return(false);
 }
@@ -288,7 +288,7 @@ uint64_t check_arg_numeric(const char * name)
 		return(arg->arg_val.nval);
 	}
 
-	DEBUG(0, ("invalid argument name: %s", name));
+	DEBUG(0, ("invalid argument name: %s\n", name));
 	SMB_ASSERT(0);
 	return(-1);
 }
@@ -302,7 +302,7 @@ const char * check_arg_pathname(const char * name)
 		return(arg->arg_val.pval);
 	}
 
-	DEBUG(0, ("invalid argument name: %s", name));
+	DEBUG(0, ("invalid argument name: %s\n", name));
 	SMB_ASSERT(0);
 	return(NULL);
 }

@@ -1480,7 +1480,7 @@ static int cmd_mput(struct smbclient_context *ctx, const char **args)
 					dos_format(rname);
 					if (NT_STATUS_IS_ERR(smbcli_chkpath(ctx->cli->tree, rname)) && 
 					    NT_STATUS_IS_ERR(do_mkdir(ctx, rname))) {
-						DEBUG (0, ("Unable to make dir, skipping..."));
+						DEBUG (0, ("Unable to make dir, skipping...\n"));
 						/* Skip the directory */
 						lname[strlen(lname)-1] = '/';
 						if (!seek_list(temp_list, lname))
