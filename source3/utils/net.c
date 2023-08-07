@@ -53,6 +53,7 @@
 #include "auth/credentials/credentials.h"
 #include "source3/utils/passwd_proto.h"
 #include "auth/gensec/gensec.h"
+#include "lib/param/param.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
@@ -1263,8 +1264,9 @@ static struct functable net_func[] = {
 		TALLOC_FREE(frame);
 		exit(1);
 	}
+	c->lp_ctx = samba_cmdline_get_lp_ctx();
 	/* set default debug level to 0 regardless of what smb.conf sets */
-	lp_set_cmdline("log level", "0");
+	lpcfg_set_cmdline(c->lp_ctx, "log level", "0");
 	c->private_data = net_func;
 
 	pc = samba_popt_get_context(getprogname(),
@@ -1300,7 +1302,6 @@ static struct functable net_func[] = {
 	}
 
 	c->creds = samba_cmdline_get_creds();
-	c->lp_ctx = samba_cmdline_get_lp_ctx();
 
 	{
 		enum credentials_obtained username_obtained =
@@ -1353,7 +1354,7 @@ static struct functable net_func[] = {
 	}
 
 	if (c->opt_requester_name) {
-		lp_set_cmdline("netbios name", c->opt_requester_name);
+		lpcfg_set_cmdline(c->lp_ctx, "netbios name", c->opt_requester_name);
 	}
 
 	if (!c->opt_target_workgroup) {
