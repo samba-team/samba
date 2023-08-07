@@ -890,7 +890,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 	subndr->flags	= ndr->flags & ~LIBNDR_FLAG_NDR64;
 
 	if (size_is > 0) {
-		NDR_CHECK(ndr_push_zero(subndr, size_is));
+		enum ndr_err_code status;
+
+		status = ndr_push_zero(subndr, size_is);
+		if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
+			talloc_free(subndr);
+			return status;
+		}
 		subndr->offset = 0;
 		subndr->relative_end_offset = size_is;
 	}
@@ -1435,7 +1441,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem
 	ndr = ndr_push_init_ctx(mem_ctx);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
-	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);
@@ -1483,8 +1489,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_
 	ndr = ndr_push_init_ctx(mem_ctx);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
-	NDR_CHECK(ndr_push_set_switch_value(ndr, p, level));
-	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	NDR_CHECK_FREE(ndr_push_set_switch_value(ndr, p, level));
+	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);

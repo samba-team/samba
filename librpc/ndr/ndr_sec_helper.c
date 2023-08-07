@@ -217,7 +217,11 @@ enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct
 	subndr->data_size	= 28;
 	subndr->offset		= 0;
 
-	NDR_CHECK(ndr_pull_advance(ndr, 28));
+	status = ndr_pull_advance(ndr, 28);
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
+		talloc_free(subndr);
+		return status;
+	}
 
 	status = ndr_pull_dom_sid(subndr, ndr_flags, sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
@@ -227,6 +231,7 @@ enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct
 		ZERO_STRUCT(sid->sub_auths);
 	}
 
+	talloc_free(subndr);
 	return NDR_ERR_SUCCESS;
 }
 
