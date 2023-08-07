@@ -35,6 +35,7 @@
 #include "system/filesys.h"
 #include "lib/cmdline/cmdline.h"
 #include "lib/param/loadparm.h"
+#include "lib/param/param.h"
 #include "lib/crypto/gnutls_helpers.h"
 #include "cmdline_contexts.h"
 
@@ -889,6 +890,7 @@ static void do_per_share_checks(int s)
 	};
 
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 
 	smb_init_locale();
 
@@ -900,13 +902,14 @@ static void do_per_share_checks(int s)
 		ret = 1;
 		goto done;
 	}
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
 	/*
 	 * Set the default debug level to 1.
 	 * Allow it to be overridden by the command line,
 	 * not by smb.conf.
 	 */
-	lp_set_cmdline("log level", "1");
+	lpcfg_set_cmdline(lp_ctx, "log level", "1");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
