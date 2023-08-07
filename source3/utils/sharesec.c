@@ -30,6 +30,7 @@ struct cli_state;
 #include "util_sd.h"
 #include "cmdline_contexts.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/param/param.h"
 
 static TALLOC_CTX *ctx;
 
@@ -336,6 +337,7 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	bool initialize_sid = False;
 	bool ok;
+	struct loadparm_context *lp_ctx = NULL;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -450,8 +452,9 @@ int main(int argc, const char *argv[])
 		TALLOC_FREE(ctx);
 		exit(1);
 	}
+	lp_ctx = samba_cmdline_get_lp_ctx();
 	/* set default debug level to 1 regardless of what smb.conf sets */
-	lp_set_cmdline("log level", "1");
+	lpcfg_set_cmdline(lp_ctx, "log level", "1");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
