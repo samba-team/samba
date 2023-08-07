@@ -137,10 +137,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         if self.ouname:
             delete_force(self.ldb_admin, self.ouname)
         self.sd_utils.modify_sd_on_dn(self.base_dn, self.desc_sddl)
-        try:
-            self.ldb_admin.deletegroup("testgroup")
-        except Exception:
-            pass
 
     # def test_dirsync_errors(self):
 
@@ -499,6 +495,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertEqual(len(res[0].get("member")), size)
 
         self.ldb_admin.newgroup("testgroup")
+        self.addCleanup(self.ldb_admin.deletegroup, "testgroup")
         self.ldb_admin.add_remove_group_members("testgroup", [self.simple_user],
                                                 add_members_operation=True)
 
@@ -537,7 +534,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     attrs=["member"],
                                     controls=[control1])
 
-        self.ldb_admin.deletegroup("testgroup")
         self.assertEqual(len(res[0].get("member")), 0)
 
     def test_dirsync_deleted_items(self):
