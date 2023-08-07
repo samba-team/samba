@@ -136,10 +136,12 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         # sanity-check the flag is not already set (this'll cause problems if
         # previous test run didn't clean up properly)
-        search_flags = self.get_attr_search_flags(self.attr_dn)
-        self.assertEqual(0, int(search_flags) & SEARCH_FLAG_CONFIDENTIAL,
-                         "{0} searchFlags already {1}".format(self.conf_attr,
-                                                              search_flags))
+        search_flags = int(self.get_attr_search_flags(self.attr_dn))
+        if search_flags & SEARCH_FLAG_CONFIDENTIAL:
+            self.set_attr_search_flags(self.attr_dn, str(search_flags &~ SEARCH_FLAG_CONFIDENTIAL))
+        search_flags = int(self.get_attr_search_flags(self.attr_dn))
+        self.assertEqual(0, search_flags & SEARCH_FLAG_CONFIDENTIAL,
+                         f"{self.conf_attr} searchFlags did not reset to omit SEARCH_FLAG_CONFIDENTIAL ({search_flags})")
 
     def add_attr(self, dn, attr, value):
         m = Message()
