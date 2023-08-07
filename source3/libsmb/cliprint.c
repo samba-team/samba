@@ -41,7 +41,7 @@ static const char *fix_char_ptr(unsigned int datap, unsigned int converter,
 	offset = datap - converter;
 
 	if (offset >= rdrcnt) {
-		DEBUG(1,("bad char ptr: datap=%u, converter=%u rdrcnt=%d>",
+		DEBUG(1,("bad char ptr: datap=%u, converter=%u rdrcnt=%d>\n",
 			 datap, converter, rdrcnt));
 		return "<ERROR>";
 	}

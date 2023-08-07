@@ -262,7 +262,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	/* Watch the test below, we are testing to see if we should exit */
 
 	if (strncmp(p, "//", 2) && strncmp(p, "\\\\", 2)) {
-                DEBUG(1, ("Invalid path (does not begin with smb://"));
+                DEBUG(1, ("Invalid path (does not begin with smb://\n"));
 		return -1;
 	}
 
@@ -273,7 +273,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
                 /* There are options.  Null terminate here and point to them */
                 *q++ = '\0';
 
-                DEBUG(4, ("Found options '%s'", q));
+                DEBUG(4, ("Found options '%s'\n", q));
 
 		/* Copy the options */
 		if (pp_options && *pp_options != NULL) {

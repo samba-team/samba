@@ -546,7 +546,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-			DBG_ERR("NetBIOS support disabled, unable to connect");
+			DBG_ERR("NetBIOS support disabled, unable to connect\n");
 		}
 
 		errno = map_errno_from_nt_status(status);
