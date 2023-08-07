@@ -505,7 +505,7 @@ NTSTATUS smbsrv_recv_smb2_request(void *private_data, DATA_BLOB blob)
 
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data,0) != 0) {
-		DEBUG(2,("Special NBT packet on SMB2 connection"));
+		DEBUG(2,("Special NBT packet on SMB2 connection\n"));
 		smbsrv_terminate_connection(smb_conn, "Special NBT packet on SMB2 connection");
 		return NT_STATUS_OK;
 	}

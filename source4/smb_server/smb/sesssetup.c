@@ -519,14 +519,14 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 							req);
 		if (!remote_address) {
 			status = NT_STATUS_INTERNAL_ERROR;
-			DBG_ERR("Failed to obtain remote address");
+			DBG_ERR("Failed to obtain remote address\n");
 			goto failed;
 		}
 
 		status = gensec_set_remote_address(gensec_ctx,
 						   remote_address);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set remote address");
+			DBG_ERR("Failed to set remote address\n");
 			goto failed;
 		}
 
@@ -534,14 +534,14 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 							req);
 		if (!local_address) {
 			status = NT_STATUS_INTERNAL_ERROR;
-			DBG_ERR("Failed to obtain local address");
+			DBG_ERR("Failed to obtain local address\n");
 			goto failed;
 		}
 
 		status = gensec_set_local_address(gensec_ctx,
 						   local_address);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set local address");
+			DBG_ERR("Failed to set local address\n");
 			goto failed;
 		}
 
@@ -549,7 +549,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 							       "SMB");
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set service description");
+			DBG_ERR("Failed to set service description\n");
 			goto failed;
 		}
 

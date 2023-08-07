@@ -151,14 +151,14 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 							req);
 		if (!remote_address) {
 			status = NT_STATUS_INTERNAL_ERROR;
-			DBG_ERR("Failed to obtain remote address");
+			DBG_ERR("Failed to obtain remote address\n");
 			goto failed;
 		}
 
 		status = gensec_set_remote_address(gensec_ctx,
 						   remote_address);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set remote address");
+			DBG_ERR("Failed to set remote address\n");
 			goto failed;
 		}
 
@@ -166,14 +166,14 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 						      req);
 		if (!local_address) {
 			status = NT_STATUS_INTERNAL_ERROR;
-			DBG_ERR("Failed to obtain local address");
+			DBG_ERR("Failed to obtain local address\n");
 			goto failed;
 		}
 
 		status = gensec_set_local_address(gensec_ctx,
 						  local_address);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set local address");
+			DBG_ERR("Failed to set local address\n");
 			goto failed;
 		}
 
@@ -181,7 +181,7 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 							       "SMB2");
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set service description");
+			DBG_ERR("Failed to set service description\n");
 			goto failed;
 		}
 

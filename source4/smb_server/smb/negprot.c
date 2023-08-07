@@ -49,13 +49,13 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 					smb_conn->lp_ctx,
 					&smb_conn->negotiate.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("auth_context_create() returned %s", nt_errstr(nt_status)));
+		DEBUG(0, ("auth_context_create() returned %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
 
 	nt_status = auth_get_challenge(smb_conn->negotiate.auth_context, buff);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("auth_get_challenge() returned %s", nt_errstr(nt_status)));
+		DEBUG(0, ("auth_get_challenge() returned %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
 

@@ -954,8 +954,8 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 			}
 
 			if (outblob.length <= MAX_DFS_RESPONSE) {
-				DEBUG(10,("DFS: managed to reduce the size of referral initial"
-					  "number of referral %d, actual count: %d",
+				DEBUG(10,("DFS: managed to reduce the size of referral initial "
+					  "number of referral %d, actual count: %d\n",
 					  nb_referrals, r->out.resp->nb_referrals));
 				ok = true;
 				break;
@@ -964,7 +964,7 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 
 		if (!ok && r->out.resp->nb_referrals <= 2) {
 			DEBUG(8, (__location__ "; Not able to fit the domain and realm in DFS a "
-				  " 56K buffer, something must be broken"));
+				  " 56K buffer, something must be broken\n"));
 			talloc_free(r);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
