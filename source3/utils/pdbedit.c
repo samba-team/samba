@@ -28,6 +28,7 @@
 #include "cmdline_contexts.h"
 #include "passwd_proto.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/param/param.h"
 
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008
@@ -1067,6 +1068,7 @@ int main(int argc, const char **argv)
 	static char *kickoff_time = NULL;
 	static char *str_hex_pwd = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 	NTSTATUS status;
 	poptContext pc;
 	bool ok;
@@ -1122,6 +1124,7 @@ int main(int argc, const char **argv)
 		TALLOC_FREE(frame);
 		exit(1);
 	}
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
@@ -1194,7 +1197,7 @@ int main(int argc, const char **argv)
 		/* HACK: set the global passdb backend by overwriting globals.
 		 * This way we can use regular pdb functions for default
 		 * operations that do not involve passdb migrations */
-		lp_set_cmdline("passdb backend", backend);
+		lpcfg_set_cmdline(lp_ctx, "passdb backend", backend);
 	} else {
 		backend = lp_passdb_backend();
 	}
