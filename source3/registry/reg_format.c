@@ -96,7 +96,7 @@ cbuf_print_hive(cbuf* ost, const char* hive, int len, const struct fmt_key* fmt)
 	if (fmt->hive_fmt != FMT_HIVE_PRESERVE) {
 		const struct hive_info* hinfo = hive_info(hive);
 		if (hinfo == NULL) {
-			DEBUG(0, ("Unknown hive %*s", len, hive));
+			DEBUG(0, ("Unknown hive %*s\n", len, hive));
 		} else {
 			switch(fmt->hive_fmt) {
 			case FMT_HIVE_SHORT:
@@ -108,7 +108,7 @@ cbuf_print_hive(cbuf* ost, const char* hive, int len, const struct fmt_key* fmt)
 				len  = hinfo->long_name_len;
 				break;
 			default:
-				DEBUG(0, ("Unsupported hive format %d",
+				DEBUG(0, ("Unsupported hive format %d\n",
 					  (int)fmt->hive_fmt));
 				return -1;
 			}
@@ -781,13 +781,13 @@ struct reg_format* reg_format_file(const void* talloc_ctx,
 	talloc_steal(fmt, fmt_ctx);
 
 	if (!set_iconv(&fmt->fromUTF16, opt.str_enc, "UTF-16LE")) { /* HACK */
-		DEBUG(0, ("reg_format_file: failed to set string encoding %s",
+		DEBUG(0, ("reg_format_file: failed to set string encoding %s\n",
 			      opt.str_enc));
 		goto fail;
 	}
 
 	if (!set_iconv(&fmt_ctx->fromUnix, opt.enc, "unix")) {
-		DEBUG(0, ("reg_format_file: failed to set file encoding %s",
+		DEBUG(0, ("reg_format_file: failed to set file encoding %s\n",
 			  opt.enc));
 		goto fail;
 	}

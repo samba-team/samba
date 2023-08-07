@@ -258,7 +258,7 @@ struct reg_parse* reg_parse_new(const void* ctx,
 	s->flags = flags;
 
 	if (str_enc && !set_iconv(&s->str2UTF16, "UTF-16LE", str_enc)) {
-		DEBUG(0, ("reg_parse_new: failed to set encoding: %s",
+		DEBUG(0, ("reg_parse_new: failed to set encoding: %s\n",
 			  str_enc));
 		goto fail;
 	}
@@ -581,7 +581,7 @@ int reg_parse_line(struct reg_parse* parser, const char* line)
 		cbuf_clear(tmp);
 
 		if (parser->state != STATE_KEY_OPEN) {
-			DEBUG(0, ("value \"%s\" without a key at line: %i",
+			DEBUG(0, ("value \"%s\" without a key at line: %i\n",
 				  cbuf_gets(parser->valname, 0), parser->linenum));
 			return -3;
 		}
@@ -604,7 +604,7 @@ int reg_parse_line(struct reg_parse* parser, const char* line)
 		}
 		else {
 			DEBUG(0, ("value \"%s\" parse error"
-				  "at line: %i pos: %li : %s",
+				  "at line: %i pos: %li : %s\n",
 				  cbuf_gets(parser->valname, 0), parser->linenum,
 				  (long int)(pos-line), pos));
 			return -3;
