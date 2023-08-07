@@ -245,7 +245,7 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside\n", fsp_str_dbg(fsp)));
+				  "resides\n", fsp_str_dbg(fsp)));
 		} else {
 			DEBUG(9, ("acl(ACE_SETACL, %s): %s\n", fsp_str_dbg(fsp),
 				  strerror(errno)));
