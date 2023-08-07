@@ -53,7 +53,7 @@ static void get_challenge(struct smbXsrv_connection *xconn, uint8_t buff[8])
 	nt_status = make_auth4_context(
 		xconn, &xconn->smb1.negprot.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("make_auth_context_subsystem returned %s",
+		DEBUG(0, ("make_auth_context_subsystem returned %s\n",
 			  nt_errstr(nt_status)));
 		smb_panic("cannot make_negprot_global_auth_context!");
 	}

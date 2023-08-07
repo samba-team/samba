@@ -222,7 +222,7 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 
 	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
 	if (ret == -1) {
-		DEBUG(2, ("socketpair failed: %s", strerror(errno)));
+		DEBUG(2, ("socketpair failed: %s\n", strerror(errno)));
 		goto fail;
 	}
 
@@ -234,7 +234,7 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 		int err = errno;
 		close(fds[0]);
 		close(fds[1]);
-		DEBUG(0, ("fork failed: %s", strerror(err)));
+		DEBUG(0, ("fork failed: %s\n", strerror(err)));
 		goto fail;
 	}
 

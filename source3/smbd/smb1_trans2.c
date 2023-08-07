@@ -137,7 +137,7 @@ static void send_trans2_replies(connection_struct *conn,
 
 	if (useable_space < 0) {
 		DEBUG(0, ("send_trans2_replies failed sanity useable_space "
-			  "= %d!!!", useable_space));
+			  "= %d!!!\n", useable_space));
 		exit_server_cleanly("send_trans2_replies: Not enough space");
 	}
 
@@ -472,7 +472,7 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 		if (!pull_ascii_talloc(ctx, &eal->ea.name, &pdata[offset],
 				       &converted_size)) {
 			DEBUG(0,("read_ea_name_list: pull_ascii_talloc "
-				 "failed: %s", strerror(errno)));
+				 "failed: %s\n", strerror(errno)));
 		}
 		if (!eal->ea.name) {
 			return NULL;

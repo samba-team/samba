@@ -2324,7 +2324,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 	if (!pull_ascii_talloc(talloc_tos(), &pathname,
 			       offset ? (data+offset) : "", &converted_size))
 	{
-		DEBUG(0,("api_RNetShareAdd: pull_ascii_talloc failed: %s",
+		DEBUG(0,("api_RNetShareAdd: pull_ascii_talloc failed: %s\n",
 			 strerror(errno)));
 	}
 

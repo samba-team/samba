@@ -575,7 +575,7 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 	TALLOC_FREE(prefix);
 
 	if (!*pp_out) {
-		M_DEBUG(0,("talloc_fail"));
+		M_DEBUG(0,("talloc_fail\n"));
 		return False;
 	}
 

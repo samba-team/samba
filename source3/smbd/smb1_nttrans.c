@@ -2099,7 +2099,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 		DEBUG(0,("TRANSACT_GET_USER_QUOTA: failed to pull "
-			 "query_quota_params."));
+			 "query_quota_params.\n"));
 		nt_status = NT_STATUS_INVALID_PARAMETER;
 		goto error;
 	}

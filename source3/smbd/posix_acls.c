@@ -4853,7 +4853,7 @@ NTSTATUS make_default_filesystem_acl(
 		break;
 
 	default:
-		DBG_ERR("unknown acl style %d", acl_style);
+		DBG_ERR("unknown acl style %d\n", acl_style);
 		status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}

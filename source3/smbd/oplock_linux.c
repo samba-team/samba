@@ -227,7 +227,7 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 			       linux_oplock_signal_handler,
 			       ctx);
 	if (!se) {
-		DBG_ERR("Failed to setup RT_SIGNAL_LEASE handler");
+		DBG_ERR("Failed to setup RT_SIGNAL_LEASE handler\n");
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
