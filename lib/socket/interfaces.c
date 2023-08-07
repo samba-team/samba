@@ -136,12 +136,12 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 
 	fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
 	if (fd == -1) {
-		DBG_ERR("Failed to open socket.");
+		DBG_ERR("Failed to open socket.\n");
 		return;
 	}
 
 	if (strlen(name) >= IF_NAMESIZE) {
-		DBG_ERR("Interface name too long.");
+		DBG_ERR("Interface name too long.\n");
 		goto done;
 	}
 
@@ -184,12 +184,12 @@ static void query_iface_rx_queues_from_name(const char *name,
 
 	fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
 	if (fd == -1) {
-		DBG_ERR("Failed to open socket.");
+		DBG_ERR("Failed to open socket.\n");
 		return;
 	}
 
 	if (strlen(name) >= IF_NAMESIZE) {
-		DBG_ERR("Interface name too long.");
+		DBG_ERR("Interface name too long.\n");
 		goto done;
 	}
 
