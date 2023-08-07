@@ -426,6 +426,7 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 				  share,
 				  lpcfg_resolve_context(tctx->lp_ctx),
 				  samba_cmdline_get_creds(),
+				  NULL, /* existing_conn */
 				  previous_session_id,
 				  tree,
 				  tctx->ev,
