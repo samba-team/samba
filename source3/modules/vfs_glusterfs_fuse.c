@@ -214,7 +214,7 @@ static struct file_id vfs_glusterfs_fuse_file_id_create(
 		id.devid = mapped_device;
 	} else {
 		DBG_WARNING("Failed to map device [%jx], falling back to "
-			    "standard file_id [%jx]",
+			    "standard file_id [%jx]\n",
 			    (uintmax_t)sbuf->st_ex_dev,
 			    (uintmax_t)id.devid);
 	}

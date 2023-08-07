@@ -848,7 +848,7 @@ static void init_stat_ex_from_ceph_statx(struct stat_ex *dst, const struct ceph_
 		  llu(stx->stx_btime.tv_sec));
 
 	if ((stx->stx_mask & SAMBA_STATX_ATTR_MASK) != SAMBA_STATX_ATTR_MASK) {
-		DBG_WARNING("%s: stx->stx_mask is incorrect (wanted %x, got %x)",
+		DBG_WARNING("%s: stx->stx_mask is incorrect (wanted %x, got %x)\n",
 				__func__, SAMBA_STATX_ATTR_MASK, stx->stx_mask);
 	}
 

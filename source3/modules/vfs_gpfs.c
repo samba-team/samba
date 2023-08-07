@@ -1784,7 +1784,7 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 	if (ret == -1) {
 		/* don't complain if access was denied */
 		if (errno != EPERM && errno != EACCES) {
-			DBG_WARNING("SMB_VFS_NEXT_FNTIMES failed: %s",
+			DBG_WARNING("SMB_VFS_NEXT_FNTIMES failed: %s\n",
 				    strerror(errno));
 		}
 		return -1;

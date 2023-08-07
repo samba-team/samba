@@ -245,9 +245,9 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside", fsp_str_dbg(fsp)));
+				  "reside\n", fsp_str_dbg(fsp)));
 		} else {
-			DEBUG(9, ("acl(ACE_SETACL, %s): %s ", fsp_str_dbg(fsp),
+			DEBUG(9, ("acl(ACE_SETACL, %s): %s\n", fsp_str_dbg(fsp),
 				  strerror(errno)));
 		}
 		return false;
@@ -298,7 +298,7 @@ static int fget_zfsacl(TALLOC_CTX *mem_ctx,
 		if (errno == ENOSYS) {
 			dbg_level = 1;
 		}
-		DEBUG(dbg_level, ("facl(ACE_GETACLCNT, %s): %s ",
+		DEBUG(dbg_level, ("facl(ACE_GETACLCNT, %s): %s\n",
 				  fsp_str_dbg(fsp), strerror(errno)));
 		return naces;
 	}
@@ -311,7 +311,7 @@ static int fget_zfsacl(TALLOC_CTX *mem_ctx,
 
 	rv = facl(fd, ACE_GETACL, naces, acebuf);
 	if (rv == -1) {
-		DBG_DEBUG("acl(ACE_GETACL, %s): %s ",
+		DBG_DEBUG("acl(ACE_GETACL, %s): %s\n",
 			  fsp_str_dbg(fsp), strerror(errno));
 		return -1;
 	}

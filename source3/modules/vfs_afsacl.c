@@ -75,7 +75,7 @@ static bool init_afs_acl(struct afs_acl *acl)
 	ZERO_STRUCT(*acl);
 	acl->ctx = talloc_init("afs_acl");
 	if (acl->ctx == NULL) {
-		DEBUG(10, ("Could not init afs_acl"));
+		DEBUG(10, ("Could not init afs_acl\n"));
 		return false;
 	}
 	return true;

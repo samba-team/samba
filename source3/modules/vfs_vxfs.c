@@ -542,7 +542,7 @@ static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	DBG_DEBUG("Fallback to xattr");
+	DBG_DEBUG("Fallback to xattr\n");
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_FSETXATTR(handle, fsp, XATTR_USER_NTACL,
 					      value, size, flags);

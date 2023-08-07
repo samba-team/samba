@@ -255,7 +255,7 @@ static bool is_in_media_dir(const char *path)
 	const char *media_dirname;
 	size_t media_dirname_len;
 
-	DEBUG(10, ("Entering with path'%s' ", path));
+	DEBUG(10, ("Entering with path'%s'\n", path));
 
 	/* Sometimes Samba gives us "./OMFI MediaFiles". */
 	if (strnequal(path, "./", 2)) {
@@ -662,7 +662,7 @@ um_readdir(vfs_handle_struct *handle, struct files_struct *dirfsp, DIR *dirp)
 		(void)get_digit_group(dname, &number);
 		digits = talloc_asprintf(talloc_tos(), "%ju", number);
 		if (digits == NULL) {
-			DEBUG(1, ("out of memory"));
+			DEBUG(1, ("out of memory\n"));
 			goto err;
 		}
 		digits_len = strlen(digits);

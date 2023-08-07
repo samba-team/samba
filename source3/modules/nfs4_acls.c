@@ -338,7 +338,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 					2 * acl->naces);
 	if (nt_ace_list==NULL)
 	{
-		DEBUG(10, ("talloc error with %d aces", acl->naces));
+		DEBUG(10, ("talloc error with %d aces\n", acl->naces));
 		errno = ENOMEM;
 		return false;
 	}
@@ -468,7 +468,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 
 	/* returns a NULL ace list when good_aces is zero. */
 	if (good_aces && nt_ace_list == NULL) {
-		DEBUG(10, ("realloc error with %d aces", good_aces));
+		DEBUG(10, ("realloc error with %d aces\n", good_aces));
 		errno = ENOMEM;
 		return false;
 	}

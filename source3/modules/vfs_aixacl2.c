@@ -408,7 +408,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 	acl_type_t	acl_type_info;
 	int	rc;
 
-	DEBUG(10, ("aixjfs2_sys_acl_set_fd invoked for %s", fsp_str_dbg(fsp)));
+	DEBUG(10, ("aixjfs2_sys_acl_set_fd invoked for %s\n", fsp_str_dbg(fsp)));
 
 	rc = aixjfs2_query_acl_support(fsp->fsp_name->base_name, ACL_AIXC,
 				       &acl_type_info);

@@ -378,7 +378,7 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mod
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}
-	DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s",
+	DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s\n",
 	       fsp_str_dbg(fsp), (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));

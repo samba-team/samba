@@ -73,7 +73,7 @@ static size_t nfs4acli_get_xdrblob_size(nfsacl41i *nacl)
 	acl_size = sizeof(aclflag4) + sizeof(unsigned);
 
 	if (naces > NFS4ACL_XDR_MAX_ACES) {
-		DBG_ERR("Too many ACEs: %u", naces);
+		DBG_ERR("Too many ACEs: %u\n", naces);
 		return 0;
 	}
 

@@ -505,7 +505,7 @@ static NTSTATUS tsmsm_set_offline(struct vfs_handle_struct *handle,
 	/* Now, call the script */
 	command = talloc_asprintf(tsmd, "%s offline \"%s\"", tsmd->hsmscript, path);
 	if(!command) {
-		DEBUG(1, ("tsmsm_set_offline: can't allocate memory to run hsm script"));
+		DEBUG(1, ("tsmsm_set_offline: can't allocate memory to run hsm script\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 	DEBUG(10, ("tsmsm_set_offline: Running [%s]\n", command));
