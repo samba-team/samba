@@ -29,6 +29,7 @@
 #include "fake_file.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
+#include "lib/param/param.h"
 
 static char *server;
 
@@ -558,6 +559,7 @@ int main(int argc, char *argv[])
 	poptContext pc;
 	struct cli_credentials *creds = NULL;
 	bool ok;
+	struct loadparm_context *lp_ctx = NULL;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -651,8 +653,9 @@ int main(int argc, char *argv[])
 		TALLOC_FREE(frame);
 		exit(1);
 	}
+	lp_ctx = samba_cmdline_get_lp_ctx();
 	/* set default debug level to 1 regardless of what smb.conf sets */
-	lp_set_cmdline("log level", "1");
+	lpcfg_set_cmdline(lp_ctx, "log level", "1");
 
 	setlinebuf(stdout);
 
@@ -720,8 +723,9 @@ int main(int argc, char *argv[])
 			todo = SET_QUOTA;
 			break;
 		case 'm':
-			lp_set_cmdline("client max protocol",
-				       poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx,
+					  "client max protocol",
+					  poptGetOptArg(pc));
 			break;
 		case POPT_ERROR_BADOPT:
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
