@@ -131,7 +131,7 @@ static int pvfs_sys_chdir_nosymlink(struct pvfs_sys_ctx *ctx, const char *pathna
 		close(fd);
 		if (st1.st_ino != st2.st_ino ||
 		    st1.st_dev != st2.st_dev) {
-			DEBUG(0,(__location__ ": Inode changed during chdir in '%s' - symlink attack?",
+			DEBUG(0,(__location__ ": Inode changed during chdir in '%s' - symlink attack?\n",
 				 pathname));
 			return -1;
 		}
