@@ -54,6 +54,7 @@
 #include "cmdline_contexts.h"
 #include "locking/leases_db.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/param/param.h"
 
 #ifdef HAVE_JANSSON
 #include <jansson.h>
@@ -996,6 +997,7 @@ int main(int argc, const char *argv[])
 	struct messaging_context *msg_ctx = NULL;
 	char *db_path;
 	bool ok;
+	struct loadparm_context *lp_ctx = NULL;
 
 	state.first = true;
 	state.json_output = false;
@@ -1011,7 +1013,8 @@ int main(int argc, const char *argv[])
 		TALLOC_FREE(frame);
 		exit(1);
 	}
-	lp_set_cmdline("log level", "0");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
