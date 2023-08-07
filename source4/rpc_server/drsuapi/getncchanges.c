@@ -3054,7 +3054,7 @@ allowed:
 					= ldb_dn_get_linearized(ncRoot_dn);
 
 				DBG_NOTICE("Rejecting full replication on "
-					   "not NC %s", dn_str);
+					   "not NC %s\n", dn_str);
 
 				return WERR_DS_CANT_FIND_EXPECTED_NC;
 			}

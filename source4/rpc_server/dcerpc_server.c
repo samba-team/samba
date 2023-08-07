@@ -64,7 +64,7 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(struct dcesrv_con
 				transport);
 
 		DBG_NOTICE("assoc_group 0x%08x (transport %s) "
-			   "is not available on transport %s",
+			   "is not available on transport %s\n",
 			   id, at, ct);
 		return NULL;
 	}
