@@ -262,7 +262,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	/* Watch the test below, we are testing to see if we should exit */
 
 	if (strncmp(p, "//", 2) && strncmp(p, "\\\\", 2)) {
-                DEBUG(1, ("Invalid path (does not begin with smb://\n"));
+                DEBUG(1, ("Invalid path (does not begin with smb://)\n"));
 		return -1;
 	}
 
