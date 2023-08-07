@@ -228,7 +228,7 @@ static int reinit_account_policies (void)
  Add all currently available account policy from tdb to one backend
  ********************************************************/
 
-static int export_account_policies (struct pdb_methods *in, struct pdb_methods *out) 
+static int export_account_policies (struct pdb_methods *in, struct pdb_methods *out)
 {
 	int i;
 
@@ -327,7 +327,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 			printf ("LM hash             : %s\n", temp);
 			pdb_sethexpwd(temp, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 			printf ("NT hash             : %s\n", temp);
-		}	
+		}
 
 	} else if (smbpwdstyle) {
 		char lm_passwd[33];
@@ -623,18 +623,18 @@ static int set_user_info(const char *username, const char *fullname,
 			fprintf(stderr, "Invalid hash\n");
 			return -1;
 		}
-					 
+
 		pdb_gethexpwd(str_hex_pwd, new_nt_p16);
-		
+
 		if (!pdb_set_nt_passwd (sam_pwent, new_nt_p16 , PDB_CHANGED)) {
 			fprintf(stderr, "Failed to set password from nt-hash\n");
 			return -1;
-		}	
+		}
 
 		if (!pdb_set_pass_last_set_time (sam_pwent, time(NULL), PDB_CHANGED)){
 			fprintf(stderr, "Failed to set last password set time\n");
 			return -1;
-		}	
+		}
 		if (!pdb_update_history(sam_pwent, new_nt_p16)){
 			fprintf(stderr, "Failed to update password history\n");
 			return -1;
@@ -642,7 +642,7 @@ static int set_user_info(const char *username, const char *fullname,
 	}
 
 	if (NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
-		
+
 		print_user_info(username, True, (str_hex_pwd != NULL ));
 	} else {
 		fprintf (stderr, "Unable to modify entry!\n");
@@ -1188,7 +1188,7 @@ int main(int argc, const char **argv)
 			(kickoff_time ? BIT_KICKOFFTIME : 0) +
 			(str_hex_pwd ? BIT_PWSETNTHASH : 0 ) +
 			(acct_desc ? BIT_DESCRIPTION : 0);
-			
+
 
 	if (setparms & BIT_BACKEND) {
 		/* HACK: set the global passdb backend by overwriting globals.
