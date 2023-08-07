@@ -405,6 +405,7 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 			  const char *share,
 			  struct resolve_context *resolve_ctx,
 			  struct cli_credentials *credentials,
+			  struct smbXcli_conn **existing_conn,
 			  uint64_t previous_session_id,
 			  struct smb2_tree **tree,
 			  struct tevent_context *ev,
@@ -429,7 +430,7 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 				   resolve_ctx,
 				   credentials,
 				   false, /* fallback_to_anonymous */
-				   NULL, /* existing_conn */
+				   existing_conn,
 				   previous_session_id,
 				   options,
 				   socket_options,
@@ -473,6 +474,7 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 
 	status = smb2_connect_ext(mem_ctx, host, ports, share, resolve_ctx,
 				  credentials,
+				  NULL, /* existing_conn */
 				  0, /* previous_session_id */
 				  tree, ev, options, socket_options,
 				  gensec_settings);
