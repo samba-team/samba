@@ -97,7 +97,7 @@ void dcesrv_log_successful_authz(
 	NTSTATUS status;
 
 	if (frame == NULL) {
-		DBG_ERR("No memory");
+		DBG_ERR("No memory\n");
 		return;
 	}
 
@@ -218,7 +218,7 @@ static NTSTATUS dcesrv_assoc_group_reference(struct dcesrv_call_state *call,
 				transport);
 
 		DBG_NOTICE("assoc_group 0x%08x (transport %s) "
-			   "is not available on transport %s",
+			   "is not available on transport %s\n",
 			   assoc_group_id, at, ct);
 		return NT_STATUS_UNSUCCESSFUL;
 	}

@@ -582,7 +582,7 @@ NTSTATUS _eventlog_ClearEventLogW(struct pipes_struct *p,
 	if (r->in.backupfile && r->in.backupfile->string) {
 
 		DEBUG(8,( "_eventlog_ClearEventLogW: Using [%s] as the backup "
-			"file name for log [%s].",
+			"file name for log [%s].\n",
 			 r->in.backupfile->string, info->logname ) );
 	}
 

@@ -1317,7 +1317,7 @@ again:
 
 		if ((worker->pid == -1) || !worker->available) {
 			DBG_DEBUG("Requested worker index %"PRIu8": "
-				  "pid=%d, available=%d",
+				  "pid=%d, available=%d\n",
 				  worker_index,
 				  (int)worker->pid,
 				  (int)worker->available);

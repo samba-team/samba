@@ -90,7 +90,7 @@ static ssize_t sl_push_uint64_val(char *buf,
 				  uint64_t val)
 {
 	if (offset + 8 > max_offset) {
-		DEBUG(1, ("%s: offset: %zd, max_offset: %zu",
+		DEBUG(1, ("%s: offset: %zd, max_offset: %zu\n",
 			  __func__, offset, max_offset));
 		return -1;
 	}
@@ -634,7 +634,7 @@ static ssize_t sl_pack_loop(DALLOC_CTX *query, char *buf, ssize_t offset,
 			offset = sl_pack_CNID(p, buf, offset,
 					      bufsize, toc_buf, toc_idx);
 		} else {
-			DEBUG(1, ("unknown type: %s", type));
+			DEBUG(1, ("unknown type: %s\n", type));
 			return -1;
 		}
 		if (offset == -1) {
@@ -999,7 +999,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 				buf, offset, slen, encoding);
 			mark_exists = (unicode_encoding & SL_ENC_UTF_16) ? true : false;
 			if (unicode_encoding & SL_ENC_BIG_ENDIAN) {
-				DEBUG(1, ("Unsupported big endian UTF16 string"));
+				DEBUG(1, ("Unsupported big endian UTF16 string\n"));
 				return -1;
 			}
 			slen -= mark_exists ? 2 : 0;
@@ -1068,7 +1068,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 		break;
 
 	default:
-		DEBUG(1, ("unknown complex query type: %u", cpx_query_type));
+		DEBUG(1, ("unknown complex query type: %u\n", cpx_query_type));
 		return -1;
 	}
 
@@ -1278,7 +1278,7 @@ static ssize_t sl_pack(DALLOC_CTX *query, char *buf, size_t bufsize)
 	}
 
 	if ((16 + len + ((toc_index + 1 ) * 8)) > bufsize) {
-		DEBUG(1, ("%s: exceeding size limit %zu", __func__, bufsize));
+		DEBUG(1, ("%s: exceeding size limit %zu\n", __func__, bufsize));
 		return -1;
 	}
 

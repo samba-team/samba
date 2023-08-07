@@ -324,7 +324,7 @@ static struct printer_handle *find_printer_index_by_hnd(struct pipes_struct *p,
 					  struct printer_handle,
 					  &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("find_printer_index_by_hnd: Printer handle not found: "));
+		DEBUG(2,("find_printer_index_by_hnd: Printer handle not found: \n"));
 		return NULL;
 	}
 
@@ -7591,7 +7591,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 							pinfo2->printername,
 							&devmode);
 		if (!W_ERROR_IS_OK(result)) {
-			DEBUG(3, ("Can't proceed w/o a devmode!"));
+			DEBUG(3, ("Can't proceed w/o a devmode!\n"));
 			goto err_pdb_drop;
 		}
 
@@ -9816,7 +9816,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 						pinfo2->printername,
 						&devmode);
 		if (!W_ERROR_IS_OK(result)) {
-			DEBUG(3, ("Can't proceed w/o a devmode!"));
+			DEBUG(3, ("Can't proceed w/o a devmode!\n"));
 			return result;
 		}
 	}

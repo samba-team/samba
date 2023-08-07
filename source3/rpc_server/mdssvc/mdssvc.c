@@ -284,7 +284,7 @@ static bool create_result_handle(struct sl_query *slq)
 
 	query_results->cnids->ca_unkn1 = 0xadd;
 	if (slq->ctx2 > UINT32_MAX) {
-		DEBUG(1,("64bit ctx2 id too large: 0x%jx", (uintmax_t)slq->ctx2));
+		DEBUG(1,("64bit ctx2 id too large: 0x%jx\n", (uintmax_t)slq->ctx2));
 		return false;
 	}
 	query_results->cnids->ca_context = (uint32_t)slq->ctx2;
