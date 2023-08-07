@@ -1146,7 +1146,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 		if (!pull_utf8_talloc(ctx, &values[i], in_vals[i],
 				      &converted_size)) {
 			DEBUG(0,("ads_pull_strvals: pull_utf8_talloc failed: "
-				 "%s", strerror(errno)));
+				 "%s\n", strerror(errno)));
 		}
 	}
 	return values;
@@ -1520,7 +1520,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 
 	*res = NULL;
 	if (!(ctx = talloc_init("ads_do_search"))) {
-		DEBUG(1,("ads_do_search: talloc_init() failed!"));
+		DEBUG(1,("ads_do_search: talloc_init() failed!\n"));
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
@@ -1530,7 +1530,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	if (!push_utf8_talloc(ctx, &utf8_expr, expr, &converted_size) ||
 	    !push_utf8_talloc(ctx, &utf8_path, bind_path, &converted_size))
 	{
-		DEBUG(1,("ads_do_search: push_utf8_talloc() failed!"));
+		DEBUG(1,("ads_do_search: push_utf8_talloc() failed!\n"));
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -1542,7 +1542,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
 		if (!(search_attrs = str_list_copy(talloc_tos(), attrs)))
 		{
-			DEBUG(1,("ads_do_search: str_list_copy() failed!"));
+			DEBUG(1,("ads_do_search: str_list_copy() failed!\n"));
 			rc = LDAP_NO_MEMORY;
 			goto done;
 		}
@@ -1914,7 +1914,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	DBG_INFO("AD LDAP: Adding %s\n", new_dn);
 
 	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, new_dn, &converted_size)) {
-		DEBUG(1, ("ads_gen_add: push_utf8_talloc failed!"));
+		DEBUG(1, ("ads_gen_add: push_utf8_talloc failed!\n"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
@@ -1941,7 +1941,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 	char *utf8_dn = NULL;
 	size_t converted_size;
 	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, del_dn, &converted_size)) {
-		DEBUG(1, ("ads_del_dn: push_utf8_talloc failed!"));
+		DEBUG(1, ("ads_del_dn: push_utf8_talloc failed!\n"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
@@ -2976,7 +2976,7 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 					      &converted_size))
 			{
 				DEBUG(0,("ads_process_results: "
-					 "pull_utf8_talloc failed: %s",
+					 "pull_utf8_talloc failed: %s\n",
 					 strerror(errno)));
 			}
 

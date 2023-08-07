@@ -262,7 +262,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 
 	if (ret) {
 		if (ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
-			DEBUG(1,("Password incorrect while getting initial ticket"));
+			DEBUG(1,("Password incorrect while getting initial ticket\n"));
 		} else {
 			DEBUG(1,("krb5_get_init_creds_password failed (%s)\n", error_message(ret)));
 		}

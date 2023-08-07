@@ -53,7 +53,7 @@ static krb5_error_code ads_keytab_open(krb5_context context,
 					   keytab_str,
 					   sizeof(keytab_str) - 2);
 		if (ret != 0) {
-			DBG_WARNING("Failed to get default keytab name");
+			DBG_WARNING("Failed to get default keytab name\n");
 			goto out;
 		}
 		keytab_name = keytab_str;
