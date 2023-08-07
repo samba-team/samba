@@ -298,7 +298,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
 						  s, &pfm_remote, NULL);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
+		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s\n",
 			 win_errstr(status)));
 		return status;
 	}
@@ -334,7 +334,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 		provision_schema = dsdb_get_schema(schema_ldb, s);
 		ret = dsdb_reference_schema(s->ldb, provision_schema, SCHEMA_MEMORY_ONLY);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
+			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap.\n"));
 			return WERR_INTERNAL_ERROR;
 		}
 		talloc_unlink(s, schema_ldb);
@@ -355,7 +355,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 						  object_count,
 						  first_object);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s",
+		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s\n",
 			  __location__, win_errstr(status)));
 		return status;
 	}
