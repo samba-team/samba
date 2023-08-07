@@ -125,7 +125,7 @@ WERROR dns_common_extract(struct ldb_context *samdb,
 
 		ret = samdb_dns_host_name(samdb, &dnsHostName);
 		if (ret != LDB_SUCCESS || dnsHostName == NULL) {
-			DEBUG(0, ("Failed to get dnsHostName from rootDSE"));
+			DEBUG(0, ("Failed to get dnsHostName from rootDSE\n"));
 			return DNS_ERR(SERVER_FAILURE);
 		}
 
