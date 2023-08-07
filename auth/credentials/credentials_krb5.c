@@ -1516,7 +1516,7 @@ _PUBLIC_ int cli_credentials_get_aes256_key(struct cli_credentials *cred,
 						   &key);
 	if (krb5_ret != 0) {
 		DEBUG(1,("cli_credentials_get_aes256_key: "
-			 "generation of a aes256-cts-hmac-sha1-96 key failed: %s",
+			 "generation of a aes256-cts-hmac-sha1-96 key failed: %s\n",
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context,
 						    krb5_ret, mem_ctx)));
 		return EINVAL;

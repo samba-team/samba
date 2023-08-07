@@ -1882,7 +1882,7 @@ _PUBLIC_ NTSTATUS netlogon_creds_session_encrypt(
 
 	if (data.data == NULL || data.length == 0) {
 		DBG_ERR("Nothing to encrypt "
-			"data.data == NULL or data.length == 0");
+			"data.data == NULL or data.length == 0\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	/*
