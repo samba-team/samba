@@ -218,7 +218,7 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 			     opaque_connection_state);
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("ldb_set_opaque() failed to store our "
-			"encrypted connection state!");
+			"encrypted connection state!\n");
 		return ret;
 	}
 

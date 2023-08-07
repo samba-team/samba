@@ -87,7 +87,7 @@ static void ldapsrv_starttls_postprocess_done(struct tevent_req *subreq)
 		NTSTATUS status = map_nt_error_from_unix_common(sys_errno);
 
 		DEBUG(1,("ldapsrv_starttls_postprocess_done: accept_tls_loop: "
-			 "tstream_tls_accept_recv() - %d:%s => %s",
+			 "tstream_tls_accept_recv() - %d:%s => %s\n",
 			 sys_errno, strerror(sys_errno), nt_errstr(status)));
 
 		tevent_req_nterror(req, status);

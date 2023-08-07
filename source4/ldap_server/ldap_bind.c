@@ -254,7 +254,7 @@ static void ldapsrv_BindSimple_done(struct tevent_req *subreq)
 
 		if (result != LDB_SUCCESS) {
 			/* Only put the detailed error in DEBUG() */
-			DBG_ERR("ldapsrv_backend_Init failed: %s: %s",
+			DBG_ERR("ldapsrv_backend_Init failed: %s: %s\n",
 				ldb_errstring, ldb_strerror(result));
 			errstr = talloc_strdup(reply,
 					       "Simple Bind: Failed to advise "
@@ -595,7 +595,7 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 
 	if (result != LDB_SUCCESS) {
 		/* Only put the detailed error in DEBUG() */
-		DBG_ERR("ldapsrv_backend_Init failed: %s: %s",
+		DBG_ERR("ldapsrv_backend_Init failed: %s: %s\n",
 			ldb_errstring, ldb_strerror(result));
 		errstr = talloc_strdup(reply,
 				       "SASL Bind: Failed to advise "
