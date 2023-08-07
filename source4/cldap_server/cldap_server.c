@@ -50,7 +50,7 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 	struct ldap_SearchRequest *search;
 
 	if (in->ldap_msg->type == LDAP_TAG_AbandonRequest) {
-		DEBUG(10,("Got (and ignoring) CLDAP AbandonRequest from %s.",
+		DEBUG(10,("Got (and ignoring) CLDAP AbandonRequest from %s.\n",
 			  tsocket_address_string(in->src, in)));
 		talloc_free(in);
 		return;
