@@ -55,7 +55,8 @@ static struct registry_key *find_regkey_by_hnd(struct pipes_struct *p,
 				    struct registry_key,
 				    &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("find_regkey_index_by_hnd: Registry Key not found: \n"));
+		DEBUG(2,("find_regkey_index_by_hnd: Registry Key not found: %s\n",
+			 nt_errstr(status)));
 		return NULL;
 	}
 
