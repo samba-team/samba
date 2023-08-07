@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    QUOTA get/set utility
 
@@ -72,7 +72,7 @@ static bool cli_open_policy_hnd(void)
 		/* Some systems don't support SEC_FLAG_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, talloc_tos(), True, 
+		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, talloc_tos(), True,
 							 GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
@@ -98,7 +98,7 @@ static void SidToString(fstring str, struct dom_sid *sid, bool _numeric)
 
 	if (!cli_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(global_pipe_hnd, talloc_tos(),
-						 &pol, 1, sid, &domains, 
+						 &pol, 1, sid, &domains,
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
 		return;
@@ -124,7 +124,7 @@ static bool StringToSid(struct dom_sid *sid, const char *str)
 
 	if (!cli_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, talloc_tos(),
-						  &pol, 1, &str, NULL, 1, &sids, 
+						  &pol, 1, &str, NULL, 1, &sids,
 						  &types))) {
 		result = False;
 		goto done;
@@ -820,7 +820,7 @@ int main(int argc, char *argv[])
 		case SET_QUOTA:
 			result = do_quota(cli, qtype, cmd, username_str, &qt);
 			break;
-		default: 
+		default:
 			result = EXIT_FAILED;
 			break;
 	}
