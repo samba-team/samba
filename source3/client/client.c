@@ -620,7 +620,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 						   ctx, &sd);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG( 0, ("display_finfo() failed to "
-					   "get security descriptor: %s",
+					   "get security descriptor: %s\n",
 					   nt_errstr(status)));
 			} else {
 				display_sec_desc(sd);
@@ -2198,7 +2198,7 @@ static int cmd_mput(void)
 					}
 					if (!NT_STATUS_IS_OK(cli_chkpath(cli, rname)) &&
 					    !do_mkdir(rname)) {
-						DEBUG (0, ("Unable to make dir, skipping..."));
+						DEBUG (0, ("Unable to make dir, skipping...\n"));
 						/* Skip the directory */
 						lname[strlen(lname)-1] = '/';
 						if (!seek_list(temp_list, lname)) {
