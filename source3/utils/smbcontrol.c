@@ -117,8 +117,8 @@ static void wait_replies(struct tevent_context *ev_ctx,
 /* Message handler callback that displays the PID and a string on stdout */
 
 static void print_pid_string_cb(struct messaging_context *msg,
-				void *private_data, 
-				uint32_t msg_type, 
+				void *private_data,
+				uint32_t msg_type,
 				struct server_id pid,
 				DATA_BLOB *data)
 {
@@ -459,8 +459,8 @@ static bool do_election(struct tevent_context *ev_ctx,
 /* Ping a samba daemon process */
 
 static void pong_cb(struct messaging_context *msg,
-		    void *private_data, 
-		    uint32_t msg_type, 
+		    void *private_data,
+		    uint32_t msg_type,
 		    struct server_id pid,
 		    DATA_BLOB *data)
 {
@@ -532,8 +532,8 @@ static bool do_profile(struct tevent_context *ev_ctx,
 /* Return the profiling level */
 
 static void profilelevel_cb(struct messaging_context *msg_ctx,
-			    void *private_data, 
-			    uint32_t msg_type, 
+			    void *private_data,
+			    uint32_t msg_type,
 			    struct server_id pid,
 			    DATA_BLOB *data)
 {
@@ -543,7 +543,7 @@ static void profilelevel_cb(struct messaging_context *msg_ctx,
 	num_replies++;
 
 	if (data->length != sizeof(int)) {
-		fprintf(stderr, "invalid message length %ld returned\n", 
+		fprintf(stderr, "invalid message length %ld returned\n",
 			(unsigned long)data->length);
 		return;
 	}
@@ -572,8 +572,8 @@ static void profilelevel_cb(struct messaging_context *msg_ctx,
 }
 
 static void profilelevel_rqst(struct messaging_context *msg_ctx,
-			      void *private_data, 
-			      uint32_t msg_type, 
+			      void *private_data,
+			      uint32_t msg_type,
 			      struct server_id pid,
 			      DATA_BLOB *data)
 {
@@ -729,7 +729,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 
 		notify_job_status_byname(
 			ev_ctx, msg_ctx,
-			argv[2], jobid, JOB_STATUS_QUEUED, 
+			argv[2], jobid, JOB_STATUS_QUEUED,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
 		goto send;
@@ -1183,7 +1183,7 @@ static bool do_winbind_offline(struct tevent_context *ev_ctx,
 
 	/* There's a potential race condition that if a child
 	   winbindd detects a domain is online at the same time
-	   we're trying to tell it to go offline that it might 
+	   we're trying to tell it to go offline that it might
 	   delete the record we add between us adding it and
 	   sending the message. Minimize this by retrying up to
 	   5 times. */
@@ -1776,7 +1776,7 @@ int main(int argc, const char **argv)
 		/* POPT_AUTOHELP */
 		{ NULL, '\0', POPT_ARG_INCLUDE_TABLE, help_options,
 		                        0, "Help options:", NULL },
-		{ "timeout", 't', POPT_ARG_INT, &timeout, 't', 
+		{ "timeout", 't', POPT_ARG_INT, &timeout, 't',
 		  "Set timeout value in seconds", "TIMEOUT" },
 
 		POPT_COMMON_SAMBA
@@ -1858,7 +1858,7 @@ int main(int argc, const char **argv)
 
 	/* Need to invert sense of return code -- samba
          * routines mostly return True==1 for success, but
-         * shell needs 0. */ 
+         * shell needs 0. */
 
 	ret = !do_command(evt_ctx, msg_ctx, argc, argv);
 
