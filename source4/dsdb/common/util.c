@@ -3436,6 +3436,10 @@ WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	*r = NULL;
 	*count = 0;
 
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
 	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs, 0);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* partition hasn't been replicated yet */
@@ -3496,7 +3500,14 @@ WERROR dsdb_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	struct ldb_message_element *el;
 	unsigned int i;
 
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
 	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		goto failed;
+	}
 	msg->dn = dn;
 	if (ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_REPLACE, &el) != LDB_SUCCESS) {
 		goto failed;
@@ -3549,6 +3560,10 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn,
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	struct dsdb_control_current_partition *p_ctrl;
 	struct ldb_result *res;
+
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -3689,6 +3704,10 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bo
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(sam_ctx);
 
+	if (tmp_ctx == NULL) {
+		return ldb_oom(sam_ctx);
+	}
+
 	ret = samdb_get_ntds_obj_by_guid(tmp_ctx,
 					 sam_ctx,
 					 objectGUID,
@@ -3772,6 +3791,9 @@ int samdb_dns_host_name(struct ldb_context *sam_ctx, const char **host_name)
 	}
 
 	tmp_ctx = talloc_new(sam_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(sam_ctx);
+	}
 
 	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, NULL, attrs, 0);
 
@@ -3962,8 +3984,17 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
 		tokens[i][0] = toupper(tokens[i][0]);
 
 	ret = talloc_strdup(mem_ctx, tokens[0]);
-	for (i = 1; tokens[i] != NULL; i++)
+	if (ret == NULL) {
+		talloc_free(tokens);
+		return NULL;
+	}
+	for (i = 1; tokens[i] != NULL; i++) {
 		ret = talloc_asprintf_append_buffer(ret, "%s", tokens[i]);
+		if (ret == NULL) {
+			talloc_free(tokens);
+			return NULL;
+		}
+	}
 
 	talloc_free(tokens);
 
@@ -4424,6 +4455,10 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 	int ret;
 	struct ldb_dn *dn;
 	struct ldb_result *res = NULL;
+
+	if (tmp_ctx == NULL) {
+		return ldb_oom(samdb);
+	}
 
 	/* construct the magic WKGUID DN */
 	dn = ldb_dn_new_fmt(tmp_ctx, samdb, "<WKGUID=%s,%s>",
@@ -5317,6 +5352,10 @@ int dsdb_search_dn(struct ldb_context *ldb,
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
@@ -5388,6 +5427,10 @@ int dsdb_search_by_dn_guid(struct ldb_context *ldb,
 	struct ldb_dn *dn;
 	int ret;
 
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
 	dn = ldb_dn_new_fmt(tmp_ctx, ldb, "<GUID=%s>", GUID_string(tmp_ctx, guid));
 	if (dn == NULL) {
 		talloc_free(tmp_ctx);
@@ -5420,6 +5463,10 @@ int dsdb_search(struct ldb_context *ldb,
 
 	/* cross-partitions searches with a basedn break multi-domain support */
 	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
+
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -5538,6 +5585,10 @@ int dsdb_search_one(struct ldb_context *ldb,
 	char *expression = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
 	dsdb_flags |= DSDB_SEARCH_ONE_ONLY;
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
@@ -5639,6 +5690,10 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 	struct ldb_dn *dn, *account_dn;
 	struct dom_sid sid2;
 	NTSTATUS status;
+
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	config_dn = ldb_get_config_basedn(ldb);
 
@@ -5968,6 +6023,10 @@ int dsdb_create_partial_replica_NC(struct ldb_context *ldb,  struct ldb_dn *dn)
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	struct ldb_message *msg;
 	int ret;
+
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	if (msg == NULL) {
@@ -6483,6 +6542,9 @@ bool dsdb_objects_have_same_nc(struct ldb_context *ldb,
 	bool same_nc = true;
 
 	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	ret = dsdb_find_nc_root(ldb, tmp_ctx, source_dn, &source_nc);
 	/* fix clang warning */
@@ -6640,6 +6702,9 @@ int PRINTF_ATTRIBUTE(6, 7) dsdb_domain_count(
 
 	*count = 0;
 	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	context = talloc_zero(tmp_ctx, struct dsdb_count_domain_context);
 	if (context == NULL) {

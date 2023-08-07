@@ -787,11 +787,13 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	salt.data	= talloc_strndup(io->ac,
 					 (char *)salt_data.data,
 					 salt_data.length);
-	io->g.salt      = salt.data;
-	salt.length	= strlen(io->g.salt);
-
 	smb_krb5_free_data_contents(io->smb_krb5_context->krb5_context,
 				    &salt_data);
+	if (salt.data == NULL) {
+		return ldb_oom(ldb);
+	}
+	io->g.salt      = salt.data;
+	salt.length	= strlen(io->g.salt);
 
 	/*
 	 * create ENCTYPE_AES256_CTS_HMAC_SHA1_96 key out of
@@ -1619,6 +1621,10 @@ static int setup_primary_userPassword_hash(
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	hash_value->scheme = talloc_strdup(ctx, CRYPT);
+	if (hash_value->scheme == NULL) {
+		TALLOC_FREE(frame);
+		return ldb_oom(ldb);
+	}
 	hash_value->scheme_len = strlen(CRYPT) + 1;
 
 	/* generate the id/salt parameter used by crypt */
@@ -1628,8 +1634,16 @@ static int setup_primary_userPassword_hash(
 				      algorithm,
 				      rounds,
 				      salt);
+		if (cmd == NULL) {
+			TALLOC_FREE(frame);
+			return ldb_oom(ldb);
+		}
 	} else {
 		cmd = talloc_asprintf(frame, "$%d$%s", algorithm, salt);
+		if (cmd == NULL) {
+			TALLOC_FREE(frame);
+			return ldb_oom(ldb);
+		}
 	}
 
 	/*
@@ -3784,6 +3798,9 @@ static int setup_io(struct ph_context *ac,
 		}
 
 		io->n.nt_hash = talloc(io->ac, struct samr_Password);
+		if (io->n.nt_hash == NULL) {
+			return ldb_oom(ldb);
+		}
 		memcpy(io->n.nt_hash->hash, quoted_utf16->data,
 		       MIN(quoted_utf16->length, sizeof(io->n.nt_hash->hash)));
 	}
@@ -3833,6 +3850,9 @@ static int setup_io(struct ph_context *ac,
 		}
 
 		io->og.nt_hash = talloc(io->ac, struct samr_Password);
+		if (io->og.nt_hash == NULL) {
+			return ldb_oom(ldb);
+		}
 		memcpy(io->og.nt_hash->hash, old_quoted_utf16->data,
 		       MIN(old_quoted_utf16->length, sizeof(io->og.nt_hash->hash)));
 	}
