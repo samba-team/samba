@@ -536,6 +536,9 @@ struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_me
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 	if (val && (val->length >= sizeof(hash->hash))) {
 		hash = talloc(mem_ctx, struct samr_Password);
+		if (hash == NULL) {
+			return NULL;
+		}
 		memcpy(hash->hash, val->data, MIN(val->length, sizeof(hash->hash)));
 	}
 	return hash;
