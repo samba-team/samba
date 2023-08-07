@@ -139,7 +139,7 @@ int mscat_pkcs7_import_catfile(struct mscat_pkcs7 *mp7,
 			     catfile,
 			     &blob);
 	if (rc == -1) {
-		DBG_ERR("Failed to read catalog file '%s' - %s",
+		DBG_ERR("Failed to read catalog file '%s' - %s\n",
 			catfile,
 			strerror(errno));
 		goto done;
@@ -152,7 +152,7 @@ int mscat_pkcs7_import_catfile(struct mscat_pkcs7 *mp7,
 				 &mscat_data,
 				 GNUTLS_X509_FMT_DER);
 	if (rc < 0) {
-		DBG_ERR("Failed to import PKCS7 from '%s' - %s",
+		DBG_ERR("Failed to import PKCS7 from '%s' - %s\n",
 			catfile,
 			gnutls_strerror(rc));
 		goto done;
@@ -182,14 +182,14 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 
 	oid = gnutls_pkcs7_get_embedded_data_oid(mp7->c);
 	if (oid == NULL) {
-		DBG_ERR("Failed to get oid - %s",
+		DBG_ERR("Failed to get oid - %s\n",
 			gnutls_strerror(errno));
 		return -1;
 	}
 
 	cmp = strcmp(oid, PKCS7_CTL_OBJID);
 	if (cmp != 0) {
-		DBG_ERR("Invalid oid in catalog file! oid: %s, expected: %s",
+		DBG_ERR("Invalid oid in catalog file! oid: %s, expected: %s\n",
 			oid,
 			PKCS7_CTL_OBJID);
 		return -1;
@@ -203,7 +203,7 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 	rc = gnutls_x509_trust_list_init(&tl,
 					 0); /* default size */
 	if (rc != 0) {
-		DBG_ERR("Failed to create trust list - %s",
+		DBG_ERR("Failed to create trust list - %s\n",
 			gnutls_strerror(rc));
 		goto done;
 	}
@@ -212,18 +212,18 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 	/* Load the system trust list */
 	rc = gnutls_x509_trust_list_add_system_trust(tl, 0, 0);
 	if (rc < 0) {
-		DBG_ERR("Failed to add system trust list - %s",
+		DBG_ERR("Failed to add system trust list - %s\n",
 			gnutls_strerror(rc));
 		goto done;
 	}
-	DBG_INFO("Loaded %d CAs", rc);
+	DBG_INFO("Loaded %d CAs\n", rc);
 
 	if (ca_file != NULL) {
 		rc = mscat_read_file(tmp_ctx,
 				     ca_file,
 				     &blob);
 		if (rc != 0) {
-			DBG_ERR("Failed to read CA file '%s' - %s",
+			DBG_ERR("Failed to read CA file '%s' - %s\n",
 				ca_file,
 				strerror(errno));
 			goto done;
@@ -239,13 +239,13 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 							  0, /* tl_flags */
 							  0); /* tl_vflags */
 		if (rc < 0) {
-			DBG_ERR("Failed to add '%s' to trust list - %s (%d)",
+			DBG_ERR("Failed to add '%s' to trust list - %s (%d)\n",
 				ca_file,
 				gnutls_strerror(rc),
 				rc);
 			goto done;
 		}
-		DBG_INFO("Loaded %d additional CAs", rc);
+		DBG_INFO("Loaded %d additional CAs\n", rc);
 	}
 
 	/*
@@ -264,7 +264,7 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 
 	count = gnutls_pkcs7_get_signature_count(mp7->c);
 	if (count == 0) {
-		DBG_ERR("Failed to verify catalog file, no signatures found");
+		DBG_ERR("Failed to verify catalog file, no signatures found\n");
 		goto done;
 	}
 
@@ -277,7 +277,7 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 					 NULL, /* data */
 					 flags);   /* flags */
 		if (rc < 0) {
-			DBG_ERR("Failed to verify catalog file - %s (%d)",
+			DBG_ERR("Failed to verify catalog file - %s (%d)\n",
 				gnutls_strerror(rc),
 				rc);
 			goto done;

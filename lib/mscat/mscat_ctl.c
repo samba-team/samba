@@ -238,7 +238,7 @@ int mscat_ctl_import(struct mscat_ctl *ctl,
 
 	ok = mscat_asn1_oid_equal(oid, CATALOG_LIST_OBJOID);
 	if (!ok) {
-		DBG_ERR("Invalid oid (%s), expected CATALOG_LIST_OBJOID",
+		DBG_ERR("Invalid oid (%s), expected CATALOG_LIST_OBJOID\n",
 			oid);
 		rc = -1;
 		goto done;
@@ -262,7 +262,7 @@ int mscat_ctl_import(struct mscat_ctl *ctl,
 			ctl->version = 1;
 		} else {
 			DBG_ERR("Invalid oid (%s), expected "
-				"CATALOG_LIST_MEMBER_OBJOID",
+				"CATALOG_LIST_MEMBER_OBJOID\n",
 				oid);
 			rc = -1;
 			goto done;
@@ -409,7 +409,7 @@ static int ctl_parse_name_value(struct mscat_ctl *ctl,
 			       content->length,
 			       error_string);
 	if (rc != ASN1_SUCCESS) {
-		DBG_ERR("Failed to decode CATALOG.CatalogNameValue: %s - %s",
+		DBG_ERR("Failed to decode CATALOG.CatalogNameValue: %s - %s\n",
 			asn1_strerror(rc),
 			error_string);
 		goto done;
@@ -512,7 +512,7 @@ static int ctl_parse_member_info(struct mscat_ctl *ctl,
 			       content->length,
 			       error_string);
 	if (rc != ASN1_SUCCESS) {
-		DBG_ERR("Failed to decode CATALOG.CatalogMemberInfo: %s - %s",
+		DBG_ERR("Failed to decode CATALOG.CatalogMemberInfo: %s - %s\n",
 			asn1_strerror(rc),
 			error_string);
 		goto done;
@@ -593,7 +593,7 @@ static int ctl_spc_pe_image_data(struct mscat_ctl *ctl,
 			       content->length,
 			       error_string);
 	if (rc != ASN1_SUCCESS) {
-		DBG_ERR("Failed to decode CATALOG.SpcPEImageData: %s - %s",
+		DBG_ERR("Failed to decode CATALOG.SpcPEImageData: %s - %s\n",
 			asn1_strerror(rc),
 			error_string);
 		goto done;
@@ -606,10 +606,10 @@ static int ctl_spc_pe_image_data(struct mscat_ctl *ctl,
 	if (rc == ASN1_SUCCESS) {
 		uint32_t flags = RIVAL(flags_blob.data, 0);
 
-		DBG_ERR(">>> SPC_PE_IMAGE_DATA FLAGS=0x%08x",
+		DBG_ERR(">>> SPC_PE_IMAGE_DATA FLAGS=0x%08x\n",
 			flags);
 	} else  {
-		DBG_ERR("Failed to parse 'flags' in CATALOG.SpcPEImageData - %s",
+		DBG_ERR("Failed to parse 'flags' in CATALOG.SpcPEImageData - %s\n",
 			asn1_strerror(rc));
 		goto done;
 	}
@@ -619,7 +619,7 @@ static int ctl_spc_pe_image_data(struct mscat_ctl *ctl,
 				   "link",
 				   &choice_blob);
 	if (rc != ASN1_SUCCESS) {
-		DBG_ERR("Failed to parse 'link' in CATALOG.SpcPEImageData - %s",
+		DBG_ERR("Failed to parse 'link' in CATALOG.SpcPEImageData - %s\n",
 			asn1_strerror(rc));
 		goto done;
 	}
@@ -662,7 +662,7 @@ static int ctl_spc_pe_image_data(struct mscat_ctl *ctl,
 					   link,
 					   &file_blob);
 		if (rc != ASN1_SUCCESS) {
-			DBG_ERR("Failed to read '%s' - %s",
+			DBG_ERR("Failed to read '%s' - %s\n",
 				link,
 				asn1_strerror(rc));
 			rc = -1;
@@ -747,7 +747,7 @@ static int ctl_spc_indirect_data(struct mscat_ctl *ctl,
 			       content->length,
 			       error_string);
 	if (rc != ASN1_SUCCESS) {
-		DBG_ERR("Failed to decode CATALOG.SpcIndirectData: %s - %s",
+		DBG_ERR("Failed to decode CATALOG.SpcIndirectData: %s - %s\n",
 			asn1_strerror(rc),
 			error_string);
 		goto done;
@@ -783,7 +783,7 @@ static int ctl_spc_indirect_data(struct mscat_ctl *ctl,
 		}
 
 		/* Just returns <<<Obsolete>>> as file */
-		DBG_NOTICE(">>> LINK: %s",
+		DBG_NOTICE(">>> LINK: %s\n",
 			   file);
 	}
 
@@ -920,7 +920,7 @@ static int ctl_get_member_attributes(struct mscat_ctl *ctl,
 			goto done;
 		}
 
-		DBG_DEBUG("Decode element (startEnd)  %s",
+		DBG_DEBUG("Decode element (startEnd)  %s\n",
 			  el2);
 
 		rc = asn1_der_decoding_startEnd(ctl->tree_ctl,
@@ -937,7 +937,7 @@ static int ctl_get_member_attributes(struct mscat_ctl *ctl,
 		}
 		content_len = content_end - content_start + 1;
 
-		DBG_DEBUG("Content data_blob length: %zu",
+		DBG_DEBUG("Content data_blob length: %zu\n",
 			  content_len);
 
 		content = data_blob_talloc_zero(tmp_ctx, content_len);
@@ -966,7 +966,7 @@ static int ctl_get_member_attributes(struct mscat_ctl *ctl,
 				goto done;
 			}
 
-			DBG_DEBUG("Parsed NameValue: name=%s, flags=%u, value=%s",
+			DBG_DEBUG("Parsed NameValue: name=%s, flags=%u, value=%s\n",
 				  name,
 				  flags,
 				  value);
