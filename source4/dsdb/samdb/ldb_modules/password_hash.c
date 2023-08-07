@@ -563,7 +563,7 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 			if (k->ctr.ctr4.num_keys != 4) {
 				talloc_free(scb);
 				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
-						 "KerberosNewerKeys num_keys != 2");
+						 "KerberosNewerKeys num_keys != 4");
 			}
 
 			if (k->ctr.ctr4.num_old_keys > k->ctr.ctr4.num_keys) {

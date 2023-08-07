@@ -4183,7 +4183,7 @@ int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_contex
 
 	ret = samdb_server_reference_dn(ldb_ctx, frame, &dc_computer_dn);
 	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Failed get the dc_computer_dn: %s\n",
+		DBG_ERR("Failed to get the dc_computer_dn: %s\n",
 			ldb_errstring(ldb_ctx));
 		TALLOC_FREE(frame);
 		return ret;
