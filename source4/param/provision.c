@@ -290,7 +290,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	/* FIXME paths */
 	py_lp_ctx = PyObject_GetAttrString(py_result, "lp");
 	if (py_lp_ctx == NULL) {
-		DEBUG(0, ("Missing 'lp' attribute"));
+		DEBUG(0, ("Missing 'lp' attribute\n"));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
@@ -298,7 +298,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	samdb = pyldb_Ldb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 	if (samdb == NULL) {
-		DEBUG(0, ("Missing 'samdb' attribute"));
+		DEBUG(0, ("Missing 'samdb' attribute\n"));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
