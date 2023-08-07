@@ -174,7 +174,7 @@ int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 		*next = NULL;
 
 		DEBUG(3, ("parsed_dn_find has a NULL GUID for a link to DN "
-			  "%s; searching through links for it",
+			  "%s; searching through links for it\n",
 			  ldb_dn_get_linearized(target_dn)));
 
 		for (i = 0; i < count; i++) {

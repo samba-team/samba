@@ -4186,7 +4186,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			DBG_WARNING("Failed to find forward link object %s "
-				    "to remove backlink %s on %s",
+				    "to remove backlink %s on %s\n",
 				    ldb_dn_get_linearized(msg->dn),
 				    sa->lDAPDisplayName,
 				    ldb_dn_get_linearized(dn));
@@ -4204,7 +4204,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 					       target_attr->lDAPDisplayName);
 		if (link_el == NULL) {
 			DBG_WARNING("Failed to find forward link on %s "
-				    "as %s to remove backlink %s on %s",
+				    "as %s to remove backlink %s on %s\n",
 				    ldb_dn_get_linearized(msg->dn),
 				    target_attr->lDAPDisplayName,
 				    sa->lDAPDisplayName,
@@ -4241,7 +4241,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 
 		if (p == NULL) {
 			DBG_WARNING("Failed to find forward link on %s "
-				    "as %s to remove backlink %s on %s",
+				    "as %s to remove backlink %s on %s\n",
 				    ldb_dn_get_linearized(msg->dn),
 				    target_attr->lDAPDisplayName,
 				    sa->lDAPDisplayName,
