@@ -98,7 +98,7 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 			 PL_DATA_FORMAT,
 			 &time_h, &time_l, &nstr, &cstr, &lstr);
 	if (ret == -1) {
-		DEBUG(1, ("Failed to un pack printer data"));
+		DEBUG(1, ("Failed to un pack printer data\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
@@ -249,7 +249,7 @@ NTSTATUS printer_list_get_last_refresh(time_t *last_refresh)
 			 PL_TSTAMP_FORMAT, &time_h, &time_l);
 	TALLOC_FREE(data.dptr);
 	if (ret == -1) {
-		DEBUG(1, ("Failed to un pack printer data"));
+		DEBUG(1, ("Failed to un pack printer data\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
@@ -354,7 +354,7 @@ static int printer_list_clean_fn(struct db_record *rec, void *private_data)
 			 PL_DATA_FORMAT, &time_h, &time_l, &name, &comment,
 			 &location);
 	if (ret == -1) {
-		DEBUG(1, ("Failed to un pack printer data"));
+		DEBUG(1, ("Failed to un pack printer data\n"));
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return -1;
 	}
@@ -427,7 +427,7 @@ static int printer_list_exec_fn(struct db_record *rec, void *private_data)
 			 PL_DATA_FORMAT, &time_h, &time_l, &name, &comment,
 			 &location);
 	if (ret == -1) {
-		DEBUG(1, ("Failed to un pack printer data"));
+		DEBUG(1, ("Failed to un pack printer data\n"));
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return -1;
 	}

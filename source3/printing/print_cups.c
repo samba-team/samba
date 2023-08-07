@@ -1107,7 +1107,7 @@ static int cups_job_submit(int snum, struct printjob *pjob,
 				pjob->sysjob = ippGetInteger(attr_job_id, 0);
 				DEBUG(5,("cups_job_submit: job-id %d\n", pjob->sysjob));
 			} else {
-				DEBUG(0,("Missing job-id attribute in IPP response"));
+				DEBUG(0,("Missing job-id attribute in IPP response\n"));
 			}
 		}
 	} else {
@@ -1301,7 +1301,7 @@ static int cups_queue_get(const char *sharename,
 			queue = SMB_REALLOC_ARRAY(queue, print_queue_struct, qalloc);
 
 			if (queue == NULL) {
-				DEBUG(0,("cups_queue_get: Not enough memory!"));
+				DEBUG(0,("cups_queue_get: Not enough memory!\n"));
 				qcount = 0;
 				goto out;
 			}

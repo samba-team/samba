@@ -1205,7 +1205,7 @@ static int iprint_queue_get(const char *sharename,
 			queue = SMB_REALLOC_ARRAY(queue, print_queue_struct, qalloc);
 
 			if (queue == NULL) {
-				DEBUG(0,("iprint_queue_get: Not enough memory!"));
+				DEBUG(0,("iprint_queue_get: Not enough memory!\n"));
 				qcount = 0;
 				goto out;
 			}
