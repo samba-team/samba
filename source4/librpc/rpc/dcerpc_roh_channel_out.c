@@ -148,7 +148,7 @@ static void roh_send_RPC_DATA_OUT_done(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(8, ("%s: RPC_OUT_DATA sent", __func__));
+	DEBUG(8, ("%s: RPC_OUT_DATA sent\n", __func__));
 
 	tevent_req_done(req);
 }
