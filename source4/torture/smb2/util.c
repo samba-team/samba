@@ -459,21 +459,15 @@ bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tr
 /**
  * SMB2 connect with share from soption
  **/
-bool torture_smb2_con_sopt(struct torture_context *tctx,
-			   const char *soption,
-			   struct smb2_tree **tree)
+bool torture_smb2_con_share(struct torture_context *tctx,
+			    const char *share,
+			    struct smb2_tree **tree)
 {
 	struct smbcli_options options;
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
-	const char *share = torture_setting_string(tctx, soption, NULL);
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
-
-	if (share == NULL) {
-		torture_comment(tctx, "No share for option %s\n", soption);
-		return false;
-	}
 
 	status = smb2_connect(tctx,
 			      host,
@@ -493,6 +487,23 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 		return false;
 	}
 	return true;
+}
+
+/**
+ * SMB2 connect with share from soption
+ **/
+bool torture_smb2_con_sopt(struct torture_context *tctx,
+			   const char *soption,
+			   struct smb2_tree **tree)
+{
+	const char *share = torture_setting_string(tctx, soption, NULL);
+
+	if (share == NULL) {
+		torture_comment(tctx, "No share for option %s\n", soption);
+		return false;
+	}
+
+	return torture_smb2_con_share(tctx, share, tree);
 }
 
 /*
