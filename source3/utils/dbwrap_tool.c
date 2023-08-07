@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "cmdline_contexts.h"
+#include "lib/param/param.h"
 
 enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS,
 		 OP_EXISTS };
@@ -380,6 +381,7 @@ int main(int argc, const char **argv)
 	int tdb_flags = TDB_DEFAULT;
 
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 
 	int ret = 1;
 	bool ok;
@@ -405,7 +407,6 @@ int main(int argc, const char **argv)
 	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_DEFAULT_STDERR);
-	lp_set_cmdline("log level", "0");
 
 	ok = samba_cmdline_init(mem_ctx,
 				SAMBA_CMDLINE_CONFIG_CLIENT,
@@ -415,6 +416,8 @@ int main(int argc, const char **argv)
 		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
