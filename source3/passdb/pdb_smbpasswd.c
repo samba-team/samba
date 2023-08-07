@@ -250,7 +250,7 @@ creating file %s\n", pfile));
 exist. File successfully created.\n", pfile));
 				} else {
 					DEBUG(0, ("startsmbfilepwent_internal: file %s did not \
-exist. Couldn't create new one. Error was: %s",
+exist. Couldn't create new one. Error was: %s\n",
 					pfile, strerror(errno)));
 					return NULL;
 				}

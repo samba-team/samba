@@ -974,12 +974,12 @@ static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
 			map->gid = id_map.xid.id;
 		} else {
-			DEBUG(1, (__location__ "Did not get GUID when mapping SID for %s", expression));
+			DEBUG(1, (__location__ "Did not get GUID when mapping SID for %s\n", expression));
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else if (samdb_find_attribute(state->ldb, msg, "objectClass", "user")) {
-		DEBUG(1, (__location__ "Got SID_NAME_USER when searching for a group with %s", expression));
+		DEBUG(1, (__location__ "Got SID_NAME_USER when searching for a group with %s\n", expression));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -2855,7 +2855,7 @@ static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 	status = dsdb_trust_search_tdos(state->ldb, NULL,
 					attrs, tmp_ctx, &res);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("dsdb_trust_search_tdos() - %s ", nt_errstr(status));
+		DBG_ERR("dsdb_trust_search_tdos() - %s\n", nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
 		return status;
 	}
@@ -3043,7 +3043,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusted_domain(struct pdb_methods *m,
 	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
 				       attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("dsdb_trust_search_tdo(%s) - %s ",
+		DBG_ERR("dsdb_trust_search_tdo(%s) - %s\n",
 			domain, nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
 		return status;
@@ -3051,7 +3051,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusted_domain(struct pdb_methods *m,
 
 	status = pdb_samba_dsdb_msg_to_trusted_domain(msg, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain(%s) - %s ",
+		DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain(%s) - %s\n",
 			domain, nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
 		return status;
@@ -3092,7 +3092,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusted_domain_by_sid(struct pdb_methods *m,
 	status = dsdb_trust_search_tdo_by_sid(state->ldb, sid,
 					      attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("dsdb_trust_search_tdo_by_sid(%s) - %s ",
+		DBG_ERR("dsdb_trust_search_tdo_by_sid(%s) - %s\n",
 			dom_sid_str_buf(sid, &buf),
 			nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
@@ -3101,7 +3101,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusted_domain_by_sid(struct pdb_methods *m,
 
 	status = pdb_samba_dsdb_msg_to_trusted_domain(msg, mem_ctx, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain(%s) - %s ",
+		DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain(%s) - %s\n",
 			dom_sid_str_buf(sid, &buf),
 			nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
@@ -3633,7 +3633,7 @@ static NTSTATUS pdb_samba_dsdb_enum_trusted_domains(struct pdb_methods *m,
 	status = dsdb_trust_search_tdos(state->ldb, NULL,
 					attrs, tmp_ctx, &res);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("dsdb_trust_search_tdos() - %s ", nt_errstr(status));
+		DBG_ERR("dsdb_trust_search_tdos() - %s\n", nt_errstr(status));
 		TALLOC_FREE(tmp_ctx);
 		return status;
 	}
@@ -3656,7 +3656,7 @@ static NTSTATUS pdb_samba_dsdb_enum_trusted_domains(struct pdb_methods *m,
 
 		status = pdb_samba_dsdb_msg_to_trusted_domain(msg, domains, &d);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain() - %s ",
+			DBG_ERR("pdb_samba_dsdb_msg_to_trusted_domain() - %s\n",
 				nt_errstr(status));
 			TALLOC_FREE(tmp_ctx);
 			return status;

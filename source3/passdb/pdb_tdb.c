@@ -821,7 +821,7 @@ static bool tdb_update_samacct_only( struct samu* newpwd, int flag )
 
 	status = dbwrap_store_bystring(db_sam, keystr, data, flag);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Unable to modify passwd TDB: %s!",
+		DEBUG(0, ("Unable to modify passwd TDB: %s!\n",
 			  nt_errstr(status)));
 		goto done;
 	}

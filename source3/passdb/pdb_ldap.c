@@ -4619,7 +4619,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 			      discard_const_p(char *, &result->account_name),
 			      vals[0], &converted_size))
 	{
-		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
+		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s\n",
 			 strerror(errno)));
 	}
 
@@ -4632,7 +4632,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 				   discard_const_p(char *, &result->fullname),
 				   vals[0], &converted_size))
 	{
-		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
+		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s\n",
 			 strerror(errno)));
 	}
 
@@ -4645,7 +4645,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 				   discard_const_p(char *, &result->description),
 				   vals[0], &converted_size))
 	{
-		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
+		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s\n",
 			 strerror(errno)));
 	}
 
@@ -4782,7 +4782,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 				      vals[0], &converted_size))
 		{
 			DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc "
-				  "failed: %s", strerror(errno)));
+				  "failed: %s\n", strerror(errno)));
 		}
 	}
 	else if (!pull_utf8_talloc(mem_ctx,
@@ -4790,7 +4790,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 						 &result->account_name),
 				   vals[0], &converted_size))
 	{
-		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s",
+		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s\n",
 			  strerror(errno)));
 	}
 
@@ -4803,7 +4803,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 				   discard_const_p(char *, &result->description),
 				   vals[0], &converted_size))
 	{
-		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s",
+		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s\n",
 			  strerror(errno)));
 	}
 	ldap_value_free(vals);
@@ -5961,10 +5961,10 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 
 	switch (modop) {
 	case LDAP_MOD_ADD:
-		DEBUG(1,("ldapsam_change_groupmem: add new member(rid=%d) to a domain group(rid=%d)", member_rid, group_rid));
+		DEBUG(1,("ldapsam_change_groupmem: add new member(rid=%d) to a domain group(rid=%d)\n", member_rid, group_rid));
 		break;
 	case LDAP_MOD_DELETE:
-		DEBUG(1,("ldapsam_change_groupmem: delete member(rid=%d) from a domain group(rid=%d)", member_rid, group_rid));
+		DEBUG(1,("ldapsam_change_groupmem: delete member(rid=%d) from a domain group(rid=%d)\n", member_rid, group_rid));
 		break;
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
