@@ -47,7 +47,7 @@ static bool open_sockets(void)
 	if (!interpret_string_addr(&ss, sock_addr,
 				AI_NUMERICHOST|AI_PASSIVE)) {
 		DEBUG(0,("open_sockets: unable to get socket address "
-					"from string %s", sock_addr));
+					"from string %s\n", sock_addr));
 		return false;
 	}
 	ServerFD = open_socket_in(

@@ -196,7 +196,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 {
 	DATA_BLOB in;
 	if (strlen(buf) < 2) {
-		DEBUG(1, ("query [%s] invalid", buf));
+		DEBUG(1, ("query [%s] invalid\n", buf));
 		printf("BH Query invalid\n");
 		return;
 	}
@@ -1484,7 +1484,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (strlen(buf) < 2) {
-		DEBUG(1, ("query [%s] invalid", buf));
+		DEBUG(1, ("query [%s] invalid\n", buf));
 		printf("BH Query invalid\n");
 		talloc_free(mem_ctx);
 		return;

@@ -5089,7 +5089,7 @@ static bool get_user_tokens_from_file(FILE *f,
 			}
 
 			if (token == NULL) {
-				DEBUG(0, ("File does not begin with username"));
+				DEBUG(0, ("File does not begin with username\n"));
 				return false;
 			}
 
