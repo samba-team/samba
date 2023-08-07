@@ -363,7 +363,7 @@ static void prefork_fork_master(
 		struct talloc_ctx *ctx = talloc_new(NULL);
 		char *name = NULL;
 		if (ctx == NULL) {
-			DBG_ERR("Out of memory");
+			DBG_ERR("Out of memory\n");
 			exit(127);
 		}
 		name = talloc_asprintf(ctx, "prefork-master-%s", service_name);
