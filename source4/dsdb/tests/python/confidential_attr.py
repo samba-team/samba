@@ -98,7 +98,9 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         userou = "OU=conf-attr-test"
         self.ou = "{0},{1}".format(userou, self.base_dn)
+        samba.tests.delete_force(self.ldb_admin, self.ou, controls=['tree_delete:1'])
         self.ldb_admin.create_ou(self.ou)
+        self.addCleanup(samba.tests.delete_force, self.ldb_admin, self.ou, controls=['tree_delete:1'])
 
         # use a common username prefix, so we can use sAMAccountName=CATC-* as
         # a search filter to only return the users we're interested in
@@ -138,10 +140,6 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         self.assertEqual(0, int(search_flags) & SEARCH_FLAG_CONFIDENTIAL,
                          "{0} searchFlags already {1}".format(self.conf_attr,
                                                               search_flags))
-
-    def tearDown(self):
-        super(ConfidentialAttrCommon, self).tearDown()
-        self.ldb_admin.delete(self.ou, ["tree_delete:1"])
 
     def add_attr(self, dn, attr, value):
         m = Message()
