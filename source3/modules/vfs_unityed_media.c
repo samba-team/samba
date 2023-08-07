@@ -1109,9 +1109,9 @@ static int um_fstat(vfs_handle_struct *handle,
 	*sbuf = fsp->fsp_name->st;
 
 out:
-	DEBUG(10, ("Leaving with fsp->fsp_name->st.st_ex_mtime %s\n",
+	DEBUG(10, ("Leaving with fsp->fsp_name->st.st_ex_mtime %s",
 		   fsp->fsp_name != NULL ?
-		   ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec)) : "0"));
+		   ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec)) : "0\n"));
 	return status;
 }
 

@@ -4067,7 +4067,7 @@ static int fruit_fntimes(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_FNTIMES(handle, fsp, ft);
 	}
 
-	DBG_DEBUG("set btime for %s to %s\n", fsp_str_dbg(fsp),
+	DBG_DEBUG("set btime for %s to %s", fsp_str_dbg(fsp),
 		  time_to_asc(convert_timespec_to_time_t(ft->create_time)));
 
 	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_META);
