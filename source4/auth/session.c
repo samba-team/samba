@@ -240,11 +240,9 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	/* unless set otherwise, the session key is the user session
 	 * key from the auth subsystem */
 	session_info->session_key = data_blob_talloc(session_info, user_info_dc->user_session_key.data, user_info_dc->user_session_key.length);
-	if (!session_info->session_key.data && session_info->session_key.length) {
-		if (session_info->session_key.data == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
+	if (!session_info->session_key.data && user_info_dc->user_session_key.length) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	nt_status = auth_generate_security_token(session_info,
