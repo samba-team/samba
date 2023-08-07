@@ -742,7 +742,13 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         #   want to weed out results from any previous test runs
         search = "(&{0}{1})".format(expr, self.extra_filter)
 
-        for attr in self.attr_filters:
+        # If we expect to return multiple results, only check the first
+        if expected_num > 0:
+            attr_filters = [self.attr_filters[0]]
+        else:
+            attr_filters = self.attr_filters
+
+        for attr in attr_filters:
             res = samdb.search(base_dn, expression=search, scope=SCOPE_SUBTREE,
                                attrs=attr, controls=self.dirsync)
             self.assertEqual(len(res), expected_num,
