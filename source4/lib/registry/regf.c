@@ -714,7 +714,7 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 			/* Get sublist data blob */
 			list_data = hbin_get(private_data->hive, ri.offset[i]);
 			if (!list_data.data) {
-				DEBUG(0, ("Error getting RI list."));
+				DEBUG(0, ("Error getting RI list.\n"));
 				talloc_free(pull);
 				return WERR_GEN_FAILURE;
 			}
@@ -998,7 +998,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			/* Get sublist data blob */
 			list_data = hbin_get(private_data->hive, ri.offset[i]);
 			if (list_data.data == NULL) {
-				DEBUG(0, ("Error getting RI list."));
+				DEBUG(0, ("Error getting RI list.\n"));
 				talloc_free(pull);
 				return WERR_GEN_FAILURE;
 			}
