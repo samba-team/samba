@@ -110,7 +110,7 @@ static bool smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
 	if (NT_STATUS_IS_OK(*nt_status)) {
 		/* Complain LOUDLY */
 		DEBUG(0, ("smb_pam_nt_status_error_handler: PAM: BUG: PAM and NT_STATUS \
-error MISMATCH, forcing to NT_STATUS_LOGON_FAILURE"));
+error MISMATCH, forcing to NT_STATUS_LOGON_FAILURE\n"));
 		*nt_status = NT_STATUS_LOGON_FAILURE;
 	}
 	return False;
@@ -469,7 +469,7 @@ static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 			return True;
 		}
 	}
-	DEBUG(2,("smb_pam_end: PAM: not initialised"));
+	DEBUG(2,("smb_pam_end: PAM: not initialised\n"));
 	return False;
 }
 

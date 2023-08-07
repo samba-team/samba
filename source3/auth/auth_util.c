@@ -2149,7 +2149,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) &&
 		    (lp_security() == SEC_ADS || lp_security() == SEC_DOMAIN) &&
 		    lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID) {
-			DBG_NOTICE("Try to map %s to guest account",
+			DBG_NOTICE("Try to map %s to guest account\n",
 				   nt_username);
 			nt_status = make_server_info_guest(tmp_ctx, &result);
 			if (NT_STATUS_IS_OK(nt_status)) {

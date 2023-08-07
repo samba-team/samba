@@ -259,7 +259,7 @@ static NTSTATUS prepare_gensec(const struct auth_context *auth_context,
 	server_credentials
 		= cli_credentials_init_server(frame, lp_ctx);
 	if (!server_credentials) {
-		DEBUG(1, ("Failed to init server credentials"));
+		DEBUG(1, ("Failed to init server credentials\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_SERVER_STATE;
 	}
