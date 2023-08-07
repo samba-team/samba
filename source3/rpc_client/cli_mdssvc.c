@@ -463,7 +463,7 @@ static void mdscli_search_cmd_done(struct tevent_req *subreq)
 	}
 
 	if (*uint64p != 0) {
-		DBG_DEBUG("Unexpected mds result: 0x%" PRIx64, *uint64p);
+		DBG_DEBUG("Unexpected mds result: 0x%" PRIx64 "\n", *uint64p);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}

@@ -143,7 +143,7 @@ static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq)
 				 rpc_transport_np_init_pipe_open_retry, req);
 		if (tevent_req_nomem(te, req)) {
 			DEBUG(2, ("Failed to create asynchronous "
-					"tevent_timer"));
+					"tevent_timer\n"));
 		}
 		return;
 	}

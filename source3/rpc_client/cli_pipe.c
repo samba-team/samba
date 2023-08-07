@@ -1662,7 +1662,7 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 	bool equal;
 
 	if (r->secondary_address_size == 0) {
-		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
+		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)\n"));
 	}
 
 	if (r->num_results < 1 || !r->ctx_list) {
