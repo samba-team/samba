@@ -745,7 +745,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
-		DEBUG(DEBUG_ERR, (__location__ " Unknown database in request. db_id==0x%08x",
+		DEBUG(DEBUG_ERR, (__location__ " Unknown database in request. db_id==0x%08x\n",
 			  c->db_id));
 		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
