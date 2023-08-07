@@ -47,40 +47,6 @@
 	} \
 } while (0)
 
-/**
- * SMB2 connect with explicit share
- **/
-static bool torture_smb2_con_share(struct torture_context *tctx,
-                           const char *share,
-                           struct smb2_tree **tree)
-{
-        struct smbcli_options options;
-        NTSTATUS status;
-        const char *host = torture_setting_string(tctx, "host", NULL);
-
-        lpcfg_smbcli_options(tctx->lp_ctx, &options);
-
-        status = smb2_connect_ext(tctx,
-                                  host,
-                                  lpcfg_smb_ports(tctx->lp_ctx),
-                                  share,
-                                  lpcfg_resolve_context(tctx->lp_ctx),
-                                  samba_cmdline_get_creds(),
-                                  0,
-                                  tree,
-                                  tctx->ev,
-                                  &options,
-                                  lpcfg_socket_options(tctx->lp_ctx),
-                                  lpcfg_gensec_settings(tctx, tctx->lp_ctx)
-                                  );
-        if (!NT_STATUS_IS_OK(status)) {
-                printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
-                       host, share, nt_errstr(status));
-                return false;
-        }
-        return true;
-}
-
 static bool test_default_acl_posix(struct torture_context *tctx,
 				   struct smb2_tree *tree_unused)
 {
