@@ -2707,7 +2707,7 @@ int ad_fset(struct vfs_handle_struct *handle,
 					  ad_getentryoff(ad, ADEID_RFORK),
 					  0);
 		if (len != ad_getentryoff(ad, ADEID_RFORK)) {
-			DBG_ERR("short write on %s: %zd", fsp_str_dbg(fsp), len);
+			DBG_ERR("short write on %s: %zd\n", fsp_str_dbg(fsp), len);
 			return -1;
 		}
 		rc = 0;

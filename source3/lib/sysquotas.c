@@ -455,7 +455,7 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		DBG_NOTICE("Running command "
 			"%s %s %d %d "
 			"%u %llu %llu "
-			"%llu %llu %llu ",
+			"%llu %llu %llu\n",
 			set_quota_command,
 			path,
 			qtype,

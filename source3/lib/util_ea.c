@@ -53,7 +53,7 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 		return NULL;
 	}
 	if (!pull_ascii_talloc(ctx, &eal->ea.name, pdata + 4, &converted_size)) {
-		DEBUG(0,("read_ea_list_entry: pull_ascii_talloc failed: %s",
+		DEBUG(0,("read_ea_list_entry: pull_ascii_talloc failed: %s\n",
 			strerror(errno)));
 	}
 	if (!eal->ea.name) {
