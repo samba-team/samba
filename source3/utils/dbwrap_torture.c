@@ -26,6 +26,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
 #include "lib/util/util_tdb.h"
+#include "lib/param/param.h"
 
 #if 0
 #include "lib/events/events.h"
@@ -253,6 +254,7 @@ int main(int argc, const char *argv[])
 	int tdb_flags;
 	bool ok;
 	int ret = 1;
+	struct loadparm_context *lp_ctx = NULL;
 
 	mem_ctx = talloc_stackframe();
 
@@ -272,7 +274,8 @@ int main(int argc, const char *argv[])
 		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
-	lp_set_cmdline("log level", "0");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
