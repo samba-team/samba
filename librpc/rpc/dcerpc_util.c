@@ -565,9 +565,14 @@ static int dcerpc_read_ncacn_packet_next_vector(struct tstream_context *stream,
 
 		ofs = state->buffer.length;
 
-		if (frag_len < ofs) {
+		if (frag_len <= ofs) {
 			/*
-			 * something is wrong, let the caller deal with it
+			 * With frag_len == ofs, we are done, this is likely
+			 * a DCERPC_PKT_CO_CANCEL and DCERPC_PKT_ORPHANED
+			 * without any payload.
+			 *
+			 * Otherwise it's a broken packet and we
+			 * let the caller deal with it.
 			 */
 			*_vector = NULL;
 			*_count = 0;
