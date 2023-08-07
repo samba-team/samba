@@ -322,7 +322,7 @@ bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 
 	pull_ascii_nstring(qname, sizeof(qname), question->name);
 
-	DBG_NOTICE("DNS search for %s - ", nmb_namestr(question));
+	DBG_NOTICE("DNS search for %s -\n", nmb_namestr(question));
 
 	dns_ip.s_addr = interpret_addr(qname);
 

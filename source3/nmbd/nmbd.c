@@ -116,7 +116,7 @@ static bool nmbd_setup_sig_term_handler(struct messaging_context *msg)
 			       nmbd_sig_term_handler,
 			       msg);
 	if (!se) {
-		DBG_ERR("failed to setup SIGTERM handler");
+		DBG_ERR("failed to setup SIGTERM handler\n");
 		return false;
 	}
 
@@ -179,7 +179,7 @@ static bool nmbd_setup_sig_hup_handler(struct messaging_context *msg)
 			       nmbd_sig_hup_handler,
 			       msg);
 	if (!se) {
-		DBG_ERR("failed to setup SIGHUP handler");
+		DBG_ERR("failed to setup SIGHUP handler\n");
 		return false;
 	}
 
@@ -721,7 +721,7 @@ static bool open_sockets(bool isdaemon, int port)
 	if (!interpret_string_addr(&ss, sock_addr,
 				AI_NUMERICHOST|AI_PASSIVE)) {
 		DBG_ERR("open_sockets: unable to get socket address "
-			"from string %s", sock_addr);
+			"from string %s\n", sock_addr);
 		return false;
 	}
 	if (ss.ss_family != AF_INET) {
