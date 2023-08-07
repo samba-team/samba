@@ -67,7 +67,7 @@ NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name
 
 	map->gid=gid;
 	if (!string_to_sid(&map->sid, sid)) {
-		DEBUG(0, ("string_to_sid failed: %s", sid));
+		DEBUG(0, ("string_to_sid failed: %s\n", sid));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
