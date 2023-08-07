@@ -456,12 +456,12 @@ static int cacl_dump(struct cli_state *cli, const char *filename, bool numeric)
 	return EXIT_OK;
 }
 
-/***************************************************** 
+/*****************************************************
 Change the ownership or group ownership of a file. Just
 because the NT docs say this can't be done :-). JRA.
 *******************************************************/
 
-static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
+static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 			const char *filename, const char *new_username)
 {
 	struct dom_sid sid;
@@ -546,7 +546,7 @@ static void sort_acl(struct security_acl *the_acl)
 	}
 }
 
-/***************************************************** 
+/*****************************************************
 set the ACLs on a file given a security descriptor
 *******************************************************/
 
