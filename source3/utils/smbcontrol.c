@@ -39,6 +39,7 @@
 #include "cmdline_contexts.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "lib/param/param.h"
 
 #ifdef HAVE_LIBUNWIND_H
 #include <libunwind.h>
@@ -1783,6 +1784,7 @@ int main(int argc, const char **argv)
 		POPT_TABLEEND
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 	int ret = 0;
 	bool ok;
 
@@ -1796,7 +1798,8 @@ int main(int argc, const char **argv)
 		TALLOC_FREE(frame);
 		exit(1);
 	}
-	lp_set_cmdline("log level", "0");
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 
 	/* Parse command line arguments using popt */
 
