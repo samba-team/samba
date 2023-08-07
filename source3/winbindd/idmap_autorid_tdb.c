@@ -100,12 +100,12 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	requested_rangenum = range->rangenum;
 
 	if (db == NULL) {
-		DEBUG(3, ("Invalid database argument: NULL"));
+		DEBUG(3, ("Invalid database argument: NULL\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (range == NULL) {
-		DEBUG(3, ("Invalid range argument: NULL"));
+		DEBUG(3, ("Invalid range argument: NULL\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -355,7 +355,7 @@ static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 
 	status = idmap_autorid_loadconfig(db, &globalcfg);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to read global configuration"));
+		DEBUG(1, ("Failed to read global configuration\n"));
 		goto done;
 	}
 	range->low_id = globalcfg.minvalue

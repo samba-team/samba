@@ -1252,7 +1252,7 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 					    NULL);
 
 	if (pw == NULL) {
-		DEBUG(0,("cannot fetch own machine password ????"));
+		DEBUG(0,("cannot fetch own machine password ????\n"));
 		return false;
 	}
 
@@ -1984,7 +1984,7 @@ bool winbindd_setup_sig_term_handler(bool parent)
 			       winbindd_sig_term_handler,
 			       is_parent);
 	if (!se) {
-		DEBUG(0,("failed to setup SIGTERM handler"));
+		DEBUG(0,("failed to setup SIGTERM handler\n"));
 		talloc_free(is_parent);
 		return false;
 	}
@@ -1995,7 +1995,7 @@ bool winbindd_setup_sig_term_handler(bool parent)
 			       winbindd_sig_term_handler,
 			       is_parent);
 	if (!se) {
-		DEBUG(0,("failed to setup SIGINT handler"));
+		DEBUG(0,("failed to setup SIGINT handler\n"));
 		talloc_free(is_parent);
 		return false;
 	}
@@ -2006,7 +2006,7 @@ bool winbindd_setup_sig_term_handler(bool parent)
 			       winbindd_sig_term_handler,
 			       is_parent);
 	if (!se) {
-		DEBUG(0,("failed to setup SIGINT handler"));
+		DEBUG(0,("failed to setup SIGINT handler\n"));
 		talloc_free(is_parent);
 		return false;
 	}

@@ -3326,7 +3326,7 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 		 */
 		slash = strchr(addr, '/');
 		if (slash == NULL) {
-			DEBUG(1, ("invalid msg_ip_dropped message: %s",
+			DEBUG(1, ("invalid msg_ip_dropped message: %s\n",
 				  addr));
 			return;
 		}

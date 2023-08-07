@@ -942,7 +942,7 @@ again:
 		}
 		filter = talloc_asprintf_append_buffer(filter, "))");
 		CHECK_ALLOC_DONE(filter);
-		DEBUG(10, ("Filter: [%s]", filter));
+		DEBUG(10, ("Filter: [%s]\n", filter));
 	} else {
 		bidx = 0;
 		idx = 1;
@@ -1006,7 +1006,7 @@ again:
 		map = idmap_find_map_by_sid(&ids[bidx], &sid);
 		if (!map) {
 			DEBUG(2, ("WARNING: couldn't find entry sid (%s) "
-				  "in ids", sidstr));
+				  "in ids\n", sidstr));
 			TALLOC_FREE(sidstr);
 			continue;
 		}

@@ -465,14 +465,14 @@ static NTSTATUS set_remote_addresses(struct dcesrv_connection *conn,
 	ret = getpeername(sock, sar, &sa_len);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
-		DBG_ERR("getpeername failed: %s", nt_errstr(status));
+		DBG_ERR("getpeername failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
 	ret = tsocket_address_bsd_from_sockaddr(conn, sar, sa_len, &remote);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
-		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s",
+		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s\n",
 			nt_errstr(status));
 		return status;
 	}
@@ -481,14 +481,14 @@ static NTSTATUS set_remote_addresses(struct dcesrv_connection *conn,
 	ret = getsockname(sock, sar, &sa_len);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
-		DBG_ERR("getsockname failed: %s", nt_errstr(status));
+		DBG_ERR("getsockname failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
 	ret = tsocket_address_bsd_from_sockaddr(conn, sar, sa_len, &local);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
-		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s",
+		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s\n",
 			nt_errstr(status));
 		return status;
 	}
@@ -541,7 +541,7 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 
 	mem_ctx = talloc_stackframe();
 	if (mem_ctx == NULL) {
-		DBG_ERR("No memory");
+		DBG_ERR("No memory\n");
 		return WINBINDD_ERROR;
 	}
 

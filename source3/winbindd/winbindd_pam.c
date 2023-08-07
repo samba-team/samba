@@ -2169,7 +2169,7 @@ static void log_authentication(
 		client_name,
 		client_pid);
 	if (ui->auth_description == NULL) {
-		DBG_ERR("OOM Unable to create auth_description");
+		DBG_ERR("OOM Unable to create auth_description\n");
 	}
 	ui->client.account_name = user_name;
 	ui->client.domain_name = domain_name;

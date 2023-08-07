@@ -3251,7 +3251,7 @@ bool initialize_winbindd_cache(void)
 		}
 
 		if (unlink(db_path) == -1) {
-			DBG_ERR("initialize_winbindd_cache: unlink %s failed %s ",
+			DBG_ERR("initialize_winbindd_cache: unlink %s failed %s\n",
 				db_path,
 				strerror(errno) );
 			TALLOC_FREE(db_path);
