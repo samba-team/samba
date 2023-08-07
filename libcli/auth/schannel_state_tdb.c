@@ -430,7 +430,7 @@ NTSTATUS schannel_fetch_challenge_tdb(struct db_context *db_sc,
 		status = NT_STATUS_NOT_FOUND;
 
 		DEBUG(1, ("%s: HASH COLLISION with key %s ! "
-			  "Wanted to fetch record for %s but got %s.",
+			  "Wanted to fetch record for %s but got %s.\n",
 			  __func__, keystr, name_upper,
 			  cache_entry.computer_name));
 	} else {
