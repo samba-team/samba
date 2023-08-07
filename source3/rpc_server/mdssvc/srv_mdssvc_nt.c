@@ -135,6 +135,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	}
 
 	strlcpy(outpath, fake_path, 1024);
+	talloc_free(path);
 	talloc_free(fake_path);
 	return;
 }
