@@ -278,7 +278,7 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 			update_stat_ex_create_time(&smb_fname->st,
 						   create_time);
 
-			DBG_DEBUG("file %s case 1 set btime %s\n",
+			DBG_DEBUG("file %s case 1 set btime %s",
 				  smb_fname_str_dbg(smb_fname),
 				  time_to_asc(convert_timespec_to_time_t(
 						      create_time)));
@@ -299,7 +299,7 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 			update_stat_ex_create_time(&smb_fname->st,
 						   create_time);
 
-			DBG_DEBUG("file %s case 3 set btime %s\n",
+			DBG_DEBUG("file %s case 3 set btime %s",
 				  smb_fname_str_dbg(smb_fname),
 				  time_to_asc(convert_timespec_to_time_t(
 						      create_time)));
