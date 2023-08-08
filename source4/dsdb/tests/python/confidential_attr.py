@@ -30,13 +30,15 @@ import time
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
-from samba.dsdb import SEARCH_FLAG_CONFIDENTIAL, SEARCH_FLAG_PRESERVEONDELETE
+from samba.dsdb import SEARCH_FLAG_CONFIDENTIAL, SEARCH_FLAG_RODC_ATTRIBUTE, SEARCH_FLAG_PRESERVEONDELETE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD
 from samba.auth import system_session
 from samba import gensec, sd_utils
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
+from samba.dcerpc import security
+
 import samba.tests
 import samba.dsdb
 
@@ -137,11 +139,11 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
         # sanity-check the flag is not already set (this'll cause problems if
         # previous test run didn't clean up properly)
         search_flags = int(self.get_attr_search_flags(self.attr_dn))
-        if search_flags & SEARCH_FLAG_CONFIDENTIAL:
-            self.set_attr_search_flags(self.attr_dn, str(search_flags &~ SEARCH_FLAG_CONFIDENTIAL))
+        if search_flags & SEARCH_FLAG_CONFIDENTIAL|SEARCH_FLAG_RODC_ATTRIBUTE:
+            self.set_attr_search_flags(self.attr_dn, str(search_flags &~ (SEARCH_FLAG_CONFIDENTIAL|SEARCH_FLAG_RODC_ATTRIBUTE)))
         search_flags = int(self.get_attr_search_flags(self.attr_dn))
-        self.assertEqual(0, search_flags & SEARCH_FLAG_CONFIDENTIAL,
-                         f"{self.conf_attr} searchFlags did not reset to omit SEARCH_FLAG_CONFIDENTIAL ({search_flags})")
+        self.assertEqual(0, search_flags & (SEARCH_FLAG_CONFIDENTIAL|SEARCH_FLAG_RODC_ATTRIBUTE),
+                         f"{self.conf_attr} searchFlags did not reset to omit SEARCH_FLAG_CONFIDENTIAL and SEARCH_FLAG_RODC_ATTRIBUTE ({search_flags})")
 
     def add_attr(self, dn, attr, value):
         m = Message()
@@ -1097,6 +1099,39 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # cases must be indistinguishable.
         user_matching, user_non_matching = time_searches(self.ldb_user)
         assertRangesOverlap(user_matching, user_non_matching)
+
+# Check that using the dirsync controls doesn't reveal confidential
+# "RODC filtered attribute" values to users with only
+# GUID_DRS_GET_CHANGES.  The tests is so similar to the Confidential
+# attribute test we base it on that.
+class RodcFilteredAttrDirsync(ConfidentialAttrTestDirsync):
+
+    def setUp(self):
+        super().setUp()
+        self.dirsync = ["dirsync:1:0:1000"]
+
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user))
+        mod = "(OA;;CR;%s;;%s)" % (security.GUID_DRS_GET_CHANGES,
+                                   str(user_sid))
+        self.sd_utils.dacl_add_ace(self.base_dn, mod)
+
+        self.ldb_user = self.get_ldb_connection(self.user, self.user_pass)
+
+        self.addCleanup(self.sd_utils.dacl_delete_aces, self.base_dn, mod)
+
+    def make_attr_confidential(self):
+        """Marks the attribute under test as being confidential AND RODC
+           filtered (which should mean it is not visible with only
+           GUID_DRS_GET_CHANGES)
+        """
+
+        # work out the original 'searchFlags' value before we overwrite it
+        old_value = self.get_attr_search_flags(self.attr_dn)
+
+        self.set_attr_search_flags(self.attr_dn, str(SEARCH_FLAG_RODC_ATTRIBUTE|SEARCH_FLAG_CONFIDENTIAL))
+
+        # reset the value after the test completes
+        self.addCleanup(self.set_attr_search_flags, self.attr_dn, old_value)
 
 
 TestProgram(module=__name__, opts=subunitopts)
