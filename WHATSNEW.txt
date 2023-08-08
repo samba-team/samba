@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.19.  This is *not*
+This is the second release candidate of Samba 4.19.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -233,6 +233,27 @@ smb.conf changes
   --------------                          -----------     -------
   winbind debug traceid                   Add traceid     No
   directory name cache size               Removed
+
+
+CHANGES SINCE 4.19.0rc1
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 9959: Windows client join fails if a second container CN=System exists
+    somewhere.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15435: regression DFS not working with widelinks = true.
+
+o  Arvid Requate <requate@univention.de>
+   * BUG 9959: Windows client join fails if a second container CN=System exists
+    somewhere.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15443: Heimdal fails to build on 32-bit FreeBSD.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15441: samba-tool ntacl get segfault if aio_pthread appended.
 
 
 KNOWN ISSUES
