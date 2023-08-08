@@ -141,7 +141,7 @@
 		return ret;
 	}
 
-	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
+	/* And push it out again, this time to the world.  This relies on deterministic pointer values */
 	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx,
 				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
