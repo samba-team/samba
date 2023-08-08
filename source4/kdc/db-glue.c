@@ -1478,17 +1478,18 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		protected_user = result;
 
-		if (protected_user && enforced_tgt_lifetime_raw == 0)
-		{
-			/*
-			 * If a TGT lifetime hasn’t been set, Protected Users
-			 * enforces a four hour TGT lifetime.
-			 */
-			*entry->max_life = MIN(*entry->max_life, 4 * 60 * 60);
-			*entry->max_renew = MIN(*entry->max_renew, 4 * 60 * 60);
-
+		if (protected_user) {
 			entry->flags.forwardable = 0;
 			entry->flags.proxiable = 0;
+
+			if (enforced_tgt_lifetime_raw == 0) {
+				/*
+				 * If a TGT lifetime hasn’t been set, Protected
+				 * Users enforces a four hour TGT lifetime.
+				 */
+				*entry->max_life = MIN(*entry->max_life, 4 * 60 * 60);
+				*entry->max_renew = MIN(*entry->max_renew, 4 * 60 * 60);
+			}
 		}
 	}
 
