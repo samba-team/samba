@@ -406,12 +406,12 @@ const char *time_to_asc(const time_t t)
 	struct tm *lt = localtime(&t);
 
 	if (!lt) {
-		return "unknown time";
+		return "unknown time\n";
 	}
 
 	asct = asctime(lt);
 	if (!asct) {
-		return "unknown time";
+		return "unknown time\n";
 	}
 	return asct;
 }
