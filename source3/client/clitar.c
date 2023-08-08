@@ -1295,7 +1295,7 @@ static int tar_set_newer_than(struct tar *t, const char *filename)
 	}
 
 	newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
-	DBG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
+	DBG(1, ("Getting files newer than %s", time_to_asc(newer_than)));
 	return 0;
 }
 
