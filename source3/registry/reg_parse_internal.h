@@ -21,7 +21,7 @@
 
 /**
  * @brief  Some stuff used by reg_parse and reg_format.
- * It might be useful elsewehre but need some review of the interfaces.
+ * It might be useful elsewhere but need some review of the interfaces.
  * @file   reg_parse_internal.h
  * @author Gregor Beck <gb@sernet.de>
  * @date   Sep 2010
