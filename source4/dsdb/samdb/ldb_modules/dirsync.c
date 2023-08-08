@@ -56,7 +56,6 @@ struct dirsync_context {
 	bool linkIncrVal;
 	bool localonly;
 	bool partial;
-	bool assystem;
 	int functional_level;
 	const struct GUID *our_invocation_id;
 	const struct dsdb_schema *schema;
@@ -872,10 +871,6 @@ static int dirsync_search_callback(struct ldb_request *req, struct ldb_reply *ar
 			DSDB_SEARCH_SHOW_DELETED |
 			DSDB_SEARCH_SHOW_EXTENDED_DN;
 
-		if (dsc->assystem) {
-			flags = flags | DSDB_FLAG_AS_SYSTEM;
-		}
-
 		ret = dsdb_module_search_tree(dsc->module, dsc, &res,
 					dn, LDB_SCOPE_BASE,
 					req->op.search.tree,
@@ -1102,15 +1097,20 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
+
+		/*
+		 * While we never use the answer to this for access
+		 * control (after CVE-2023-4154), we return a
+		 * different error message depending on if the user
+		 * was granted GUID_DRS_GET_CHANGES to provide a closer
+		 * emulation and keep some tests passing.
+		 *
+		 * (Samba's ACL logic is not well suited to redacting
+		 * only the secret and RODC filtered attributes).
+		 */
 		ret = acl_check_extended_right(dsc, module, req, objectclass,
 					       sd, acl_user_token(module),
 					       GUID_DRS_GET_CHANGES, SEC_ADS_CONTROL_ACCESS, sid);
-
-		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-			return ret;
-		}
-		dsc->assystem = true;
-		ret = ldb_request_add_control(req, LDB_CONTROL_AS_SYSTEM_OID, false, NULL);
 
 		if (ret != LDB_SUCCESS) {
 			return ret;
