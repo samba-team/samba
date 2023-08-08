@@ -1612,6 +1612,77 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
 
         self.check_as_log(client_creds)
 
+    # This variant of the test is adapted to the behaviour of Windows and MIT
+    # Kerberos. It asserts that tickets issued to Protected Users are neither
+    # forwardable nor proxiable.
+    def test_authn_policy_protected_flags_without_policy_error(self):
+        # Create an authentication policy with a TGT lifetime set.
+        lifetime = 6 * 60 * 60  # 6 hours
+        policy = self.create_authn_policy(enforced=True,
+                                          user_tgt_lifetime=lifetime)
+
+        # Create a user account with the assigned policy, belonging to the
+        # Protected Users group.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       protected=True,
+                                       assigned_policy=policy)
+
+        # Request a Kerberos ticket with a lifetime of eight hours, and request
+        # that it be renewable, forwardable and proxiable. Show that the
+        # returned ticket for the protected user is only renewable.
+        till = self.get_KerberosTime(offset=8 * 60 * 60)  # 8 hours
+        tgt = self._get_tgt(
+            client_creds,
+            till=till,
+            kdc_options=str(krb5_asn1.KDCOptions(
+                'renewable,forwardable,proxiable')),
+            expected_flags=krb5_asn1.TicketFlags('renewable'),
+            unexpected_flags=krb5_asn1.TicketFlags('forwardable,proxiable'))
+        self.check_ticket_times(tgt, expected_life=lifetime,
+                                expected_renew_life=lifetime)
+
+        self.check_as_log(client_creds)
+
+    # This variant of the test is adapted to the behaviour of Heimdal
+    # Kerberos. It asserts that we get a policy error when requesting a
+    # proxiable ticket.
+    def test_authn_policy_protected_flags_with_policy_error(self):
+        # Create an authentication policy with a TGT lifetime set.
+        lifetime = 6 * 60 * 60  # 6 hours
+        policy = self.create_authn_policy(enforced=True,
+                                          user_tgt_lifetime=lifetime)
+
+        # Create a user account with the assigned policy, belonging to the
+        # Protected Users group.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       protected=True,
+                                       assigned_policy=policy)
+
+        # Request a Kerberos ticket with a lifetime of eight hours, and request
+        # that it be renewable and forwardable. Show that the returned ticket
+        # for the protected user is only renewable.
+        till = self.get_KerberosTime(offset=8 * 60 * 60)  # 8 hours
+        tgt = self._get_tgt(
+            client_creds,
+            till=till,
+            kdc_options=str(krb5_asn1.KDCOptions('renewable,forwardable')),
+            expected_flags=krb5_asn1.TicketFlags('renewable'),
+            unexpected_flags=krb5_asn1.TicketFlags('forwardable'))
+        self.check_ticket_times(tgt, expected_life=lifetime,
+                                expected_renew_life=lifetime)
+
+        self.check_as_log(client_creds)
+
+        # Request that the Kerberos ticket be proxiable. Show that we get a
+        # policy error.
+        self._get_tgt(client_creds,
+                      till=till,
+                      kdc_options=str(krb5_asn1.KDCOptions('proxiable')),
+                      expected_error=KDC_ERR_POLICY)
+
+        self.check_as_log(client_creds,
+                          status=ntstatus.NT_STATUS_INVALID_WORKSTATION)
+
     def test_authn_policy_tgt_lifetime_zero_protected(self):
         # Create an authentication policy with the TGT lifetime set to zero.
         policy = self.create_authn_policy(enforced=True,
