@@ -17,7 +17,6 @@ NEW FEATURES/CHANGES
 ====================
 
 
-================
 REMOVED FEATURES
 ================
 
