@@ -383,13 +383,13 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 			DEBUG (3, ("Parsed output of get_quota, ...\n"));
 
 			DEBUGADD (5,( 
-				"qflags:%u curblocks:%llu softlimit:%llu hardlimit:%llu\n"
-				"curinodes:%llu isoftlimit:%llu ihardlimit:%llu bsize:%llu\n", 
-				dp->qflags,(long long unsigned)dp->curblocks,
-				(long long unsigned)dp->softlimit,(long long unsigned)dp->hardlimit,
-				(long long unsigned)dp->curinodes,
-				(long long unsigned)dp->isoftlimit,(long long unsigned)dp->ihardlimit,
-				(long long unsigned)dp->bsize));
+				"qflags:%"PRIu32" curblocks:%"PRIu64" softlimit:%"PRIu64" hardlimit:%"PRIu64"\n"
+				"curinodes:%"PRIu64" isoftlimit:%"PRIu64" ihardlimit:%"PRIu64" bsize:%"PRIu64"\n",
+				dp->qflags,dp->curblocks,
+				dp->softlimit,dp->hardlimit,
+				dp->curinodes,
+				dp->isoftlimit,dp->ihardlimit,
+				dp->bsize));
 			return 0;
 		}
 
@@ -439,15 +439,15 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		str_list_add_printf(&argl, "%d", _id);
 		str_list_add_printf(&argl, "%u", dp->qflags);
 		str_list_add_printf(
-			&argl, "%llu", (long long unsigned)dp->softlimit);
+			&argl, "%"PRIu64, dp->softlimit);
 		str_list_add_printf(
-			&argl, "%llu", (long long unsigned)dp->hardlimit);
+			&argl, "%"PRIu64, dp->hardlimit);
 		str_list_add_printf(
-			&argl, "%llu", (long long unsigned)dp->isoftlimit);
+			&argl, "%"PRIu64, dp->isoftlimit);
 		str_list_add_printf(
-			&argl, "%llu", (long long unsigned)dp->ihardlimit);
+			&argl, "%"PRIu64, dp->ihardlimit);
 		str_list_add_printf(
-			&argl, "%llu", (long long unsigned)dp->bsize);
+			&argl, "%"PRIu64, dp->bsize);
 		if (argl == NULL) {
 			return -1;
 		}
