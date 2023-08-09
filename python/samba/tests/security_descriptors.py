@@ -73,7 +73,6 @@ class SDDLvsDescriptorBase(TestCase):
                 name = f"{name[:100]}+{len(name) - 100}-more-characters-{tag}"
             cls.generate_dynamic_test('test_sddl_vs_sd', name, sddl, sdl)
 
-
     def _test_sddl_vs_sd_with_args(self, sddl, sdl):
         sdb_win = bytes(sdl)
         try:
@@ -90,11 +89,7 @@ class SDDLvsDescriptorBase(TestCase):
         try:
             sd_win = ndr_unpack(security.descriptor, sdb_win)
         except RuntimeError as e:
-            self.fail(f"could not unpack windows descriptor for {sddl}: {e}\n"
-                      f"windows {len(sdb_win)} bytes: {sdb_win.hex(' ')}\n"
-                      f"samba   {len(sdb_sam)} bytes: {sdb_sam.hex(' ')}\n"
-                      f"colour diff {colourdiff(sdb_win, sdb_sam)}\n"
-                      f"SAMBA SD is\n{ndr_print(sd_sam)}")
+            self.fail(f"could not unpack windows descriptor for {sddl}: {e}")
 
         if self.munge_to_v4:
             # Force the ACL revisions to match Samba. Windows seems to
@@ -125,10 +120,7 @@ class SDDLvsDescriptorBase(TestCase):
                 sd_win.sacl.revision = 4
 
         if (sd_win != sd_sam):
-            self.fail(f"Descriptors differ for {sddl}\n"
-                      f"windows {len(sdb_win)} bytes: {sdb_win.hex(' ')}\n"
-                      f"samba   {len(sdb_sam)} bytes: {sdb_sam.hex(' ')}\n"
-                      f"colour diff {colourdiff(sdb_win, sdb_sam)}")
+            self.fail(f"Descriptors differ for {sddl}")
 
 
 @DynamicTestCase
