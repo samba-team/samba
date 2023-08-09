@@ -1357,7 +1357,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	len = strlen(r->in.machine_password);
 	ok = convert_string_talloc(frame, CH_UNIX, CH_UTF16,
 				   r->in.machine_password, len,
-				   (void **)&new_trust_blob.data,
+				   &new_trust_blob.data,
 				   &new_trust_blob.length);
 	if (!ok) {
 		status = NT_STATUS_UNMAPPABLE_CHARACTER;
