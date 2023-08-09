@@ -139,7 +139,7 @@ NTSTATUS dcesrv_assoc_group_find_s4(
 	 *
 	 * We have to do this when it is not run as a single process,
 	 * because then it can't see the other valid association
-	 * groups.  We handle this genericly for all endpoints not
+	 * groups.  We handle this generically for all endpoints not
 	 * running in single process mode.
 	 *
 	 * We know which endpoint we are on even before checking the
