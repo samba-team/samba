@@ -323,7 +323,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 
 		ok = convert_string_talloc(frame, CH_UNIX, CH_UTF16LE,
 					   password->data, password->length,
-					   (void **)&utf16, &utf16_size);
+					   &utf16, &utf16_size);
 		if (!ok) {
 			if (errno == 0) {
 				errno = EINVAL;
