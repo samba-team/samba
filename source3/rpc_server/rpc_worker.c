@@ -955,7 +955,7 @@ static NTSTATUS register_ep_server(
  *
  * get_servers() is called when the process is about to do the real
  * work. So more heavy-weight initialization should happen here. It
- * should return the number of server implementations provided.
+ * should return NT_STATUS_OK and the number of server implementations provided.
  *
  * @param[in] argc argc from main()
  * @param[in] argv argv from main()
@@ -974,9 +974,10 @@ int rpc_worker_main(
 	size_t (*get_interfaces)(
 		const struct ndr_interface_table ***ifaces,
 		void *private_data),
-	size_t (*get_servers)(
+	NTSTATUS (*get_servers)(
 		struct dcesrv_context *dce_ctx,
 		const struct dcesrv_endpoint_server ***ep_servers,
+		size_t *num_ep_servers,
 		void *private_data),
 	void *private_data)
 {
@@ -1185,7 +1186,16 @@ int rpc_worker_main(
 
 	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
 
-	num_servers = get_servers(dce_ctx, &ep_servers, private_data);
+	status = get_servers(dce_ctx,
+			     &ep_servers,
+			     &num_servers,
+			     private_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("get_servers failed: %s\n", nt_errstr(status));
+		global_messaging_context_free();
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	DBG_DEBUG("get_servers() returned %zu servers\n", num_servers);
 

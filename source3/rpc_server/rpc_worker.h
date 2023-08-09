@@ -30,9 +30,10 @@ int rpc_worker_main(
 	size_t (*get_interfaces)(
 		const struct ndr_interface_table ***ifaces,
 		void *private_data),
-	size_t (*get_servers)(
+	NTSTATUS (*get_servers)(
 		struct dcesrv_context *dce_ctx,
 		const struct dcesrv_endpoint_server ***ep_servers,
+		size_t *num_ep_servers,
 		void *private_data),
 	void *private_data);
 

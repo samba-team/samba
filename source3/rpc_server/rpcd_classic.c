@@ -72,9 +72,10 @@ static size_t classic_interfaces(
 
 }
 
-static size_t classic_servers(
+static NTSTATUS classic_servers(
 	struct dcesrv_context *dce_ctx,
 	const struct dcesrv_endpoint_server ***_ep_servers,
+	size_t *_num_ep_servers,
 	void *private_data)
 {
 	static const struct dcesrv_endpoint_server *ep_servers[7] = { NULL };
@@ -118,7 +119,8 @@ static size_t classic_servers(
 	mangle_reset_cache();
 
 	*_ep_servers = ep_servers;
-	return num_servers;
+	*_num_ep_servers = num_servers;
+	return NT_STATUS_OK;
 }
 
 int main(int argc, const char *argv[])

@@ -32,9 +32,10 @@ static size_t winreg_interfaces(
 	return ARRAY_SIZE(ifaces);
 }
 
-static size_t winreg_servers(
+static NTSTATUS winreg_servers(
 	struct dcesrv_context *dce_ctx,
 	const struct dcesrv_endpoint_server ***_ep_servers,
+	size_t *_num_ep_servers,
 	void *private_data)
 {
 	static const struct dcesrv_endpoint_server *ep_servers[1] = { NULL };
@@ -46,13 +47,14 @@ static size_t winreg_servers(
 	if (!W_ERROR_IS_OK(werr)) {
 		DBG_ERR("registry_init_full() failed: %s\n",
 			win_errstr(werr));
-		exit(1);
+		return werror_to_ntstatus(werr);
 	}
 
 	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	*_ep_servers = ep_servers;
-	return ARRAY_SIZE(ep_servers);
+	*_num_ep_servers = ARRAY_SIZE(ep_servers);
+	return NT_STATUS_OK;
 }
 
 int main(int argc, const char *argv[])
