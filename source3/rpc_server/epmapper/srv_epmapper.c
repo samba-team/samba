@@ -795,9 +795,9 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	floors = r->in.map_tower->tower.floors;
 
 	/* We accept NDR as the transfer syntax */
-	status = dcerpc_floor_get_lhs_data(&floors[1], &ifid);
+	status = dcerpc_floor_get_uuid_full(&floors[1], &ifid);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dcerpc_floor_get_lhs_data() failed: %s\n",
+		DBG_DEBUG("dcerpc_floor_get_uuid_full() failed: %s\n",
 			  nt_errstr(status));
 		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 		goto done;
@@ -832,9 +832,9 @@ error_status_t _epm_Map(struct pipes_struct *p,
 
 		DEBUG(7, ("_epm_Map: No entry_handle found, creating it.\n"));
 
-		status = dcerpc_floor_get_lhs_data(&floors[0], &ifid);
+		status = dcerpc_floor_get_uuid_full(&floors[0], &ifid);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dcerpc_floor_get_lhs_data() failed: %s\n",
+			DBG_DEBUG("dcerpc_floor_get_uuid_full() failed: %s\n",
 				  nt_errstr(status));
 			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 			goto done;

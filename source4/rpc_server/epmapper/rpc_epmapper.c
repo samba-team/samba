@@ -218,7 +218,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 
 	floors = r->in.map_tower->tower.floors;
 
-	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_syntax);
+	dcerpc_floor_get_uuid_full(&r->in.map_tower->tower.floors[1], &ndr_syntax);
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    !ndr_syntax_id_equal(&ndr_syntax, &ndr_transfer_syntax_ndr)) {

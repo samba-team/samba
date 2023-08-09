@@ -134,7 +134,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 
 	switch(epm_floor->lhs.protocol) {
 		case EPM_PROTOCOL_UUID:
-			status = dcerpc_floor_get_lhs_data(epm_floor, &syntax);
+			status = dcerpc_floor_get_uuid_full(epm_floor, &syntax);
 			if (NT_STATUS_IS_OK(status)) {
 				/* lhs is used: UUID */
 				struct GUID_txt_buf buf;
@@ -894,13 +894,20 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_flags(struct dcerpc_binding *b,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
-					    struct ndr_syntax_id *syntax)
+_PUBLIC_ NTSTATUS dcerpc_floor_get_uuid_full(const struct epm_floor *epm_floor,
+					     struct ndr_syntax_id *syntax)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
 	struct ndr_pull *ndr;
 	enum ndr_err_code ndr_err;
 	uint16_t if_version=0;
+
+	*syntax = (struct ndr_syntax_id) { .if_version = 0, };
+
+	if (epm_floor->lhs.protocol != EPM_PROTOCOL_UUID) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
 	if (ndr == NULL) {
@@ -922,6 +929,23 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 	}
 
 	syntax->if_version = if_version;
+
+	TALLOC_FREE(ndr);
+
+	ndr = ndr_pull_init_blob(&epm_floor->rhs.uuid.unknown, mem_ctx);
+	if (ndr == NULL) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ndr->flags |= LIBNDR_FLAG_NOALIGN;
+
+	ndr_err = ndr_pull_uint16(ndr, NDR_SCALARS, &if_version);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(mem_ctx);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	syntax->if_version |= (((uint32_t)if_version) << 16) & 0xffff0000;
 
 	talloc_free(mem_ctx);
 
@@ -1261,7 +1285,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Set abstract syntax */
-	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &abstract_syntax);
+	status = dcerpc_floor_get_uuid_full(&tower->floors[0], &abstract_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(b);
 		return status;

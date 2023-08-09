@@ -198,7 +198,7 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 	t = r.out.towers[0].twr->tower;
 
 	/* Check if we got the correct RPC interface identifier */
-	dcerpc_floor_get_lhs_data(&t.floors[0], &syntax);
+	dcerpc_floor_get_uuid_full(&t.floors[0], &syntax);
 	torture_assert(tctx, ndr_syntax_id_equal(&syntax, &map_syntax),
 		       "epm_Map_tcpip failed: Interface identifier mismatch");
 
@@ -206,7 +206,7 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 			"epm_Map_tcpip response for '%s':\n",
 			ndr_interface_name(&syntax.uuid, syntax.if_version));
 
-	dcerpc_floor_get_lhs_data(&t.floors[1], &syntax);
+	dcerpc_floor_get_uuid_full(&t.floors[1], &syntax);
 	torture_assert(tctx, ndr_syntax_id_equal(&syntax, &ndr_transfer_syntax_ndr),
 		       "epm_Map_tcpip failed: floor 2 is not NDR encoded");
 
@@ -285,7 +285,7 @@ static bool test_Map_display(struct dcerpc_binding_handle *b,
 	r.in.max_towers = 10;
 	r.out.num_towers = &num_towers;
 
-	dcerpc_floor_get_lhs_data(&twr->tower.floors[0], &syntax);
+	dcerpc_floor_get_uuid_full(&twr->tower.floors[0], &syntax);
 
 	torture_comment(tctx,
 			"epm_Map results for '%s':\n",
