@@ -166,6 +166,54 @@ static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_conne
 }
 
 /*
+ * register a principal for an auth_type
+ *
+ * In order to get used in dcesrv_mgmt_inq_princ_name()
+ */
+_PUBLIC_ NTSTATUS dcesrv_auth_type_principal_register(struct dcesrv_context *dce_ctx,
+						      enum dcerpc_AuthType auth_type,
+						      const char *principal_name)
+{
+	const char *existing = NULL;
+	struct dcesrv_ctx_principal *p = NULL;
+
+	existing = dcesrv_auth_type_principal_find(dce_ctx, auth_type);
+	if (existing != NULL) {
+		DBG_ERR("auth_type[%u] already registered with principal_name[%s]\n",
+			auth_type, existing);
+		return NT_STATUS_ALREADY_REGISTERED;
+	}
+
+	p = talloc_zero(dce_ctx, struct dcesrv_ctx_principal);
+	if (p == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	p->auth_type = auth_type;
+	p->principal_name = talloc_strdup(p, principal_name);
+	if (p->principal_name == NULL) {
+		TALLOC_FREE(p);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DLIST_ADD_END(dce_ctx->principal_list, p);
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ const char *dcesrv_auth_type_principal_find(struct dcesrv_context *dce_ctx,
+						     enum dcerpc_AuthType auth_type)
+{
+	struct dcesrv_ctx_principal *p = NULL;
+
+	for (p = dce_ctx->principal_list; p != NULL; p = p->next) {
+		if (p->auth_type == auth_type) {
+			return p->principal_name;
+		}
+	}
+
+	return NULL;
+}
+
+/*
   register an interface on an endpoint
 
   An endpoint is one unix domain socket (for ncalrpc), one TCP port

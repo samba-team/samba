@@ -436,6 +436,16 @@ struct dcesrv_context {
 		bool use_single_process;
 	} *endpoint_list;
 
+	/*
+	 * registered auth_type/principals
+	 * for dcesrv_mgmt_inq_princ_name()
+	 */
+	struct dcesrv_ctx_principal {
+		struct dcesrv_ctx_principal *next, *prev;
+		enum dcerpc_AuthType auth_type;
+		const char *principal_name;
+	} *principal_list;
+
 	/* loadparm context to use for this connection */
 	struct loadparm_context *lp_ctx;
 
@@ -460,6 +470,11 @@ struct dcesrv_critical_sizes {
 	int sizeof_dcesrv_handle;
 };
 
+NTSTATUS dcesrv_auth_type_principal_register(struct dcesrv_context *dce_ctx,
+					     enum dcerpc_AuthType auth_type,
+					     const char *principal_name);
+const char *dcesrv_auth_type_principal_find(struct dcesrv_context *dce_ctx,
+					    enum dcerpc_AuthType auth_type);
 NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
 				   const char *ncacn_np_secondary_endpoint,

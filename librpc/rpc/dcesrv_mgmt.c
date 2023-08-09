@@ -137,7 +137,26 @@ static WERROR dcesrv_mgmt_stop_server_listening(struct dcesrv_call_state *dce_ca
 static WERROR dcesrv_mgmt_inq_princ_name(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_princ_name *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	const char *principal = NULL;
+
+	if (r->in.princ_name_size < 1) {
+		DCESRV_FAULT(DCERPC_FAULT_BAD_STUB_DATA);
+	}
+
+	r->out.princ_name = "";
+
+	principal = dcesrv_auth_type_principal_find(dce_call->conn->dce_ctx,
+						    r->in.authn_proto);
+	if (principal == NULL) {
+		return WERR_RPC_S_UNKNOWN_AUTHN_SERVICE;
+	}
+
+	if (strlen(principal) + 1 > r->in.princ_name_size) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	r->out.princ_name = principal;
+	return WERR_OK;
 }
 
 
