@@ -1559,7 +1559,7 @@ void ldb_set_utf8_default(struct ldb_context *ldb);
    \brief Casefold a string
 
    Note that the callback needs to be ASCII compatible. So first ASCII needs
-   to be handle before any UTF-8. This is needed to avoid issues with dottet
+   to be handle before any UTF-8. This is needed to avoid issues with dotted
    languages.
 
    \param ldb the ldb context
@@ -1776,7 +1776,7 @@ char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
          'const char * const *' within the LDB_SECRET_ATTRIBUTE_LIST
          opaque set on the ldb
 
-   \sa ldb_ldif_message_string for an exact representiation of the
+   \sa ldb_ldif_message_string for an exact representation of the
        message as LDIF
 */
 char *ldb_ldif_message_redacted_string(struct ldb_context *ldb,
@@ -1856,7 +1856,7 @@ int ldb_dn_extended_add_syntax(struct ldb_context *ldb,
   \param mem_ctx TALLOC context to return resulting ldb_dn structure on
   \param dn The new DN
 
-  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
+  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntactically correct
 */
 
 struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *dn);
@@ -1876,7 +1876,7 @@ struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, cons
   \param mem_ctx TALLOC context to return resulting ldb_dn structure on
   \param dn The new DN
 
-  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
+  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntactically correct
 */
 
 struct ldb_dn *ldb_dn_from_ldb_val(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const struct ldb_val *strdn);
@@ -2196,7 +2196,7 @@ int ldb_set_debug(struct ldb_context *ldb,
 
 /**
   this allows the user to set custom utf8 function for error reporting. make
-  sure it is able to handle ASCII first, so it prevents issues with dottet
+  sure it is able to handle ASCII first, so it prevents issues with dotted
   languages.
 */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
