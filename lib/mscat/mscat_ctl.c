@@ -315,7 +315,7 @@ static int ctl_get_member_checksum_string(struct mscat_ctl *ctl,
 				   CH_UNIX,
 				   chksum_ucs2.data,
 				   chksum_ucs2.length,
-				   (void **)&checksum,
+				   &checksum,
 				   &converted_size);
 	if (!ok) {
 		rc = -1;
@@ -450,7 +450,7 @@ static int ctl_parse_name_value(struct mscat_ctl *ctl,
 				   CH_UNIX,
 				   name_blob.data,
 				   name_blob.length,
-				   (void **)pname,
+				   pname,
 				   &converted_size);
 	if (!ok) {
 		rc = ASN1_MEM_ERROR;
@@ -464,7 +464,7 @@ static int ctl_parse_name_value(struct mscat_ctl *ctl,
 				   CH_UNIX,
 				   value_blob.data,
 				   value_blob.length,
-				   (void **)pvalue,
+				   pvalue,
 				   &converted_size);
 	if (!ok) {
 		rc = ASN1_MEM_ERROR;
@@ -543,7 +543,7 @@ static int ctl_parse_member_info(struct mscat_ctl *ctl,
 				   CH_UNIX,
 				   name_blob.data,
 				   name_blob.length,
-				   (void **)pname,
+				   pname,
 				   &converted_size);
 	if (!ok) {
 		rc = ASN1_MEM_ERROR;
@@ -679,7 +679,7 @@ static int ctl_spc_pe_image_data(struct mscat_ctl *ctl,
 						   CH_UNIX,
 						   file_blob.data,
 						   file_blob.length,
-						   (void **)&file,
+						   &file,
 						   &converted_size);
 			if (!ok) {
 				rc = -1;
