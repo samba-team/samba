@@ -1473,7 +1473,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 				CH_UNIX,
 				new_password.data,
 				new_password.length,
-				(void *)&plaintext.data,
+				&plaintext.data,
 				&plaintext.length);
 	if (!ok) {
 		DBG_WARNING("unable to extract password from a buffer. "
