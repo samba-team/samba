@@ -61,6 +61,16 @@ static WERROR dcesrv_mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_
 	vector->if_id = NULL;
 
 	for (l = ep->interface_list; l; l = l->next) {
+		bool filter;
+
+		filter = ndr_syntax_id_equal(&l->iface->syntax_id, &ndr_table_mgmt.syntax_id);
+		if (filter) {
+			/*
+			 * We should not return the mgmt syntax itself here
+			 */
+			continue;
+		}
+
 		vector->count++;
 		vector->if_id = talloc_realloc(vector, vector->if_id, struct ndr_syntax_id_p, vector->count);
 		if (vector->if_id == NULL) {
