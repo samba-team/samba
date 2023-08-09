@@ -119,7 +119,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!convert_string_talloc(mem_ctx, CH_UTF16LE, CH_UNIX, data_in, n,
-				   (void *)&data_out, &converted_size))
+				   &data_out, &converted_size))
 	{
 		status = NT_STATUS_INVALID_BUFFER_SIZE;
 		goto out;
