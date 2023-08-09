@@ -213,6 +213,64 @@ _PUBLIC_ const char *dcesrv_auth_type_principal_find(struct dcesrv_context *dce_
 	return NULL;
 }
 
+_PUBLIC_ NTSTATUS dcesrv_register_default_auth_types(struct dcesrv_context *dce_ctx,
+						     const char *principal)
+{
+	const char *realm = lpcfg_realm(dce_ctx->lp_ctx);
+	NTSTATUS status;
+
+	status = dcesrv_auth_type_principal_register(dce_ctx,
+						     DCERPC_AUTH_TYPE_NTLMSSP,
+						     principal);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = dcesrv_auth_type_principal_register(dce_ctx,
+						     DCERPC_AUTH_TYPE_SPNEGO,
+						     principal);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (realm == NULL || realm[0] == '\0') {
+		return NT_STATUS_OK;
+	}
+
+	status = dcesrv_auth_type_principal_register(dce_ctx,
+						     DCERPC_AUTH_TYPE_KRB5,
+						     principal);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_register_default_auth_types_machine_principal(struct dcesrv_context *dce_ctx)
+{
+	const char *realm = lpcfg_realm(dce_ctx->lp_ctx);
+	const char *nb = lpcfg_netbios_name(dce_ctx->lp_ctx);
+	char *principal = NULL;
+	NTSTATUS status;
+
+	if (realm == NULL || realm[0] == '\0') {
+		return dcesrv_register_default_auth_types(dce_ctx, "");
+	}
+
+	principal = talloc_asprintf(talloc_tos(), "%s$@%s", nb, realm);
+	if (principal == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcesrv_register_default_auth_types(dce_ctx, principal);
+	TALLOC_FREE(principal);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
   register an interface on an endpoint
 

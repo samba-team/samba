@@ -475,6 +475,9 @@ NTSTATUS dcesrv_auth_type_principal_register(struct dcesrv_context *dce_ctx,
 					     const char *principal_name);
 const char *dcesrv_auth_type_principal_find(struct dcesrv_context *dce_ctx,
 					    enum dcerpc_AuthType auth_type);
+NTSTATUS dcesrv_register_default_auth_types(struct dcesrv_context *dce_ctx,
+					    const char *principal);
+NTSTATUS dcesrv_register_default_auth_types_machine_principal(struct dcesrv_context *dce_ctx);
 NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
 				   const char *ncacn_np_secondary_endpoint,
