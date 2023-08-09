@@ -80,6 +80,7 @@ static NTSTATUS classic_servers(
 {
 	static const struct dcesrv_endpoint_server *ep_servers[7] = { NULL };
 	size_t num_servers = ARRAY_SIZE(ep_servers);
+	NTSTATUS status;
 	bool ok;
 
 	ep_servers[0] = srvsvc_get_ep_server();
@@ -117,6 +118,11 @@ static NTSTATUS classic_servers(
 	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	mangle_reset_cache();
+
+	status = dcesrv_register_default_auth_types_machine_principal(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	*_ep_servers = ep_servers;
 	*_num_ep_servers = num_servers;
