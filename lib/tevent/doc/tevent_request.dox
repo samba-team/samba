@@ -184,6 +184,6 @@ tevent_wakeup_recv() )
 
 A comprehensive example of nested subrequests can be found in the file
 echo_server.c. It implements a complete, self-contained echo server with no
-dependencies but libevent and libtalloc.
+dependencies but libtevent and libtalloc.
 
 */
