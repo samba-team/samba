@@ -136,9 +136,9 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 					  lpcfg_iconv_handle(kdc->task->lp_ctx),
 					  CH_UTF8,
 					  CH_UTF16,
-					  (const char *)chpw.newpasswd.data,
+					  chpw.newpasswd.data,
 					  chpw.newpasswd.length,
-					  (void **)&password.data,
+					  &password.data,
 					  &password.length);
 	if (!ok) {
 		free_ChangePasswdDataMS(&chpw);
@@ -288,9 +288,9 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 						  lpcfg_iconv_handle(kdc->task->lp_ctx),
 						  CH_UTF8,
 						  CH_UTF16,
-						  (const char *)decoded_data->data,
+						  decoded_data->data,
 						  decoded_data->length,
-						  (void **)&password.data,
+						  &password.data,
 						  &password.length);
 		if (!ok) {
 			*error_string = "String conversion failed!";

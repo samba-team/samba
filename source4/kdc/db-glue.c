@@ -2009,7 +2009,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 						   CH_UTF16MUNGED, CH_UTF8,
 						   password_utf16.data,
 						   password_utf16.length,
-						   (void *)&password_utf8.data,
+						   &password_utf8.data,
 						   &password_utf8.length);
 			if (!ok) {
 				krb5_clear_error_message(context);
