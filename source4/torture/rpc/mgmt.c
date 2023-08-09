@@ -119,6 +119,12 @@ static bool test_inq_princ_name_size(struct torture_context *tctx,
 	/*
 	 * 0 gives NT_STATUS_RPC_BAD_STUB_DATA
 	 */
+	r.in.princ_name_size = 0;
+
+	torture_assert_ntstatus_equal(tctx,
+			dcerpc_mgmt_inq_princ_name_r(b, tctx, &r),
+			NT_STATUS_RPC_BAD_STUB_DATA,
+			"mgmt_inq_princ_name failed");
 
 	for (i=1; i <= len; i++) {
 		r.in.princ_name_size = i;
