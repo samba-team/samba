@@ -47,7 +47,7 @@
 
 void mit_samba_context_free(struct mit_samba_context *ctx)
 {
-	/* free heimdal's krb5_context */
+	/* free MIT's krb5_context */
 	if (ctx->context) {
 		krb5_free_context(ctx->context);
 	}
@@ -120,7 +120,7 @@ int mit_samba_context_init(struct mit_samba_context **_ctx)
 		goto done;
 	}
 
-	/* init heimdal's krb_context and log facilities */
+	/* init MIT's krb_context and log facilities */
 	ret = smb_krb5_init_context_basic(ctx,
 					  ctx->db_ctx->lp_ctx,
 					  &ctx->context);
