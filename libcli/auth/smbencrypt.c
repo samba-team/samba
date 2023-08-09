@@ -968,7 +968,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 				   CH_UNIX,
 				   new_password.data,
 				   new_password.length,
-				   (void *)pp_new_pwrd,
+				   pp_new_pwrd,
 				   new_pw_len);
 	data_blob_free(&new_password);
 	if (!ok) {
@@ -1062,7 +1062,7 @@ bool decode_pwd_string_from_buffer514(TALLOC_CTX *mem_ctx,
 				   CH_UNIX,
 				   new_password.data,
 				   new_password.length,
-				   (void *)&decoded_password->data,
+				   &decoded_password->data,
 				   &decoded_password->length);
 	data_blob_free(&new_password);
 	if (!ok) {
