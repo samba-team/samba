@@ -62,8 +62,8 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 		/* ok */
 		break;
 	default:
-		DEBUG(2,("check_pac_checksum: Checksum Type %d is not supported\n",
-			(int)sig->type));
+		DEBUG(2,("check_pac_checksum: Checksum Type %"PRIu32" is not supported\n",
+			sig->type));
 		return EINVAL;
 	}
 
