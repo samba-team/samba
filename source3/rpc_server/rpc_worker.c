@@ -1192,8 +1192,8 @@ int rpc_worker_main(
 	for (i=0; i<num_servers; i++) {
 		status = register_ep_server(dce_ctx, ep_servers[i]);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("register_ep_server failed: %s\n",
-				  nt_errstr(status));
+			DBG_ERR("register_ep_server failed: %s\n",
+				nt_errstr(status));
 			global_messaging_context_free();
 			TALLOC_FREE(frame);
 			exit(1);
