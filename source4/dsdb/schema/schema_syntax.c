@@ -1535,7 +1535,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_syntax_ctx *c
 					   CH_UTF16, CH_UNIX,
 					   in->value_ctr.values[i].blob->data,
 					   in->value_ctr.values[i].blob->length,
-					   (void **)&str, &converted_size)) {
+					   &str, &converted_size)) {
 			return WERR_FOOBAR;
 		}
 
@@ -1575,7 +1575,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_syntax_ctx *c
 		if (!convert_string_talloc(blobs,
 					   CH_UNIX, CH_UTF16,
 					   in->values[i].data, in->values[i].length,
-					   (void **)&blobs[i].data, &blobs[i].length)) {
+					   &blobs[i].data, &blobs[i].length)) {
 			return WERR_FOOBAR;
 		}
 	}
@@ -1599,7 +1599,7 @@ static WERROR dsdb_syntax_UNICODE_validate_one_val(const struct dsdb_syntax_ctx 
 				   CH_UNIX, CH_UTF16,
 				   val->data,
 				   val->length,
-				   (void **)&dst,
+				   &dst,
 				   &size);
 	TALLOC_FREE(dst);
 	if (!ok) {

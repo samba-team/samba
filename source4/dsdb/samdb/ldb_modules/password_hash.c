@@ -2536,7 +2536,7 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 					   CH_UTF8, CH_UTF16,
 					   g->cleartext_utf8->data,
 					   g->cleartext_utf8->length,
-					   (void *)&cleartext_utf16_blob->data,
+					   &cleartext_utf16_blob->data,
 					   &cleartext_utf16_blob->length)) {
 			if (g->cleartext_utf8->length != 0) {
 				talloc_free(cleartext_utf16_blob);
@@ -2563,7 +2563,7 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 					   CH_UTF16MUNGED, CH_UTF8,
 					   g->cleartext_utf16->data,
 					   g->cleartext_utf16->length,
-					   (void *)&cleartext_utf8_blob->data,
+					   &cleartext_utf8_blob->data,
 					   &cleartext_utf8_blob->length)) {
 			if (g->cleartext_utf16->length != 0) {
 				/* We must bail out here, the input wasn't even
