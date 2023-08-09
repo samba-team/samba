@@ -982,6 +982,29 @@ static bool dcerpc_floor_pack_rhs_if_version_data(
 	return true;
 }
 
+static NTSTATUS dcerpc_floor_pack_uuid_full(TALLOC_CTX *mem_ctx,
+					    struct epm_floor *floor,
+					    const struct ndr_syntax_id *syntax)
+{
+	bool ok;
+
+	floor->lhs.protocol = EPM_PROTOCOL_UUID;
+
+	floor->lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, syntax);
+	if (floor->lhs.lhs_data.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = dcerpc_floor_pack_rhs_if_version_data(mem_ctx, syntax,
+				&floor->rhs.uuid.unknown);
+	if (!ok) {
+		data_blob_free(&floor->lhs.lhs_data);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
 	switch (epm_floor->lhs.protocol) {
@@ -1402,25 +1425,21 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Floor 0 */
-	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-
 	abstract_syntax = dcerpc_binding_get_abstract_syntax(binding);
-	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors,
-								   &abstract_syntax);
-
-	if (!dcerpc_floor_pack_rhs_if_version_data(
-		    tower->floors, &abstract_syntax,
-		    &tower->floors[0].rhs.uuid.unknown)) {
-		return NT_STATUS_NO_MEMORY;
+	status = dcerpc_floor_pack_uuid_full(tower->floors,
+					     &tower->floors[0],
+					     &abstract_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Floor 1 */
-	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-
-	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors, 
-								&ndr_transfer_syntax_ndr);
-
-	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(tower->floors, 2);
+	status = dcerpc_floor_pack_uuid_full(tower->floors,
+					     &tower->floors[1],
+					     &ndr_transfer_syntax_ndr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
