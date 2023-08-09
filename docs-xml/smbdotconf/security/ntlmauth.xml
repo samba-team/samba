@@ -16,7 +16,7 @@
     authentication will still be forwarded to and NTLM authentication
     accepted against any domain we are joined to, and any trusted
     domain, even if disabled or if NTLMv2-only is enforced here.  To
-    control NTLM authentiation for domain users, this must option must
+    control NTLM authentication for domain users, this option must
     be configured on each DC.</para>
 
     <para>By default with <command moreinfo="none">ntlm auth</command> set to
@@ -33,7 +33,7 @@
           <para><constant>ntlmv1-permitted</constant>
 	  (alias <constant>yes</constant>) - Allow NTLMv1 and above for all clients.</para>
 
-	  <para>This is the required setting for to enable the <parameter
+	  <para>This is the required setting to enable the <parameter
 	  moreinfo="none">lanman auth</parameter> parameter.</para>
 
         </listitem>
