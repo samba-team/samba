@@ -148,3 +148,12 @@ class SDDLvsDescriptorOverSizeAcls(SDDLvsDescriptorBase):
     ACEs), these cannot currently be parsed by Samba.
     """
     json_file = TEST_DIR / 'oversize-acls.json.gz'
+
+
+@DynamicTestCase
+class SDDLvsDescriptorShortOrdinaryAclsNoMungeV4(SDDLvsDescriptorBase):
+    """These ones have revision 2 ACLs (NT4), but Samba's SDDL only writes
+    revision 4 ACLs (which are otherwise identical).
+    """
+    munge_to_v4 = False
+    json_file = TEST_DIR / 'short-ordinary-acls-v2.json.gz'
