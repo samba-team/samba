@@ -153,7 +153,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	/*
@@ -196,7 +196,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 						  &logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	if (cred_ndr_ptr != NULL) {
@@ -205,7 +205,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 							cred_ndr_ptr);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
-			return EINVAL;
+			return map_errno_from_nt_status(nt_status);
 		}
 	}
 
@@ -214,7 +214,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 						&upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	if (is_krbtgt) {
@@ -223,7 +223,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 							 &pac_attrs_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
-			return EINVAL;
+			return map_errno_from_nt_status(nt_status);
 		}
 
 		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
@@ -231,7 +231,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 							     &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
-			return EINVAL;
+			return map_errno_from_nt_status(nt_status);
 		}
 	}
 
@@ -240,7 +240,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 					      &client_claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	if (pk_reply_key != NULL && cred_ndr != NULL) {

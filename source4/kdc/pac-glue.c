@@ -772,7 +772,7 @@ int samba_client_requested_pac(krb5_context context,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_ERR("can't parse the PAC ATTRIBUTES_INFO: %s\n", nt_errstr(nt_status));
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	if (pac_attrs.attributes_info.flags & (PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY
@@ -819,7 +819,7 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return EINVAL;
+		return map_errno_from_nt_status(status);
 	}
 
 	rodc_krbtgt_number = ldb_msg_find_attr_as_int(p->msg, "msDS-SecondaryKrbTgtNumber", -1);
@@ -1272,7 +1272,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 			DBG_ERR("authsam_update_user_info_dc failed: %s\n",
 				nt_errstr(nt_status));
 
-			ret = EINVAL;
+			ret = map_errno_from_nt_status(nt_status);
 			goto out;
 		}
 	} else {
@@ -1497,7 +1497,7 @@ static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_ERR("can't parse the PAC REQUESTER_SID: %s\n", nt_errstr(nt_status));
 		talloc_free(tmp_ctx);
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	*sid = info.requester_sid.sid;
@@ -1785,7 +1785,7 @@ static krb5_error_code samba_kdc_add_domain_group_sid(TALLOC_CTX *mem_ctx,
 					   &domain_group->domain_sid,
 					   &rid);
 		if (!NT_STATUS_IS_OK(status)) {
-			return EINVAL;
+			return map_errno_from_nt_status(status);
 		}
 	} else {
 		status = dom_sid_split_rid(NULL,
@@ -1793,7 +1793,7 @@ static krb5_error_code samba_kdc_add_domain_group_sid(TALLOC_CTX *mem_ctx,
 					   NULL,
 					   &rid);
 		if (!NT_STATUS_IS_OK(status)) {
-			return EINVAL;
+			return map_errno_from_nt_status(status);
 		}
 	}
 
@@ -1902,7 +1902,7 @@ static krb5_error_code samba_kdc_update_device_info(TALLOC_CTX *mem_ctx,
 							  true, /* This user was authenticated */
 							  &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	num_existing_sids = device_info_dc->num_sids;
@@ -1915,7 +1915,7 @@ static krb5_error_code samba_kdc_update_device_info(TALLOC_CTX *mem_ctx,
 						samdb,
 						device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	for (i = num_existing_sids; i < device_info_dc->num_sids; ++i) {
@@ -1953,7 +1953,7 @@ static krb5_error_code samba_kdc_get_device_info_pac_blob(TALLOC_CTX *mem_ctx,
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("PAC_DEVICE_INFO (presig) push failed: %s\n",
 			    nt_errstr(nt_status));
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	return 0;
@@ -2002,7 +2002,7 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 		DBG_ERR("can't parse device PAC LOGON_INFO: %s\n",
 			nt_errstr(nt_status));
 		talloc_free(frame);
-		return EINVAL;
+		return map_errno_from_nt_status(nt_status);
 	}
 
 	/*
@@ -2463,7 +2463,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
 					nt_errstr(nt_status));
-				code = EINVAL;
+				code = map_errno_from_nt_status(nt_status);
 				goto done;
 			}
 
@@ -2494,7 +2494,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("update delegation info blob failed: %s\n",
 				nt_errstr(nt_status));
-			code = EINVAL;
+			code = map_errno_from_nt_status(nt_status);
 			goto done;
 		}
 	}
@@ -2587,7 +2587,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
 				nt_errstr(nt_status));
 
-			code = EINVAL;
+			code = map_errno_from_nt_status(nt_status);
 			goto done;
 		}
 
@@ -2637,7 +2637,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
 				nt_errstr(nt_status));
-			code = EINVAL;
+			code = map_errno_from_nt_status(nt_status);
 			goto done;
 		}
 	}
@@ -2952,7 +2952,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 								  true, /* This user was authenticated */
 								  &device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			code = EINVAL;
+			code = map_errno_from_nt_status(nt_status);
 			goto out;
 		}
 
@@ -2964,7 +2964,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 							samdb,
 							device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			code = EINVAL;
+			code = map_errno_from_nt_status(nt_status);
 			goto out;
 		}
 	} else {
