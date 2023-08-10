@@ -793,7 +793,7 @@ static int get_all_claims(struct ldb_context *ldb,
 			  TALLOC_CTX *mem_ctx,
 			  const struct ldb_message *principal,
 			  uint32_t principal_class_id,
-			  DATA_BLOB *claims_blob)
+			  struct CLAIMS_SET **claims_set_out)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 
@@ -803,7 +803,6 @@ static int get_all_claims(struct ldb_context *ldb,
 	struct ldb_dn *claim_types_child = NULL;
 	struct ldb_dn *config_dn = ldb_get_config_basedn(ldb);
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
-	NTSTATUS status;
 	bool ok;
 	int ret;
 	struct ldb_result *res = NULL;
@@ -837,7 +836,7 @@ static int get_all_claims(struct ldb_context *ldb,
 
 	struct assigned_silo assigned_silo = new_assigned_silo();
 
-	*claims_blob = data_blob_null;
+	*claims_set_out = NULL;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -1241,32 +1240,24 @@ static int get_all_claims(struct ldb_context *ldb,
 		}
 	}
 
-	if (claims_set->claims_array_count == 0) {
-		/* If we have no claims, we're done. */
-		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
-	}
-
-	/* Encode the claims ready to go into a PAC buffer. */
-	status = encode_claims_set(mem_ctx, claims_set, claims_blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
+	if (claims_set->claims_array_count) {
+		*claims_set_out = talloc_steal(mem_ctx, claims_set);
 	}
 
 	talloc_free(tmp_ctx);
-	return ret;
+	return LDB_SUCCESS;
 }
 
-int get_claims_blob_for_principal(struct ldb_context *ldb,
-				  TALLOC_CTX *mem_ctx,
-				  const struct ldb_message *principal,
-				  DATA_BLOB *claims_blob_out)
+int get_claims_set_for_principal(struct ldb_context *ldb,
+				 TALLOC_CTX *mem_ctx,
+				 const struct ldb_message *principal,
+				 struct CLAIMS_SET **claims_set_out)
 {
 	struct ldb_message_element *principal_class_el = NULL;
 	struct dsdb_schema *schema = NULL;
 	const struct dsdb_class *principal_class = NULL;
 
-	*claims_blob_out = data_blob_null;
+	*claims_set_out = NULL;
 
 	if (!ad_claims_are_issued(ldb)) {
 		return LDB_SUCCESS;
@@ -1292,5 +1283,38 @@ int get_claims_blob_for_principal(struct ldb_context *ldb,
 			      mem_ctx,
 			      principal,
 			      principal_class->governsID_id,
-			      claims_blob_out);
+			      claims_set_out);
+}
+
+int get_claims_blob_for_principal(struct ldb_context *ldb,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ldb_message *principal,
+			     DATA_BLOB *claims_blob_out)
+{
+	struct CLAIMS_SET *claims_set = NULL;
+	int ret;
+	NTSTATUS status;
+
+	*claims_blob_out = data_blob_null;
+
+	ret = get_claims_set_for_principal(ldb,
+					   mem_ctx,
+					   principal,
+					   &claims_set);
+	if (ret) {
+		return ret;
+	}
+
+	if (claims_set == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	/* Encode the claims ready to go into a PAC buffer. */
+	status = encode_claims_set(mem_ctx, claims_set, claims_blob_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		talloc_free(claims_set);
+	}
+
+	return ret;
 }

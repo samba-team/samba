@@ -24,7 +24,14 @@
 #include "lib/util/data_blob.h"
 #include "ldb.h"
 
+struct CLAIMS_SET;
+
 bool ad_claims_are_issued(struct ldb_context *samdb);
+
+int get_claims_set_for_principal(struct ldb_context *ldb,
+				 TALLOC_CTX *mem_ctx,
+				 const struct ldb_message *principal,
+				 struct CLAIMS_SET **claims_set_out);
 
 int get_claims_blob_for_principal(struct ldb_context *ldb,
 				  TALLOC_CTX *mem_ctx,
