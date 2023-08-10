@@ -18,7 +18,7 @@
 """Tests for samba.dcerpc.security"""
 
 from samba.dcerpc import security
-from samba.tests import TestCase, DynamicTestCase
+from samba.tests import TestCase, DynamicTestCase, get_env_dir
 from samba.colour import c_RED, c_GREEN
 
 
@@ -27,6 +27,16 @@ class SddlDecodeEncodeBase(TestCase):
     @classmethod
     def setUpDynamicTestCases(cls):
         cls.domain_sid = security.dom_sid("S-1-2-3-4")
+
+        for (key, fn) in [
+                ("SAMBA_WRITE_WINDOWS_STRINGS_DIR",
+                 cls.write_windows_strings),
+                ("SAMBA_READ_WINDOWS_STRINGS_DIR",
+                 cls.read_windows_strings)]:
+            dir = get_env_dir(key)
+            if dir is not None:
+                fn(dir)
+
         seen = set()
         for pair in cls.strings:
             if isinstance(pair, str):
@@ -67,8 +77,10 @@ class SddlDecodeEncodeBase(TestCase):
             sd = security.descriptor.from_sddl(s, self.domain_sid)
             print(sd.as_sddl(self.domain_sid))
 
-    def _test_write_test_strings(self):
-        """The file libcli/security/tests/windows/windows-sddl-tests.c, if
+    @classmethod
+    def write_windows_strings(cls, dir):
+        """Write all test cases in the format used by
+        libcli/security/tests/windows/windows-sddl-tests.c which, if
         compiled on Windows under Cygwin or MSYS64, can run SDDL
         parsing tests using the Windows API. This allows us to run the
         same tests here and on Windows, to ensure we get the same
@@ -82,54 +94,40 @@ class SddlDecodeEncodeBase(TestCase):
         That is, the separator consists of the 4 bytes " -> ".
         Multi-line examples are not possible.
 
-        If you rename this method to start with 'test_' and run these
-        tests, the examples here will be written in this format in
-        files in /tmp. If you then copy them to Windows and run them
-        in your POSIX-y shell with
+        To run this set an environment variable; see
+        cls.setUpDynamicTestCases(), above. Then if you copy the
+        file/s produced to Windows and run them in your POSIX-y shell
+        with
 
           windows-sddl-tests -i path/to/*.txt
 
         the results on Windows will be shown.
-        """
-        if getattr(self, 'name', None) is None:
-            print(f"not reading changes in {c_RED(self)} with no name "
-                  "(it is probably the base class)")
-            return
 
-        name = f"/tmp/{self.name}.txt"
+        Note this will only run in subclasses annotated with @DynamicTestCase.
+        """
+        name = f"{dir}/{cls.name}.txt"
         with open(name, 'w') as f:
-            for p in self.strings:
+            for p in cls.strings:
                 if isinstance(p, str):
                     p = (p, p)
                 print(f"{p[0]} -> {p[1]}", file=f)
 
-    def _test_00_read_test_strings(self):
-        """This is a complementary non-test to _test_write_test_strings, which
-        writes these tests in a format usable on Windows. In this
-        case, if the method is enabled as a test by removing the
-        leading '_', examples will be read. Unlike the write function,
-        this reads from 'libcli/security/tests/windows/' in the source
-        tree, and will replace the examples here with the ones there.
-        Along the way it allerts you to the changes.
+    @classmethod
+    def read_windows_strings(cls, dir):
+        """This is complementary to cls.write_windows_strings(), which writes
+        these tests in a format usable on Windows. In this case
+        examples will be read in, replacing the strings here with the
+        ones listed. Along the way it alerts you to the changes.
 
-        If run, this test should run first, hence the 00 in its name.
+        To run this set an environment variable; see
+        cls.setUpDynamicTestCases(), above.
+
+        Note this will only run in subclasses annotated with @DynamicTestCase.
         """
-        if getattr(self, 'name', None) is None:
-            print(f"not reading changes in {c_RED(self)} with no name "
-                  "(it is probably the base class)")
-            return
-
-        from pathlib import Path
-        p = Path(__file__).parent
-        while not (p / 'libcli').is_dir():
-            q = p.parent
-            self.assertNotEqual(p, q)
-            p = q
-
-        filename = p / f"libcli/security/tests/windows/{self.name}.txt"
+        filename = f"{dir}/{cls.name}.txt"
 
         old_pairs = set()
-        for s in self.strings:
+        for s in cls.strings:
             if isinstance(s, str):
                 s = (s, s)
             old_pairs.add(s)
@@ -137,15 +135,20 @@ class SddlDecodeEncodeBase(TestCase):
         new_pairs = set()
         with open(filename) as f:
             for line in f:
-                o, _, c = line.rstrip().partition(' -> ')
+                line = line.rstrip()
+                if line.startswith('#') or line == '':
+                    continue
+                o, _, c = line.partition(' -> ')
+                if c == '':
+                    c = o
                 new_pairs.add((o, c))
 
         if old_pairs == new_pairs:
-            print(f"no change in {c_GREEN(self.name)}")
+            print(f"no change in {c_GREEN(cls.name)}")
             # nothing to do
             return
 
-        print(f"change in {c_RED(self.name)}")
+        print(f"change in {c_RED(cls.name)}")
         print("added:")
         for x in sorted(new_pairs - old_pairs):
             print(x)
@@ -153,8 +156,8 @@ class SddlDecodeEncodeBase(TestCase):
         for x in sorted(old_pairs - new_pairs):
             print(x)
 
-        self.strings[:] = sorted(new_pairs)
-        self.fail("test cases out of sync")
+        cls.strings[:] = sorted(new_pairs)
+
 
 @DynamicTestCase
 class SddlNonCanonical(SddlDecodeEncodeBase):
