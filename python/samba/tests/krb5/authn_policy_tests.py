@@ -990,6 +990,9 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
     def _get_tgt(self, creds, *,
                  armor_tgt=None,
                  till=None,
+                 kdc_options=None,
+                 expected_flags=None,
+                 unexpected_flags=None,
                  expected_error=0,
                  expect_status=None,
                  expected_status=None):
@@ -1017,10 +1020,11 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
 
         expected_etypes = krbtgt_creds.tgs_supported_enctypes
 
-        kdc_options = str(krb5_asn1.KDCOptions('renewable'))
-        # Contrary to Microsoft’s documentation, the returned ticket is
-        # renewable.
-        expected_flags = krb5_asn1.TicketFlags('renewable')
+        if kdc_options is None:
+            kdc_options = str(krb5_asn1.KDCOptions('renewable'))
+            # Contrary to Microsoft’s documentation, the returned ticket is
+            # renewable.
+            expected_flags = krb5_asn1.TicketFlags('renewable')
 
         preauth_key = self.PasswordKey_from_creds(creds,
                                                   kcrypto.Enctype.AES256)
@@ -1086,6 +1090,7 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
             expected_sname=expected_sname,
             expected_salt=salt,
             expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
             expected_supported_etypes=expected_etypes,
             generate_padata_fn=generate_padata_fn,
             generate_fast_padata_fn=generate_fast_padata_fn,
