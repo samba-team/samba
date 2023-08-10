@@ -47,6 +47,7 @@ if bld.AD_DC_BUILD_IS_ENABLED():
             -Wl,--wrap,json_array_extend
             -Wl,--wrap,json_object
             -Wl,--wrap,json_string
+            -Wl,--wrap,json_stringn
             -Wl,--wrap,json_integer
             -Wl,--wrap,json_array
             -Wl,--wrap,json_dumps

@@ -119,6 +119,21 @@ json_t *__wrap_json_string(const char *value)
 }
 
 /*
+ * cmocka wrappers for json_stringn
+ */
+json_t *__wrap_json_stringn(const char *value, size_t len);
+json_t *__real_json_stringn(const char *value, size_t len);
+json_t *__wrap_json_stringn(const char *value, size_t len)
+{
+
+	bool fail = (bool)mock();
+	if (fail) {
+		return NULL;
+	}
+	return __real_json_stringn(value, len);
+}
+
+/*
  * cmocka wrappers for json_dumps
  */
 char *__wrap_json_dumps(const json_t *json, size_t flags);
@@ -510,7 +525,7 @@ static void test_json_add_stringn(_UNUSED_ void **state)
 	/*
 	 * Test json string failure
 	 */
-	will_return(__wrap_json_string, true);
+	will_return(__wrap_json_stringn, true);
 	rc = json_add_stringn(&object, "name", "value", 3);
 
 	assert_false(json_is_invalid(&object));
@@ -519,7 +534,7 @@ static void test_json_add_stringn(_UNUSED_ void **state)
 	/*
 	 * Test json object set new failure
 	 */
-	will_return(__wrap_json_string, false);
+	will_return(__wrap_json_stringn, false);
 	will_return(__wrap_json_object_set_new, JANSSON_FAILURE);
 	rc = json_add_stringn(&object, "name", "value", 3);
 
