@@ -743,16 +743,16 @@ bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry)
 	return true;
 }
 
-static int samba_client_requested_pac(krb5_context context,
-				      const krb5_const_pac pac,
-				      TALLOC_CTX *mem_ctx,
-				      bool *requested_pac)
+static krb5_error_code samba_client_requested_pac(krb5_context context,
+						  const krb5_const_pac pac,
+						  TALLOC_CTX *mem_ctx,
+						  bool *requested_pac)
 {
 	enum ndr_err_code ndr_err;
 	krb5_data k5pac_attrs_in;
 	DATA_BLOB pac_attrs_in;
 	union PAC_INFO pac_attrs;
-	int ret;
+	krb5_error_code ret;
 
 	*requested_pac = true;
 
