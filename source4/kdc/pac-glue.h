@@ -78,11 +78,6 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry);
 
-int samba_client_requested_pac(krb5_context context,
-			       krb5_const_pac pac,
-			       TALLOC_CTX *mem_ctx,
-			       bool *requested_pac);
-
 int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_in_db,
 			  bool *is_trusted);
@@ -104,21 +99,6 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 				       const char *client_name,
 				       const char *workstation,
 				       bool password_change);
-
-krb5_error_code samba_kdc_validate_pac_blob(
-		krb5_context context,
-		const struct samba_kdc_entry *client_skdc_entry,
-		krb5_const_pac pac);
-
-/*
- * In the RODC case, to confirm that the returned user is permitted to
- * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
- */
-struct dom_sid;
-WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_sids,
-					  const struct dom_sid *object_sids,
-					  const struct samba_kdc_entry *rodc,
-					  const struct samba_kdc_entry *object);
 
 krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,

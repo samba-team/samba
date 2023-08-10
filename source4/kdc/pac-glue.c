@@ -743,10 +743,10 @@ bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry)
 	return true;
 }
 
-int samba_client_requested_pac(krb5_context context,
-			       const krb5_const_pac pac,
-			       TALLOC_CTX *mem_ctx,
-			       bool *requested_pac)
+static int samba_client_requested_pac(krb5_context context,
+				      const krb5_const_pac pac,
+				      TALLOC_CTX *mem_ctx,
+				      bool *requested_pac)
 {
 	enum ndr_err_code ndr_err;
 	krb5_data k5pac_attrs_in;
@@ -1507,7 +1507,7 @@ static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
 }
 
 /* Does a parse and SID check, but no crypto. */
-krb5_error_code samba_kdc_validate_pac_blob(
+static krb5_error_code samba_kdc_validate_pac_blob(
 		krb5_context context,
 		const struct samba_kdc_entry *client_skdc_entry,
 		const krb5_const_pac pac)
@@ -1579,10 +1579,10 @@ out:
  * In the RODC case, to confirm that the returned user is permitted to
  * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
  */
-WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
-					  const struct dom_sid *object_sids,
-					  const struct samba_kdc_entry *rodc,
-					  const struct samba_kdc_entry *object)
+static WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
+						 const struct dom_sid *object_sids,
+						 const struct samba_kdc_entry *rodc,
+						 const struct samba_kdc_entry *object)
 {
 	int ret;
 	WERROR werr;
