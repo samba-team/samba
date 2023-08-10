@@ -1514,7 +1514,7 @@ static krb5_error_code samba_kdc_validate_pac_blob(
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_user_info_dc *pac_user_info = NULL;
-	struct dom_sid *client_sid = NULL;
+	struct dom_sid client_sid;
 	struct dom_sid pac_sid;
 	krb5_error_code code;
 	bool ok;
@@ -1551,11 +1551,14 @@ static krb5_error_code samba_kdc_validate_pac_blob(
 		goto out;
 	}
 
-	client_sid = samdb_result_dom_sid(frame,
-					  client_skdc_entry->msg,
-					  "objectSid");
+	code = samdb_result_dom_sid_buf(client_skdc_entry->msg,
+					      "objectSid",
+					      &client_sid);
+	if (code) {
+		goto out;
+	}
 
-	ok = dom_sid_equal(&pac_sid, client_sid);
+	ok = dom_sid_equal(&pac_sid, &client_sid);
 	if (!ok) {
 		struct dom_sid_buf buf1;
 		struct dom_sid_buf buf2;
@@ -1563,7 +1566,7 @@ static krb5_error_code samba_kdc_validate_pac_blob(
 		DBG_ERR("SID mismatch between PAC and looked up client: "
 			"PAC[%s] != CLI[%s]\n",
 			dom_sid_str_buf(&pac_sid, &buf1),
-			dom_sid_str_buf(client_sid, &buf2));
+			dom_sid_str_buf(&client_sid, &buf2));
 			code = KRB5KDC_ERR_TGT_REVOKED;
 		goto out;
 	}
