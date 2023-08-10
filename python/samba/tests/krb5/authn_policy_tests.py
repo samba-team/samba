@@ -160,7 +160,7 @@ def policy_check_fn(fn):
     return wrapper_fn
 
 
-class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
+class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -1118,6 +1118,8 @@ class AuthnPolicyTests(AuthLogTestBase, KdcTgsBaseTests):
         ticket_creds = kdc_exchange_dict['rep_ticket_creds']
         return ticket_creds
 
+
+class AuthnPolicyTests(AuthnPolicyBaseTests):
     def setUp(self):
         super().setUp()
         self.do_asn1_print = global_asn1_print
