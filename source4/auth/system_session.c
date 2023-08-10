@@ -99,11 +99,13 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 
 	session_info->credentials = cli_credentials_init(session_info);
 	if (!session_info->credentials) {
+		talloc_free(session_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ok = cli_credentials_set_conf(session_info->credentials, lp_ctx);
 	if (!ok) {
+		talloc_free(session_info);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -426,11 +428,13 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 
 	session_info->credentials = cli_credentials_init(session_info);
 	if (!session_info->credentials) {
+		talloc_free(session_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ok = cli_credentials_set_conf(session_info->credentials, lp_ctx);
 	if (!ok) {
+		talloc_free(session_info);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	cli_credentials_set_anonymous(session_info->credentials);
