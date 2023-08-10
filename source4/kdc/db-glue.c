@@ -3020,12 +3020,9 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 				      SDB_F_ADMIN_DATA|SDB_F_GET_ANY,
 				      0 /* kvno */,
 				      priv->realm_dn, msg, entry);
+	krb5_free_principal(context, principal);
 
 out:
-	if (principal != NULL) {
-		krb5_free_principal(context, principal);
-	}
-
 	if (ret != 0) {
 		TALLOC_FREE(priv);
 		kdc_db_ctx->seq_ctx = NULL;
