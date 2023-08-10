@@ -245,27 +245,6 @@ NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 }
 
 static
-NTSTATUS samba_get_claims_blob(TALLOC_CTX *mem_ctx,
-			       struct ldb_context *samdb,
-			       const struct ldb_message *principal,
-			       DATA_BLOB *client_claims_data)
-{
-	int ret;
-
-	*client_claims_data = data_blob_null;
-
-	ret = get_claims_for_principal(samdb,
-				       mem_ctx,
-				       principal,
-				       client_claims_data);
-	if (ret != LDB_SUCCESS) {
-		return dsdb_ldb_err_to_ntstatus(ret);
-	}
-
-	return NT_STATUS_OK;
-}
-
-static
 NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 				      const struct ldb_message *msg,
 				      DATA_BLOB *cred_blob)
@@ -1131,6 +1110,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB *claims_blob = NULL;
 	NTSTATUS nt_status;
+	int ret;
 
 	SMB_ASSERT(_claims_blob != NULL);
 
@@ -1141,11 +1121,12 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = samba_get_claims_blob(mem_ctx,
-					  p->kdc_db_ctx->samdb,
-					  p->msg,
-					  claims_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ret = get_claims_for_principal(p->kdc_db_ctx->samdb,
+				       mem_ctx,
+				       p->msg,
+				       claims_blob);
+	if (ret != LDB_SUCCESS) {
+		nt_status = dsdb_ldb_err_to_ntstatus(ret);
 		DBG_ERR("Building claims failed: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
