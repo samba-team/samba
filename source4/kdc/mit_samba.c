@@ -1093,8 +1093,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("samba_kdc_get_user_info_from_db failed: %s\n",
 			    nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return EINVAL;
+		code = EINVAL;
+		goto out;
 	}
 
 	status = auth_generate_session_info(tmp_ctx,
@@ -1107,8 +1107,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("auth_generate_session_info failed: %s\n",
 			    nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return EINVAL;
+		code = EINVAL;
+		goto out;
 	}
 
 	/* password is expected as UTF16 */
@@ -1117,8 +1117,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 				   pwd, strlen(pwd),
 				   &password.data, &password.length)) {
 		DBG_WARNING("convert_string_talloc failed\n");
-		talloc_free(tmp_ctx);
-		return EINVAL;
+		code = EINVAL;
+		goto out;
 	}
 
 	status = samdb_kpasswd_change_password(tmp_ctx,
