@@ -75,6 +75,8 @@ static int sdb_salt_to_Salt(const struct sdb_salt *s, Salt *h)
 {
 	int ret;
 
+	ZERO_STRUCTP(h);
+
 	h->type = s->type;
 	ret = smb_krb5_copy_data_contents(&h->salt, s->salt.data, s->salt.length);
 	if (ret != 0) {
@@ -126,6 +128,8 @@ static int sdb_keys_to_Keys(const struct sdb_keys *s, Keys *h)
 {
 	int ret, i;
 
+	ZERO_STRUCTP(h);
+
 	h->len = s->len;
 	if (s->val != NULL) {
 		h->val = malloc(h->len * sizeof(Key));
@@ -176,6 +180,8 @@ static int sdb_event_to_Event(krb5_context context,
 			      const struct sdb_event *s, Event *h)
 {
 	int ret;
+
+	ZERO_STRUCTP(h);
 
 	if (s->principal != NULL) {
 		ret = krb5_copy_principal(context,
