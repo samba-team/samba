@@ -257,6 +257,7 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
                    ntlm=False,
                    spn=None,
                    allowed_rodc=None,
+                   additional_details=None,
                    cached=None):
         if cached is None:
             # Policies and silos are rarely reused between accounts.
@@ -282,6 +283,8 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
         if allowed_rodc:
             opts['allowed_replication_mock'] = True
             opts['revealed_to_mock_rodc'] = True
+        if additional_details is not None:
+            opts['additional_details'] = self.freeze(additional_details)
 
         if members:
             opts['member_of'] = members
