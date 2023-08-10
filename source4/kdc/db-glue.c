@@ -1055,6 +1055,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					       struct ldb_message *msg,
 					       struct sdb_entry *entry)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
 	uint32_t msDS_User_Account_Control_Computed;
@@ -1101,6 +1102,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	ZERO_STRUCTP(entry);
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
 	if (supported_enctypes == 0) {
 		supported_enctypes = default_supported_enctypes;
 	}
@@ -1125,7 +1131,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		is_computer = TRUE;
 	}
 
-	p = talloc_zero(mem_ctx, struct samba_kdc_entry);
+	p = talloc_zero(tmp_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
@@ -1200,7 +1206,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 */
 	if (krb5_princ_size(context, principal) > 2) {
 		char *third_part
-			= smb_krb5_principal_get_comp_string(mem_ctx,
+			= smb_krb5_principal_get_comp_string(tmp_ctx,
 							     context,
 							     principal,
 							     2);
@@ -1285,7 +1291,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		entry->flags.server = 1;
 
 		realm = smb_krb5_principal_get_realm(
-			mem_ctx, context, principal);
+			tmp_ctx, context, principal);
 		if (realm == NULL) {
 			ret = ENOMEM;
 			goto out;
@@ -1418,7 +1424,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	    (flags & SDB_F_FOR_AS_REQ) &&
 	    !(flags & SDB_F_ARMOR_PRINCIPAL))
 	{
-		ret = authn_policy_kerberos_client(kdc_db_ctx->samdb, mem_ctx, msg,
+		ret = authn_policy_kerberos_client(kdc_db_ctx->samdb, tmp_ctx, msg,
 						   &authn_client_policy);
 		if (ret) {
 			goto out;
@@ -1430,7 +1436,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * apply to it.
 	 */
 	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
-		ret = authn_policy_server(kdc_db_ctx->samdb, mem_ctx, msg,
+		ret = authn_policy_server(kdc_db_ctx->samdb, tmp_ctx, msg,
 					  &authn_server_policy);
 		if (ret) {
 			goto out;
@@ -1709,6 +1715,7 @@ out:
 		sdb_entry_free(entry);
 	}
 
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
@@ -1726,6 +1733,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       struct ldb_message *msg,
 					       struct sdb_entry *entry)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *our_realm = lpcfg_realm(lp_ctx);
 	char *partner_realm = NULL;
@@ -1764,6 +1772,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	ZERO_STRUCTP(entry);
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
 		/* If not told otherwise, Windows now assumes that trusts support AES. */
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
@@ -1788,7 +1801,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	supported_enctypes &= kdc_enctypes;
 	supported_session_etypes &= kdc_enctypes;
 
-	status = dsdb_trust_parse_tdo_info(mem_ctx, msg, &tdo);
+	status = dsdb_trust_parse_tdo_info(tmp_ctx, msg, &tdo);
 	if (!NT_STATUS_IS_OK(status)) {
 		krb5_clear_error_message(context);
 		ret = ENOMEM;
@@ -1825,7 +1838,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		ret = SDB_ERR_NOENTRY;
 		goto out;
 	}
-	partner_realm = strupper_talloc(mem_ctx, tdo->domain_name.string);
+	partner_realm = strupper_talloc(tmp_ctx, tdo->domain_name.string);
 	if (partner_realm == NULL) {
 		krb5_clear_error_message(context);
 		ret = ENOMEM;
@@ -1850,7 +1863,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
+	ndr_err = ndr_pull_struct_blob(password_val, tmp_ctx, &password_blob,
 				       (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		krb5_clear_error_message(context);
@@ -1858,7 +1871,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	p = talloc_zero(mem_ctx, struct samba_kdc_entry);
+	p = talloc_zero(tmp_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
@@ -2015,7 +2028,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 				break;
 			}
 
-			ok = convert_string_talloc(mem_ctx,
+			ok = convert_string_talloc(tmp_ctx,
 						   CH_UTF16MUNGED, CH_UTF8,
 						   password_utf16.data,
 						   password_utf16.length,
@@ -2174,6 +2187,7 @@ out:
 		sdb_entry_free(entry);
 	}
 
+	talloc_free(tmp_ctx);
 	return ret;
 
 }
