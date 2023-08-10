@@ -1680,7 +1680,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					     kdc_db_ctx->msg_ctx,
 					     kdc_db_ctx->ev_ctx,
 					     msg->dn);
-		return SDB_ERR_NOT_FOUND_HERE;
+		ret = SDB_ERR_NOT_FOUND_HERE;
+		goto out;
 	} else {
 		/*
 		 * oh, no password.  Apparently (comment in
