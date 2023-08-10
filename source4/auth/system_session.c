@@ -411,6 +411,10 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	bool ok;
+
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	nt_status = auth_anonymous_user_info_dc(mem_ctx,
 					       lpcfg_netbios_name(lp_ctx),
