@@ -678,7 +678,6 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			dump_data(0, sc_val->data, sc_val->length);
 			ret = EINVAL;
 			goto out;
 		}
