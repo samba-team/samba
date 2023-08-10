@@ -1701,12 +1701,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	p->client_policy = talloc_steal(p, authn_client_policy);
 	p->server_policy = talloc_steal(p, authn_server_policy);
 
+	talloc_steal(kdc_db_ctx, p);
+
 out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
 		sdb_entry_free(entry);
-	} else {
-		talloc_steal(kdc_db_ctx, p);
 	}
 
 	return ret;
@@ -2164,14 +2164,14 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	p->msg = talloc_steal(p, msg);
 
+	talloc_steal(kdc_db_ctx, p);
+
 out:
 	TALLOC_FREE(partner_realm);
 
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
 		sdb_entry_free(entry);
-	} else {
-		talloc_steal(kdc_db_ctx, p);
 	}
 
 	return ret;
