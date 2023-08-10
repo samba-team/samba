@@ -3680,14 +3680,18 @@ krb5_error_code dsdb_extract_aes_256_key(krb5_context context,
 						ENC_HMAC_SHA1_96_AES256,
 						&supported_enctypes);
 	if (krb5_ret != 0) {
+		const char *krb5_err = krb5_get_error_message(context, krb5_ret);
+
 		DBG_ERR("Failed to parse supplementalCredentials "
 			"of %s with %s kvno using "
 			"ENCTYPE_HMAC_SHA1_96_AES256 "
 			"Kerberos Key: %s\n",
 			ldb_dn_get_linearized(msg->dn),
 			(kvno != NULL) ? "previous" : "current",
-			krb5_get_error_message(context,
-					       krb5_ret));
+			krb5_err != NULL ? krb5_err : "<unknown>");
+
+		krb5_free_error_message(context, krb5_err);
+
 		return krb5_ret;
 	}
 
