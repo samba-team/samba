@@ -2992,7 +2992,7 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 	if (!mem_ctx) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "samba_kdc_seq: talloc_named() failed!");
-		return ret;
+		goto out;
 	}
 
 	while (priv->index < priv->count) {
