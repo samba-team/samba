@@ -1006,7 +1006,10 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t 
 _PUBLIC_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex)
 {
 	DATA_BLOB ret_blob = data_blob_talloc(mem_ctx, NULL, strlen(strhex)/2+1);
-
+	if (ret_blob.data == NULL) {
+		/* ret_blob.length is already 0 */
+		return ret_blob;
+	}
 	ret_blob.length = strhex_to_str((char *)ret_blob.data, ret_blob.length,
 					strhex,
 					strlen(strhex));
