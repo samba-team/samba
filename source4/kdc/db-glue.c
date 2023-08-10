@@ -1757,7 +1757,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct timeval tv;
 	NTTIME an_hour_ago;
 	uint32_t *auth_kvno;
-	bool preferr_current = false;
+	bool prefer_current = false;
 	bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 	uint32_t pa_supported_enctypes;
@@ -1921,7 +1921,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	 */
 
 	/*
-	 * Windows preferrs the previous key for one hour.
+	 * Windows prefers the previous key for one hour.
 	 */
 	tv = timeval_current();
 	if (tv.tv_sec > 3600) {
@@ -1936,7 +1936,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			&password_blob.current.array[i];
 
 		if (a->LastUpdateTime <= an_hour_ago) {
-			preferr_current = true;
+			prefer_current = true;
 		}
 
 		if (a->AuthType == TRUST_AUTH_TYPE_VERSION) {
@@ -1967,7 +1967,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		 * If not specified we use the lowest kvno
 		 * for the first hour after an update.
 		 */
-		if (preferr_current) {
+		if (prefer_current) {
 			use_previous = false;
 		} else if (previous_kvno < current_kvno) {
 			use_previous = true;
