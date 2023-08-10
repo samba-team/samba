@@ -2356,7 +2356,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	bool delegated_proxy_pac_is_trusted = flags & SAMBA_KDC_FLAG_DELEGATED_PROXY_IS_TRUSTED;
 	const DATA_BLOB *device_claims_blob = NULL;
 	DATA_BLOB *device_info_blob = NULL;
-	int is_tgs = false;
+	bool is_tgs = false;
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
@@ -2374,10 +2374,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		*status_out = NT_STATUS_OK;
 	}
 
-	is_tgs = smb_krb5_principal_is_tgs(context, server_principal);
-	if (is_tgs == -1) {
-		code = ENOMEM;
-		goto done;
+	{
+		int result = smb_krb5_principal_is_tgs(context, server_principal);
+		if (result == -1) {
+			code = ENOMEM;
+			goto done;
+		}
+
+		is_tgs = result;
 	}
 
 	/* Only include resource groups in a service ticket. */
