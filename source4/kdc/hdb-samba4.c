@@ -1119,7 +1119,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 
 	*db = talloc_zero(base_ctx, HDB);
 	if (!*db) {
-		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM, "talloc_zero: out of memory");
 		return NT_STATUS_NO_MEMORY;
 	}
 
