@@ -2524,7 +2524,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	 * Enforce the AllowedToAuthenticateTo part of an authentication policy,
 	 * if one is present.
 	 */
-	if (authn_policy_restrictions_present(server->server_policy)) {
+	if (!is_tgs && authn_policy_restrictions_present(server->server_policy)) {
 		const struct samba_kdc_entry *auth_entry = NULL;
 		struct auth_user_info_dc *auth_user_info_dc = NULL;
 
