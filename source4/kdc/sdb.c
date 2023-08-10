@@ -82,8 +82,13 @@ void sdb_entry_free(struct sdb_entry *s)
 	krb5_free_principal(NULL, s->principal);
 
 	sdb_keys_free(&s->keys);
+	SAFE_FREE(s->etypes);
 	sdb_keys_free(&s->old_keys);
 	sdb_keys_free(&s->older_keys);
+	if (s->session_etypes != NULL) {
+		SAFE_FREE(s->session_etypes->val);
+	}
+	SAFE_FREE(s->session_etypes);
 	krb5_free_principal(NULL, s->created_by.principal);
 	if (s->modified_by) {
 		krb5_free_principal(NULL, s->modified_by->principal);
@@ -91,6 +96,8 @@ void sdb_entry_free(struct sdb_entry *s)
 	SAFE_FREE(s->valid_start);
 	SAFE_FREE(s->valid_end);
 	SAFE_FREE(s->pw_end);
+	SAFE_FREE(s->max_life);
+	SAFE_FREE(s->max_renew);
 
 	ZERO_STRUCTP(s);
 }
@@ -138,6 +145,7 @@ krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s)
 
 		s->etypes->val = calloc(s->etypes->len, sizeof(*s->etypes->val));
 		if (s->etypes->val == NULL) {
+			SAFE_FREE(s->etypes);
 			return ENOMEM;
 		}
 
