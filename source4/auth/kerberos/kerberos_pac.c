@@ -400,7 +400,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 					 group_inclusion,
 					 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("make_user_info_dc_pac() failed -%s\n",
+		DBG_ERR("make_user_info_dc_pac() failed - %s\n",
 			nt_errstr(nt_status));
 		NDR_PRINT_DEBUG(PAC_LOGON_INFO, info.logon_info.info);
 		if (upn_dns_info != NULL) {
