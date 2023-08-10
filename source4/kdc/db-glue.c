@@ -1059,6 +1059,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	NTTIME acct_expiry;
 	NTSTATUS status;
 	bool protected_user = false;
+	struct dom_sid sid;
 	uint32_t rid;
 	bool is_krbtgt = false;
 	bool is_rodc = false;
@@ -1259,8 +1260,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	/* The lack of password controls etc applies to krbtgt by
 	 * virtue of being that particular RID */
-	status = dom_sid_split_rid(NULL, samdb_result_dom_sid(mem_ctx, msg, "objectSid"), NULL, &rid);
-
+	ret = samdb_result_dom_sid_buf(msg, "objectSid", &sid);
+	if (ret) {
+		goto out;
+	}
+	status = dom_sid_split_rid(NULL, &sid, NULL, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = EINVAL;
 		goto out;
