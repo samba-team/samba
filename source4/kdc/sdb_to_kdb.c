@@ -222,7 +222,7 @@ static void free_krb5_db_entry(krb5_context context,
 			for (j = 0; j < k->key_data[i].key_data_ver; j++) {
 				if (k->key_data[i].key_data_length[j] != 0) {
 					if (k->key_data[i].key_data_contents[j] != NULL) {
-						memset(k->key_data[i].key_data_contents[j], 0, k->key_data[i].key_data_length[j]);
+						BURN_PTR_SIZE(k->key_data[i].key_data_contents[j], k->key_data[i].key_data_length[j]);
 						free(k->key_data[i].key_data_contents[j]);
 					}
 				}
