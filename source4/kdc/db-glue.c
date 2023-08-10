@@ -108,6 +108,11 @@ static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx,
         }
 
         r.in.user_dn = ldb_dn_get_linearized(user_dn);
+        if (r.in.user_dn == NULL) {
+                DBG_WARNING("Unable to get user DN\n");
+                TALLOC_FREE(tmp_ctx);
+                return;
+        }
 
         /*
          * This seem to rely on the current IRPC implementation,
