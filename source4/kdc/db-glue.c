@@ -3042,7 +3042,6 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	char *realm;
 	struct ldb_result *res = NULL;
 	krb5_error_code ret;
-	TALLOC_CTX *mem_ctx;
 	int lret;
 
 	if (priv) {
@@ -3061,15 +3060,6 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	priv->msgs = NULL;
 	priv->realm_dn = ldb_get_default_basedn(ldb_ctx);
 	priv->count = 0;
-
-	mem_ctx = talloc_named(priv, 0, "samba_kdc_firstkey context");
-
-	if (!mem_ctx) {
-		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "samba_kdc_firstkey: talloc_named() failed!");
-		TALLOC_FREE(priv);
-		return ret;
-	}
 
 	ret = krb5_get_default_realm(context, &realm);
 	if (ret != 0) {
@@ -3099,8 +3089,6 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	if (ret != 0) {
 		TALLOC_FREE(priv);
 		kdc_db_ctx->seq_ctx = NULL;
-	} else {
-		talloc_free(mem_ctx);
 	}
 	return ret;
 }
