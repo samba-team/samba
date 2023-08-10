@@ -136,6 +136,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 	 */
 	skeys = sentry.keys;
 
+	code = EINVAL;
 	for (i = 0; i < skeys.len; i++) {
 		krb5_keyblock krbtgt_keyblock = skeys.val[i].key;
 
