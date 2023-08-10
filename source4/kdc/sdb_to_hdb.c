@@ -130,19 +130,20 @@ static int sdb_keys_to_Keys(const struct sdb_keys *s, Keys *h)
 
 	ZERO_STRUCTP(h);
 
-	h->len = s->len;
 	if (s->val != NULL) {
-		h->val = malloc(h->len * sizeof(Key));
+		h->val = malloc(s->len * sizeof(Key));
 		if (h->val == NULL) {
 			return ENOMEM;
 		}
-		for (i = 0; i < h->len; i++) {
+		for (i = 0; i < s->len; i++) {
 			ret = sdb_key_to_Key(&s->val[i],
 					     &h->val[i]);
 			if (ret != 0) {
 				free_Keys(h);
 				return ENOMEM;
 			}
+
+			++h->len;
 		}
 	} else {
 		h->val = NULL;
