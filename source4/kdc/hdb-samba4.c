@@ -178,7 +178,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 	ret = sdb_entry_to_hdb_entry(context, &sentry, entry);
 	sdb_entry_free(&sentry);
 
-	if (code != 0 && ret != 0) {
+	if (code == 0) {
 		code = ret;
 	}
 
