@@ -408,7 +408,7 @@ static void kdc_tcp_call_proxy_done(struct tevent_req *subreq)
 					   kdc_conn->send_queue,
 					   call->out_iov, 2);
 	if (subreq == NULL) {
-		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_proxy_done: "
 				"no memory for tstream_writev_queue_send");
 		return;
 	}
@@ -425,7 +425,7 @@ static void kdc_tcp_call_proxy_done(struct tevent_req *subreq)
 					    packet_full_request_u32,
 					    kdc_conn);
 	if (subreq == NULL) {
-		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_proxy_done: "
 				"no memory for tstream_read_pdu_blob_send");
 		return;
 	}
