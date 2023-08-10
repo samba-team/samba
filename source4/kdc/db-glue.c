@@ -1237,10 +1237,10 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			goto out;
 		}
 
-		entry->modified_by = (struct sdb_event *) malloc(sizeof(struct sdb_event));
+		entry->modified_by = calloc(1, sizeof(struct sdb_event));
 		if (entry->modified_by == NULL) {
 			ret = ENOMEM;
-			krb5_set_error_message(context, ret, "malloc: out of memory");
+			krb5_set_error_message(context, ret, "calloc: out of memory");
 			goto out;
 		}
 
