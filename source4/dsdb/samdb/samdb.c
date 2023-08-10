@@ -163,7 +163,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
 			       struct loadparm_context *lp_ctx,
 			       uint32_t num_sids,
-			       struct auth_SidAttr *sids,
+			       const struct auth_SidAttr *sids,
 			       uint32_t session_info_flags,
 			       struct security_token **token)
 {
