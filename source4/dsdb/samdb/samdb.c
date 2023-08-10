@@ -162,13 +162,13 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
 			       struct loadparm_context *lp_ctx,
-			       unsigned int num_sids,
+			       uint32_t num_sids,
 			       struct auth_SidAttr *sids,
 			       uint32_t session_info_flags,
 			       struct security_token **token)
 {
 	struct security_token *ptoken;
-	unsigned int i;
+	uint32_t i;
 	NTSTATUS status;
 
 	ptoken = security_token_initialise(mem_ctx);
@@ -183,7 +183,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken->num_sids = 0;
 
 	for (i = 0; i < num_sids; i++) {
-		size_t check_sid_idx;
+		uint32_t check_sid_idx;
 		for (check_sid_idx = 0;
 		     check_sid_idx < ptoken->num_sids;
 		     check_sid_idx++) {
