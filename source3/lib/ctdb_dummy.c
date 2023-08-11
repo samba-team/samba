@@ -114,6 +114,19 @@ int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
 	return ENOSYS;
 }
 
+int ctdbd_all_ip_foreach(struct ctdbd_connection *conn,
+			 bool include_node_ips,
+			 bool include_public_ips,
+			 int (*cb)(uint32_t total_ip_count,
+				   const struct sockaddr_storage *ip,
+				   uint32_t pinned_pnn,
+				   uint32_t current_pnn,
+				   void *private_data),
+			 void *private_data)
+{
+	return ENOSYS;
+}
+
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid, uint64_t unique_id)
 {

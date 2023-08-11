@@ -121,6 +121,15 @@ int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
 				      bool is_movable_ip,
 				      void *private_data),
 			    void *private_data);
+int ctdbd_all_ip_foreach(struct ctdbd_connection *conn,
+			 bool include_node_ips,
+			 bool include_public_ips,
+			 int (*cb)(uint32_t total_ip_count,
+				   const struct sockaddr_storage *ip,
+				   uint32_t pinned_pnn,
+				   uint32_t current_pnn,
+				   void *private_data),
+			 void *private_data);
 
 int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,

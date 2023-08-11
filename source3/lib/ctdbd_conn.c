@@ -38,6 +38,8 @@
 #include "lib/util/blocking.h"
 #include "ctdb/include/ctdb_protocol.h"
 #include "lib/async_req/async_sock.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "lib/dbwrap/dbwrap_rbt.h"
 
 /* paths to these include files come from --with-ctdb= in configure */
 
@@ -1505,6 +1507,265 @@ int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
 		ret = cb(ips->num,
 			 &tmp.u.ss,
 			 true, /* all ctdb public ips are movable */
+			 private_data);
+		if (ret != 0) {
+			goto out_free;
+		}
+	}
+
+	ret = 0;
+out_free:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static int count_ips(struct db_record *rec, void *private_data)
+{
+	return 0;
+}
+
+static int collect_ips(struct db_record *rec, void *private_data)
+{
+	struct ctdb_public_ip_list_old *ips = talloc_get_type_abort(
+		private_data, struct ctdb_public_ip_list_old);
+	struct ctdb_public_ip *ip;
+	TDB_DATA val = dbwrap_record_get_value(rec);
+
+	SMB_ASSERT(val.dsize == sizeof(*ip));
+
+	ip = (struct ctdb_public_ip *)val.dptr;
+	ips->ips[ips->num] = *ip;
+	ips->num += 1;
+
+	return 0;
+}
+
+static int ctdbd_control_get_all_public_ips(struct ctdbd_connection *conn,
+					    const struct ctdb_node_map_old *nodemap,
+					    TALLOC_CTX *mem_ctx,
+					    struct ctdb_public_ip_list_old **_ips)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	uint32_t ni;
+	struct ctdb_public_ip_list_old *ips = NULL;
+	struct db_context *rbt = NULL;
+	NTSTATUS status;
+	size_t len;
+	int ret;
+	int count;
+
+	rbt = db_open_rbt(frame);
+	if (rbt == NULL) {
+		DBG_WARNING("db_open_rbt() failed\n");
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	for (ni=0; ni < nodemap->num; ni++) {
+		const struct ctdb_node_and_flags *n = &nodemap->nodes[ni];
+		uint32_t j;
+
+		if (n->flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		ret = ctdbd_control_get_public_ips(conn,
+						   n->pnn,
+						   0,
+						   frame,
+						   &ips);
+		if (ret != 0) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+
+		for (j=0; j<ips->num; j++) {
+			struct ctdb_public_ip ip;
+			TDB_DATA key;
+			TDB_DATA val;
+
+			ip.pnn = ips->ips[j].pnn;
+			ip.addr = ips->ips[j].addr;
+
+			key = make_tdb_data((uint8_t *)&ip.addr, sizeof(ip.addr));
+			val = make_tdb_data((uint8_t *)&ip, sizeof(ip));
+
+			if (n->pnn == ip.pnn) {
+				/*
+				 * Node claims IP is hosted on it, so
+				 * save that information
+				 */
+				status = dbwrap_store(rbt, key, val,
+						      TDB_REPLACE);
+				if (!NT_STATUS_IS_OK(status)) {
+					TALLOC_FREE(frame);
+					return -1;
+				}
+			} else {
+				/*
+				 * Node thinks IP is hosted elsewhere,
+				 * so overwrite with CTDB_UNKNOWN_PNN
+				 * if there's no existing entry
+				 */
+				bool exists = dbwrap_exists(rbt, key);
+				if (!exists) {
+					ip.pnn = CTDB_UNKNOWN_PNN;
+					status = dbwrap_store(rbt, key, val,
+							      TDB_INSERT);
+					if (!NT_STATUS_IS_OK(status)) {
+						TALLOC_FREE(frame);
+						return -1;
+					}
+				}
+			}
+		}
+
+		TALLOC_FREE(ips);
+	}
+
+	status = dbwrap_traverse_read(rbt, count_ips, NULL, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	len = offsetof(struct ctdb_public_ip_list_old, ips) +
+		       count*sizeof(struct ctdb_public_ip);
+	ips = talloc_zero_size(mem_ctx, len);
+	if (ips == NULL) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	talloc_set_type(ips, struct ctdb_public_ip_list_old);
+	talloc_reparent(mem_ctx, frame, ips);
+
+	status = dbwrap_traverse_read(rbt, collect_ips, ips, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if ((unsigned int)count != ips->num) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	*_ips = talloc_move(mem_ctx, &ips);
+	TALLOC_FREE(frame);
+	return 0;
+}
+
+/*
+ * This includes all node and/or public ips
+ * of the whole cluster.
+ *
+ * node ips have:
+ * - a valid pinned_pnn value.
+ * - current_pnn is valid if the node is healthy
+ *
+ * public ips have:
+ * - pinned_pnn as CTDB_UNKNOWN_PNN
+ * - current_pnn is valid if a node healthy and hosting this ip.
+ */
+int ctdbd_all_ip_foreach(struct ctdbd_connection *conn,
+			 bool include_node_ips,
+			 bool include_public_ips,
+			 int (*cb)(uint32_t total_ip_count,
+				   const struct sockaddr_storage *ip,
+				   uint32_t pinned_pnn,
+				   uint32_t current_pnn,
+				   void *private_data),
+			 void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ctdb_node_map_old *nodemap = NULL;
+	struct ctdb_public_ip_list_old *ips = NULL;
+	int ret = ENOMEM;
+	uint32_t total_ip_count = 0;
+	uint32_t i;
+
+	ret = ctdbd_control_get_nodemap(conn, frame, &nodemap);
+	if (ret != 0) {
+		DBG_WARNING("ctdbd_control_get_nodemap() failed: %s\n", strerror(ret));
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	for (i=0; include_node_ips && i < nodemap->num; i++) {
+		const struct ctdb_node_and_flags *n = &nodemap->nodes[i];
+
+		if (n->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
+		total_ip_count += 1;
+	}
+
+	if (include_public_ips) {
+		ret = ctdbd_control_get_all_public_ips(conn, nodemap,
+						       frame, &ips);
+		if (ret < 0) {
+			ret = EIO;
+			goto out_free;
+		}
+
+		total_ip_count += ips->num;
+	}
+
+	for (i=0; include_node_ips && i < nodemap->num; i++) {
+		const struct ctdb_node_and_flags *n = &nodemap->nodes[i];
+		struct samba_sockaddr tmp = ctdbd_sock_addr_to_samba(&n->addr);
+		uint32_t pinned_pnn = n->pnn;
+		uint32_t current_pnn = n->pnn;
+
+		if (n->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
+		if (n->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED)) {
+			/*
+			 * The ip address is not available
+			 * unless the node is up and
+			 * healthy.
+			 */
+			current_pnn = CTDB_UNKNOWN_PNN;
+		}
+
+		ret = cb(total_ip_count,
+			 &tmp.u.ss,
+			 pinned_pnn,
+			 current_pnn,
+			 private_data);
+		if (ret != 0) {
+			goto out_free;
+		}
+	}
+
+	for (i=0; include_public_ips && i < ips->num; i++) {
+		const ctdb_sock_addr *addr = &ips->ips[i].addr;
+		struct samba_sockaddr tmp = ctdbd_sock_addr_to_samba(addr);
+		/* all ctdb public ips are movable and not pinned */
+		uint32_t pinned_pnn = CTDB_UNKNOWN_PNN;
+		uint32_t current_pnn = ips->ips[i].pnn;
+		uint32_t ni;
+
+		for (ni=0; ni < nodemap->num; ni++) {
+			const struct ctdb_node_and_flags *n = &nodemap->nodes[ni];
+
+			if (n->pnn != current_pnn) {
+				continue;
+			}
+
+			if (n->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED)) {
+				current_pnn = CTDB_UNKNOWN_PNN;
+			}
+			break;
+		}
+
+		ret = cb(total_ip_count,
+			 &tmp.u.ss,
+			 pinned_pnn,
+			 current_pnn,
 			 private_data);
 		if (ret != 0) {
 			goto out_free;
