@@ -161,7 +161,7 @@ void reply_sends(struct smb_request *req)
 		return;
 	}
 
-	state = talloc(talloc_tos(), struct msg_state);
+	state = talloc_zero(talloc_tos(), struct msg_state);
 
 	p = req->buf + 1;
 	p += srvstr_pull_req_talloc(
