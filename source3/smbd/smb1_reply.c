@@ -5005,6 +5005,7 @@ static void reply_exit_done(struct tevent_req *req)
 		reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
 		smb_request_done(smb1req);
 		END_PROFILE(SMBexit);
+		return;
 	}
 
 	/*
@@ -5044,6 +5045,7 @@ static void reply_exit_done(struct tevent_req *req)
 			reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
 			smb_request_done(smb1req);
 			END_PROFILE(SMBexit);
+			return;
 		}
 		close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
 	}
