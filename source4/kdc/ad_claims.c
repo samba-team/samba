@@ -673,8 +673,7 @@ static uint32_t claim_get_value_count(const struct CLAIM_ENTRY *claim)
 	return 0;
 }
 
-static NTSTATUS encode_claims_set(struct ldb_context *ldb,
-				  TALLOC_CTX *mem_ctx,
+static NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
 				  struct CLAIMS_SET *claims_set,
 				  DATA_BLOB *claims_blob)
 {
@@ -1233,7 +1232,7 @@ static int get_all_claims(struct ldb_context *ldb,
 	}
 
 	/* Encode the claims ready to go into a PAC buffer. */
-	status = encode_claims_set(ldb, mem_ctx, &claims_set, claims_blob);
+	status = encode_claims_set(mem_ctx, &claims_set, claims_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 	}
