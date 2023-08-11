@@ -1393,6 +1393,7 @@ void ctdbd_passed_ips(struct ctdbd_connection *conn,
 }
 
 static int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
+					uint32_t vnn,
 					uint32_t flags,
 					TALLOC_CTX *mem_ctx,
 					struct ctdb_public_ip_list_old **_ips)
@@ -1406,14 +1407,15 @@ static int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
 
 	*_ips = NULL;
 
-	ret = ctdbd_control_local(conn,
-				  CTDB_CONTROL_GET_PUBLIC_IPS,
-				  0, /* srvid */
-				  flags,
-				  tdb_null, /* indata */
-				  mem_ctx,
-				  &outdata,
-				  &cstatus);
+	ret = ctdbd_control(conn,
+			    vnn,
+			    CTDB_CONTROL_GET_PUBLIC_IPS,
+			    0, /* srvid */
+			    flags,
+			    tdb_null, /* indata */
+			    mem_ctx,
+			    &outdata,
+			    &cstatus);
 	if (ret != 0 || cstatus != 0) {
 		DBG_ERR("ctdb_control for getpublicips failed ret:%d cstatus:%d\n",
 			ret, (int)cstatus);
@@ -1476,7 +1478,7 @@ int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
 	int ret = ENOMEM;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	ret = ctdbd_control_get_public_ips(conn, 0, frame, &ips);
+	ret = ctdbd_control_get_public_ips(conn, CTDB_CURRENT_NODE, 0, frame, &ips);
 	if (ret < 0) {
 		ret = EIO;
 		goto out_free;
