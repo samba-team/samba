@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+"""USAGE: $ ./export-sddl-fuzz-seeds-as-json DIR [DIR[...]] > x.json
+
+Some of our fuzzers generate SDDL strings with trailing garbage.
+
+This script converts them into the JSON format used by
+windws-sddl-tests.py, though it doesn't parse the SDDL, mapping all
+strings to an empty list. The idea is you can feed this through
+windws-sddl-tests.py or something else to get the correct bytes.
+
+Valid and invalid strings are treated alike, so long as they are
+utf-8. The JSON is un-indented, but structurally equivalent to this:
+
+{
+   "D:P" : [],
+   "yertle" : [],
+   "ł\n¼" : [],
+}
+"""
+from pathlib import Path
+import sys
+import json
+
+
+def main():
+    if {'-h', '--help'}.intersection(sys.argv) or len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(len(sys.argv) < 2)
+
+    bytes_json = {}
+    for arg in sys.argv[1:]:
+        d = Path(arg)
+        for fn in d.iterdir():
+            with fn.open("rb") as f:
+                b = f.read()
+            # the SDDL string is the nul-terminated portion.
+            if 0 in b:
+                b = b[:b.index(0)]
+            try:
+                s = b.decode()
+            except UnicodeDecodeError:
+                continue
+            bytes_json[s] = []
+
+    out = json.dumps(bytes_json)
+    print(out)
+
+
+main()
