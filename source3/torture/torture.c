@@ -14645,6 +14645,182 @@ static bool run_local_canonicalize_path(int dummy)
 	}
 	return true;
 }
+struct session_setup_nt1_truncated_state {
+	uint16_t vwv[13];
+	uint8_t bytes[20];
+};
+
+static void smb1_session_setup_nt1_truncated_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb1_session_setup_nt1_truncated_send(
+		TALLOC_CTX *mem_ctx,
+		struct tevent_context *ev,
+		struct smbXcli_conn *conn)
+{
+	uint16_t *vwv = NULL;
+	uint8_t *bytes = NULL;
+	const char *pass = "12345678";
+	const char *uname = "z";
+	struct session_setup_nt1_truncated_state *state = NULL;
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx,
+				&state,
+				struct session_setup_nt1_truncated_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	vwv = &state->vwv[0];
+	bytes = &state->bytes[0];
+
+	SCVAL(vwv+0,  0, 0xff);
+	SCVAL(vwv+0,  1, 0);
+	SSVAL(vwv+1,  0, 0);
+	SSVAL(vwv+2,  0, 8192);
+	SSVAL(vwv+3,  0, 2);
+	SSVAL(vwv+4,  0, 1);
+	SIVAL(vwv+5,  0, 0);
+	SSVAL(vwv+7,  0, strlen(pass)); /* OEMPasswordLen */
+	SSVAL(vwv+8,  0, 0); /* UnicodePasswordLen */
+	SSVAL(vwv+9,  0, 0); /* reserved */
+	SSVAL(vwv+10, 0, 0); /* reserved */
+	SIVAL(vwv+11, 0, CAP_STATUS32);
+
+	memcpy(bytes, pass, strlen(pass));
+	bytes += strlen(pass);
+	memcpy(bytes, uname, strlen(uname)+1);
+
+	subreq = smb1cli_req_send(state, ev, conn,
+				  SMBsesssetupX,
+				  0, /*  additional_flags */
+				  0, /*  clear_flags */
+				  0, /*  additional_flags2 */
+				  0, /*  clear_flags2 */
+				  10000, /* timeout_msec */
+				  getpid(),
+				  NULL, /* tcon */
+				  NULL, /* session */
+				  13, /* wct */
+				  state->vwv,
+				  strlen(pass), /* Truncate length at password. */
+				  state->bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				smb1_session_setup_nt1_truncated_done,
+				req);
+	return req;
+}
+
+static void smb1_session_setup_nt1_truncated_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct session_setup_nt1_truncated_state *state =
+		tevent_req_data(req,
+		struct session_setup_nt1_truncated_state);
+	NTSTATUS status;
+	struct smb1cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.wct    = 3,
+	},
+	};
+
+	status = smb1cli_req_recv(subreq, state,
+				  NULL,
+				  NULL,
+				  NULL,
+				  NULL,
+				  NULL, /* pvwv_offset */
+				  NULL,
+				  NULL,
+				  NULL, /* pbytes_offset */
+				  NULL,
+				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS smb1_session_setup_nt1_truncated_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool run_smb1_truncated_sesssetup(int dummy)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	struct smbXcli_conn *conn;
+	struct sockaddr_storage ss;
+	NTSTATUS status;
+	int fd;
+	bool ok;
+
+	printf("Starting send truncated SMB1 sesssetup.\n");
+
+	ok = resolve_name(host, &ss, 0x20, true);
+	if (!ok) {
+		d_fprintf(stderr, "Could not resolve name %s\n", host);
+		return false;
+	}
+
+	status = open_socket_out(&ss, 445, 10000, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "open_socket_out failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
+				   NULL, 0, NULL);
+	if (conn == NULL) {
+		d_fprintf(stderr, "smbXcli_conn_create failed\n");
+		return false;
+	}
+
+	status = smbXcli_negprot(conn, 0, PROTOCOL_NT1, PROTOCOL_NT1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "smbXcli_negprot failed!\n");
+		return false;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		return false;
+	}
+
+	req = smb1_session_setup_nt1_truncated_send(ev, ev, conn);
+	if (req == NULL) {
+		d_fprintf(stderr, "smb1_session_setup_nt1_truncated_send failed\n");
+		return false;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr, "tevent_req_poll failed with status %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = smb1_session_setup_nt1_truncated_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "smb1_session_setup_nt1_truncated_recv returned "
+			  "%s, expected NT_STATUS_OK\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	TALLOC_FREE(conn);
+	return true;
+}
 
 static bool run_ign_bad_negprot(int dummy)
 {
@@ -14720,6 +14896,7 @@ static bool run_ign_bad_negprot(int dummy)
 
 	return true;
 }
+
 
 static double create_procs(bool (*fn)(int), bool *result)
 {
@@ -15372,6 +15549,10 @@ static struct {
 	{
 		.name  = "OPLOCK-CANCEL",
 		.fn    = run_oplock_cancel,
+	},
+	{
+		.name  = "SMB1-TRUNCATED-SESSSETUP",
+		.fn    = run_smb1_truncated_sesssetup,
 	},
 	{
 		.name  = "PIDHIGH",
