@@ -1121,10 +1121,10 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = get_claims_for_principal(p->kdc_db_ctx->samdb,
-				       mem_ctx,
-				       p->msg,
-				       claims_blob);
+	ret = get_claims_blob_for_principal(p->kdc_db_ctx->samdb,
+					    mem_ctx,
+					    p->msg,
+					    claims_blob);
 	if (ret != LDB_SUCCESS) {
 		nt_status = dsdb_ldb_err_to_ntstatus(ret);
 		DBG_ERR("Building claims failed: %s\n",

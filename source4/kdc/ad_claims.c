@@ -1257,10 +1257,10 @@ static int get_all_claims(struct ldb_context *ldb,
 	return ret;
 }
 
-int get_claims_for_principal(struct ldb_context *ldb,
-			     TALLOC_CTX *mem_ctx,
-			     const struct ldb_message *principal,
-			     DATA_BLOB *claims_blob)
+int get_claims_blob_for_principal(struct ldb_context *ldb,
+				  TALLOC_CTX *mem_ctx,
+				  const struct ldb_message *principal,
+				  DATA_BLOB *claims_blob)
 {
 	struct ldb_message_element *principal_class_el = NULL;
 	struct dsdb_schema *schema = NULL;

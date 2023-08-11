@@ -26,9 +26,9 @@
 
 bool ad_claims_are_issued(struct ldb_context *samdb);
 
-int get_claims_for_principal(struct ldb_context *ldb,
-			     TALLOC_CTX *mem_ctx,
-			     const struct ldb_message *principal,
-			     DATA_BLOB *claims_blob);
+int get_claims_blob_for_principal(struct ldb_context *ldb,
+				  TALLOC_CTX *mem_ctx,
+				  const struct ldb_message *principal,
+				  DATA_BLOB *claims_blob);
 
 #endif
