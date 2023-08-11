@@ -241,7 +241,8 @@ def getca(ca, url, trust_dir):
         certs = load_der_pkcs7_certificates(r.content)
         for i in range(0, len(certs)):
             cert = certs[i].public_bytes(Encoding.PEM)
-            dest = '%s.%d' % (root_cert, i)
+            filename, extension = root_cert.rsplit('.', 1)
+            dest = '%s.%d.%s' % (filename, i, extension)
             with open(dest, 'wb') as w:
                 w.write(cert)
             root_certs.append(dest)
