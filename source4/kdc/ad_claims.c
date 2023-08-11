@@ -1260,13 +1260,13 @@ static int get_all_claims(struct ldb_context *ldb,
 int get_claims_blob_for_principal(struct ldb_context *ldb,
 				  TALLOC_CTX *mem_ctx,
 				  const struct ldb_message *principal,
-				  DATA_BLOB *claims_blob)
+				  DATA_BLOB *claims_blob_out)
 {
 	struct ldb_message_element *principal_class_el = NULL;
 	struct dsdb_schema *schema = NULL;
 	const struct dsdb_class *principal_class = NULL;
 
-	*claims_blob = data_blob_null;
+	*claims_blob_out = data_blob_null;
 
 	if (!ad_claims_are_issued(ldb)) {
 		return LDB_SUCCESS;
@@ -1292,5 +1292,5 @@ int get_claims_blob_for_principal(struct ldb_context *ldb,
 			      mem_ctx,
 			      principal,
 			      principal_class->governsID_id,
-			      claims_blob);
+			      claims_blob_out);
 }
