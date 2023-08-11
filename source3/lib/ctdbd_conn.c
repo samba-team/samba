@@ -296,30 +296,44 @@ static int get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 	return ret;
 }
 
+static int ctdbd_control_get_nodemap(struct ctdbd_connection *conn,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_node_map_old **_nodemap)
+{
+	int32_t cstatus=-1;
+	TDB_DATA outdata = {0};
+	int ret;
+
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_GET_NODEMAP, 0, 0,
+				  tdb_null, mem_ctx, &outdata, &cstatus);
+	if (ret != 0) {
+		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
+		return ret;
+	}
+	if ((cstatus != 0) || (outdata.dptr == NULL)) {
+		DEBUG(2, ("Received invalid ctdb data\n"));
+		return EINVAL;
+	}
+
+	*_nodemap = (struct ctdb_node_map_old *)outdata.dptr;
+	return 0;
+}
+
 /*
  * Are we active (i.e. not banned or stopped?)
  */
 static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 {
-	int32_t cstatus=-1;
-	TDB_DATA outdata = {0};
-	struct ctdb_node_map_old *m;
+	struct ctdb_node_map_old *m = NULL;
 	bool ok = false;
 	uint32_t i;
 	int ret;
 
-	ret = ctdbd_control_local(conn, CTDB_CONTROL_GET_NODEMAP, 0, 0,
-				  tdb_null, talloc_tos(), &outdata, &cstatus);
+	ret = ctdbd_control_get_nodemap(conn, talloc_tos(), &m);
 	if (ret != 0) {
-		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
+		DEBUG(1, ("ctdbd_control_get_nodemap() failed: %s\n", strerror(ret)));
 		return false;
 	}
-	if ((cstatus != 0) || (outdata.dptr == NULL)) {
-		DEBUG(2, ("Received invalid ctdb data\n"));
-		goto fail;
-	}
-
-	m = (struct ctdb_node_map_old *)outdata.dptr;
 
 	for (i=0; i<m->num; i++) {
 		if (vnn == m->nodes[i].pnn) {
@@ -341,7 +355,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 
 	ok = true;
 fail:
-	TALLOC_FREE(outdata.dptr);
+	TALLOC_FREE(m);
 	return ok;
 }
 
