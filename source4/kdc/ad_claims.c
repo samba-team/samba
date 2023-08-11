@@ -673,10 +673,10 @@ static uint32_t claim_get_value_count(const struct CLAIM_ENTRY *claim)
 	return 0;
 }
 
-static int encode_claims_set(struct ldb_context *ldb,
-			     TALLOC_CTX *mem_ctx,
-			     struct CLAIMS_SET *claims_set,
-			     DATA_BLOB *claims_blob)
+static NTSTATUS encode_claims_set(struct ldb_context *ldb,
+				  TALLOC_CTX *mem_ctx,
+				  struct CLAIMS_SET *claims_set,
+				  DATA_BLOB *claims_blob)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 	enum ndr_err_code ndr_err;
@@ -686,25 +686,25 @@ static int encode_claims_set(struct ldb_context *ldb,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
-		return ldb_oom(ldb);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	metadata_ndr = talloc_zero(tmp_ctx, struct CLAIMS_SET_METADATA_NDR);
 	if (metadata_ndr == NULL) {
 		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	metadata = talloc_zero(metadata_ndr, struct CLAIMS_SET_METADATA);
 	if (metadata == NULL) {
 		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	claims_set_info = talloc_zero(metadata, struct CLAIMS_SET_NDR);
 	if (claims_set_info == NULL) {
 		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	metadata_ndr->claims.metadata = metadata;
@@ -722,11 +722,11 @@ static int encode_claims_set(struct ldb_context *ldb,
 			nt_errstr(nt_status));
 
 		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
+		return nt_status;
 	}
 
 	talloc_free(tmp_ctx);
-	return LDB_SUCCESS;
+	return NT_STATUS_OK;
 }
 
 static bool is_schema_dn(struct ldb_dn *dn,
@@ -794,6 +794,7 @@ static int get_all_claims(struct ldb_context *ldb,
 	struct ldb_dn *claim_types_child = NULL;
 	struct ldb_dn *config_dn = ldb_get_config_basedn(ldb);
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
+	NTSTATUS status;
 	bool ok;
 	int ret;
 	struct ldb_result *res = NULL;
@@ -1232,7 +1233,10 @@ static int get_all_claims(struct ldb_context *ldb,
 	}
 
 	/* Encode the claims ready to go into a PAC buffer. */
-	ret = encode_claims_set(ldb, mem_ctx, &claims_set, claims_blob);
+	status = encode_claims_set(ldb, mem_ctx, &claims_set, claims_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	talloc_free(tmp_ctx);
 	return ret;
