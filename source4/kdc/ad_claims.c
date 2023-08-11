@@ -689,6 +689,10 @@ static NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
 	struct CLAIMS_SET_METADATA *metadata = NULL;
 	struct CLAIMS_SET_METADATA_NDR *metadata_ndr = NULL;
 
+	if (claims_blob == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_3;
+	}
+
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
