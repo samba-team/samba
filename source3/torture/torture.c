@@ -14822,6 +14822,183 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 	return true;
 }
 
+struct smb1_negotiate_exit_state {
+	int dummy;
+};
+
+static void smb1_negotiate_exit_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb1_negotiate_exit_send(
+		TALLOC_CTX *mem_ctx,
+		struct tevent_context *ev,
+		struct smbXcli_conn *conn)
+{
+	struct smb1_negotiate_exit_state *state = NULL;
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx,
+				&state,
+				struct smb1_negotiate_exit_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	subreq = smb1cli_req_send(state, ev, conn,
+				  SMBexit,
+				  0, /*  additional_flags */
+				  0, /*  clear_flags */
+				  0, /*  additional_flags2 */
+				  0, /*  clear_flags2 */
+				  10000, /* timeout_msec */
+				  getpid(),
+				  NULL, /* tcon */
+				  NULL, /* session */
+				  0, /* wct */
+				  NULL,
+				  0,
+				  NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				smb1_negotiate_exit_done,
+				req);
+	return req;
+}
+
+static void smb1_negotiate_exit_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smb1_negotiate_exit_state *state =
+		tevent_req_data(req,
+		struct smb1_negotiate_exit_state);
+	NTSTATUS status;
+	struct smb1cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.wct    = 0,
+	},
+	};
+
+	status = smb1cli_req_recv(subreq, state,
+				  NULL,
+				  NULL,
+				  NULL,
+				  NULL,
+				  NULL, /* pvwv_offset */
+				  NULL,
+				  NULL,
+				  NULL, /* pbytes_offset */
+				  NULL,
+				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS smb1_negotiate_exit_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool do_smb1_exit(TALLOC_CTX *mem_ctx,
+			 struct tevent_context *ev,
+			 struct smbXcli_conn *conn)
+{
+	struct tevent_req *req;
+	bool ok;
+	NTSTATUS status;
+	NTSTATUS expected_status = NT_STATUS_DOS(ERRSRV, ERRinvnid);;
+
+	req = smb1_negotiate_exit_send(ev, ev, conn);
+	if (req == NULL) {
+		d_fprintf(stderr, "smb1_negotiate_exit_send failed\n");
+		return false;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr, "tevent_req_poll failed with status %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = smb1_negotiate_exit_recv(req);
+	if (!NT_STATUS_EQUAL(status, expected_status)) {
+		d_fprintf(stderr, "smb1_negotiate_exit_recv returned "
+			  "%s, expected ERRSRV, ERRinvnid\n",
+			  nt_errstr(status));
+		return false;
+	}
+	return true;
+}
+
+static bool run_smb1_negotiate_exit(int dummy)
+{
+	struct tevent_context *ev;
+	struct smbXcli_conn *conn;
+	struct sockaddr_storage ss;
+	NTSTATUS status;
+	int fd;
+	bool ok;
+
+	printf("Starting send SMB1 negotiate+exit.\n");
+
+	ok = resolve_name(host, &ss, 0x20, true);
+	if (!ok) {
+		d_fprintf(stderr, "Could not resolve name %s\n", host);
+		return false;
+	}
+
+	status = open_socket_out(&ss, 445, 10000, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "open_socket_out failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
+				   NULL, 0, NULL);
+	if (conn == NULL) {
+		d_fprintf(stderr, "smbXcli_conn_create failed\n");
+		return false;
+	}
+
+	status = smbXcli_negprot(conn, 0, PROTOCOL_NT1, PROTOCOL_NT1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "smbXcli_negprot failed!\n");
+		return false;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		return false;
+	}
+
+	/*
+	 * Call do_smb1_exit twice to catch a server crash, the
+	 * server sends the first return code then crashes.
+	 */
+	ok = do_smb1_exit(ev, ev, conn);
+	if (!ok) {
+		d_fprintf(stderr, "do_smb1_exit (1) failed\n");
+		return false;
+	}
+	ok = do_smb1_exit(ev, ev, conn);
+	if (!ok) {
+		d_fprintf(stderr, "do_smb1_exit (2) failed\n");
+		return false;
+	}
+
+	TALLOC_FREE(conn);
+	return true;
+}
+
 static bool run_ign_bad_negprot(int dummy)
 {
 	struct tevent_context *ev;
@@ -15553,6 +15730,10 @@ static struct {
 	{
 		.name  = "SMB1-TRUNCATED-SESSSETUP",
 		.fn    = run_smb1_truncated_sesssetup,
+	},
+	{
+		.name  = "SMB1-NEGOTIATE-EXIT",
+		.fn    = run_smb1_negotiate_exit,
 	},
 	{
 		.name  = "SMB1-DFS-PATHS",
