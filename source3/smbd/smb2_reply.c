@@ -517,6 +517,7 @@ size_t srvstr_pull_req_talloc(TALLOC_CTX *ctx, struct smb_request *req,
 	ssize_t bufrem = smbreq_bufrem(req, src);
 
 	if (bufrem == 0) {
+		*dest = NULL;
 		return 0;
 	}
 
