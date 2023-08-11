@@ -581,7 +581,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct reply_sesssetup_and_X_state *state = NULL;
 	uint64_t sess_vuid;
 	uint16_t smb_bufsize;
-	char *tmp;
+	char *tmp = (char *)0xDEADBEEF;
 	fstring sub_user; /* Sanitised username for substitution */
 	const char *native_os;
 	const char *native_lanman;
