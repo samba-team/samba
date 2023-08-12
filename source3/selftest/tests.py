@@ -239,6 +239,17 @@ plantestsuite("samba3.smbtorture_s3.smb1.SMB1-NEGOTIATE-EXIT",
                 smbtorture3,
                 "-mNT1"])
 
+plantestsuite("samba3.smbtorture_s3.smb1.SMB1-NEGOTIATE-TCON",
+                "fileserver_smb1",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB1-NEGOTIATE-TCON',
+                '//$SERVER_IP/tmp',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "-mNT1"])
+
 #
 # MSDFS attribute tests.
 #
