@@ -764,6 +764,8 @@ bool init_smb1_request(struct smb_request *req,
 		return false;
 	}
 
+	*req = (struct smb_request) { .cmd = 0};
+
 	req->request_time = timeval_current();
 	now = timeval_to_nttime(&req->request_time);
 
@@ -782,18 +784,13 @@ bool init_smb1_request(struct smb_request *req,
 	req->encrypted = encrypted;
 	req->sconn = sconn;
 	req->xconn = xconn;
-	req->conn = NULL;
 	if (xconn != NULL) {
 		status = smb1srv_tcon_lookup(xconn, req->tid, now, &tcon);
 		if (NT_STATUS_IS_OK(status)) {
 			req->conn = tcon->compat;
 		}
 	}
-	req->chain_fsp = NULL;
-	req->smb2req = NULL;
-	req->chain = NULL;
 	req->posix_pathnames = lp_posix_pathnames();
-	req->session = (void *)0xDEADBEEF;
 	smb_init_perfcount_data(&req->pcd);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
@@ -813,7 +810,6 @@ bool init_smb1_request(struct smb_request *req,
 		return false;
 	}
 
-	req->outbuf = NULL;
 	return true;
 }
 
