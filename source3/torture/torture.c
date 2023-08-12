@@ -14999,6 +14999,42 @@ static bool run_smb1_negotiate_exit(int dummy)
 	return true;
 }
 
+static bool run_smb1_negotiate_tcon(int dummy)
+{
+	struct cli_state *cli = NULL;
+	uint16_t cnum = 0;
+	uint16_t max_xmit = 0;
+	NTSTATUS status;
+
+	printf("Starting send SMB1 negotiate+tcon.\n");
+	cli = open_nbt_connection();
+	if (cli == NULL) {
+		d_fprintf(stderr, "open_nbt_connection failed!\n");
+		return false;
+	}
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = smbXcli_negprot(cli->conn, 0, PROTOCOL_NT1, PROTOCOL_NT1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "smbXcli_negprot failed %s!\n",
+			nt_errstr(status));
+		return false;
+	}
+        status = cli_raw_tcon(cli,
+			      share,
+			      "",
+			      "?????",
+			      &max_xmit,
+			      &cnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		d_fprintf(stderr, "cli_raw_tcon failed - got %s "
+			"(should get NT_STATUS_ACCESS_DENIED)!\n",
+			nt_errstr(status));
+		return false;
+	}
+	return true;
+}
+
 static bool run_ign_bad_negprot(int dummy)
 {
 	struct tevent_context *ev;
@@ -15734,6 +15770,10 @@ static struct {
 	{
 		.name  = "SMB1-NEGOTIATE-EXIT",
 		.fn    = run_smb1_negotiate_exit,
+	},
+	{
+		.name  = "SMB1-NEGOTIATE-TCON",
+		.fn    = run_smb1_negotiate_tcon,
 	},
 	{
 		.name  = "PIDHIGH",
