@@ -67,23 +67,23 @@ static int hnd_cnt_destructor(struct hnd_cnt *cnt)
 	return 0;
 }
 
-bool create_policy_hnd(struct pipes_struct *p,
-		       struct policy_handle *hnd,
-		       uint8_t handle_type,
-		       void *data_ptr)
+void *create_policy_hnd(struct pipes_struct *p,
+		        struct policy_handle *hnd,
+		        uint8_t handle_type,
+		        void *data_ptr)
 {
 	struct dcesrv_handle *rpc_hnd = NULL;
 	struct hnd_cnt *cnt = NULL;
 
 	rpc_hnd = dcesrv_handle_create(p->dce_call, handle_type);
 	if (rpc_hnd == NULL) {
-		return false;
+		return NULL;
 	}
 
 	cnt = talloc_zero(rpc_hnd, struct hnd_cnt);
 	if (cnt == NULL) {
 		TALLOC_FREE(rpc_hnd);
-		return false;
+		return NULL;
 	}
 	talloc_set_destructor(cnt, hnd_cnt_destructor);
 
@@ -95,7 +95,7 @@ bool create_policy_hnd(struct pipes_struct *p,
 
 	num_handles++;
 
-	return true;
+	return rpc_hnd;
 }
 
 /****************************************************************************

@@ -55,7 +55,7 @@ struct pipes_struct {
 bool check_open_pipes(void);
 size_t num_pipe_handles(void);
 
-bool create_policy_hnd(struct pipes_struct *p,
+void *create_policy_hnd(struct pipes_struct *p,
 			struct policy_handle *hnd,
 			uint8_t handle_type,
 			void *data_ptr);
