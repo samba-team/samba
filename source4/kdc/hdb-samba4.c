@@ -900,7 +900,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				r->error_code = final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 				rwdc_fallback = kdc_db_ctx->rodc;
 			} else if (!NT_STATUS_IS_OK(status)) {
-				r->error_code = final_ret = KRB5KRB_ERR_GENERIC;
+				r->error_code = final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
 				rwdc_fallback = kdc_db_ctx->rodc;
 			} else {
 				if (r->error_code == KRB5KDC_ERR_NEVER_VALID) {
