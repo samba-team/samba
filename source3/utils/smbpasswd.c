@@ -26,6 +26,7 @@
 #include "cmdline_contexts.h"
 #include "passwd_proto.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/param/param.h"
 
 /*
  * Next two lines needed for SunOS and don't
@@ -87,7 +88,8 @@ static void set_line_buffering(FILE *f)
  Process command line options
  ******************************************************************/
 
-static int process_options(int argc, char **argv, int local_flags)
+static int process_options(int argc, char **argv, int local_flags,
+			   struct loadparm_context *lp_ctx)
 {
 	int ch;
 	const char *configfile = get_dyn_CONFIGFILE();
@@ -156,10 +158,10 @@ static int process_options(int argc, char **argv, int local_flags)
 			fstrcpy(ldap_secret, optarg);
 			break;
 		case 'R':
-			lp_set_cmdline("name resolve order", optarg);
+			lpcfg_set_cmdline(lp_ctx, "name resolve order", optarg);
 			break;
 		case 'D':
-			lp_set_cmdline("log level", optarg);
+			lpcfg_set_cmdline(lp_ctx, "log level", optarg);
 			break;
 		case 'U': {
 			got_username = True;
@@ -617,6 +619,7 @@ static int process_nonroot(int local_flags)
 int main(int argc, char **argv)
 {	
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 	int local_flags = 0;
 	int ret;
 
@@ -630,7 +633,14 @@ int main(int argc, char **argv)
 
 	smb_init_locale();
 
-	local_flags = process_options(argc, argv, local_flags);
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		fprintf(stderr,
+			"Failed to initialise the global parameter structure.\n");
+		return 1;
+	}
+
+	local_flags = process_options(argc, argv, local_flags, lp_ctx);
 
 	setup_logging("smbpasswd", DEBUG_STDERR);
 
