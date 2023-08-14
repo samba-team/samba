@@ -22,10 +22,12 @@
 #include "lib/messages_ctdb.h"
 #include <tevent.h>
 #include "lib/util/tevent_unix.h"
+#include "lib/param/param.h"
 
 int main(int argc, const char *argv[])
 {
 	TALLOC_CTX *frame;
+	struct loadparm_context *lp_ctx = NULL;
 	struct tevent_context *ev;
 	struct messaging_context *msg;
 	struct tevent_req *req;
@@ -36,8 +38,15 @@ int main(int argc, const char *argv[])
 
 	frame = talloc_stackframe();
 
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		fprintf(stderr,
+			"Failed to initialise the global parameter structure.\n");
+		return 1;
+	}
+
 	setup_logging("notifyd", DEBUG_DEFAULT_STDOUT);
-	lp_set_cmdline("log level", "10");
+	lpcfg_set_cmdline(lp_ctx, "log level", "10");
 
 	ok = lp_load_initial_only(get_dyn_CONFIGFILE());
 	if (!ok) {
