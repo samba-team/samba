@@ -5,6 +5,31 @@
 #include <libsmbclient.h>
 #include "get_auth_data_fn.h"
 
+static const char *filetypestr(mode_t mode)
+{
+	if (S_ISREG(mode)) {
+		return "regular file";
+	}
+	if (S_ISDIR(mode)) {
+		return "directory";
+	}
+	if (S_ISFIFO(mode)) {
+		return "fifo";
+	}
+	if (S_ISLNK(mode)) {
+		return "symbolic link";
+	}
+	if (S_ISSOCK(mode)) {
+		return "socket";
+	}
+	if (S_ISCHR(mode)) {
+		return "character special file";
+	}
+	if (S_ISBLK(mode)) {
+		return "block special file";
+	}
+	return "unknown file type";
+}
 
 int main(int argc, char * argv[])
 {
@@ -53,13 +78,14 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
-	printf("\nSAMBA\n mtime:%jd/%s ctime:%jd/%s atime:%jd/%s\n",
+	printf("\nSAMBA\n mtime:%jd/%s ctime:%jd/%s atime:%jd/%s %s\n",
 	       (intmax_t)st.st_mtime,
 	       ctime_r(&st.st_mtime, m_time),
 	       (intmax_t)st.st_ctime,
 	       ctime_r(&st.st_ctime, c_time),
 	       (intmax_t)st.st_atime,
-	       ctime_r(&st.st_atime, a_time));
+	       ctime_r(&st.st_atime, a_time),
+	       filetypestr(st.st_mode));
 
 	if (pLocalPath != NULL) {
 		ret = stat(pLocalPath, &st);
@@ -68,13 +94,14 @@ int main(int argc, char * argv[])
 			return 1;
 		}
 
-		printf("LOCAL\n mtime:%jd/%s ctime:%jd/%s atime:%jd/%s\n",
+		printf("LOCAL\n mtime:%jd/%s ctime:%jd/%s atime:%jd/%s %s\n",
 		       (intmax_t)st.st_mtime,
 		       ctime_r(&st.st_mtime, m_time),
 		       (intmax_t)st.st_ctime,
 		       ctime_r(&st.st_ctime, c_time),
 		       (intmax_t)st.st_atime,
-		       ctime_r(&st.st_atime, a_time));
+		       ctime_r(&st.st_atime, a_time),
+		       filetypestr(st.st_mode));
 	}
 
 	return 0;
