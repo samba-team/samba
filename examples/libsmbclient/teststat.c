@@ -53,10 +53,13 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
-	printf("\nSAMBA\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
-	       (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
-	       (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
-	       (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
+	printf("\nSAMBA\n mtime:%jd/%s ctime:%jd/%s atime:%jd/%s\n",
+	       (intmax_t)st.st_mtime,
+	       ctime_r(&st.st_mtime, m_time),
+	       (intmax_t)st.st_ctime,
+	       ctime_r(&st.st_ctime, c_time),
+	       (intmax_t)st.st_atime,
+	       ctime_r(&st.st_atime, a_time));
 
 	if (pLocalPath != NULL) {
 		ret = stat(pLocalPath, &st);
@@ -65,10 +68,13 @@ int main(int argc, char * argv[])
 			return 1;
 		}
 
-		printf("LOCAL\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
-		       (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
-		       (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
-		       (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
+		printf("LOCAL\n mtime:%jd/%s ctime:%jd/%s atime:%jd/%s\n",
+		       (intmax_t)st.st_mtime,
+		       ctime_r(&st.st_mtime, m_time),
+		       (intmax_t)st.st_ctime,
+		       ctime_r(&st.st_ctime, c_time),
+		       (intmax_t)st.st_atime,
+		       ctime_r(&st.st_atime, a_time));
 	}
 
 	return 0;
