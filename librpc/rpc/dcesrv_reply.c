@@ -168,6 +168,10 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
+	if (context->ndr64) {
+		push->flags |= LIBNDR_FLAG_NDR64;
+	}
+
 	status = context->iface->ndr_push(call, call, push, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);

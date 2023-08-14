@@ -232,6 +232,7 @@ struct dcesrv_connection_context {
 
 	/* the negotiated transfer syntax */
 	struct ndr_syntax_id transfer_syntax;
+	bool ndr64;
 };
 
 
@@ -453,6 +454,11 @@ struct dcesrv_context {
 	uint32_t assoc_groups_num;
 
 	struct dcesrv_connection *broken_connections;
+
+	/*
+	 * Our preferred transfer syntax.
+	 */
+	const struct ndr_syntax_id *preferred_transfer;
 
 	struct dcesrv_context_callbacks *callbacks;
 };

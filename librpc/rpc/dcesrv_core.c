@@ -704,10 +704,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	p->default_auth_state = auth;
 
-	/*
-	 * For now we only support NDR32.
-	 */
-	p->preferred_transfer = &ndr_transfer_syntax_ndr;
+	p->preferred_transfer = dce_ctx->preferred_transfer;
 
 	*_p = p;
 	return NT_STATUS_OK;
@@ -1594,6 +1591,8 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 	context->context_id = ctx->context_id;
 	context->iface = iface;
 	context->transfer_syntax = *selected_transfer;
+	context->ndr64 = ndr_syntax_id_equal(&context->transfer_syntax,
+					     &ndr_transfer_syntax_ndr64);
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
 	talloc_set_destructor(context, dcesrv_connection_context_destructor);
@@ -2032,6 +2031,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		DEBUG(10, ("dcesrv_check_verification_trailer failed: %s\n",
 			   nt_errstr(status)));
 		return dcesrv_fault(call, faultcode);
+	}
+
+	if (call->context->ndr64) {
+		call->ndr_pull->flags |= LIBNDR_FLAG_NDR64;
 	}
 
 	/* unravel the NDR for the packet */
@@ -2565,6 +2568,11 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 	}
 	dce_ctx->broken_connections = NULL;
 	dce_ctx->callbacks = cb;
+
+	/*
+	 * For now we only support NDR32.
+	 */
+	dce_ctx->preferred_transfer = &ndr_transfer_syntax_ndr;
 
 	*_dce_ctx = dce_ctx;
 	return NT_STATUS_OK;
