@@ -514,7 +514,16 @@ void dcesrv_context_set_callbacks(
 	struct dcesrv_context *dce_ctx,
 	struct dcesrv_context_callbacks *cb);
 
+/*
+ * Use dcesrv_async_reply() in async code
+ */
 NTSTATUS dcesrv_reply(struct dcesrv_call_state *call);
+void _dcesrv_async_reply(struct dcesrv_call_state *call,
+			 const char *func,
+			 const char *location);
+#define dcesrv_async_reply(__call) \
+	_dcesrv_async_reply(__call, __func__, __location__)
+
 struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
 					   uint8_t handle_type);
 
