@@ -1012,12 +1012,12 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			return NDR_ERR_RANGE;
 		}
 		if (list->count == alloc_count) {
-			unsigned new_alloc;
+			uint32_t new_alloc;
 			/*
 			 * Double the list, until we start in chunks
 			 * of 1000
 			 */
-			unsigned increment = MIN(list->count, 1000);
+			uint32_t increment = MIN(list->count, 1000);
 			new_alloc = alloc_count + increment;
 			if (new_alloc < alloc_count) {
 				return NDR_ERR_RANGE;
