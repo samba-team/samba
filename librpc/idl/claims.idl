@@ -50,7 +50,7 @@ interface claims
 
 	typedef struct {
 		[range(1, 10*1024*1024)] uint32 value_count;
-		[size_is(value_count)] dlong *values;
+		[size_is(value_count)] int64 *values;
 	} CLAIM_INT64;
 
 	typedef struct {
