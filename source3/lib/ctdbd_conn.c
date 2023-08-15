@@ -1438,6 +1438,32 @@ static int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
 	return 0;
 }
 
+static struct samba_sockaddr ctdbd_sock_addr_to_samba(const ctdb_sock_addr *c)
+{
+	struct samba_sockaddr s = {};
+
+	switch (c->sa.sa_family) {
+	case AF_INET:
+		s.u.in = c->ip;
+		break;
+	case AF_INET6:
+		/*
+		 * ctdb always requires HAVE_IPV6,
+		 * so we don't need an ifdef here.
+		 */
+		s.u.in6 = c->ip6;
+		break;
+	default:
+		/*
+		 * ctdb_sock_addr only supports ipv4 and ipv6
+		 */
+		smb_panic(__location__);
+		break;
+	}
+
+	return s;
+}
+
 int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
 			    int (*cb)(uint32_t total_ip_count,
 				      const struct sockaddr_storage *ip,
@@ -1457,11 +1483,8 @@ int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
 	}
 
 	for (i=0; i < ips->num; i++) {
-		struct samba_sockaddr tmp = {
-			.u = {
-				.sa = ips->ips[i].addr.sa,
-			},
-		};
+		const ctdb_sock_addr *addr = &ips->ips[i].addr;
+		struct samba_sockaddr tmp = ctdbd_sock_addr_to_samba(addr);
 
 		ret = cb(ips->num,
 			 &tmp.u.ss,
