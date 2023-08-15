@@ -1441,7 +1441,7 @@ krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
 		return krb5_kt_default(context, keytab);
 	}
 
-	mem_ctx = talloc_init("smb_krb5_open_keytab");
+	mem_ctx = talloc_init("smb_krb5_kt_open_relative");
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
@@ -1482,7 +1482,7 @@ krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
 		goto out;
 	}
 
-	DEBUG(10,("smb_krb5_open_keytab: krb5_kt_default_name returned %s\n", keytab_string));
+	DBG_DEBUG("krb5_kt_default_name returned %s\n", keytab_string);
 
 	tmp = talloc_strdup(mem_ctx, keytab_string);
 	if (!tmp) {
@@ -1535,7 +1535,7 @@ krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
 	}
 
 resolve:
-	DEBUG(10,("smb_krb5_open_keytab: resolving: %s\n", tmp));
+	DBG_DEBUG("resolving: %s\n", tmp);
 	ret = krb5_kt_resolve(context, tmp, keytab);
 
 out:
@@ -2668,10 +2668,9 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 		if (code != 0) {
 			ip = NULL;
 		}
-		DEBUG(1, ("smb_krb5_kinit_password_cache: "
-			  "KDC returned self principal[%s] while impersonating [%s]\n",
-			  sp?sp:"<no memory>",
-			  ip?ip:"<no memory>"));
+		DBG_WARNING("KDC returned self principal[%s] while impersonating [%s]\n",
+			    sp?sp:"<no memory>",
+			    ip?ip:"<no memory>");
 
 		SAFE_FREE(sp);
 		SAFE_FREE(ip);
@@ -2698,10 +2697,9 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 		if (code != 0) {
 			ep = NULL;
 		}
-		DEBUG(1, ("smb_krb5_kinit_password_cache: "
-			  "KDC returned wrong principal[%s] we expected [%s]\n",
-			  sp?sp:"<no memory>",
-			  ep?ep:"<no memory>"));
+		DBG_WARNING("KDC returned wrong principal[%s] we expected [%s]\n",
+			    sp?sp:"<no memory>",
+			    ep?ep:"<no memory>");
 
 		SAFE_FREE(sp);
 		SAFE_FREE(ep);
