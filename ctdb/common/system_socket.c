@@ -988,7 +988,6 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 			errbuf);
 		return -1;
 	}
-	*((pcap_t **)private_data) = pt;
 
 	pcap_packet_type = pcap_datalink(pt);
 	switch (pcap_packet_type) {
@@ -1005,8 +1004,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 #endif /* DLT_LINUX_SLL2 */
 	default:
 		DBG_ERR("Unknown pcap packet type %d\n", pcap_packet_type);
-		pcap_close(pt);
-		return -1;
+		goto fail;
 	}
 
 	fd = pcap_get_selectable_fd(pt);
@@ -1014,7 +1012,12 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 		  t,
 		  fd);
 
+	*((pcap_t **)private_data) = pt;
 	return fd;
+
+fail:
+	pcap_close(pt);
+	return -1;
 }
 
 int ctdb_sys_close_capture_socket(void *private_data)
