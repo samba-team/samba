@@ -1007,6 +1007,13 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 		DBG_ERR("Failed to set timeout for pcap capture\n");
 		goto fail;
 	}
+#ifdef HAVE_PCAP_SET_IMMEDIATE_MODE
+	ret = pcap_set_immediate_mode(pt, 1);
+	if (ret < 0) {
+		DBG_ERR("Failed to set immediate mode for pcap capture\n");
+		goto fail;
+	}
+#endif
 	ret = pcap_activate(pt);
 	if (ret < 0) {
 		DBG_ERR("Failed to activate pcap capture\n");

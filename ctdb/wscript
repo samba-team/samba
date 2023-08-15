@@ -221,6 +221,7 @@ def configure(conf):
         if not conf.CHECK_FUNCS_IN('pcap_open_live', 'pcap', headers='pcap.h'):
             Logs.error('Need libpcap')
             sys.exit(1)
+        conf.CHECK_FUNCS_IN('pcap_set_immediate_mode', 'pcap', headers='pcap.h')
 
     if not conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo',
                                checklibc=True, headers='execinfo.h'):
