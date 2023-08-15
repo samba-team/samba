@@ -36,6 +36,9 @@
 #define NDR_PULL_I32(ndr, ofs) \
 	(int32_t)(NDR_BE(ndr) ? PULL_BE_U32(ndr->data,ofs) : PULL_LE_U32(ndr->data,ofs))
 
+#define NDR_PULL_I64(ndr, ofs) \
+	(NDR_BE(ndr) ? PULL_BE_I64((ndr)->data, (ofs)) : PULL_LE_I64((ndr)->data, (ofs)))
+
 #define NDR_PUSH_U16(ndr, ofs, v) \
 	do { \
 		if (NDR_BE(ndr)) { \
@@ -60,6 +63,15 @@
 			PUSH_BE_U32(ndr->data, ofs, v); \
 		} else { \
 			PUSH_LE_U32(ndr->data, ofs, v); \
+		} \
+	} while (0)
+
+#define NDR_PUSH_I64(ndr, ofs, v) \
+	do { \
+		if (NDR_BE(ndr)) { \
+			PUSH_BE_I64((ndr)->data, (ofs), (v));	\
+		} else { \
+			PUSH_LE_I64((ndr)->data, (ofs), (v));	\
 		} \
 	} while (0)
 
@@ -304,6 +316,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, u
 		return ndr_pull_udlongr(ndr, ndr_flags, v);
 	}
 	return ndr_pull_udlong(ndr, ndr_flags, v);
+}
+
+/*
+  parse an int64
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_int64(struct ndr_pull *ndr, int ndr_flags, int64_t *v)
+{
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_PULL_ALIGN(ndr, 8);
+	NDR_PULL_NEED_BYTES(ndr, 8);
+	*v = NDR_PULL_I64(ndr, ndr->offset);
+	ndr->offset += 8;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
@@ -641,6 +666,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, u
 		return ndr_push_udlongr(ndr, NDR_SCALARS, v);
 	}
 	return ndr_push_udlong(ndr, NDR_SCALARS, v);
+}
+
+/*
+  push an int64
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_int64(struct ndr_push *ndr, int ndr_flags, int64_t v)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_PUSH_ALIGN(ndr, 8);
+	NDR_PUSH_NEED_BYTES(ndr, 8);
+	NDR_PUSH_I64(ndr, ndr->offset, v);
+	ndr->offset += 8;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
@@ -1206,6 +1244,11 @@ _PUBLIC_ void ndr_print_double(struct ndr_print *ndr, const char *name, double v
 }
 
 _PUBLIC_ void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v)
+{
+	ndr_print_dlong(ndr, name, v);
+}
+
+_PUBLIC_ void ndr_print_int64(struct ndr_print *ndr, const char *name, int64_t v)
 {
 	ndr_print_dlong(ndr, name, v);
 }
