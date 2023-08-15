@@ -120,6 +120,40 @@ class PacClaimsTests(TestCase):
         '0105000000000005150000003f1ba8749a54499be10ea459ad04000000000000'
         )
 
+    pac_data_int64_claim = bytes.fromhex(
+        '080000000000000001000000f0010000880000000000000006000000100000007802'
+        '000000000000070000001000000088020000000000000a0000001a00000098020000'
+        '000000000c00000088000000b8020000000000000d000000d0000000400300000000'
+        '000011000000080000001004000000000000120000001c0000001804000000000000'
+        '01100800cccccccce001000000000000000002000000000000000000ffffffffffff'
+        'ff7fffffffffffffff7f52a2a6d607cfd90152621001d1cfd901522200cc08f0d901'
+        '10001000040002000000000008000200000000000c00020000000000100002000000'
+        '0000140002000000000018000200000000004362000001020000010000001c000200'
+        '200000000000000000000000000000000000000014001600200002000e0010002400'
+        '02002800020000000000000000001000000000000000000000000000000000000000'
+        '000000000000000000000000020000002c0002000000000000000000000000000800'
+        '0000000000000800000075007300650072006e0061006d0065000000000000000000'
+        '00000000000000000000000000000000000000000000000000000000000000000000'
+        '0000000000000000000000000000000000000100000001020000070000000b000000'
+        '000000000a000000570049004e0032004b00310039002d0044004300080000000000'
+        '0000070000006500780061006d0070006c0065000000040000000104000000000005'
+        '15000000bcfb8bf5af39e9b21f9b5fcd020000003000020007000000340002000700'
+        '000005000000010500000000000515000000000000000000000000000000f1010000'
+        '010000000101000000000012010000000000000010000000147a8762afe3366b316c'
+        '936410000000e05a433ae9271bcc603d933480353ad607cfd9011000750073006500'
+        '72006e0061006d006500000000000000280018001600400003000000100058001c00'
+        '68000000000075007300650072006e0061006d00650040006500780061006d007000'
+        '6c0065002e0063006f006d004500580041004d0050004c0045002e0043004f004d00'
+        '000075007300650072006e0061006d006500010500000000000515000000bcfb8bf5'
+        'af39e9b21f9b5fcd436200000000000001100800ccccccccc0000000000000000000'
+        '02009800000004000200000000009800000000000000000000000000000098000000'
+        '01100800cccccccc8800000000000000000002000100000004000200000000000000'
+        '00000000000001000000010000000100000008000200010000000c00020001000100'
+        '05000000100002000800000000000000080000006100200063006c00610069006d00'
+        '0000050000000000000003000000000000002a0000000000000019fcffffffffffff'
+        'e803000000000000204e000000000000000000000200000001000000010500000000'
+        '000515000000bcfb8bf5af39e9b21f9b5fcd4362000000000000'
+        )
 
     def test_unpack_raw(self):
         pac_unpacked_raw = ndr_unpack(krb5pac.PAC_DATA_RAW, self.pac_data_uncompressed)
@@ -410,6 +444,46 @@ class PacClaimsTests(TestCase):
         # Finally confirm a re-pack gets identical bytes
         client_claims_bytes2 = ndr_pack(client_claims2)
         self.assertEqual(client_claims_bytes1, client_claims_bytes2)
+
+    def test_pac_int64_claims(self):
+        """Test that we can parse a PAC containing INT64 claims."""
+
+        # Decode the PAC.
+        pac = ndr_unpack(krb5pac.PAC_DATA, self.pac_data_int64_claim)
+
+        # Get the PAC buffer which contains the client claims.
+        self.assertEqual(8, pac.num_buffers)
+        client_claims_buf = pac.buffers[5]
+        self.assertEqual(krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO,
+                         client_claims_buf.type)
+
+        # Ensure that we can decode the client claims.
+        client_claims_data = client_claims_buf.info.remaining
+        client_claims = ndr_unpack(claims.CLAIMS_SET_METADATA_NDR,
+                                   client_claims_data)
+
+        claims_set = client_claims.claims.metadata.claims_set.claims.claims
+
+        # We should find a single claims array, …
+        self.assertEqual(1, claims_set.claims_array_count)
+        claims_array = claims_set.claims_arrays[0]
+        self.assertEqual(claims.CLAIMS_SOURCE_TYPE_AD,
+                         claims_array.claims_source_type)
+
+        # …containing our INT64 claim.
+        self.assertEqual(1, claims_array.claims_count)
+        claim_entry = claims_array.claim_entries[0]
+        self.assertEqual('a claim', claim_entry.id)
+        self.assertEqual(claims.CLAIM_TYPE_INT64, claim_entry.type)
+
+        # Ensure that the values have been decoded correctly.
+        self.assertEqual([3, 42, -999, 1000, 20000], claim_entry.values.values)
+
+        # Re-encode the claims buffer and ensure that the result is identical
+        # to the original encoded claims produced by Windows.
+        client_claims_packed = ndr_pack(client_claims)
+        self.assertEqual(client_claims_data, client_claims_packed)
+
 
 if __name__ == '__main__':
     import unittest
