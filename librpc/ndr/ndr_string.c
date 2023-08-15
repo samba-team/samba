@@ -660,6 +660,14 @@ _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uin
 	uint32_t i;
 	uint32_t save_offset;
 
+	if (count == 0) {
+		return NDR_ERR_RANGE;
+	}
+
+	if (element_size && count - 1 > UINT32_MAX / element_size) {
+		return NDR_ERR_RANGE;
+	}
+
 	save_offset = ndr->offset;
 	NDR_CHECK(ndr_pull_advance(ndr, (count - 1) * element_size));
 	NDR_PULL_NEED_BYTES(ndr, element_size);
