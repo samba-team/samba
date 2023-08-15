@@ -980,13 +980,37 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 	int pcap_packet_type;
 	const char *t = NULL;
 	int fd;
+	int ret;
 
-	pt = pcap_open_live(iface, 100, 0, 0, errbuf);
+	pt = pcap_create(iface, errbuf);
 	if (pt == NULL) {
 		DBG_ERR("Failed to open pcap capture device %s (%s)\n",
 			iface,
 			errbuf);
 		return -1;
+	}
+	/*
+	 * pcap isn't very clear about defaults...
+	 */
+	ret = pcap_set_snaplen(pt, 100);
+	if (ret < 0) {
+		DBG_ERR("Failed to set snaplen for pcap capture\n");
+		goto fail;
+	}
+	ret = pcap_set_promisc(pt, 0);
+	if (ret < 0) {
+		DBG_ERR("Failed to unset promiscuous mode for pcap capture\n");
+		goto fail;
+	}
+	ret = pcap_set_timeout(pt, 0);
+	if (ret < 0) {
+		DBG_ERR("Failed to set timeout for pcap capture\n");
+		goto fail;
+	}
+	ret = pcap_activate(pt);
+	if (ret < 0) {
+		DBG_ERR("Failed to activate pcap capture\n");
+		goto fail;
 	}
 
 	pcap_packet_type = pcap_datalink(pt);
