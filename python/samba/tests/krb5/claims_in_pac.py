@@ -24,7 +24,7 @@ sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 from samba.dcerpc import krb5pac, claims
-from samba.ndr import ndr_pack, ndr_unpack, ndr_print
+from samba.ndr import ndr_pack, ndr_unpack
 from samba.tests import TestCase
 
 class PacClaimsTests(TestCase):
