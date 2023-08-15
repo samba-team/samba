@@ -220,15 +220,12 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-#if KRB5_KDB_API_VERSION >= 10
 	/*
 	 * The MIT KDC code that wants the canonical name in all lookups, and
 	 * takes care to canonicalize only when appropriate.
 	 */
 	sflags |= SDB_F_FORCE_CANON;
-#endif
 
-#if KRB5_KDB_DAL_MAJOR_VERSION >= 9
 	if (kflags & KRB5_KDB_FLAG_REFERRAL_OK) {
 		sflags |= SDB_F_CANON;
 	}
@@ -249,33 +246,6 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 			sflags |= SDB_F_FOR_TGS_REQ;
 		}
 	}
-#else /* KRB5_KDB_DAL_MAJOR_VERSION < 9 */
-	if (kflags & KRB5_KDB_FLAG_CANONICALIZE) {
-		sflags |= SDB_F_CANON;
-	}
-	if (kflags & (KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY |
-		      KRB5_KDB_FLAG_INCLUDE_PAC)) {
-		/*
-		 * KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY is equal to
-		 * SDB_F_FOR_AS_REQ
-		 *
-		 * We use ANY to also allow AS_REQ for service principal names
-		 * This is supported by Windows.
-		 */
-		sflags |= SDB_F_GET_ANY|SDB_F_FOR_AS_REQ;
-	} else {
-		int equal = smb_krb5_principal_is_tgs(ctx->context, principal);
-		if (equal == -1) {
-			return ENOMEM;
-		}
-
-		if (equal) {
-			sflags |= SDB_F_GET_KRBTGT;
-		} else {
-			sflags |= SDB_F_GET_SERVER|SDB_F_FOR_TGS_REQ;
-		}
-	}
-#endif /* KRB5_KDB_DAL_MAJOR_VERSION */
 
 	/* always set this or the created_by data will not be populated by samba's
 	 * backend and we will fail to parse the entry later */
@@ -617,140 +587,6 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	return code;
 }
 
-#if KRB5_KDB_DAL_MAJOR_VERSION < 9
-krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
-				    krb5_context context,
-				    int kdc_flags,
-				    krb5_const_principal client_principal,
-				    krb5_db_entry *client,
-				    krb5_db_entry *server,
-				    krb5_db_entry *krbtgt,
-				    krb5_keyblock *krbtgt_keyblock,
-				    krb5_pac *pac)
-{
-	TALLOC_CTX *tmp_ctx;
-	krb5_error_code code;
-	struct samba_kdc_entry *client_skdc_entry = NULL;
-	struct samba_kdc_entry *krbtgt_skdc_entry = NULL;
-	struct samba_kdc_entry *server_skdc_entry = NULL;
-	struct samba_kdc_entry *delegated_proxy_entry = NULL;
-	krb5_principal delegated_proxy_principal = NULL;
-	krb5_pac new_pac = NULL;
-	bool is_in_db = false;
-	bool is_trusted = false;
-	uint32_t flags = SAMBA_KDC_FLAG_SKIP_PAC_BUFFER;
-
-	/* Create a memory context early so code can use talloc_stackframe() */
-	tmp_ctx = talloc_named(ctx, 0, "mit_samba_reget_pac context");
-	if (tmp_ctx == NULL) {
-		return ENOMEM;
-	}
-
-	if (client != NULL) {
-		client_skdc_entry =
-			talloc_get_type_abort(client->e_data,
-					      struct samba_kdc_entry);
-	}
-
-	if (server == NULL) {
-		code = EINVAL;
-		goto done;
-	}
-
-	server_skdc_entry =
-		talloc_get_type_abort(server->e_data,
-				      struct samba_kdc_entry);
-
-	if (krbtgt == NULL) {
-		code = EINVAL;
-		goto done;
-	}
-	krbtgt_skdc_entry =
-		talloc_get_type_abort(krbtgt->e_data,
-				      struct samba_kdc_entry);
-
-	code = samba_krbtgt_is_in_db(krbtgt_skdc_entry,
-				     &is_in_db,
-				     &is_trusted);
-	if (code != 0) {
-		goto done;
-	}
-
-	if (is_trusted) {
-		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
-	}
-
-	if (is_in_db) {
-		flags |= SAMBA_KDC_FLAG_KRBTGT_IN_DB;
-
-	}
-
-	if (kdc_flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) {
-		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
-	}
-
-	if (kdc_flags & KRB5_KDB_FLAG_CONSTRAINED_DELEGATION) {
-		flags |= SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION;
-		delegated_proxy_entry = client_skdc_entry;
-		delegated_proxy_principal = discard_const(client_principal);
-	}
-
-	code = samba_kdc_verify_pac(tmp_ctx,
-				    context,
-				    flags,
-				    client_skdc_entry,
-				    krbtgt_skdc_entry,
-				    NULL /* device */,
-				    NULL /* device_pac */,
-				    *pac);
-	if (code != 0) {
-		goto done;
-	}
-
-	/* Build an updated PAC */
-	code = krb5_pac_init(context, &new_pac);
-	if (code != 0) {
-		goto done;
-	}
-
-	code = samba_kdc_update_pac(tmp_ctx,
-				    context,
-				    krbtgt_skdc_entry->kdc_db_ctx->samdb,
-				    krbtgt_skdc_entry->kdc_db_ctx->lp_ctx,
-				    flags,
-				    krbtgt_skdc_entry,
-				    client_skdc_entry,
-				    server->princ,
-				    server_skdc_entry,
-				    delegated_proxy_principal,
-				    delegated_proxy_entry,
-				    NULL /* delegated_proxy_pac */,
-				    NULL /* device_krbtgt */,
-				    NULL /* device */,
-				    NULL /* device_pac */,
-				    *pac,
-				    new_pac,
-				    NULL /* server_audit_info_out */,
-				    NULL /* status_out */);
-	if (code != 0) {
-		krb5_pac_free(context, new_pac);
-		if (code == ENOATTR) {
-			krb5_pac_free(context, *pac);
-			*pac = NULL;
-			code = 0;
-		}
-		goto done;
-	}
-
-	/* We now replace the pac */
-	krb5_pac_free(context, *pac);
-	*pac = new_pac;
-
-done:
-	talloc_free(tmp_ctx);
-	return code;
-}
-#else
 krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    krb5_context context,
 				    int kdc_flags,
@@ -871,7 +707,6 @@ done:
 	talloc_free(tmp_ctx);
 	return code;
 }
-#endif
 
 /* provide header, function is exported but there are no public headers */
 
@@ -957,9 +792,6 @@ int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 			      const krb5_db_entry *server,
 			      krb5_const_principal target_principal)
 {
-#if KRB5_KDB_DAL_MAJOR_VERSION < 9
-	return KRB5KDC_ERR_BADOPTION;
-#else
 	struct samba_kdc_entry *server_skdc_entry =
 		talloc_get_type_abort(server->e_data, struct samba_kdc_entry);
 	krb5_error_code code;
@@ -970,7 +802,6 @@ int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 					 target_principal);
 
 	return code;
-#endif
 }
 
 krb5_error_code mit_samba_check_allowed_to_delegate_from(
@@ -980,9 +811,6 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 		krb5_pac header_pac,
 		const krb5_db_entry *proxy)
 {
-#if KRB5_KDB_DAL_MAJOR_VERSION < 8
-	return KRB5KDC_ERR_POLICY;
-#else
 	struct samba_kdc_entry *proxy_skdc_entry =
 		talloc_get_type_abort(proxy->e_data, struct samba_kdc_entry);
 	krb5_error_code code;
@@ -995,7 +823,6 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 					      proxy_skdc_entry);
 
 	return code;
-#endif
 }
 
 static krb5_error_code mit_samba_change_pwd_error(krb5_context context,
