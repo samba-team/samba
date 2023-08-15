@@ -456,7 +456,7 @@ int smb_krb5_get_pw_salt(krb5_context context,
  * @param[in]  sAMAccountName     The sAMAccountName attribute of the object.
  *
  * @param[in]  userPrincipalName  The userPrincipalName attribute of the object
- *                                or NULL is not available.
+ *                                or NULL if not available.
  *
  * @param[in]  uac_flags          UF_ACCOUNT_TYPE_MASKed userAccountControl field
  *
@@ -656,7 +656,7 @@ int smb_krb5_salt_principal(krb5_context krb5_ctx,
  * @param[in]  sAMAccountName     The sAMAccountName attribute of the object.
  *
  * @param[in]  userPrincipalName  The userPrincipalName attribute of the object
- *                                or NULL is not available.
+ *                                or NULL if not available.
  *
  * @param[in]  uac_flags          UF_ACCOUNT_TYPE_MASKed userAccountControl field
  *
@@ -735,7 +735,7 @@ int smb_krb5_salt_principal_str(const char *realm,
  * @param[in]  sAMAccountName     The sAMAccountName attribute of the object.
  *
  * @param[in]  userPrincipalName  The userPrincipalName attribute of the object
- *                                or NULL is not available.
+ *                                or NULL if not available.
  *
  * @param[in]  is_computer        The indication of the object includes
  *                                objectClass=computer.
@@ -1759,7 +1759,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		 * Save the entries with kvno - 1. This is what microsoft does
 		 * to allow people with existing sessions that have kvno - 1
 		 * to still work. Otherwise, when the password for the machine
-		 * changes, all kerberizied sessions will 'break' until either
+		 * changes, all kerberized sessions will 'break' until either
 		 * the client reboots or the client's session key expires and
 		 * they get a new session ticket with the new kvno.
 		 * Some keytab files only store the kvno in 8bits, limit
