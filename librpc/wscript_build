@@ -628,7 +628,7 @@ bld.SAMBA_LIBRARY('ndr',
     public_deps='samba-errors talloc samba-util util_str_hex',
     public_headers='gen_ndr/misc.h gen_ndr/ndr_misc.h ndr/libndr.h:ndr.h',
     header_path= [('*gen_ndr*', 'gen_ndr')],
-    vnum='3.0.0',
+    vnum='3.0.1',
     abi_directory='ABI',
     abi_match='!ndr_table_* ndr_* GUID_* _ndr_pull_error* _ndr_push_error*',
     )
