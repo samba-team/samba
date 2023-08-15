@@ -1002,8 +1002,6 @@ class ClaimsTests(KDCBaseTest):
             'class': 'user',
         },
         {
-            # This test fails on Windows, which for an integer syntax claim
-            # issues corrupt data shifted four bytes to the right.
             'name': 'integer syntax',
             'claims': [
                 {
@@ -1021,8 +1019,6 @@ class ClaimsTests(KDCBaseTest):
             'class': 'user',
         },
         {
-            # This test fails on Windows, which for an integer syntax claim
-            # issues corrupt data that cannot be NDR unpacked.
             'name': 'integer syntax, duplicate claim',
             'claims': [
                 {
