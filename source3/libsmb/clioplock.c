@@ -55,7 +55,7 @@ struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
 	smb1cli_req_set_mid(subreq, 0xffff);
 
 	if (!smbXcli_req_set_pending(subreq)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_smb_oplock_break_waiter_done, req);
