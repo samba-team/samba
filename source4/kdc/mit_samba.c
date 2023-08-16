@@ -72,12 +72,12 @@ static void mit_samba_debug(void *private_ptr, int msg_level, const char *msg)
 	com_err("", is_error, "%s", msg);
 }
 
-int mit_samba_context_init(struct mit_samba_context **_ctx)
+krb5_error_code mit_samba_context_init(struct mit_samba_context **_ctx)
 {
 	NTSTATUS status;
 	struct mit_samba_context *ctx;
 	const char *s4_conf_file;
-	int ret;
+	krb5_error_code ret;
 	struct samba_kdc_base_context base_ctx;
 
 	ctx = talloc_zero(NULL, struct mit_samba_context);
@@ -204,14 +204,14 @@ int mit_samba_generate_random_password(krb5_data *pwd)
 	return 0;
 }
 
-int mit_samba_get_principal(struct mit_samba_context *ctx,
-			    krb5_const_principal principal,
-			    unsigned int kflags,
-			    krb5_db_entry **_kentry)
+krb5_error_code mit_samba_get_principal(struct mit_samba_context *ctx,
+					krb5_const_principal principal,
+					unsigned int kflags,
+					krb5_db_entry **_kentry)
 {
 	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
-	int ret;
+	krb5_error_code ret;
 	uint32_t sflags = 0;
 	krb5_principal referral_principal = NULL;
 
@@ -349,12 +349,12 @@ done:
 	return ret;
 }
 
-int mit_samba_get_firstkey(struct mit_samba_context *ctx,
-			   krb5_db_entry **_kentry)
+krb5_error_code mit_samba_get_firstkey(struct mit_samba_context *ctx,
+				       krb5_db_entry **_kentry)
 {
 	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
-	int ret;
+	krb5_error_code ret;
 
 	kentry = malloc(sizeof(krb5_db_entry));
 	if (kentry == NULL) {
@@ -387,12 +387,12 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 	return ret;
 }
 
-int mit_samba_get_nextkey(struct mit_samba_context *ctx,
-			  krb5_db_entry **_kentry)
+krb5_error_code mit_samba_get_nextkey(struct mit_samba_context *ctx,
+				      krb5_db_entry **_kentry)
 {
 	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
-	int ret;
+	krb5_error_code ret;
 
 	kentry = malloc(sizeof(krb5_db_entry));
 	if (kentry == NULL) {
@@ -425,13 +425,13 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 	return ret;
 }
 
-int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
-		      krb5_context context,
-		      uint32_t flags,
-		      krb5_db_entry *client,
-		      krb5_db_entry *server,
-		      krb5_keyblock *replaced_reply_key,
-		      krb5_pac *pac)
+krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
+				  krb5_context context,
+				  uint32_t flags,
+				  krb5_db_entry *client,
+				  krb5_db_entry *server,
+				  krb5_keyblock *replaced_reply_key,
+				  krb5_pac *pac)
 {
 	TALLOC_CTX *tmp_ctx;
 	struct auth_user_info_dc *user_info_dc = NULL;
@@ -760,14 +760,14 @@ static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 	return;
 }
 
-int mit_samba_check_client_access(struct mit_samba_context *ctx,
-				  krb5_db_entry *client,
-				  const char *client_name,
-				  krb5_db_entry *server,
-				  const char *server_name,
-				  const char *netbios_name,
-				  bool password_change,
-				  DATA_BLOB *e_data)
+krb5_error_code mit_samba_check_client_access(struct mit_samba_context *ctx,
+					      krb5_db_entry *client,
+					      const char *client_name,
+					      krb5_db_entry *server,
+					      const char *server_name,
+					      const char *netbios_name,
+					      bool password_change,
+					      DATA_BLOB *e_data)
 {
 	struct samba_kdc_entry *skdc_entry;
 	NTSTATUS nt_status;
@@ -792,9 +792,9 @@ int mit_samba_check_client_access(struct mit_samba_context *ctx,
 	return 0;
 }
 
-int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
-			      const krb5_db_entry *server,
-			      krb5_const_principal target_principal)
+krb5_error_code mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
+					  const krb5_db_entry *server,
+					  krb5_const_principal target_principal)
 {
 	struct samba_kdc_entry *server_skdc_entry =
 		talloc_get_type_abort(server->e_data, struct samba_kdc_entry);
@@ -893,9 +893,9 @@ static krb5_error_code mit_samba_change_pwd_error(krb5_context context,
 	return code;
 }
 
-int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
-				      char *pwd,
-				      krb5_db_entry *db_entry)
+krb5_error_code mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
+						  char *pwd,
+						  krb5_db_entry *db_entry)
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
