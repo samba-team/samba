@@ -56,7 +56,7 @@ class cmd_user_sensitive(Command):
                     credentials=creds, lp=lp)
 
         search_filter = "sAMAccountName=%s" % ldb.binary_encode(accountname)
-        flag = dsdb.UF_NOT_DELEGATED;
+        flag = dsdb.UF_NOT_DELEGATED
 
         if cmd == "show":
             res = sam.search(scope=ldb.SCOPE_SUBTREE, expression=search_filter,
