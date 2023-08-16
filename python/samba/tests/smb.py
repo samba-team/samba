@@ -147,7 +147,7 @@ class SMBTests(samba.tests.TestCase):
         """Returns whether a regular file exists (by trying to open it)"""
         try:
             self.smb_conn.loadfile(filepath)
-            exists = True;
+            exists = True
         except NTSTATUSError as err:
             if (err.args[0] == NT_STATUS_OBJECT_NAME_NOT_FOUND or
                 err.args[0] == NT_STATUS_OBJECT_PATH_NOT_FOUND):

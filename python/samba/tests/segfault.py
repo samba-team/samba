@@ -187,8 +187,8 @@ class SegfaultTests(samba.tests.TestCase):
     @segfault_detector
     def test_dcerpc_idl_set_inline_arrays(self):
         """Setting an inline array was incorrectly handled."""
-        a = dnsserver.DNS_EXTENSION();
-        x = dnsserver.DNS_RPC_DP_INFO();
+        a = dnsserver.DNS_EXTENSION()
+        x = dnsserver.DNS_RPC_DP_INFO()
         x.pwszReserved = [a, a, a]
 
     @no_gdb_backtrace

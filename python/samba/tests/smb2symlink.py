@@ -95,7 +95,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         target="foo"
         suffix="bar"
 
-        self.create_symlink(smb1, target, symlink);
+        self.create_symlink(smb1, target, symlink)
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}\\{suffix}')
@@ -115,7 +115,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         symlink="syml"
         target="foo"
 
-        self.create_symlink(smb1, target, symlink);
+        self.create_symlink(smb1, target, symlink)
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}')

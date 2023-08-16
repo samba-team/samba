@@ -119,7 +119,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             CreateDisposition=libsmb.FILE_CREATE)
         b = reparse_symlink.put(0x80000025, 0, b'asdfasdfasdfasdfasdfasdf')
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
-        conn.close(fd);
+        conn.close(fd)
 
         fd,cr,_ = conn.create_ex(
             filename,
@@ -133,7 +133,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         conn.write(fd, b'x', 1)
 
         conn.delete_on_close(fd, 1)
-        conn.close(fd);
+        conn.close(fd)
 
     # Show that directories can carry reparse points
 
@@ -164,7 +164,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
                          ntstatus.NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED)
 
         conn.delete_on_close(dir_fd, 1)
-        conn.close(dir_fd);
+        conn.close(dir_fd)
 
     # Only empty directories can carry reparse points
 
@@ -215,7 +215,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             CreateDisposition=libsmb.FILE_CREATE)
         b = reparse_symlink.put(0x80000025, 0, b'asdfasdfasdfasdfasdfasdf')
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
-        conn.close(fd);
+        conn.close(fd)
 
         fd1 = conn.create(
             filename,
@@ -233,7 +233,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(e.exception.args[0],
                          ntstatus.NT_STATUS_SHARING_VIOLATION)
 
-        conn.delete_on_close(fd1, 1);
+        conn.delete_on_close(fd1, 1)
         conn.close(fd1)
 
 if __name__ == '__main__':

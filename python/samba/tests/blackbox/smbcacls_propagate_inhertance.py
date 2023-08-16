@@ -334,7 +334,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
             self.assertTrue(self.file_ace_check(self.f1, child_file_ace) == False)
 
             # nested dir  'oi_dir/nested/' should have CI|I|READ
-            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str);
+            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.nested_dir, child_dir_ace))
 
             # nested file 'oi_dir/nested/file-2' should NOT have inherited I/READ
@@ -342,7 +342,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
             self.assertTrue(self.file_ace_check(self.f2, child_file_ace) == False)
 
             # nested dir  'oi_dir/nested/nested_again' should have CI|I|READ
-            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str);
+            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.nested_again_dir, child_dir_ace))
 
             # nested file 'oi_dir/nested/nested_again/file-3' should NOT have inherited I/READ
@@ -410,7 +410,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
             dir_ace = self.ace_parse_str(dir_acl_str)
             self.assertTrue(self.file_ace_check(self.oi_dir, dir_ace) == False)
 
-            child_file_ace = self.ace_parse_str(file_inherited_ace_str);
+            child_file_ace = self.ace_parse_str(file_inherited_ace_str)
             # nested file 'oi_dir/file-1' should NOT have inherited I/READ
             self.assertTrue(self.file_ace_check(self.f1, child_file_ace) == False)
 
@@ -481,7 +481,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
                             dir_mod_acl_str, self.oi_dir])
 
             # check top level container 'oi_dir' has CI/CHANGE
-            dir_ace = self.ace_parse_str(dir_mod_acl_str);
+            dir_ace = self.ace_parse_str(dir_mod_acl_str)
             self.assertTrue(self.file_ace_check(self.oi_dir, dir_ace))
 
             # nested file 'oi_dir/file-1' should NOT have inherited I/CHANGE
@@ -553,23 +553,23 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
             self.assertTrue(self.file_ace_check(self.oi_dir, dir_ace))
 
             # nested file 'oi_dir/file-1' should have inherited I/READ
-            child_file_ace = self.ace_parse_str(file_inherited_ace_str);
+            child_file_ace = self.ace_parse_str(file_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.f1, child_file_ace))
 
             # nested dir  'oi_dir/nested/' should have OI|CI|I|READ
-            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str);
+            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.nested_dir, child_dir_ace))
 
             # nested file 'oi_dir/nested/file-2' should have inherited I/READ
-            child_file_ace = self.ace_parse_str(file_inherited_ace_str);
+            child_file_ace = self.ace_parse_str(file_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.f2, child_file_ace))
 
             # nested dir  'oi_dir/nested/nested_again' should have OI|CI|I|READ
-            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str);
+            child_dir_ace = self.ace_parse_str(dir_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.nested_again_dir, child_dir_ace))
 
             # nested file 'oi_dir/nested/nested_again/file-3' should have inherited I/READ
-            child_file_ace = self.ace_parse_str(file_inherited_ace_str);
+            child_file_ace = self.ace_parse_str(file_inherited_ace_str)
             self.assertTrue(self.file_ace_check(self.f3, child_file_ace))
 
         except BlackboxProcessError as e:
@@ -720,24 +720,24 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
             self.assertTrue(self.file_ace_check(self.oi_dir, dir_ace))
 
             # nested file 'oi_dir/file-1' should have inherited I|CHANGE
-            child_file_ace = self.ace_parse_str(file_mod_inherited_ace_str);
-            self.assertTrue(self.file_ace_check(self.f1, child_file_ace));
+            child_file_ace = self.ace_parse_str(file_mod_inherited_ace_str)
+            self.assertTrue(self.file_ace_check(self.f1, child_file_ace))
 
             # nested dir  'oi_dir/nested/' should have OI|CI|I|CHANGE
             child_dir_ace = self.ace_parse_str(dir_mod_inherited_ace_str)
             self.file_ace_check(self.nested_dir, child_dir_ace)
 
             # nested file 'oi_dir/nested/file-2' should have inherited I|CHANGE
-            child_file_ace = self.ace_parse_str(file_mod_inherited_ace_str);
-            self.assertTrue(self.file_ace_check(self.f2, child_file_ace));
+            child_file_ace = self.ace_parse_str(file_mod_inherited_ace_str)
+            self.assertTrue(self.file_ace_check(self.f2, child_file_ace))
 
             # nested dir  'oi_dir/nested/nested_again' should have OI|CI|I|CHANGE
             child_dir_ace = self.ace_parse_str(dir_mod_inherited_ace_str)
             self.file_ace_check(self.nested_again_dir, child_dir_ace)
 
             # nested file 'oi_dir/nested/nested_again/file-3' should have inherited I|CHANGE
-            child_file_ace = self.ace_parse_str(file_mod_inherited_ace_str);
-            self.assertTrue(self.file_ace_check(self.f3, child_file_ace));
+            child_file_ace = self.ace_parse_str(file_mod_inherited_ace_str)
+            self.assertTrue(self.file_ace_check(self.f3, child_file_ace))
 
         except BlackboxProcessError as e:
             self.fail(str(e))

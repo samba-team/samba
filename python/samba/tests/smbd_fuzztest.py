@@ -27,7 +27,7 @@ class fuzzsmbd(samba.tests.TestCase):
         # terminated SMB1 Negprot, with a valid SessionSetup after.
         # BUG: #14205 causes the smbd server to crash.
         #
-        state = True;
+        state = True
         badblob = binascii.a2b_base64("AAAA1P9TTUJyAAAAABhDyAAAAAAAAAAAAAAAACcA/v8AAAAAALEAAlBDIE5F"
                                       "VFdPUksgUFJPR1JBTSD//jAAAk1JQ1JPU09GVCBOR1RXT1JLUyAxLjANDAJN"
                                       "SR3hkXOl0mb+QXW4Da/jp0f+AAAA1P9TTUJyAAAAABgDyAAABDQAAAAAAAAA"
@@ -71,6 +71,6 @@ class fuzzsmbd(samba.tests.TestCase):
         for line in open(os.environ['SMBD_TEST_LOG']):
             if "INTERNAL ERROR: Signal 11 in pid" in line:
                 print("Found crash in smbd log")
-                state = False;
+                state = False
                 break
         self.assertTrue(state)
