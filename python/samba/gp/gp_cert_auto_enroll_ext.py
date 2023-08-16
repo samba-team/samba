@@ -45,10 +45,12 @@ cert_wrap = b"""
 -----BEGIN CERTIFICATE-----
 %s
 -----END CERTIFICATE-----"""
-global_trust_dir = '/etc/pki/trust/anchors'
 endpoint_re = '(https|HTTPS)://(?P<server>[a-zA-Z0-9.-]+)/ADPolicyProvider' + \
               '_CEP_(?P<auth>[a-zA-Z]+)/service.svc/CEP'
 
+global_trust_dirs = ['/etc/pki/trust/anchors',           # SUSE
+                     '/etc/pki/ca-trust/source/anchors', # RHEL/Fedora
+                     '/usr/local/share/ca-certificates'] # Debian/Ubuntu
 
 def octet_string_to_objectGUID(data):
     """Convert an octet string to an objectGUID."""
@@ -249,12 +251,20 @@ def getca(ca, url, trust_dir):
     return root_certs
 
 
+def find_global_trust_dir():
+    """Return the global trust dir using known paths from various Linux distros."""
+    for trust_dir in global_trust_dirs:
+        if os.path.isdir(trust_dir):
+            return trust_dir
+    return global_trust_dirs[0]
+
 def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     """Install the root certificate chain."""
     data = dict({'files': [], 'templates': []}, **ca)
     url = 'http://%s/CertSrv/mscep/mscep.dll/pkiclient.exe?' % ca['hostname']
     root_certs = getca(ca, url, trust_dir)
     data['files'].extend(root_certs)
+    global_trust_dir = find_global_trust_dir()
     for src in root_certs:
         # Symlink the certs to global trust dir
         dst = os.path.join(global_trust_dir, os.path.basename(src))
