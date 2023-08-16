@@ -28,7 +28,7 @@ try:
     from dateutil.parser import isoparse as iso_parse_date
 except ImportError:
     try:
-        from iso8601 import parse_date as iso_parse_date;
+        from iso8601 import parse_date as iso_parse_date
     except ImportError:
         print('Install either python-dateutil >= 2.7.1 or python-iso8601')
 
