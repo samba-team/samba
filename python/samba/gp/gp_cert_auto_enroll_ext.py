@@ -415,7 +415,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext, gp_applier):
                             # remove any existing policy
                             ca_attrs = \
                                 self.cache_get_all_attribute_values(gpo.name)
-                            self.clean(gpo.name, remove=ca_attrs)
+                            self.clean(gpo.name, remove=list(ca_attrs.keys()))
 
     def __read_cep_data(self, guid, ldb, end_point_information,
                         trust_dir, private_dir):
