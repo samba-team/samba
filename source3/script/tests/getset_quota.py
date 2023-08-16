@@ -77,7 +77,7 @@ def load_quotas(input_file):
 def set_quotas(quota_list, output_file):
     filecontents = open(output_file,"w+")
     if filecontents == None:
-        return False;
+        return False
     lines = ""
     for quota in quota_list:
         next_line = quota_to_db_str(quota)
@@ -97,7 +97,7 @@ def get_quotas(uid, quota_list):
 def main():
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
     logging.debug("system args passed are %s\n"% str(sys.argv))
-    quota_file_dir = os.path.dirname(sys.argv[0]);
+    quota_file_dir = os.path.dirname(sys.argv[0])
     quota_file_db = os.path.join(quota_file_dir,"quotas.db")
     logging.debug("quota db is located %s\n", quota_file_db)
     quota_list = load_quotas(quota_file_db)
@@ -120,7 +120,7 @@ def main():
             logging.debug("no result for uid %s"%uid)
         else:
             result = quota_to_str(quota)
-            logging.debug("got result for uid %s\n"%uid);
+            logging.debug("got result for uid %s\n"%uid)
         if result is None:
             result = "0 0 0 0 0 0 0"
         logging.debug("for uid %s returning quotas %s\n"%(uid,result))

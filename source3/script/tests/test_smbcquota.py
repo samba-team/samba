@@ -153,7 +153,7 @@ class listtest(test_base):
     def run(self, protocol):
         init_quota_db(self.env.users, self.env.quota_db)
         quotas = load_quotas(self.env.quota_db)
-        args = [self.env.smbcquotas];
+        args = [self.env.smbcquotas]
         remaining_args = ['-U' + self.env.username + "%" + self.env.password, '-L', '//' + self.env.server + '/quotadir']
         if protocol == 'smb2':
             args.append('-m smb2')

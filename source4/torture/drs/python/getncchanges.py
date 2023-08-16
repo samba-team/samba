@@ -1329,9 +1329,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # Check some predicates about USN ordering that the below tests will rely on
         if ou_change and nc_change:
-            self.assertGreater(ou_usn, base_usn);
+            self.assertGreater(ou_usn, base_usn)
         elif not ou_change and nc_change:
-            self.assertGreater(base_usn, ou_usn);
+            self.assertGreater(base_usn, ou_usn)
 
         ctr6 = self.repl_get_next()
 
