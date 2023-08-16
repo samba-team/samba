@@ -158,7 +158,7 @@ def fetch_certification_authorities(ldb):
     for es in res:
         data = { 'name': get_string(es['cn'][0]),
                  'hostname': get_string(es['dNSHostName'][0]),
-                 'cACertificate': get_string(es['cACertificate'][0])
+                 'cACertificate': get_string(base64.b64encode(es['cACertificate'][0]))
                }
         result.append(data)
     return result
@@ -176,8 +176,7 @@ def fetch_template_attrs(ldb, name, attrs=None):
         return {'msPKI-Minimal-Key-Size': ['2048']}
 
 def format_root_cert(cert):
-    cert = base64.b64encode(cert.encode())
-    return cert_wrap % re.sub(b"(.{64})", b"\\1\n", cert, 0, re.DOTALL)
+    return cert_wrap % re.sub(b"(.{64})", b"\\1\n", cert.encode(), 0, re.DOTALL)
 
 def find_cepces_submit():
     certmonger_dirs = [os.environ.get("PATH"), '/usr/lib/certmonger',
