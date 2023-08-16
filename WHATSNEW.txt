@@ -1,4 +1,84 @@
                    ==============================
+                   Release Notes for Samba 4.18.6
+                          August 16, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.18 release series.
+
+
+Changes since 4.18.5
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15420: reply_sesssetup_and_X() can dereference uninitialized tmp
+     pointer.
+   * BUG 15430: Missing return in reply_exit_done().
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15289: post-exec password redaction for samba-tool is more reliable for
+     fully random passwords as it no longer uses regular expressions
+     containing the password value itself.
+   * BUG 9959: Windows client join fails if a second container CN=System exists
+     somewhere.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15342: Spotlight sometimes returns no results on latest macOS.
+   * BUG 15417: Renaming results in NT_STATUS_SHARING_VIOLATION if previously
+     attempted to remove the destination.
+   * BUG 15427: Spotlight results return wrong date in result list.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15414: "net offlinejoin provision" does not work as non-root user.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15400: rpcserver no longer accepts double backslash in dfs pathname.
+   * BUG 15433: cm_prepare_connection() calls close(fd) for the second time.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15346: 2-3min delays at reconnect with smb2_validate_sequence_number:
+     bad message_id 2.
+   * BUG 15441: samba-tool ntacl get segfault if aio_pthread appended.
+   * BUG 15446: DCERPC_PKT_CO_CANCEL and DCERPC_PKT_ORPHANED can't be parsed.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15390: Python tarfile extraction needs change to avoid a warning
+     (CVE-2007-4559 mitigation).
+   * BUG 15435: Regression DFS not working with widelinks = true.
+
+o  Arvid Requate <requate@univention.de>
+   * BUG 9959: Windows client join fails if a second container CN=System exists
+    somewhere.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15441: samba-tool ntacl get segfault if aio_pthread appended.
+   * BUG 15449: mdssvc: Do an early talloc_free() in _mdssvc_open().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.18.5
                            July 19, 2023
                    ==============================
@@ -70,8 +150,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.4
                            July 05, 2023
