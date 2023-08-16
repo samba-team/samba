@@ -100,8 +100,7 @@ static void cli_message_start_done(struct tevent_req *subreq)
 	status = cli_smb_recv(subreq, state, NULL, 0, &wct, &vwv,
 			      NULL, NULL);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (wct >= 1) {
@@ -190,8 +189,7 @@ static void cli_message_text_done(struct tevent_req *subreq)
 
 	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);
@@ -241,8 +239,7 @@ static void cli_message_end_done(struct tevent_req *subreq)
 
 	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);
@@ -302,8 +299,7 @@ static void cli_message_started(struct tevent_req *subreq)
 
 	status = cli_message_start_recv(subreq, &state->grp);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -329,8 +325,7 @@ static void cli_message_sent(struct tevent_req *subreq)
 
 	status = cli_message_text_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -366,8 +361,7 @@ static void cli_message_done(struct tevent_req *subreq)
 
 	status = cli_message_end_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);

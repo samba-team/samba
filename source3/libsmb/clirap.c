@@ -863,8 +863,7 @@ static void cli_qpathinfo2_done(struct tevent_req *subreq)
 
 	status = cli_qpathinfo_recv(subreq, state, &data, &num_data);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1511,8 +1510,7 @@ static void cli_qpathinfo_basic_done(struct tevent_req *subreq)
 	status = cli_qpathinfo_recv(subreq, state, &state->data,
 				    &state->num_data);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);

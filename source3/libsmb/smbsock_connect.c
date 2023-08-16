@@ -237,8 +237,7 @@ static void nb_connect_connected(struct tevent_req *subreq)
 
 	status = open_socket_out_recv(subreq, &state->sock);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	subreq = cli_session_request_send(state, state->ev, state->sock,

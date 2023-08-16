@@ -1742,9 +1742,8 @@ static void cli_session_setup_creds_done_nt1(struct tevent_req *subreq)
 						&state->out_native_lm,
 						&state->out_primary_domain);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(3, ("NT1 login failed: %s\n", nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -1792,9 +1791,8 @@ static void cli_session_setup_creds_done_lm21(struct tevent_req *subreq)
 						 &state->out_native_os,
 						 &state->out_native_lm);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(3, ("LM21 login failed: %s\n", nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -1906,8 +1904,7 @@ static void cli_ulogoff_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	cli_state_set_uid(state->cli, UID_FIELD_INVALID);
@@ -2146,8 +2143,7 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 	status = smb1cli_req_chain_submit(&subreq, 1);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 	return req;
@@ -2172,8 +2168,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	status = cli_smb_recv(subreq, state, &in, 0, &wct, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -2479,8 +2474,7 @@ static void cli_tdis_done(struct tevent_req *subreq)
 
 	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	TALLOC_FREE(state->cli->smb1.tcon);
@@ -2572,8 +2566,7 @@ static struct tevent_req *cli_connect_sock_send(
 
 		status = resolve_name_list(state, host, name_type,
 					   &addrs, &num_addrs);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 	} else {

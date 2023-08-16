@@ -85,8 +85,7 @@ static void cli_unix_extensions_version_done(struct tevent_req *subreq)
 	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
 				NULL, 0, NULL, &data, 12, &num_data);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -302,8 +301,7 @@ static void cli_get_fs_attr_info_done(struct tevent_req *subreq)
 	status = cli_trans_recv(subreq, talloc_tos(), NULL, NULL, 0, NULL,
 				NULL, 0, NULL, &data, 12, &num_data);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	state->fs_attr = IVAL(data, 0);
