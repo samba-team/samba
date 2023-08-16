@@ -1122,6 +1122,8 @@ int rpc_worker_main(
 	/* Ignore children - no zombies. */
 	CatchChild();
 
+	reopen_logs();
+
 	DEBUG(0, ("%s version %s started.\n",
 		  progname,
 		  samba_version_string()));
