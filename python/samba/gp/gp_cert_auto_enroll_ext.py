@@ -258,6 +258,10 @@ def find_global_trust_dir():
             return trust_dir
     return global_trust_dirs[0]
 
+def update_ca_command():
+    """Return the command to update the CA trust store."""
+    return which('update-ca-certificates') or which('update-ca-trust')
+
 def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     """Install the root certificate chain."""
     data = dict({'files': [], 'templates': []}, **ca)
@@ -283,7 +287,7 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
             # already exists. Ignore the FileExistsError. Preserve the
             # existing symlink in the unapply data.
             data['files'].append(dst)
-    update = which('update-ca-certificates')
+    update = update_ca_command()
     if update is not None:
         Popen([update]).wait()
     # Setup Certificate Auto Enrollment
