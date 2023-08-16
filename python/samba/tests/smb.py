@@ -109,7 +109,7 @@ class SMBTests(samba.tests.TestCase):
             for i in range(1, 4):
                 contents = "I'm file {0} in dir {1}!".format(i, subdir)
                 path = self.make_sysvol_path(subdir, "file-{0}.txt".format(i))
-                self.smb_conn.savefile(path, test_contents.encode('utf8'))
+                self.smb_conn.savefile(path, contents.encode('utf8'))
                 filepaths.append(path)
 
         # sanity-check these dirs/files exist
