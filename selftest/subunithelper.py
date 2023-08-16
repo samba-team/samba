@@ -69,7 +69,7 @@ def parse_results(msg_ops, statistics, fh):
             msg_ops.control_msg(l)
             try:
                 dt = iso_parse_date(arg.rstrip("\n"))
-            except TypeError as e:
+            except TypeError:
                 print("Unable to parse time line: %s" % arg.rstrip("\n"))
             else:
                 msg_ops.time(dt)
