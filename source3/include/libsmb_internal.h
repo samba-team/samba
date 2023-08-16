@@ -160,6 +160,14 @@ struct SMBC_internal_data {
         bool                                    full_time_names;
 
         /*
+         * Enable POSIX extensions before opening files/directories
+         * Will silently ignore if the server does not support the POSIX
+         * extensions
+         */
+
+        bool                                     posix_extensions;
+
+        /*
          * The share mode of a file being opened.  To match POSIX semantics
          * (and maintain backward compatibility), DENY_NONE is the default.
          */

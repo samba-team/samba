@@ -549,6 +549,20 @@ smbc_setOptionProtocols(SMBCCTX *c,
 	return ok;
 }
 
+/** Get whether to enable POSIX extensions if available */
+smbc_bool
+smbc_getOptionPosixExtensions(SMBCCTX *c)
+{
+	return c->internal->posix_extensions;
+}
+
+/** Set whether to enable POSIX extensions if available */
+void
+smbc_setOptionPosixExtensions(SMBCCTX *c, smbc_bool b)
+{
+	c->internal->posix_extensions = b;
+}
+
 /** Get the function for obtaining authentication data */
 smbc_get_auth_data_fn
 smbc_getFunctionAuthData(SMBCCTX *c)

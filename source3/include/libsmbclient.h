@@ -588,7 +588,13 @@ smbc_getPort(SMBCCTX *c);
 void
 smbc_setPort(SMBCCTX *c, uint16_t port);
 
+/** Get whether to enable POSIX extensions if available */
+smbc_bool
+smbc_getOptionPosixExtensions(SMBCCTX *c);
 
+/** Set whether to enable POSIX extensions if available */
+void
+smbc_setOptionPosixExtensions(SMBCCTX *c, smbc_bool b);
 
 /***********************************
  * Getters and setters for OPTIONS *
