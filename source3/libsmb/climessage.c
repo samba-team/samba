@@ -101,7 +101,6 @@ static void cli_message_start_done(struct tevent_req *subreq)
 			      NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
