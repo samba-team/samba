@@ -176,11 +176,12 @@ int mit_samba_generate_random_password(krb5_data *pwd)
 {
 	TALLOC_CTX *tmp_ctx;
 	char *password;
+	char *data = NULL;
+	const unsigned length = 24;
 
 	if (pwd == NULL) {
 		return EINVAL;
 	}
-	pwd->length = 24;
 
 	tmp_ctx = talloc_named(NULL,
 			       0,
@@ -189,17 +190,19 @@ int mit_samba_generate_random_password(krb5_data *pwd)
 		return ENOMEM;
 	}
 
-	password = generate_random_password(tmp_ctx, pwd->length, pwd->length);
+	password = generate_random_password(tmp_ctx, length, length);
 	if (password == NULL) {
 		talloc_free(tmp_ctx);
 		return ENOMEM;
 	}
 
-	pwd->data = strdup(password);
+	data = strdup(password);
 	talloc_free(tmp_ctx);
-	if (pwd->data == NULL) {
+	if (data == NULL) {
 		return ENOMEM;
 	}
+
+	*pwd = smb_krb5_make_data(data, length);
 
 	return 0;
 }
