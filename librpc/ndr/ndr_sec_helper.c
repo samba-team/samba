@@ -65,10 +65,19 @@ static size_t ndr_size_security_ace_core(const struct security_ace *ace, int fla
 */
 size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 {
-	size_t ret = ndr_size_security_ace_core(ace, flags);
-
-	ret += ndr_size_security_ace_coda(&ace->coda, ace->type, flags);
-
+	size_t base = ndr_size_security_ace_core(ace, flags);
+	size_t ret = base;
+	if (sec_ace_callback(ace->type)) {
+		ret += ace->coda.conditions.length;
+	} else if (ace->type == SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE) {
+		ret += ndr_size_security_ace_coda(&ace->coda, ace->type, flags);
+	} else {
+		ret += ace->coda.ignored.length;
+	}
+	if (unlikely(ret < base)) {
+		/* overflow, and there's not much we can do anyway */
+		return 0;
+	}
 	return ret;
 }
 
