@@ -596,7 +596,6 @@ NTSTATUS cli_ctemp(struct cli_state *cli,
 			const char *path,
 			uint16_t *pfnum,
 			char **out_path);
-NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA_BLOB *blob);
 NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 			 const char *ea_name, const char *ea_val,
 			 size_t ea_len);

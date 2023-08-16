@@ -9901,6 +9901,42 @@ static NTSTATUS del_fn(struct file_info *finfo, const char *mask,
 
 
 /*
+   send a raw ioctl - used by the torture code
+*/
+static NTSTATUS cli_raw_ioctl(struct cli_state *cli,
+			      uint16_t fnum,
+			      uint32_t code,
+			      DATA_BLOB *blob)
+{
+	uint16_t vwv[3];
+	NTSTATUS status;
+
+	PUSH_LE_U16(vwv + 0, 0, fnum);
+	PUSH_LE_U16(vwv + 1, 0, code >> 16);
+	PUSH_LE_U16(vwv + 2, 0, (code & 0xFFFF));
+
+	status = cli_smb(talloc_tos(),
+			 cli,
+			 SMBioctl,
+			 0,
+			 3,
+			 vwv,
+			 0,
+			 NULL,
+			 NULL,
+			 0,
+			 NULL,
+			 NULL,
+			 NULL,
+			 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*blob = data_blob_null;
+	return NT_STATUS_OK;
+}
+
+/*
   sees what IOCTLs are supported
  */
 bool torture_ioctl_test(int dummy)

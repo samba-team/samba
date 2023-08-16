@@ -5458,27 +5458,6 @@ NTSTATUS cli_ctemp(struct cli_state *cli,
 	return status;
 }
 
-/*
-   send a raw ioctl - used by the torture code
-*/
-NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA_BLOB *blob)
-{
-	uint16_t vwv[3];
-	NTSTATUS status;
-
-	SSVAL(vwv+0, 0, fnum);
-	SSVAL(vwv+1, 0, code>>16);
-	SSVAL(vwv+2, 0, (code&0xFFFF));
-
-	status = cli_smb(talloc_tos(), cli, SMBioctl, 0, 3, vwv, 0, NULL,
-			 NULL, 0, NULL, NULL, NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	*blob = data_blob_null;
-	return NT_STATUS_OK;
-}
-
 /*********************************************************
  Set an extended attribute utility fn.
 *********************************************************/
