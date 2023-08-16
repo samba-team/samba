@@ -42,7 +42,8 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
     # override if they need to (to e.g. add a lying isatty() method).
     stringIO = StringIO
 
-    def getSamDB(self, *argv):
+    @staticmethod
+    def getSamDB(*argv):
         """a convenience function to get a samdb instance so that we can query it"""
 
         # We build a fake command to get the options created the same
