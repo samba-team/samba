@@ -19,8 +19,6 @@
 #
 
 import os
-import time
-import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.tests import env_loadparm
 import random

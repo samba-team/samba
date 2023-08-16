@@ -16,7 +16,6 @@
 #
 
 import os
-import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import re
 
