@@ -1,4 +1,4 @@
-# Blackbox tests for smbcaclcs
+# Blackbox tests for smbcacls
 #
 # Copyright (C) Noel Power noel.power@suse.com
 #
