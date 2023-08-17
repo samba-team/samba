@@ -55,7 +55,7 @@ sub report_time()
 	if (substr($msg, 1, 1) eq ".") {
 		$msg = "0" . $msg;
 	}
-	printf "time: %04d-%02d-%02d %02d:%02d:%s\n", $year+1900, $mon+1, $mday, $hour, $min, $msg;
+	printf "time: %04d-%02d-%02d %02d:%02d:%sZ\n", $year+1900, $mon+1, $mday, $hour, $min, $msg;
 }
 
 sub progress_pop()
