@@ -458,7 +458,7 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
         # Remove organisational unit.
         self.samdb.delete(self.ou, ["tree_delete:1"])
 
-        # Remove members from silos before deleting them in super.
+        # Remove members from silos.
         for silo, members in self.members.items():
             for member in members:
                 self.remove_silo_member(silo, member)
