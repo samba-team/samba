@@ -126,6 +126,7 @@ sub run_testsuite($$$$$)
 	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
 	my $pcap_file = $target->setup_pcap($name);
 
+	Subunit::report_time();
 	Subunit::start_testsuite($name);
 	Subunit::progress_push();
 	Subunit::report_time();
