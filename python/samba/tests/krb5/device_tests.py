@@ -1795,9 +1795,9 @@ class DeviceTests(KDCBaseTest):
                 # be skipped.
                 continue
             name = case.pop('test')
+            name = re.sub(r'\W+', '_', name)
             if FILTER and not re.search(FILTER, name):
                 continue
-            name = re.sub(r'\W+', '_', name)
 
             cls.generate_dynamic_test('test_device_info', name,
                                       dict(case))

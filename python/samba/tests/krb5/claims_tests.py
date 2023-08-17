@@ -721,9 +721,9 @@ class ClaimsTests(KDCBaseTest):
         FILTER = env_get_var_value('FILTER', allow_missing=True)
         for case in cls.cases:
             name = case.pop('name')
+            name = re.sub(r'\W+', '_', name)
             if FILTER and not re.search(FILTER, name):
                 continue
-            name = re.sub(r'\W+', '_', name)
 
             # Run tests making requests both to the krbtgt and to our own
             # account.
@@ -734,9 +734,9 @@ class ClaimsTests(KDCBaseTest):
 
         for case in cls.device_claims_cases:
             name = case.pop('test')
+            name = re.sub(r'\W+', '_', name)
             if FILTER and not re.search(FILTER, name):
                 continue
-            name = re.sub(r'\W+', '_', name)
 
             cls.generate_dynamic_test('test_device_claims', name,
                                       dict(case))
