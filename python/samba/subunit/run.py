@@ -160,7 +160,7 @@ class TestProtocolClient(unittest.TestResult):
     def time(self, a_datetime):
         """Inform the client of the time.
 
-        ":param datetime: A datetime.datetime object.
+        ":param a_datetime: A datetime.datetime object.
         """
         time = a_datetime.astimezone(datetime.timezone.utc)
         self._stream.write("time: %04d-%02d-%02d %02d:%02d:%02d.%06dZ\n" % (
