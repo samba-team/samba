@@ -7,7 +7,9 @@ bld.SAMBA_LIBRARY('samba-security',
                           'security_descriptor.c', 'sddl.c', 'privileges.c',
                           'security_token.c', 'access_check.c',
                           'object_tree.c', 'create_descriptor.c',
-                          'util_sid.c', 'session.c', 'secdesc.c'],
+                          'util_sid.c', 'session.c', 'secdesc.c',
+                          'conditional_ace.c', 'sddl_conditional_ace.c',
+                          'claims-conversions.c'],
                   private_library=True, deps='talloc ndr NDR_SECURITY')
 
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
