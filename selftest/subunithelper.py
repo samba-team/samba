@@ -478,7 +478,6 @@ class PerfFilterOps(unittest.TestResult):
 
     def time(self, time):
         self.latest_time = time
-        #self._ops.output_msg("found time %s\n" % time)
         self.suite_has_time = True
 
     def get_time(self):
