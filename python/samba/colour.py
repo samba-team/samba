@@ -141,3 +141,35 @@ def colour_if_wanted(*streams, hint='auto'):
     else:
         switch_colour_off()
     return wanted
+
+
+def colourdiff(a, b):
+    """Generate a string comparing two strings or byte sequences, with
+    differences coloured to indicate what changed.
+
+    Byte sequences are printed as hex pairs separated by colons.
+    """
+    from difflib import SequenceMatcher
+    out = []
+    if isinstance(a, bytes):
+        a = a.hex(':')
+    if isinstance(b, bytes):
+        b = b.hex(':')
+    a = a.replace(' ', '␠')
+    b = b.replace(' ', '␠')
+
+    s = SequenceMatcher(None, a, b)
+    for op, al, ar, bl, br in s.get_opcodes():
+        if op == 'equal':
+            out.append(a[al: ar])
+        elif op == 'delete':
+            out.append(c_RED(a[al: ar]))
+        elif op == 'insert':
+            out.append(c_GREEN(b[bl: br]))
+        elif op == 'replace':
+            out.append(c_RED(a[al: ar]))
+            out.append(c_GREEN(b[bl: br]))
+        else:
+            out.append(f' --unknown diff op {op}!-- ')
+
+    return ''.join(out)
