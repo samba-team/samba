@@ -1,6 +1,7 @@
 *.dump binary
 *.SAMBABACKUP binary
 libcli/security/tests/data/conditional_aces.txt.json binary
+libcli/security/tests/windows/non_canonical.txt binary
 testdata/compression/compressed-huffman/** binary
 testdata/compression/compressed-more-huffman/** binary
 testdata/compression/compressed-more-plain/** binary
