@@ -598,11 +598,11 @@ class TestProgram(object):
         parser.prog = self.progName
         parser.add_option('-v', '--verbose', dest='verbose', default=False,
                           help='Verbose output', action='store_true')
-        if self.catchbreak != False:
+        if self.catchbreak is not False:
             parser.add_option('-c', '--catch', dest='catchbreak', default=False,
                               help='Catch ctrl-C and display results so far',
                               action='store_true')
-        if self.buffer != False:
+        if self.buffer is not False:
             parser.add_option('-b', '--buffer', dest='buffer', default=False,
                               help='Buffer stdout and stderr during tests',
                               action='store_true')
@@ -666,9 +666,9 @@ class TestProgram(object):
             print (msg)
         usage = {'progName': self.progName, 'catchbreak': '',
                  'buffer': ''}
-        if self.catchbreak != False:
+        if self.catchbreak is not False:
             usage['catchbreak'] = CATCHBREAK
-        if self.buffer != False:
+        if self.buffer is not False:
             usage['buffer'] = BUFFEROUTPUT
         usage_text = self.USAGE % usage
         usage_lines = usage_text.split('\n')
