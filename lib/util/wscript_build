@@ -106,6 +106,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                     pidfile.c
                     become_daemon.c
                     mkdir_p.c
+                    samba_sockaddr.c
                     ''',
                     deps='''
                     time-basic

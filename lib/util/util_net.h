@@ -23,21 +23,7 @@
 
 #include "system/network.h"
 
-struct samba_sockaddr {
-	socklen_t sa_socklen;
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in in;
-#ifdef HAVE_IPV6
-		struct sockaddr_in6 in6;
-#endif
-		struct sockaddr_un un;
-#ifdef HAVE_PACKETSOCKET
-		struct sockaddr_ll ll;
-#endif
-		struct sockaddr_storage ss;
-	} u;
-};
+#include "lib/util/samba_sockaddr.h"
 
 /* The following definitions come from lib/util/util_net.c  */
 
@@ -115,15 +101,6 @@ char *print_sockaddr(char *dest,
 char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 			const struct sockaddr_storage *pss);
 
-struct ssaddr_buf { char buf[INET6_ADDRSTRLEN]; };
-char *ssaddr_str_buf(const struct samba_sockaddr *addr,
-		     struct ssaddr_buf *dst);
-
 void set_socket_options(int fd, const char *options);
-
-bool sockaddr_storage_to_samba_sockaddr(
-	struct samba_sockaddr *sa, const struct sockaddr_storage *ss);
-bool samba_sockaddr_set_port(struct samba_sockaddr *sa, uint16_t port);
-bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port);
 
 #endif /* _SAMBA_UTIL_NET_H_ */
