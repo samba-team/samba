@@ -6896,14 +6896,14 @@ class GPOTests(tests.TestCase):
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
-                 'cACertificate': 'XXX',
+                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
                  'certificateRevocationList': ['XXX'],
                 })
         # Write the dummy pKIEnrollmentService
         enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
-                 'cACertificate': 'XXXX',
+                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
                  'certificateTemplates': ['Machine'],
                  'dNSHostName': hostname,
                 })
@@ -7448,14 +7448,14 @@ class GPOTests(tests.TestCase):
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
-                 'cACertificate': 'XXX',
+                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
                  'certificateRevocationList': ['XXX'],
                 })
         # Write the dummy pKIEnrollmentService
         enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
-                 'cACertificate': 'XXXX',
+                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
                  'certificateTemplates': ['Machine'],
                  'dNSHostName': hostname,
                 })
