@@ -21,6 +21,7 @@
 
 #include "replace.h"
 #include "libcli/util/werror.h"
+#include "libcli/util/hresult.h"
 
 struct werror_code_struct {
         const char *dos_errstr;
@@ -110,6 +111,19 @@ const char *win_errstr(WERROR werror)
 #include "werror_gen.c"
 	default:
 		break;
+	}
+
+	/*
+	 * WERROR codes are 16-bit only, if the
+	 * upper 16-bit are not 0, it's likely
+	 * an HRESULT.
+	 *
+	 * E.g. we should display HRES_SEC_E_WRONG_PRINCIPAL instead of
+	 * 'DOS code 0x80090322'
+	 */
+	if ((W_ERROR_V(werror) & 0xFFFF0000) != 0) {
+		HRESULT hres = HRES_ERROR(W_ERROR_V(werror));
+		return hresult_errstr(hres);
 	}
 
 	slprintf(msg, sizeof(msg), "DOS code 0x%08x", W_ERROR_V(werror));

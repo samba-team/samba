@@ -356,7 +356,7 @@ WARNING! 2 unread bytes
                         info                     : union spoolss_FormInfo(case 0)
             needed                   : *
                 needed                   : 0x00000000 (0)
-            result                   : DOS code 0xa9a9a900
+            result                   : HRES code 0xa9a9a900
 dump OK
 '''
         try:
