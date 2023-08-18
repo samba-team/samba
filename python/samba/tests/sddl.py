@@ -20,6 +20,7 @@
 from samba.dcerpc import security
 from samba.tests import TestCase, DynamicTestCase, get_env_dir
 from samba.colour import c_RED, c_GREEN
+import os
 
 
 class SddlDecodeEncodeBase(TestCase):
@@ -32,7 +33,9 @@ class SddlDecodeEncodeBase(TestCase):
                 ("SAMBA_WRITE_WINDOWS_STRINGS_DIR",
                  cls.write_windows_strings),
                 ("SAMBA_READ_WINDOWS_STRINGS_DIR",
-                 cls.read_windows_strings)]:
+                 cls.read_windows_strings),
+                ("SAMBA_WRITE_FUZZ_STRINGS_DIR",
+                 cls.write_sddl_strings_for_fuzz_seeds)]:
             dir = get_env_dir(key)
             if dir is not None:
                 fn(dir)
@@ -76,6 +79,24 @@ class SddlDecodeEncodeBase(TestCase):
         with self.assertRaises(ValueError):
             sd = security.descriptor.from_sddl(s, self.domain_sid)
             print(sd.as_sddl(self.domain_sid))
+
+    @classmethod
+    def write_sddl_strings_for_fuzz_seeds(cls, dir):
+        """write all the SDDL strings we have into a directory as individual
+        files, using a naming convention beloved of fuzzing engines.
+
+        To run this set an environment variable; see
+        cls.setUpDynamicTestCases(), above.
+
+        Note this will only run in subclasses annotated with @DynamicTestCase.
+        """
+        from hashlib import md5
+        for sddl in cls.strings:
+            if not isinstance(sddl, str):
+                sddl = sddl[0]
+            name = md5(sddl.encode()).hexdigest()
+            with open(os.path.join(dir, name), 'w') as f:
+                f.write(sddl)
 
     @classmethod
     def write_windows_strings(cls, dir):
