@@ -41,19 +41,6 @@ bool sec_ace_object(uint8_t type)
 	return false;
 }
 
-/**
- * copy a struct security_ace structure.
- */
-void sec_ace_copy(struct security_ace *ace_dest, const struct security_ace *ace_src)
-{
-	ace_dest->type  = ace_src->type;
-	ace_dest->flags = ace_src->flags;
-	ace_dest->size  = ace_src->size;
-	ace_dest->access_mask = ace_src->access_mask;
-	ace_dest->object = ace_src->object;
-	ace_dest->trustee = ace_src->trustee;
-}
-
 /*******************************************************************
  Sets up a struct security_ace structure.
 ********************************************************************/
