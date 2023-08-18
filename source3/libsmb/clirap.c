@@ -1099,6 +1099,7 @@ struct cli_qpathinfo_streams_state {
 };
 
 static void cli_qpathinfo_streams_done(struct tevent_req *subreq);
+static void cli_qpathinfo_streams_done2(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -1112,6 +1113,22 @@ struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
 				struct cli_qpathinfo_streams_state);
 	if (req == NULL) {
 		return NULL;
+	}
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_qpathinfo_send(state,
+						 ev,
+						 cli,
+						 fname,
+						 FSCC_FILE_STREAM_INFORMATION,
+						 0,
+						 CLI_BUFFER_SIZE);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					cli_qpathinfo_streams_done2,
+					req);
+		return req;
 	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_FILE_STREAM_INFORMATION,
@@ -1133,12 +1150,22 @@ static void cli_qpathinfo_streams_done(struct tevent_req *subreq)
 
 	status = cli_qpathinfo_recv(subreq, state, &state->data,
 				    &state->num_data);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_qpathinfo_streams_done2(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_qpathinfo_streams_state *state =
+		tevent_req_data(req, struct cli_qpathinfo_streams_state);
+	NTSTATUS status;
+
+	status = cli_smb2_qpathinfo_recv(subreq,
+					 state,
+					 &state->data,
+					 &state->num_data);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_qpathinfo_streams_recv(struct tevent_req *req,
@@ -1169,14 +1196,6 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_qpathinfo_streams(cli,
-					fname,
-					mem_ctx,
-					pnum_streams,
-					pstreams);
-	}
 
 	frame = talloc_stackframe();
 
