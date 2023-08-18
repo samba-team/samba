@@ -461,9 +461,7 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 
 	pac_cred_info.encryption_type = cred_enctype;
 
-	cred_ndr_data.magic = 0;
-	cred_ndr_data.data = (char *)cred_ndr_blob->data;
-	cred_ndr_data.length = cred_ndr_blob->length;
+	cred_ndr_data = smb_krb5_data_from_blob(*cred_ndr_blob);
 
 	code = krb5_c_encrypt_length(context,
 				     cred_enctype,
@@ -482,8 +480,7 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		return ENOMEM;
 	}
 
-	cred_ndr_crypt.ciphertext.length = enc_len;
-	cred_ndr_crypt.ciphertext.data = (char *)pac_cred_info.encrypted_data.data;
+	cred_ndr_crypt.ciphertext = smb_krb5_data_from_blob(pac_cred_info.encrypted_data);
 
 	code = krb5_k_encrypt(context,
 			      cred_key,
