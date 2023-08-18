@@ -25,6 +25,8 @@ import os
 
 class SddlDecodeEncodeBase(TestCase):
     maxDiff = 10000
+    case_insensitive = False
+
     @classmethod
     def setUpDynamicTestCases(cls):
         cls.domain_sid = security.dom_sid("S-1-2-3-4")
@@ -69,7 +71,7 @@ class SddlDecodeEncodeBase(TestCase):
         sddl = sd1.as_sddl(self.domain_sid)
         sd2 = security.descriptor.from_sddl(sddl, self.domain_sid)
         self.assertEqual(sd1, sd2)
-        if '0X' in canonical.upper():
+        if '0X' in canonical.upper() or self.case_insensitive:
             # let's chill out about case in hex numbers.
             self.assertEqual(sddl.upper(), canonical.upper())
         else:
