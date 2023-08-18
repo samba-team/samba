@@ -14,4 +14,5 @@ if __name__ == "__main__":
     assert opts.auth == 'Kerberos'
     if 'CERTMONGER_OPERATION' in os.environ and \
        os.environ['CERTMONGER_OPERATION'] == 'GET-SUPPORTED-TEMPLATES':
-        print('Machine') # Report a Machine template
+        templates = os.environ.get('CEPCES_SUBMIT_SUPPORTED_TEMPLATES', 'Machine').split(',')
+        print('\n'.join(templates)) # Report the requested templates

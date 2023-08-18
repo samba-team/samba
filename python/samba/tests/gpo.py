@@ -6925,6 +6925,23 @@ class GPOTests(tests.TestCase):
             self.assertTrue(os.path.exists(machine_crt),
                             'Machine key was not generated')
 
+            # Subsequent apply should react to new certificate templates
+            os.environ['CEPCES_SUBMIT_SUPPORTED_TEMPLATES'] = 'Machine,Workstation'
+            self.addCleanup(os.environ.pop, 'CEPCES_SUBMIT_SUPPORTED_TEMPLATES')
+            ext.process_group_policy([], gpos, dname, dname)
+            self.assertTrue(os.path.exists(ca_crt),
+                            'Root CA certificate was not requested')
+            self.assertTrue(os.path.exists(machine_crt),
+                            'Machine certificate was not requested')
+            self.assertTrue(os.path.exists(machine_crt),
+                            'Machine key was not generated')
+            workstation_crt = os.path.join(dname, '%s.Workstation.crt' % ca_cn)
+            self.assertTrue(os.path.exists(workstation_crt),
+                            'Workstation certificate was not requested')
+            workstation_key = os.path.join(dname, '%s.Workstation.key' % ca_cn)
+            self.assertTrue(os.path.exists(workstation_crt),
+                            'Workstation key was not generated')
+
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
@@ -6942,11 +6959,17 @@ class GPOTests(tests.TestCase):
                             'Machine certificate was not removed')
             self.assertFalse(os.path.exists(machine_crt),
                             'Machine key was not removed')
+            self.assertFalse(os.path.exists(workstation_crt),
+                            'Workstation certificate was not removed')
+            self.assertFalse(os.path.exists(workstation_crt),
+                            'Workstation key was not removed')
             out, _ = Popen(['getcert', 'list-cas'], stdout=PIPE).communicate()
             self.assertNotIn(get_bytes(ca_cn), out, 'CA was not removed')
             out, _ = Popen(['getcert', 'list'], stdout=PIPE).communicate()
             self.assertNotIn(b'Machine', out,
                              'Machine certificate not removed')
+            self.assertNotIn(b'Workstation', out,
+                             'Workstation certificate not removed')
 
         # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
         ldb.delete(certa_dn)
@@ -7480,6 +7503,25 @@ class GPOTests(tests.TestCase):
                 self.assertTrue(os.path.exists(machine_crt),
                                 'Machine key was not generated')
 
+            # Subsequent apply should react to new certificate templates
+            os.environ['CEPCES_SUBMIT_SUPPORTED_TEMPLATES'] = 'Machine,Workstation'
+            self.addCleanup(os.environ.pop, 'CEPCES_SUBMIT_SUPPORTED_TEMPLATES')
+            ext.process_group_policy([], gpos, dname, dname)
+            for ca in ca_list:
+                self.assertTrue(os.path.exists(ca_crt),
+                                'Root CA certificate was not requested')
+                self.assertTrue(os.path.exists(machine_crt),
+                                'Machine certificate was not requested')
+                self.assertTrue(os.path.exists(machine_crt),
+                                'Machine key was not generated')
+
+                workstation_crt = os.path.join(dname, '%s.Workstation.crt' % ca)
+                self.assertTrue(os.path.exists(workstation_crt),
+                                'Workstation certificate was not requested')
+                workstation_key = os.path.join(dname, '%s.Workstation.key' % ca)
+                self.assertTrue(os.path.exists(workstation_crt),
+                                'Workstation key was not generated')
+
             # Verify RSOP does not fail
             ext.rsop([g for g in gpos if g.name == guid][0])
 
@@ -7497,12 +7539,18 @@ class GPOTests(tests.TestCase):
                             'Machine certificate was not removed')
             self.assertFalse(os.path.exists(machine_crt),
                             'Machine key was not removed')
+            self.assertFalse(os.path.exists(workstation_crt),
+                            'Workstation certificate was not removed')
+            self.assertFalse(os.path.exists(workstation_crt),
+                            'Workstation key was not removed')
             out, _ = Popen(['getcert', 'list-cas'], stdout=PIPE).communicate()
             for ca in ca_list:
                 self.assertNotIn(get_bytes(ca), out, 'CA was not removed')
             out, _ = Popen(['getcert', 'list'], stdout=PIPE).communicate()
             self.assertNotIn(b'Machine', out,
                              'Machine certificate not removed')
+            self.assertNotIn(b'Workstation', out,
+                             'Workstation certificate not removed')
 
         # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
         ldb.delete(certa_dn)
