@@ -4582,11 +4582,26 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_getatr(cli,
-					fname,
-					pattr,
-					size,
-					write_time);
+		struct stat_ex sbuf = {
+			.st_ex_nlink = 0,
+		};
+		uint32_t attr;
+
+		status = cli_smb2_qpathinfo_basic(cli, fname, &sbuf, &attr);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (pattr != NULL) {
+			*pattr = attr;
+		}
+		if (size != NULL) {
+			*size = sbuf.st_ex_size;
+		}
+		if (write_time != NULL) {
+			*write_time = sbuf.st_ex_mtime.tv_sec;
+		}
+		return NT_STATUS_OK;
 	}
 
 	frame = talloc_stackframe();

@@ -170,11 +170,6 @@ NTSTATUS cli_smb2_query_info_fnum(
 	uint32_t in_flags,
 	TALLOC_CTX *mem_ctx,
 	DATA_BLOB *outbuf);
-NTSTATUS cli_smb2_getatr(struct cli_state *cli,
-			const char *name,
-			uint32_t *pattr,
-			off_t *size,
-			time_t *write_time);
 NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
 			const char *name,
 			uint8_t in_info_type,

@@ -2390,68 +2390,6 @@ NTSTATUS cli_smb2_qpathinfo_recv(struct tevent_req *req,
 }
 
 /***************************************************************
- Wrapper that allows SMB2 to get pathname attributes.
- Synchronous only.
-***************************************************************/
-
-NTSTATUS cli_smb2_getatr(struct cli_state *cli,
-			const char *name,
-			uint32_t *pattr,
-			off_t *size,
-			time_t *write_time)
-{
-	NTSTATUS status;
-	uint16_t fnum = 0xffff;
-	struct timespec write_time_ts;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	status = get_fnum_from_path(cli,
-				name,
-				FILE_READ_ATTRIBUTES,
-				&fnum);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = cli_qfileinfo_basic(
-		cli,
-		fnum,
-		pattr,
-		size,
-		NULL,		/* create_time */
-		NULL,		/* access_time */
-		&write_time_ts,
-		NULL,		/* change_time */
-		NULL);		/* ino */
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-	if (write_time != NULL) {
-		*write_time = write_time_ts.tv_sec;
-	}
-
-  fail:
-
-	if (fnum != 0xffff) {
-		cli_smb2_close_fnum(cli, fnum);
-	}
-
-	cli->raw_status = status;
-
-	TALLOC_FREE(frame);
-	return status;
-}
-
-/***************************************************************
  Wrapper that allows SMB2 to set SMB_FILE_BASIC_INFORMATION on
  a pathname.
  Synchronous only.
