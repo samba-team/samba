@@ -353,13 +353,13 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-#ifdef SAMBA4_USES_HEIMDAL
 krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 						  const krb5_keyblock *pkreplykey,
 						  const DATA_BLOB *cred_ndr_blob,
 						  TALLOC_CTX *mem_ctx,
 						  DATA_BLOB *cred_info_blob)
 {
+#ifdef SAMBA4_USES_HEIMDAL
 	krb5_crypto cred_crypto;
 	krb5_enctype cred_enctype;
 	krb5_data cred_ndr_crypt;
@@ -428,14 +428,7 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		      cred_info_blob->data, cred_info_blob->length);
 
 	return 0;
-}
 #else /* SAMBA4_USES_HEIMDAL */
-krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
-						  const krb5_keyblock *pkreplykey,
-						  const DATA_BLOB *cred_ndr_blob,
-						  TALLOC_CTX *mem_ctx,
-						  DATA_BLOB *cred_info_blob)
-{
 	krb5_key cred_key;
 	krb5_enctype cred_enctype;
 	struct PAC_CREDENTIAL_INFO pac_cred_info = { .version = 0, };
@@ -526,8 +519,8 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		      cred_info_blob->data, cred_info_blob->length);
 
 	return 0;
-}
 #endif /* SAMBA4_USES_HEIMDAL */
+}
 
 
 /**
