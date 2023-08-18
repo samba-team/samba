@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.19.  This is *not*
+This is the third release candidate of Samba 4.19.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -233,6 +233,37 @@ smb.conf changes
   --------------                          -----------     -------
   winbind debug traceid                   Add traceid     No
   directory name cache size               Removed
+
+
+CHANGES SINCE 4.19.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15420: reply_sesssetup_and_X() can dereference uninitialized tmp
+     pointer.
+   * BUG 15430: missing return in reply_exit_done().
+   * BUG 15432: TREE_CONNECT without SETUP causes smbd to use uninitialized
+     pointer.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15401: Avoid infinite loop in initial user sync with Azure AD Connect
+     when synchronising a large Samba AD domain.
+   * BUG 15407: Samba replication logs show (null) DN.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15346: 2-3min delays at reconnect with smb2_validate_sequence_number:
+     bad message_id 2.
+   * BUG 15446: DCERPC_PKT_CO_CANCEL and DCERPC_PKT_ORPHANED can't be parsed.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15438: CID 1539212 causes real issue when output contains only
+     newlines.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15452: KDC encodes INT64 claims incorrectly.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15449: mdssvc: Do an early talloc_free() in _mdssvc_open().
 
 
 CHANGES SINCE 4.19.0rc1
