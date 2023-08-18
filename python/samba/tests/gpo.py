@@ -281,6 +281,28 @@ b"""
 </PolFile>
 """
 
+auto_enroll_unchecked_reg_pol = \
+b"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="3" signature="PReg" version="1">
+        <Entry type="4" type_name="REG_DWORD">
+                <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+                <ValueName>AEPolicy</ValueName>
+                <Value>0</Value>
+        </Entry>
+        <Entry type="4" type_name="REG_DWORD">
+                <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+                <ValueName>OfflineExpirationPercent</ValueName>
+                <Value>10</Value>
+        </Entry>
+        <Entry type="1" type_name="REG_SZ">
+                <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+                <ValueName>OfflineExpirationStoreNames</ValueName>
+                <Value>MY</Value>
+        </Entry>
+</PolFile>
+"""
+
 advanced_enroll_reg_pol = \
 b"""
 <?xml version="1.0" encoding="utf-8"?>
@@ -6948,6 +6970,38 @@ class GPOTests(tests.TestCase):
             # Check that a call to gpupdate --rsop also succeeds
             ret = rsop(self.lp)
             self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+
+            # Remove policy by staging pol file with auto-enroll unchecked
+            parser.load_xml(etree.fromstring(auto_enroll_unchecked_reg_pol.strip()))
+            ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+            ext.process_group_policy([], gpos, dname, dname)
+            self.assertFalse(os.path.exists(ca_crt),
+                            'Root CA certificate was not removed')
+            self.assertFalse(os.path.exists(machine_crt),
+                            'Machine certificate was not removed')
+            self.assertFalse(os.path.exists(machine_crt),
+                            'Machine key was not removed')
+            self.assertFalse(os.path.exists(workstation_crt),
+                            'Workstation certificate was not removed')
+            self.assertFalse(os.path.exists(workstation_crt),
+                            'Workstation key was not removed')
+
+            # Reapply policy by staging the enabled pol file
+            parser.load_xml(etree.fromstring(auto_enroll_reg_pol.strip()))
+            ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+            ext.process_group_policy([], gpos, dname, dname)
+            self.assertTrue(os.path.exists(ca_crt),
+                            'Root CA certificate was not requested')
+            self.assertTrue(os.path.exists(machine_crt),
+                            'Machine certificate was not requested')
+            self.assertTrue(os.path.exists(machine_crt),
+                            'Machine key was not generated')
+            self.assertTrue(os.path.exists(workstation_crt),
+                            'Workstation certificate was not requested')
+            self.assertTrue(os.path.exists(workstation_crt),
+                            'Workstation key was not generated')
 
             # Remove policy
             gp_db = store.get_gplog(machine_creds.get_username())
