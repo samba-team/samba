@@ -119,8 +119,14 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context,
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 
+	if (stat_ctx != NULL && libnetapi_initialized) {
+		*context = stat_ctx;
+		return NET_API_STATUS_SUCCESS;
+	}
+
+	frame = talloc_stackframe();
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
 	if (!ctx) {
 		TALLOC_FREE(frame);
