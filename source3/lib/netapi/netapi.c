@@ -74,10 +74,16 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 #endif
 	frame = talloc_stackframe();
 
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
+	}
+
 	/* When libnetapi is invoked from an application, it does not
 	 * want to be swamped with level 10 debug messages, even if
 	 * this has been set for the server in smb.conf */
-	lp_set_cmdline("log level", "0");
+	lpcfg_set_cmdline(lp_ctx, "log level", "0");
 	setup_logging("libnetapi", DEBUG_STDERR);
 
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
@@ -91,13 +97,10 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	BlockSignals(True, SIGPIPE);
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		TALLOC_FREE(frame);
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
-	}
-
 	ret = libnetapi_net_init(context, lp_ctx, NULL);
+	if (ret == NET_API_STATUS_SUCCESS) {
+		talloc_steal(*context, lp_ctx);
+	}
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -124,6 +127,8 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context,
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
+	ctx->lp_ctx = lp_ctx;
+
 	ctx->creds = creds;
 	if (ctx->creds == NULL) {
 		ctx->creds = cli_credentials_init(ctx);
@@ -147,7 +152,7 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context,
 
 	talloc_steal(NULL, ctx);
 	*context = stat_ctx = ctx;
-	
+
 	TALLOC_FREE(frame);
 	return NET_API_STATUS_SUCCESS;
 }
@@ -211,8 +216,8 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	ctx->debuglevel = talloc_strdup(ctx, debuglevel);
-	
-	if (!lp_set_cmdline("log level", debuglevel)) {
+
+	if (!lpcfg_set_cmdline(ctx->lp_ctx, "log level", debuglevel)) {
 		TALLOC_FREE(frame);
 		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
@@ -229,7 +234,7 @@ NET_API_STATUS libnetapi_set_logfile(struct libnetapi_ctx *ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	ctx->logfile = talloc_strdup(ctx, logfile);
 
-	if (!lp_set_cmdline("log file", logfile)) {
+	if (!lpcfg_set_cmdline(ctx->lp_ctx, "log file", logfile)) {
 		TALLOC_FREE(frame);
 		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
@@ -416,7 +421,7 @@ char *libnetapi_errstr(NET_API_STATUS status)
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *ret;
 	if (status & 0xc0000000) {
-		ret = talloc_strdup(NULL, 
+		ret = talloc_strdup(NULL,
 				     get_friendly_nt_error_msg(NT_STATUS(status)));
 	} else {
 		ret = talloc_strdup(NULL,
