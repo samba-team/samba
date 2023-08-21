@@ -284,14 +284,18 @@ static void cli_get_unixattr_opened(struct tevent_req *subreq)
 	}
 
 	subreq = smb2cli_query_info_send(
-		state, state->ev, cli->conn, 0,
-		cli->smb2.session, cli->smb2.tcon,
-		1, /* in_info_type */
-		(SMB_FILE_ALL_INFORMATION - 1000), /* in_file_info_class */
-		0xFFFF, /* in_max_output_length */
-		NULL, /* in_input_buffer */
-		0, /* in_additional_info */
-		0, /* in_flags */
+		state,
+		state->ev,
+		cli->conn,
+		0,
+		cli->smb2.session,
+		cli->smb2.tcon,
+		1,			   /* in_info_type */
+		FSCC_FILE_ALL_INFORMATION, /* in_file_info_class */
+		0xFFFF,			   /* in_max_output_length */
+		NULL,			   /* in_input_buffer */
+		0,			   /* in_additional_info */
+		0,			   /* in_flags */
 		state->fid_persistent,
 		state->fid_volatile);
 	if (tevent_req_nomem(subreq, req)) {
