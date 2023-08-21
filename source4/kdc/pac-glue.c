@@ -823,8 +823,8 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
  *
  * https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview
  */
-static NTSTATUS samba_add_asserted_identity(enum samba_asserted_identity ai,
-					    struct auth_user_info_dc *user_info_dc)
+NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
+					 struct auth_user_info_dc *user_info_dc)
 {
 	struct dom_sid ai_sid;
 	const char *sid_str = NULL;
@@ -854,8 +854,8 @@ static NTSTATUS samba_add_asserted_identity(enum samba_asserted_identity ai,
 		&user_info_dc->num_sids);
 }
 
-static NTSTATUS samba_add_claims_valid(enum samba_claims_valid claims_valid,
-				       struct auth_user_info_dc *user_info_dc)
+NTSTATUS samba_kdc_add_claims_valid(enum samba_claims_valid claims_valid,
+				    struct auth_user_info_dc *user_info_dc)
 {
 	switch (claims_valid) {
 	case SAMBA_CLAIMS_VALID_EXCLUDE:
@@ -880,8 +880,8 @@ static NTSTATUS samba_add_claims_valid(enum samba_claims_valid claims_valid,
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-static NTSTATUS samba_add_compounded_auth(enum samba_compounded_auth compounded_auth,
-					  struct auth_user_info_dc *user_info_dc)
+NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_auth,
+				       struct auth_user_info_dc *user_info_dc)
 {
 	switch (compounded_auth) {
 	case SAMBA_COMPOUNDED_AUTH_EXCLUDE:
@@ -1148,24 +1148,24 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Here we modify the SIDs to add the Asserted Identity SID. */
-	nt_status = samba_add_asserted_identity(asserted_identity,
-						user_info_dc);
+	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
+						    user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
 
-	nt_status = samba_add_claims_valid(claims_valid,
-					   user_info_dc);
+	nt_status = samba_kdc_add_claims_valid(claims_valid,
+					       user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
 
-	nt_status = samba_add_compounded_auth(compounded_auth,
-					      user_info_dc);
+	nt_status = samba_kdc_add_compounded_auth(compounded_auth,
+						  user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Compounded Authentication: %s\n",
 			nt_errstr(nt_status));
@@ -2533,8 +2533,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_status = samba_add_compounded_auth(compounded_auth,
-					      user_info_dc);
+	nt_status = samba_kdc_add_compounded_auth(compounded_auth,
+						  user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Compounded Authentication: %s\n",
 			nt_errstr(nt_status));

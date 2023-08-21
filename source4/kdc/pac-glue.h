@@ -167,3 +167,12 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 				       const struct authn_kerberos_client_policy *client_policy,
 				       struct authn_audit_info **client_audit_info_out,
 				       NTSTATUS *status_out);
+
+NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
+					 struct auth_user_info_dc *user_info_dc);
+
+NTSTATUS samba_kdc_add_claims_valid(enum samba_claims_valid claims_valid,
+				    struct auth_user_info_dc *user_info_dc);
+
+NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_auth,
+				       struct auth_user_info_dc *user_info_dc);
