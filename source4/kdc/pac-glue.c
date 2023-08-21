@@ -1349,6 +1349,12 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	d->proxy_target.string = server;
 	d->transited_services = talloc_realloc(mem_ctx, d->transited_services,
 					       struct lsa_String, i + 1);
+	if (d->transited_services == NULL) {
+		SAFE_FREE(server);
+		SAFE_FREE(proxy);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 	d->transited_services[i].string = proxy;
 	d->num_transited_services = i + 1;
 
