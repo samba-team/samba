@@ -838,6 +838,8 @@ static NTSTATUS samba_add_asserted_identity(enum samba_asserted_identity ai,
 		break;
 	case SAMBA_ASSERTED_IDENTITY_IGNORE:
 		return NT_STATUS_OK;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!dom_sid_parse(sid_str, &ai_sid)) {
