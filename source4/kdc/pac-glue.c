@@ -840,7 +840,9 @@ static NTSTATUS samba_add_asserted_identity(enum samba_asserted_identity ai,
 		return NT_STATUS_OK;
 	}
 
-	dom_sid_parse(sid_str, &ai_sid);
+	if (!dom_sid_parse(sid_str, &ai_sid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return add_sid_to_array_attrs_unique(
 		user_info_dc,
