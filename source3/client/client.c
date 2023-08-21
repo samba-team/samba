@@ -1697,9 +1697,11 @@ static int do_allinfo(const char *name)
 	status = cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
 				       &streams);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("%s getting streams for %s\n", nt_errstr(status),
-			 name);
-		return false;
+		d_fprintf(stderr,
+			  "%s getting streams for %s\n",
+			  nt_errstr(status),
+			  name);
+		num_streams = 0;
 	}
 
 	for (i=0; i<num_streams; i++) {
@@ -1765,15 +1767,20 @@ static int do_allinfo(const char *name)
 
 	status = cli_shadow_copy_data(talloc_tos(), cli, fnum,
 				      false, &snapshots, &num_snapshots);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_close(cli, fnum);
-		return 0;
+	if (NT_STATUS_IS_OK(status)) {
+		status = cli_shadow_copy_data(talloc_tos(),
+					      cli,
+					      fnum,
+					      true,
+					      &snapshots,
+					      &num_snapshots);
 	}
-	status = cli_shadow_copy_data(talloc_tos(), cli, fnum,
-				      true, &snapshots, &num_snapshots);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_close(cli, fnum);
-		return 0;
+		d_fprintf(stderr,
+			  "%s getting shadow copy data for %s\n",
+			  nt_errstr(status),
+			  name);
+		num_snapshots = 0;
 	}
 
 	for (j=0; j<num_snapshots; j++) {
