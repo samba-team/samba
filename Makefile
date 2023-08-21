@@ -100,7 +100,7 @@ ctags:
 pep8:
 	$(WAF) pep8
 
-# Adding force on the dependencies will force the target to be always rebuild form the Make
+# Adding force on the dependencies will force the target to be always rebuilt from the Make
 # point of view forcing make to invoke waf
 
 bin/smbd: FORCE
@@ -117,7 +117,7 @@ bin/smbclient: FORCE
 
 # this allows for things like "make bin/smbtorture"
 # mainly for the binary that don't have a broken mode like smbd that must
-# be build with smbd/smbd
+# be built with smbd/smbd
 bin/%: FORCE
 	$(WAF) --targets=$(subst bin/,,$@)
 
@@ -128,7 +128,7 @@ bin/%: FORCE
 
 # This rule has to be the last one
 FORCE:
-# Having .NOTPARALLEL will force make to do target once at a time but still -j
+# Having .NOTPARALLEL will force make to do targets one at a time but still -j
 # will be present in the MAKEFLAGS that are in turn interpreted by WAF
 # so only 1 waf at a time will be called but it will still be able to do parallel builds if
 # instructed to do so
