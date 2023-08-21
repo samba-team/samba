@@ -40,23 +40,6 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		       void *state);
 bool cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
-struct tevent_req *cli_qpathinfo1_send(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
-				       struct cli_state *cli,
-				       const char *fname);
-NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
-			     time_t *change_time,
-			     time_t *access_time,
-			     time_t *write_time,
-			     off_t *size,
-			     uint32_t *pattr);
-NTSTATUS cli_qpathinfo1(struct cli_state *cli,
-			const char *fname,
-			time_t *change_time,
-			time_t *access_time,
-			time_t *write_time,
-			off_t *size,
-			uint32_t *pattr);
 NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 			     struct timespec create_time,
 			     struct timespec access_time,

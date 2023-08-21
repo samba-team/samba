@@ -656,6 +656,54 @@ static bool check_error(int line, NTSTATUS status,
 	return True;
 }
 
+NTSTATUS cli_qpathinfo1(struct cli_state *cli,
+			const char *fname,
+			time_t *change_time,
+			time_t *access_time,
+			time_t *write_time,
+			off_t *size,
+			uint32_t *pattr)
+{
+	int timezone = smb1cli_conn_server_time_zone(cli->conn);
+	time_t (*date_fn)(const void *buf, int serverzone) = NULL;
+	uint8_t *rdata = NULL;
+	uint32_t num_rdata;
+	NTSTATUS status;
+
+	status = cli_qpathinfo(talloc_tos(),
+			       cli,
+			       fname,
+			       SMB_INFO_STANDARD,
+			       22,
+			       CLI_BUFFER_SIZE,
+			       &rdata,
+			       &num_rdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (cli->win95) {
+		date_fn = make_unix_date;
+	} else {
+		date_fn = make_unix_date2;
+	}
+
+	if (change_time) {
+		*change_time = date_fn(rdata + 0, timezone);
+	}
+	if (access_time) {
+		*access_time = date_fn(rdata + 4, timezone);
+	}
+	if (write_time) {
+		*write_time = date_fn(rdata + 8, timezone);
+	}
+	if (size) {
+		*size = PULL_LE_U32(rdata, 12);
+	}
+	if (pattr) {
+		*pattr = PULL_LE_U16(rdata, l1_attrFile);
+	}
+	return NT_STATUS_OK;
+}
 
 static bool wait_lock(struct cli_state *c, int fnum, uint32_t offset, uint32_t len)
 {

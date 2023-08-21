@@ -76,6 +76,14 @@ NTSTATUS torture_setup_unix_extensions(struct cli_state *cli);
 void torture_conn_set_sockopt(struct cli_state *cli);
 void torture_deltree(struct cli_state *cli, const char *dname);
 
+NTSTATUS cli_qpathinfo1(struct cli_state *cli,
+			const char *fname,
+			time_t *change_time,
+			time_t *access_time,
+			time_t *write_time,
+			off_t *size,
+			uint32_t *pattr);
+
 /* The following definitions come from torture/utable.c  */
 
 bool torture_utable(int dummy);
