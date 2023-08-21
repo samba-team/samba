@@ -378,10 +378,6 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 		flags |= SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 	}
 
-	if (is_in_db) {
-		flags |= SAMBA_KDC_FLAG_KRBTGT_IN_DB;
-	}
-
 	ret = samba_kdc_verify_pac(mem_ctx,
 				   context,
 				   flags,
