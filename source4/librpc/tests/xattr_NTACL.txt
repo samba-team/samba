@@ -50,6 +50,8 @@ pull returned Success
                                         access_mask              : 0x001f01ff (2032127)
                                         object                   : union security_ace_object_ctr(case 0)
                                         trustee                  : S-1-5-32-544
+                                        coda                     : union security_ace_coda(case 0)
+                                        ignored                  : DATA_BLOB length=0
                                     aces: struct security_ace
                                         type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
                                         flags                    : 0x03 (3)
@@ -65,6 +67,8 @@ pull returned Success
                                         access_mask              : 0x001200a9 (1179817)
                                         object                   : union security_ace_object_ctr(case 0)
                                         trustee                  : S-1-5-32-549
+                                        coda                     : union security_ace_coda(case 0)
+                                        ignored                  : DATA_BLOB length=0
                                     aces: struct security_ace
                                         type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
                                         flags                    : 0x03 (3)
@@ -80,6 +84,8 @@ pull returned Success
                                         access_mask              : 0x001f01ff (2032127)
                                         object                   : union security_ace_object_ctr(case 0)
                                         trustee                  : S-1-5-18
+                                        coda                     : union security_ace_coda(case 0)
+                                        ignored                  : DATA_BLOB length=0
                                     aces: struct security_ace
                                         type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
                                         flags                    : 0x03 (3)
@@ -95,5 +101,7 @@ pull returned Success
                                         access_mask              : 0x001200a9 (1179817)
                                         object                   : union security_ace_object_ctr(case 0)
                                         trustee                  : S-1-5-11
+                                        coda                     : union security_ace_coda(case 0)
+                                        ignored                  : DATA_BLOB length=0
                 hash_type                : 0x0001 (1)
                 hash: ARRAY(64)
