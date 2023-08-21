@@ -10955,9 +10955,6 @@ static bool run_mangle1(int dummy)
 	uint16_t fnum;
 	fstring alt_name;
 	NTSTATUS status;
-	time_t change_time, access_time, write_time;
-	off_t size;
-	uint32_t attr;
 
 	printf("starting mangle1 test\n");
 	if (!torture_open_connection(&cli, 0)) {
@@ -10991,8 +10988,7 @@ static bool run_mangle1(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	status = cli_qpathinfo1(cli, alt_name, &change_time, &access_time,
-				&write_time, &size, &attr);
+	status = cli_qpathinfo1(cli, alt_name, NULL, NULL, NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("cli_qpathinfo1(%s) failed: %s\n", alt_name,
 			 nt_errstr(status));
