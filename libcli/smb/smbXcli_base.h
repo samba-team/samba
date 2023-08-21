@@ -23,6 +23,13 @@
 
 #define SMB_SUICIDE_PACKET 0x74697865
 
+#include "replace.h"
+#include <tevent.h>
+#include "libcli/smb/smb_constants.h"
+#include "libcli/util/ntstatus.h"
+#include "lib/util/time.h"
+#include "lib/util/data_blob.h"
+
 struct smbXcli_conn;
 struct smbXcli_session;
 struct smbXcli_tcon;
