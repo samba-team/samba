@@ -149,7 +149,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 {
 	struct security_descriptor *sd;
 	NTSTATUS status;
-	struct security_ace ace;
+	struct security_ace ace = {};
 	mode_t mode;
 	struct id_map *ids;
 

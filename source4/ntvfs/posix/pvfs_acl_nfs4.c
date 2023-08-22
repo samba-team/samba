@@ -98,7 +98,7 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 
 	for (i=0;i<acl->a_count;i++) {
 		struct nfs4ace *a = &acl->ace[i];
-		struct security_ace ace;
+		struct security_ace ace = {};
 		ace.type = a->e_type;
 		ace.flags = a->e_flags;
 		ace.access_mask = a->e_mask;
