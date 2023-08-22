@@ -54,7 +54,7 @@ struct mount_state {
 struct inode_state {
 	struct idr_context *ino_ctx;
 	fuse_ino_t ino;
-	char path[1];
+	char path[];
 };
 
 static int inode_state_destructor(struct inode_state *s);
