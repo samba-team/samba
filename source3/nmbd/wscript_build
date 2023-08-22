@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+nmbd_cflags = ''
+if bld.CONFIG_SET('HAVE_WNO_ERROR_STRINGOP_OVERFLOW'):
+    nmbd_cflags = '-Wno-error=stringop-overflow'
+
 bld.SAMBA3_BINARY('nmbd',
                  source='''
                  asyncdns.c
@@ -30,6 +34,7 @@ bld.SAMBA3_BINARY('nmbd',
                  nmbd_workgroupdb.c
                  nmbd_synclists.c
                  ''',
+                 cflags=nmbd_cflags,
                  deps='''
                  talloc
                  tevent
