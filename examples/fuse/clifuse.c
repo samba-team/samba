@@ -736,6 +736,25 @@ static void cli_ll_lookup_done(struct tevent_req *req)
 	TALLOC_FREE(state);
 }
 
+static void
+cli_ll_forget(fuse_req_t freq, fuse_ino_t ino, unsigned long nlookup)
+{
+	struct mount_state *mstate =
+		talloc_get_type_abort(fuse_req_userdata(freq),
+				      struct mount_state);
+	struct inode_state *istate = NULL;
+
+	DBG_DEBUG("ino=%ju, nlookup=%lu\n", (uintmax_t)ino, nlookup);
+
+	istate = idr_find(mstate->ino_ctx, ino);
+	if (istate == NULL) {
+		fuse_reply_err(freq, ENOENT);
+		return;
+	}
+	TALLOC_FREE(istate);
+	fuse_reply_none(freq);
+}
+
 struct ll_getattr_state {
 	struct mount_state *mstate;
 	fuse_req_t freq;
@@ -1399,6 +1418,7 @@ static void cli_ll_releasedir_done(struct tevent_req *req)
 
 static struct fuse_lowlevel_ops cli_ll_ops = {
 	.lookup = cli_ll_lookup,
+	.forget = cli_ll_forget,
 	.getattr = cli_ll_getattr,
 	.open = cli_ll_open,
 	.create = cli_ll_create,
