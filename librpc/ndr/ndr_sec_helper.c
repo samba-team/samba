@@ -50,7 +50,7 @@ static size_t ndr_size_security_ace_core(const struct security_ace *ace, int fla
 			ret += 16; /* GUID ace->object.object.type.type */
 		}
 		if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
-			ret += 16; /* GUID ace->object.object.inherited_typeinherited_type */
+			ret += 16; /* GUID ace->object.object.inherited_type.inherited_type */
 		}
 		break;
 	default:
