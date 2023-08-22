@@ -39,12 +39,7 @@ static size_t ndr_size_security_ace_core(const struct security_ace *ace, int fla
 	if (!ace) return 0;
 
 	ret = 8 + ndr_size_dom_sid(&ace->trustee, flags);
-
-	switch (ace->type) {
-	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-	case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-	case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
-	case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+	if (sec_ace_object(ace->type)) {
 		ret += 4; /* uint32 bitmap ace->object.object.flags */
 		if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
 			ret += 16; /* GUID ace->object.object.type.type */
@@ -52,9 +47,6 @@ static size_t ndr_size_security_ace_core(const struct security_ace *ace, int fla
 		if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
 			ret += 16; /* GUID ace->object.object.inherited_type.inherited_type */
 		}
-		break;
-	default:
-		break;
 	}
 
 	return ret;
