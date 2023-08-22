@@ -2019,7 +2019,7 @@ static bool test_PrinterInfo_SDs(struct torture_context *tctx,
 	/* set modified sd level 3, query level 2 */
 
 	for (i=0; i < 93; i++) {
-		struct security_ace a;
+		struct security_ace a = {};
 		const char *sid_string = talloc_asprintf(tctx, "S-1-5-32-9999%i", i);
 		a.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 		a.flags = 0;

@@ -251,7 +251,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	struct policy_handle uch;
 	struct samr_QuerySecurity qs;
 	struct samr_SetSecurity ss;
-	struct security_ace ace;
+	struct security_ace ace = {};
 	struct security_descriptor *sd;
 	struct sec_desc_buf sdb, *sdbuf = NULL;
 	bool ret = true;

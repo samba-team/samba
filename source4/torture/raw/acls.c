@@ -140,7 +140,7 @@ static bool test_sd(struct torture_context *tctx, struct smbcli_state *cli)
 	int fnum = -1;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_ace ace;
+	struct security_ace ace = {};
 	struct security_descriptor *sd;
 	struct dom_sid *test_sid;
 
