@@ -114,6 +114,95 @@
 
 	<varlistentry>
 	  <term>
+	    CTDB_KILLTCP_USE_SS_KILL=yes|try|no
+	  </term>
+	  <listitem>
+	    <para>
+	      Whether to use <command>ss -K/--kill</command> to reset
+	      incoming TCP connections to public IP addresses during
+	      <command>releaseip</command>.
+	    </para>
+
+	    <para>
+	      CTDB's standard method of resetting incoming TCP
+	      connections during <command>releaseip</command> is via
+	      its custom <command>ctdb_killtcp</command> command.
+	      This uses network trickery to reset each connection:
+	      send a "tickle ACK", capture the reply to extract the
+	      TCP sequence number, send a reset (containing the
+	      correct sequence number).
+	    </para>
+
+	    <para>
+	      <command>ss -K</command> has been supported in
+	      <command>ss</command> since iproute 4.5 in March 2016
+	      and in the Linux kernel since 4.4 in December 2015.
+	      However, the required kernel configuration item
+	      <code>CONFIG_INET_DIAG_DESTROY</code> is disabled by
+	      default.  Although enabled in Debian kernels since ~2017
+	      and in Ubuntu since at least 18.04, this has only
+	      recently been enabled in distributions such as RHEL.
+	      There seems to be no way, including running <command>ss
+	      -K</command>, to determine if this is supported, so use
+	      of this feature needs to be configurable.  When
+	      available, it should be the fastest, most reliable way
+	      of killing connections.
+	    </para>
+
+	    <para>
+	      Supported values are:
+	      <variablelist>
+		<varlistentry>
+		  <term>
+		    yes
+		  </term>
+		  <listitem>
+		    <para>
+		      Use <command>ss -K</command> and make no other
+		      attempt to kill any remaining connections.  This
+		      is sane on modern Linux distributions that are
+		      guaranteed to have
+		      <code>CONFIG_INET_DIAG_DESTROY</code> enabled.
+		    </para>
+		  </listitem>
+		</varlistentry>
+
+		<varlistentry>
+		  <term>
+		    try
+		  </term>
+		  <listitem>
+		    <para>
+		      Attempt to use <command>ss -K</command> and fall
+		      back to <command>ctdb_killtcp</command> for any
+		      remaining connections.  This may be a good value
+		      when <command>ss</command> supports the
+		      <command>-K</command> option but it is uncertain
+		      whether <code>CONFIG_INET_DIAG_DESTROY</code> is
+		      enabled.
+		    </para>
+		  </listitem>
+		</varlistentry>
+
+		<varlistentry>
+		  <term>
+		    no
+		  </term>
+		  <listitem>
+		    <para>
+		      Never attempt to use <command>ss -K</command>.
+		      Rely only on <command>ctdb_killtcp</command>.
+		    </para>
+		  </listitem>
+		</varlistentry>
+	      </variablelist>
+	      Default is "no".
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>
 	    CTDB_PARTIALLY_ONLINE_INTERFACES=yes|no
 	  </term>
 	  <listitem>

@@ -514,6 +514,7 @@ kill_tcp_summarise()
 {
 	_mode="$1"
 	_count="$2"
+	_method="$3"
 
 	_connections=$(get_tcp_connections_for_ip "$_ip")
 	if [ -z "$_connections" ]; then
@@ -534,7 +535,11 @@ kill_tcp_summarise()
 	esac
 
 	_t="${_killed}/${_total}"
-	echo "Killed ${_t} TCP connections to released IP ${_ip}"
+	_m=""
+	if [ -n "$_method" ]; then
+		_m=", using ${_method}"
+	fi
+	echo "Killed ${_t} TCP connections to released IP ${_ip}${_m}"
 	if [ -n "$_connections" ]; then
 		echo "Remaining connections:"
 		echo "$_connections" | sed -e 's|^|  |'
@@ -550,6 +555,16 @@ kill_tcp_connections()
 	if [ "$3" = "oneway" ]; then
 		_oneway=true
 	fi
+
+	case "$CTDB_KILLTCP_USE_SS_KILL" in
+	yes | try)
+		_killcount=$(ss -K -tnH state established src "$_ip" | wc -l)
+		kill_tcp_summarise "killed" "$_killcount" "ss -K"
+		if [ "$CTDB_KILLTCP_USE_SS_KILL" = "yes" ]; then
+			return
+		fi
+		;;
+	esac
 
 	get_tcp_connections_for_ip "$_ip" | {
 		_killcount=0
@@ -588,7 +603,11 @@ kill_tcp_connections()
 			return
 		}
 
-		kill_tcp_summarise "total" "$_killcount"
+		_method=""
+		if [ "$CTDB_KILLTCP_USE_SS_KILL" = "try" ]; then
+			_method="ctdb_killtcp"
+		fi
+		kill_tcp_summarise "total" "$_killcount" "$_method"
 	}
 }
 

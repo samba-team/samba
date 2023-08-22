@@ -108,22 +108,33 @@ ss_tcp_established()
 	# shellcheck disable=SC2048,SC2086
 	parse_filter $*
 
-	for i in $FAKE_NETSTAT_TCP_ESTABLISHED; do
-		src="${i%|*}"
-		dst="${i#*|}"
-		if filter_socket "$srcs" "$sports" "$src"; then
-			echo 0 0 "$src" "$dst"
-		fi
-	done
+	if ! "$kill"; then
+		for i in $FAKE_NETSTAT_TCP_ESTABLISHED; do
+			src="${i%|*}"
+			dst="${i#*|}"
+			if filter_socket "$srcs" "$sports" "$src"; then
+				echo 0 0 "$src" "$dst"
+			fi
+		done
+	fi
 
 	if [ -z "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE" ]; then
 		return
 	fi
+	new="${FAKE_NETSTAT_TCP_ESTABLISHED_FILE}.new"
+	: >"$new"
 	while read -r src dst; do
 		if filter_socket "$srcs" "$sports" "$src"; then
 			echo 0 0 "$src" "$dst"
+		else
+			echo "${src} ${dst}" >>"$new"
 		fi
 	done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+	if "$kill"; then
+		mv "$new" "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+	else
+		rm "$new"
+	fi
 }
 
 ############################################################
@@ -160,16 +171,18 @@ unix=false
 all=false
 listen=false
 header=true
+kill=false
 
 orig="$*"
 
-while getopts "txnalHh?" opt; do
+while getopts "txnalHKh?" opt; do
 	case "$opt" in
 	t) tcp=true ;;
 	x) unix=true ;;
 	l) listen=true ;;
 	a) all=true ;;
 	H) header=false ;;
+	K) kill=true ;;
 	n) : ;;
 	\? | h) usage ;;
 	esac
