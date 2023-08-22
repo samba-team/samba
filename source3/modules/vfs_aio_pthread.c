@@ -483,28 +483,28 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 		aio_allow_open = false;
 	}
 
-	if (!aio_allow_open) {
-		/* aio opens turned off. */
-		return openat(fsp_get_pathref_fd(dirfsp),
-			      smb_fname->base_name,
-			      how->flags,
-			      how->mode);
+	if (fsp->fsp_flags.is_pathref) {
+		/* Use SMB_VFS_NEXT_OPENAT() to call openat() with O_PATH. */
+		aio_allow_open = false;
 	}
 
 	if (!(how->flags & O_CREAT)) {
 		/* Only creates matter. */
-		return openat(fsp_get_pathref_fd(dirfsp),
-			      smb_fname->base_name,
-			      how->flags,
-			      how->mode);
+		aio_allow_open = false;
 	}
 
 	if (!(how->flags & O_EXCL)) {
 		/* Only creates with O_EXCL matter. */
-		return openat(fsp_get_pathref_fd(dirfsp),
-			      smb_fname->base_name,
-			      how->flags,
-			      how->mode);
+		aio_allow_open = false;
+	}
+
+	if (!aio_allow_open) {
+		/* aio opens turned off. */
+		return SMB_VFS_NEXT_OPENAT(handle,
+			      dirfsp,
+			      smb_fname,
+			      fsp,
+			      how);
 	}
 
 	/*
