@@ -105,8 +105,9 @@
       <title>10.interface</title>
 
       <para>
-	This event script handles monitoring of interfaces using by
-	public IP addresses.
+	This event script handles public IP address release and
+	takeover, as well as monitoring interfaces used by public IP
+	addresses.
       </para>
 
       <variablelist>

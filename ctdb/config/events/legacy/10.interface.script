@@ -1,9 +1,7 @@
 #!/bin/sh
 
-#################################
-# interface event script for ctdb
-# this adds/removes IPs from your 
-# public interface
+# Handle public IP address release and takeover, as well as monitoring
+# interfaces used by public IP addresses.
 
 [ -n "$CTDB_BASE" ] || \
 	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && dirname "$PWD")
@@ -125,8 +123,8 @@ init)
 	get_proc "$_promote" >/dev/null 2>&1 || \
 	    die "Public IPs only supported if promote_secondaries is available"
 
-	# make sure we drop any ips that might still be held if
-	# previous instance of ctdb got killed with -9 or similar
+	# Make sure we drop any IPs that might still be held if
+	# previous instance of ctdbd got killed with -9 or similar
 	drop_all_public_ips
 	;;
 
@@ -156,12 +154,15 @@ takeip)
 	;;
 
 releaseip)
-	# releasing an IP is a bit more complex than it seems. Once the IP
-	# is released, any open tcp connections to that IP on this host will end
-	# up being stuck. Some of them (such as NFS connections) will be unkillable
-	# so we need to use the killtcp ctdb function to kill them off. We also
-	# need to make sure that no new connections get established while we are
-	# doing this! So what we do is this:
+	# Releasing an IP is a bit more complex than it seems. Once
+	# the IP is released, any open TCP connections to that IP on
+	# this host will end up being stuck. Some of them (such as NFS
+	# connections) will be unkillable so we need to terminate
+	# them. We also need to make sure that no new connections get
+	# established while we are doing this.
+	#
+	# The steps are:
+	#
 	# 1) firewall this IP, so no new external packets arrive for it
 	# 2) find existing connections, and kill them
 	# 3) remove the IP from the interface
@@ -186,17 +187,20 @@ releaseip)
 	;;
 
 updateip)
-	# moving an IP is a bit more complex than it seems.
-	# First we drop all traffic on the old interface.
-	# Then we try to add the ip to the new interface and before
-	# we finally remove it from the old interface.
+	# Moving an IP is a bit more complex than it seems.  First we
+	# drop all traffic on the old interface.  Then we try to
+	# remove the IP from the old interface and add it to the new
+	# interface.
+	#
+	# The steps are:
 	#
 	# 1) firewall this IP, so no new external packets arrive for it
 	# 2) remove the IP from the old interface (and new interface, to be sure)
 	# 3) add the IP to the new interface
 	# 4) remove the firewall rule
 	# 5) use ctdb gratarp to propagate the new mac address
-	# 6) use netstat -tn to find existing connections, and tickle them
+	# 6) send tickle ACKs for existing connections, so dropped
+	#    packets are resent
 	_oiface=$2
 	niface=$3
 	_ip=$4
@@ -226,10 +230,10 @@ updateip)
 
 	flush_route_cache
 
-	# propagate the new mac address
+	# Propagate the new MAC address
 	$CTDB gratarp "$ip" "$niface"
 
-	# tickle all existing connections, so that dropped packets
+	# Tickle all existing connections, so that dropped packets
 	# are retransmitted and the tcp streams work
 	tickle_tcp_connections "$ip"
 	;;
