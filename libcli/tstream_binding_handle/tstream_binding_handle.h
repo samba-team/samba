@@ -22,7 +22,6 @@
 
 #include <talloc.h>
 #include "librpc/rpc/dcerpc.h"
-#include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/rpc/rpc_common.h"
 #include "libcli/util/tstream.h"
 
