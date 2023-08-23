@@ -467,6 +467,7 @@ SMBC_getatr(SMBCCTX * context,
 	struct timespec w_time_ts = {0};
 	time_t write_time = 0;
 	SMB_INO_T ino = 0;
+	mode_t mode = S_IFREG;
 	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -517,7 +518,7 @@ SMBC_getatr(SMBCCTX * context,
 					&size,
 					&attr,
 					&ino,
-					NULL);
+					&mode);
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
 		}
@@ -583,6 +584,10 @@ setup_stat:
 		   access_time_ts,
 		   change_time_ts,
 		   write_time_ts);
+
+	if ((context->internal->posix_extensions) && (mode != S_IFREG)) {
+		sb->st_mode = (sb->st_mode & ~S_IFMT) | mode;
+	}
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
