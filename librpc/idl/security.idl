@@ -658,11 +658,8 @@ interface security
 	} CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1;
 
 	typedef [public,nodiscriminant] union {
-		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] security_ace_object object;
-		[case(SEC_ACE_TYPE_ACCESS_DENIED_OBJECT)] security_ace_object object;
-		[case(SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT)] security_ace_object object;
-		[case(SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT)] security_ace_object object;
-		[default];
+		[default] security_ace_object object;
+		[case(false)];
 	} security_ace_object_ctr;
 
 	typedef [public,nodiscriminant,gensize] union {
@@ -674,7 +671,7 @@ interface security
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r,ndr->flags))] uint16 size;
 		uint32 access_mask;
-		[switch_is(type)] security_ace_object_ctr object;
+		[switch_is(sec_ace_object(type))] security_ace_object_ctr object;
 		dom_sid trustee;
 		[switch_is(type), subcontext(0), subcontext_size(ndr_subcontext_size_of_ace_coda(r, size, ndr->flags))] security_ace_coda coda;
 	} security_ace;
