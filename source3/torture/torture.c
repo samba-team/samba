@@ -4534,8 +4534,16 @@ static bool run_trans2test(int dummy)
 	cli_openx(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_close(cli, fnum);
-	status = cli_qpathinfo2(cli, fname, &c_time_ts, &a_time_ts, &w_time_ts,
-				&m_time_ts, &size, NULL, &ino);
+	status = cli_qpathinfo2(cli,
+				fname,
+				&c_time_ts,
+				&a_time_ts,
+				&w_time_ts,
+				&m_time_ts,
+				&size,
+				NULL,
+				&ino,
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", nt_errstr(status));
 		correct = False;
@@ -4571,8 +4579,16 @@ static bool run_trans2test(int dummy)
 		correct = False;
 	}
 	sleep(3);
-	status = cli_qpathinfo2(cli, "\\trans2\\", &c_time_ts, &a_time_ts,
-				&w_time_ts, &m_time_ts, &size, NULL, NULL);
+	status = cli_qpathinfo2(cli,
+				"\\trans2\\",
+				&c_time_ts,
+				&a_time_ts,
+				&w_time_ts,
+				&m_time_ts,
+				&size,
+				NULL,
+				NULL,
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", nt_errstr(status));
 		correct = False;
@@ -4582,8 +4598,16 @@ static bool run_trans2test(int dummy)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_writeall(cli, fnum,  0, (uint8_t *)&fnum, 0, sizeof(fnum), NULL);
 	cli_close(cli, fnum);
-	status = cli_qpathinfo2(cli, "\\trans2\\", &c_time_ts, &a_time_ts,
-				&w_time_ts, &m_time2_ts, &size, NULL, NULL);
+	status = cli_qpathinfo2(cli,
+				"\\trans2\\",
+				&c_time_ts,
+				&a_time_ts,
+				&w_time_ts,
+				&m_time2_ts,
+				&size,
+				NULL,
+				NULL,
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", nt_errstr(status));
 		correct = False;
@@ -12471,8 +12495,16 @@ static bool run_dir_createtime(int dummy)
 		goto out;
 	}
 
-	status = cli_qpathinfo2(cli, dname, &create_time, NULL, NULL, NULL,
-				NULL, NULL, &ino);
+	status = cli_qpathinfo2(cli,
+				dname,
+				&create_time,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				&ino,
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_qpathinfo2 returned %s\n",
 		       nt_errstr(status));
@@ -12503,8 +12535,16 @@ static bool run_dir_createtime(int dummy)
 		goto out;
 	}
 
-	status = cli_qpathinfo2(cli, dname, &create_time1, NULL, NULL, NULL,
-				NULL, NULL, NULL);
+	status = cli_qpathinfo2(cli,
+				dname,
+				&create_time1,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_qpathinfo2 (2) returned %s\n",
 		       nt_errstr(status));

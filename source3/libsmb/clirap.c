@@ -893,8 +893,10 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
 			     struct timespec *change_time,
-			     off_t *size, uint32_t *pattr,
-			     SMB_INO_T *ino)
+			     off_t *size,
+			     uint32_t *pattr,
+			     SMB_INO_T *ino,
+			     mode_t *mode)
 {
 	struct cli_qpathinfo2_state *state = tevent_req_data(
 		req, struct cli_qpathinfo2_state);
@@ -925,16 +927,22 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 	if (ino) {
 		*ino = state->ino;
 	}
+	if (mode != NULL) {
+		*mode = 0;
+	}
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
+NTSTATUS cli_qpathinfo2(struct cli_state *cli,
+			const char *fname,
 			struct timespec *create_time,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint32_t *pattr,
-			SMB_INO_T *ino)
+			off_t *size,
+			uint32_t *pattr,
+			SMB_INO_T *ino,
+			mode_t *mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = NULL;
@@ -959,8 +967,15 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_qpathinfo2_recv(req, create_time, access_time,
-				     write_time, change_time, size, pattr, ino);
+	status = cli_qpathinfo2_recv(req,
+				     create_time,
+				     access_time,
+				     write_time,
+				     change_time,
+				     size,
+				     pattr,
+				     ino,
+				     mode);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -1693,9 +1708,16 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 		 * an intermediate attr variable as below but can
 		 * pass pattr directly.
 		 */
-		return cli_qpathinfo2(cli, fname,
-				      create_time, access_time, write_time, change_time,
-				      size, pattr, ino);
+		return cli_qpathinfo2(cli,
+				      fname,
+				      create_time,
+				      access_time,
+				      write_time,
+				      change_time,
+				      size,
+				      pattr,
+				      ino,
+				      NULL);
 	}
 
 	if (create_time || access_time || write_time || change_time || pattr) {
