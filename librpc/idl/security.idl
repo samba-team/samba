@@ -663,6 +663,13 @@ interface security
 	} security_ace_object_ctr;
 
 	typedef [public,nodiscriminant,gensize] union {
+		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK)] [flag(NDR_REMAINING)] DATA_BLOB conditions;
+		[case(SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK)] [flag(NDR_REMAINING)] DATA_BLOB conditions;
+		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT)] [flag(NDR_REMAINING)] DATA_BLOB conditions;
+		[case(SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT)] [flag(NDR_REMAINING)] DATA_BLOB conditions;
+		[case(SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK)] [flag(NDR_REMAINING)] DATA_BLOB conditions;
+		[case(SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK_OBJECT)] [flag(NDR_REMAINING)] DATA_BLOB conditions;
+
 		[case(SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE)] CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 claim;
 		[default][flag(NDR_REMAINING)] DATA_BLOB ignored;
 	} security_ace_coda;
