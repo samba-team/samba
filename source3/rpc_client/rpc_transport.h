@@ -99,5 +99,6 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 				struct tstream_context **stream,
 				struct rpc_cli_transport **presult);
-
+struct tstream_context *rpc_transport_get_tstream(
+		struct rpc_cli_transport *transport);
 #endif /* _RPC_CLIENT_RPC_TRANSPORT_H_ */

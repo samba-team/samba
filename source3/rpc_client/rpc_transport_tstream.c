@@ -554,3 +554,11 @@ NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 	*presult = result;
 	return NT_STATUS_OK;
 }
+
+struct tstream_context *rpc_transport_get_tstream(
+		struct rpc_cli_transport *transport)
+{
+	struct rpc_tstream_state *state = talloc_get_type_abort(
+			transport->priv, struct rpc_tstream_state);
+	return state->stream;
+}
