@@ -28,6 +28,7 @@
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "libcli/smb/reparse.h"
 #include "cli_smb2_fnum.h"
 #include "lib/util/string_wrappers.h"
 
@@ -777,6 +778,9 @@ NTSTATUS cli_setfileinfo_ext(
 ****************************************************************************/
 
 struct cli_qpathinfo2_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *fname;
 	struct timespec create_time;
 	struct timespec access_time;
 	struct timespec write_time;
@@ -784,10 +788,12 @@ struct cli_qpathinfo2_state {
 	off_t size;
 	uint32_t attr;
 	SMB_INO_T ino;
+	mode_t mode;
 };
 
 static void cli_qpathinfo2_done2(struct tevent_req *subreq);
 static void cli_qpathinfo2_done(struct tevent_req *subreq);
+static void cli_qpathinfo2_got_reparse(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
@@ -801,6 +807,12 @@ struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fname = fname;
+
+	state->mode = S_IFREG;
+
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		subreq = cli_smb2_qpathinfo_send(state,
 						 ev,
@@ -848,6 +860,20 @@ static void cli_qpathinfo2_done2(struct tevent_req *subreq)
 	state->size = PULL_LE_U64(rdata, 0x30);
 	state->ino = PULL_LE_U64(rdata, 0x40);
 
+	if (state->attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+		subreq = cli_get_reparse_data_send(state,
+						   state->ev,
+						   state->cli,
+						   state->fname);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					cli_qpathinfo2_got_reparse,
+					req);
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
@@ -885,6 +911,73 @@ static void cli_qpathinfo2_done(struct tevent_req *subreq)
 
 	TALLOC_FREE(data);
 
+	if (state->attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+		subreq = cli_get_reparse_data_send(state,
+						   state->ev,
+						   state->cli,
+						   state->fname);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					cli_qpathinfo2_got_reparse,
+					req);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static void cli_qpathinfo2_got_reparse(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct cli_qpathinfo2_state *state =
+		tevent_req_data(req, struct cli_qpathinfo2_state);
+	uint8_t *data = NULL;
+	uint32_t num_data;
+	struct reparse_data_buffer reparse = {
+		.tag = 0,
+	};
+	NTSTATUS status;
+
+	status = cli_get_reparse_data_recv(subreq, state, &data, &num_data);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	status = reparse_data_buffer_parse(state, &reparse, data, num_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Ignoring unknown reparse data\n");
+		goto done;
+	}
+
+	switch (reparse.tag) {
+	case IO_REPARSE_TAG_SYMLINK:
+		state->mode = S_IFLNK;
+		break;
+	case IO_REPARSE_TAG_NFS:
+		switch (reparse.parsed.nfs.type) {
+		case NFS_SPECFILE_LNK:
+			state->mode = S_IFLNK;
+			break;
+		case NFS_SPECFILE_CHR:
+			state->mode = S_IFCHR;
+			break;
+		case NFS_SPECFILE_BLK:
+			state->mode = S_IFBLK;
+			break;
+		case NFS_SPECFILE_FIFO:
+			state->mode = S_IFIFO;
+			break;
+		case NFS_SPECFILE_SOCK:
+			state->mode = S_IFSOCK;
+			break;
+		}
+		break;
+	}
+done:
 	tevent_req_done(req);
 }
 
@@ -928,7 +1021,7 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 		*ino = state->ino;
 	}
 	if (mode != NULL) {
-		*mode = 0;
+		*mode = state->mode;
 	}
 	return NT_STATUS_OK;
 }
