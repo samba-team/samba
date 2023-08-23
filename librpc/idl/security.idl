@@ -639,6 +639,24 @@ interface security
 		CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING = 0x0010
 	} security_claim_value_type;
 
+	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64),relative] int64 *int_value;
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64),relative] hyper *uint_value;
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING),relative] nstring *string_value;
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_SID),relative] DATA_BLOB *sid_value;
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING),relative] DATA_BLOB *octet_value;
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN),relative] hyper *bool_value;
+	} claim_values;
+
+	typedef [public,gensize] struct {
+		[relative] nstring *name;
+		uint16 value_type;
+		uint16 _reserved;
+		uint32 flags;
+		uint32 value_count;
+		[switch_is(value_type)] claim_values values[value_count];
+	} CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1;
+
 	typedef [public,nodiscriminant] union {
 		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] security_ace_object object;
 		[case(SEC_ACE_TYPE_ACCESS_DENIED_OBJECT)] security_ace_object object;
