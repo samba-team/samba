@@ -32,8 +32,6 @@
 #include "libsmb/clirap.h"
 
 #define SMBC_MAX_NAME  1023
-#define SMBC_FILE_MODE (S_IFREG | 0444)
-#define SMBC_DIR_MODE  (S_IFDIR | 0555)
 
 /*
  * DOS Attribute values (used internally)

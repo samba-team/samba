@@ -59,9 +59,9 @@ void setup_stat(struct stat *st,
 	st->st_mode = 0;
 
 	if (IS_DOS_DIR(attr)) {
-		st->st_mode = SMBC_DIR_MODE;
+		st->st_mode = (S_IFDIR | 0555);
 	} else {
-		st->st_mode = SMBC_FILE_MODE;
+		st->st_mode = (S_IFREG | 0444);
 	}
 
 	if (IS_DOS_ARCHIVE(attr)) {
