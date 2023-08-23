@@ -758,6 +758,12 @@ interface security
 		[size_is(num_sids)] dom_sid sids[*];
 		se_privilege privilege_mask;
 		lsa_SystemAccessModeFlags rights_mask;
+		uint32 num_local_claims;
+		uint32 num_user_claims;
+		uint32 num_device_claims;
+		[size_is(num_local_claims)] CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 local_claims[*];
+		[size_is(num_user_claims)] CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 user_claims[*];
+		[size_is(num_device_claims)] CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 device_claims[*];
 	} security_token;
 
         typedef [public] struct {
