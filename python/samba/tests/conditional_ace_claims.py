@@ -32,6 +32,63 @@ DEFAULT_ACCESS2 = (security.SEC_STD_READ_CONTROL |
                    security.SEC_ADS_READ_PROP)
 
 
+def write_c_test_on_failure(f):
+    """This is a function decorator that writes a function for
+    /libcli/security/tests/test_run_conditional_ace.c that runs the
+    equivalent test. Why?! Because iterating over a test to debug the
+    failure is slower in Python tests, but adding new tests is faster
+    in Python. So the flow goes like this:
+
+    1. add python tests, run them
+    2. if nothing fails, goto 1
+    3. copy the test_something() text into test_run_conditional_ace.c,
+       rename it, and add it to main().
+    4. `make bin/test_run_conditional_ace && rr bin/test_run_conditional_ace`
+    5. `rr replay`
+
+    and you're away. You can also just work from the Python, but a few
+    runs of `make -j` after touching something in libcli/security will
+    make you see why this exists.
+
+    You might be thinking that this surely took longer to write than
+    waiting 100 times for a 30 second compile, but that misses the
+    point that debugging needs to be ergonomic and fun.
+    """
+    from json import dumps as q  # JSON quoting is C quoting, more or less
+
+    def wrapper(name, token, sddl, access_desired):
+        try:
+            f(name, token, sddl, access_desired)
+        except Exception:
+            print()
+            print('static void test_something(void **state)')
+            print('{')
+            print('\tINIT();')
+            for s in ('sids', 'device_sids'):
+                if s in token:
+                    macro = ('user_sids' if s == 'sids' else s).upper()
+                    v = ', '.join(q(x) for x in token[s])
+                    print(f'\t{macro}({v});')
+            for s in ('user_claims', 'device_claims'):
+                if s in token:
+                    macro = s.upper()
+                    for name, values in token[s].items():
+                        if not isinstance(values, (list, tuple)):
+                            values = [values]
+                        v = ', '.join(q(x) for x in values)
+                        v = q(f"{v}")
+                        print(f'\t{macro}({q(name)}, {v});')
+            print(f'\tSD({q(sddl)});')
+            if 'allow' in f.__name__:
+                print(f'\tALLOW_CHECK({access_desired:#x});')
+            else:
+                print(f'\tDENY_CHECK({access_desired:#x});')
+            print('}')
+            print()
+            raise
+    return wrapper
+
+
 class ConditionalAceClaimsBase(TestCase):
     maxDiff = 0
 
@@ -77,6 +134,7 @@ class ConditionalAceClaimsBase(TestCase):
             with open(os.path.join(fuzz_seed_dir, name), 'w') as f:
                 f.write(sddl)
 
+    @write_c_test_on_failure
     def _test_allow_with_args(self, _token, sddl, access_desired):
         if isinstance(_token, dict):
             token = Token(**_token)
@@ -94,6 +152,7 @@ class ConditionalAceClaimsBase(TestCase):
 
         self.assertEqual(granted, access_desired)
 
+    @write_c_test_on_failure
     def _test_deny_with_args(self, token, sddl, access_desired):
         if isinstance(token, dict):
             token = Token(**token)
