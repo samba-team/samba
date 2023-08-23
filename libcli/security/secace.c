@@ -64,6 +64,15 @@ bool sec_ace_callback(uint8_t type)
 	return false;
 }
 
+/**
+ * Check if an ACE type is resource attribute, which means it will
+ * have a blob of data at the end defining an attribute on the object.
+ * Resource attribute ACEs should only occur in SACLs.
+ */
+bool sec_ace_resource(uint8_t type)
+{
+	return type == SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE;
+}
 
 /*******************************************************************
  Sets up a struct security_ace structure.
