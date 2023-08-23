@@ -8,6 +8,7 @@
 
 int main(int argc, char * argv[])
 {
+	SMBCCTX *ctx = NULL;
 	int             debug = 0;
 	char            m_time[32];
 	char            c_time[32];
@@ -35,9 +36,18 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
-	smbc_init(get_auth_data_fn, debug);
+	ctx = smbc_new_context();
+	if (ctx == NULL) {
+		perror("smbc_new_context failed");
+		return 1;
+	}
 
-	ret = smbc_stat(pSmbPath, &st);
+	smbc_setOptionDebugToStderr(ctx, 1);
+	smbc_setDebug(ctx, debug);
+	smbc_init_context(ctx);
+	smbc_setFunctionAuthData(ctx, get_auth_data_fn);
+
+	ret = smbc_getFunctionStat(ctx)(ctx, pSmbPath, &st);
 	if (ret < 0) {
 		perror("smbc_stat");
 		return 1;
