@@ -74,6 +74,12 @@ bool sec_ace_resource(uint8_t type)
 	return type == SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE;
 }
 
+bool sec_ace_has_extra_blob(uint8_t type)
+{
+	return sec_ace_callback(type) || sec_ace_resource(type);
+}
+
+
 /*******************************************************************
  Sets up a struct security_ace structure.
 ********************************************************************/

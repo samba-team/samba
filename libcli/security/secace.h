@@ -27,6 +27,7 @@ bool sec_ace_object(uint8_t type);
 size_t ndr_subcontext_size_of_ace_coda(const struct security_ace *ace, size_t ace_size, int flags);
 bool sec_ace_callback(uint8_t type);
 bool sec_ace_resource(uint8_t type);
+bool sec_ace_has_extra_blob(uint8_t type);
 
 void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum security_ace_type type,
 		  uint32_t mask, uint8_t flag);
