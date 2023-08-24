@@ -129,38 +129,6 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 }
 
 static
-NTSTATUS samba_get_requester_sid_pac_blob(TALLOC_CTX *mem_ctx,
-					  const struct auth_user_info_dc *info,
-					  DATA_BLOB *requester_sid_blob)
-{
-	enum ndr_err_code ndr_err;
-	NTSTATUS nt_status;
-
-	if (requester_sid_blob != NULL) {
-		*requester_sid_blob = data_blob_null;
-	}
-
-	if (requester_sid_blob != NULL && info->num_sids > 0) {
-		union PAC_INFO pac_requester_sid = {};
-
-		pac_requester_sid.requester_sid.sid = info->sids[PRIMARY_USER_SID_INDEX].sid;
-
-		ndr_err = ndr_push_union_blob(requester_sid_blob, mem_ctx,
-					      &pac_requester_sid,
-					      PAC_TYPE_REQUESTER_SID,
-					      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			nt_status = ndr_map_error2ntstatus(ndr_err);
-			DBG_WARNING("PAC_REQUESTER_SID (presig) push failed: %s\n",
-				    nt_errstr(nt_status));
-			return nt_status;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
-static
 NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 				     const struct auth_user_info_dc *info,
 				     DATA_BLOB *upn_data)
@@ -1068,13 +1036,25 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = samba_get_requester_sid_pac_blob(mem_ctx,
-						     user_info_dc,
-						     requester_sid_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Building PAC REQUESTER SID failed: %s\n",
-			nt_errstr(nt_status));
-		return nt_status;
+	if (user_info_dc->num_sids > 0) {
+		union PAC_INFO pac_requester_sid = {};
+		enum ndr_err_code ndr_err;
+
+		pac_requester_sid.requester_sid.sid = user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid;
+
+		ndr_err = ndr_push_union_blob(requester_sid_blob, mem_ctx,
+					      &pac_requester_sid,
+					      PAC_TYPE_REQUESTER_SID,
+					      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			nt_status = ndr_map_error2ntstatus(ndr_err);
+			DBG_WARNING("PAC_REQUESTER_SID (presig) push failed: %s\n",
+				    nt_errstr(nt_status));
+			DBG_ERR("Building PAC REQUESTER SID failed: %s\n",
+				nt_errstr(nt_status));
+
+			return nt_status;
+		}
 	}
 
 	*_requester_sid_blob = requester_sid_blob;
