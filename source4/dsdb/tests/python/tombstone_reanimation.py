@@ -26,7 +26,6 @@ import samba
 
 from samba.ndr import ndr_unpack, ndr_print
 from samba.dcerpc import misc
-from samba.dcerpc import security
 from samba.dcerpc import drsblobs
 from samba.dcerpc.drsuapi import *
 from samba.tests.password_test import PasswordCommon

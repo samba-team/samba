@@ -15,31 +15,27 @@ import samba
 import samba.getopt as options
 import samba.tests
 import ldb
-import base64
 
 sys.path.insert(0, "bin/python")
-from samba.tests.subunitrun import TestProgram, SubunitOptions
 from samba.tests import DynamicTestCase
 from samba.subunit.run import SubunitTestRunner
-from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.dcerpc import samr, security, lsa
+from samba.dcerpc import security
 from samba.credentials import Credentials
-from samba.ndr import ndr_unpack, ndr_pack
+from samba.ndr import ndr_pack
 from samba.tests import delete_force
 from samba import gensec, sd_utils
 from samba.credentials import DONT_USE_KERBEROS
-from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
-from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba.dsdb import UF_SCRIPT, UF_ACCOUNTDISABLE, UF_00000004, UF_HOMEDIR_REQUIRED, \
-    UF_LOCKOUT, UF_PASSWD_NOTREQD, UF_PASSWD_CANT_CHANGE, UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED,\
-    UF_TEMP_DUPLICATE_ACCOUNT, UF_NORMAL_ACCOUNT, UF_00000400, UF_INTERDOMAIN_TRUST_ACCOUNT, \
-    UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT, UF_00004000, \
-    UF_00008000, UF_DONT_EXPIRE_PASSWD, UF_MNS_LOGON_ACCOUNT, UF_SMARTCARD_REQUIRED, \
-    UF_TRUSTED_FOR_DELEGATION, UF_NOT_DELEGATED, UF_USE_DES_KEY_ONLY, UF_DONT_REQUIRE_PREAUTH, \
-    UF_PASSWORD_EXPIRED, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION, UF_NO_AUTH_DATA_REQUIRED, \
-    UF_PARTIAL_SECRETS_ACCOUNT, UF_USE_AES_KEYS
+from ldb import SCOPE_BASE, LdbError
+from samba.dsdb import (
+    UF_NORMAL_ACCOUNT,
+    UF_PARTIAL_SECRETS_ACCOUNT,
+    UF_PASSWD_NOTREQD,
+    UF_SERVER_TRUST_ACCOUNT,
+    UF_TRUSTED_FOR_DELEGATION,
+    UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
+    UF_WORKSTATION_TRUST_ACCOUNT,
+)
 
 
 parser = optparse.OptionParser("user_account_control.py [options] <host>")

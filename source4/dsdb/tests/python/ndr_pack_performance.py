@@ -8,12 +8,7 @@ import os
 import samba
 import samba.getopt as options
 import random
-import tempfile
-import shutil
-import time
 import gzip
-
-from samba.netcmd.main import cmd_sambatool
 
 # We try to use the test infrastructure of Samba 4.3+, but if it
 # doesn't work, we are probably in a back-ported patch and trying to
@@ -30,9 +25,6 @@ except ImportError:
     samba.ensure_external_module("subunit", "subunit/python")
     from subunit.run import SubunitTestRunner
     import unittest
-
-from samba.samdb import SamDB
-from samba.auth import system_session
 
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security

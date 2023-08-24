@@ -4,7 +4,6 @@
 import optparse
 import sys
 import os
-import itertools
 from time import time
 from binascii import hexlify
 

@@ -31,15 +31,10 @@ from samba.auth import system_session
 from samba import ldb
 from samba.samdb import SamDB
 from samba.ndr import ndr_unpack
-from samba import gensec
-from samba.credentials import Credentials
 import samba.tests
 
-from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
-
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from ldb import LdbError
 from ldb import ERR_TIME_LIMIT_EXCEEDED, ERR_ADMIN_LIMIT_EXCEEDED, ERR_UNWILLING_TO_PERFORM
-from ldb import Message
 
 parser = optparse.OptionParser("notification.py [options] <host>")
 sambaopts = options.SambaOptions(parser)

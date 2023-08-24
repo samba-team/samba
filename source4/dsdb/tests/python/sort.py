@@ -12,7 +12,7 @@ import re
 
 sys.path.insert(0, "bin/python")
 import samba
-from samba.tests.subunitrun import SubunitOptions, TestProgram
+from samba.tests.subunitrun import SubunitOptions
 from samba.common import cmp
 from functools import cmp_to_key
 import samba.getopt as options

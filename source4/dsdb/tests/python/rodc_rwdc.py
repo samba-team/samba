@@ -14,7 +14,6 @@ import itertools
 import time
 
 sys.path.insert(0, "bin/python")
-import samba
 import ldb
 
 from samba.tests.subunitrun import SubunitOptions, TestProgram
@@ -24,7 +23,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from samba import gensec, dsdb
-from ldb import SCOPE_BASE, LdbError, ERR_INVALID_CREDENTIALS
+from ldb import LdbError, ERR_INVALID_CREDENTIALS
 from samba.dcerpc import security, samr
 import os
 

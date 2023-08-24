@@ -4,8 +4,6 @@
 import optparse
 import sys
 import os
-import base64
-import random
 import re
 import uuid
 
@@ -20,8 +18,6 @@ import ldb
 from samba.samdb import SamDB
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import drsblobs
-
-import time
 
 
 class RodcTestException(Exception):

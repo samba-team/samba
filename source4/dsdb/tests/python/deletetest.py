@@ -13,9 +13,9 @@ from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 
 from samba.auth import system_session
-from ldb import SCOPE_BASE, LdbError, Message, MessageElement, Dn, FLAG_MOD_ADD, FLAG_MOD_DELETE, FLAG_MOD_REPLACE
-from ldb import ERR_NO_SUCH_OBJECT, ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_ENTRY_ALREADY_EXISTS, ERR_ATTRIBUTE_OR_VALUE_EXISTS
-from ldb import ERR_UNWILLING_TO_PERFORM, ERR_OPERATIONS_ERROR
+from ldb import SCOPE_BASE, LdbError
+from ldb import ERR_NO_SUCH_OBJECT, ERR_NOT_ALLOWED_ON_NON_LEAF
+from ldb import ERR_UNWILLING_TO_PERFORM
 from samba.samdb import SamDB
 from samba.tests import delete_force
 from samba import dsdb
