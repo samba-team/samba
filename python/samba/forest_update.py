@@ -19,9 +19,7 @@
 import ldb
 import samba
 from samba import sd_utils
-from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import security
-from samba.dcerpc.security import SECINFO_DACL
 from samba.provision.common import setup_path
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008,

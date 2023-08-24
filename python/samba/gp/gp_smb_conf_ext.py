@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, re, numbers
+import os, numbers
 from samba.gp.gpclass import gp_pol_ext, gp_misc_applier
 from tempfile import NamedTemporaryFile
 from samba.gp.util.logging import log

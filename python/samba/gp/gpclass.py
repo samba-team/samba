@@ -21,7 +21,7 @@ import errno
 import tdb
 import pwd
 sys.path.insert(0, "bin/python")
-from samba import NTSTATUSError, WERRORError
+from samba import WERRORError
 from configparser import ConfigParser
 from io import StringIO
 import traceback
@@ -33,12 +33,10 @@ from samba.net import Net
 from samba.dcerpc import nbt
 from samba.samba3 import libsmb_samba_internal as libsmb
 import samba.gpo as gpo
-from samba.param import LoadParm
 from uuid import UUID
 from tempfile import NamedTemporaryFile
 from samba.dcerpc import preg
-from samba.dcerpc import misc
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.ndr import ndr_unpack
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.gp.util.logging import log
 from hashlib import blake2b
@@ -47,7 +45,7 @@ from samba.common import get_string
 from samba.samdb import SamDB
 from samba.auth import system_session
 import ldb
-from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT, GPLINK_OPT_ENFORCE, GPLINK_OPT_DISABLE, GPO_INHERIT, GPO_BLOCK_INHERITANCE
+from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT, GPLINK_OPT_ENFORCE, GPLINK_OPT_DISABLE, GPO_BLOCK_INHERITANCE
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 from samba.dcerpc import security
 import samba.security

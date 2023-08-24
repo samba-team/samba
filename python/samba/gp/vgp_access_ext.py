@@ -17,7 +17,6 @@
 import os, re
 from samba.gp.gpclass import gp_xml_ext, gp_file_applier
 from tempfile import NamedTemporaryFile
-from samba.common import get_bytes
 from samba.gp.util.logging import log
 
 intro = '''

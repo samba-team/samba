@@ -66,7 +66,6 @@ from samba.dcerpc.misc import (
 )
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
-    DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2008,
     DS_DOMAIN_FUNCTION_2008_R2,
     DS_DOMAIN_FUNCTION_2012,
@@ -82,7 +81,6 @@ from samba.provision.backend import (
     LDBBackend,
 )
 from samba.descriptor import (
-    get_empty_descriptor,
     get_config_descriptor,
     get_config_partitions_descriptor,
     get_config_sites_descriptor,
@@ -98,9 +96,6 @@ from samba.descriptor import (
     get_domain_controllers_descriptor,
     get_domain_delete_protected1_descriptor,
     get_domain_delete_protected2_descriptor,
-    get_dns_partition_descriptor,
-    get_dns_forest_microsoft_dns_descriptor,
-    get_dns_domain_microsoft_dns_descriptor,
     get_managed_service_accounts_descriptor,
 )
 from samba.provision.common import (
@@ -109,7 +104,6 @@ from samba.provision.common import (
     setup_modify_ldif,
     FILL_FULL,
     FILL_SUBDOMAIN,
-    FILL_NT4SYNC,
     FILL_DRS
 )
 from samba.provision.sambadns import (

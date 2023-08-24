@@ -17,12 +17,9 @@
 #
 
 import ldb
-import samba
 from base64 import b64encode
 from samba import sd_utils
-from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import security
-from samba.dcerpc.security import SECINFO_DACL
 from samba.descriptor import (
     get_managed_service_accounts_descriptor,
 )

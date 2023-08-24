@@ -19,7 +19,6 @@
 from samba.tests import TestCaseInTempDir
 from samba.samdb import SamDB
 from ldb import LdbError, ERR_OPERATIONS_ERROR
-import os
 import errno
 
 

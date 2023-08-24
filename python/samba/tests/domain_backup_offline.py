@@ -21,9 +21,6 @@ import tempfile
 from samba.tests import BlackboxTestCase, BlackboxProcessError
 from samba.netcmd import CommandError
 from samba.param import LoadParm
-from samba.join import join_DC
-from samba.credentials import Credentials
-from samba.logger import get_samba_logger
 from samba import safe_tarfile as tarfile
 
 

@@ -19,7 +19,6 @@
     Tests GetDCNameEx calls in NETLOGON
 """
 
-from samba import auth
 from samba import WERRORError, werror
 import samba.tests
 import os

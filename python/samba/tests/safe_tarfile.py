@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import tarfile
 from samba import safe_tarfile
-import tempfile
 
 import os
 from samba.tests import TestCaseInTempDir

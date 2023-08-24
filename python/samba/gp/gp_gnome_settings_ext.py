@@ -20,7 +20,7 @@ from tempfile import NamedTemporaryFile
 import shutil
 from configparser import ConfigParser
 from subprocess import Popen, PIPE
-from samba.common import get_bytes, get_string
+from samba.common import get_string
 from glob import glob
 import xml.etree.ElementTree as etree
 from samba.gp.util.logging import log

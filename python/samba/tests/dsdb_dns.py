@@ -16,7 +16,6 @@
 #
 from samba.tests import TestCase
 from samba import dsdb_dns
-import time
 
 
 def unix2nttime(t):

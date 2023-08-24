@@ -26,7 +26,7 @@ from samba.tests import TestCase, ldb_err
 from samba.tests import DynamicTestCase
 import samba.getopt as options
 import optparse
-from samba.colour import c_RED, c_GREEN, c_DARK_YELLOW
+from samba.colour import c_DARK_YELLOW
 import re
 import pprint
 from samba.dsdb import (

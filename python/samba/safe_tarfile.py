@@ -18,7 +18,7 @@
 import os
 import tarfile
 from pathlib import Path
-from tarfile import ExtractError, TarInfo, TarFile as UnsafeTarFile
+from tarfile import ExtractError, TarFile as UnsafeTarFile
 
 
 class TarFile(UnsafeTarFile):

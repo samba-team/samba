@@ -25,7 +25,7 @@ import errno
 import samba.ndr as ndr
 from samba import credentials
 from samba.tests import TestCase
-from samba.dcerpc import dns, dnsp
+from samba.dcerpc import dns
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 import optparse

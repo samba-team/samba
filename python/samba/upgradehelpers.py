@@ -27,7 +27,7 @@ import shutil
 import samba
 
 from samba.common import cmp
-from samba import Ldb, version, ntacls
+from samba import Ldb, version
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
 from samba.provision import (provision_paths_from_lp,

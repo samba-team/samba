@@ -18,7 +18,6 @@
 
 """Tests for samba.dcerpc.samr.password"""
 
-import os
 import ctypes
 import samba.tests
 

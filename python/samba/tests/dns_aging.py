@@ -26,7 +26,7 @@ import ldb
 from samba import credentials
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.dnsserver import TXTRecord, ARecord
-from samba.dnsserver import recbuf_from_string, ipv6_normalise
+from samba.dnsserver import ipv6_normalise
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest

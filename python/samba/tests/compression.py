@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from unittest import TestSuite
 import os
-import random
 
 from samba.tests import TestCase
 from samba import compression

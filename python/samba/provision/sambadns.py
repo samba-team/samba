@@ -36,8 +36,6 @@ from samba.dcerpc import dnsp, misc, security
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2003,
-    DS_DOMAIN_FUNCTION_2008_R2,
-    DS_DOMAIN_FUNCTION_2012_R2,
     DS_DOMAIN_FUNCTION_2016,
     DS_GUID_USERS_CONTAINER
 )
@@ -56,8 +54,6 @@ from samba.provision.common import (
     setup_ldb,
     FILL_FULL,
     FILL_SUBDOMAIN,
-    FILL_NT4SYNC,
-    FILL_DRS,
 )
 
 from samba.samdb import get_default_backend_store

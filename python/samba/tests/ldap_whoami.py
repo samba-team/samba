@@ -16,7 +16,7 @@
 
 from samba import Ldb,tests
 from samba.samba3 import param as s3param
-from samba import (credentials,NTSTATUSError)
+from samba import credentials
 import os
 
 class LdapWhoami(tests.TestCase):

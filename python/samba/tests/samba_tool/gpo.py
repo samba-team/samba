@@ -30,10 +30,8 @@ from samba.dcerpc import preg
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.common import get_string
 from configparser import ConfigParser
-from io import StringIO
 import xml.etree.ElementTree as etree
 from tempfile import NamedTemporaryFile
-from time import sleep
 import re
 from samba.gp.gpclass import check_guid
 from samba.gp_parse.gp_ini import GPTIniParser

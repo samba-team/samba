@@ -39,7 +39,6 @@ from samba.tests.password_hash import (
     PassWordHashTests,
     get_package,
     USER_NAME,
-    USER_PASS
 )
 from samba.samdb import SamDB
 from samba.ndr import ndr_unpack

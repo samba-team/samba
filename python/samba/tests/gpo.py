@@ -27,7 +27,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from samba.gp import gpclass
 # Disable privilege dropping for testing
 gpclass.drop_privileges = lambda _, func, *args : func(*args)
-from samba.gp.gp_sec_ext import gp_krb_ext, gp_access_ext
+from samba.gp.gp_sec_ext import gp_krb_ext
 from samba.gp.gp_scripts_ext import gp_scripts_ext, gp_user_scripts_ext
 from samba.gp.gp_sudoers_ext import gp_sudoers_ext
 from samba.gp.vgp_sudoers_ext import vgp_sudoers_ext

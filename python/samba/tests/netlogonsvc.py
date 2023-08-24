@@ -18,7 +18,6 @@
 from samba.tests import TestCase
 import os
 
-import samba
 from samba.credentials import Credentials
 from samba.dcerpc import netlogon
 from samba import NTSTATUSError, ntstatus

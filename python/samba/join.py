@@ -26,7 +26,6 @@ import samba
 import uuid
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs, dnsserver, dnsp
-from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import (secretsdb_self_join, provision, provision_fill,
                              FILL_DRS, FILL_SUBDOMAIN, DEFAULTSITE)
@@ -41,7 +40,6 @@ from base64 import b64encode
 from samba import WERRORError, NTSTATUSError
 from samba import sd_utils
 from samba.dnsserver import ARecord, AAAARecord, CNAMERecord
-import logging
 import random
 import time
 import re

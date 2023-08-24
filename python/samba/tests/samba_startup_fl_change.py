@@ -20,10 +20,9 @@
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
-from samba.tests import TestCase
 from samba.param import LoadParm
 from samba import dsdb, functional_level
-import ldb, samba
+import ldb
 
 
 from samba.tests.samba_tool.base import SambaToolCmdTest

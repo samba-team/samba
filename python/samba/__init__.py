@@ -23,7 +23,6 @@
 __docformat__ = "restructuredText"
 
 import os
-import sys
 import time
 import ldb
 import samba.param

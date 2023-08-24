@@ -28,7 +28,6 @@ from samba.colour import colourdiff
 from hashlib import md5
 import gzip
 
-import os
 import json
 from pathlib import Path
 

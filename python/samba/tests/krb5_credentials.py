@@ -26,7 +26,7 @@ from samba.credentials import (
 from samba.dsdb import (
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_PASSWD_NOTREQD,
-    UF_NORMAL_ACCOUNT)
+)
 from samba.samdb import SamDB
 
 """KRB5 Integration tests for pycredentials.

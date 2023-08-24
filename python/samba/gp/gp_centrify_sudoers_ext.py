@@ -17,7 +17,6 @@
 import os
 from samba.gp.gpclass import gp_pol_ext, gp_file_applier
 from samba.gp.gp_sudoers_ext import sudo_applier_func
-from samba.gp.util.logging import log
 
 def ext_enabled(entries):
     section = 'Software\\Policies\\Centrify\\UnixSettings'

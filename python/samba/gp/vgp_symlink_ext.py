@@ -16,8 +16,6 @@
 
 import os
 from samba.gp.gpclass import gp_xml_ext, gp_file_applier
-from tempfile import NamedTemporaryFile
-from subprocess import Popen, PIPE
 from samba.gp.util.logging import log
 
 class vgp_symlink_ext(gp_xml_ext, gp_file_applier):

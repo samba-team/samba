@@ -21,7 +21,7 @@ import samba
 import os
 import samba.tests
 from samba.common import normalise_int32
-from samba.samdb import SamDB, dsdb_Dn
+from samba.samdb import dsdb_Dn
 
 
 class CommonTests(samba.tests.TestCaseInTempDir):

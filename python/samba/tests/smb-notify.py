@@ -24,7 +24,6 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 import samba
 import random
 from samba.tests import TestCase
-from samba import NTSTATUSError
 from samba import credentials
 from samba.ntstatus import NT_STATUS_NOTIFY_CLEANUP
 from samba.samba3 import libsmb_samba_internal as libsmb
