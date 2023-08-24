@@ -22,6 +22,7 @@
 #include "replace.h"
 #include "lib/util/debug.h"
 #include "libcli/security/security.h"
+#include "libcli/security/conditional_ace.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/smb_strtox.h"
 #include "libcli/security/sddl.h"
@@ -463,6 +464,36 @@ static bool sddl_decode_guid(const char *str, struct GUID *guid)
 }
 
 
+
+static DATA_BLOB sddl_decode_conditions(TALLOC_CTX *mem_ctx,
+					const char *conditions,
+					const char **message,
+					size_t *length)
+{
+	DATA_BLOB blob = {0};
+	struct ace_condition_script *script = NULL;
+	size_t message_offset;
+	script = ace_conditions_compile_sddl(mem_ctx,
+					     conditions,
+					     message,
+					     &message_offset,
+					     length);
+	if (script != NULL) {
+		bool ok = conditional_ace_encode_binary(mem_ctx,
+							script,
+							&blob);
+		if (! ok) {
+			DBG_ERR("could not blobify '%s'\n", conditions);
+		}
+		if (*message) {
+			DBG_ERR("                  %*c", (int)message_offset, '^');
+			DBG_ERR("error '%s'\n", *message);
+		}
+	}
+	return blob;
+}
+
+
 /*
   decode an ACE
   return true on success, false on failure
@@ -550,8 +581,17 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 
 	ace->type = v;
 
-	if (has_extra_data) {
-		DBG_WARNING("ACE has trailing section which is not yet supported");
+	/*
+	 * Only callback and resource aces should have trailing data.
+	 */
+	if (sec_ace_callback(ace->type)) {
+		if (! has_extra_data) {
+			DBG_WARNING("callback ACE has no trailing data\n");
+			return false;
+		}
+	} else if (has_extra_data) {
+		DBG_WARNING("ACE has trailing section but is not a "
+			    "callback or resource ACE\n");
 		return false;
 	}
 
@@ -597,6 +637,36 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	if (*s != '\0') {
 		return false;
 	}
+
+	if (sec_ace_callback(ace->type)) {
+		/*
+		 * This is either a conditional ACE or some unknown
+		 * type of callback ACE that will be rejected by the
+		 * conditional ACE compiler.
+		 */
+		size_t length;
+		const char *message = NULL;
+		DATA_BLOB conditions = {0};
+		s = tok[6];
+
+		conditions = sddl_decode_conditions(mem_ctx, s, &message, &length);
+		if (conditions.data == NULL) {
+			DBG_WARNING("Conditional ACE compilation failure: %s\n", message);
+			return false;
+		}
+		ace->coda.conditions = conditions;
+
+		/*
+		 * We have found the end of the conditions, and the
+		 * next character should be the ')' to end the ACE.
+		 */
+		if (s[length] != ')') {
+			DBG_WARNING("Conditional ACE has trailing bytes\n");
+			return false;
+		}
+		str = discard_const_p(char, s + length + 1);
+	}
+
 	*sddl_copy = str;
 	return true;
 }
