@@ -777,8 +777,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             samdb.add(details)
         except ldb.LdbError as err:
             num, estr = err.args
+            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                raise
             self.assertFalse(force, 'should not fail with force=True')
-            self.assertEqual(num, ldb.ERR_ENTRY_ALREADY_EXISTS)
         else:
             # Save the claim DN so it can be deleted in tearDownClass()
             self.accounts.append(str(claim_dn))
