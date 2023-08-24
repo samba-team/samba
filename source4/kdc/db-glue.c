@@ -3288,7 +3288,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		talloc_free(mem_ctx);
 		krb5_set_error_message(context, ret,
 				       "samba_kdc_check_s4u2proxy:"
-				       " krb5_unparse_name() failed!");
+				       " krb5_unparse_name_flags() failed!");
 		return ret;
 	}
 	DBG_DEBUG("client[%s] for target[%s]\n",
