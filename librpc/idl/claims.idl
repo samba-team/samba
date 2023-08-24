@@ -49,17 +49,17 @@ interface claims
 	} CLAIMS_COMPRESSION_FORMAT;
 
 	typedef struct {
-		[range(1, 10*1024*1024)] uint32 value_count;
+		[range(0, 10*1024*1024)] uint32 value_count;
 		[size_is(value_count)] int64 *values;
 	} CLAIM_INT64;
 
 	typedef struct {
-		[range(1, 10*1024*1024)] uint32 value_count;
+		[range(0, 10*1024*1024)] uint32 value_count;
 		[size_is(value_count)] hyper *values;
 	} CLAIM_UINT64;
 
 	typedef struct {
-		[range(1, 10*1024*1024)] uint32 value_count;
+		[range(0, 10*1024*1024)] uint32 value_count;
 		[size_is(value_count), string, charset(UTF16)] wchar_t **values;
 	} CLAIM_STRING;
 
