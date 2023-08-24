@@ -481,6 +481,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	size_t len;
 	size_t count = 0;
 	char *str = *sddl_copy;
+	bool has_extra_data = false;
 	ZERO_STRUCTP(ace);
 
 	if (*str != '(') {
@@ -488,7 +489,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	}
 	str++;
 	/*
-	 * First we split apart the 6 tokens.
+	 * First we split apart the 6 (or 7) tokens.
 	 *
 	 * 0.		 ace type
 	 * 1.		 ace flags
@@ -497,6 +498,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	 * 4.		 inherit guid
 	 * 5.		 sid
 	 *
+	 * 6/extra_data	 rare optional extra data
 	 */
 	tok[0] = str;
 	while (*str != '\0') {
@@ -507,11 +509,13 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 			tok[count] = str;
 			if (count == 6) {
 				/*
-				 * When we get conditional or resource ACEs,
-				 * this will set a flag and break;
-				 * for now we just...
+				 * this looks like a conditional ACE
+				 * or resource ACE, but we can't say
+				 * for sure until we look at the ACE
+				 * type (tok[0]), after the loop.
 				 */
-				return false;
+				has_extra_data = true;
+				break;
 			}
 			continue;
 		}
@@ -545,6 +549,11 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	}
 
 	ace->type = v;
+
+	if (has_extra_data) {
+		DBG_WARNING("ACE has trailing section which is not yet supported");
+		return false;
+	}
 
 	/* ace flags */
 	if (!sddl_map_flags(ace_flags, tok[1], &v, NULL, false)) {
