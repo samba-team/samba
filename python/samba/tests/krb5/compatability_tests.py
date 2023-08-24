@@ -120,54 +120,6 @@ class CompatabilityTests(KDCBaseTest):
             self.fail(
                 "(Heimdal) Salt populated for ARCFOUR_HMAC_MD5 encryption")
 
-    # This tests also passes again Samba AD built with MIT Kerberos 1.20 which
-    # is not released yet.
-    #
-    # FIXME: Should be moved to to a new kdc_tgt_tests.py once MIT KRB5 1.20
-    # is released.
-    def test_ticket_signature(self):
-        # Ensure that a DC correctly issues tickets signed with its krbtgt key.
-        user_creds = self.get_client_creds()
-        target_creds = self.get_service_creds()
-
-        krbtgt_creds = self.get_krbtgt_creds()
-        key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
-
-        # Get a TGT from the DC.
-        tgt = self.get_tgt(user_creds)
-
-        # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(tgt, key, service_ticket=False)
-
-        # Get a service ticket from the DC.
-        service_ticket = self.get_service_ticket(tgt, target_creds)
-
-        # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(service_ticket, key, service_ticket=True,
-                           expect_ticket_checksum=True)
-
-    def test_full_signature(self):
-        # Ensure that a DC correctly issues tickets signed with its krbtgt key.
-        user_creds = self.get_client_creds()
-        target_creds = self.get_service_creds()
-
-        krbtgt_creds = self.get_krbtgt_creds()
-        key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
-
-        # Get a TGT from the DC.
-        tgt = self.get_tgt(user_creds)
-
-        # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(tgt, key, service_ticket=False)
-
-        # Get a service ticket from the DC.
-        service_ticket = self.get_service_ticket(tgt, target_creds)
-
-        # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(service_ticket, key, service_ticket=True,
-                           expect_ticket_checksum=True,
-                           expect_full_checksum=True)
-
     def as_pre_auth_req(self, creds, etypes):
         user = creds.get_username()
         realm = creds.get_realm()
