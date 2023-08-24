@@ -1882,17 +1882,20 @@ static krb5_error_code samba_kdc_update_device_info(TALLOC_CTX *mem_ctx,
 
 static krb5_error_code samba_kdc_get_device_info_pac_blob(TALLOC_CTX *mem_ctx,
 							  union PAC_INFO *info,
-							  DATA_BLOB **device_info_blob)
+							  DATA_BLOB **_device_info_blob)
 {
+	DATA_BLOB *device_info_blob = NULL;
 	enum ndr_err_code ndr_err;
 
-	*device_info_blob = talloc_zero(mem_ctx, DATA_BLOB);
-	if (*device_info_blob == NULL) {
+	*_device_info_blob = NULL;
+
+	device_info_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (device_info_blob == NULL) {
 		DBG_ERR("Out of memory\n");
 		return ENOMEM;
 	}
 
-	ndr_err = ndr_push_union_blob(*device_info_blob, *device_info_blob,
+	ndr_err = ndr_push_union_blob(device_info_blob, device_info_blob,
 				      info, PAC_TYPE_DEVICE_INFO,
 				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1901,6 +1904,8 @@ static krb5_error_code samba_kdc_get_device_info_pac_blob(TALLOC_CTX *mem_ctx,
 			    nt_errstr(nt_status));
 		return map_errno_from_nt_status(nt_status);
 	}
+
+	*_device_info_blob = device_info_blob;
 
 	return 0;
 }
