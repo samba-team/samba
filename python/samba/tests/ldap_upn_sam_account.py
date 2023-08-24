@@ -485,7 +485,7 @@ def main():
     global LP, CREDS, SERVER, REALM
 
     parser = optparse.OptionParser(
-        "python3 ldap_upn_sam_account_name.py <server> [options]")
+        "python3 ldap_upn_sam_account.py <server> [options]")
     sambaopts = options.SambaOptions(parser)
     parser.add_option_group(sambaopts)
 
