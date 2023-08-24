@@ -923,6 +923,7 @@ NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Building PAC LOGON INFO failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(logon_blob);
 		return nt_status;
 	}
 
@@ -953,6 +954,7 @@ NTSTATUS samba_kdc_get_cred_ndr_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Building PAC CRED INFO failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(cred_blob);
 		return nt_status;
 	}
 
@@ -981,6 +983,7 @@ NTSTATUS samba_kdc_get_upn_info_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Building PAC UPN INFO failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(upn_blob);
 		return nt_status;
 	}
 
@@ -1012,6 +1015,7 @@ NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Building PAC ATTRIBUTES failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(pac_attrs_blob);
 		return nt_status;
 	}
 
@@ -1053,6 +1057,7 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 			DBG_ERR("Building PAC REQUESTER SID failed: %s\n",
 				nt_errstr(nt_status));
 
+			talloc_free(requester_sid_blob);
 			return nt_status;
 		}
 	}
@@ -1087,6 +1092,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 		nt_status = dsdb_ldb_err_to_ntstatus(ret);
 		DBG_ERR("Building claims failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(claims_blob);
 		return nt_status;
 	}
 
@@ -1902,6 +1908,7 @@ static krb5_error_code samba_kdc_get_device_info_pac_blob(TALLOC_CTX *mem_ctx,
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("PAC_DEVICE_INFO (presig) push failed: %s\n",
 			    nt_errstr(nt_status));
+		talloc_free(device_info_blob);
 		return map_errno_from_nt_status(nt_status);
 	}
 
