@@ -1603,7 +1603,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             else:
                 self.fail(f'invalid SID type {sid_type}')
 
-        found_logon_info = True
+        found_logon_info = False
 
         pac_buffers = pac.buffers
         for pac_buffer in pac_buffers:
