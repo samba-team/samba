@@ -135,6 +135,23 @@ member server's own domain, to only consume a header and 4 bytes per
 group in the PAC, not a full-length SID worth of space each.  This is
 known as "Resource SID compression".
 
+Resource Based Constrained Delegation (RBCD) support in both MIT and Heimdal
+-----------------------------------------------------------------------------
+
+Samba AD DC built with MIT Kerberos (1.20 and later) has offered RBCD
+support since Samba 4.17.  Samba 4.19 brings this feature to the
+default Heimdal KDC.
+
+Samba 4.17 added to samba-tool delegation the 'add-principal' and
+'del-principal' subcommands in order to manage RBCD, and the database
+changes made by these tools are now honoured by the Heimdal KDC once
+Samba is upgraded.
+
+Likewise, now both MIT (1.20 and later) and Heimdal KDCs add the
+Asserted Identity [1] SID into the PAC for constrained delegation.
+
+[1] https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview
+
 New samba-tool support for silos, claims, sites and subnets.
 ------------------------------------------------------------
 
