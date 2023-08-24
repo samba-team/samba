@@ -1042,7 +1042,7 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 
 		pac_requester_sid.requester_sid.sid = user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid;
 
-		ndr_err = ndr_push_union_blob(requester_sid_blob, mem_ctx,
+		ndr_err = ndr_push_union_blob(requester_sid_blob, requester_sid_blob,
 					      &pac_requester_sid,
 					      PAC_TYPE_REQUESTER_SID,
 					      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
@@ -1080,7 +1080,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = get_claims_blob_for_principal(p->kdc_db_ctx->samdb,
-					    mem_ctx,
+					    claims_blob,
 					    p->msg,
 					    claims_blob);
 	if (ret != LDB_SUCCESS) {
@@ -1892,7 +1892,7 @@ static krb5_error_code samba_kdc_get_device_info_pac_blob(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	ndr_err = ndr_push_union_blob(*device_info_blob, mem_ctx,
+	ndr_err = ndr_push_union_blob(*device_info_blob, *device_info_blob,
 				      info, PAC_TYPE_DEVICE_INFO,
 				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2431,7 +2431,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_kdc_update_delegation_info_blob(
-				mem_ctx,
+				deleg_blob,
 				context,
 				old_pac,
 				server_principal,
