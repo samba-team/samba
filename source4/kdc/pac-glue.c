@@ -755,11 +755,6 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 	struct dom_sid sid;
 	uint32_t rid;
 
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
-
 	trust_direction = ldb_msg_find_attr_as_int(p->msg, "trustDirection", 0);
 
 	if (trust_direction != 0) {
@@ -768,7 +763,6 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 		   This is exactly where we should flag for SID
 		   validation when we do inter-forest trusts
 		 */
-		talloc_free(mem_ctx);
 		*is_trusted = true;
 		*is_in_db = false;
 		return 0;
@@ -783,7 +777,6 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 
 	status = dom_sid_split_rid(NULL, &sid, NULL, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
 		return map_errno_from_nt_status(status);
 	}
 
@@ -793,29 +786,24 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 		if (rid == DOMAIN_RID_KRBTGT) {
 			*is_trusted = true;
 			*is_in_db = true;
-			talloc_free(mem_ctx);
 			return 0;
 		} else if (rodc_krbtgt_number != -1) {
 			*is_in_db = true;
 			*is_trusted = false;
-			talloc_free(mem_ctx);
 			return 0;
 		}
 	} else if ((rid != DOMAIN_RID_KRBTGT) && (rodc_krbtgt_number == p->kdc_db_ctx->my_krbtgt_number)) {
-		talloc_free(mem_ctx);
 		*is_trusted = true;
 		*is_in_db = true;
 		return 0;
 	} else if (rid == DOMAIN_RID_KRBTGT) {
 		/* krbtgt viewed from an RODC */
-		talloc_free(mem_ctx);
 		*is_trusted = true;
 		*is_in_db = false;
 		return 0;
 	}
 
 	/* Another RODC */
-	talloc_free(mem_ctx);
 	*is_trusted = false;
 	*is_in_db = false;
 	return 0;
