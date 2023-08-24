@@ -3527,9 +3527,9 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 				struct samba_kdc_db_context **kdc_db_ctx_out)
 {
 	int ldb_ret;
-	struct ldb_message *msg;
-	struct auth_session_info *session_info;
-	struct samba_kdc_db_context *kdc_db_ctx;
+	struct ldb_message *msg = NULL;
+	struct auth_session_info *session_info = NULL;
+	struct samba_kdc_db_context *kdc_db_ctx = NULL;
 	/* The idea here is very simple.  Using Kerberos to
 	 * authenticate the KDC to the LDAP server is highly likely to
 	 * be circular.
@@ -3583,7 +3583,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	if (kdc_db_ctx->rodc) {
 		int my_krbtgt_number;
 		const char *secondary_keytab[] = { "msDS-SecondaryKrbTgtNumber", NULL };
-		struct ldb_dn *account_dn;
+		struct ldb_dn *account_dn = NULL;
 		struct ldb_dn *server_dn = samdb_server_dn(kdc_db_ctx->samdb, kdc_db_ctx);
 		if (!server_dn) {
 			DBG_WARNING("Cannot determine server DN in KDC backend: %s\n",
