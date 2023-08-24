@@ -750,7 +750,9 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 			  bool *is_trusted)
 {
 	NTSTATUS status;
+	krb5_error_code ret;
 	int rodc_krbtgt_number, trust_direction;
+	struct dom_sid sid;
 	uint32_t rid;
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
@@ -774,8 +776,12 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 
 	/* The lack of password controls etc applies to krbtgt by
 	 * virtue of being that particular RID */
-	status = dom_sid_split_rid(NULL, samdb_result_dom_sid(mem_ctx, p->msg, "objectSid"), NULL, &rid);
+	ret = samdb_result_dom_sid_buf(p->msg, "objectSid", &sid);
+	if (ret) {
+		return ret;
+	}
 
+	status = dom_sid_split_rid(NULL, &sid, NULL, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return map_errno_from_nt_status(status);
