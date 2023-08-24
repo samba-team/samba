@@ -1605,8 +1605,6 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         found_logon_info = True
 
-        user_sid = security.dom_sid(f'{domain_sid}-{user_rid}')
-
         pac_buffers = pac.buffers
         for pac_buffer in pac_buffers:
             # Find the LOGON_INFO PAC buffer.
@@ -1660,7 +1658,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
                 upn_dns_info_ex = pac_buffer.info.ex
 
-                upn_dns_info_ex.objectsid = user_sid
+                upn_dns_info_ex.objectsid = security.dom_sid(
+                    f'{domain_sid}-{user_rid}')
 
             # But don't replace the user's SID in the Requester SID buffer, or
             # we'll get a SID mismatch.
