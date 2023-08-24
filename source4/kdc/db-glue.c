@@ -1205,15 +1205,23 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * these more restricted SPNs.
 	 */
 	if (krb5_princ_size(context, principal) > 2) {
-		char *third_part
-			= smb_krb5_principal_get_comp_string(tmp_ctx,
-							     context,
-							     principal,
-							     2);
-		bool is_our_realm =
-			 lpcfg_is_my_domain_or_realm(lp_ctx,
+		char *third_part = NULL;
+		bool is_our_realm;
+		bool is_dc;
+
+		third_part = smb_krb5_principal_get_comp_string(tmp_ctx,
+								context,
+								principal,
+								2);
+		if (third_part == NULL) {
+			ret = ENOMEM;
+			krb5_set_error_message(context, ret, "smb_krb5_principal_get_comp_string: out of memory");
+			goto out;
+		}
+
+		is_our_realm = lpcfg_is_my_domain_or_realm(lp_ctx,
 						     third_part);
-		bool is_dc = userAccountControl &
+		is_dc = userAccountControl &
 			(UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT);
 		if (is_our_realm && !is_dc) {
 			entry->flags.server = 0;
