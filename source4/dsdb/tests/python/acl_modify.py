@@ -23,7 +23,7 @@ import samba.tests
 import samba.dsdb
 
 
-parser = optparse.OptionParser("acl.py [options] <host>")
+parser = optparse.OptionParser("acl_modify.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

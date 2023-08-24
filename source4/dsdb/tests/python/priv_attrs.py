@@ -38,7 +38,7 @@ from samba.dsdb import (
 )
 
 
-parser = optparse.OptionParser("user_account_control.py [options] <host>")
+parser = optparse.OptionParser("priv_attrs.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
