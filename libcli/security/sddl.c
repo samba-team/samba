@@ -589,6 +589,11 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 			DBG_WARNING("callback ACE has no trailing data\n");
 			return false;
 		}
+	} else if (sec_ace_resource(ace->type)) {
+		if (! has_extra_data) {
+			DBG_WARNING("resource ACE has no trailing data\n");
+			return false;
+		}
 	} else if (has_extra_data) {
 		DBG_WARNING("ACE has trailing section but is not a "
 			    "callback or resource ACE\n");
@@ -662,6 +667,33 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		 */
 		if (s[length] != ')') {
 			DBG_WARNING("Conditional ACE has trailing bytes\n");
+			return false;
+		}
+		str = discard_const_p(char, s + length + 1);
+	} else if (sec_ace_resource(ace->type)) {
+		size_t length;
+		struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim = NULL;
+
+		if (! dom_sid_equal(&ace->trustee, &global_sid_World)) {
+			/* these are just the rules */
+			DBG_WARNING("Resource Attribute ACE trustee must be "
+				    "'S-1-1-0' or 'WD'.\n");
+			return false;
+		}
+
+		s = tok[6];
+		claim = sddl_decode_resource_attr(mem_ctx, s, &length);
+		if (claim == NULL) {
+			DBG_WARNING("Resource Attribute ACE parse failure\n");
+			return false;
+		}
+		ace->coda.claim = *claim;
+
+		/*
+		 * We want a ')' to end the ACE.
+		 */
+		if (s[length] != ')') {
+			DBG_WARNING("Resource ACE has trailing bytes\n");
 			return false;
 		}
 		str = discard_const_p(char, s + length + 1);
