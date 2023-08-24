@@ -533,6 +533,15 @@ plantestsuite_loadlist("samba.tests.sddl",
                         "samba.tests.sddl"
                        ])
 
+plantestsuite_loadlist("samba.tests.sddl_conditional_ace",
+                       "none",
+                       [python,
+                        '-msamba.subunit.run',
+                        '$LOADLIST',
+                        "$LISTOPT"
+                        "samba.tests.sddl_conditional_ace"
+                       ])
+
 for t in smbtorture4_testsuites("dns_internal."):
     plansmbtorture4testsuite(t, "ad_dc_default:local", '//$SERVER/whavever')
 
