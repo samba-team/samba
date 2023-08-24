@@ -26,7 +26,7 @@ enum ndr_compression_alg ndr_claims_compression_alg(enum CLAIMS_COMPRESSION_FORM
 
 enum CLAIMS_COMPRESSION_FORMAT ndr_claims_actual_wire_compression_alg(enum CLAIMS_COMPRESSION_FORMAT specified_compression,
 								      size_t uncompressed_claims_size) {
-	if (uncompressed_claims_size < CLAIM_MINIMUM_BYTES_TO_COMPRESS) {
+	if (uncompressed_claims_size < CLAIM_UPPER_COMPRESSION_THRESHOLD) {
 		return CLAIMS_COMPRESSION_FORMAT_NONE;
 	}
 

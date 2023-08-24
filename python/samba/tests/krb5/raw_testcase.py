@@ -4585,13 +4585,15 @@ class RawKerberosTest(TestCase):
                 uncompressed_size = client_claims.uncompressed_claims_set_size
                 compression_format = client_claims.compression_format
 
-                if uncompressed_size < claims.CLAIM_MINIMUM_BYTES_TO_COMPRESS:
+                if uncompressed_size < (
+                        claims.CLAIM_LOWER_COMPRESSION_THRESHOLD):
                     self.assertEqual(claims.CLAIMS_COMPRESSION_FORMAT_NONE,
                                      compression_format,
                                      f'{claims_type} unexpectedly '
                                      f'compressed ({uncompressed_size} '
                                      f'bytes uncompressed)')
-                else:
+                elif uncompressed_size >= (
+                        claims.CLAIM_UPPER_COMPRESSION_THRESHOLD):
                     self.assertEqual(
                         claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
                         compression_format,

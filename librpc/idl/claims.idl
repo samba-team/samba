@@ -27,7 +27,8 @@ interface claims
 #define wchar_t uint16
 #define CLAIM_ID [string, charset(UTF16)] wchar_t *
 
-	const int CLAIM_MINIMUM_BYTES_TO_COMPRESS = 384;
+	const int CLAIM_LOWER_COMPRESSION_THRESHOLD = 368;
+	const int CLAIM_UPPER_COMPRESSION_THRESHOLD = 384;
 
 	typedef enum {
 		CLAIM_TYPE_INT64 = 1,
