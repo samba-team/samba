@@ -29,7 +29,7 @@ void setup_domain_child(struct winbindd_domain *domain)
 {
 	int i;
 
-        for (i=0; i<lp_winbind_max_domain_connections(); i++) {
+        for (i=0; i<talloc_array_length(domain->children); i++) {
                 setup_child(domain, &domain->children[i],
                             "log.wb", domain->name);
 	}
