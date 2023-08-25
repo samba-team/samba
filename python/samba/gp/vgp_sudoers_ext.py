@@ -47,7 +47,7 @@ class vgp_sudoers_ext(gp_xml_ext, gp_file_applier):
                     for listelement in listelements:
                         principals.extend(listelement.findall('principal'))
                     if len(principals) > 0:
-                        uname = ','.join([u.text if u.attrib['type'] == 'user' \
+                        uname = ','.join([u.text if u.attrib['type'] == 'user'
                             else '%s%%' % u.text for u in principals])
                     else:
                         uname = 'ALL'
@@ -84,7 +84,7 @@ class vgp_sudoers_ext(gp_xml_ext, gp_file_applier):
                 for listelement in listelements:
                     principals.extend(listelement.findall('principal'))
                 if len(principals) > 0:
-                    uname = ','.join([u.text if u.attrib['type'] == 'user' \
+                    uname = ','.join([u.text if u.attrib['type'] == 'user'
                         else '%s%%' % u.text for u in principals])
                 else:
                     uname = 'ALL'

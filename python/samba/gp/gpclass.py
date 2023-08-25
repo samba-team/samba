@@ -584,7 +584,7 @@ class gp_file_applier(gp_applier):
         old_val = self.cache_get_attribute_value(guid, attribute)
         # Ignore removal if this policy is applied and hasn't changed
         old_val_hash, old_val_files = self.__parse_value(old_val, sep)
-        if (old_val_hash != value_hash or \
+        if (old_val_hash != value_hash or
                 self.cache_get_apply_state() == GPOSTATE.ENFORCE) or \
                 not all([os.path.exists(f) for f in old_val_files]):
             self.unapply(guid, attribute, old_val_files)

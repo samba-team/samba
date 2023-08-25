@@ -69,7 +69,7 @@ class vgp_openssh_ext(gp_xml_ext, gp_file_applier):
                         settings[kv.find('key')] = kv.find('value')
                     raw = BytesIO()
                     for k, v in settings.items():
-                        raw.write(b'%s %s\n' % \
+                        raw.write(b'%s %s\n' %
                                   (get_bytes(k.text), get_bytes(v.text)))
                     # Each GPO applies only one set of OpenSSH settings, in a
                     # single file, so the attribute does not need uniqueness.

@@ -712,7 +712,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertTrue(os.path.exists(reg_pol),
                         'The Registry.pol does not exist')
         reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
-        ret = any([get_string(e.valuename) == policy and e.data == 1 \
+        ret = any([get_string(e.valuename) == policy and e.data == 1
             for e in reg_data.entries])
         self.assertTrue(ret, 'The sudoers entry was not added')
 
@@ -731,7 +731,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
 
         reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
-        ret = not any([get_string(e.valuename) == policy and e.data == 1 \
+        ret = not any([get_string(e.valuename) == policy and e.data == 1
             for e in reg_data.entries])
         self.assertTrue(ret, 'The sudoers entry was not removed')
 

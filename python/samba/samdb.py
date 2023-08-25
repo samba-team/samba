@@ -1408,7 +1408,7 @@ schemaUpdateNow: 1
         -> (num_objects_expunged, num_links_expunged)'''
 
         if not is_ad_dc_built():
-            raise SamDBError('Cannot garbage collect tombstones: ' \
+            raise SamDBError('Cannot garbage collect tombstones: '
                 'AD DC was not built')
 
         if tombstone_lifetime is None:

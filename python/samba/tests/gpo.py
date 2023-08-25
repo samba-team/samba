@@ -7171,7 +7171,7 @@ class GPOTests(tests.TestCase):
                                  'Policies were not applied')
 
             # Check that modifying the policy will enforce the correct settings
-            entries = [e for e in parser.pol_file.entries \
+            entries = [e for e in parser.pol_file.entries
                        if e.valuename != 'AppUpdateURL']
             for e in entries:
                 if e.valuename == 'AppAutoUpdate':
@@ -7426,9 +7426,9 @@ class GPOTests(tests.TestCase):
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         # Firewalld will report the rule one of two ways:
-        rules = [b'rule family=ipv4 source address=172.25.1.7 ' + \
+        rules = [b'rule family=ipv4 source address=172.25.1.7 ' +
                  b'service name=ftp reject',
-                 b'rule family="ipv4" source address="172.25.1.7" ' + \
+                 b'rule family="ipv4" source address="172.25.1.7" ' +
                  b'service name="ftp" reject']
         self.assertIn(out.strip(), rules, 'Failed to set rich rule')
 
@@ -7513,7 +7513,7 @@ class GPOTests(tests.TestCase):
         objectGUID = b'{%s}' % \
             cae.octet_string_to_objectGUID(res2[0]['objectGUID'][0]).upper().encode()
         parser = GPPolParser()
-        parser.load_xml(etree.fromstring(advanced_enroll_reg_pol.strip() % \
+        parser.load_xml(etree.fromstring(advanced_enroll_reg_pol.strip() %
             (objectGUID, objectGUID, objectGUID, objectGUID)))
         ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
         self.assertTrue(ret, 'Could not create the target %s' % reg_pol)

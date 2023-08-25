@@ -153,7 +153,7 @@ class RegistryGroupPolicies(object):
     def __pol_remove(self, pol_data, entry):
         entries = []
         for e in pol_data.entries:
-            if not (e.keyname == entry['keyname'] and \
+            if not (e.keyname == entry['keyname'] and
                     e.valuename == entry['valuename']):
                 entries.append(e)
         pol_data.entries = entries

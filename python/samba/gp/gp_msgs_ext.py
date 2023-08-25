@@ -40,7 +40,7 @@ class gp_msgs_ext(gp_pol_ext, gp_misc_applier):
         for e in entries:
             if e.keyname == section_name and e.data.strip():
                 if e.valuename not in ['motd', 'issue']:
-                    raise ValueError('"%s" is not a message attribute' % \
+                    raise ValueError('"%s" is not a message attribute' %
                             e.valuename)
                 mfile = os.path.join(cdir, e.valuename)
                 if os.path.exists(mfile):

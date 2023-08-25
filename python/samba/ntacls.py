@@ -538,7 +538,7 @@ def backup_online(smb_conn, dest_tarfile_path, dom_sid):
                 ntacl_sddl_str = smb_helper.get_acl(r_name, as_sddl=True)
                 _create_ntacl_file(l_name, ntacl_sddl_str)
             except NTSTATUSError as e:
-                logger.error('Failed to get the ntacl for %s: %s' % \
+                logger.error('Failed to get the ntacl for %s: %s' %
                              (r_name, e.args[1]))
                 logger.warning('The permissions for %s may not be' % r_name +
                                ' restored correctly')
