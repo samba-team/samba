@@ -69,7 +69,7 @@ class cmd_domain_level(Command):
         domain_dn = samdb.domain_dn()
 
         in_transaction = False
-        if subcommand == "raise" and not H.startswith("ldap"):
+        if subcommand == "raise" and (H is None or not H.startswith("ldap")):
             samdb.transaction_start()
             in_transaction = True
             try:
