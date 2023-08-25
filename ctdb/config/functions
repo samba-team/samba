@@ -509,6 +509,38 @@ ctdb_check_unix_socket()
 ################################################
 # kill off any TCP connections with the given IP
 ################################################
+
+kill_tcp_summarise()
+{
+	_mode="$1"
+	_count="$2"
+
+	_connections=$(get_tcp_connections_for_ip "$_ip")
+	if [ -z "$_connections" ]; then
+		_remaining=0
+	else
+		_remaining=$(echo "$_connections" | wc -l)
+	fi
+
+	case "$_mode" in
+	total)
+		_total="$_count"
+		_killed=$((_total - _remaining))
+		;;
+	killed)
+		_killed="$_count"
+		_total=$((_killed + _remaining))
+		;;
+	esac
+
+	_t="${_killed}/${_total}"
+	echo "Killed ${_t} TCP connections to released IP ${_ip}"
+	if [ -n "$_connections" ]; then
+		echo "Remaining connections:"
+		echo "$_connections" | sed -e 's|^|  |'
+	fi
+}
+
 kill_tcp_connections()
 {
 	_iface="$1"
@@ -556,22 +588,7 @@ kill_tcp_connections()
 			return
 		}
 
-		_connections=$(get_tcp_connections_for_ip "$_ip")
-		if [ -z "$_connections" ]; then
-			_remaining=0
-		else
-			_remaining=$(echo "$_connections" | wc -l)
-		fi
-
-		_actually_killed=$((_killcount - _remaining))
-
-		_t="${_actually_killed}/${_killcount}"
-		echo "Killed ${_t} TCP connections to released IP $_ip"
-
-		if [ -n "$_connections" ]; then
-			echo "Remaining connections:"
-			echo "$_connections" | sed -e 's|^|  |'
-		fi
+		kill_tcp_summarise "total" "$_killcount"
 	}
 }
 
