@@ -153,7 +153,6 @@ class cmd_domain_level(Command):
 
             outstr = functional_level.level_to_string(min_level_dc)
             self.message("Lowest function level of a DC: (Windows) " + outstr)
-            return
 
         def do_raise():
             msgs = []
