@@ -91,6 +91,9 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	PyObject* result = NULL;
 	PyObject* args = NULL;
 	args = Py_BuildValue("(y#)", msg, size);
+	if (args == NULL) {
+		return NULL;
+	}
 	result = PyLdbBytesType.tp_new(&PyLdbBytesType, args, NULL);
 	Py_DECREF(args);
 	return result;
@@ -473,6 +476,10 @@ static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx,
 	}
 	for (i = 0; i < res->count; i++) {
 		PyObject *item = PyList_GetItem(obj, i);
+		if (item == NULL) {
+			talloc_free(res);
+			return NULL;
+		}
 		res->msgs[i] = pyldb_Message_AsMessage(item);
 	}
 	return res;
@@ -1961,6 +1968,11 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 	}
 
 	list = PyList_New(0);
+	if (list == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
 	while (s && *s != '\0') {
 		ldif = ldb_ldif_read_string(self->ldb_ctx, &s);
 		talloc_steal(mem_ctx, ldif);
@@ -3362,10 +3374,26 @@ static PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 
 	/* Python << 2.5 doesn't have PySet_New and PySet_Add. */
 	result = PyList_New(me->num_values);
+	if (result == NULL) {
+		return NULL;
+	}
 
 	for (i = 0; i < me->num_values; i++) {
-		PyList_SetItem(result, i,
-			PyObject_FromLdbValue(&me->values[i]));
+		PyObject *obj = NULL;
+		int ret;
+
+		obj = PyObject_FromLdbValue(&me->values[i]);
+		if (obj == NULL) {
+			Py_DECREF(result);
+			return NULL;
+		}
+
+		ret = PyList_SetItem(result, i, obj);
+		if (ret) {
+			Py_DECREF(obj);
+			Py_DECREF(result);
+			return NULL;
+		}
 	}
 
 	return result;
@@ -3730,12 +3758,46 @@ static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self,
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i, j = 0;
 	PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
+	if (obj == NULL) {
+		return NULL;
+	}
+
 	if (msg->dn != NULL) {
-		PyList_SetItem(obj, j, PyUnicode_FromString("dn"));
+		PyObject *py_dn = NULL;
+		int ret;
+
+		py_dn = PyUnicode_FromString("dn");
+		if (py_dn == NULL) {
+			Py_DECREF(obj);
+			return NULL;
+		}
+
+		ret = PyList_SetItem(obj, j, py_dn);
+		if (ret) {
+			Py_DECREF(py_dn);
+			Py_DECREF(obj);
+			return NULL;
+		}
+
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++) {
-		PyList_SetItem(obj, j, PyUnicode_FromString(msg->elements[i].name));
+		PyObject *py_name = NULL;
+		int ret;
+
+		py_name = PyUnicode_FromString(msg->elements[i].name);
+		if (py_name == NULL) {
+			Py_DECREF(obj);
+			return NULL;
+		}
+
+		ret = PyList_SetItem(obj, j, py_name);
+		if (ret) {
+			Py_DECREF(py_name);
+			Py_DECREF(obj);
+			return NULL;
+		}
+
 		j++;
 	}
 	return obj;
@@ -3864,8 +3926,25 @@ static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self,
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i = 0;
 	PyObject *l = PyList_New(msg->num_elements);
+	if (l == NULL) {
+		return NULL;
+	}
 	for (i = 0; i < msg->num_elements; i++) {
-		PyList_SetItem(l, i, PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements));
+		PyObject *msg_el = NULL;
+		int ret;
+
+		msg_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements);
+		if (msg_el == NULL) {
+			Py_DECREF(l);
+			return NULL;
+		}
+
+		ret = PyList_SetItem(l, i, msg_el);
+		if (ret) {
+			Py_DECREF(msg_el);
+			Py_DECREF(l);
+			return NULL;
+		}
 	}
 	return l;
 }
@@ -4141,6 +4220,10 @@ static PyGetSetDef py_ldb_msg_getset[] = {
 static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 {
 	PyObject *dict = PyDict_New(), *ret, *repr;
+	const char *repr_str = NULL;
+	if (dict == NULL) {
+		return NULL;
+	}
 	if (PyDict_Update(dict, (PyObject *)self) != 0)
 		return NULL;
 	repr = PyObject_Repr(dict);
@@ -4148,7 +4231,13 @@ static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 		Py_DECREF(dict);
 		return NULL;
 	}
-	ret = PyUnicode_FromFormat("Message(%s)", PyUnicode_AsUTF8(repr));
+	repr_str = PyUnicode_AsUTF8(repr);
+	if (repr_str == NULL) {
+		Py_DECREF(repr);
+		Py_DECREF(dict);
+		return NULL;
+	}
+	ret = PyUnicode_FromFormat("Message(%s)", repr_str);
 	Py_DECREF(repr);
 	Py_DECREF(dict);
 	return ret;
@@ -4285,8 +4374,32 @@ static int py_module_search(struct ldb_module *mod, struct ldb_request *req)
 		int i, len;
 		for (len = 0; req->op.search.attrs[len]; len++);
 		py_attrs = PyList_New(len);
-		for (i = 0; i < len; i++)
-			PyList_SetItem(py_attrs, i, PyUnicode_FromString(req->op.search.attrs[i]));
+		if (py_attrs == NULL) {
+			Py_DECREF(py_tree);
+			Py_DECREF(py_base);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		for (i = 0; i < len; i++) {
+			PyObject *py_attr = NULL;
+			int ret;
+
+			py_attr = PyUnicode_FromString(req->op.search.attrs[i]);
+			if (py_attr == NULL) {
+				Py_DECREF(py_tree);
+				Py_DECREF(py_base);
+				Py_DECREF(py_attrs);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			ret = PyList_SetItem(py_attrs, i, py_attr);
+			if (ret) {
+				Py_DECREF(py_attr);
+				Py_DECREF(py_tree);
+				Py_DECREF(py_base);
+				Py_DECREF(py_attrs);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
 	}
 
 	py_result = PyObject_CallMethod(py_ldb, discard_const_p(char, "search"),

@@ -92,13 +92,37 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	PyTypeObject *PyLdb_Dn_Type;
 
 	if (ldb_ctx != NULL && (PyUnicode_Check(object))) {
-		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyUnicode_AsUTF8(object));
+		const char *odn_str = NULL;
+
+		odn_str = PyUnicode_AsUTF8(object);
+		if (odn_str == NULL) {
+			return false;
+		}
+
+		odn = ldb_dn_new(mem_ctx, ldb_ctx, odn_str);
+		if (odn == NULL) {
+			PyErr_NoMemory();
+			return false;
+		}
+
 		*dn = odn;
 		return true;
 	}
 
 	if (ldb_ctx != NULL && PyBytes_Check(object)) {
-		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyBytes_AsString(object));
+		const char *odn_str = NULL;
+
+		odn_str = PyBytes_AsString(object);
+		if (odn_str == NULL) {
+			return false;
+		}
+
+		odn = ldb_dn_new(mem_ctx, ldb_ctx, odn_str);
+		if (odn == NULL) {
+			PyErr_NoMemory();
+			return false;
+		}
+
 		*dn = odn;
 		return true;
 	}
