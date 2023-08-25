@@ -6944,7 +6944,7 @@ class GPOTests(tests.TestCase):
             self.assertTrue(os.path.exists(machine_crt),
                             'Machine certificate was not requested')
             machine_key = os.path.join(dname, '%s.Machine.key' % ca_cn)
-            self.assertTrue(os.path.exists(machine_crt),
+            self.assertTrue(os.path.exists(machine_key),
                             'Machine key was not generated')
 
             # Subsequent apply should react to new certificate templates
@@ -6955,13 +6955,13 @@ class GPOTests(tests.TestCase):
                             'Root CA certificate was not requested')
             self.assertTrue(os.path.exists(machine_crt),
                             'Machine certificate was not requested')
-            self.assertTrue(os.path.exists(machine_crt),
+            self.assertTrue(os.path.exists(machine_key),
                             'Machine key was not generated')
             workstation_crt = os.path.join(dname, '%s.Workstation.crt' % ca_cn)
             self.assertTrue(os.path.exists(workstation_crt),
                             'Workstation certificate was not requested')
             workstation_key = os.path.join(dname, '%s.Workstation.key' % ca_cn)
-            self.assertTrue(os.path.exists(workstation_crt),
+            self.assertTrue(os.path.exists(workstation_key),
                             'Workstation key was not generated')
 
             # Verify RSOP does not fail
@@ -6980,11 +6980,11 @@ class GPOTests(tests.TestCase):
                             'Root CA certificate was not removed')
             self.assertFalse(os.path.exists(machine_crt),
                             'Machine certificate was not removed')
-            self.assertFalse(os.path.exists(machine_crt),
+            self.assertFalse(os.path.exists(machine_key),
                             'Machine key was not removed')
             self.assertFalse(os.path.exists(workstation_crt),
                             'Workstation certificate was not removed')
-            self.assertFalse(os.path.exists(workstation_crt),
+            self.assertFalse(os.path.exists(workstation_key),
                             'Workstation key was not removed')
 
             # Reapply policy by staging the enabled pol file
@@ -6996,11 +6996,11 @@ class GPOTests(tests.TestCase):
                             'Root CA certificate was not requested')
             self.assertTrue(os.path.exists(machine_crt),
                             'Machine certificate was not requested')
-            self.assertTrue(os.path.exists(machine_crt),
+            self.assertTrue(os.path.exists(machine_key),
                             'Machine key was not generated')
             self.assertTrue(os.path.exists(workstation_crt),
                             'Workstation certificate was not requested')
-            self.assertTrue(os.path.exists(workstation_crt),
+            self.assertTrue(os.path.exists(workstation_key),
                             'Workstation key was not generated')
 
             # Remove policy
@@ -7011,11 +7011,11 @@ class GPOTests(tests.TestCase):
                             'Root CA certificate was not removed')
             self.assertFalse(os.path.exists(machine_crt),
                             'Machine certificate was not removed')
-            self.assertFalse(os.path.exists(machine_crt),
+            self.assertFalse(os.path.exists(machine_key),
                             'Machine key was not removed')
             self.assertFalse(os.path.exists(workstation_crt),
                             'Workstation certificate was not removed')
-            self.assertFalse(os.path.exists(workstation_crt),
+            self.assertFalse(os.path.exists(workstation_key),
                             'Workstation key was not removed')
             out, _ = Popen(['getcert', 'list-cas'], stdout=PIPE).communicate()
             self.assertNotIn(get_bytes(ca_cn), out, 'CA was not removed')
@@ -7554,7 +7554,7 @@ class GPOTests(tests.TestCase):
                 self.assertTrue(os.path.exists(machine_crt),
                                 'Machine certificate was not requested')
                 machine_key = os.path.join(dname, '%s.Machine.key' % ca)
-                self.assertTrue(os.path.exists(machine_crt),
+                self.assertTrue(os.path.exists(machine_key),
                                 'Machine key was not generated')
 
             # Subsequent apply should react to new certificate templates
@@ -7566,14 +7566,14 @@ class GPOTests(tests.TestCase):
                                 'Root CA certificate was not requested')
                 self.assertTrue(os.path.exists(machine_crt),
                                 'Machine certificate was not requested')
-                self.assertTrue(os.path.exists(machine_crt),
+                self.assertTrue(os.path.exists(machine_key),
                                 'Machine key was not generated')
 
                 workstation_crt = os.path.join(dname, '%s.Workstation.crt' % ca)
                 self.assertTrue(os.path.exists(workstation_crt),
                                 'Workstation certificate was not requested')
                 workstation_key = os.path.join(dname, '%s.Workstation.key' % ca)
-                self.assertTrue(os.path.exists(workstation_crt),
+                self.assertTrue(os.path.exists(workstation_key),
                                 'Workstation key was not generated')
 
             # Verify RSOP does not fail
@@ -7591,11 +7591,11 @@ class GPOTests(tests.TestCase):
                             'Root CA certificate was not removed')
             self.assertFalse(os.path.exists(machine_crt),
                             'Machine certificate was not removed')
-            self.assertFalse(os.path.exists(machine_crt),
+            self.assertFalse(os.path.exists(machine_key),
                             'Machine key was not removed')
             self.assertFalse(os.path.exists(workstation_crt),
                             'Workstation certificate was not removed')
-            self.assertFalse(os.path.exists(workstation_crt),
+            self.assertFalse(os.path.exists(workstation_key),
                             'Workstation key was not removed')
             out, _ = Popen(['getcert', 'list-cas'], stdout=PIPE).communicate()
             for ca in ca_list:
