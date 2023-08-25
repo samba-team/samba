@@ -508,7 +508,7 @@ class GetDCNameEx(samba.tests.TestCase):
             response = self._call_get_dc_name(domain=self.realm,
                                               flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_WEB_SERVICE_REQUIRED)
 
-            self.fail("Failed to detect that requirement for Web Services was not")
+            self.fail("Failed to detect that requirement for Web Services was not met")
         except WERRORError as e:
             enum, estr = e.args
             if enum != werror.WERR_NO_SUCH_DOMAIN:
@@ -541,7 +541,7 @@ class GetDCNameEx(samba.tests.TestCase):
             response = self._call_get_dc_name(domain=self.trust_realm,
                                               flags=netlogon.DS_RETURN_DNS_NAME|netlogon.DS_WEB_SERVICE_REQUIRED)
 
-            self.fail("Failed to detect that requirement for Web Services was not")
+            self.fail("Failed to detect that requirement for Web Services was not met")
         except WERRORError as e:
             enum, estr = e.args
             if enum != werror.WERR_NO_SUCH_DOMAIN:
