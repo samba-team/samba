@@ -45,15 +45,15 @@ def get_gp_client_side_extensions(smb_conf):
     user_exts = []
     machine_exts = []
     gp_exts = list_gp_extensions(smb_conf)
-    for gp_ext in gp_exts.values():
-        module = import_file(gp_ext['ProcessGroupPolicy'], gp_ext['DllName'])
-        ext = get_gp_ext_from_module(gp_ext['ProcessGroupPolicy'], module)
-        if ext and gp_ext['MachinePolicy']:
+    for gp_extension in gp_exts.values():
+        module = import_file(gp_extension['ProcessGroupPolicy'], gp_extension['DllName'])
+        ext = get_gp_ext_from_module(gp_extension['ProcessGroupPolicy'], module)
+        if ext and gp_extension['MachinePolicy']:
             machine_exts.append(ext)
             log.info('Loaded machine extension from %s: %s'
-                     % (gp_ext['DllName'], ext.__name__))
-        if ext and gp_ext['UserPolicy']:
+                     % (gp_extension['DllName'], ext.__name__))
+        if ext and gp_extension['UserPolicy']:
             user_exts.append(ext)
             log.info('Loaded user extension from %s: %s'
-                     % (gp_ext['DllName'], ext.__name__))
+                     % (gp_extension['DllName'], ext.__name__))
     return (machine_exts, user_exts)
