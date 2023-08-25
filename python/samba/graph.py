@@ -192,7 +192,7 @@ def compile_graph_key(key_items, nodes_above=None, elisions=None,
                 short = short[1:]
                 long = long[1:]
             elision_str += ('\nelision%d[shape=plaintext; style=solid; '
-                            'label="\“%s”  means  “%s”\\r"]\n'
+                            'label="\\“%s”  means  “%s”\\r"]\n'
                             % ((i, short, long)))
 
     above_lines = []
