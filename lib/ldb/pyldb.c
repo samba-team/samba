@@ -454,6 +454,11 @@ static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx,
 	if (obj == Py_None)
 		return NULL;
 
+	if (!PyList_Check(obj)) {
+		PyErr_SetString(PyExc_ValueError, "Expected list of LDB results");
+		return NULL;
+	}
+
 	res = talloc_zero(mem_ctx, struct ldb_result);
 	res->count = PyList_Size(obj);
 	res->msgs = talloc_array(res, struct ldb_message *, res->count);
