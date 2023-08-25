@@ -709,7 +709,7 @@ def get_gpo_link(samdb, link_dn):
                        '(objectclass=*)', ['gPLink', 'gPOptions'])
     if res.count != 1:
         raise ldb.LdbError(ldb.ERR_NO_SUCH_OBJECT, 'get_gpo_link: no result')
-    if not 'gPLink' in res.msgs[0]:
+    if 'gPLink' not in res.msgs[0]:
         raise ldb.LdbError(ldb.ERR_NO_SUCH_ATTRIBUTE,
             "get_gpo_link: no 'gPLink' attribute found for '{}'".format(link_dn)
         )
