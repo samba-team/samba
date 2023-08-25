@@ -551,6 +551,14 @@ class KerberosCredentials(Credentials):
     def get_sid(self):
         return self.sid
 
+    def get_rid(self):
+        sid = self.get_sid()
+        if sid is None:
+            return None
+
+        _, rid = sid.rsplit('-', 1)
+        return int(rid)
+
     def set_type(self, account_type):
         self.account_type = account_type
 
