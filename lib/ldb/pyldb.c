@@ -460,8 +460,17 @@ static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx,
 	}
 
 	res = talloc_zero(mem_ctx, struct ldb_result);
+	if (res == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	res->count = PyList_Size(obj);
 	res->msgs = talloc_array(res, struct ldb_message *, res->count);
+	if (res->msgs == NULL) {
+		talloc_free(res);
+		PyErr_NoMemory();
+		return NULL;
+	}
 	for (i = 0; i < res->count; i++) {
 		PyObject *item = PyList_GetItem(obj, i);
 		res->msgs[i] = pyldb_Message_AsMessage(item);
@@ -894,35 +903,69 @@ static Py_ssize_t py_ldb_dn_len(PyLdbDnObject *self)
  */
 static PyObject *py_ldb_dn_copy(struct ldb_dn *dn)
 {
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldb_dn *new_dn = NULL;
 	PyLdbDnObject *py_ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	new_dn = ldb_dn_copy(mem_ctx, dn);
+	if (new_dn == NULL) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
 	if (py_ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	py_ret->mem_ctx = talloc_new(NULL);
-	py_ret->dn = ldb_dn_copy(py_ret->mem_ctx, dn);
+	py_ret->mem_ctx = mem_ctx;
+	py_ret->dn = new_dn;
 	return (PyObject *)py_ret;
 }
 
 static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
 {
+	TALLOC_CTX *mem_ctx = NULL;
 	struct ldb_dn *dn = pyldb_Dn_AS_DN((PyObject *)self),
 				  *other;
+	struct ldb_dn *new_dn = NULL;
 	PyLdbDnObject *py_ret;
 
 	if (!pyldb_Object_AsDn(NULL, py_other, NULL, &other))
 		return NULL;
 
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	new_dn = ldb_dn_copy(mem_ctx, dn);
+	if (new_dn == NULL) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
+
+	if (!ldb_dn_add_base(new_dn, other)) {
+		PyErr_SetString(PyExc_RuntimeError, "unable to concatenate DNs");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
 	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
 	if (py_ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	py_ret->mem_ctx = talloc_new(NULL);
-	py_ret->dn = ldb_dn_copy(py_ret->mem_ctx, dn);
-	ldb_dn_add_base(py_ret->dn, other);
+	py_ret->mem_ctx = mem_ctx;
+	py_ret->dn = new_dn;
+
 	return (PyObject *)py_ret;
 }
 
@@ -1225,20 +1268,29 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 
 static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
+	TALLOC_CTX *mem_ctx = NULL;
 	PyLdbObject *ret;
 	struct ldb_context *ldb;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	ldb = ldb_init(mem_ctx, NULL);
+	if (ldb == NULL) {
+		talloc_free(mem_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	ret = (PyLdbObject *)type->tp_alloc(type, 0);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret->mem_ctx = talloc_new(NULL);
-	ldb = ldb_init(ret->mem_ctx, NULL);
-
-	if (ldb == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	ret->mem_ctx = mem_ctx;
 
 	ret->ldb_ctx = ldb;
 	return (PyObject *)ret;
@@ -1874,6 +1926,9 @@ static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 	ldif.changetype = changetype;
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
 
 	string = ldb_ldif_write_string(pyldb_Ldb_AS_LDBCONTEXT(self), mem_ctx, &ldif);
 	if (!string) {
@@ -2621,15 +2676,29 @@ static PyMethodDef py_ldb_methods[] = {
 
 static PyObject *PyLdbModule_FromModule(struct ldb_module *mod)
 {
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldb_module *mod_ref = NULL;
 	PyLdbModuleObject *ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	mod_ref = talloc_reference(mem_ctx, mod);
+	if (mod_ref == NULL) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	ret = (PyLdbModuleObject *)PyLdbModule.tp_alloc(&PyLdbModule, 0);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret->mem_ctx = talloc_new(NULL);
-	ret->mod = talloc_reference(ret->mem_ctx, mod);
+	ret->mem_ctx = mem_ctx;
+	ret->mod = mod_ref;
 	return (PyObject *)ret;
 }
 
@@ -2690,15 +2759,29 @@ static PySequenceMethods py_ldb_seq = {
 
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 {
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldb_context *ldb_ctx_ref = NULL;
 	PyLdbObject *ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	ldb_ctx_ref = talloc_reference(mem_ctx, ldb_ctx);
+	if (ldb_ctx_ref == NULL) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	ret = (PyLdbObject *)PyLdb.tp_alloc(&PyLdb, 0);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret->mem_ctx = talloc_new(NULL);
-	ret->ldb_ctx = talloc_reference(ret->mem_ctx, ldb_ctx);
+	ret->mem_ctx = mem_ctx;
+	ret->ldb_ctx = ldb_ctx_ref;
 	return (PyObject *)ret;
 }
 
@@ -3367,17 +3450,27 @@ static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 
 static PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
 {
+	TALLOC_CTX *ret_mem_ctx = NULL;
 	PyLdbMessageElementObject *ret;
+
+	ret_mem_ctx = talloc_new(NULL);
+	if (ret_mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	if (talloc_reference(ret_mem_ctx, mem_ctx) == NULL) {
+		talloc_free(ret_mem_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	ret = PyObject_New(PyLdbMessageElementObject, &PyLdbMessageElement);
 	if (ret == NULL) {
+		talloc_free(ret_mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret->mem_ctx = talloc_new(NULL);
-	if (talloc_reference(ret->mem_ctx, mem_ctx) == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	ret->mem_ctx = ret_mem_ctx;
 	ret->el = el;
 	return (PyObject *)ret;
 }
@@ -3952,6 +4045,10 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 			return NULL;
 		}
 		ret->dn = talloc_reference(ret, dn);
+		if (ret->dn == NULL) {
+			talloc_free(mem_ctx);
+			return PyErr_NoMemory();
+		}
 	}
 
 	py_ret = (PyLdbMessageObject *)type->tp_alloc(type, 0);
@@ -3968,15 +4065,29 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 
 static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg)
 {
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldb_message *msg_ref = NULL;
 	PyLdbMessageObject *ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	msg_ref = talloc_reference(mem_ctx, msg);
+	if (msg_ref == NULL) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	ret = (PyLdbMessageObject *)PyLdbMessage.tp_alloc(&PyLdbMessage, 0);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret->mem_ctx = talloc_new(NULL);
-	ret->msg = talloc_reference(ret->mem_ctx, msg);
+	ret->mem_ctx = mem_ctx;
+	ret->msg = msg_ref;
 	return (PyObject *)ret;
 }
 
@@ -3989,6 +4100,7 @@ static PyObject *py_ldb_msg_get_dn(PyLdbMessageObject *self, void *closure)
 static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
 {
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	struct ldb_dn *dn = NULL;
 	if (value == NULL) {
 		PyErr_SetString(PyExc_AttributeError, "cannot delete dn");
 		return -1;
@@ -3998,7 +4110,13 @@ static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *cl
 		return -1;
 	}
 
-	msg->dn = talloc_reference(msg, pyldb_Dn_AS_DN(value));
+	dn = talloc_reference(msg, pyldb_Dn_AS_DN(value));
+	if (dn == NULL) {
+		PyErr_NoMemory();
+		return -1;
+	}
+
+	msg->dn = dn;
 	return 0;
 }
 
@@ -4104,16 +4222,30 @@ static PyTypeObject PyLdbMessage = {
 
 static PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
 {
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldb_parse_tree *tree_ref = NULL;
 	PyLdbTreeObject *ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	tree_ref = talloc_reference(mem_ctx, tree);
+	if (tree_ref == NULL) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	ret = (PyLdbTreeObject *)PyLdbTree.tp_alloc(&PyLdbTree, 0);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
 
-	ret->mem_ctx = talloc_new(NULL);
-	ret->tree = talloc_reference(ret->mem_ctx, tree);
+	ret->mem_ctx = mem_ctx;
+	ret->tree = tree_ref;
 	return (PyObject *)ret;
 }
 
