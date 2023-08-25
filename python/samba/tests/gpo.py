@@ -123,7 +123,7 @@ dspath = 'CN=Policies,CN=System,' + base_dn
 gpt_data = '[General]\nVersion=%d'
 
 gnome_test_reg_pol = \
-b"""
+br"""
 <?xml version="1.0" encoding="utf-8"?>
 <PolFile num_entries="26" signature="PReg" version="1">
     <Entry type="4" type_name="REG_DWORD">
@@ -260,7 +260,7 @@ b"""
 """
 
 auto_enroll_reg_pol = \
-b"""
+br"""
 <?xml version="1.0" encoding="utf-8"?>
 <PolFile num_entries="3" signature="PReg" version="1">
         <Entry type="4" type_name="REG_DWORD">
@@ -282,7 +282,7 @@ b"""
 """
 
 auto_enroll_unchecked_reg_pol = \
-b"""
+br"""
 <?xml version="1.0" encoding="utf-8"?>
 <PolFile num_entries="3" signature="PReg" version="1">
         <Entry type="4" type_name="REG_DWORD">
@@ -304,7 +304,7 @@ b"""
 """
 
 advanced_enroll_reg_pol = \
-b"""
+br"""
 <?xml version="1.0" encoding="utf-8"?>
 <PolFile num_entries="30" signature="PReg" version="1">
     <Entry type="1" type_name="REG_SZ">
@@ -338,122 +338,122 @@ b"""
         <Value>0</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
         <ValueName>URL</ValueName>
         <Value>LDAP:</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
         <ValueName>PolicyID</ValueName>
         <Value>%s</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
         <ValueName>FriendlyName</ValueName>
         <Value>Example</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
         <ValueName>Flags</ValueName>
         <Value>16</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
         <ValueName>AuthFlags</ValueName>
         <Value>2</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
         <ValueName>Cost</ValueName>
         <Value>2147483645</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
         <ValueName>URL</ValueName>
         <Value>https://example2.com/ADPolicyProvider_CEP_Certificate/service.svc/CEP</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
         <ValueName>PolicyID</ValueName>
         <Value>%s</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
         <ValueName>FriendlyName</ValueName>
         <Value>Example2</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
         <ValueName>Flags</ValueName>
         <Value>16</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
         <ValueName>AuthFlags</ValueName>
         <Value>8</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
         <ValueName>Cost</ValueName>
         <Value>10</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
         <ValueName>URL</ValueName>
         <Value>https://example0.com/ADPolicyProvider_CEP_Kerberos/service.svc/CEP</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
         <ValueName>PolicyID</ValueName>
         <Value>%s</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
         <ValueName>FriendlyName</ValueName>
         <Value>Example0</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
         <ValueName>Flags</ValueName>
         <Value>16</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
         <ValueName>AuthFlags</ValueName>
         <Value>2</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
         <ValueName>Cost</ValueName>
         <Value>1</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
         <ValueName>URL</ValueName>
         <Value>https://example1.com/ADPolicyProvider_CEP_Kerberos/service.svc/CEP</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
         <ValueName>PolicyID</ValueName>
         <Value>%s</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
         <ValueName>FriendlyName</ValueName>
         <Value>Example1</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
         <ValueName>Flags</ValueName>
         <Value>16</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
         <ValueName>AuthFlags</ValueName>
         <Value>2</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
-        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
         <ValueName>Cost</ValueName>
         <Value>1</Value>
     </Entry>
@@ -2116,7 +2116,7 @@ firefox_json_expected = \
 """
 
 chromium_reg_pol = \
-b"""
+br"""
 <?xml version="1.0" encoding="utf-8"?>
 <PolFile num_entries="418" signature="PReg" version="1">
     <Entry type="4" type_name="REG_DWORD">
@@ -3012,12 +3012,12 @@ b"""
     <Entry type="1" type_name="REG_SZ">
         <Key>Software\Policies\Google\Chrome</Key>
         <ValueName>RestrictSigninToPattern</ValueName>
-        <Value>.*@example\\.com</Value>
+        <Value>.*@example\.com</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
         <Key>Software\Policies\Google\Chrome</Key>
         <ValueName>RoamingProfileLocation</ValueName>
-        <Value>${roaming_app_data}\\chrome-profile</Value>
+        <Value>${roaming_app_data}\chrome-profile</Value>
     </Entry>
     <Entry type="4" type_name="REG_DWORD">
         <Key>Software\Policies\Google\Chrome</Key>
@@ -3267,7 +3267,7 @@ b"""
     <Entry type="1" type_name="REG_SZ">
         <Key>Software\Policies\Google\Chrome\AlternativeBrowserParameters</Key>
         <ValueName>5</ValueName>
-        <Value>%HOME%\\browser_profile</Value>
+        <Value>%HOME%\browser_profile</Value>
     </Entry>
     <Entry type="1" type_name="REG_SZ">
         <Key>Software\Policies\Google\Chrome\AudioCaptureAllowedUrls</Key>
@@ -4973,7 +4973,7 @@ b"""
 """
 
 firewalld_reg_pol = \
-b"""
+br"""
 <?xml version="1.0" encoding="utf-8"?>
 <PolFile num_entries="6" signature="PReg" version="1">
     <Entry type="4" type_name="REG_DWORD">
