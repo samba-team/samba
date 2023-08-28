@@ -2436,6 +2436,8 @@ class TestDNSAging(DNSTest):
         rset = set(x.rdata.txt.str[0] for x in r.answers)
         self.assertEqual(rset, set('ABCD'))
 
+        self.assert_timestamps_equal(dtime, self.get_unique_txt_record(name, D))
+
         self.dns_delete(name, D)
         self.assert_timestamps_equal(atime, self.get_unique_txt_record(name, A))
         self.assert_timestamps_equal(btime, self.get_unique_txt_record(name, B))
