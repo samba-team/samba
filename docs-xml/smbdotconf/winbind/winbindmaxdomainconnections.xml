@@ -11,6 +11,7 @@
 	Setting this parameter to a value greater than 1 can improve
 	scalability with many simultaneous winbind requests,
 	some of which might be slow.
+	Changing this value requires a restart of winbindd.
 	</para>
 	<para>
 	Note that if <smbconfoption name="winbind offline logon"/> is set to
