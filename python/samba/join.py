@@ -934,12 +934,12 @@ class DCJoinContext(object):
             adprep_level = ctx.behavior_version
 
             updates_allowed_overridden = False
-            if lp.get("dsdb:schema update allowed") is None:
-                lp.set("dsdb:schema update allowed", "yes")
+            if ctx.lp.get("dsdb:schema update allowed") is None:
+                ctx.lp.set("dsdb:schema update allowed", "yes")
                 print("Temporarily overriding 'dsdb:schema update allowed' setting")
                 updates_allowed_overridden = True
 
-            samdb.transaction_start()
+            ctx.samdb.transaction_start()
             try:
                 from samba.domain_update import DomainUpdate
 
@@ -948,13 +948,13 @@ class DCJoinContext(object):
                                                       samba.dsdb.DS_DOMAIN_FUNCTION_2008,
                                                       update_revision=True)
 
-                samdb.transaction_commit()
+                ctx.samdb.transaction_commit()
             except Exception as e:
-                samdb.transaction_cancel()
+                ctx.samdb.transaction_cancel()
                 raise DCJoinException("DomainUpdate() failed: %s" % e)
 
             if updates_allowed_overridden:
-                lp.set("dsdb:schema update allowed", "no")
+                ctx.lp.set("dsdb:schema update allowed", "no")
 
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
