@@ -208,7 +208,7 @@ class RegistryGroupPolicies(object):
     def __validate_extension_registration(self, ext_name, ext_attr):
         try:
             ext_name_guid = GUID(ext_name)
-        except samba.NTSTATUSError as e:
+        except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_INVALID_PARAMETER:
                 raise SyntaxError('Extension name not formatted correctly')
             raise
