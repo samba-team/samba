@@ -140,7 +140,7 @@ class SMBConfTests(samba.tests.TestCase):
             self.smbconf.SMBConfError, sconf.create_share, "alice"
         )
 
-    def test_create_share(self):
+    def test_drop_share(self):
         sconf = self.s3smbconf.init_reg(None)
         sconf.drop()
         sconf.create_share("alice")
