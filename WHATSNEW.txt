@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.19.  This is *not*
+This is the fourth release candidate of Samba 4.19.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -250,6 +250,17 @@ smb.conf changes
   --------------                          -----------     -------
   winbind debug traceid                   Add traceid     No
   directory name cache size               Removed
+
+
+CHANGES SINCE 4.19.0rc3
+=======================
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15460: Logging to stdout/stderr with DEBUG_SYSLOG_FORMAT_ALWAYS can log
+     to syslog.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15458: ‘samba-tool domain level raise’ fails unless given a URL.
 
 
 CHANGES SINCE 4.19.0rc2
