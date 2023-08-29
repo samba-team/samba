@@ -313,11 +313,11 @@ static bool add_results(sl_array_t *array, struct sl_query *slq)
 	bool ok;
 
 	/*
-	 * Taken from a network trace against a macOS SMB Spotlight server. If
-	 * the first fetch-query-results has no results yet because the search
-	 * is still running, macOS returns 0x23, otherwise 0x0.
+	 * Taken from network traces against a macOS SMB Spotlight server: if
+	 * the search is not finished yet in the backend macOS returns 0x23,
+	 * otherwise 0x0.
 	 */
-	if (slq->state >= SLQ_STATE_RESULTS ) {
+	if (slq->state >= SLQ_STATE_DONE) {
 		status = 0;
 	} else {
 		status = 0x23;
