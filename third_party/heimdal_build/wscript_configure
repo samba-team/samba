@@ -65,9 +65,9 @@ conf.CHECK_FUNCS('dirfd', headers='dirent.h')
 conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
 conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='dirent.h')
 
-if conf.env['WITH_KERNEL_KEYRING'] != False:
+if conf.env['WITH_KERNEL_KEYRING'] is not False:
     require_keyutils = False
-    if conf.env['WITH_KERNEL_KEYRING'] == True:
+    if conf.env['WITH_KERNEL_KEYRING'] is True:
         require_keyutils = True
     conf.CHECK_FUNCS_IN('add_key keyctl_get_persistent',
                         'keyutils', headers='keyutils.h',
