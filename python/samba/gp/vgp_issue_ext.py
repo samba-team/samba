@@ -23,7 +23,11 @@ class vgp_issue_ext(gp_xml_ext, gp_misc_applier):
             raise ValueError('"%s" is not a message attribute' % attribute)
         msg = value
         data = self.parse_value(value)
-        current = open(issue, 'r').read() if os.path.exists(issue) else ''
+        if os.path.exists(issue):
+            with open(issue, 'r') as f:
+                current = f.read()
+        else:
+            current = ''
         # Only overwrite the msg if it hasn't been modified. It may have been
         # modified by another GPO.
         if 'new_val' not in data or current.strip() == data['new_val'].strip():
@@ -36,7 +40,11 @@ class vgp_issue_ext(gp_xml_ext, gp_misc_applier):
         self.cache_remove_attribute(guid, attribute)
 
     def apply(self, guid, issue, text):
-        current = open(issue, 'r').read() if os.path.exists(issue) else ''
+        if os.path.exists(issue):
+            with open(issue, 'r') as f:
+                current = f.read()
+        else:
+            current = ''
         if current != text.text:
             with open(issue, 'w') as w:
                 w.write(text.text)

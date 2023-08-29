@@ -282,7 +282,8 @@ class gp_gnome_settings_ext(gp_pol_ext, gp_file_applier):
             os.makedirs(os.path.dirname(udisk2_etc), exist_ok=True)
             xml_data = etree.ElementTree(etree.Element('policyconfig'))
             if os.path.exists(udisk2):
-                data = open(udisk2, 'rb').read()
+                with open(udisk2, 'rb') as f:
+                    data = f.read()
                 existing_xml = etree.ElementTree(etree.fromstring(data))
                 root = xml_data.getroot()
                 root.append(existing_xml.find('vendor'))

@@ -51,9 +51,9 @@ def sudo_applier_func(sudo_dir, sudo_entries):
                 w.write(contents)
             if visudo is None:
                 raise FileNotFoundError('visudo not found, please install it')
-            sudo_validation = \
-                    Popen([visudo, '-c', '-f', f.name],
-                        stdout=PIPE, stderr=PIPE).wait()
+            with Popen([visudo, '-c', '-f', f.name],
+                       stdout=PIPE, stderr=PIPE) as proc:
+                sudo_validation = proc.wait()
         if sudo_validation == 0:
             with NamedTemporaryFile(prefix='gp_',
                                     delete=False,

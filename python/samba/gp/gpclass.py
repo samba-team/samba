@@ -357,7 +357,8 @@ class gp_ext(object):
 
 class gp_inf_ext(gp_ext):
     def read(self, data_file):
-        policy = open(data_file, 'rb').read()
+        with open(data_file, 'rb') as f:
+            policy = f.read()
         inf_conf = ConfigParser(interpolation=None)
         inf_conf.optionxform = str
         try:
@@ -369,13 +370,15 @@ class gp_inf_ext(gp_ext):
 
 class gp_pol_ext(gp_ext):
     def read(self, data_file):
-        raw = open(data_file, 'rb').read()
+        with open(data_file, 'rb') as f:
+            raw = f.read()
         return ndr_unpack(preg.file, raw)
 
 
 class gp_xml_ext(gp_ext):
     def read(self, data_file):
-        raw = open(data_file, 'rb').read()
+        with open(data_file, 'rb') as f:
+            raw = f.read()
         try:
             return etree.fromstring(raw.decode())
         except UnicodeDecodeError:

@@ -23,7 +23,11 @@ class gp_msgs_ext(gp_pol_ext, gp_misc_applier):
             raise ValueError('"%s" is not a message attribute' % attribute)
         data = self.parse_value(value)
         mfile = os.path.join(cdir, attribute)
-        current = open(mfile, 'r').read() if os.path.exists(mfile) else ''
+        if os.path.exists(mfile):
+            with open(mfile, 'r') as f:
+                current = f.read()
+        else:
+            current = ''
         # Only overwrite the msg if it hasn't been modified. It may have been
         # modified by another GPO.
         if 'new_val' not in data or current.strip() == data['new_val'].strip():
@@ -44,7 +48,8 @@ class gp_msgs_ext(gp_pol_ext, gp_misc_applier):
                             e.valuename)
                 mfile = os.path.join(cdir, e.valuename)
                 if os.path.exists(mfile):
-                    old_val = open(mfile, 'r').read()
+                    with open(mfile, 'r') as f:
+                        old_val = f.read()
                 else:
                     old_val = ''
                 # If policy is already applied, skip application
