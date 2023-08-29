@@ -21,8 +21,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys, os.path, io, string
-from gen_error_common import parseErrorDescriptions, ErrorDef
+import sys, io
+from gen_error_common import parseErrorDescriptions
 
 def generateHeaderFile(out_file, errors):
     out_file.write("/*\n")
