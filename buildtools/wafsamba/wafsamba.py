@@ -82,7 +82,7 @@ def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):
         return
     bld.ASSERT(subsystem is not None, "You must specify a subsystem for init_function '%s'" % init_function)
     cache = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
-    if not subsystem in cache:
+    if subsystem not in cache:
         cache[subsystem] = []
     cache[subsystem].append( { 'TARGET':target, 'INIT_FUNCTION':init_function } )
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
