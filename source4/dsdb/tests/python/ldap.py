@@ -263,7 +263,7 @@ class BasicTests(samba.tests.TestCase):
             (num, _) = e.args
             self.assertEqual(num, ERR_NO_SUCH_ATTRIBUTE)
 
-        # We cannot add a the new top-most structural class "user" here since
+        # We cannot add a new top-most structural class "user" here since
         # we are missing at least one new mandatory attribute (in this case
         # "sAMAccountName")
         m = Message()
@@ -1689,7 +1689,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
 
         delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
-        # All this attributes are specificable on add operations
+        # All these attributes are specifiable on add operations
         self.ldb.add({
             "dn": "cn=ldaptestcontainer," + self.base_dn,
             "objectclass": "container",
@@ -1824,7 +1824,7 @@ delete: description
         delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
     def test_groupType_int32(self):
-        """Test groupType (int32) behaviour (should appear to be casted to a 32 bit signed integer before comparison)"""
+        """Test groupType (int32) behaviour (should appear to be cast to a 32 bit signed integer before comparison)"""
 
         res1 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
                           attrs=["groupType"], expression="groupType=2147483653")
@@ -2755,7 +2755,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(self.configuration_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
         self.assertTrue(len(res) > 0)
 
-        # Testing objectCategory canonacolisation"
+        # Testing objectCategory canonicalisation"
         res = ldb.search(self.configuration_dn, expression="objectCategory=ntDsDSA", scope=SCOPE_SUBTREE, attrs=["cn"])
         self.assertTrue(len(res) > 0, "Didn't find any records with objectCategory=ntDsDSA")
         self.assertTrue(len(res) != 0)
