@@ -174,7 +174,7 @@ class TestCase(unittest.TestCase):
         if kerberos_state is None:
             kerberos_state = template.get_kerberos_state()
 
-        # get a copy of the global creds or a the passed in creds
+        # get a copy of the global creds or the passed in creds
         c = Credentials()
         c.set_username(username)
         c.set_password(userpass)
@@ -560,7 +560,7 @@ def connect_samdb_env(env_url, env_username, env_password, lp=None):
     creds = credentials.Credentials()
     if lp is None:
         # guess Credentials parameters here. Otherwise workstation
-        # and domain fields are NULL and gencache code segfalts
+        # and domain fields are NULL and gencache code segfaults
         lp = param.LoadParm()
         creds.guess(lp)
     creds.set_username(env_get_var_value(env_username))
@@ -709,7 +709,7 @@ def check_help_consistency(out,
 def get_env_dir(key):
     """A helper to pull a directory name from the environment, used in
     some tests that optionally write e.g. fuzz seeds into a directory
-    named in an environment valiable.
+    named in an environment variable.
     """
     dir = os.environ.get(key)
     if dir is None:

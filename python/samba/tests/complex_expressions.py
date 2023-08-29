@@ -142,7 +142,7 @@ class ComplexExpressionTests(TestCase):
 
     # Take an ldap expression and an equivalent python expression.
     # Run and time the ldap expression and compare the result to the python
-    # expression run over the a list of ldap_object dicts.
+    # expression run over a list of ldap_object dicts.
     def assertLDAPQuery(self, ldap_expr, ou_dn, py_expr, ldap_objects):
 
         # run (and time) the LDAP search expression over the DB

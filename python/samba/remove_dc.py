@@ -128,10 +128,10 @@ def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
 
     # Work out the set of names we will likely have an A record on by
     # default.  This is by default all the partitions of type
-    # domainDNS.  By finding the canocial name of all the partitions,
+    # domainDNS.  By finding the canonical name of all the partitions,
     # we find the likely candidates.  We only remove the record if it
     # matches the IP that was used by the dnsHostName.  This avoids us
-    # needing to look a the dns_update_list file from in the demote
+    # needing to look at a dns_update_list file from in the demote
     # script.
 
     def dns_name_from_dn(dn):
@@ -388,7 +388,7 @@ def remove_dc(samdb, logger, dc_name):
 
     server_dn = None
 
-    # Allow the name to be a the nTDS-DSA GUID
+    # Allow the name to be an nTDS-DSA GUID
     try:
         ntds_guid = uuid.UUID(hex=dc_name)
         ntds_dn = "<GUID=%s>" % ntds_guid

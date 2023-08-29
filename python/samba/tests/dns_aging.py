@@ -604,7 +604,7 @@ class TestDNSAging(DNSTest):
         r.wType = dnsp.DNS_TYPE_TOMBSTONE
         # r.dwTimeStamp is a 32 bit value in hours, and r.data is an
         # NTTIME (100 nanosecond intervals), both in the 1601 epoch. A
-        # tombstome will have both, but expiration calculations use
+        # tombstone will have both, but expiration calculations use
         # the r.data NTTIME EntombedTime timestamp (see [MS-DNSP]).
         r.dwTimeStamp = epoch_hours
         if epoch_nttime is None:
@@ -1507,7 +1507,7 @@ class TestDNSAging(DNSTest):
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
 
-        # Here, although there is no record frm which to get the zero
+        # Here, although there is no record from which to get the zero
         # timestamp, record 4 does it anyway.
         self.assert_timestamps_equal(timestamp1, longer_ago)
         self.assert_timestamps_equal(timestamp2, n_days_ago)

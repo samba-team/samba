@@ -104,7 +104,7 @@ class NamingContext(object):
         return self.nc_type == NCType.config
 
     def identify_by_basedn(self, samdb):
-        """Given an NC object, identify what type is is thru
+        """Given an NC object, identify what type it is thru
            the samdb basedn strings and NC sid value
         """
         # Invoke loader to initialize guid and more
@@ -2018,7 +2018,7 @@ class RepsFromTo(object):
         return text
 
     def __setattr__(self, item, value):
-        """Set an attribute and chyange update flag.
+        """Set an attribute and change update flag.
 
         Be aware that setting any RepsFromTo attribute will set the
         drsuapi.DRSUAPI_DRS_UPDATE_ADDRESS update flag.
