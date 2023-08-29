@@ -24,7 +24,7 @@ def HEIMDAL_ASN1(name, source,
     '''Build a ASN1 file using the asn1 compiler.
        This will produce 2 output files'''
     source = heimdal_path(source)
-    bname = os.path.basename(source)[0:-5];
+    bname = os.path.basename(source)[0:-5]
     dname = os.path.dirname(source)
     asn1name = "%s_asn1" % bname
 
@@ -125,7 +125,7 @@ def HEIMDAL_ERRTABLE(name, source):
 
     source = heimdal_path(source)
 
-    bname = source[0:-3]; # strip off the .et suffix
+    bname = source[0:-3] # strip off the .et suffix
 
     if not SET_TARGET_TYPE(bld, name, 'ET'):
         return
