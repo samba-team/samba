@@ -84,7 +84,7 @@ def CHECK_ICONV(conf, define='HAVE_NATIVE_ICONV'):
 @conf
 def CHECK_LARGEFILE(conf, define='HAVE_LARGEFILE'):
     '''see what we need for largefile support'''
-    getconf_cflags = conf.CHECK_COMMAND(['getconf', 'LFS_CFLAGS']);
+    getconf_cflags = conf.CHECK_COMMAND(['getconf', 'LFS_CFLAGS'])
     if getconf_cflags is not False:
         if (conf.CHECK_CODE('if (sizeof(off_t) < 8) return 1',
                             define='WORKING_GETCONF_LFS_CFLAGS',

@@ -34,18 +34,18 @@ def SAMBA_CHECK_PERL(conf, mandatory=True, version=(5,0,0)):
 
     perl_arch_install_dir = None
     if vendor_prefix == conf.env.PREFIX:
-        perl_arch_install_dir = check_perl_config_var('vendorarch');
+        perl_arch_install_dir = check_perl_config_var('vendorarch')
     if perl_arch_install_dir is None:
-        perl_arch_install_dir = "${LIBDIR}/perl5";
+        perl_arch_install_dir = "${LIBDIR}/perl5"
     conf.start_msg("PERL_ARCH_INSTALL_DIR: ")
     conf.end_msg("'%s'" % (perl_arch_install_dir), 'GREEN')
     conf.env.PERL_ARCH_INSTALL_DIR = perl_arch_install_dir
 
     perl_lib_install_dir = None
     if vendor_prefix == conf.env.PREFIX:
-        perl_lib_install_dir = check_perl_config_var('vendorlib');
+        perl_lib_install_dir = check_perl_config_var('vendorlib')
     if perl_lib_install_dir is None:
-        perl_lib_install_dir = "${DATADIR}/perl5";
+        perl_lib_install_dir = "${DATADIR}/perl5"
     conf.start_msg("PERL_LIB_INSTALL_DIR: ")
     conf.end_msg("'%s'" % (perl_lib_install_dir), 'GREEN')
     conf.env.PERL_LIB_INSTALL_DIR = perl_lib_install_dir

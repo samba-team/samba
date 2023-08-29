@@ -963,10 +963,10 @@ def CURRENT_CFLAGS(bld, target, cflags,
     if not 'EXTRA_CFLAGS' in bld.env:
         list = []
     else:
-        list = bld.env['EXTRA_CFLAGS'];
+        list = bld.env['EXTRA_CFLAGS']
     ret.extend(list)
     if not allow_warnings and 'PICKY_CFLAGS' in bld.env:
-        list = bld.env['PICKY_CFLAGS'];
+        list = bld.env['PICKY_CFLAGS']
         ret.extend(list)
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
         ret.append(bld.env.VISIBILITY_CFLAGS)

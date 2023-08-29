@@ -225,7 +225,7 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
         if k in sorted(invmap.keys()):
             f.write("\tglobal:\n")
             for s in invmap.get(k, []):
-                f.write("\t\t%s;\n" % s);
+                f.write("\t\t%s;\n" % s)
         f.write("}%s;\n\n" % last_key)
         last_key = " %s" % symver
     f.write("%s {\n" % current_version)
