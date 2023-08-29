@@ -14,7 +14,6 @@ sys.path.insert(0, top + '/buildtools/wafsamba')
 
 out = 'bin'
 
-import wafsamba
 from wafsamba import samba_dist, samba_utils
 from waflib import Errors, Options, Logs, Context
 import shutil
