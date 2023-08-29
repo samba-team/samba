@@ -2202,12 +2202,14 @@ defined share. This parameter is only allowed if the global parameter
 "usershare allow guests" has been set to true in the &smb.conf;.
 </para>
 
+<para>
 There is no separate command to modify an existing user defined share,
 just use the "net usershare add [sharename]" command using the same
 sharename as the one you wish to modify and specify the new options
 you wish. The Samba smbd daemon notices user defined share modifications
 at connect time so will see the change immediately, there is no need
 to restart smbd on adding, deleting or changing a user defined share.
+</para>
 </refsect3>
 
 <refsect3>
