@@ -281,21 +281,21 @@ conf.CHECK_CODE('''
        ''',
     '_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5',
     headers='krb5.h', lib='krb5',
-    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type definition is available");
+    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type definition is available")
 conf.CHECK_CODE('''
        krb5_enctype enctype;
        enctype = ENCTYPE_ARCFOUR_HMAC_MD5_56;
        ''',
     '_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5_56',
     headers='krb5.h', lib='krb5',
-    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC_MD5_56 key type definition is available");
+    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC_MD5_56 key type definition is available")
 conf.CHECK_CODE('''
        krb5_keytype keytype;
        keytype = KEYTYPE_ARCFOUR_56;
        ''',
     '_HAVE_KEYTYPE_ARCFOUR_56',
     headers='krb5.h', lib='krb5',
-    msg="Checking whether the HAVE_KEYTYPE_ARCFOUR_56 key type definition is available");
+    msg="Checking whether the HAVE_KEYTYPE_ARCFOUR_56 key type definition is available")
 if conf.CONFIG_SET('_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5') and conf.CONFIG_SET('_HAVE_KEYTYPE_ARCFOUR_56'):
     conf.DEFINE('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5', '1')
 if conf.CONFIG_SET('_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5_56') and conf.CONFIG_SET('_HAVE_KEYTYPE_ARCFOUR_56'):
@@ -307,14 +307,14 @@ conf.CHECK_CODE('''
        ''',
     'HAVE_ENCTYPE_ARCFOUR_HMAC',
     headers='krb5.h', lib='krb5',
-    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC key type definition is available");
+    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC key type definition is available")
 conf.CHECK_CODE('''
        krb5_enctype enctype;
        enctype = ENCTYPE_ARCFOUR_HMAC_EXP;
        ''',
     'HAVE_ENCTYPE_ARCFOUR_HMAC_EXP',
     headers='krb5.h', lib='krb5',
-    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC_EXP key type definition is available");
+    msg="Checking whether the ENCTYPE_ARCFOUR_HMAC_EXP key type definition is available")
 
 conf.CHECK_CODE('''
        krb5_context context;
@@ -324,7 +324,7 @@ conf.CHECK_CODE('''
        ''',
     'HAVE_WRFILE_KEYTAB',
     headers='krb5.h', lib='krb5', execute=True,
-    msg="Checking whether the WRFILE -keytab is supported");
+    msg="Checking whether the WRFILE -keytab is supported")
 # Check for KRB5_DEPRECATED handling
 conf.CHECK_CODE('''#define KRB5_DEPRECATED 1
        #include <krb5.h>''',
@@ -344,7 +344,7 @@ conf.CHECK_CODE('''
 # Check for MIT KDC
 if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     Logs.info("Looking for MIT KDC")
-    conf.DEFINE('SAMBA_USES_MITKDC', 1);
+    conf.DEFINE('SAMBA_USES_MITKDC', 1)
 
     kdc_path_list = [ '/usr/sbin', '/usr/lib/mit/sbin']
 
