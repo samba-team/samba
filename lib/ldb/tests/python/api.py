@@ -1724,7 +1724,7 @@ class SearchTests(LdbBaseTest):
         if hasattr(self, 'disallowDNFilter') and \
            hasattr(self, 'IDX') and \
            (hasattr(self, 'IDXGUID') or
-            ((hasattr(self, 'IDXONE') == False and hasattr(self, 'IDX')))):
+            ((not hasattr(self, 'IDXONE') and hasattr(self, 'IDX')))):
             self.assertEqual(len(res11), 0)
         else:
             self.assertEqual(len(res11), 1)
