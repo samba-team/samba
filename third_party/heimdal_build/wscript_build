@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-from waflib import Context
 from samba_utils import SET_TARGET_TYPE
 from samba_autoconf import CURRENT_CFLAGS
 from samba_utils import LOAD_ENVIRONMENT, TO_LIST
