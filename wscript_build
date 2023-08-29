@@ -2,8 +2,6 @@
 
 # top level waf build script for samba4
 
-from waflib import Options
-import os
 srcdir = "."
 
 import samba_version

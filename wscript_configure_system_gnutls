@@ -1,4 +1,3 @@
-from waflib import Logs
 import os
 
 def parse_version(v):

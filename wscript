@@ -452,7 +452,6 @@ def configure(conf):
 
 def etags(ctx):
     '''build TAGS file using etags'''
-    from waflib import Utils
     source_root = os.path.dirname(Context.g_module.root_path)
     cmd = r'rm -f %s/TAGS && (find %s -name "*.[ch]" | egrep -v \.inst\. | xargs -n 100 etags -a)' % (source_root, source_root)
     print("Running: %s" % cmd)
@@ -462,7 +461,6 @@ def etags(ctx):
 
 def ctags(ctx):
     "build 'tags' file using ctags"
-    from waflib import Utils
     source_root = os.path.dirname(Context.g_module.root_path)
     cmd = r'ctags --python-kinds=-i $(find %s -name "*.[ch]" | grep -v "*_proto\.h" | egrep -v \.inst\.) $(find %s -name "*.py")' % (source_root, source_root)
     print("Running: %s" % cmd)
@@ -531,7 +529,6 @@ Scripting.main = main
 
 def reconfigure(ctx):
     '''reconfigure if config scripts have changed'''
-    import samba_utils
     samba_utils.reconfigure(ctx)
 
 
