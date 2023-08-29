@@ -384,6 +384,7 @@ class TestDNSAging(DNSTest):
         self.rpc_replace(name, old, None)
 
     def get_one_node(self, name):
+        self.assertIsInstance(name, str)
         expr = f"(&(objectClass=dnsNode)(name={name}))"
         nodes = self.samdb.search(base=self.zone_dn,
                                   scope=ldb.SCOPE_SUBTREE,
