@@ -5,9 +5,7 @@
 
 import sys
 import os
-import optparse
-from waflib import Scripting, Options, Utils
-from waflib.ConfigSet import ConfigSet as Environment
+from waflib import Options, Utils
 
 from samba_utils import *
 from samba_autoconf import *
