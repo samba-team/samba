@@ -46,7 +46,7 @@ if conf.env.KRB5_CONFIG:
         if 'krb5' in conf.env['LIB_KRB5']:
             krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
         if 'k5crypto' in conf.env['LIB_KRB5']:
-            krb5_define_syslib(conf, "k5crypto", conf.env['LIB_GSSAPI'])
+            krb5_define_syslib(conf, "k5crypto", conf.env['LIB_KRB5'])
     else:
         raise Errors.WafError('Unable to find required krb5 library!')
 
