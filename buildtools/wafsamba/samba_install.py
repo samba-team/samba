@@ -188,7 +188,7 @@ def symlink_lib(self):
     blddir = os.path.dirname(self.bld.srcnode.abspath(self.bld.env))
     libpath = self.link_task.outputs[0].abspath(self.env)
 
-    # calculat the link target and put it in the environment
+    # calculate the link target and put it in the environment
     soext=""
     vnum = getattr(self, 'vnum', None)
     if vnum is not None:

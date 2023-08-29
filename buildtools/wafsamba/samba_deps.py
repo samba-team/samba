@@ -360,7 +360,7 @@ def show_final_deps(bld, tgt_list):
 
 
 def add_samba_attributes(bld, tgt_list):
-    '''ensure a target has a the required samba attributes'''
+    '''ensure a target has the required samba attributes'''
 
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
 

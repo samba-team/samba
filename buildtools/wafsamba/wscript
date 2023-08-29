@@ -37,7 +37,7 @@ def options(opt):
                    help=(f'''comma separated list of bundled libraries.
 
 {Context.g_module.APPNAME} includes copies of externally maintained
-system libraries (such as popt, cmokca) as well as Samba-maintained
+system libraries (such as popt, cmocka) as well as Samba-maintained
 libraries that can be found on the system already (such as talloc,
 tdb).
 
@@ -99,7 +99,7 @@ versions of libraries that we include match that found on the system,
 before we will select not to 'bundle'.
 
 This option, possibly useful for packagers, allows that specified
-version to be overridden (say, if it is absolutely known that a the
+version to be overridden (say, if it is absolutely known that the
 newer version included in this tarball has no relevant changes).
 
 Use this with extreme care
@@ -539,7 +539,7 @@ def configure(conf):
         # conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
 
     # we should use the PIC options in waf instead
-    # Some compilo didn't support -fPIC but just print a warning
+    # Some compiler didn't support -fPIC but just print a warning
     if conf.env['COMPILER_CC'] == "suncc":
         conf.ADD_CFLAGS('-KPIC', testflags=True)
         # we really want define here as we need to have this
@@ -552,7 +552,7 @@ def configure(conf):
 
     # On Solaris 8 with suncc (at least) the flags for the linker to define the name of the
     # library are not always working (if the command line is very very long and with a lot
-    # files)
+    # of files)
 
     if conf.env['COMPILER_CC'] == "suncc":
         save = conf.env['SONAME_ST']
@@ -615,7 +615,7 @@ struct foo bar = { .y = 'X', .x = 1 };
 
     # see if we need special largefile flags
     if not conf.CHECK_LARGEFILE():
-        raise Errors.WafError('Samba requires large file support support, but not available on this platform: sizeof(off_t) < 8')
+        raise Errors.WafError('Samba requires large file support, but not available on this platform: sizeof(off_t) < 8')
 
     if conf.env.HAVE_STDDEF_H and conf.env.HAVE_STDLIB_H:
         conf.DEFINE('STDC_HEADERS', 1)
@@ -632,7 +632,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     else:
         conf.define('SHLIBEXT', "so", quote=True)
 
-    # First try a header check for cross-compile friendlyness
+    # First try a header check for cross-compile friendliness
     conf.CHECK_CODE(code = """#ifdef __BYTE_ORDER
                         #define B __BYTE_ORDER
                         #elif defined(BYTE_ORDER)
