@@ -90,6 +90,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 {
 	struct ldb_dn *odn;
 	PyTypeObject *PyLdb_Dn_Type;
+	bool is_dn;
 
 	if (ldb_ctx != NULL && (PyUnicode_Check(object))) {
 		const char *odn_str = NULL;
@@ -132,7 +133,9 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 		return false;
 	}
 
-	if (PyObject_TypeCheck(object, PyLdb_Dn_Type)) {
+	is_dn = PyObject_TypeCheck(object, PyLdb_Dn_Type);
+	Py_DECREF(PyLdb_Dn_Type);
+	if (is_dn) {
 		*dn = pyldb_Dn_AS_DN(object);
 		return true;
 	}
@@ -170,6 +173,7 @@ PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn)
 	}
 
 	py_ret = (PyLdbDnObject *)PyLdb_Dn_Type->tp_alloc(PyLdb_Dn_Type, 0);
+	Py_DECREF(PyLdb_Dn_Type);
 	if (py_ret == NULL) {
 		talloc_free(mem_ctx);
 		PyErr_NoMemory();

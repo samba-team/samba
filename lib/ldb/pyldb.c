@@ -1263,6 +1263,7 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 		ret = ldb_connect(ldb, url, flags, options);
 		if (ret != LDB_SUCCESS) {
 			PyErr_SetLdbError(PyExc_LdbError, ret, ldb);
+			talloc_free(options);
 			return -1;
 		}
 	} else {
@@ -1940,6 +1941,7 @@ static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 	string = ldb_ldif_write_string(pyldb_Ldb_AS_LDBCONTEXT(self), mem_ctx, &ldif);
 	if (!string) {
 		PyErr_SetString(PyExc_KeyError, "Failed to generate LDIF");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -2071,6 +2073,7 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 
 	diff = ldb_msg_copy(mem_ctx, diff);
 	if (diff == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
@@ -4224,8 +4227,10 @@ static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 	if (dict == NULL) {
 		return NULL;
 	}
-	if (PyDict_Update(dict, (PyObject *)self) != 0)
+	if (PyDict_Update(dict, (PyObject *)self) != 0) {
+		Py_DECREF(dict);
 		return NULL;
+	}
 	repr = PyObject_Repr(dict);
 	if (repr == NULL) {
 		Py_DECREF(dict);
@@ -4365,8 +4370,10 @@ static int py_module_search(struct ldb_module *mod, struct ldb_request *req)
 
 	py_tree = PyLdbTree_FromTree(req->op.search.tree);
 
-	if (py_tree == NULL)
+	if (py_tree == NULL) {
+		Py_DECREF(py_base);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	if (req->op.search.attrs == NULL) {
 		py_attrs = Py_None;
@@ -4416,6 +4423,7 @@ static int py_module_search(struct ldb_module *mod, struct ldb_request *req)
 
 	req->op.search.res = PyLdbResult_AsResult(NULL, py_result);
 	if (req->op.search.res == NULL) {
+		Py_DECREF(py_result);
 		return LDB_ERR_PYTHON_EXCEPTION;
 	}
 
@@ -4489,6 +4497,7 @@ static int py_module_del(struct ldb_module *mod, struct ldb_request *req)
 	py_result = PyObject_CallMethod(py_ldb, discard_const_p(char, "delete"),
 					discard_const_p(char, "O"),
 					py_dn);
+	Py_DECREF(py_dn);
 
 	if (py_result == NULL) {
 		return LDB_ERR_PYTHON_EXCEPTION;
@@ -4511,8 +4520,10 @@ static int py_module_rename(struct ldb_module *mod, struct ldb_request *req)
 
 	py_newdn = pyldb_Dn_FromDn(req->op.rename.newdn);
 
-	if (py_newdn == NULL)
+	if (py_newdn == NULL) {
+		Py_DECREF(py_olddn);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	py_result = PyObject_CallMethod(py_ldb, discard_const_p(char, "rename"),
 					discard_const_p(char, "OO"),
@@ -4625,11 +4636,16 @@ static int py_module_init(struct ldb_module *mod)
 
 	py_next = PyLdbModule_FromModule(mod->next);
 
-	if (py_next == NULL)
+	if (py_next == NULL) {
+		Py_DECREF(py_ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	py_result = PyObject_CallFunction(py_class, discard_const_p(char, "OO"),
 					  py_ldb, py_next);
+
+	Py_DECREF(py_next);
+	Py_DECREF(py_ldb);
 
 	if (py_result == NULL) {
 		return LDB_ERR_PYTHON_EXCEPTION;
