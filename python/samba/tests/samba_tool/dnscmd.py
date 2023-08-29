@@ -206,7 +206,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
             self.assertTrue("testrecord" in out and record_str in out,
                             "Query for a record which had DNS_RANK_NONE"
                             "succeeded but produced no resulting records.")
-        except AssertionError as e:
+        except AssertionError:
             # Windows produces no resulting records
             pass
 

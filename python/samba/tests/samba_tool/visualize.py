@@ -187,7 +187,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                                       '-H', self.dburl,
                                                       '-S',
                                                       opt)
-                except SystemExit as e:
+                except SystemExit:
                     # optparse makes us do this
                     self.fail(f"optparse rejects {env}, {opt}, {is_colour}")
 
