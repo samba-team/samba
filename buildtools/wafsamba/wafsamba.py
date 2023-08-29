@@ -303,7 +303,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         else:
             bundled_name = libname.replace('_', '-')
     else:
-        assert (private_library == True and realname is None)
+        assert (private_library is True and realname is None)
         bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'))
         vnum = None
 
@@ -1058,7 +1058,7 @@ def copy_and_fix_perl_path(task):
     lineno = 0
     for line in source_file:
         newline = line
-        if lineno == 0 and task.env["PERL_SPECIFIED"] == True and line[:2] == "#!":
+        if lineno == 0 and task.env["PERL_SPECIFIED"] is True and line[:2] == "#!":
             newline = replacement_shebang
         elif pattern in line:
             newline = line.replace(pattern, replacement)
