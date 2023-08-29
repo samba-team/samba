@@ -629,7 +629,7 @@ def test(ctx):
          'tests/python/index.py',
          'tests/python/repack.py'],
         extra_env={'SELFTEST_PREFIX': test_prefix,
-                   'LC_ALL': 'tr_TR.UTF-8'})
+                   'LC_ALL': 'tr_TR.UTF-8'}) or pyret
     print("Python testsuite returned %d" % pyret)
 
     cmocka_ret = 0
