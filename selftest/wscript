@@ -7,8 +7,14 @@ import sys
 import os
 from waflib import Options, Utils
 
-from samba_utils import *
-from samba_autoconf import *
+from samba_utils import (
+    ADD_LD_LIBRARY_PATH,
+    CHECK_MAKEFLAGS,
+    EXPAND_VARIABLES,
+    LOAD_ENVIRONMENT,
+    RUN_COMMAND,
+)
+from samba_autoconf import CONFIG_GET, CONFIG_SET
 import types
 
 DEFAULT_SELFTEST_PREFIX="./st"
