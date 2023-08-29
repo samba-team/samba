@@ -123,7 +123,7 @@ def options(opt):
                   help=('Disable kernely keyring support for credential storage'),
                   action='store_false', dest='enable_keyring')
 
-    gr = opt.option_group('developer options')
+    opt.option_group('developer options')
 
     opt.load('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
