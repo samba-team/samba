@@ -2162,7 +2162,7 @@ class TestDNSAging(DNSTest):
         self.assertEqual(r.ancount, 0)
         recs = self.ldap_get_records(D)
         self.assertEqual(len(recs), 1)
-        self.assert_tombstoned(recs[0])
+        self.assert_tombstoned(D)
 
         # others unchanged.
         atime = self.get_unique_txt_record(A, A).dwTimeStamp
@@ -2182,17 +2182,17 @@ class TestDNSAging(DNSTest):
         dsdb._dns_delete_tombstones(file_samdb)
         recs = self.ldap_get_records(D)
         self.assertEqual(len(recs), 1)
-        self.assert_tombstoned(recs[0])
+        self.assert_tombstoned(D)
 
         # Let's delete C using rpc, and ensure it survives dns_delete_tombstones
         self.rpc_delete_txt(C, C)
         recs = self.ldap_get_records(C)
         self.assertEqual(len(recs), 1)
-        self.assert_tombstoned(recs[0])
+        self.assert_tombstoned(C)
         dsdb._dns_delete_tombstones(file_samdb)
         recs = self.ldap_get_records(C)
         self.assertEqual(len(recs), 1)
-        self.assert_tombstoned(recs[0])
+        self.assert_tombstoned(C)
 
         # now let's wind A and B back to either side of the two week
         # threshold. A should survive, B should not.
@@ -2202,7 +2202,7 @@ class TestDNSAging(DNSTest):
 
         recs = self.ldap_get_records(A)
         self.assertEqual(len(recs), 1)
-        self.assert_tombstoned(recs[0])
+        self.assert_tombstoned(A)
 
         recs = self.ldap_get_records(B)
         self.assertEqual(len(recs), 0)
