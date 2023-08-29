@@ -107,6 +107,7 @@ def replace_refill_task_list(self):
 
 def AUTOCLEANUP_STALE_FILES(bld):
     """automatically clean up any files in bin that shouldn't be there"""
+    global old_refill_task_list
     old_refill_task_list = Parallel.refill_task_list
     Parallel.refill_task_list = replace_refill_task_list
     Parallel.bld = bld
