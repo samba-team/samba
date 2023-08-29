@@ -2358,9 +2358,9 @@ PasswordComplexity      Password must meet complexity requirements
             inf_data.optionxform=str
             raw = conn.loadfile(inf_file)
             try:
-                inf_data.readfp(StringIO(raw.decode()))
+                inf_data.read_file(StringIO(raw.decode()))
             except UnicodeDecodeError:
-                inf_data.readfp(StringIO(raw.decode('utf-16')))
+                inf_data.read_file(StringIO(raw.decode('utf-16')))
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
@@ -2453,9 +2453,9 @@ samba-tool gpo manage security list {31B2F340-016D-11D2-945F-00C04FB984F9}
             inf_data.optionxform=str
             raw = conn.loadfile(inf_file)
             try:
-                inf_data.readfp(StringIO(raw.decode()))
+                inf_data.read_file(StringIO(raw.decode()))
             except UnicodeDecodeError:
-                inf_data.readfp(StringIO(raw.decode('utf-16')))
+                inf_data.read_file(StringIO(raw.decode('utf-16')))
         except NTSTATUSError as e:
             if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
                              NT_STATUS_OBJECT_NAME_NOT_FOUND,

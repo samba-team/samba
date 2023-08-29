@@ -38,7 +38,7 @@ class GPIniParser(GPParser):
                                      interpolation=None)
         self.ini_conf.optionxform = str
 
-        self.ini_conf.readfp(StringIO(contents.decode(self.encoding)))
+        self.ini_conf.read_file(StringIO(contents.decode(self.encoding)))
 
     def build_xml_parameter(self, section_xml, section, key_ini, val_ini):
         child = SubElement(section_xml, 'Parameter')
@@ -117,7 +117,7 @@ class GPTIniParser(GPIniParser):
             self.ini_conf.optionxform = str
 
             # Fallback to Latin-1 which RSAT appears to use
-            self.ini_conf.readfp(StringIO(contents.decode('iso-8859-1')))
+            self.ini_conf.read_file(StringIO(contents.decode('iso-8859-1')))
 
 
 class GPScriptsIniParser(GPIniParser):

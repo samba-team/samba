@@ -362,9 +362,9 @@ class gp_inf_ext(gp_ext):
         inf_conf = ConfigParser(interpolation=None)
         inf_conf.optionxform = str
         try:
-            inf_conf.readfp(StringIO(policy.decode()))
+            inf_conf.read_file(StringIO(policy.decode()))
         except UnicodeDecodeError:
-            inf_conf.readfp(StringIO(policy.decode('utf-16')))
+            inf_conf.read_file(StringIO(policy.decode('utf-16')))
         return inf_conf
 
 
