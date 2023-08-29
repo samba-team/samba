@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 from io import BytesIO
 from samba.gp.gpclass import gp_xml_ext, gp_file_applier
 from samba.common import get_bytes
