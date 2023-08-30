@@ -46,7 +46,7 @@
 /* heimdal now wants some atomic ops - ask for the non-atomic ones for Samba */
 #define HEIM_BASE_NON_ATOMIC 1
 
-/* lib/replace provides an XSI Compatable strerror_r so use that */
+/* lib/replace provides an XSI Compatible strerror_r so use that */
 #define STRERROR_R_PROTO_COMPATIBLE
 
 /* lib/replace provides a closefrom */
