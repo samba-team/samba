@@ -327,7 +327,7 @@ bool dcerpc_sec_vt_header2_equal(const struct dcerpc_sec_vt_header2 *v1,
  *
  * @param[in] vt a pointer to the security verification trailer.
  * @param[in] bitmask1 which flags were negotiated on the connection.
- * @param[in] pcontext the syntaxes negotiatied for the presentation context.
+ * @param[in] pcontext the syntaxes negotiated for the presentation context.
  * @param[in] header2 some fields from the PDU header.
  *
  * @retval true on success.
