@@ -862,8 +862,10 @@ static WERROR NetRequestOfflineDomainJoin_backend(struct libnetapi_ctx *ctx,
 				  WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED;
 
 	werr = libnet_Join(j, j);
-	if (!W_ERROR_IS_OK(werr) && j->out.error_string) {
-		libnetapi_set_error_string(ctx, "%s", j->out.error_string);
+	if (!W_ERROR_IS_OK(werr)) {
+		if (j->out.error_string != NULL) {
+			libnetapi_set_error_string(ctx, "%s", j->out.error_string);
+		}
 		talloc_free(j);
 		return werr;
 	}
