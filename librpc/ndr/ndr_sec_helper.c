@@ -74,6 +74,8 @@ size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 	} else {
 		ret += ace->coda.ignored.length;
 	}
+	/* round up to a multiple of 4  (MS-DTYP 2.4.4.1) */
+	ret = (ret + 3ULL) & ~3ULL;
 	if (unlikely(ret < base)) {
 		/* overflow, and there's not much we can do anyway */
 		return 0;
