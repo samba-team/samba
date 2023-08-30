@@ -71,8 +71,6 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 		is_root = true;
 	}
 
-	/* Check if we are root */
-
 	/* check privileges; certain SAM access bits should be overridden
 	   by privileges (mostly having to do with creating/modifying/deleting
 	   users and groups) */
