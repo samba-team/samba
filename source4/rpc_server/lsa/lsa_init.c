@@ -226,8 +226,59 @@ NTSTATUS dcesrv_lsa_OpenPolicy3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_OpenPolicy3 *r)
 {
-	/* TODO */
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
+	struct lsa_policy_state *state = NULL;
+	struct dcesrv_handle *handle = NULL;
+	NTSTATUS status;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
+
+	ZERO_STRUCTP(r->out.handle);
+
+	/*
+	 * The attributes have no effect and MUST be ignored, except the
+	 * root_dir which MUST be NULL.
+	 */
+	if (r->in.attr != NULL && r->in.attr->root_dir != NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (r->in.in_version) {
+	case 1:
+		*r->out.out_version = 1;
+
+		r->out.out_revision_info->info1.revision = 1;
+		/* TODO: Enable as soon as we support it */
+#if 0
+		r->out.out_revision_info->info1.supported_features =
+				LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER;
+#endif
+
+		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
+					     r->in.access_mask,
+					     &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_POLICY);
+	if (handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	handle->data = talloc_steal(handle, state);
+
+	state->handle = handle;
+	*r->out.handle = handle->wire_handle;
+
+	return NT_STATUS_OK;
 }
 
 /*
