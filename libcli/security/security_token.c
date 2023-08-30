@@ -105,29 +105,36 @@ struct security_token *security_token_duplicate(TALLOC_CTX *mem_ctx, const struc
 ****************************************************************************/
 void security_token_debug(int dbg_class, int dbg_lev, const struct security_token *token)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *sids = NULL;
 	char *privs = NULL;
 	uint32_t i;
 
 	if (!token) {
 		DEBUGC(dbg_class, dbg_lev, ("Security token: (NULL)\n"));
+		TALLOC_FREE(frame);
 		return;
 	}
 
-	DEBUGC(dbg_class, dbg_lev, ("Security token SIDs (%"PRIu32"):\n",
-				       token->num_sids));
+	sids = talloc_asprintf(frame,
+			       "Security token SIDs (%" PRIu32 "):\n",
+			       token->num_sids);
 	for (i = 0; i < token->num_sids; i++) {
 		struct dom_sid_buf sidbuf;
-		DEBUGADDC(dbg_class,
-			  dbg_lev,
-			  ("  SID[%3"PRIu32"]: %s\n", i,
-			   dom_sid_str_buf(&token->sids[i], &sidbuf)));
+		talloc_asprintf_addbuf(
+			&sids,
+			"  SID[%3" PRIu32 "]: %s\n",
+			i,
+			dom_sid_str_buf(&token->sids[i], &sidbuf));
 	}
 
-	privs = security_token_debug_privileges(talloc_tos(), token);
-	if (privs != NULL) {
-		DEBUGADDC(dbg_class, dbg_lev, ("%s", privs));
-		TALLOC_FREE(privs);
-	}
+	privs = security_token_debug_privileges(frame, token);
+
+	DEBUGC(dbg_class,
+	       dbg_lev,
+	       ("%s%s", sids ? sids : "(NULL)", privs ? privs : "(NULL)"));
+
+	TALLOC_FREE(frame);
 }
 
 /* These really should be cheaper... */
