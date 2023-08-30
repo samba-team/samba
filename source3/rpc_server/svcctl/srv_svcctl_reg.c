@@ -601,12 +601,12 @@ bool svcctl_init_winreg(struct messaging_context *msg_ctx)
 					 &subkeys,
 					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("svcctl_init_winreg: Could enum keys at %s - %s\n",
+		DEBUG(0, ("svcctl_init_winreg: Could not enum keys at %s - %s\n",
 			  key, nt_errstr(status)));
 		goto done;
 	}
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("svcctl_init_winreg: Could enum keys at %s - %s\n",
+		DEBUG(0, ("svcctl_init_winreg: Could not enum keys at %s - %s\n",
 			  key, win_errstr(result)));
 		goto done;
 	}
