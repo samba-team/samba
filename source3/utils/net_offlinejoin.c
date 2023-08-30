@@ -257,7 +257,6 @@ int net_offlinejoin_requestodj(struct net_context *c,
 	uint8_t *provision_bin_data = NULL;
 	size_t provision_bin_data_size = 0;
 	uint32_t options = NETSETUP_PROVISION_ONLINE_CALLER;
-	const char *loadfile = NULL;
 	const char *windows_path = NULL;
 	int i;
 
@@ -270,8 +269,21 @@ int net_offlinejoin_requestodj(struct net_context *c,
 	for (i = 0; i < argc; i++) {
 
 		if (strnequal(argv[i], "loadfile", strlen("loadfile"))) {
+			const char *loadfile = NULL;
+
 			loadfile = get_string_param(argv[i]);
 			if (loadfile == NULL) {
+				return -1;
+			}
+
+			provision_bin_data =
+				(uint8_t *)file_load(loadfile,
+						     &provision_bin_data_size,
+						     0,
+						     c);
+			if (provision_bin_data == NULL) {
+				d_printf("Failed to read loadfile: %s\n",
+				loadfile);
 				return -1;
 			}
 		}
@@ -282,10 +294,8 @@ int net_offlinejoin_requestodj(struct net_context *c,
 #endif
 	}
 
-	provision_bin_data =
-		(uint8_t *)file_load(loadfile, &provision_bin_data_size, 0, c);
-	if (provision_bin_data == NULL) {
-		d_printf("Failed to read loadfile: %s\n", loadfile);
+	if (provision_bin_data == NULL || provision_bin_data_size == 0) {
+		d_printf("Please provide provision data\n");
 		return -1;
 	}
 	if (provision_bin_data_size > UINT32_MAX) {
