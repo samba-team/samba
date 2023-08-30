@@ -529,7 +529,7 @@ coverity:
   script:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
     - tar xf /tmp/coverity_tool.tgz
-    - ./configure.developer --with-cluster-support --with-system-mitkrb5 --with-experimental-mit-ad-dc
+    - ./configure.developer --with-cluster-support
     - cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
     - tar czf cov-int.tar.gz cov-int
     - curl
