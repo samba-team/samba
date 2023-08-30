@@ -30,6 +30,7 @@
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/privileges.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/util/talloc_stack.h"
 
 /*
   return a blank security token
@@ -104,6 +105,7 @@ struct security_token *security_token_duplicate(TALLOC_CTX *mem_ctx, const struc
 ****************************************************************************/
 void security_token_debug(int dbg_class, int dbg_lev, const struct security_token *token)
 {
+	char *privs = NULL;
 	uint32_t i;
 
 	if (!token) {
@@ -121,7 +123,11 @@ void security_token_debug(int dbg_class, int dbg_lev, const struct security_toke
 			   dom_sid_str_buf(&token->sids[i], &sidbuf)));
 	}
 
-	security_token_debug_privileges(dbg_class, dbg_lev, token);
+	privs = security_token_debug_privileges(talloc_tos(), token);
+	if (privs != NULL) {
+		DEBUGADDC(dbg_class, dbg_lev, ("%s", privs));
+		TALLOC_FREE(privs);
+	}
 }
 
 /* These really should be cheaper... */
