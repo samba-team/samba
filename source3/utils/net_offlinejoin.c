@@ -244,6 +244,7 @@ static int net_offlinejoin_requestodj_usage(struct net_context *c, int argc, con
 	d_printf(_("\nnet offlinejoin requestodj [misc. options]\n"
 		   "\tRequests offline domain join\n"));
 	d_printf(_("Valid options:\n"));
+	d_printf(_("\t-i\t\t\t\t\tRead ODJ data from STDIN\n"));
 	d_printf(_("\tloadfile=<FILENAME>\t\t\tFile that provides the ODJ data\n"));
 	/*d_printf(_("\tlocalos\t\t\t\t\tModify the local machine\n"));*/
 	net_common_flags_usage(c, argc, argv);
@@ -260,7 +261,7 @@ int net_offlinejoin_requestodj(struct net_context *c,
 	const char *windows_path = NULL;
 	int i;
 
-	if (c->display_usage || argc == 1) {
+	if (c->display_usage) {
 		return net_offlinejoin_requestodj_usage(c, argc, argv);
 	}
 
@@ -294,8 +295,29 @@ int net_offlinejoin_requestodj(struct net_context *c,
 #endif
 	}
 
+	if (c->opt_stdin) {
+		if (isatty(STDIN_FILENO) == 1) {
+			d_fprintf(stderr,
+				  "hint: stdin waiting for ODJ blob, end "
+				  "with <crtl-D>.\n");
+		}
+		provision_bin_data =
+			(uint8_t *)fd_load(STDIN_FILENO,
+					   &provision_bin_data_size, 0, c);
+		if (provision_bin_data == NULL) {
+			d_printf("Failed to read ODJ blob from stdin\n");
+			return -1;
+		}
+
+		/* Strip last newline */
+		if (provision_bin_data[provision_bin_data_size - 1] == '\n') {
+			provision_bin_data[provision_bin_data_size - 1] = '\0';
+		}
+	}
+
 	if (provision_bin_data == NULL || provision_bin_data_size == 0) {
-		d_printf("Please provide provision data\n");
+		d_printf("Please provide provision data either from file "
+			 "(using loadfile parameter) of from stdin (-i)\n");
 		return -1;
 	}
 	if (provision_bin_data_size > UINT32_MAX) {
