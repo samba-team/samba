@@ -1664,6 +1664,11 @@ class cmd_restore(cmd_create):
                                      credopts, versionopts)
 
         try:
+            if tmpdir is None:
+                # Create GPT
+                self.tmpdir, gpodir = self.construct_tmpdir(tmpdir, self.gpo_name)
+                self.gpodir = gpodir
+
             # Iterate over backup files and restore with DTD
             self.restore_from_backup_to_local_dir(backup, self.gpodir,
                                                   dtd_header)
@@ -1691,6 +1696,10 @@ class cmd_restore(cmd_create):
                                                 ext)
 
                     self.samdb.modify(m)
+
+            if tmpdir is None:
+                # Without --tmpdir, we created one in /tmp/. It must go.
+                shutil.rmtree(self.tmpdir)
 
         except Exception as e:
             import traceback
