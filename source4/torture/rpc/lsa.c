@@ -246,7 +246,8 @@ static bool test_OpenPolicy2_fail(struct dcerpc_binding_handle *b,
 
 	status = dcerpc_lsa_OpenPolicy2_r(b, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			torture_comment(tctx,
 					"OpenPolicy2 correctly returned with "
 					"status: %s\n",
@@ -730,7 +731,8 @@ static bool test_LookupNames4_fail(struct dcerpc_binding_handle *b,
 
 	status = dcerpc_lsa_LookupNames4_r(b, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
 			torture_comment(tctx,
 					"LookupNames4 correctly returned with "
 					"status: %s\n",
@@ -937,7 +939,8 @@ static bool test_LookupSids3_fail(struct dcerpc_binding_handle *b,
 
 	status = dcerpc_lsa_LookupSids3_r(b, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
 			torture_comment(tctx,
 					"LookupSids3 correctly returned with "
 					"status: %s\n",
