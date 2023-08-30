@@ -888,16 +888,29 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *s = NULL;
 	int     i;
-	DEBUGC(dbg_class, dbg_lev,
-	       ("UNIX token of user %ld\n", (long int)uid));
 
-	DEBUGADDC(dbg_class, dbg_lev,
-		  ("Primary group is %ld and contains %i supplementary "
-		   "groups\n", (long int)gid, n_groups));
-	for (i = 0; i < n_groups; i++)
-		DEBUGADDC(dbg_class, dbg_lev, ("Group[%3i]: %ld\n", i,
-			(long int)groups[i]));
+	s = talloc_asprintf(frame,
+			    "UNIX token of user %ld\n",
+			    (long int)uid);
+
+	talloc_asprintf_addbuf(
+		&s,
+		"Primary group is %ld and contains %i supplementary "
+		"groups\n",
+		(long int)gid,
+		n_groups);
+	for (i = 0; i < n_groups; i++) {
+		talloc_asprintf_addbuf(&s,
+				       "Group[%3i]: %ld\n",
+				       i,
+				       (long int)groups[i]);
+	}
+
+	DEBUGC(dbg_class, dbg_lev, ("%s", s ? s : "(NULL)"));
+	TALLOC_FREE(frame);
 }
 
 /*
