@@ -230,8 +230,8 @@ NTSTATUS reparse_data_buffer_parse(TALLOC_CTX *mem_ctx,
 	case IO_REPARSE_TAG_SYMLINK:
 		ret = symlink_reparse_buffer_parse(mem_ctx,
 						   &dst->parsed.lnk,
-						   reparse_data,
-						   reparse_data_length);
+						   buf,
+						   buflen);
 		if (ret != 0) {
 			return map_nt_error_from_unix_common(ret);
 		}
