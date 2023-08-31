@@ -449,7 +449,7 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 	switch (xattr_version) {
 	case 1:
 	case 2:
-		/* These xattr types are unilatteral, they do not
+		/* These xattr types are unilateral, they do not
 		 * require confirmation of the hash.  In particular,
 		 * the NTVFS file server uses version 1, but
 		 * 'samba-tool ntacl' can set these as well */
