@@ -81,9 +81,6 @@ NTSTATUS dcerpc_lsa_open_policy2(struct dcerpc_binding_handle *h,
 				 uint32_t des_access,
 				 struct policy_handle *pol,
 				 NTSTATUS *result);
-NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx, bool sec_qos,
-				 uint32_t des_access, struct policy_handle *pol);
 
 /**
  * @brief Open a LSA policy.
