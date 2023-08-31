@@ -4819,6 +4819,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 				if (NT_STATUS_IS_OK(status)) {
 					info = FILE_WAS_CREATED;
 				} else {
+					int ret;
 					/* Cope with create race. */
 					if (!NT_STATUS_EQUAL(status,
 							NT_STATUS_OBJECT_NAME_COLLISION)) {
@@ -4834,9 +4835,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 					 * NT_STATUS_OBJECT_NAME_COLLISION
 					 * we still must lstat the path.
 					 */
-
-					if (SMB_VFS_LSTAT(conn, smb_dname)
-							== -1) {
+					ret = SMB_VFS_FSTATAT(
+						conn,
+						parent_dir_fname->fsp,
+						smb_fname_atname,
+						&smb_dname->st,
+						AT_SYMLINK_NOFOLLOW);
+					if (ret == -1) {
 						DEBUG(2, ("Could not stat "
 							"directory '%s' just "
 							"opened: %s\n",
