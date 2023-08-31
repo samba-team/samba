@@ -203,7 +203,13 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *session_key)
 {
 	NTSTATUS status;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32_t out_version = 0;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
 
 	status = net_make_ipc_connection_ex(net_ctx, NULL, NULL, NULL,
 					    NET_FLAGS_PDC, cli);
@@ -220,24 +226,22 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = dcerpc_lsa_open_policy2((*pipe_hnd)->binding_handle,
-					 mem_ctx,
-					 (*pipe_hnd)->srv_name_slash,
-					 false,
-					 (LSA_POLICY_VIEW_LOCAL_INFORMATION |
-					  LSA_POLICY_TRUST_ADMIN |
-					  LSA_POLICY_CREATE_SECRET),
-					 pol_hnd,
-					 &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to open policy handle with error [%s]\n",
-			  nt_errstr(status)));
+	status = dcerpc_lsa_open_policy_fallback(
+		(*pipe_hnd)->binding_handle,
+		mem_ctx,
+		(*pipe_hnd)->srv_name_slash,
+		false,
+		LSA_POLICY_VIEW_LOCAL_INFORMATION |
+		LSA_POLICY_TRUST_ADMIN |
+		LSA_POLICY_CREATE_SECRET,
+		&out_version,
+		&out_revision_info,
+		pol_hnd,
+		&result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		DBG_ERR("Failed to open policy handle: %s\n",
+			nt_errstr(result));
 		return status;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("lsa_open_policy2 with error [%s]\n",
-			  nt_errstr(result)));
-		return result;
 	}
 
 	status = get_domain_info(mem_ctx, (*pipe_hnd)->binding_handle,
