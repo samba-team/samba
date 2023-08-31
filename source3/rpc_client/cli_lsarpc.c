@@ -152,6 +152,47 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	return result;
 }
 
+NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
+				 TALLOC_CTX *mem_ctx,
+				 const char *srv_name_slash,
+				 bool sec_qos,
+				 uint32_t des_access,
+				 uint32_t *out_version,
+				 union lsa_revision_info *out_revision_info,
+				 struct policy_handle *pol,
+				 NTSTATUS *result)
+{
+	struct lsa_ObjectAttribute attr = { .len = 0x18, };
+	struct lsa_QosInfo qos;
+	union lsa_revision_info in_revision_info = {
+		.info1 = {
+			.revision = 1,
+		},
+	};
+	uint32_t in_version = 1;
+
+	if (sec_qos) {
+		qos.len			= 0xc;
+		qos.impersonation_level	= 2;
+		qos.context_mode	= 1;
+		qos.effective_only	= 0;
+
+		attr.sec_qos		= &qos;
+	}
+
+	return dcerpc_lsa_OpenPolicy3(h,
+				      mem_ctx,
+				      srv_name_slash,
+				      &attr,
+				      des_access,
+				      in_version,
+				      &in_revision_info,
+				      out_version,
+			              out_revision_info,
+				      pol,
+				      result);
+}
+
 /* Lookup a list of sids
  *
  * internal version withOUT memory allocation of the target arrays.

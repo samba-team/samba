@@ -86,6 +86,38 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 				 uint32_t des_access, struct policy_handle *pol);
 
 /**
+ * @brief Open a LSA policy.
+ *
+ * @param[in]  h        The dcerpc binding handle to use.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  sec_qos  Enable security quality of services.
+ *
+ * @param[in]  des_access The desired access rights to be granted.
+ *
+ * @param[out]  out_version A pointer to an uin32_t to store the version of the
+ *                          following data structure.
+ *
+ * @param[out]  out_revision info A pointer to store the out_revision_info.
+ *
+ * @param[out]  pol     A pointer to a rpc policy handle.
+ *
+ * @param[out]  result  A pointer for the NDR NTSTATUS error code.
+ *
+ * @return              A corresponding NTSTATUS error code for the connection.
+ */
+NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
+				 TALLOC_CTX *mem_ctx,
+				 const char *srv_name_slash,
+				 bool sec_qos,
+				 uint32_t des_access,
+				 uint32_t *out_version,
+				 union lsa_revision_info *out_revision_info,
+				 struct policy_handle *pol,
+				 NTSTATUS *result);
+
+/**
  * @brief Look up the names that correspond to an array of sids.
  *
  * @param[in]  h        The initialized binding handle for a dcerpc connection.
