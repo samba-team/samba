@@ -968,6 +968,12 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 
 	struct lsa_String names;
 	uint32_t num_names = 1;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (!sid || !name) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -977,13 +983,21 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 
 	init_lsa_String(&names, name);
 
-	status = rpccli_lsa_open_policy2(lsa_pipe, mem_ctx,
-					 false,
-					 SEC_STD_READ_CONTROL |
-					 LSA_POLICY_VIEW_LOCAL_INFORMATION |
-					 LSA_POLICY_LOOKUP_NAMES,
-					 &lsa_handle);
-	NT_STATUS_NOT_OK_RETURN(status);
+	status = dcerpc_lsa_open_policy_fallback(
+		b,
+		mem_ctx,
+		lsa_pipe->srv_name_slash,
+		false,
+		SEC_STD_READ_CONTROL |
+		LSA_POLICY_VIEW_LOCAL_INFORMATION |
+		LSA_POLICY_LOOKUP_NAMES,
+		&out_version,
+		&out_revision_info,
+		&lsa_handle,
+		&result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		return status;
+	}
 
 	status = dcerpc_lsa_LookupNames3(b, mem_ctx,
 					 &lsa_handle,
