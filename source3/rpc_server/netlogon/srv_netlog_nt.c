@@ -429,6 +429,12 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	struct policy_handle pol;
 	uint32_t enum_ctx = 0;
 	uint32_t max_size = (uint32_t)-1;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	ZERO_STRUCT(pol);
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
@@ -444,13 +450,16 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 		return status;
 	}
 
-	status = dcerpc_lsa_open_policy2(h,
-					 p->mem_ctx,
-					 NULL,
-					 true,
-					 LSA_POLICY_VIEW_LOCAL_INFORMATION,
-					 &pol,
-					 &result);
+	status = dcerpc_lsa_open_policy_fallback(
+		h,
+		p->mem_ctx,
+		NULL,
+		true,
+		LSA_POLICY_VIEW_LOCAL_INFORMATION,
+		&out_version,
+		&out_revision_info,
+		&pol,
+		&result);
 	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
