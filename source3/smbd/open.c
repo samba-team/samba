@@ -3819,12 +3819,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			*pinfo = FILE_WAS_CREATED;
 		}
 
-		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n",
-			   smb_fname_str_dbg(smb_fname)));
+		DBG_DEBUG("printer open fname=%s\n",
+			  smb_fname_str_dbg(smb_fname));
 
 		if (!req) {
-			DEBUG(0,("open_file_ntcreate: printer open without "
-				"an SMB request!\n"));
+			DBG_ERR("printer open without an SMB request!\n");
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
