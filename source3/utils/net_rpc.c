@@ -6548,6 +6548,12 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	fstring pdc_name;
 	union lsa_PolicyInformation *info = NULL;
 	struct dcerpc_binding_handle *b;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	/*
 	 * Connect to \\server\ipc$ as 'our domain' account with password
@@ -6651,13 +6657,20 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 
 	b = pipe_hnd->binding_handle;
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true, KEY_QUERY_VALUE,
-	                                 &connect_hnd);
-	if (NT_STATUS_IS_ERR(nt_status)) {
-		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
-			nt_errstr(nt_status)));
+	nt_status = dcerpc_lsa_open_policy_fallback(b,
+						    mem_ctx,
+						    pipe_hnd->srv_name_slash,
+						    true,
+						    KEY_QUERY_VALUE,
+						    &out_version,
+						    &out_revision_info,
+						    &connect_hnd,
+						    &result);
+	if (any_nt_status_not_ok(nt_status, result, &nt_status)) {
+		DBG_ERR("Couldn't open policy handle: %s\n",
+			nt_errstr(nt_status));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return -1;
 	}
 
@@ -6878,6 +6891,12 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	struct lsa_DomainList dom_list;
 	fstring pdc_name;
 	struct dcerpc_binding_handle *b;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -6929,15 +6948,22 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 
 	b = pipe_hnd->binding_handle;
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, KEY_QUERY_VALUE,
-					&connect_hnd);
-	if (NT_STATUS_IS_ERR(nt_status)) {
-		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
- 			nt_errstr(nt_status)));
+	nt_status = dcerpc_lsa_open_policy_fallback(b,
+						    mem_ctx,
+						    pipe_hnd->srv_name_slash,
+						    false,
+						    KEY_QUERY_VALUE,
+						    &out_version,
+						    &out_revision_info,
+						    &connect_hnd,
+						    &result);
+	if (any_nt_status_not_ok(nt_status, result, &nt_status)) {
+		DBG_ERR("Couldn't open policy handle: %s\n",
+			nt_errstr(nt_status));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return -1;
-	};
+	}
 
 	/* query info level 5 to obtain sid of a domain being queried */
 	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
@@ -7058,6 +7084,12 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	/* trusting domains listing variables */
 	struct policy_handle domain_hnd;
 	struct samr_SamArray *trusts = NULL;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -7109,15 +7141,22 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 
 	b = pipe_hnd->binding_handle;
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, KEY_QUERY_VALUE,
-					&connect_hnd);
-	if (NT_STATUS_IS_ERR(nt_status)) {
-		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
- 			nt_errstr(nt_status)));
+	nt_status = dcerpc_lsa_open_policy_fallback(b,
+						    mem_ctx,
+						    pipe_hnd->srv_name_slash,
+						    true,
+						    KEY_QUERY_VALUE,
+						    &out_version,
+						    &out_revision_info,
+						    &connect_hnd,
+						    &result);
+	if (any_nt_status_not_ok(nt_status, result, &nt_status)) {
+		DBG_ERR("Couldn't open policy handle: %s\n",
+			nt_errstr(nt_status));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return -1;
-	};
+	}
 
 	/* query info level 5 to obtain sid of a domain being queried */
 	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
