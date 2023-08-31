@@ -2186,6 +2186,12 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	struct policy_handle pol;
 	union dssetup_DsRoleInfo info;
 	union lsa_PolicyInformation *lsa_info = NULL;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (!domain->internal && !connection_ok(domain)) {
 		return;
@@ -2274,10 +2280,17 @@ no_dssetup:
 		return;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-					 SEC_FLAG_MAXIMUM_ALLOWED, &pol);
+	status = dcerpc_lsa_open_policy_fallback(cli->binding_handle,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		/* This particular query is exactly what Win2k clients use
 		   to determine that the DC is active directory */
 		status = dcerpc_lsa_QueryInfoPolicy2(cli->binding_handle, mem_ctx,
@@ -2287,6 +2300,10 @@ no_dssetup:
 						     &result);
 	}
 
+	/*
+	 * If the status and result will not be OK we will fallback to
+	 * OpenPolicy.
+	 */
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		domain->active_directory = True;
 
