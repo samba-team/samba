@@ -177,13 +177,27 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		info_class = atoi(argv[1]);
 
 	switch (info_class) {
-	case 12:
-		status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-						 SEC_FLAG_MAXIMUM_ALLOWED,
-						 &pol);
+	case 12: {
+		union lsa_revision_info out_revision_info = {
+			.info1 = {
+				.revision = 0,
+			},
+		};
+		uint32_t out_version = 0;
 
-		if (!NT_STATUS_IS_OK(status))
+		status = dcerpc_lsa_open_policy_fallback(
+			b,
+			mem_ctx,
+			cli->srv_name_slash,
+			true,
+			SEC_FLAG_MAXIMUM_ALLOWED,
+			&out_version,
+			&out_revision_info,
+			&pol,
+			&result);
+		if (any_nt_status_not_ok(status, result, &status)) {
 			goto done;
+		}
 
 		status = dcerpc_lsa_QueryInfoPolicy2(b, mem_ctx,
 						     &pol,
@@ -191,6 +205,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 						     &info,
 						     &result);
 		break;
+	}
 	default:
 		status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 						SEC_FLAG_MAXIMUM_ALLOWED,
@@ -905,6 +920,12 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	NTSTATUS status, result;
 	uint32_t des_access = 0x000f000f;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	struct dom_sid sid;
 
@@ -917,12 +938,18 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	status = dcerpc_lsa_CreateAccount(b, mem_ctx,
 					  &dom_pol,
@@ -961,6 +988,12 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	struct lsa_PrivilegeSet *privs = NULL;
 	int i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc != 2 ) {
 		printf("Usage: %s SID\n", argv[0]);
@@ -971,12 +1004,18 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	status = dcerpc_lsa_OpenAccount(b, mem_ctx,
 					&dom_pol,
@@ -1032,6 +1071,12 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	struct dom_sid_buf buf;
 	struct lsa_RightSet rights;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	int i;
 
@@ -1044,12 +1089,18 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	status = dcerpc_lsa_EnumAccountRights(b, mem_ctx,
 					      &dom_pol,
@@ -1089,6 +1140,12 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 	struct dom_sid sid;
 	int i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 3 ) {
 		printf("Usage: %s SID [rights...]\n", argv[0]);
@@ -1099,12 +1156,18 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	rights.count = argc-2;
 	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
@@ -1148,6 +1211,12 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 	struct dom_sid sid;
 	int i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 3 ) {
 		printf("Usage: %s SID [rights...]\n", argv[0]);
@@ -1158,12 +1227,18 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	rights.count = argc-2;
 	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
@@ -1208,18 +1283,30 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 	struct lsa_LUID luid;
 	struct lsa_String name;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc != 2 ) {
 		printf("Usage: %s name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	init_lsa_String(&name, argv[1]);
 
@@ -1256,21 +1343,33 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	struct sec_desc_buf *sdb;
 	uint32_t sec_info = SECINFO_DACL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 1 || argc > 2) {
 		printf("Usage: %s [sec_info]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      &pol);
-
 	if (argc == 2)
 		sscanf(argv[1], "%x", &sec_info);
 
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	status = dcerpc_lsa_QuerySecurity(b, mem_ctx,
 					  &pol,
@@ -1346,6 +1445,12 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [sid] [info_class]\n", argv[0]);
@@ -1358,10 +1463,18 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_class = atoi(argv[2]);
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 access_mask,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	status = dcerpc_lsa_QueryTrustedDomainInfoBySid(b, mem_ctx,
 							&pol,
@@ -1403,6 +1516,12 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	struct lsa_String trusted_domain;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	DATA_BLOB session_key;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [name] [info_class]\n", argv[0]);
@@ -1412,10 +1531,18 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_class = atoi(argv[2]);
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 access_mask,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	init_lsa_String(&trusted_domain, argv[1]);
 
@@ -1457,6 +1584,12 @@ static NTSTATUS cmd_lsa_set_trustdominfo(struct rpc_pipe_client *cli,
 	struct dom_sid dom_sid;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc > 4 || argc < 3) {
 		printf("Usage: %s [sid] [info_class] [value]\n", argv[0]);
@@ -1478,8 +1611,16 @@ static NTSTATUS cmd_lsa_set_trustdominfo(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 access_mask,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
 	}
 
@@ -1529,6 +1670,12 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [sid] [info_class]\n", argv[0]);
@@ -1542,10 +1689,18 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_class = atoi(argv[2]);
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 access_mask,
+						 &out_version,
+						 &out_revision_info,
+						 &pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
+	}
 
 	status = dcerpc_lsa_OpenTrustedDomain(b, mem_ctx,
 					      &pol,
@@ -1635,6 +1790,12 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 	struct dom_sid sid;
 	int i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	ZERO_STRUCT(privs);
 
@@ -1648,11 +1809,16 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
 	}
 
@@ -1733,6 +1899,12 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 	struct dom_sid sid;
 	int i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	ZERO_STRUCT(privs);
 
@@ -1746,11 +1918,16 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
 	}
 
@@ -1830,17 +2007,28 @@ static NTSTATUS cmd_lsa_create_secret(struct rpc_pipe_client *cli,
 	struct policy_handle handle, sec_handle;
 	struct lsa_String name;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 2) {
 		printf("Usage: %s name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &sec_handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -1879,17 +2067,28 @@ static NTSTATUS cmd_lsa_delete_secret(struct rpc_pipe_client *cli,
 	struct policy_handle handle, sec_handle;
 	struct lsa_String name;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 2) {
 		printf("Usage: %s name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -1947,17 +2146,28 @@ static NTSTATUS cmd_lsa_query_secret(struct rpc_pipe_client *cli,
 	DATA_BLOB old_blob = data_blob_null;
 	char *new_secret, *old_secret;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 2) {
 		printf("Usage: %s name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -2039,17 +2249,28 @@ static NTSTATUS cmd_lsa_set_secret(struct rpc_pipe_client *cli,
 	DATA_BLOB enc_key;
 	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 3) {
 		printf("Usage: %s name secret\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -2119,17 +2340,28 @@ static NTSTATUS cmd_lsa_retrieve_private_data(struct rpc_pipe_client *cli,
 	DATA_BLOB blob = data_blob_null;
 	char *secret;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 2) {
 		printf("Usage: %s name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -2183,17 +2415,28 @@ static NTSTATUS cmd_lsa_store_private_data(struct rpc_pipe_client *cli,
 	DATA_BLOB session_key;
 	DATA_BLOB enc_key;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 3) {
 		printf("Usage: %s name secret\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -2242,17 +2485,28 @@ static NTSTATUS cmd_lsa_create_trusted_domain(struct rpc_pipe_client *cli,
 	struct dom_sid sid;
 	struct lsa_DomainInfo info;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 3) {
 		printf("Usage: %s name sid\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
@@ -2295,17 +2549,28 @@ static NTSTATUS cmd_lsa_delete_trusted_domain(struct rpc_pipe_client *cli,
 	struct lsa_String name;
 	struct dom_sid *sid = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 2) {
 		printf("Usage: %s name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, mem_ctx,
-					 true,
-					 SEC_FLAG_MAXIMUM_ALLOWED,
-					 &handle);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
 	}
 
