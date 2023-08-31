@@ -1603,7 +1603,7 @@ static NTSTATUS open_file(
 			 * There is only one legit case where end up here:
 			 * openat_pathref_fsp() failed to open a symlink, so the
 			 * fsp was created by fsp_new() which doesn't set
-			 * is_pathref. Other then that, we should always have a
+			 * is_pathref. Other than that, we should always have a
 			 * pathref fsp at this point. The subsequent checks
 			 * assert this.
 			 */
