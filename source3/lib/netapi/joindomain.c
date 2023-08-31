@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/ndr_ODJ.h"
 #include "lib/util/base64.h"
 #include "libnet/libnet_join_offline.h"
+#include "libcli/security/dom_sid.h"
 
 /****************************************************************
 ****************************************************************/
@@ -960,8 +961,185 @@ WERROR NetComposeOfflineDomainJoin_r(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR NetComposeOfflineDomainJoin_backend(struct libnetapi_ctx *ctx,
+						  struct NetComposeOfflineDomainJoin *r,
+						  TALLOC_CTX *mem_ctx,
+						  struct ODJ_PROVISION_DATA **p)
+{
+	struct libnet_JoinCtx *j = NULL;
+	WERROR werr;
+
+	werr = libnet_init_JoinCtx(ctx, &j);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	j->in.domain_name = talloc_strdup(j, r->in.dns_domain_name);
+	if (j->in.domain_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	j->in.dc_name = talloc_strdup(j, r->in.dc_name);
+	W_ERROR_HAVE_NO_MEMORY(j->in.dc_name);
+
+	j->in.machine_password = talloc_strdup(j, r->in.machine_account_password);
+	W_ERROR_HAVE_NO_MEMORY(j->in.machine_password);
+
+	j->out.account_name = talloc_strdup(j, r->in.machine_account_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.account_name);
+
+	j->out.dns_domain_name = talloc_strdup(j, r->in.dns_domain_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.dns_domain_name);
+
+	j->out.netbios_domain_name = talloc_strdup(j, r->in.netbios_domain_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.netbios_domain_name);
+
+	j->out.domain_sid = dom_sid_dup(j, (struct dom_sid *)r->in.domain_sid);
+	W_ERROR_HAVE_NO_MEMORY(j->out.domain_sid);
+
+	j->out.domain_guid = *r->in.domain_guid;
+
+	j->out.forest_name = talloc_strdup(j, r->in.forest_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.forest_name);
+
+	j->out.domain_is_ad = r->in.domain_is_ad;
+
+	j->out.dcinfo = talloc_zero(j, struct netr_DsRGetDCNameInfo);
+	W_ERROR_HAVE_NO_MEMORY(j->out.dcinfo);
+
+	j->out.dcinfo->dc_unc = talloc_asprintf(j->out.dcinfo, "\\\\%s", r->in.dc_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.dcinfo->dc_unc);
+
+	j->out.dcinfo->dc_address = talloc_asprintf(j->out.dcinfo, "\\\\%s", r->in.dc_address);
+	W_ERROR_HAVE_NO_MEMORY(j->out.dcinfo->dc_address);
+
+	j->out.dcinfo->dc_address_type = DS_ADDRESS_TYPE_INET;
+
+	j->out.dcinfo->domain_guid = *r->in.domain_guid;
+
+	j->out.dcinfo->domain_name = talloc_strdup(j->out.dcinfo, r->in.dns_domain_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.dcinfo->domain_name);
+
+	j->out.dcinfo->forest_name = talloc_strdup(j->out.dcinfo, r->in.forest_name);
+	W_ERROR_HAVE_NO_MEMORY(j->out.dcinfo->forest_name);
+
+	werr = libnet_odj_compose_ODJ_PROVISION_DATA(mem_ctx, j, p);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	return WERR_OK;
+}
+
 WERROR NetComposeOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
 				     struct NetComposeOfflineDomainJoin *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	enum ndr_err_code ndr_err;
+	const char *b64_bin_data_str;
+	DATA_BLOB blob;
+	struct ODJ_PROVISION_DATA_serialized_ptr odj_compose_data;
+	struct ODJ_PROVISION_DATA *p;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	if (r->in.compose_bin_data == NULL &&
+	    r->in.compose_text_data == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+	if (r->in.compose_bin_data != NULL &&
+	    r->in.compose_text_data != NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+	if (r->in.compose_bin_data == NULL &&
+	    r->in.compose_bin_data_size != NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+	if (r->in.compose_bin_data != NULL &&
+	    r->in.compose_bin_data_size == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.dns_domain_name == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.netbios_domain_name == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.domain_sid == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.domain_guid == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.forest_name == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.machine_account_name == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.machine_account_password == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.dc_name == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (r->in.dc_address == NULL) {
+		werr = WERR_INVALID_PARAMETER;
+		goto out;
+	}
+
+	werr = NetComposeOfflineDomainJoin_backend(ctx, r, tmp_ctx, &p);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto out;
+	}
+
+	ZERO_STRUCT(odj_compose_data);
+
+	odj_compose_data.s.p = p;
+
+	ndr_err = ndr_push_struct_blob(&blob, ctx, &odj_compose_data,
+		(ndr_push_flags_fn_t)ndr_push_ODJ_PROVISION_DATA_serialized_ptr);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		werr = W_ERROR(NERR_BadOfflineJoinInfo);
+		goto out;
+	}
+
+	if (r->out.compose_text_data != NULL) {
+		b64_bin_data_str = base64_encode_data_blob(ctx, blob);
+		if (b64_bin_data_str == NULL) {
+			werr = WERR_NOT_ENOUGH_MEMORY;
+		}
+		*r->out.compose_text_data = b64_bin_data_str;
+	}
+
+	if (r->out.compose_bin_data != NULL &&
+	    r->out.compose_bin_data_size != NULL) {
+		*r->out.compose_bin_data = blob.data;
+		*r->out.compose_bin_data_size = blob.length;
+	}
+
+	werr = WERR_OK;
+out:
+	talloc_free(tmp_ctx);
+	return werr;
 }
