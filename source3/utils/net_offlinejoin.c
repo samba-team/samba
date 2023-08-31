@@ -22,6 +22,8 @@
 #include <netapi.h>
 #include "netapi/netapi_net.h"
 #include "libcli/registry/util_reg.h"
+#include "libcli/security/dom_sid.h"
+#include "lib/cmdline/cmdline.h"
 
 int net_offlinejoin_usage(struct net_context *c, int argc, const char **argv)
 {
@@ -30,6 +32,7 @@ int net_offlinejoin_usage(struct net_context *c, int argc, const char **argv)
 	d_printf(_("Valid commands:\n"));
 	d_printf(_("\tprovision\t\t\tProvision machine account in AD\n"));
 	d_printf(_("\trequestodj\t\t\tRequest offline domain join\n"));
+	d_printf(_("\tcomposeodj\t\t\tCompose offline domain join blob\n"));
 	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
@@ -74,6 +77,13 @@ int net_offlinejoin(struct net_context *c, int argc, const char **argv)
 
 	if (strcasecmp_m(argv[0], "requestodj") == 0) {
 		ret = net_offlinejoin_requestodj(c, argc, argv);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	if (strcasecmp_m(argv[0], "composeodj") == 0) {
+		ret = net_offlinejoin_composeodj(c, argc, argv);
 		if (ret != 0) {
 			return ret;
 		}
@@ -296,6 +306,258 @@ int net_offlinejoin_requestodj(struct net_context *c,
 	}
 
 	d_printf("Successfully requested Offline Domain Join\n");
+
+	return 0;
+}
+
+static int net_offlinejoin_composeodj_usage(struct net_context *c,
+					    int argc,
+					    const char **argv)
+{
+	d_printf(_("\nnet offlinejoin composeodj [misc. options]\n"
+		   "\tComposes offline domain join blob\n"));
+	d_printf(_("Valid options:\n"));
+	d_printf(_("\tdomain_sid=<SID>\t\t\tThe domain SID\n"));
+	d_printf(_("\tdomain_guid=<GUID>\t\t\tThe domain GUID\n"));
+	d_printf(_("\tforest_name=<NAME>\t\t\tThe forest name\n"));
+	d_printf(_("\tdomain_is_nt4\t\t\t\tThe domain not AD but NT4\n"));
+	d_printf(_("\tsavefile=<FILENAME>\t\t\tFile to store the ODJ data\n"));
+	d_printf(_("\tprintblob\t\t\t\tPrint the base64 encoded ODJ data on stdout\n"));
+	net_common_flags_usage(c, argc, argv);
+	d_printf(_("Example:\n"));
+	d_printf("\tnet offlinejoin composeodj --realm=<realm> "
+		 "--workgroup=<domain> domain_sid=<sid> domain_guid=<guid> "
+		 "forest_name=<name> -S <dc name> -I <dc address> "
+		 "--password=<password> printblob\n");
+	return -1;
+}
+
+int net_offlinejoin_composeodj(struct net_context *c,
+			       int argc,
+			       const char **argv)
+{
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+	NET_API_STATUS status;
+	const char *dns_domain_name = NULL;
+	const char *netbios_domain_name = NULL;
+	const char *machine_account_name = NULL;
+	const char *machine_account_password = NULL;
+	const char *domain_sid_str = NULL;
+	const char *domain_guid_str = NULL;
+	struct dom_sid domain_sid;
+	struct GUID domain_guid;
+	const char *forest_name = NULL;
+	const char *dc_name = NULL;
+	char dc_address[INET6_ADDRSTRLEN] = { 0 };
+	bool domain_is_ad = true;
+	const char *provision_text_data = NULL;
+	const char *savefile = NULL;
+	bool printblob = false;
+	enum credentials_obtained obtained;
+	bool ok;
+	NTSTATUS ntstatus;
+	int i;
+
+	if (c->display_usage || argc < 4) {
+		return net_offlinejoin_composeodj_usage(c, argc, argv);
+	}
+
+	dns_domain_name = cli_credentials_get_realm(creds);
+	netbios_domain_name = cli_credentials_get_domain(creds);
+
+	machine_account_name = cli_credentials_get_username_and_obtained(creds, &obtained);
+	if (obtained < CRED_CALLBACK_RESULT) {
+		const char *netbios_name = cli_credentials_get_workstation(creds);
+		cli_credentials_set_username(
+			creds,
+			talloc_asprintf(c, "%s$", netbios_name),
+			CRED_SPECIFIED);
+	}
+
+	machine_account_name = cli_credentials_get_username(creds);
+	machine_account_password = cli_credentials_get_password(creds);
+	dc_name = c->opt_host;
+
+	if (c->opt_have_ip) {
+		struct sockaddr_in *in4 = NULL;
+		struct sockaddr_in6 *in6 = NULL;
+		const char *p = NULL;
+
+		switch(c->opt_dest_ip.ss_family) {
+		case AF_INET:
+			in4 = (struct sockaddr_in *)&c->opt_dest_ip;
+			p = inet_ntop(AF_INET, &in4->sin_addr, dc_address, sizeof(dc_address));
+			break;
+		case AF_INET6:
+			in6 = (struct sockaddr_in6 *)&c->opt_dest_ip;
+			p = inet_ntop(AF_INET6, &in6->sin6_addr, dc_address, sizeof(dc_address));
+			break;
+		default:
+			d_printf("Unknown IP address family\n");
+			return -1;
+		}
+
+		if (p == NULL) {
+			d_fprintf(stderr, "Failed to parse IP address: %s\n", strerror(errno));
+			return -1;
+		}
+	}
+
+	/* process additional command line args */
+
+	for (i = 0; i < argc; i++) {
+		if (strnequal(argv[i], "domain_sid", strlen("domain_sid"))) {
+			domain_sid_str = get_string_param(argv[i]);
+			if (domain_sid_str == NULL) {
+				return -1;
+			}
+		}
+
+		if (strnequal(argv[i], "domain_guid", strlen("domain_guid"))) {
+			domain_guid_str = get_string_param(argv[i]);
+			if (domain_guid_str == NULL) {
+				return -1;
+			}
+		}
+
+		if (strnequal(argv[i], "forest_name", strlen("forest_name"))) {
+			forest_name = get_string_param(argv[i]);
+			if (forest_name == NULL) {
+				return -1;
+			}
+		}
+
+		if (strnequal(argv[i], "savefile", strlen("savefile"))) {
+			savefile = get_string_param(argv[i]);
+			if (savefile == NULL) {
+				return -1;
+			}
+		}
+
+		if (strnequal(argv[i], "printblob", strlen("printblob"))) {
+			printblob = true;
+		}
+
+		if (strnequal(argv[i], "domain_is_nt4", strlen("domain_is_nt4"))) {
+			domain_is_ad = false;
+		}
+	}
+
+	/* Check command line arguments */
+
+	if (savefile == NULL && !printblob) {
+		d_printf("Choose either save the blob to a file or print it\n");
+		return -1;
+	}
+
+	if (dns_domain_name == NULL) {
+		d_printf("Please provide a valid realm parameter (--realm)\n");
+		return -1;
+	}
+
+	if (netbios_domain_name == NULL) {
+		d_printf("Please provide a valid domain parameter (--workgroup)\n");
+		return -1;
+	}
+
+	if (dc_name == NULL) {
+		d_printf("Please provide a valid DC name parameter (-S)\n");
+		return -1;
+	}
+
+	if (strlen(dc_address) == 0) {
+		d_printf("Please provide a valid domain controller address parameter (-I)\n");
+		return -1;
+	}
+
+	if (machine_account_name == NULL) {
+		d_printf("Please provide a valid netbios name parameter\n");
+		return -1;
+	}
+
+	if (machine_account_password == NULL) {
+		d_printf("Please provide a valid password parameter\n");
+		return -1;
+	}
+
+	if (domain_sid_str == NULL) {
+		d_printf("Please provide a valid <domain_sid> parameter\n");
+		return -1;
+	}
+
+	if (domain_guid_str == NULL) {
+		d_printf("Please provide a valid <domain_guid> parameter\n");
+		return -1;
+	}
+
+	if (forest_name == NULL) {
+		d_printf("Please provide a valid <forest_name> parameter\n");
+		return -1;
+	}
+
+	ok = dom_sid_parse(domain_sid_str, &domain_sid);
+	if (!ok) {
+		d_fprintf(stderr, _("Failed to parse domain SID\n"));
+		return -1;
+	}
+
+	ntstatus = GUID_from_string(domain_guid_str, &domain_guid);
+	if (NT_STATUS_IS_ERR(ntstatus)) {
+		d_fprintf(stderr, _("Failed to parse domain GUID\n"));
+		return -1;
+	}
+
+	status = NetComposeOfflineDomainJoin(dns_domain_name,
+					     netbios_domain_name,
+					     (struct domsid *)&domain_sid,
+					     &domain_guid,
+					     forest_name,
+					     machine_account_name,
+					     machine_account_password,
+					     dc_name,
+					     dc_address,
+					     domain_is_ad,
+					     NULL,
+					     0,
+					     &provision_text_data);
+	if (status != 0) {
+		d_printf("Failed to compose offline domain join blob: %s\n",
+			libnetapi_get_error_string(c->netapi_ctx, status));
+		return status;
+	}
+
+	if (savefile != NULL) {
+		DATA_BLOB ucs2_blob, blob;
+
+		/*
+		 * Windows produces and consumes UTF16/UCS2 encoded blobs
+		 * so we also do it for compatibility. Someone may provision an
+		 * account for a Windows machine with samba.
+		 */
+		ok = push_reg_sz(c, &ucs2_blob, provision_text_data);
+		if (!ok) {
+			return -1;
+		}
+
+		/* Add the unicode BOM mark */
+		blob = data_blob_talloc(c, NULL, ucs2_blob.length + 2);
+
+		blob.data[0] = 0xff;
+		blob.data[1] = 0xfe;
+
+		memcpy(blob.data + 2, ucs2_blob.data, ucs2_blob.length);
+
+		ok = file_save(savefile, blob.data, blob.length);
+		if (!ok) {
+			d_printf("Failed to save %s: %s\n", savefile,
+					strerror(errno));
+			return -1;
+		}
+	}
+
+	if (printblob) {
+		printf("%s\n", provision_text_data);
+	}
 
 	return 0;
 }
