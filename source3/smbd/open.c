@@ -1262,14 +1262,9 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
 				struct files_struct *fsp,
-				int flags,
-				mode_t mode,
+				const struct vfs_open_how *how,
 				bool *p_file_created)
 {
-	struct vfs_open_how how = {
-		.flags = flags,
-		.mode = mode,
-	};
 	bool __unused_file_created = false;
 	NTSTATUS status;
 
@@ -1282,7 +1277,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 	 *       SMB_VFS_REOPEN_FSP()?
 	 */
 
-	status = reopen_from_procfd(fsp, &how);
+	status = reopen_from_procfd(fsp, how);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return status;
 	}
@@ -1298,7 +1293,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 
 	fsp->fsp_flags.is_pathref = false;
 
-	status = fd_open_atomic(dirfsp, smb_fname, fsp, &how, p_file_created);
+	status = fd_open_atomic(dirfsp, smb_fname, fsp, how, p_file_created);
 	return status;
 }
 
@@ -1489,12 +1484,17 @@ static NTSTATUS open_file(struct smb_request *req,
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = reopen_from_fsp(dirfsp,
-					 smb_fname_atname,
-					 fsp,
-					 local_flags & ~O_TRUNC,
-					 unx_mode,
-					 p_file_created);
+		{
+			struct vfs_open_how how = {
+				.flags = local_flags & ~O_TRUNC,
+				.mode = unx_mode,
+			};
+			status = reopen_from_fsp(dirfsp,
+						 smb_fname_atname,
+						 fsp,
+						 &how,
+						 p_file_created);
+		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 			/*
 			 * Non-O_PATH reopen that hit a race
@@ -4900,13 +4900,15 @@ static NTSTATUS open_directory(connection_struct *conn,
 		FILE_ADD_SUBDIRECTORY;
 
 	if (access_mask & need_fd_access) {
-		status = reopen_from_fsp(
-			fsp->conn->cwd_fsp,
-			fsp->fsp_name,
-			fsp,
-			O_RDONLY | O_DIRECTORY,
-			0,
-			NULL);
+		struct vfs_open_how how = {
+			.flags = O_RDONLY | O_DIRECTORY,
+		};
+
+		status = reopen_from_fsp(fsp->conn->cwd_fsp,
+					 fsp->fsp_name,
+					 fsp,
+					 &how,
+					 NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_INFO("Could not open fd for [%s]: %s\n",
 				 smb_fname_str_dbg(smb_dname),
