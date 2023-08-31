@@ -6511,20 +6511,21 @@ NTSTATUS create_file_default(connection_struct *conn,
 	bool stream_name = false;
 	struct smb2_create_blob *posx = NULL;
 
-	DBG_DEBUG("create_file: access_mask = 0x%x "
-		  "file_attributes = 0x%x, share_access = 0x%x, "
-		  "create_disposition = 0x%x create_options = 0x%x "
-		  "oplock_request = 0x%x "
-		  "private_flags = 0x%x "
-		  "ea_list = %p, sd = %p, "
-		  "fname = %s\n",
-		  (unsigned int)access_mask,
-		  (unsigned int)file_attributes,
-		  (unsigned int)share_access,
-		  (unsigned int)create_disposition,
-		  (unsigned int)create_options,
-		  (unsigned int)oplock_request,
-		  (unsigned int)private_flags,
+	DBG_DEBUG("access_mask = 0x%" PRIu32
+		  " file_attributes = 0x%" PRIu32
+		  " share_access = 0x%" PRIu32
+		  " create_disposition = 0x%" PRIu32
+		  " create_options = 0x%" PRIu32
+		  " oplock_request = 0x%" PRIu32
+		  " private_flags = 0x%" PRIu32
+		  " ea_list = %p, sd = %p, fname = %s\n",
+		  access_mask,
+		  file_attributes,
+		  share_access,
+		  create_disposition,
+		  create_options,
+		  oplock_request,
+		  private_flags,
 		  ea_list,
 		  sd,
 		  smb_fname_str_dbg(smb_fname));
