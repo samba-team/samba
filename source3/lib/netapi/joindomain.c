@@ -947,3 +947,21 @@ WERROR NetRequestOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
 
 	return W_ERROR(NERR_JoinPerformedMustRestart);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetComposeOfflineDomainJoin_r(struct libnetapi_ctx *ctx,
+				     struct NetComposeOfflineDomainJoin *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetComposeOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
+				     struct NetComposeOfflineDomainJoin *r)
+{
+	return WERR_NOT_SUPPORTED;
+}

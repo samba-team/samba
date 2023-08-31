@@ -393,6 +393,73 @@ NET_API_STATUS NetRequestOfflineDomainJoin(uint8_t *provision_bin_data /* [in] [
 }
 
 /****************************************************************
+ NetComposeOfflineDomainJoin
+****************************************************************/
+NET_API_STATUS NetComposeOfflineDomainJoin(const char *dns_domain_name /* [in] [ref] */,
+					   const char *netbios_domain_name /* [in] [ref] */,
+					   struct domsid *domain_sid /* [in] [ref] */,
+					   struct GUID *domain_guid /* [in] [ref] */,
+					   const char *forest_name /* [in] [ref] */,
+					   const char *machine_account_name /* [in] [ref] */,
+					   const char *machine_account_password /* [in] [ref] */,
+					   const char *dc_name /* [in] [unique] */,
+					   const char *dc_address /* [in] [unique] */,
+					   int domain_is_ad /* [in] */,
+					   uint8_t **compose_bin_data /* [in,out] [unique] */,
+					   uint32_t *compose_bin_data_size /* [in,out] [unique] */,
+					   const char * *compose_text_data /* [in,out] [unique] */)
+{
+	struct NetComposeOfflineDomainJoin r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* In parameters */
+	r.in.dns_domain_name = dns_domain_name;
+	r.in.netbios_domain_name = netbios_domain_name;
+	r.in.domain_sid = domain_sid;
+	r.in.domain_guid = domain_guid;
+	r.in.forest_name = forest_name;
+	r.in.machine_account_name = machine_account_name;
+	r.in.machine_account_password = machine_account_password;
+	r.in.dc_name = dc_name;
+	r.in.dc_address = dc_address;
+	r.in.domain_is_ad = domain_is_ad;
+	r.in.compose_bin_data = compose_bin_data;
+	r.in.compose_bin_data_size = compose_bin_data_size;
+	r.in.compose_text_data = compose_text_data;
+
+	/* Out parameters */
+	r.out.compose_bin_data = compose_bin_data;
+	r.out.compose_bin_data_size = compose_bin_data_size;
+	r.out.compose_text_data = compose_text_data;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetComposeOfflineDomainJoin, &r);
+	}
+
+	werr = NetComposeOfflineDomainJoin_l(ctx, &r);
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetComposeOfflineDomainJoin, &r);
+	}
+
+	TALLOC_FREE(frame);
+	return (NET_API_STATUS)r.out.result;
+}
+
+/****************************************************************
  NetServerGetInfo
 ****************************************************************/
 

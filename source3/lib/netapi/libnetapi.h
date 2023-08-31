@@ -83,6 +83,23 @@ WERROR NetRequestOfflineDomainJoin_r(struct libnetapi_ctx *ctx,
 				     struct NetRequestOfflineDomainJoin *r);
 WERROR NetRequestOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
 				     struct NetRequestOfflineDomainJoin *r);
+NET_API_STATUS NetComposeOfflineDomainJoin(const char *dns_domain_name /* [in] [ref] */,
+					   const char *netbios_domain_name /* [in] [ref] */,
+					   struct domsid *domain_sid /* [in] [ref] */,
+					   struct GUID *domain_guid /* [in] [ref] */,
+					   const char *forest_name /* [in] [ref] */,
+					   const char *machine_account_name /* [in] [ref] */,
+					   const char *machine_account_password /* [in] [ref] */,
+					   const char *dc_name /* [in] [unique] */,
+					   const char *dc_address /* [in] [unique] */,
+					   int domain_is_ad /* [in] */,
+					   uint8_t **provision_bin_data /* [in,out] [unique] */,
+					   uint32_t *provision_bin_data_size /* [in,out] [unique] */,
+					   const char * *provision_text_data /* [in,out] [unique] */);
+WERROR NetComposeOfflineDomainJoin_r(struct libnetapi_ctx *ctx,
+				     struct NetComposeOfflineDomainJoin *r);
+WERROR NetComposeOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
+				     struct NetComposeOfflineDomainJoin *r);
 NET_API_STATUS NetServerGetInfo(const char * server_name /* [in] [unique] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);
