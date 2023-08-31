@@ -177,34 +177,6 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 }
 
 static
-NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
-				  uint64_t pac_attributes,
-				  DATA_BLOB *pac_attrs_data)
-{
-	union PAC_INFO pac_attrs = {};
-	enum ndr_err_code ndr_err;
-	NTSTATUS nt_status;
-
-	*pac_attrs_data = data_blob_null;
-
-	/* Set the length of the flags in bits. */
-	pac_attrs.attributes_info.flags_length = 2;
-	pac_attrs.attributes_info.flags = pac_attributes;
-
-	ndr_err = ndr_push_union_blob(pac_attrs_data, mem_ctx, &pac_attrs,
-				      PAC_TYPE_ATTRIBUTES_INFO,
-				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		nt_status = ndr_map_error2ntstatus(ndr_err);
-		DBG_WARNING("PAC ATTRIBUTES_INFO (presig) push failed: %s\n",
-			    nt_errstr(nt_status));
-		return nt_status;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static
 NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 				      const struct ldb_message *msg,
 				      DATA_BLOB *cred_blob)
@@ -997,6 +969,8 @@ NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB **_pac_attrs_blob)
 {
 	DATA_BLOB *pac_attrs_blob = NULL;
+	union PAC_INFO pac_attrs = {};
+	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
 
 	SMB_ASSERT(_pac_attrs_blob != NULL);
@@ -1008,13 +982,20 @@ NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = samba_get_pac_attrs_blob(pac_attrs_blob,
-					     pac_attributes,
-					     pac_attrs_blob);
+	/* Set the length of the flags in bits. */
+	pac_attrs.attributes_info.flags_length = 2;
+	pac_attrs.attributes_info.flags = pac_attributes;
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_push_union_blob(pac_attrs_blob, pac_attrs_blob, &pac_attrs,
+				      PAC_TYPE_ATTRIBUTES_INFO,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DBG_WARNING("PAC ATTRIBUTES_INFO (presig) push failed: %s\n",
+			    nt_errstr(nt_status));
 		DBG_ERR("Building PAC ATTRIBUTES failed: %s\n",
 			nt_errstr(nt_status));
+
 		talloc_free(pac_attrs_blob);
 		return nt_status;
 	}
