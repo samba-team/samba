@@ -316,12 +316,8 @@ static int epoll_add_multiplex_fd(struct epoll_event_context *epoll_ev,
 			     "EPOLL_CTL_MOD EBADF for "
 			     "add_fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     add_fde, mpx_fde, add_fde->fd);
-		DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
-		mpx_fde->wrapper = NULL;
-		mpx_fde->event_ctx = NULL;
-		DLIST_REMOVE(epoll_ev->ev->fd_events, add_fde);
-		add_fde->wrapper = NULL;
-		add_fde->event_ctx = NULL;
+		tevent_common_fd_disarm(mpx_fde);
+		tevent_common_fd_disarm(add_fde);
 		return 0;
 	} else if (ret != 0) {
 		return ret;
@@ -382,13 +378,9 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "EPOLL_CTL_ADD EBADF for "
 			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     fde, mpx_fde, fde->fd);
-		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
-		fde->wrapper = NULL;
-		fde->event_ctx = NULL;
+		tevent_common_fd_disarm(fde);
 		if (mpx_fde != NULL) {
-			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
-			mpx_fde->wrapper = NULL;
-			mpx_fde->event_ctx = NULL;
+			tevent_common_fd_disarm(mpx_fde);
 		}
 		return;
 	} else if (ret != 0 && errno == EEXIST && mpx_fde == NULL) {
@@ -459,13 +451,9 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "EPOLL_CTL_DEL EBADF for "
 			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     fde, mpx_fde, fde->fd);
-		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
-		fde->wrapper = NULL;
-		fde->event_ctx = NULL;
+		tevent_common_fd_disarm(fde);
 		if (mpx_fde != NULL) {
-			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
-			mpx_fde->wrapper = NULL;
-			mpx_fde->event_ctx = NULL;
+			tevent_common_fd_disarm(mpx_fde);
 		}
 		return;
 	} else if (ret != 0) {
@@ -510,13 +498,9 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "EPOLL_CTL_MOD EBADF for "
 			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
 			     fde, mpx_fde, fde->fd);
-		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
-		fde->wrapper = NULL;
-		fde->event_ctx = NULL;
+		tevent_common_fd_disarm(fde);
 		if (mpx_fde != NULL) {
-			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
-			mpx_fde->wrapper = NULL;
-			mpx_fde->event_ctx = NULL;
+			tevent_common_fd_disarm(mpx_fde);
 		}
 		return;
 	} else if (ret != 0) {

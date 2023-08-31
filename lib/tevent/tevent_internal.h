@@ -561,3 +561,16 @@ void tevent_trace_immediate_callback(struct tevent_context *ev,
 void tevent_trace_queue_callback(struct tevent_context *ev,
 				 struct tevent_queue_entry *qe,
 				 enum tevent_event_trace_point);
+
+#include "tevent_dlinklist.h"
+
+static inline void tevent_common_fd_disarm(struct tevent_fd *fde)
+{
+	if (fde->event_ctx != NULL) {
+		tevent_trace_fd_callback(fde->event_ctx, fde,
+					 TEVENT_EVENT_TRACE_DETACH);
+		DLIST_REMOVE(fde->event_ctx->fd_events, fde);
+		fde->event_ctx = NULL;
+	}
+	fde->wrapper = NULL;
+}

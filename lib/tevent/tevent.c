@@ -410,10 +410,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 	for (fd = ev->fd_events; fd; fd = fn) {
 		fn = fd->next;
-		tevent_trace_fd_callback(fd->event_ctx, fd, TEVENT_EVENT_TRACE_DETACH);
-		fd->wrapper = NULL;
-		fd->event_ctx = NULL;
-		DLIST_REMOVE(ev->fd_events, fd);
+		tevent_common_fd_disarm(fd);
 	}
 
 	ev->last_zero_timer = NULL;

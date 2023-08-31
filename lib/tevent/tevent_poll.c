@@ -534,9 +534,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 				     fde, pfd->fd);
 			poll_ev->fdes[idx] = NULL;
 			poll_ev->deleted = true;
-			DLIST_REMOVE(ev->fd_events, fde);
-			fde->wrapper = NULL;
-			fde->event_ctx = NULL;
+			tevent_common_fd_disarm(fde);
 			continue;
 		}
 
@@ -586,9 +584,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 			poll_ev->fdes[i] = NULL;
 			poll_ev->deleted = true;
 			if (fde != NULL) {
-				DLIST_REMOVE(ev->fd_events, fde);
-				fde->wrapper = NULL;
-				fde->event_ctx = NULL;
+				tevent_common_fd_disarm(fde);
 			}
 		}
 	}

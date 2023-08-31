@@ -276,9 +276,7 @@ static int tevent_wrapper_context_destructor(struct tevent_context *wrap_ev)
 
 		tevent_fd_set_flags(fd, 0);
 
-		fd->wrapper = NULL;
-		fd->event_ctx = NULL;
-		DLIST_REMOVE(main_ev->fd_events, fd);
+		tevent_common_fd_disarm(fd);
 	}
 
 	for (te = main_ev->timer_events; te; te = tn) {
