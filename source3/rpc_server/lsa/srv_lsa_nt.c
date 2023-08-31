@@ -5110,8 +5110,90 @@ NTSTATUS _lsa_CreateTrustedDomainEx3(struct pipes_struct *p,
 NTSTATUS _lsa_OpenPolicy3(struct pipes_struct *p,
 			  struct lsa_OpenPolicy3 *r)
 {
-	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+	struct security_descriptor *psd = NULL;
+	size_t sd_size;
+	uint32_t des_access = r->in.access_mask;
+	uint32_t acc_granted;
+	NTSTATUS status;
+
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	ZERO_STRUCTP(r->out.handle);
+
+	/*
+	 * The attributes have no effect and MUST be ignored, except the
+	 * root_dir which MUST be NULL.
+	 */
+	if (r->in.attr != NULL && r->in.attr->root_dir != NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (r->in.in_version) {
+	case 1:
+		*r->out.out_version = 1;
+
+		r->out.out_revision_info->info1.revision = 1;
+		/* TODO: Enable as soon as we support it */
+#if 0
+		r->out.out_revision_info->info1.supported_features =
+			LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER;
+#endif
+
+		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/* Work out max allowed. */
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
+			       &des_access);
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&des_access, &lsa_policy_mapping);
+
+	/* get the generic lsa policy SD until we store it */
+	status = make_lsa_object_sd(p->mem_ctx,
+				    &psd,
+				    &sd_size,
+				    &lsa_policy_mapping,
+				    NULL,
+				    0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd,
+				     session_info->security_token,
+				     SEC_PRIV_INVALID,
+				     SEC_PRIV_INVALID,
+				     0,
+				     des_access,
+				     &acc_granted,
+				     "_lsa_OpenPolicy2");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = create_lsa_policy_handle(p->mem_ctx,
+					  p,
+					  LSA_HANDLE_POLICY_TYPE,
+					  acc_granted,
+					  get_global_sam_sid(),
+					  NULL,
+					  psd,
+					  r->out.handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
 }
 
 void _lsa_Opnum131NotUsedOnWire(struct pipes_struct *p,
