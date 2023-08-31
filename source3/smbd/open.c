@@ -1113,11 +1113,10 @@ static NTSTATUS change_dir_owner_to_parent_fsp(struct files_struct *parent_fsp,
 static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 			       struct smb_filename *smb_fname,
 			       files_struct *fsp,
-			       int flags,
-			       mode_t mode,
+			       const struct vfs_open_how *_how,
 			       bool *file_created)
 {
-	struct vfs_open_how how = { .flags = flags, .mode = mode, };
+	struct vfs_open_how how = *_how;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS retry_status;
 	bool file_existed = VALID_STAT(smb_fname->st);
@@ -1168,10 +1167,10 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 	 */
 
 	if (file_existed) {
-		how.flags = flags & ~(O_CREAT);
+		how.flags = _how->flags & ~(O_CREAT);
 		retry_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	} else {
-		how.flags = flags | O_EXCL;
+		how.flags = _how->flags | O_EXCL;
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -1189,9 +1188,9 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 			  file_existed ? "existed" : "did not exist");
 
 		if (file_existed) {
-			how.flags = flags & ~(O_CREAT);
+			how.flags = _how->flags & ~(O_CREAT);
 		} else {
-			how.flags = flags | O_EXCL;
+			how.flags = _how->flags | O_EXCL;
 		}
 
 		status = fd_openat(dirfsp, smb_fname, fsp, &how);
@@ -1299,13 +1298,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 
 	fsp->fsp_flags.is_pathref = false;
 
-	status = fd_open_atomic(
-		dirfsp,
-		smb_fname,
-		fsp,
-		flags,
-		mode,
-		p_file_created);
+	status = fd_open_atomic(dirfsp, smb_fname, fsp, &how, p_file_created);
 	return status;
 }
 
