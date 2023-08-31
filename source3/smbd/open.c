@@ -6040,11 +6040,10 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	 * delete access.
 	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13358
 	 */
-	if (create_options & FILE_DELETE_ON_CLOSE) {
-		if ((access_mask & DELETE_ACCESS) == 0) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
+	if ((create_options & FILE_DELETE_ON_CLOSE) &&
+	    ((access_mask & DELETE_ACCESS) == 0)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
