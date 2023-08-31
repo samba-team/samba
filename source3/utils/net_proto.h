@@ -120,6 +120,8 @@ int net_offlinejoin_provision(struct net_context *c,
 			      int argc, const char **argv);
 int net_offlinejoin_requestodj(struct net_context *c,
 			       int argc, const char **argv);
+int net_offlinejoin_composeodj(struct net_context *c,
+			       int argc, const char **argv);
 
 /* The following definitions come from utils/net_lookup.c  */
 
