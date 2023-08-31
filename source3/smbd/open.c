@@ -1202,10 +1202,8 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 }
 
 static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
-				   int flags,
-				   mode_t mode)
+				   const struct vfs_open_how *how)
 {
-	struct vfs_open_how how = { .flags = flags, .mode = mode };
 	struct smb_filename proc_fname;
 	const char *p = NULL;
 	char buf[PATH_MAX];
@@ -1246,7 +1244,7 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 				fsp->conn->cwd_fsp,
 				&proc_fname,
 				fsp,
-				&how);
+				how);
 	if (new_fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		fd_close(fsp);
@@ -1269,6 +1267,10 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 				mode_t mode,
 				bool *p_file_created)
 {
+	struct vfs_open_how how = {
+		.flags = flags,
+		.mode = mode,
+	};
 	bool __unused_file_created = false;
 	NTSTATUS status;
 
@@ -1281,9 +1283,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 	 *       SMB_VFS_REOPEN_FSP()?
 	 */
 
-	status = reopen_from_procfd(fsp,
-				    flags,
-				    mode);
+	status = reopen_from_procfd(fsp, &how);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return status;
 	}
