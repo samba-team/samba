@@ -477,11 +477,19 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = {
+		.handle_type = 0,
+	};
 	NTSTATUS status, result;
 	struct lsa_RightSet rights;
 	int i;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	uint32_t out_version = 0;
 
 	struct dom_sid sid;
 
@@ -499,12 +507,20 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 pipe_hnd->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		DBG_DEBUG("Couldn't open policy handle: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
 
 	rights.count = argc-1;
 	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
@@ -560,6 +576,13 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 	struct dom_sid sid;
 	int i;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+	union lsa_revision_info out_revision_info = {
+		.info1 =
+			{
+				.revision = 0,
+			},
+	};
+	uint32_t out_version = 0;
 
 	if (argc < 2 ) {
 		d_printf("%s\n%s",
@@ -572,12 +595,20 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 	if (!NT_STATUS_IS_OK(status))
 		return status;
 
-	status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &dom_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 pipe_hnd->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &dom_pol,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		DBG_DEBUG("Couldn't open policy handle: %s\n",
+			  nt_errstr(status));
 		return status;
+	}
 
 	rights.count = argc-1;
 	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
