@@ -165,6 +165,26 @@ interface libnetapi
 	);
 
 	/*******************************************/
+	/* NetComposeOfflineDomainJoin             */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetComposeOfflineDomainJoin(
+		[in,ref] string *dns_domain_name,
+		[in,ref] string *netbios_domain_name,
+		[in,ref] domsid *domain_sid,
+		[in,ref] GUID *domain_guid,
+		[in,ref] string *forest_name,
+		[in,ref] string *machine_account_name,
+		[in,ref] string *machine_account_password,
+		[in,unique] string *dc_name,
+		[in,unique] string *dc_address,
+		[in] boolean8 domain_is_ad,
+		[in,out,unique] uint8 **compose_bin_data,
+		[in,out,unique] uint32 *compose_bin_data_size,
+		[in,out,unique] string **compose_text_data
+		);
+
+	/*******************************************/
 	/* NetServerGetInfo                        */
 	/*******************************************/
 
