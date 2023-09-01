@@ -665,7 +665,7 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 
 /**********************************************************************
  Try to find an AD dc using our internal name resolution routines
- Try the realm first and then then workgroup name if netbios is not
+ Try the realm first and then the workgroup name if netbios is not
  disabled
 **********************************************************************/
 
@@ -1586,7 +1586,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * Do a search on a specific DistinguishedName
  * @param ads connection to ads server
  * @param res ** which will contain results - free res* with ads_msgfree()
- * @param dn DistinguishName to search
+ * @param dn DistinguishedName to search
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
@@ -2182,7 +2182,7 @@ uint32_t ads_get_machine_kvno(ADS_STRUCT *ads, const char *machine_name)
 
 /**
  * This clears out all registered spn's for a given hostname
- * @param ads An initilaized ADS_STRUCT
+ * @param ads An initialized ADS_STRUCT
  * @param machine_name the NetBIOS name of the computer.
  * @return 0 upon success, non-zero otherwise.
  **/
@@ -3198,7 +3198,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 			   &range_start) == 1) {
 			*more_strings = False;
 		} else {
-			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attriubte (%s)\n",
+			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attribute (%s)\n",
 				  range_attr));
 			ldap_memfree(range_attr);
 			*more_strings = False;
@@ -4459,7 +4459,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 }
 
 /**
- * Find a sAMAccoutName in LDAP
+ * Find a sAMAccountName in LDAP
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param samaccountname to search
