@@ -1325,7 +1325,6 @@ static NTSTATUS open_file(struct smb_request *req,
 		FILE_EXECUTE |
 		SEC_FLAG_SYSTEM_SECURITY;
 	bool creating = !file_existed && (flags & O_CREAT);
-	bool truncating = (flags & O_TRUNC);
 	bool open_fd = false;
 	bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 
@@ -1384,7 +1383,8 @@ static NTSTATUS open_file(struct smb_request *req,
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
-	if ((open_access_mask & need_fd_mask) || creating || truncating) {
+	if ((open_access_mask & need_fd_mask) || creating ||
+	    (flags & O_TRUNC)) {
 		open_fd = true;
 	}
 
@@ -1402,7 +1402,6 @@ static NTSTATUS open_file(struct smb_request *req,
 		if (file_existed && S_ISFIFO(smb_fname->st.st_ex_mode)) {
 			local_flags &= ~O_TRUNC; /* Can't truncate a FIFO. */
 			local_flags |= O_NONBLOCK;
-			truncating = false;
 		}
 #endif
 
