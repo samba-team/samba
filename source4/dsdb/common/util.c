@@ -658,11 +658,9 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx,
 */
 struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char *attr)
 {
-	struct samr_LogonHours hours;
+	struct samr_LogonHours hours = {};
 	size_t units_per_week = 168;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
-
-	ZERO_STRUCT(hours);
 
 	if (val) {
 		units_per_week = val->length * 8;
