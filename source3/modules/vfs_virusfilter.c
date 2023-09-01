@@ -1495,9 +1495,7 @@ static int virusfilter_vfs_close(
 		return close_result;
 	}
 
-	if (config->exclude_files && is_in_path(fname,
-	    config->exclude_files, false))
-	{
+	if (is_in_path(fname, config->exclude_files, false)) {
 		DBG_INFO("Not scanned: exclude files: %s/%s\n",
 			 cwd_fname, fname);
 		return close_result;

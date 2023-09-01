@@ -1670,9 +1670,9 @@ static NTSTATUS open_file(
 	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->fsp_flags.is_directory = false;
-	if (conn->aio_write_behind_list &&
-	    is_in_path(smb_fname->base_name, conn->aio_write_behind_list,
-		       posix_open ? true: conn->case_sensitive)) {
+	if (is_in_path(smb_fname->base_name,
+		       conn->aio_write_behind_list,
+		       posix_open ? true : conn->case_sensitive)) {
 		fsp->fsp_flags.aio_write_behind = true;
 	}
 
