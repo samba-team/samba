@@ -61,7 +61,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 
 /* default is 30 minutes: -1e7 * 30 * 60 */
-#define DEFAULT_OBSERVATION_WINDOW              -18000000000
+#define DEFAULT_OBSERVATION_WINDOW              (-18000000000)
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
