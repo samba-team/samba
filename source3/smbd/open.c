@@ -4133,6 +4133,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			.flags = flags,
 			.mode = unx_mode,
 		};
+
+		if (create_options & FILE_OPEN_FOR_BACKUP_INTENT) {
+			how.resolve |= VFS_OPEN_HOW_WITH_BACKUP_INTENT;
+		}
+
 		fsp_open = open_file(req,
 				     parent_dir_fname->fsp,
 				     smb_fname_atname,

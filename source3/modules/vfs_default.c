@@ -664,7 +664,8 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_openat);
 
-	if (how->resolve & ~VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS) {
+	if (how->resolve & ~(VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS |
+			     VFS_OPEN_HOW_WITH_BACKUP_INTENT)) {
 		errno = ENOSYS;
 		result = -1;
 		goto out;
