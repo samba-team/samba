@@ -906,7 +906,7 @@ for d in delete_list:
             if opts.verbose:
                 print("skip delete (rodc): %s" % d)
             continue
-        if not d.type in [ 'A', 'AAAA' ]:
+        if d.type not in [ 'A', 'AAAA' ]:
             if opts.verbose:
                 print("delete (rodc): %s" % d)
             call_rodc_update(d, op="delete")
@@ -931,7 +931,7 @@ for d in update_list:
             if opts.verbose:
                 print("skip (rodc): %s" % d)
             continue
-        if not d.type in [ 'A', 'AAAA' ]:
+        if d.type not in [ 'A', 'AAAA' ]:
             if opts.verbose:
                 print("update (rodc): %s" % d)
             call_rodc_update(d)
