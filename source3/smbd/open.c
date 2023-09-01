@@ -1412,8 +1412,7 @@ static NTSTATUS open_file(struct smb_request *req,
 		} else {
 			wild = smb_fname->base_name;
 		}
-		if ((local_flags & O_CREAT) && !file_existed &&
-		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
+		if ((local_flags & O_CREAT) && !file_existed && !posix_open &&
 		    ms_has_wild(wild))  {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
