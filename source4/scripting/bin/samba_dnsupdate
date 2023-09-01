@@ -29,7 +29,7 @@ import subprocess
 # and don't get swallowed by a timeout
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-# forcing GMT avoids a problem in some timezones with kerberos. Both MIT
+# forcing GMT avoids a problem in some timezones with kerberos. Both MIT and
 # heimdal can get mutual authentication errors due to the 24 second difference
 # between UTC and GMT when using some zone files (eg. the PDT zone from
 # the US)
@@ -134,7 +134,7 @@ def get_possible_rw_dns_server(creds, domain):
 
 def get_krb5_rw_dns_server(creds, domain):
     """Get a list of read-write DNS servers that we can obtain a ticket
-       for, starting with the SOA.  The SOA is the correct answer, but
+       to, starting with the SOA.  The SOA is the correct answer, but
        old Samba domains (4.6 and prior) do not maintain this value,
        so continue with the NS servers as well until we get one that
        the KDC will issue a ticket to.
