@@ -220,7 +220,7 @@ static int acl_childClasses(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* Must remove any existing attribute, or else confusion reins */
+	/* Must remove any existing attribute, or else confusion reigns */
 	ldb_msg_remove_attr(msg, attrName);
 	ret = ldb_msg_add_empty(msg, attrName, 0, &allowedClasses);
 	if (ret != LDB_SUCCESS) {
@@ -286,7 +286,7 @@ static int acl_childClassesEffective(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* Must remove any existing attribute, or else confusion reins */
+	/* Must remove any existing attribute, or else confusion reigns */
 	ldb_msg_remove_attr(msg, "allowedChildClassesEffective");
 
 	oc_el = ldb_msg_find_element(sd_msg, "objectClass");
@@ -361,7 +361,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 		as_system->critical = 0;
 	}
 
-	/* Must remove any existing attribute, or else confusion reins */
+	/* Must remove any existing attribute, or else confusion reigns */
 	ldb_msg_remove_attr(msg, "sDRightsEffective");
 	ret = ldb_msg_add_empty(msg, "sDRightsEffective", 0, &rightsEffective);
 	if (ret != LDB_SUCCESS) {

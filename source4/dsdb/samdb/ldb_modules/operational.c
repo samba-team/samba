@@ -644,7 +644,7 @@ static int construct_msds_isrodc(struct ldb_module *module,
 /*
   construct msDS-keyVersionNumber attr
 
-  TODO:  Make this based on the 'win2k' DS huristics bit...
+  TODO:  Make this based on the 'win2k' DS heuristics bit...
 
 */
 static int construct_msds_keyversionnumber(struct ldb_module *module,
@@ -1442,7 +1442,7 @@ enum op_remove {
 	OPERATIONAL_REMOVE_ALWAYS, /* remove always */
 	OPERATIONAL_REMOVE_UNASKED,/* remove if not requested */
 	OPERATIONAL_SD_FLAGS,	   /* show if SD_FLAGS_OID set, or asked for */
-	OPERATIONAL_REMOVE_UNLESS_CONTROL	 /* remove always unless an adhoc control has been specified */
+	OPERATIONAL_REMOVE_UNLESS_CONTROL	 /* remove always unless an ad hoc control has been specified */
 };
 
 /*

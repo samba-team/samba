@@ -389,7 +389,7 @@ static void test_dsdb_audit_attributes_json(void **state)
 	TALLOC_FREE(msg);
 
 	/*
-	 * Test a message with a multivalues attributres
+	 * Test a message with a multi-valued attribute
 	 */
 	msg = talloc_zero(ctx, struct ldb_message);
 	ldb_msg_add_string(msg, "attribute01", "value01");

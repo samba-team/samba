@@ -440,7 +440,7 @@ static void test_modify_of_objectSID_replicated(void **state)
 }
 
 /*
- * Test the a modify with no object SID is passed through correctly
+ * Test that a modify with no object SID is passed through correctly
  *
  */
 static void test_modify_no_objectSID(void **state)

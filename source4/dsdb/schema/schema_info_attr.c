@@ -94,8 +94,8 @@ bool dsdb_schema_info_blob_is_valid(const DATA_BLOB *blob)
 /**
  * Parse schemaInfo structure from a data_blob
  * (DATA_BLOB or ldb_val).
- * Suitable for parsing blobs that comes from
- * DRS interface of from LDB database
+ * Suitable for parsing blobs that come from
+ * DRS interface or from LDB database
  */
 WERROR dsdb_schema_info_from_blob(const DATA_BLOB *blob,
 				  TALLOC_CTX *mem_ctx, struct dsdb_schema_info **_schema_info)
@@ -167,7 +167,7 @@ WERROR dsdb_blob_from_schema_info(const struct dsdb_schema_info *schema_info,
 /**
  * Compares schemaInfo signatures in dsdb_schema and prefixMap.
  * NOTE: At present function compares schemaInfo values
- * as string without taking into account schemVersion field
+ * as string without taking into account schemaVersion field
  *
  * @return WERR_OK if schemaInfos are equal
  * 	   WERR_DS_DRA_SCHEMA_MISMATCH if schemaInfos are different

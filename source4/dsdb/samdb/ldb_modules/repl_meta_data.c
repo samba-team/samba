@@ -3520,7 +3520,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		new_el->num_values = el->num_values;
 		new_el->values = talloc_steal(msg->elements, el->values);
 
-		/* TODO: this relises a bit too heavily on the exact
+		/* TODO: this relies a bit too heavily on the exact
 		   behaviour of ldb_msg_find_element and
 		   ldb_msg_remove_element */
 		old_el = ldb_msg_find_element(msg, el->name);

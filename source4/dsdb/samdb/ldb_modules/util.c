@@ -766,7 +766,7 @@ int dsdb_check_samba_compatible_feature(struct ldb_module *module,
 
   Note that features can be marked as enabled in more than one
   place. For example, the recyclebin feature is marked as enabled both
-  on the CN=Partitions,CN=Configurration object and on the NTDS DN of
+  on the CN=Partitions,CN=Configuration object and on the NTDS DN of
   each DC in the forest. It seems likely that it is the job of the KCC
   to propagate between the two
  */

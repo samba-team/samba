@@ -1984,12 +1984,12 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	if (!io->n.cleartext_utf8) {
 		/*
 		 * when we don't have a cleartext password
-		 * we can't setup a supplementalCredential value
+		 * we can't setup a supplementalCredentials value
 		 */
 		return LDB_SUCCESS;
 	}
 
-	/* if there's an old supplementaCredentials blob then use it */
+	/* if there's an old supplementalCredentials blob then use it */
 	if (io->o.supplemental) {
 		if (io->o.scb.sub.signature == SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
 			old_scb = &io->o.scb;
@@ -3878,7 +3878,7 @@ static int setup_io(struct ph_context *ac,
 
 	/*
 	 * Handles the password change control if it's specified. It has the
-	 * precedance and overrides already specified old password values of
+	 * precedence and overrides already specified old password values of
 	 * change requests (but that shouldn't happen since the control is
 	 * fully internal and only used in conjunction with replace requests!).
 	 */
@@ -4950,7 +4950,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 					DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
 	if (restore == NULL) {
 		/*
-		 * A tomstone reanimation generates a double update
+		 * A tombstone reanimation generates a double update
 		 * of pwdLastSet.
 		 *
 		 * So we only remove it without the

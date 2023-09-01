@@ -1279,7 +1279,7 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 		 *
 		 * We have to check the DB in case someone else has
 		 * modified the database while we are doing our
-		 * changes too (this case should be very bery rare) in
+		 * changes too (this case should be very very rare) in
 		 * order to be sure.
 		 */
 		if (dsdb_attribute_by_attributeID_id(schema, msds_intid)) {
