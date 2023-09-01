@@ -733,7 +733,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 	const char *last_component;
 
 	/* if we have no list it's obviously not in the path */
-	if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) {
+	if ((namelist == NULL) || (namelist[0].name == NULL)) {
 		return False;
 	}
 
