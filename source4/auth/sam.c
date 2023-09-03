@@ -322,6 +322,9 @@ static NTSTATUS authsam_domain_group_filter(TALLOC_CTX *mem_ctx,
 	*_filter = NULL;
 
 	filter = talloc_strdup(mem_ctx, "(&(objectClass=group)");
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * Skip all builtin groups, they're added later.
@@ -329,6 +332,9 @@ static NTSTATUS authsam_domain_group_filter(TALLOC_CTX *mem_ctx,
 	talloc_asprintf_addbuf(&filter,
 			       "(!(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
 			       GROUP_TYPE_BUILTIN_LOCAL_GROUP);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	/*
 	 * Only include security groups.
 	 */
