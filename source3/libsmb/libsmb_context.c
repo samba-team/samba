@@ -169,6 +169,16 @@ smbc_new_context(void)
         /* Initialize the context and establish reasonable defaults */
         ZERO_STRUCTP(context->internal);
 
+	context->internal->lp_ctx = loadparm_init_s3(NULL,
+						     loadparm_s3_helpers());
+	if (context->internal->lp_ctx == NULL) {
+		SAFE_FREE(context->internal);
+		SAFE_FREE(context);
+		TALLOC_FREE(frame);
+		errno = ENOMEM;
+		return NULL;
+	}
+
         smbc_setDebug(context, 0);
         smbc_setTimeout(context, 20000);
         smbc_setPort(context, 0);
@@ -324,6 +334,7 @@ smbc_free_context(SMBCCTX *context,
 	/* Free any DFS auth context. */
 	TALLOC_FREE(context->internal->creds);
 
+	TALLOC_FREE(context->internal->lp_ctx);
 	SAFE_FREE(context->internal);
         SAFE_FREE(context);
 
@@ -737,7 +748,6 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 					const char *user,
 					const char *password)
 {
-	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;
 	enum credentials_use_kerberos kerberos_state =
 		CRED_USE_KERBEROS_DISABLED;
@@ -765,13 +775,7 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		return;
 	}
 
-	lp_ctx = loadparm_init_s3(creds, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		TALLOC_FREE(creds);
-		return;
-	}
-
-	cli_credentials_set_conf(creds, lp_ctx);
+	cli_credentials_set_conf(creds, context->internal->lp_ctx);
 
 	if (smbc_getOptionUseKerberos(context)) {
 		kerberos_state = CRED_USE_KERBEROS_REQUIRED;

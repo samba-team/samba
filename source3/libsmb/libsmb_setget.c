@@ -26,6 +26,7 @@
 #define __LIBSMBCLIENT_INTERNAL__
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
+#include "lib/param/param.h"
 
 
 /** Get the netbios name used for making connections */
@@ -94,7 +95,7 @@ smbc_setDebug(SMBCCTX *c, int debug)
 	TALLOC_CTX *frame = talloc_stackframe();
 	snprintf(buf, sizeof(buf), "%d", debug);
         c->debug = debug;
-	lp_set_cmdline("log level", buf);
+	lpcfg_set_cmdline(c->internal->lp_ctx, "log level", buf);
 	TALLOC_FREE(frame);
 }
 
@@ -534,11 +535,15 @@ smbc_setOptionProtocols(SMBCCTX *c,
 	bool ok = true;
 
 	if (min_proto != NULL) {
-		ok = lp_set_cmdline("client min protocol", min_proto);
+		ok = lpcfg_set_cmdline(c->internal->lp_ctx,
+				       "client min protocol",
+				       min_proto);
 	}
 
 	if (max_proto != NULL) {
-		ok &= lp_set_cmdline("client max protocol", max_proto);
+		ok &= lpcfg_set_cmdline(c->internal->lp_ctx,
+					"client max protocol",
+					max_proto);
 	}
 
 	return ok;

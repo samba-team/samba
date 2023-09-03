@@ -254,7 +254,9 @@ struct SMBC_internal_data {
         }               smb;
 
 	uint16_t	port;
-};	
+
+	struct loadparm_context *lp_ctx;
+};
 
 /* Functions in libsmb_cache.c */
 int
