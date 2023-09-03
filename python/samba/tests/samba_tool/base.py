@@ -19,7 +19,7 @@
 # of the commands. A list of the environmental variables can be found in
 # ~/selftest/selftest.pl
 #
-# These can all be accesses via os.environ["VARIBLENAME"] when needed
+# These can all be accessed via os.environ["VARIABLENAME"] when needed
 
 import os
 import random
