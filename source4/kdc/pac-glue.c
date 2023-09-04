@@ -1727,6 +1727,10 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 	}
 
 	if (domain_group == NULL) {
+		if (info->domain_group_count == UINT32_MAX) {
+			return EINVAL;
+		}
+
 		info->domain_groups = talloc_realloc(
 			info,
 			info->domain_groups,
@@ -1759,6 +1763,10 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 		if (!NT_STATUS_IS_OK(status)) {
 			return map_errno_from_nt_status(status);
 		}
+	}
+
+	if (domain_group->groups.count == UINT32_MAX) {
+		return EINVAL;
 	}
 
 	domain_group->groups.rids = talloc_realloc(info->domain_groups,
