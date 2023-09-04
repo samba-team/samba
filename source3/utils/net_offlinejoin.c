@@ -193,11 +193,17 @@ int net_offlinejoin_provision(struct net_context *c,
 		DATA_BLOB ucs2_blob, blob;
 		bool ok;
 
+		/*
+		 * Windows produces and consumes UTF16/UCS2 encoded blobs
+		 * so we also do it for compatibility. Someone may provision an
+		 * account for a Windows machine with samba.
+		 */
 		ok = push_reg_sz(c, &ucs2_blob, provision_text_data);
 		if (!ok) {
 			return -1;
 		}
 
+		/* Add the unicode BOM mark */
 		blob = data_blob_talloc(c, NULL, ucs2_blob.length + 2);
 
 		blob.data[0] = 0xff;

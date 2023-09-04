@@ -894,6 +894,10 @@ WERROR NetRequestOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
 		return W_ERROR(NERR_BadOfflineJoinInfo);
 	}
 
+	/*
+	 * Windows produces and consumes UTF16/UCS2 encoded blobs. Check for the
+	 * unicode BOM mark and convert back to UNIX charset if necessary.
+	 */
 	if (r->in.provision_bin_data[0] == 0xff &&
 	    r->in.provision_bin_data[1] == 0xfe) {
 		ok = convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX,
