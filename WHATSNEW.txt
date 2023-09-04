@@ -1,17 +1,10 @@
-Release Announcements
-=====================
+                   ==============================
+                   Release Notes for Samba 4.19.0
+                         September 04, 2023
+                   ==============================
 
-This is the fourth release candidate of Samba 4.19.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.19 will be the next version of the Samba suite.
-
-
-UPGRADING
-=========
-
+This is the first stable release of the Samba 4.19 release series.
+Please read the release notes carefully before upgrading.
 
 NEW FEATURES/CHANGES
 ====================
@@ -250,6 +243,18 @@ smb.conf changes
   --------------                          -----------     -------
   winbind debug traceid                   Add traceid     No
   directory name cache size               Removed
+
+
+CHANGES SINCE 4.19.0rc4
+=======================
+
+o  MikeLiu <mikeliu@qnap.com>
+   * BUG 15453: File doesn't show when user doesn't have permission if
+     aio_pthread is loaded.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15451: ctdb_killtcp fails to work with --enable-pcap and libpcap ≥
+     1.9.1.
 
 
 CHANGES SINCE 4.19.0rc3
