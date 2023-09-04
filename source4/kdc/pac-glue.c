@@ -1714,10 +1714,11 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 	uint32_t rid;
 	NTSTATUS status;
 
+	uint32_t domain_group_count = info->domain_group_count;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *domain_group = NULL;
 	struct samr_RidWithAttribute *rids = NULL;
 
-	for (i = 0; i < info->domain_group_count; ++i) {
+	for (i = 0; i < domain_group_count; ++i) {
 		struct PAC_DOMAIN_GROUP_MEMBERSHIP *this_domain_group
 			= &info->domain_groups[i];
 
@@ -1730,7 +1731,7 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 	if (domain_group == NULL) {
 		struct PAC_DOMAIN_GROUP_MEMBERSHIP *domain_groups = NULL;
 
-		if (info->domain_group_count == UINT32_MAX) {
+		if (domain_group_count == UINT32_MAX) {
 			return EINVAL;
 		}
 
@@ -1738,15 +1739,14 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 			info,
 			info->domain_groups,
 			struct PAC_DOMAIN_GROUP_MEMBERSHIP,
-			info->domain_group_count + 1);
+			domain_group_count + 1);
 		if (domain_groups == NULL) {
 			return ENOMEM;
 		}
 
 		info->domain_groups = domain_groups;
 
-		domain_group = &info->domain_groups[
-			info->domain_group_count++];
+		domain_group = &info->domain_groups[domain_group_count++];
 		*domain_group = (struct PAC_DOMAIN_GROUP_MEMBERSHIP) {};
 
 		status = dom_sid_split_rid(info->domain_groups,
@@ -1786,6 +1786,8 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 	};
 
 	++domain_group->groups.count;
+
+	info->domain_group_count = domain_group_count;
 
 	return 0;
 }
