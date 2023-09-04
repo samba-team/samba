@@ -43,6 +43,8 @@ testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required ||
 
 rm -f $ODJFILE
 
+testit "leave" $VALGRIND $net_tool ads leave  -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
+
 # 2. Test with dcname
 
 testit "provision with dcname" $VALGRIND $net_tool offlinejoin provision domain=$REALM machine_name=$netbios savefile=$ODJFILE dcname=$DC_SERVER -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
@@ -53,6 +55,8 @@ testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required ||
 
 rm -f $ODJFILE
 
+testit "leave" $VALGRIND $net_tool ads leave  -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
+
 # 3. Test with defpwd
 
 testit "provision with dcname and default password" $VALGRIND $net_tool offlinejoin provision domain=$REALM machine_name=$netbios savefile=$ODJFILE dcname=$DC_SERVER defpwd -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
@@ -62,6 +66,8 @@ testit "requestodj" $VALGRIND $net_tool offlinejoin requestodj loadfile=$ODJFILE
 testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=$(expr $failed + 1)
 
 rm -f $ODJFILE
+
+testit "leave" $VALGRIND $net_tool ads leave  -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
 rm -rf $BASEDIR/$WORKDIR
 
