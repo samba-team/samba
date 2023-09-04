@@ -67,33 +67,11 @@ static int samba_wdc_pac_options(astgs_request_t r, PAC_OPTIONS_FLAGS *flags)
 
 static bool samba_wdc_is_s4u2self_req(astgs_request_t r)
 {
-	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
 	const KDC_REQ *req = kdc_request_get_req(r);
 	const PA_DATA *pa_for_user = NULL;
 
 	if (req->msg_type != krb_tgs_req) {
 		return false;
-	}
-
-	if (config->enable_fast && req->padata != NULL) {
-		const PA_DATA *pa_fx_fast = NULL;
-		int idx = 0;
-
-		pa_fx_fast = krb5_find_padata(req->padata->val,
-					      req->padata->len,
-					      KRB5_PADATA_FX_FAST,
-					      &idx);
-		if (pa_fx_fast != NULL) {
-			/*
-			 * We're in the outer request
-			 * with KRB5_PADATA_FX_FAST
-			 * if fast is enabled we'll
-			 * process the s4u2self
-			 * request only in the
-			 * inner request.
-			 */
-			return false;
-		}
 	}
 
 	if (req->padata != NULL) {
