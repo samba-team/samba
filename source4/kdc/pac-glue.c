@@ -1747,11 +1747,7 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 
 		domain_group = &info->domain_groups[
 			info->domain_group_count++];
-
-		domain_group->domain_sid = NULL;
-
-		domain_group->groups.count = 0;
-		domain_group->groups.rids = NULL;
+		*domain_group = (struct PAC_DOMAIN_GROUP_MEMBERSHIP) {};
 
 		status = dom_sid_split_rid(info->domain_groups,
 					   sid->sid,
