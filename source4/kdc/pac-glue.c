@@ -1281,7 +1281,7 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	krb5_data old_data = {};
 	DATA_BLOB old_blob;
 	krb5_error_code ret;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 	enum ndr_err_code ndr_err;
 	union PAC_INFO info = {};
 	struct PAC_CONSTRAINED_DELEGATION _d = {};
@@ -1292,15 +1292,16 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_CONSTRAINED_DELEGATION, &old_data);
 	if (ret == ENOENT) {
 		/* OK. */
 	} else if (ret) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	old_blob.length = old_data.length;
@@ -1314,8 +1315,7 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 			smb_krb5_free_data_contents(context, &old_data);
 			nt_status = ndr_map_error2ntstatus(ndr_err);
 			DBG_ERR("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status));
-			talloc_free(tmp_ctx);
-			return nt_status;
+			goto out;
 		}
 	} else {
 		info.constrained_delegation.info = &_d;
@@ -1325,15 +1325,15 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	ret = krb5_unparse_name_flags(context, server_principal,
 				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &server);
 	if (ret) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		nt_status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 
 	ret = krb5_unparse_name(context, proxy_principal, &proxy);
 	if (ret) {
 		SAFE_FREE(server);
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		nt_status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 
 	d = info.constrained_delegation.info;
@@ -1344,8 +1344,8 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	if (d->transited_services == NULL) {
 		SAFE_FREE(server);
 		SAFE_FREE(proxy);
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		nt_status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 	d->transited_services[i].string = proxy;
 	d->num_transited_services = i + 1;
@@ -1359,12 +1359,12 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 		smb_krb5_free_data_contents(context, &old_data);
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_ERR("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status));
-		talloc_free(tmp_ctx);
-		return nt_status;
+		goto out;
 	}
 
+out:
 	talloc_free(tmp_ctx);
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 /* function to map policy errors */
@@ -1428,7 +1428,7 @@ static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
-	krb5_error_code ret;
+	krb5_error_code ret = 0;
 
 	DATA_BLOB pac_requester_sid_in;
 	krb5_data k5pac_requester_sid_in;
@@ -1437,14 +1437,14 @@ static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
-		return ENOMEM;
+		ret = ENOMEM;
+		goto out;
 	}
 
 	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_REQUESTER_SID,
 				  &k5pac_requester_sid_in);
 	if (ret != 0) {
-		talloc_free(tmp_ctx);
-		return ret;
+		goto out;
 	}
 
 	pac_requester_sid_in = data_blob_const(k5pac_requester_sid_in.data,
@@ -1457,14 +1457,15 @@ static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_ERR("can't parse the PAC REQUESTER_SID: %s\n", nt_errstr(nt_status));
-		talloc_free(tmp_ctx);
-		return map_errno_from_nt_status(nt_status);
+		ret = map_errno_from_nt_status(nt_status);
+		goto out;
 	}
 
 	*sid = info.requester_sid.sid;
 
+out:
 	talloc_free(tmp_ctx);
-	return 0;
+	return ret;
 }
 
 /* Does a parse and SID check, but no crypto. */
@@ -1784,6 +1785,7 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 {
 	struct PAC_DEVICE_INFO *device_info = NULL;
 	uint32_t i;
+	krb5_error_code ret = 0;
 
 	*info = (union PAC_INFO) {};
 
@@ -1791,7 +1793,8 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 
 	device_info = talloc(mem_ctx, struct PAC_DEVICE_INFO);
 	if (device_info == NULL) {
-		return ENOMEM;
+		ret = ENOMEM;
+		goto out;
 	}
 
 	device_info->rid = info3->base.rid;
@@ -1818,21 +1821,23 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 		const struct netr_SidAttr *device_sid = &info3->sids[i];
 
 		if (dom_sid_has_account_domain(device_sid->sid)) {
-			krb5_error_code ret = samba_kdc_add_domain_group_sid(mem_ctx, device_info, device_sid);
+			ret = samba_kdc_add_domain_group_sid(mem_ctx, device_info, device_sid);
 			if (ret != 0) {
-				return ret;
+				goto out;
 			}
 		} else {
 			device_info->sids = talloc_realloc(mem_ctx, device_info->sids,
 							   struct netr_SidAttr,
 							   device_info->sid_count + 1);
 			if (device_info->sids == NULL) {
-				return ENOMEM;
+				ret = ENOMEM;
+				goto out;
 			}
 
 			device_info->sids[device_info->sid_count].sid = dom_sid_dup(device_info->sids, device_sid->sid);
 			if (device_info->sids[device_info->sid_count].sid == NULL) {
-				return ENOMEM;
+				ret = ENOMEM;
+				goto out;
 			}
 
 			device_info->sids[device_info->sid_count].attributes = device_sid->attributes;
@@ -1843,7 +1848,8 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 
 	info->device_info.info = device_info;
 
-	return 0;
+out:
+	return ret;
 }
 
 static krb5_error_code samba_kdc_update_device_info(TALLOC_CTX *mem_ctx,
