@@ -1308,7 +1308,7 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	old_blob.data = (uint8_t *)old_data.data;
 
 	if (old_blob.length > 0) {
-		ndr_err = ndr_pull_union_blob(&old_blob, mem_ctx,
+		ndr_err = ndr_pull_union_blob(&old_blob, tmp_ctx,
 				&info, PAC_TYPE_CONSTRAINED_DELEGATION,
 				(ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
