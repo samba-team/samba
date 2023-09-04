@@ -45,6 +45,8 @@ class SDDLvsDescriptorBase(TestCase):
     json_file = TEST_DIR / 'conditional_aces.txt.json'
     munge_to_v4 = True
     domain_sid = security.dom_sid("S-1-5-21-2457507606-2709100691-398136650")
+    failure_json = None
+    success_json = None
 
     @classmethod
     def filter_test_cases(cls, data):
@@ -73,22 +75,44 @@ class SDDLvsDescriptorBase(TestCase):
                 name = f"{name[:100]}+{len(name) - 100}-more-characters-{tag}"
             cls.generate_dynamic_test('test_sddl_vs_sd', name, sddl, sdl)
 
+        if cls.failure_json:
+            cls.failures = {}
+            cls.failure_file = open(cls.failure_json, 'w')
+            cls.addClassCleanup(json.dump, cls.failures, cls.failure_file)
+        if cls.success_json:
+            cls.successes = {}
+            cls.success_file = open(cls.success_json, 'w')
+            cls.addClassCleanup(json.dump, cls.successes, cls.success_file)
+
     def _test_sddl_vs_sd_with_args(self, sddl, sdl):
         sdb_win = bytes(sdl)
         try:
             sd_sam = security.descriptor.from_sddl(sddl, self.domain_sid)
         except (TypeError, ValueError) as e:
+
+            try:
+                sd_win = ndr_unpack(security.descriptor, sdb_win)
+                win_ndr_print = ndr_print(sd_win)
+            except RuntimeError as e2:
+                win_ndr_print = f"not parseable: {e2}"
+            if self.failure_json:
+                self.failures[sddl] = sdl
+
             self.fail(f"failed to parse {sddl} into SD: {e}")
 
         try:
             sdb_sam = ndr_pack(sd_sam)
         except RuntimeError as e:
+            if self.failure_json:
+                self.failures[sddl] = sdl
             self.fail(f"failed to pack samba SD from {sddl} into bytes: {e}\n"
                       f"{ndr_print(sd_sam)}")
 
         try:
             sd_win = ndr_unpack(security.descriptor, sdb_win)
         except RuntimeError as e:
+            if self.failure_json:
+                self.failures[sddl] = sdl
             self.fail(f"could not unpack windows descriptor for {sddl}: {e}")
 
         if self.munge_to_v4:
@@ -120,7 +144,12 @@ class SDDLvsDescriptorBase(TestCase):
                 sd_win.sacl.revision = 4
 
         if (sd_win != sd_sam):
+            if self.failure_json:
+                self.failures[sddl] = sdl
             self.fail(f"Descriptors differ for {sddl}")
+
+        if self.success_json:
+            self.successes[sddl] = sdl
 
 
 @DynamicTestCase
