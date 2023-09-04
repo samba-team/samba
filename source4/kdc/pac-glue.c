@@ -57,14 +57,20 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const enum auth_group_inclusion group_inclusion,
 				       DATA_BLOB *pac_data)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups = NULL;
 	union PAC_INFO pac_info = {};
 	enum ndr_err_code ndr_err;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 
 	*pac_data = data_blob_null;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (override_resource_groups == NULL) {
 		resource_groups = &_resource_groups;
@@ -75,22 +81,24 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 		 */
 		DBG_ERR("supplied resource groups with invalid group inclusion parameter: %u\n",
 			group_inclusion);
-		return NT_STATUS_INVALID_PARAMETER;
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
-	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, info,
+	nt_status = auth_convert_user_info_dc_saminfo3(tmp_ctx, info,
 						       group_inclusion,
 						       &info3,
 						       resource_groups);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_WARNING("Getting Samba info failed: %s\n",
 			    nt_errstr(nt_status));
-		return nt_status;
+		goto out;
 	}
 
-	pac_info.logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
+	pac_info.logon_info.info = talloc_zero(tmp_ctx, struct PAC_LOGON_INFO);
 	if (!pac_info.logon_info.info) {
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	pac_info.logon_info.info->info3 = *info3;
@@ -122,10 +130,12 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("PAC_LOGON_INFO (presig) push failed: %s\n",
 			    nt_errstr(nt_status));
-		return nt_status;
+		goto out;
 	}
 
-	return NT_STATUS_OK;
+out:
+	talloc_free(tmp_ctx);
+	return nt_status;
 }
 
 static
@@ -133,18 +143,25 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 				     const struct auth_user_info_dc *info,
 				     DATA_BLOB *upn_data)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	union PAC_INFO pac_upn = {};
 	enum ndr_err_code ndr_err;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 	bool ok;
 
 	*upn_data = data_blob_null;
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	pac_upn.upn_dns_info.upn_name = info->info->user_principal_name;
-	pac_upn.upn_dns_info.dns_domain_name = strupper_talloc(mem_ctx,
+	pac_upn.upn_dns_info.dns_domain_name = strupper_talloc(tmp_ctx,
 						info->info->dns_domain_name);
 	if (pac_upn.upn_dns_info.dns_domain_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 	if (info->info->user_principal_constructed) {
 		pac_upn.upn_dns_info.flags |= PAC_UPN_DNS_FLAG_CONSTRUCTED;
@@ -165,15 +182,19 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("PAC UPN_DNS_INFO (presig) push failed: %s\n",
 			    nt_errstr(nt_status));
-		return nt_status;
+		goto out;
 	}
 
 	ok = data_blob_pad(mem_ctx, upn_data, 8);
 	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
+		talloc_free(upn_data);
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
-	return NT_STATUS_OK;
+out:
+	talloc_free(tmp_ctx);
+	return nt_status;
 }
 
 static
@@ -369,10 +390,11 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 
 	return 0;
 #else /* SAMBA4_USES_HEIMDAL */
+	TALLOC_CTX *tmp_ctx = NULL;
 	krb5_key cred_key;
 	krb5_enctype cred_enctype;
 	struct PAC_CREDENTIAL_INFO pac_cred_info = { .version = 0, };
-	krb5_error_code code;
+	krb5_error_code code = 0;
 	const char *krb5err;
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
@@ -382,6 +404,11 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 
 	*cred_info_blob = data_blob_null;
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
 	code = krb5_k_create_key(context,
 				 pkreplykey,
 				 &cred_key);
@@ -389,7 +416,7 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		krb5err = krb5_get_error_message(context, code);
 		DBG_WARNING("Failed initializing cred data crypto: %s\n", krb5err);
 		krb5_free_error_message(context, krb5err);
-		return code;
+		goto out;
 	}
 
 	cred_enctype = krb5_k_key_enctype(context, cred_key);
@@ -411,13 +438,14 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		krb5err = krb5_get_error_message(context, code);
 		DBG_WARNING("Failed initializing cred data crypto: %s\n", krb5err);
 		krb5_free_error_message(context, krb5err);
-		return code;
+		goto out;
 	}
 
-	pac_cred_info.encrypted_data = data_blob_talloc_zero(mem_ctx, enc_len);
+	pac_cred_info.encrypted_data = data_blob_talloc_zero(tmp_ctx, enc_len);
 	if (pac_cred_info.encrypted_data.data == NULL) {
 		DBG_ERR("Out of memory\n");
-		return ENOMEM;
+		code = ENOMEM;
+		goto out;
 	}
 
 	cred_ndr_crypt.ciphertext = smb_krb5_data_from_blob(pac_cred_info.encrypted_data);
@@ -433,7 +461,7 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		krb5err = krb5_get_error_message(context, code);
 		DBG_WARNING("Failed crypt of cred data: %s\n", krb5err);
 		krb5_free_error_message(context, krb5err);
-		return code;
+		goto out;
 	}
 
 	if (DEBUGLVL(10)) {
@@ -447,7 +475,8 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("PAC_CREDENTIAL_INFO (presig) push failed: %s\n",
 			    nt_errstr(nt_status));
-		return KRB5KDC_ERR_SVC_UNAVAILABLE;
+		code = KRB5KDC_ERR_SVC_UNAVAILABLE;
+		goto out;
 	}
 
 	DBG_DEBUG("Encrypted credential BLOB (len %zu) with alg %"PRId32"\n",
@@ -455,7 +484,9 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 	dump_data_pw("PAC_CREDENTIAL_INFO",
 		      cred_info_blob->data, cred_info_blob->length);
 
-	return 0;
+out:
+	talloc_free(tmp_ctx);
+	return code;
 #endif /* SAMBA4_USES_HEIMDAL */
 }
 
