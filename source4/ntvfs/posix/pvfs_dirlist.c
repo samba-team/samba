@@ -242,7 +242,8 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 			talloc_free(short_name);
 		}
 
-		dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
+		/* Casting is necessary to avoid signed integer overflow. */
+		dir->offset = (unsigned long)telldir(dir->dir) + (unsigned long)DIR_OFFSET_BASE;
 		(*ofs) = dir->offset;
 
 		dcache_add(dir, dname);
@@ -311,7 +312,8 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, off_t *ofs)
 
 	while ((de = readdir(dir->dir))) {
 		if (strcasecmp_m(name, de->d_name) == 0) {
-			dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
+			/* Casting is necessary to avoid signed integer overflow. */
+			dir->offset = (unsigned long)telldir(dir->dir) + (unsigned long)DIR_OFFSET_BASE;
 			*ofs = dir->offset;
 			return NT_STATUS_OK;
 		}
@@ -348,7 +350,8 @@ NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *of
 			dir->end_of_search = true;
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
-		*ofs = telldir(dir->dir) + DIR_OFFSET_BASE;
+		/* Casting is necessary to avoid signed integer overflow. */
+		*ofs = (unsigned long)telldir(dir->dir) + (unsigned long)DIR_OFFSET_BASE;
 		dir->offset = *ofs;
 		return NT_STATUS_OK;
 	}
@@ -371,7 +374,8 @@ NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *of
 	rewinddir(dir->dir);
 
 	while ((de = readdir(dir->dir))) {
-		dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
+		/* Casting is necessary to avoid signed integer overflow. */
+		dir->offset = (unsigned long)telldir(dir->dir) + (unsigned long)DIR_OFFSET_BASE;
 		if (resume_key == (uint32_t)dir->offset) {
 			*ofs = dir->offset;
 			return NT_STATUS_OK;
