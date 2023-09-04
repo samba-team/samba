@@ -1689,6 +1689,7 @@ sub setup_simpleserver
 	vfs objects = xattr_tdb streams_depot
 	change notify = no
 	server smb encrypt = off
+        allow trusted domains = no
 
 [vfs_aio_pthread]
 	path = $prefix_abs/share
