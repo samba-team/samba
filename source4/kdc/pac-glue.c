@@ -1715,6 +1715,7 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 	NTSTATUS status;
 
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *domain_group = NULL;
+	struct samr_RidWithAttribute *rids = NULL;
 
 	for (i = 0; i < info->domain_group_count; ++i) {
 		struct PAC_DOMAIN_GROUP_MEMBERSHIP *this_domain_group
@@ -1727,18 +1728,22 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 	}
 
 	if (domain_group == NULL) {
+		struct PAC_DOMAIN_GROUP_MEMBERSHIP *domain_groups = NULL;
+
 		if (info->domain_group_count == UINT32_MAX) {
 			return EINVAL;
 		}
 
-		info->domain_groups = talloc_realloc(
+		domain_groups = talloc_realloc(
 			info,
 			info->domain_groups,
 			struct PAC_DOMAIN_GROUP_MEMBERSHIP,
 			info->domain_group_count + 1);
-		if (info->domain_groups == NULL) {
+		if (domain_groups == NULL) {
 			return ENOMEM;
 		}
+
+		info->domain_groups = domain_groups;
 
 		domain_group = &info->domain_groups[
 			info->domain_group_count++];
@@ -1769,13 +1774,15 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 		return EINVAL;
 	}
 
-	domain_group->groups.rids = talloc_realloc(info->domain_groups,
-						   domain_group->groups.rids,
-						   struct samr_RidWithAttribute,
-						   domain_group->groups.count + 1);
-	if (domain_group->groups.rids == NULL) {
+	rids = talloc_realloc(info->domain_groups,
+			      domain_group->groups.rids,
+			      struct samr_RidWithAttribute,
+			      domain_group->groups.count + 1);
+	if (rids == NULL) {
 		return ENOMEM;
 	}
+
+	domain_group->groups.rids = rids;
 
 	domain_group->groups.rids[domain_group->groups.count].rid = rid;
 	domain_group->groups.rids[domain_group->groups.count].attributes = sid->attributes;
