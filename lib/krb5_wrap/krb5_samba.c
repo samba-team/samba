@@ -150,7 +150,7 @@ const krb5_data *krb5_princ_component(krb5_context context,
 /* HEIMDAL */
 
 /**
- * @brief Stores the address of a 'struct sockaddr_storage' a krb5_address
+ * @brief Stores the address of a 'struct sockaddr_storage' into a krb5_address
  *
  * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
  *                      address from.
@@ -183,7 +183,7 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 /* MIT */
 
 /**
- * @brief Stores the address of a 'struct sockaddr_storage' a krb5_address
+ * @brief Stores the address of a 'struct sockaddr_storage' into a krb5_address
  *
  * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
  *                      address from.
@@ -865,7 +865,7 @@ krb5_error_code smb_krb5_parse_name(krb5_context context,
  *
  * @param[in]  principal The principal.
  *
- * @param[out] unix_name A string representation of the princpial name as with
+ * @param[out] unix_name A string representation of the principal name as with
  *                       unix charset.
  *
  * Use talloc_free() to free the string representation if it is no longer
@@ -1644,7 +1644,7 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  keep_old_kvno Keep the entries with the previous kvno.
  *
- * @param[in]  kvno          The kvnco to use.
+ * @param[in]  kvno          The kvno to use.
  *
  * @param[in]  enctype_only  Only evaluate the enctype argument if true
  *
@@ -2351,7 +2351,7 @@ done:
  *
  * @param[in]  password  The password (or NULL).
  *
- * @param[in]  impersonate_principal The impersonatiion principal (or NULL).
+ * @param[in]  impersonate_principal The impersonation principal (or NULL).
  *
  * @param[in]  self_service The local service for S4U2Self if
  *                          impersonate_principal is specified).
