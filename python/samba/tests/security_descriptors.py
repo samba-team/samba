@@ -136,3 +136,15 @@ class SDDLvsDescriptorRegistryObjectRights(SDDLvsDescriptorBase):
     """We'll fail these because we don't recognise 'KA' and related object
     rights strings that are used for registry objects."""
     json_file = TEST_DIR / 'registry-object-rights.json'
+
+
+@DynamicTestCase
+class SDDLvsDescriptorOverSizeAcls(SDDLvsDescriptorBase):
+    """These are ordinary ACLs that contain duplicate ACEs (e.g.
+    'D:P(D;;;;;MP)(D;;;;;MP)(D;;;;;MP)(D;;;;;MP)'). Due to a
+    peculiarity in Windows, the ACL structures generated have extra
+    trailing zero bytes. Due to a peculiarity in the way Samba reads
+    an ACL (namely, it assumes an ACL will be just big enough for its
+    ACEs), these cannot currently be parsed by Samba.
+    """
+    json_file = TEST_DIR / 'oversize-acls.json.gz'
