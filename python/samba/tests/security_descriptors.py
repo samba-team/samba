@@ -151,6 +151,27 @@ class SDDLvsDescriptorOverSizeAcls(SDDLvsDescriptorBase):
 
 
 @DynamicTestCase
+class SDDLvsDescriptorShortConditionalAndResourceAceSuccesses(SDDLvsDescriptorBase):
+    """These contain conditional ACEs or resource attribute aces, the SDDL
+    is less than 1000 characters long, and success is expected.
+    """
+    json_file = TEST_DIR / 'short-conditional-and-resource-aces-successes.json.gz'
+
+
+@DynamicTestCase
+class SDDLvsDescriptorShortConditionalAndResourceAcesTxIntegers(SDDLvsDescriptorBase):
+    """These contain resource attribute aces in the form
+
+          (RA;;;;;WD;("foo",TX,0x0,0077,00,...))
+
+    where the numbers after the 0x0 flags like "0077" are interpreted
+    by Windows as if they are octet strings. This is not documented
+    and not supported by Samba.
+    """
+    json_file = TEST_DIR / 'short-conditional-and-resource-aces-tx-int.json.gz'
+
+
+@DynamicTestCase
 class SDDLvsDescriptorShortOrdinaryAclsNoMungeV4(SDDLvsDescriptorBase):
     """These ones have revision 2 ACLs (NT4), but Samba's SDDL only writes
     revision 4 ACLs (which are otherwise identical).

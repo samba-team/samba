@@ -1,4 +1,4 @@
 ^samba.tests.security_descriptors.+SDDLvsDescriptorRegistryObjectRights.+
 ^samba.tests.security_descriptors.+SDDLvsDescriptorShortOrdinaryAclsNoMungeV4.+
 ^samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.+
-
+^samba.tests.security_descriptors.+SDDLvsDescriptorShortConditionalAndResourceAcesTxIntegers.+
