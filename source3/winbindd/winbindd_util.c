@@ -668,7 +668,7 @@ static void rescan_forest_trusts( void )
  async process:
  (a) ask our domain
  (b) ask the root domain in our forest
- (c) ask the a DC in any Win2003 trusted forests
+ (c) ask a DC in any Win2003 trusted forests
 *********************************************************************/
 
 void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
@@ -676,7 +676,7 @@ void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 {
 	TALLOC_FREE(te);
 
-	/* I use to clear the cache here and start over but that
+	/* I used to clear the cache here and start over but that
 	   caused problems in child processes that needed the
 	   trust dom list early on.  Removing it means we
 	   could have some trusted domains listed that have been

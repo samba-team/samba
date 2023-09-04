@@ -184,7 +184,7 @@ NTSTATUS winbindd_pam_chauthtok_recv(struct tevent_req *req,
 		/*
 		 * When we login from gdm or xdm and password expires,
 		 * we change password, but there are no memory
-		 * crendentials So, winbindd_replace_memory_creds()
+		 * credentials. So, winbindd_replace_memory_creds()
 		 * returns NT_STATUS_OBJECT_NAME_NOT_FOUND. This is
 		 * not a failure.  --- BoYang
 		 */
