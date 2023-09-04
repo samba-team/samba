@@ -1707,8 +1707,7 @@ out:
 	return ret;
 }
 
-static krb5_error_code samba_kdc_add_domain_group_sid(TALLOC_CTX *mem_ctx,
-						      struct PAC_DEVICE_INFO *info,
+static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *info,
 						      const struct netr_SidAttr *sid)
 {
 	uint32_t i;
@@ -1729,7 +1728,7 @@ static krb5_error_code samba_kdc_add_domain_group_sid(TALLOC_CTX *mem_ctx,
 
 	if (domain_group == NULL) {
 		info->domain_groups = talloc_realloc(
-			mem_ctx,
+			info,
 			info->domain_groups,
 			struct PAC_DOMAIN_GROUP_MEMBERSHIP,
 			info->domain_group_count + 1);
@@ -1821,7 +1820,7 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 		const struct netr_SidAttr *device_sid = &info3->sids[i];
 
 		if (dom_sid_has_account_domain(device_sid->sid)) {
-			ret = samba_kdc_add_domain_group_sid(mem_ctx, device_info, device_sid);
+			ret = samba_kdc_add_domain_group_sid(device_info, device_sid);
 			if (ret != 0) {
 				goto out;
 			}
@@ -1895,7 +1894,7 @@ static krb5_error_code samba_kdc_update_device_info(TALLOC_CTX *mem_ctx,
 			.attributes = device_sid->attrs,
 		};
 
-		krb5_error_code ret = samba_kdc_add_domain_group_sid(mem_ctx, device_info, &sid);
+		krb5_error_code ret = samba_kdc_add_domain_group_sid(device_info, &sid);
 		if (ret != 0) {
 			return ret;
 		}
