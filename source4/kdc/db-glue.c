@@ -278,7 +278,7 @@ static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 /*
  * Sort keys in descending order of strength.
  *
- * Explanaton from Greg Hudson:
+ * Explanation from Greg Hudson:
  *
  * To encrypt tickets only the first returned key is used by the MIT KDC.  The
  * other keys just communicate support for session key enctypes, and aren't
@@ -1233,7 +1233,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	}
 	if (flags & SDB_F_ADMIN_DATA) {
 		/* These (created_by, modified_by) parts of the entry are not relevant for Samba4's use
-		 * of the Heimdal KDC.  They are stored in a the traditional
+		 * of the Heimdal KDC.  They are stored in the traditional
 		 * DB for audit purposes, and still form part of the structure
 		 * we must return */
 
@@ -1299,7 +1299,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		/* Don't mark all requests for the krbtgt/realm as
 		 * 'change password', as otherwise we could get into
-		 * trouble, and not enforce the password expirty.
+		 * trouble, and not enforce the password expiry.
 		 * Instead, only do it when request is for the kpasswd service */
 		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER &&
 		    is_kadmin_changepw(context, principal) &&
@@ -1917,7 +1917,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	 * We base this on the kvno the client passes in. If the kvno
 	 * passed in is equal to the current kvno in our database then
 	 * we use the current structure. If it is the current kvno-1,
-	 * then we use the previous substrucure.
+	 * then we use the previous substructure.
 	 */
 
 	/*
@@ -2411,7 +2411,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
 	    && lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp)) {
 		/* us, or someone quite like us */
- 		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
+		/* Kludge, kludge, kludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
  		 * krbtgt */
 
@@ -3149,7 +3149,7 @@ samba_kdc_check_client_matches_target_service(krb5_context context,
 	return 0;
 }
 
-/* Certificates printed by a the Certificate Authority might have a
+/* Certificates printed by the Certificate Authority might have a
  * slightly different form of the user principal name to that in the
  * database.  Allow a mismatch where they both refer to the same
  * SID */

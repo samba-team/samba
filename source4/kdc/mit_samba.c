@@ -300,7 +300,7 @@ fetch_referral_principal:
 		 * and the error: SDB_ERR_WRONG_REALM.
 		 *
 		 * In the case of a TGS-REQ we need to return a referral ticket
-		 * fo the next trust hop to the client. This ticket will have
+		 * for the next trust hop to the client. This ticket will have
 		 * the following principal:
 		 *
 		 *     krbtgt/SAMBA2008R2.EXAMPLE.COM@ADDOM.SAMBA.EXAMPLE.COM
