@@ -1784,8 +1784,10 @@ static krb5_error_code samba_kdc_add_domain_group_sid(struct PAC_DEVICE_INFO *in
 
 	domain_group->groups.rids = rids;
 
-	domain_group->groups.rids[domain_group->groups.count].rid = rid;
-	domain_group->groups.rids[domain_group->groups.count].attributes = sid->attributes;
+	domain_group->groups.rids[domain_group->groups.count] = (struct samr_RidWithAttribute) {
+		.rid = rid,
+		.attributes = sid->attributes,
+	};
 
 	++domain_group->groups.count;
 
