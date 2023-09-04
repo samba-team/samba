@@ -1504,7 +1504,7 @@ Adds a new keytab entry, the entry can be either;
 </para>
 <para>
 Unlike old versions no computer AD objects are modified by this command. To
-preserve the bevhaviour of older clients 'net ads keytab ad_update_ads' is
+preserve the behaviour of older clients 'net ads keytab ad_update_ads' is
 available.
 </para>
 </refsect2>
@@ -1514,7 +1514,7 @@ available.
 
 <para>
 Adds a new keytab entry (see section for net ads keytab add). In addition to
-adding entries to the keytab file corrosponding Windows SPNs are created
+adding entries to the keytab file corresponding Windows SPNs are created
 from the entry passed to this command. These SPN(s) added to the AD computer
 account object associated with the client machine running this command for
 the following entry types;

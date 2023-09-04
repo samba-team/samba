@@ -26,7 +26,7 @@
 	<command>samba</command> process that invokes
 	<command>smbd</command> will still provide its normal DCERPC
 	services, not <command>samba-dcerpcd</command>. When
-	separately invoked by system startup scripts or a a daemon,
+	separately invoked by system startup scripts or a daemon,
 	the global smb.conf option <smbconfoption name="rpc start on
 	demand helpers">false</smbconfoption> MUST be set to allow
 	<command>samba-dcerpcd</command> to start standalone.

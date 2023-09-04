@@ -168,7 +168,7 @@
 	    <listitem>
 	      <para>Controls where the OS X resource fork is stored.</para>
 
-	      <para>Due to a spelling bug in all Samba versions older then
+	      <para>Due to a spelling bug in all Samba versions older than
 	      4.6.0, this option can also be given as
 	      <emphasis>fruit:ressource</emphasis>, ie with two s.</para>
 

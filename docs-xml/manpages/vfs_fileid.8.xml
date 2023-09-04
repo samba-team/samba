@@ -171,11 +171,11 @@
 		<term>fileid:nolock_max_slots = NUMBER(1-18446744073709551615)</term>
 		<listitem>
 		<para>This option alters the behavior of the <command>nolock</command> algorithm
-		in a ways that it also breaks the lock coherency between individual processes
+		in a way that it also breaks the lock coherency between individual processes
 		on the same host. The default is to have just 1 concurrent slot available per host.
-		By incressing the number of slots you can specify how many concurrent processes
+		By increasing the number of slots you can specify how many concurrent processes
 		can work on a given inode without contention, the number should typically be larger
-		than the a number of logical cpus, maybe 2 times of num_cpus.
+		than the number of logical cpus, maybe 2 times num_cpus.
 		</para>
 		</listitem>
 		</varlistentry>

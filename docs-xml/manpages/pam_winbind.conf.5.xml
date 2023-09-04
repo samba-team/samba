@@ -132,14 +132,14 @@
 		<quote>KEYRING:persistent:UID</quote>, which uses the Linux
 		kernel keyring to store credentials on a per-UID basis.
 		The KEYRING has its limitations. As it is secure kernel memory,
-		for example bulk sorage of credentils is for not possible.</para>
+		for example bulk storage of credentials is not possible.</para>
 
-		<para>When using th KCM type, the supported mechanism is
+		<para>When using the KCM type, the supported mechanism is
 		<quote>KCM:UID</quote>, which uses a Kerberos credential
-		manaager to store credentials on a per-UID basis similar to
+		manager to store credentials on a per-UID basis similar to
 		KEYRING. This is the recommended choice on latest Linux
 		distributions, offering a Kerberos Credential Manager. If not
-		we suggest to use KEYRING as those are the most secure and
+		we suggest to use KEYRING as that is the most secure and
 		predictable method.</para>
 
 		<para>It is also possible to define custom filepaths and use the "%u"

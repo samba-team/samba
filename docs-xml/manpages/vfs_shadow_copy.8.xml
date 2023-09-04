@@ -50,7 +50,7 @@
 	<para>Filesystem snapshots must be mounted on
 	specially named directories in order to be recognized by
 	<command>vfs_shadow_copy</command>. The snapshot mount points must
-	be immediate children of a the directory being shared.</para>
+	be immediate children of the directory being shared.</para>
 
 	<para>The snapshot naming convention is @GMT-YYYY.MM.DD-hh.mm.ss,
 	where:

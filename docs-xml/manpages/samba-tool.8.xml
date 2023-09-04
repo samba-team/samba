@@ -126,7 +126,7 @@
 	<varlistentry>
 	<term>--description=DESCRIPTION</term>
 	<listitem><para>
-	The new computers's description.
+	The new computer's description.
 	</para></listitem>
 	</varlistentry>
 
@@ -246,7 +246,7 @@
 	<varlistentry>
 	<term>--description=DESCRIPTION</term>
 	<listitem><para>
-	The new contacts's description.
+	The new contact's description.
 	</para></listitem>
 	</varlistentry>
 
