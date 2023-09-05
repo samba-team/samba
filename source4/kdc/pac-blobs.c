@@ -63,21 +63,21 @@ krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
 					krb5_context context,
 					const krb5_const_pac pac)
 {
-	krb5_error_code code;
+	krb5_error_code code = 0;
 	uint32_t *types = NULL;
 	size_t i;
 
 	code = krb5_pac_get_types(context, pac, &pac_blobs->num_types, &types);
 	if (code != 0) {
 		DBG_ERR("krb5_pac_get_types failed\n");
-		return code;
+		goto out;
 	}
 
 	pac_blobs->type_blobs = talloc_array(mem_ctx, struct type_data, pac_blobs->num_types);
 	if (pac_blobs->type_blobs == NULL) {
 		DBG_ERR("Out of memory\n");
-		SAFE_FREE(types);
-		return ENOMEM;
+		code = ENOMEM;
+		goto out;
 	}
 
 	for (i = 0; i < pac_blobs->num_types; ++i) {
@@ -109,8 +109,8 @@ krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
 			if (*type_index != SIZE_MAX) {
 				DBG_WARNING("PAC buffer type[%"PRIu32"] twice\n", type);
 				pac_blobs_destroy(pac_blobs);
-				SAFE_FREE(types);
-				return EINVAL;
+				code = EINVAL;
+				goto out;
 			}
 			*type_index = i;
 
@@ -120,8 +120,9 @@ krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
 		}
 	}
 
+out:
 	SAFE_FREE(types);
-	return 0;
+	return code;
 }
 
 krb5_error_code _pac_blobs_ensure_exists(struct pac_blobs *pac_blobs,
