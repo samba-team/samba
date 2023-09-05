@@ -410,8 +410,21 @@ samba-codecheck:
     - if: $SUPPORT_PRIVATE_TEST == "yes"
 
 .needs_ext4_support:
-  # Our private runners provide an ext4 filesystem
-  extends: .private_test_only
+  # All runners provide an ext4 filesystem
+  #
+  # Note: we don't use
+  # extends: .shared_template_test_only
+  # as that somehow resets the needs section
+  # and generates problems for something
+  # like this (which is used below)
+  #
+  # .needs_samba-SOME-build-ext4:
+  #   extends:
+  #     - .needs_samba-SOME-build
+  #     - .needs_ext4_support
+  #
+  # So we only set stage again instead...
+  stage: test_only
 
 .needs_5_15_kernel:
   # Our private runners are based on
