@@ -861,7 +861,7 @@ static int ldb_kv_find_element(const struct ldb_message *msg, const char *name)
 
 /*
   add an element to an existing record. Assumes a elements array that we
-  can call re-alloc on, and assumed that we can re-use the data pointers from
+  can call re-alloc on, and assumes that we can reuse the data pointers from
   the passed in additional values. Use with care!
 
   returns 0 on success, -1 on failure (and sets errno)

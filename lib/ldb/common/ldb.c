@@ -986,7 +986,7 @@ struct ldb_db_lock_context {
 };
 
 /*
- * We have to have a the unlock on a destructor so that we unlock the
+ * We have to have the unlock on a destructor so that we unlock the
  * DB if a caller calls talloc_free(req).  We trust that the ldb
  * context has not already gone away.
  */

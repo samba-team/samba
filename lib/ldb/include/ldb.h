@@ -1471,7 +1471,7 @@ int ldb_extended_default_callback(struct ldb_request *req, struct ldb_reply *are
   \param ldb the context associated with the database (from ldb_init())
   \param mem_ctx a talloc memory context (used as parent of ret_req)
   \param oid the OID of the extended operation.
-  \param data a void pointer a the extended operation specific parameters,
+  \param data a void pointer to the extended operation specific parameters,
   it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it
   \param controls an array of controls
   \param context the callback function context
@@ -1495,7 +1495,7 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 
   \param ldb the context associated with the database (from ldb_init())
   \param oid the OID of the extended operation.
-  \param data a void pointer a the extended operation specific parameters,
+  \param data a void pointer to the extended operation specific parameters,
   it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it
   \param res the result of the extended operation
 

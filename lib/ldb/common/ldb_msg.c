@@ -1576,7 +1576,7 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 		return NULL;
 	}
 
-	/* we now exactly how long this string will be */
+	/* we know exactly how long this string will be */
 	ts = talloc_array(mem_ctx, char, 18);
 
 	/* formatted like: 20040408072012.0Z */
@@ -1692,7 +1692,7 @@ char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t)
 		return NULL;
 	}
 
-	/* we now exactly how long this string will be */
+	/* we know exactly how long this string will be */
 	ts = talloc_array(mem_ctx, char, 14);
 
 	/* formatted like: 20040408072012.0Z => 040408072012Z */
