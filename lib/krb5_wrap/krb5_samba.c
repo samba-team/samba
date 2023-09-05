@@ -141,6 +141,30 @@ const krb5_data *krb5_princ_component(krb5_context context,
 }
 #endif
 
+krb5_error_code smb_krb5_princ_component(krb5_context context,
+					 krb5_principal principal,
+					 int i,
+					 krb5_data *data);
+krb5_error_code smb_krb5_princ_component(krb5_context context,
+					 krb5_principal principal,
+					 int i,
+					 krb5_data *data)
+{
+	const krb5_data *kdata = NULL;
+
+	if (i < 0) {
+		return EINVAL;
+	}
+
+	kdata = krb5_princ_component(context, principal, i);
+	if (kdata == NULL) {
+		return ENOENT;
+	}
+
+	*data = *kdata;
+
+	return 0;
+}
 
 /**********************************************************
  * WRAPPING FUNCTIONS

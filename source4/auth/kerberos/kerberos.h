@@ -65,6 +65,11 @@ krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_con
 const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i );
 #endif
 
+krb5_error_code smb_krb5_princ_component(krb5_context context,
+					 krb5_principal principal,
+					 int i,
+					 krb5_data *data);
+
 /* Samba wrapper function for krb5 functionality. */
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
