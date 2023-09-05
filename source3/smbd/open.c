@@ -1387,7 +1387,6 @@ static NTSTATUS open_file(struct smb_request *req,
 	}
 
 	if (open_fd) {
-		const char *wild;
 		int ret;
 
 #if defined(O_NONBLOCK) && defined(S_ISFIFO)
@@ -1402,19 +1401,22 @@ static NTSTATUS open_file(struct smb_request *req,
 		}
 #endif
 
-		/* Don't create files with Microsoft wildcard characters. */
-		if (fsp_is_alternate_stream(fsp)) {
+		if (!posix_open) {
+			const char *wild = smb_fname->base_name;
 			/*
-			 * wildcard characters are allowed in stream names
-			 * only test the basefilename
+			 * Don't open files with Microsoft wildcard characters.
 			 */
-			wild = fsp->base_fsp->fsp_name->base_name;
-		} else {
-			wild = smb_fname->base_name;
-		}
-		if ((local_flags & O_CREAT) && !file_existed && !posix_open &&
-		    ms_has_wild(wild))  {
-			return NT_STATUS_OBJECT_NAME_INVALID;
+			if (fsp_is_alternate_stream(fsp)) {
+				/*
+				 * wildcard characters are allowed in stream
+				 * names only test the basefilename
+				 */
+				wild = fsp->base_fsp->fsp_name->base_name;
+			}
+
+			if (ms_has_wild(wild)) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
 		}
 
 		/* Can we access this file ? */
