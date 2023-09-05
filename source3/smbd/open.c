@@ -1360,7 +1360,6 @@ static NTSTATUS open_file(struct smb_request *req,
 			   O_CREAT doesn't create the file if we have write
 			   access into the directory.
 			*/
-			flags &= ~(O_CREAT|O_EXCL);
 			local_flags &= ~(O_CREAT|O_EXCL);
 		}
 	}
