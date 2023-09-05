@@ -1825,7 +1825,7 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 		 * so we can add them all in one go.
 		 */
 		device_info->domain_group_count = 1;
-		device_info->domain_groups = talloc_move(mem_ctx, &resource_groups);
+		device_info->domain_groups = talloc_move(device_info, &resource_groups);
 	} else {
 		device_info->domain_group_count = 0;
 		device_info->domain_groups = NULL;
@@ -1840,7 +1840,7 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 				goto out;
 			}
 		} else {
-			device_info->sids = talloc_realloc(mem_ctx, device_info->sids,
+			device_info->sids = talloc_realloc(device_info, device_info->sids,
 							   struct netr_SidAttr,
 							   device_info->sid_count + 1);
 			if (device_info->sids == NULL) {
