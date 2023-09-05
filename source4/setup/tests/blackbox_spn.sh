@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ]; then
 	cat <<EOF
-Usage: blackbox_group.sh PREFIX
+Usage: blackbox_spn.sh PREFIX
 EOF
 	exit 1
 fi
