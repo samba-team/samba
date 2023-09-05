@@ -61,10 +61,6 @@ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype
 krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_context auth_context, krb5_keyblock *keyblock);
 #endif
 
-#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
-const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i );
-#endif
-
 krb5_error_code smb_krb5_princ_component(krb5_context context,
 					 krb5_const_principal principal,
 					 int i,
