@@ -2761,24 +2761,6 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 	return false;
 }
 
-bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
-{
-	bool ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct loadparm_context *lp_ctx;
-
-	lp_ctx = setup_lp_context(frame);
-	if (lp_ctx == NULL) {
-		TALLOC_FREE(frame);
-		return false;
-	}
-
-	ret = lpcfg_set_cmdline(lp_ctx, pszParmName, pszParmValue);
-
-	TALLOC_FREE(frame);
-	return ret;
-}
-
 /***************************************************************************
  Process a parameter.
 ***************************************************************************/

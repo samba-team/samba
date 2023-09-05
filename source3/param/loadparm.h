@@ -118,7 +118,6 @@ struct loadparm_service *lp_default_loadparm_service(void);
 void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm);
 void *lp_local_ptr_by_snum(int snum, struct parm_struct *parm);
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue);
-bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue);
 bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);
 bool lp_snum_ok(int iService);
 void lp_add_one_printer(const char *name, const char *comment,
