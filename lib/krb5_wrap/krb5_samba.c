@@ -146,9 +146,6 @@ const krb5_data *krb5_princ_component(krb5_context context,
  * WRAPPING FUNCTIONS
  **********************************************************/
 
-#if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
-/* HEIMDAL */
-
 /**
  * @brief Stores the address of a 'struct sockaddr_storage' into a krb5_address
  *
@@ -163,6 +160,8 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 				krb5_address *pkaddr)
 {
 	memset(pkaddr, '\0', sizeof(krb5_address));
+#if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
+/* HEIMDAL */
 #ifdef HAVE_IPV6
 	if (paddr->ss_family == AF_INET6) {
 		pkaddr->addr_type = KRB5_ADDRESS_INET6;
@@ -177,25 +176,8 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 		pkaddr->address.data = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
 		return true;
 	}
-	return false;
-}
 #elif defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS)
 /* MIT */
-
-/**
- * @brief Stores the address of a 'struct sockaddr_storage' into a krb5_address
- *
- * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
- *                      address from.
- *
- * @param[in]  pkaddr A Kerberos address to store the address in.
- *
- * @return True on success, false if an error occurred.
- */
-bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
-				krb5_address *pkaddr)
-{
-	memset(pkaddr, '\0', sizeof(krb5_address));
 #ifdef HAVE_IPV6
 	if (paddr->ss_family == AF_INET6) {
 		pkaddr->addrtype = ADDRTYPE_INET6;
@@ -210,11 +192,11 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 		pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in *)paddr)->sin_addr);
 		return true;
 	}
-	return false;
-}
 #else
 #error UNKNOWN_ADDRTYPE
 #endif
+	return false;
+}
 
 krb5_error_code smb_krb5_mk_error(krb5_context context,
 				  krb5_error_code error_code,
