@@ -506,7 +506,7 @@ static krb5_error_code krb5_cc_remove_cred_wrap(struct ccache_container *ccc,
 #endif
 
 /*
- * Indicate the we failed to log in to this service/host with these
+ * Indicate that we failed to log in to this service/host with these
  * credentials.  The caller passes an unsigned int which they
  * initialise to the number of times they would like to retry.
  *
@@ -856,7 +856,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 			DEBUG(3, ("Credentials for %s will expire shortly (%u sec), must refresh credentials cache\n", cli_credentials_get_principal(cred, cred), lifetime));
 			expired = true;
 		} else if (maj_stat != GSS_S_COMPLETE) {
-			*error_string = talloc_asprintf(cred, "inquiry of credential lifefime via GSSAPI gss_inquire_cred failed: %s\n",
+			*error_string = talloc_asprintf(cred, "inquiry of credential lifetime via GSSAPI gss_inquire_cred failed: %s\n",
 							gssapi_error_string(cred, maj_stat, min_stat, NULL));
 			return EINVAL;
 		}
@@ -1050,7 +1050,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		gcc->creds = gssapi_cred;
 		talloc_set_destructor(gcc, free_gssapi_creds);
 
-		/* set the clinet_gss_creds_obtained here, as it just
+		/* set the client_gss_creds_obtained here, as it just
 		   got set to UNINITIALISED by the calls above */
 		cred->client_gss_creds_obtained = obtained;
 		cred->client_gss_creds = gcc;

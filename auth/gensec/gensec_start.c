@@ -76,7 +76,7 @@ bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct g
  *   only add non-kerberos mechs
  *
  * Once we get things like NegoEx or moonshot, this will of course get
- * more compplex.
+ * more complex.
  */
 
 static const struct gensec_security_ops **gensec_use_kerberos_mechs(

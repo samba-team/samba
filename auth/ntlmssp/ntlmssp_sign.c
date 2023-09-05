@@ -359,7 +359,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		 * The order of these two operations matters - we
 		 * must first seal the packet, then seal the
 		 * sequence number - this is because the
-		 * send_seal_hash is not constant, but is is rather
+		 * send_seal_hash is not constant, but is rather
 		 * updated with each iteration
 		 */
 		nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
@@ -411,7 +411,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		 * The order of these two operations matters - we
 		 * must first seal the packet, then seal the
 		 * sequence number - this is because the ntlmv1_arc4_state
-		 * is not constant, but is is rather updated with
+		 * is not constant, but is rather updated with
 		 * each iteration
 		 */
 		dump_arc4_state("ntlmv1 arc4 state:\n",

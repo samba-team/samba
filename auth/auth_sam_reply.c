@@ -460,7 +460,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
 	sam2->base	= sam6->base;
 	/*
 	 * We have nowhere to put sam6->sids, so we follow Windows here and drop
-	 * it. Any resource groups it happened to be contain are lost.
+	 * it. Any resource groups it happened to contain are lost.
 	 */
 	sam2->base.user_flags &= ~NETLOGON_EXTRA_SIDS;
 	TALLOC_FREE(sam6->sids);
