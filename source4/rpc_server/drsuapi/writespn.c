@@ -65,7 +65,7 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 	krb5_context krb_ctx;
 	krb5_error_code kerr;
 	krb5_principal principal;
-	const krb5_data *component;
+	krb5_data component;
 	const char *dns_name, *dnsHostName;
 
 	/* The service principal name shouldn't be NULL */
@@ -128,8 +128,14 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 		return false;
 	}
 
-	component = krb5_princ_component(krb_ctx, principal, 1);
-	dns_name = (const char *)component->data;
+	kerr = smb_krb5_princ_component(krb_ctx, principal, 1, &component);
+	if (kerr) {
+		krb5_free_principal(krb_ctx, principal);
+		krb5_free_context(krb_ctx);
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	dns_name = (const char *)component.data;
 
 	if (strcasecmp(dns_name, dnsHostName) != 0) {
 		krb5_free_principal(krb_ctx, principal);
