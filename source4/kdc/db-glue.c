@@ -520,7 +520,7 @@ static krb5_error_code samba_kdc_fill_user_keys(krb5_context context,
 							  salt.data,
 							  salt.length);
 			if (ret) {
-				ZERO_STRUCTP(key.salt);
+				*key.salt = (struct sdb_salt) {};
 				sdb_key_free(&key);
 				goto fail;
 			}
