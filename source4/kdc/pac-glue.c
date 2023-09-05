@@ -2348,6 +2348,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct authn_audit_info **server_audit_info_out,
 				     NTSTATUS *status_out)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
 	DATA_BLOB *pac_blob = NULL;
@@ -2376,6 +2377,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	if (status_out != NULL) {
 		*status_out = NT_STATUS_OK;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		code = ENOMEM;
+		goto done;
 	}
 
 	{
@@ -2430,14 +2437,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			} else {
 				DATA_BLOB *device_claims = NULL;
 
-				device_claims = talloc_zero(mem_ctx, DATA_BLOB);
+				device_claims = talloc_zero(tmp_ctx, DATA_BLOB);
 				if (device_claims == NULL) {
 					smb_krb5_free_data_contents(context, &device_claims_data);
 					code = ENOMEM;
 					goto done;
 				}
 
-				*device_claims = data_blob_talloc(mem_ctx,
+				*device_claims = data_blob_talloc(tmp_ctx,
 								  device_claims_data.data,
 								  device_claims_data.length);
 				if (device_claims->data == NULL && device_claims_data.length != 0) {
@@ -2451,7 +2458,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				device_claims_blob = device_claims;
 			}
 
-			code = samba_kdc_create_device_info_blob(mem_ctx,
+			code = samba_kdc_create_device_info_blob(tmp_ctx,
 								 context,
 								 samdb,
 								 device_pac,
@@ -2461,7 +2468,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			}
 		} else {
 			/* Don't trust RODC-issued claims. Regenerate them. */
-			nt_status = samba_kdc_get_claims_blob(mem_ctx,
+			nt_status = samba_kdc_get_claims_blob(tmp_ctx,
 							      device,
 							      &device_claims_blob);
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2472,7 +2479,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			}
 
 			/* Also regenerate device info. */
-			code = samba_kdc_get_device_info_blob(mem_ctx,
+			code = samba_kdc_get_device_info_blob(tmp_ctx,
 							      device,
 							      &device_info_blob);
 			if (code != 0) {
@@ -2482,7 +2489,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (delegated_proxy_principal != NULL) {
-		deleg_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		deleg_blob = talloc_zero(tmp_ctx, DATA_BLOB);
 		if (deleg_blob == NULL) {
 			code = ENOMEM;
 			goto done;
@@ -2503,7 +2510,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	code = samba_kdc_obtain_user_info_dc(mem_ctx,
+	code = samba_kdc_obtain_user_info_dc(tmp_ctx,
 					     context,
 					     samdb,
 					     group_inclusion,
@@ -2532,7 +2539,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		if (delegated_proxy != NULL) {
 			auth_entry = delegated_proxy;
 
-			code = samba_kdc_obtain_user_info_dc(mem_ctx,
+			code = samba_kdc_obtain_user_info_dc(tmp_ctx,
 							     context,
 							     samdb,
 							     AUTH_INCLUDE_RESOURCE_GROUPS,
@@ -2557,9 +2564,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 							    server,
 							    server_audit_info_out,
 							    status_out);
-		if (auth_user_info_dc != user_info_dc) {
-			talloc_unlink(mem_ctx, auth_user_info_dc);
-		}
 		if (code) {
 			goto done;
 		}
@@ -2576,13 +2580,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (client_pac_is_trusted) {
-		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		pac_blob = talloc_zero(tmp_ctx, DATA_BLOB);
 		if (pac_blob == NULL) {
 			code = ENOMEM;
 			goto done;
 		}
 
-		nt_status = samba_get_logon_info_pac_blob(mem_ctx,
+		nt_status = samba_get_logon_info_pac_blob(tmp_ctx,
 							  user_info_dc,
 							  _resource_groups,
 							  group_inclusion,
@@ -2603,7 +2607,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			client_claims_blob = &data_blob_null;
 		}
 	} else {
-		nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
+		nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
 						       user_info_dc,
 						       group_inclusion,
 						       &pac_blob);
@@ -2614,7 +2618,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
+		nt_status = samba_kdc_get_upn_info_blob(tmp_ctx,
 							user_info_dc,
 							&upn_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2624,7 +2628,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
+		nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
 							     user_info_dc,
 							     &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2635,7 +2639,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Don't trust RODC-issued claims. Regenerate them. */
-		nt_status = samba_kdc_get_claims_blob(mem_ctx,
+		nt_status = samba_kdc_get_claims_blob(tmp_ctx,
 						      client,
 						      &client_claims_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2648,7 +2652,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	/* Check the types of the given PAC */
 	code = pac_blobs_from_krb5_pac(&pac_blobs,
-				       mem_ctx,
+				       tmp_ctx,
 				       context,
 				       old_pac);
 	if (code != 0) {
@@ -2687,7 +2691,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 #endif
 
 	code = pac_blobs_add_blob(&pac_blobs,
-				  mem_ctx,
+				  tmp_ctx,
 				  PAC_TYPE_CONSTRAINED_DELEGATION,
 				  deleg_blob);
 	if (code != 0) {
@@ -2695,7 +2699,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	code = pac_blobs_add_blob(&pac_blobs,
-				  mem_ctx,
+				  tmp_ctx,
 				  PAC_TYPE_UPN_DNS_INFO,
 				  upn_blob);
 	if (code != 0) {
@@ -2703,7 +2707,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	code = pac_blobs_add_blob(&pac_blobs,
-				  mem_ctx,
+				  tmp_ctx,
 				  PAC_TYPE_CLIENT_CLAIMS_INFO,
 				  client_claims_blob);
 	if (code != 0) {
@@ -2711,7 +2715,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	code = pac_blobs_add_blob(&pac_blobs,
-				  mem_ctx,
+				  tmp_ctx,
 				  PAC_TYPE_DEVICE_INFO,
 				  device_info_blob);
 	if (code != 0) {
@@ -2719,7 +2723,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	code = pac_blobs_add_blob(&pac_blobs,
-				  mem_ctx,
+				  tmp_ctx,
 				  PAC_TYPE_DEVICE_CLAIMS_INFO,
 				  device_claims_blob);
 	if (code != 0) {
@@ -2728,7 +2732,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	if (!client_pac_is_trusted || !is_tgs) {
 		code = pac_blobs_remove_blob(&pac_blobs,
-					     mem_ctx,
+					     tmp_ctx,
 					     PAC_TYPE_ATTRIBUTES_INFO);
 		if (code != 0) {
 			goto done;
@@ -2737,14 +2741,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	if (!is_tgs) {
 		code = pac_blobs_remove_blob(&pac_blobs,
-					     mem_ctx,
+					     tmp_ctx,
 					     PAC_TYPE_REQUESTER_SID);
 		if (code != 0) {
 			goto done;
 		}
 	} else {
 		code = pac_blobs_add_blob(&pac_blobs,
-					  mem_ctx,
+					  tmp_ctx,
 					  PAC_TYPE_REQUESTER_SID,
 					  requester_sid_blob);
 		if (code != 0) {
@@ -2777,7 +2781,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		code = samba_client_requested_pac(context,
 						  old_pac,
-						  mem_ctx,
+						  tmp_ctx,
 						  &requested_pac);
 		if (code != 0 || !requested_pac) {
 			if (!requested_pac) {
@@ -2845,14 +2849,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	code = 0;
 done:
 	pac_blobs_destroy(&pac_blobs);
-	TALLOC_FREE(pac_blob);
-	TALLOC_FREE(upn_blob);
-	TALLOC_FREE(deleg_blob);
-	/*
-	 * Release our handle to user_info_dc. ‘server_audit_info_out’, if
-	 * non-NULL, becomes the new parent.
-	 */
-	talloc_unlink(mem_ctx, user_info_dc);
+	TALLOC_FREE(tmp_ctx);
 	return code;
 }
 
