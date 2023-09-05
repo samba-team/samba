@@ -611,7 +611,7 @@ static bool test_plaintext_lm_only(bool lanman_support_expected) {
    - NTLMv2
    - NTLMv2 and LMv2
    - LMv2
-   - plaintext tests (in challenge-response feilds)
+   - plaintext tests (in challenge-response fields)
   
    check we get the correct session key in each case
    check what values we get for the LM session key

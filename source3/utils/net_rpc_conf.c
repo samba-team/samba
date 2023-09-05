@@ -652,7 +652,7 @@ static int rpc_conf_print_shares(uint32_t num_shares,
 }
 
 /*
- * The function openes the registry key
+ * The function opens the registry key
  * HKLM/Software/Samba/smbconf with the give access_mask
  */
 static NTSTATUS rpc_conf_open_conf(TALLOC_CTX *mem_ctx,

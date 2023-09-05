@@ -317,7 +317,7 @@ int net_offlinejoin_requestodj(struct net_context *c,
 
 	if (provision_bin_data == NULL || provision_bin_data_size == 0) {
 		d_printf("Please provide provision data either from file "
-			 "(using loadfile parameter) of from stdin (-i)\n");
+			 "(using loadfile parameter) or from stdin (-i)\n");
 		return -1;
 	}
 	if (provision_bin_data_size > UINT32_MAX) {

@@ -864,7 +864,7 @@ static char *build_dirname(TALLOC_CTX *ctx,
 }
 
 /*
- * Returns the a copy of the ACL flags in ace modified according
+ * Returns a copy of the ACL flags in ace modified according
  * to some inheritance rules.
  *   a) SEC_ACE_FLAG_INHERITED_ACE is propagated to children
  *   b) SEC_ACE_FLAG_INHERIT_ONLY is set on container children for OI (only)

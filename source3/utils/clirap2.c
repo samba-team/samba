@@ -32,7 +32,7 @@
 /*   to a particular network operating system        */
 /*                                                   */
 /*   Although it has largely been replaced           */
-/*   for complex remote admistration and management  */
+/*   for complex remote administration and management  */
 /*   (of servers) by the relatively newer            */
 /*   DCE/RPC based remote API (which better handles  */
 /*   large >64K data structures), there are many     */
@@ -2246,7 +2246,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16_
 	}
 
 	if (!rdata) {
-		DEBUG(4,("NetSesssionEnum no data returned\n"));
+		DEBUG(4,("NetSessionEnum no data returned\n"));
 		goto out;
 	}
 

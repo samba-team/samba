@@ -1635,7 +1635,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 	if ((argc > 1) ||
 	    ((argc == 1) && !strequal(argv[0], "yes") &&
 	     !strequal(argv[0], "no"))) {
-		/* TRANSATORS: The yes|no here are program keywords. Please do
+		/* TRANSLATORS: The yes|no here are program keywords. Please do
 		   not translate. */
 		d_fprintf(stderr, _("Usage: %s <username> [yes|no]\n"),
 			  ctx->whoami);

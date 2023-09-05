@@ -444,7 +444,7 @@ static NTSTATUS rpc_rights_list_internal(struct net_context *c,
 		goto done;
 	}
 
-	/* backward comaptibility: if no keyword provided, treat the key
+	/* backward compatibility: if no keyword provided, treat the key
 	   as an account name */
 	if (argc > 1) {
 		d_printf("%s net rpc rights list [[accounts|privileges] "
