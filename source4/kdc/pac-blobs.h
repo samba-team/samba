@@ -79,5 +79,5 @@ krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
 				   const uint32_t type,
 				   const DATA_BLOB *blob);
 
-krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
-				      const uint32_t type);
+void pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
+			   const uint32_t type);

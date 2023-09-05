@@ -2721,19 +2721,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!client_pac_is_trusted || !is_tgs) {
-		code = pac_blobs_remove_blob(pac_blobs,
-					     PAC_TYPE_ATTRIBUTES_INFO);
-		if (code != 0) {
-			goto done;
-		}
+		pac_blobs_remove_blob(pac_blobs,
+				      PAC_TYPE_ATTRIBUTES_INFO);
 	}
 
 	if (!is_tgs) {
-		code = pac_blobs_remove_blob(pac_blobs,
-					     PAC_TYPE_REQUESTER_SID);
-		if (code != 0) {
-			goto done;
-		}
+		pac_blobs_remove_blob(pac_blobs,
+				      PAC_TYPE_REQUESTER_SID);
 	} else {
 		code = pac_blobs_add_blob(pac_blobs,
 					  PAC_TYPE_REQUESTER_SID,

@@ -200,8 +200,8 @@ krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
 	return 0;
 }
 
-krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
-				      const uint32_t type)
+void pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
+			   const uint32_t type)
 {
 	struct type_data *type_blobs = NULL;
 	size_t found_index;
@@ -211,7 +211,7 @@ krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
 	found_index = *pac_blobs_get_index(pac_blobs, type);
 	if (found_index == SIZE_MAX) {
 		/* We don't have a PAC buffer of this type, so we're done. */
-		return 0;
+		return;
 	}
 
 	/* Since the PAC buffer is present, there will be at least one type in the array. */
@@ -247,12 +247,7 @@ krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
 				    pac_blobs->type_blobs,
 				    struct type_data,
 				    --pac_blobs->num_types);
-	if (type_blobs == NULL) {
-		DBG_ERR("Out of memory\n");
-		return ENOMEM;
+	if (type_blobs != NULL) {
+		pac_blobs->type_blobs = type_blobs;
 	}
-
-	pac_blobs->type_blobs = type_blobs;
-
-	return 0;
 }
