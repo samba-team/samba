@@ -1355,13 +1355,12 @@ static NTSTATUS open_file(struct smb_request *req,
 				 smb_fname_str_dbg(smb_fname)));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		if (flags & O_CREAT) {
-			/* We don't want to write - but we must make sure that
-			   O_CREAT doesn't create the file if we have write
-			   access into the directory.
-			*/
-			local_flags &= ~(O_CREAT|O_EXCL);
-		}
+		/*
+		 * We don't want to write - but we must make sure that
+		 * O_CREAT doesn't create the file if we have write
+		 * access into the directory.
+		 */
+		local_flags &= ~(O_CREAT | O_EXCL);
 	}
 
 	/*
