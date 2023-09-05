@@ -76,7 +76,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry);
 
-krb5_error_code samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
+krb5_error_code samba_krbtgt_is_in_db(const struct samba_kdc_entry *skdc_entry,
 				      bool *is_in_db,
 				      bool *is_trusted);
 
