@@ -1315,7 +1315,6 @@ static NTSTATUS open_file(struct smb_request *req,
 	connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
-	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
 	const uint32_t need_fd_mask =
@@ -1350,7 +1349,8 @@ static NTSTATUS open_file(struct smb_request *req,
 
 	if (!CAN_WRITE(conn)) {
 		/* It's a read-only share - fail if we wanted to write. */
-		if(accmode != O_RDONLY || (flags & O_TRUNC) || (flags & O_APPEND)) {
+		if ((flags & O_ACCMODE) != O_RDONLY || (flags & O_TRUNC) ||
+		    (flags & O_APPEND)) {
 			DEBUG(3,("Permission denied opening %s\n",
 				 smb_fname_str_dbg(smb_fname)));
 			return NT_STATUS_ACCESS_DENIED;
@@ -1377,7 +1377,8 @@ static NTSTATUS open_file(struct smb_request *req,
 	 * as we always opened files read-write in that release. JRA.
 	 */
 
-	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC)) {
+	if (((flags & O_ACCMODE) == O_RDONLY) &&
+	    ((flags & O_TRUNC) == O_TRUNC)) {
 		DEBUG(10,("open_file: truncate requested on read-only open "
 			  "for file %s\n", smb_fname_str_dbg(smb_fname)));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
