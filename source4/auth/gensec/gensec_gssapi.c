@@ -757,7 +757,7 @@ init_sec_context_done:
 				gss_release_buffer(&min_stat, &buffer);
 				gss_release_name(&min_stat, &name);
 			} else if (maj_stat != GSS_S_COMPLETE) {
-				DEBUG(0, ("inquiry of credential lifefime via GSSAPI gss_inquire_cred failed: %s\n",
+				DEBUG(0, ("inquiry of credential lifetime via GSSAPI gss_inquire_cred failed: %s\n",
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 			}
 			return NT_STATUS_INVALID_PARAMETER;
@@ -902,7 +902,7 @@ init_sec_context_done:
 			} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 				DEBUG(3, ("SASL/GSSAPI Connection to server will be cryptographically signed\n"));
 			} else {
-				DEBUG(3, ("SASL/GSSAPI Connection to server will have no cryptographically protection\n"));
+				DEBUG(3, ("SASL/GSSAPI Connection to server will have no cryptographic protection\n"));
 			}
 
 			return NT_STATUS_OK;
@@ -1449,7 +1449,7 @@ static NTTIME gensec_gssapi_expire_time(struct gensec_security *gensec_security)
 }
 
 /*
- * Extract the 'sesssion key' needed by SMB signing and ncacn_np 
+ * Extract the 'session key' needed by SMB signing and ncacn_np
  * (for encrypting some passwords).
  * 
  * This breaks all the abstractions, but what do you expect...
