@@ -1315,7 +1315,6 @@ static NTSTATUS open_file(struct smb_request *req,
 	connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
-	int local_flags = flags;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
 	const uint32_t need_fd_mask =
 		FILE_READ_DATA |
@@ -1350,7 +1349,7 @@ static NTSTATUS open_file(struct smb_request *req,
 	if (((flags & O_ACCMODE) == O_RDONLY) && (flags & O_TRUNC)) {
 		DBG_DEBUG("truncate requested on read-only open for file %s\n",
 			  smb_fname_str_dbg(smb_fname));
-		local_flags = (flags & ~O_ACCMODE) | O_RDWR;
+		flags = (flags & ~O_ACCMODE) | O_RDWR;
 	}
 
 	/* Check permissions */
@@ -1378,7 +1377,7 @@ static NTSTATUS open_file(struct smb_request *req,
 		 * O_CREAT doesn't create the file if we have write
 		 * access into the directory.
 		 */
-		local_flags &= ~(O_CREAT | O_EXCL);
+		flags &= ~(O_CREAT | O_EXCL);
 	}
 
 	if ((open_access_mask & need_fd_mask) || creating ||
@@ -1397,7 +1396,7 @@ static NTSTATUS open_file(struct smb_request *req,
 		 */
 
 		if (file_existed && S_ISFIFO(smb_fname->st.st_ex_mode)) {
-			local_flags |= O_NONBLOCK;
+			flags |= O_NONBLOCK;
 		}
 #endif
 
@@ -1456,7 +1455,7 @@ static NTSTATUS open_file(struct smb_request *req,
 			}
 
 			if (!file_existed) {
-				if (!(local_flags & O_CREAT)) {
+				if (!(flags & O_CREAT)) {
 					/* File didn't exist and no O_CREAT. */
 					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 				}
@@ -1483,7 +1482,7 @@ static NTSTATUS open_file(struct smb_request *req,
 		 */
 		{
 			struct vfs_open_how how = {
-				.flags = local_flags & ~O_TRUNC,
+				.flags = flags & ~O_TRUNC,
 				.mode = unx_mode,
 			};
 			status = reopen_from_fsp(dirfsp,
@@ -1503,13 +1502,14 @@ static NTSTATUS open_file(struct smb_request *req,
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
-				 "(flags=%d)\n", smb_fname_str_dbg(smb_fname),
-				 nt_errstr(status),local_flags,flags));
+			DBG_NOTICE("Error opening file %s (%s) (flags=%d)\n",
+				   smb_fname_str_dbg(smb_fname),
+				   nt_errstr(status),
+				   flags);
 			return status;
 		}
 
-		if (local_flags & O_NONBLOCK) {
+		if (flags & O_NONBLOCK) {
 			/*
 			 * GPFS can return ETIMEDOUT for pread on
 			 * nonblocking file descriptors when files
