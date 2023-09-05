@@ -696,7 +696,9 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 
 		for (i=0; i < scb.sub.num_packages; i++) {
-			if (strcmp("Primary:Kerberos-Newer-Keys", scb.sub.packages[i].name) == 0) {
+			if (scb.sub.packages[i].name != NULL &&
+			    strcmp("Primary:Kerberos-Newer-Keys", scb.sub.packages[i].name) == 0)
+			{
 				scpk = &scb.sub.packages[i];
 				if (!scpk->data || !scpk->data[0]) {
 					scpk = NULL;
