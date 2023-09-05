@@ -3162,11 +3162,22 @@ char *smb_krb5_principal_get_realm(TALLOC_CTX *mem_ctx,
 				   krb5_const_principal principal)
 {
 #ifdef HAVE_KRB5_PRINCIPAL_GET_REALM /* Heimdal */
-	return talloc_strdup(mem_ctx,
-			     krb5_principal_get_realm(context, principal));
+	const char *realm = NULL;
+
+	realm = krb5_principal_get_realm(context, principal);
+	if (realm == NULL) {
+		return NULL;
+	}
+
+	return talloc_strdup(mem_ctx, realm);
 #elif defined(krb5_princ_realm) /* MIT */
-	const krb5_data *realm;
+	const krb5_data *realm = NULL;
+
 	realm = krb5_princ_realm(context, principal);
+	if (realm == NULL) {
+		return NULL;
+	}
+
 	return talloc_strndup(mem_ctx, realm->data, realm->length);
 #else
 #error UNKNOWN_GET_PRINC_REALM_FUNCTIONS
