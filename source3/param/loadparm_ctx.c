@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Parameter loading functions
    Copyright (C) Andrew Bartlett 2011
@@ -69,6 +69,7 @@ static struct loadparm_s3_helpers s3_fns =
 	.lp_include = lp_include,
 	.init_ldap_debugging = init_ldap_debugging,
 	.do_section = lp_do_section,
+	.init_globals = loadparm_s3_init_globals,
 };
 
 const struct loadparm_s3_helpers *loadparm_s3_helpers(void)

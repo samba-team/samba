@@ -3201,7 +3201,16 @@ struct loadparm_context *loadparm_init_global(bool load_default)
 }
 
 /**
- * Initialise the global parameter structure.
+ * @brief Initialise the global parameter structure.
+ *
+ * This function initialized the globals if needed. Make sure that
+ * gfree_loadparm() is called before the application exits.
+ *
+ * @param mem_ctx   The talloc memory context to allocate lp_ctx on.
+ *
+ * @param s3_fns    The loadparm helper functions to use
+ *
+ * @return An initialized lp_ctx pointer or NULL on error.
  */
 struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx,
 					  const struct loadparm_s3_helpers *s3_fns)
@@ -3213,6 +3222,9 @@ struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx,
 	loadparm_context->s3_fns = s3_fns;
 	loadparm_context->globals = s3_fns->globals;
 	loadparm_context->flags = s3_fns->flags;
+
+	/* Make sure globals are correctly initialized */
+	loadparm_context->s3_fns->init_globals(loadparm_context, false);
 
 	return loadparm_context;
 }
