@@ -1375,8 +1375,7 @@ static NTSTATUS open_file(struct smb_request *req,
 	 * as we always opened files read-write in that release. JRA.
 	 */
 
-	if (((flags & O_ACCMODE) == O_RDONLY) &&
-	    ((flags & O_TRUNC) == O_TRUNC)) {
+	if (((flags & O_ACCMODE) == O_RDONLY) && (flags & O_TRUNC)) {
 		DEBUG(10,("open_file: truncate requested on read-only open "
 			  "for file %s\n", smb_fname_str_dbg(smb_fname)));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
