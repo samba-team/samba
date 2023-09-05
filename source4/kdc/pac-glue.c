@@ -1797,6 +1797,7 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 						  struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups,
 						  union PAC_INFO *info)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct PAC_DEVICE_INFO *device_info = NULL;
 	uint32_t i;
 	krb5_error_code ret = 0;
@@ -1805,7 +1806,12 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 
 	info->device_info.info = NULL;
 
-	device_info = talloc(mem_ctx, struct PAC_DEVICE_INFO);
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	device_info = talloc(tmp_ctx, struct PAC_DEVICE_INFO);
 	if (device_info == NULL) {
 		ret = ENOMEM;
 		goto out;
@@ -1860,9 +1866,10 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	info->device_info.info = device_info;
+	info->device_info.info = talloc_steal(mem_ctx, device_info);
 
 out:
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
