@@ -2396,27 +2396,38 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      uint32_t kvno,
 					      struct sdb_entry *entry)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
-	krb5_error_code ret;
+	krb5_error_code ret = 0;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 	char *realm_from_princ;
-	char *realm_princ_comp = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 1);
+	char *realm_princ_comp = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
 
 	realm_from_princ = smb_krb5_principal_get_realm(
-		mem_ctx, context, principal);
+		tmp_ctx, context, principal);
 	if (realm_from_princ == NULL) {
 		/* can't happen */
-		return SDB_ERR_NOENTRY;
+		ret = SDB_ERR_NOENTRY;
+		goto out;
 	}
 
 	if (krb5_princ_size(context, principal) != 2
 	    || (principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
-		return SDB_ERR_NOENTRY;
+		ret = SDB_ERR_NOENTRY;
+		goto out;
 	}
 
 	/* krbtgt case.  Either us or a trusted realm */
+
+	realm_princ_comp = smb_krb5_principal_get_comp_string(tmp_ctx, context, principal, 1);
 
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
 	    && lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp)) {
@@ -2434,7 +2445,8 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			krbtgt_number = SAMBA_KVNO_GET_KRBTGT(kvno);
 			if (kdc_db_ctx->rodc) {
 				if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
-					return SDB_ERR_NOT_FOUND_HERE;
+					ret = SDB_ERR_NOT_FOUND_HERE;
+					goto out;
 				}
 			}
 		} else {
@@ -2442,7 +2454,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		}
 
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
-			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
+			lret = dsdb_search_one(kdc_db_ctx->samdb, tmp_ctx,
 					       &msg, kdc_db_ctx->krbtgt_dn, LDB_SCOPE_BASE,
 					       krbtgt_attrs, DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					       "(objectClass=user)");
@@ -2450,7 +2462,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			/* We need to look up an RODC krbtgt (perhaps
 			 * ours, if we are an RODC, perhaps another
 			 * RODC if we are a read-write DC */
-			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
+			lret = dsdb_search_one(kdc_db_ctx->samdb, tmp_ctx,
 					       &msg, realm_dn, LDB_SCOPE_SUBTREE,
 					       krbtgt_attrs,
 					       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
@@ -2463,14 +2475,16 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			krb5_set_error_message(context, SDB_ERR_NOENTRY,
 					       "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
-			return SDB_ERR_NOENTRY;
+			ret = SDB_ERR_NOENTRY;
+			goto out;
 		} else if (lret != LDB_SUCCESS) {
 			krb5_warnx(context, "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 				   (unsigned)(krbtgt_number));
 			krb5_set_error_message(context, SDB_ERR_NOENTRY,
 					       "samba_kdc_fetch_krbtgt: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
-			return SDB_ERR_NOENTRY;
+			ret = SDB_ERR_NOENTRY;
+			goto out;
 		}
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
@@ -2479,8 +2493,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch_krbtgt: self krbtgt message2entry failed");
 		}
-		return ret;
-
 	} else {
 		enum trust_direction direction = UNKNOWN;
 		const char *realm = NULL;
@@ -2502,19 +2514,20 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			krb5_set_error_message(context, SDB_ERR_NOENTRY, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
 					       realm_from_princ,
 					       realm_princ_comp);
-			return SDB_ERR_NOENTRY;
+			ret = SDB_ERR_NOENTRY;
+			goto out;
 		}
 
 		/* Trusted domains are under CN=system */
 
 		ret = samba_kdc_lookup_trust(context, kdc_db_ctx->samdb,
-				       mem_ctx,
+				       tmp_ctx,
 				       realm, realm_dn, &msg);
 
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch_krbtgt: could not find principal in DB");
 			krb5_set_error_message(context, ret, "samba_kdc_fetch_krbtgt: could not find principal in DB");
-			return ret;
+			goto out;
 		}
 
 		ret = samba_kdc_trust_message2entry(context, kdc_db_ctx, mem_ctx,
@@ -2527,9 +2540,11 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					       "trust_message2entry failed for %s",
 					       ldb_dn_get_linearized(msg->dn));
 		}
-		return ret;
 	}
 
+out:
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 static krb5_error_code samba_kdc_lookup_server(krb5_context context,
