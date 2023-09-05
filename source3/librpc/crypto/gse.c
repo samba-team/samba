@@ -1240,7 +1240,7 @@ static NTTIME gensec_gse_expire_time(struct gensec_security *gensec_security)
 }
 
 /*
- * Extract the 'sesssion key' needed by SMB signing and ncacn_np
+ * Extract the 'session key' needed by SMB signing and ncacn_np
  * (for encrypting some passwords).
  *
  * This breaks all the abstractions, but what do you expect...
