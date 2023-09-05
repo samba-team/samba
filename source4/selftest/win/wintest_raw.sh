@@ -9,7 +9,7 @@
 
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: test_net.sh SERVER USERNAME PASSWORD DOMAIN
+Usage: wintest_raw.sh SERVER USERNAME PASSWORD DOMAIN
 EOF
 	exit 1
 fi
