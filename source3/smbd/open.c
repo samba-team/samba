@@ -1398,7 +1398,6 @@ static NTSTATUS open_file(struct smb_request *req,
 		 */
 
 		if (file_existed && S_ISFIFO(smb_fname->st.st_ex_mode)) {
-			local_flags &= ~O_TRUNC; /* Can't truncate a FIFO. */
 			local_flags |= O_NONBLOCK;
 		}
 #endif
