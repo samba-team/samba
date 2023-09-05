@@ -175,15 +175,18 @@ krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
 
 	index = pac_blobs_get_index(pac_blobs, type);
 	if (*index == SIZE_MAX) {
-		pac_blobs->type_blobs = talloc_realloc(mem_ctx,
-						       pac_blobs->type_blobs,
-						       struct type_data,
-						       pac_blobs->num_types + 1);
-		if (pac_blobs->type_blobs == NULL) {
+		struct type_data *type_blobs = NULL;
+
+		type_blobs = talloc_realloc(mem_ctx,
+					    pac_blobs->type_blobs,
+					    struct type_data,
+					    pac_blobs->num_types + 1);
+		if (type_blobs == NULL) {
 			DBG_ERR("Out of memory\n");
 			return ENOMEM;
 		}
 
+		pac_blobs->type_blobs = type_blobs;
 		*index = pac_blobs->num_types++;
 	}
 
@@ -199,6 +202,7 @@ krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
 				      TALLOC_CTX *mem_ctx,
 				      const uint32_t type)
 {
+	struct type_data *type_blobs = NULL;
 	size_t found_index;
 	size_t i;
 
@@ -238,14 +242,16 @@ krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
 	/* We do not free the removed data blob, as it may be statically allocated (e.g., a null blob). */
 
 	/* Remove the last element from the array. */
-	pac_blobs->type_blobs = talloc_realloc(mem_ctx,
-					       pac_blobs->type_blobs,
-					       struct type_data,
-					       --pac_blobs->num_types);
-	if (pac_blobs->type_blobs == NULL) {
+	type_blobs = talloc_realloc(mem_ctx,
+				    pac_blobs->type_blobs,
+				    struct type_data,
+				    --pac_blobs->num_types);
+	if (type_blobs == NULL) {
 		DBG_ERR("Out of memory\n");
 		return ENOMEM;
 	}
+
+	pac_blobs->type_blobs = type_blobs;
 
 	return 0;
 }
