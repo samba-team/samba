@@ -170,7 +170,7 @@ include:
   script:
     # gitlab predefines CI_JOB_NAME for each job. The gitlab job usually matches the
     # autobuild name, which means we can define a default template that runs most autobuild jobs
-    - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE  --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase
+    - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE  --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase
 
 # Ensure when adding a new job below that you also add it to
 # the dependencies for 'pages' below for the code coverage page
@@ -179,14 +179,14 @@ include:
 others:
   extends: .shared_template
   script:
-    - script/autobuild.py ldb      $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/ldb
-    - script/autobuild.py pidl     $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/pidl
-    - script/autobuild.py replace  $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/replace
-    - script/autobuild.py talloc   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/talloc
-    - script/autobuild.py tdb      $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/tdb
-    - script/autobuild.py tevent   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/tevent
-    - script/autobuild.py samba-xc $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/samba-xc
-    - script/autobuild.py docs-xml $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase/docs-xml
+    - script/autobuild.py ldb      $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/ldb
+    - script/autobuild.py pidl     $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/pidl
+    - script/autobuild.py replace  $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/replace
+    - script/autobuild.py talloc   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/talloc
+    - script/autobuild.py tdb      $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/tdb
+    - script/autobuild.py tevent   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/tevent
+    - script/autobuild.py samba-xc $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/samba-xc
+    - script/autobuild.py docs-xml $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/docs-xml
 
 .shared_template_build_only:
   extends: .shared_template
@@ -203,20 +203,20 @@ others:
   script:
     # gitlab predefines CI_JOB_NAME for each job. The gitlab job usually matches the
     # autobuild name, which means we can define a default template that runs most autobuild jobs
-    - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE  --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase
+    - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE  --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase
     # On success we need to pack everything into an artifacts file
     # which needs to be in the git checkout.
     # As tar doesn't handle hardlink of read-only files,
     # we remember the acls and add write permissions
     # before creating the archive. The consumer will apply
     # the acls again.
-    - cp -a /sha1sum.txt /tmp/samba-testbase/image-sha1sum.txt
-    - cp -a /tmp/commit.txt /tmp/samba-testbase/commit.txt
-    - ln -s /tmp/samba-testbase/${AUTOBUILD_JOB_NAME}/ /tmp/samba-testbase/build_subdir_link
-    - pushd /tmp && getfacl -R samba-testbase > samba-testbase.acl.dump && popd
-    - chmod -R +w /tmp/samba-testbase
-    - mv /tmp/samba-testbase.acl.dump /tmp/samba-testbase/
-    - tar $SAMBA_TESTBASE_TAR_OPTIONS -cf samba-testbase.tar /tmp/samba-testbase
+    - cp -a /sha1sum.txt /builds/samba-testbase/image-sha1sum.txt
+    - cp -a /tmp/commit.txt /builds/samba-testbase/commit.txt
+    - ln -s /builds/samba-testbase/${AUTOBUILD_JOB_NAME}/ /builds/samba-testbase/build_subdir_link
+    - pushd /builds && getfacl -R samba-testbase > samba-testbase.acl.dump && popd
+    - chmod -R +w /builds/samba-testbase
+    - mv /builds/samba-testbase.acl.dump /builds/samba-testbase/
+    - tar $SAMBA_TESTBASE_TAR_OPTIONS -cf samba-testbase.tar /builds/samba-testbase
     - ls -la samba-testbase.tar
     - sha1sum samba-testbase.tar
 
@@ -235,18 +235,18 @@ others:
     - ls -la samba-testbase.tar
     - sha1sum samba-testbase.tar
     - tar $SAMBA_TESTBASE_TAR_OPTIONS -xf samba-testbase.tar -C /
-    - diff -u /tmp/samba-testbase/image-sha1sum.txt /sha1sum.txt
-    - diff -u /tmp/samba-testbase/commit.txt /tmp/commit.txt
-    - mv /tmp/samba-testbase/samba-testbase.acl.dump /tmp/samba-testbase.acl.dump
-    - pushd /tmp && setfacl --restore=/tmp/samba-testbase.acl.dump && popd
-    - ls -la /tmp/samba-testbase/
-    - ls -la /tmp/samba-testbase/build_subdir_link
-    - ls -la /tmp/samba-testbase/build_subdir_link/
-    - if [ -n "$SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE" ]; then find /tmp/samba-testbase/build_subdir_link/ -type d -printf "'%p'\n" | xargs chmod u+w; fi
-    - ls -la /tmp/samba-testbase/build_subdir_link/
+    - diff -u /builds/samba-testbase/image-sha1sum.txt /sha1sum.txt
+    - diff -u /builds/samba-testbase/commit.txt /tmp/commit.txt
+    - mv /builds/samba-testbase/samba-testbase.acl.dump /builds/samba-testbase.acl.dump
+    - pushd /builds && setfacl --restore=/builds/samba-testbase.acl.dump && popd
+    - ls -la /builds/samba-testbase/
+    - ls -la /builds/samba-testbase/build_subdir_link
+    - ls -la /builds/samba-testbase/build_subdir_link/
+    - if [ -n "$SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE" ]; then find /builds/samba-testbase/build_subdir_link/ -type d -printf "'%p'\n" | xargs chmod u+w; fi
+    - ls -la /builds/samba-testbase/build_subdir_link/
     # gitlab predefines CI_JOB_NAME for each job. The gitlab job usually matches the
     # autobuild name, which means we can define a default template that runs most autobuild jobs
-    - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --skip-dependencies --verbose --nocleanup --keeplogs --tail --full-testbase /tmp/samba-testbase
+    - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --skip-dependencies --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase
 
 samba-def-build:
   extends: .shared_template_build_only
