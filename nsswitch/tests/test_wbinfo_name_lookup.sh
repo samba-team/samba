@@ -2,7 +2,7 @@
 # Blackbox test for wbinfo name lookup
 if [ $# -lt 3 ]; then
 	cat <<EOF
-Usage: test_wbinfo.sh DOMAIN REALM DC_USERNAME
+Usage: test_wbinfo_name_lookup.sh DOMAIN REALM DC_USERNAME
 EOF
 	exit 1
 fi
