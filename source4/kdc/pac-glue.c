@@ -716,9 +716,9 @@ static krb5_error_code samba_client_requested_pac(krb5_context context,
 }
 
 /* Was the krbtgt in this DB (ie, should we check the incoming signature) and was it an RODC */
-int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
-			  bool *is_in_db,
-			  bool *is_trusted)
+krb5_error_code samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
+				      bool *is_in_db,
+				      bool *is_trusted)
 {
 	NTSTATUS status;
 	krb5_error_code ret;
