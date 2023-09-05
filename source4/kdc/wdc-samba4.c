@@ -531,8 +531,9 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 		kdc_request_get_explicit_armor_pac(r);
 
 	if (delegated_proxy) {
-		uint16_t rodc_id;
-		unsigned int my_krbtgt_number;
+		uint16_t pac_kdc_signature_rodc_id;
+		const unsigned int local_tgs_rodc_id = krbtgt_skdc_entry->kdc_db_ctx->my_krbtgt_number;
+		const uint16_t header_ticket_rodc_id = krbtgt->kvno >> 16;
 
 		/*
 		 * We're using delegated_proxy for the moment to indicate cases
@@ -550,7 +551,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 		ret = krb5_pac_get_kdc_checksum_info(context,
 						     pac,
 						     &ctype,
-						     &rodc_id);
+						     &pac_kdc_signature_rodc_id);
 		if (ret != 0) {
 			DBG_WARNING("Failed to get PAC checksum info\n");
 			return ret;
@@ -560,16 +561,13 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 		 * We need to check the KDC and ticket signatures, fetching the
 		 * correct key based on the enctype.
 		 */
-
-		my_krbtgt_number = krbtgt_skdc_entry->kdc_db_ctx->my_krbtgt_number;
-
-		if (my_krbtgt_number != 0) {
+		if (local_tgs_rodc_id != 0) {
 			/*
 			 * If we are an RODC, and we are not the KDC that signed
 			 * the evidence ticket, then we need to proxy the
 			 * request.
 			 */
-			if (rodc_id != my_krbtgt_number) {
+			if (local_tgs_rodc_id != pac_kdc_signature_rodc_id) {
 				return HDB_ERR_NOT_FOUND_HERE;
 			}
 		} else {
@@ -578,14 +576,14 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 			 * different KDC than the one that issued the header
 			 * ticket.
 			 */
-			if (rodc_id != krbtgt->kvno >> 16) {
+			if (pac_kdc_signature_rodc_id != header_ticket_rodc_id) {
 				struct sdb_entry signing_krbtgt_sdb;
 
 				/*
 				 * If we didn't sign the ticket, then return an
 				 * error.
 				 */
-				if (rodc_id != 0) {
+				if (pac_kdc_signature_rodc_id != 0) {
 					return KRB5KRB_AP_ERR_MODIFIED;
 				}
 
