@@ -4,7 +4,7 @@
 
 if [ $# -lt 5 ]; then
 	cat <<EOF
-Usage: test_smbclient_basic.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD SMBCLIENT <smbclient arguments>
+Usage: test_bug15435_widelink_dfs.sh SERVER SERVER_IP USERNAME PASSWORD SMBCLIENT CONFIGURATION <smbclient arguments>
 EOF
 	exit 1
 fi

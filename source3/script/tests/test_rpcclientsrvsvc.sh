@@ -6,7 +6,7 @@
 
 if [ $# -lt 5 ]; then
 	cat <<EOF
-Usage: test_net_srvsvc.sh USERNAME PASSWORD SERVER RPCCLIENT SHARE1
+Usage: test_rpcclientsrvsvc.sh USERNAME PASSWORD SERVER RPCCLIENT SHARE1
 EOF
 	exit 1
 fi

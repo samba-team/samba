@@ -2,7 +2,7 @@
 
 if [ $# -lt 6 ]; then
 	cat <<EOF
-Usage: test_smbclient.sh smbclient3 SERVER USERNAME PASSWORD PREFIX CONFIGURATION
+Usage: test_smbclient_netbios_aliases.sh smbclient3 SERVER USERNAME PASSWORD PREFIX CONFIGURATION
 EOF
 	exit 1
 fi

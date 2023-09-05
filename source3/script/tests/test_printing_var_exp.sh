@@ -2,7 +2,7 @@
 
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: test_smbspool.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD
+Usage: test_printing_var_exp.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD
 EOF
 	exit 1
 fi

@@ -7,7 +7,7 @@
 
 if [ $# -lt 1 ]; then
 	cat <<EOF
-Usage: test_net_registry_roundtrip.sh LOCAL_PATH
+Usage: test_testparm_s3.sh LOCAL_PATH
 EOF
 	exit 1
 fi

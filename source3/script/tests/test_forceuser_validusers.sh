@@ -5,7 +5,7 @@
 
 if [ $# -lt 6 ]; then
 	cat <<EOF
-Usage: test_forceuser.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCLIENT <smbclient arguments>
+Usage: test_forceuser_validusers.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCLIENT <smbclient arguments>
 EOF
 	exit 1
 fi

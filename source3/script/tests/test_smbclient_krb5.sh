@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ]; then
 	cat <<EOF
-Usage: test_smbclient.sh ccache smbclient3 server <smbclient args>
+Usage: test_smbclient_krb5.sh ccache smbclient3 server <smbclient args>
 EOF
 	exit 1
 fi

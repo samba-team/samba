@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ]; then
 	cat <<EOF
-Usage: test_smbclient_posix_large.sh ccache smbclient3 server prefix <smbclient args>
+Usage: test_smbclient_large_file.sh ccache smbclient3 server prefix <smbclient args>
 EOF
 	exit 1
 fi

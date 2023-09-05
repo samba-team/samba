@@ -5,7 +5,7 @@
 # Copyright (C) 2011 Björn Baumbach <bb@sernet.de>
 
 if [ $# -lt 5 ]; then
-	echo "Usage: test_net_registry.sh SCRIPTDIR SERVERCONFFILE NET CONFIGURATION DBWRAP_TOOL"
+	echo "Usage: test_net_registry_check.sh SCRIPTDIR SERVERCONFFILE NET CONFIGURATION DBWRAP_TOOL"
 	exit 1
 fi
 
