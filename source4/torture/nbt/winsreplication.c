@@ -645,7 +645,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	nbt_srv_addr = socket_address_from_strings(tctx, ctx->nbtsock_srv->sock->backend_name, ctx->myaddr->addr, lpcfg_nbt_port(tctx->lp_ctx));
 	if (!nbt_srv_addr) return NULL;
 
-	/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
+	/* And if possible, bind to it.  This won't work unless we are root or in socketwrapper */
 	status = socket_listen(ctx->nbtsock_srv->sock, nbt_srv_addr, 0, 0);
 	talloc_free(nbt_srv_addr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -671,7 +671,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 							   lpcfg_nbt_port(tctx->lp_ctx));
 		if (!nbt_srv_addr) return NULL;
 
-		/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
+		/* And if possible, bind to it.  This won't work unless we are root or in socketwrapper */
 		status = socket_listen(ctx->nbtsock_srv2->sock, ctx->myaddr2, 0, 0);
 		talloc_free(nbt_srv_addr);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1167,7 +1167,7 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 		.num_ips	= ARRAY_SIZE(addresses_B_3_4),
 		.ips		= addresses_B_3_4,
 		},{
-		/* the last one should always be a unique,tomstone record! */
+		/* the last one should always be a unique,tombstone record! */
 		.type		= WREPL_TYPE_UNIQUE,
 		.state		= WREPL_STATE_TOMBSTONE,
 		.node		= WREPL_NODE_B,

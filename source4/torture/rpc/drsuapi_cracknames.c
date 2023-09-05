@@ -472,7 +472,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 
 	/* form up a user@DOMAIN */
 	user_principal_name_short = talloc_asprintf(mem_ctx, "%s$@%s", test_dc, nt4_domain);
-	/* variable nt4_domain includs a trailing \ */
+	/* variable nt4_domain includes a trailing \ */
 	user_principal_name_short[strlen(user_principal_name_short) - 1] = '\0';
 	
 	service_principal_name = talloc_asprintf(mem_ctx, "HOST/%s", test_dc);

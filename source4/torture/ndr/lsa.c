@@ -2014,7 +2014,7 @@ static bool lsarsetforesttrustsinformation_in_check(struct torture_context *tctx
 	torture_assert_str_equal(tctx, r->in.trusted_domain_name->string, "f1.test", "trusted domain name");
 	torture_assert_int_equal(tctx, r->in.highest_record_type, 2, "highest record type");
 	torture_assert(tctx, r->in.forest_trust_info != NULL, "forest trust info");
-	torture_assert_int_equal(tctx, r->in.forest_trust_info->count, 2, "number fo forest trust records");
+	torture_assert_int_equal(tctx, r->in.forest_trust_info->count, 2, "number of forest trust records");
 	torture_assert_int_equal(tctx, r->in.forest_trust_info->entries[0]->flags, 0, "first entry flags");
 	torture_assert_int_equal(tctx, r->in.forest_trust_info->entries[0]->type, 0, "first entry type");
 	torture_assert_int_equal(tctx, r->in.forest_trust_info->entries[0]->time, 0, "first entry time");
