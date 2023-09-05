@@ -2121,12 +2121,19 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     const krb5_const_pac *device_pac,
 				     const krb5_const_pac pac)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
 	bool is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
 
 	struct pac_blobs pac_blobs;
 	pac_blobs_init(&pac_blobs);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		code = ENOMEM;
+		goto done;
+	}
 
 	if (client != NULL) {
 		/*
@@ -2180,7 +2187,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 		 * Check if the SID list in the user_info_dc intersects
 		 * correctly with the RODC allow/deny lists.
 		 */
-		object_sids = talloc_array(mem_ctx, struct dom_sid, user_info_dc->num_sids);
+		object_sids = talloc_array(tmp_ctx, struct dom_sid, user_info_dc->num_sids);
 		if (object_sids == NULL) {
 			code = ENOMEM;
 			goto done;
@@ -2194,7 +2201,6 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 							  object_sids,
 							  krbtgt,
 							  client);
-		TALLOC_FREE(object_sids);
 		if (!W_ERROR_IS_OK(werr)) {
 			code = KRB5KDC_ERR_TGT_REVOKED;
 			if (W_ERROR_EQUAL(werr,
@@ -2224,7 +2230,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 	/* Check the types of the given PAC */
 
 	code = pac_blobs_from_krb5_pac(&pac_blobs,
-				       mem_ctx,
+				       tmp_ctx,
 				       context,
 				       pac);
 	if (code != 0) {
@@ -2268,6 +2274,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 
 done:
 	pac_blobs_destroy(&pac_blobs);
+	talloc_free(tmp_ctx);
 
 	return code;
 }
