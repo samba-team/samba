@@ -1335,6 +1335,24 @@ static NTSTATUS open_file(struct smb_request *req,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
+	/*
+	 * This little piece of insanity is inspired by the
+	 * fact that an NT client can open a file for O_RDONLY,
+	 * but set the create disposition to FILE_EXISTS_TRUNCATE.
+	 * If the client *can* write to the file, then it expects to
+	 * truncate the file, even though it is opening for readonly.
+	 * Quicken uses this stupid trick in backup file creation...
+	 * Thanks *greatly* to "David W. Chapman Jr." <dwcjr@inethouston.net>
+	 * for helping track this one down. It didn't bite us in 2.0.x
+	 * as we always opened files read-write in that release. JRA.
+	 */
+
+	if (((flags & O_ACCMODE) == O_RDONLY) && (flags & O_TRUNC)) {
+		DBG_DEBUG("truncate requested on read-only open for file %s\n",
+			  smb_fname_str_dbg(smb_fname));
+		local_flags = (flags & ~O_ACCMODE) | O_RDWR;
+	}
+
 	/* Check permissions */
 
 	/*
@@ -1361,24 +1379,6 @@ static NTSTATUS open_file(struct smb_request *req,
 		 * access into the directory.
 		 */
 		local_flags &= ~(O_CREAT | O_EXCL);
-	}
-
-	/*
-	 * This little piece of insanity is inspired by the
-	 * fact that an NT client can open a file for O_RDONLY,
-	 * but set the create disposition to FILE_EXISTS_TRUNCATE.
-	 * If the client *can* write to the file, then it expects to
-	 * truncate the file, even though it is opening for readonly.
-	 * Quicken uses this stupid trick in backup file creation...
-	 * Thanks *greatly* to "David W. Chapman Jr." <dwcjr@inethouston.net>
-	 * for helping track this one down. It didn't bite us in 2.0.x
-	 * as we always opened files read-write in that release. JRA.
-	 */
-
-	if (((flags & O_ACCMODE) == O_RDONLY) && (flags & O_TRUNC)) {
-		DEBUG(10,("open_file: truncate requested on read-only open "
-			  "for file %s\n", smb_fname_str_dbg(smb_fname)));
-		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
 	if ((open_access_mask & need_fd_mask) || creating ||
