@@ -42,7 +42,7 @@ class SDDLvsDescriptorBase(TestCase):
     filter_test_cases class method.
     """
     maxDiff = 10000
-    json_file = TEST_DIR / 'conditional_aces.txt.json'
+    json_file = None
     munge_to_v4 = True
     domain_sid = security.dom_sid("S-1-5-21-2457507606-2709100691-398136650")
     failure_json = None
@@ -207,3 +207,10 @@ class SDDLvsDescriptorShortOrdinaryAclsNoMungeV4(SDDLvsDescriptorBase):
     """
     munge_to_v4 = False
     json_file = TEST_DIR / 'short-ordinary-acls-v2.json.gz'
+
+
+@DynamicTestCase
+class SDDLvsDescriptorCollectedConditionalAces(SDDLvsDescriptorBase):
+    """Some conditional ACE strings that have collected up.
+    """
+    json_file = TEST_DIR / 'conditional_aces.txt.json'
