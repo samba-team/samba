@@ -142,14 +142,30 @@ const krb5_data *krb5_princ_component(krb5_context context,
 #endif
 
 krb5_error_code smb_krb5_princ_component(krb5_context context,
-					 krb5_principal principal,
+					 krb5_const_principal principal,
 					 int i,
 					 krb5_data *data);
 krb5_error_code smb_krb5_princ_component(krb5_context context,
-					 krb5_principal principal,
+					 krb5_const_principal principal,
 					 int i,
 					 krb5_data *data)
 {
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
+	const char *component = NULL;
+
+	if (i < 0) {
+		return EINVAL;
+	}
+
+	component = krb5_principal_get_comp_string(context, principal, i);
+	if (component == NULL) {
+		return ENOENT;
+	}
+
+	*data = smb_krb5_make_data(discard_const_p(char, component), strlen(component));
+
+	return 0;
+#else
 	const krb5_data *kdata = NULL;
 
 	if (i < 0) {
@@ -164,6 +180,7 @@ krb5_error_code smb_krb5_princ_component(krb5_context context,
 	*data = *kdata;
 
 	return 0;
+#endif
 }
 
 /**********************************************************

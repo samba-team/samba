@@ -66,7 +66,7 @@ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal princ
 #endif
 
 krb5_error_code smb_krb5_princ_component(krb5_context context,
-					 krb5_principal principal,
+					 krb5_const_principal principal,
 					 int i,
 					 krb5_data *data);
 
