@@ -101,7 +101,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 	struct authn_audit_info *server_audit_info = NULL;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS reply_status = NT_STATUS_OK;
 
 	struct auth_user_info_dc *user_info_dc = NULL;
 
@@ -145,7 +145,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 							   user_info_dc,
 							   server_entry,
 							   &server_audit_info,
-							   &status);
+							   &reply_status);
 		if (server_audit_info != NULL) {
 			krb5_error_code ret2;
 
@@ -154,10 +154,10 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 				ret = ret2;
 			}
 		}
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(reply_status)) {
 			krb5_error_code ret2;
 
-			ret2 = hdb_samba4_set_ntstatus(r, status, ret);
+			ret2 = hdb_samba4_set_ntstatus(r, reply_status, ret);
 			if (ret == 0) {
 				ret = ret2;
 			}
@@ -405,7 +405,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	krb5_pac new_pac = NULL;
 	struct authn_audit_info *server_audit_info = NULL;
 	krb5_error_code ret;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS reply_status = NT_STATUS_OK;
 	uint32_t flags = 0;
 
 	mem_ctx = talloc_named(NULL, 0, "samba_wdc_reget_pac context");
@@ -469,7 +469,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 				   *pac,
 				   new_pac,
 				   &server_audit_info,
-				   &status);
+				   &reply_status);
 	if (server_audit_info != NULL) {
 		krb5_error_code ret2;
 
@@ -478,10 +478,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 			ret = ret2;
 		}
 	}
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(reply_status)) {
 		krb5_error_code ret2;
 
-		ret2 = hdb_samba4_set_ntstatus(r, status, ret);
+		ret2 = hdb_samba4_set_ntstatus(r, reply_status, ret);
 		if (ret == 0) {
 			ret = ret2;
 		}
