@@ -888,17 +888,18 @@ static int principal_comp_strcmp_int(krb5_context context,
 	}
 #else
 	size_t len;
-	krb5_data *d;
+	krb5_data d;
+	krb5_error_code ret = 0;
 	if (component >= krb5_princ_size(context, principal)) {
 		return -1;
 	}
 
-	d = krb5_princ_component(context, principal, component);
-	if (d == NULL) {
+	ret = smb_krb5_princ_component(context, principal, component, &d);
+	if (ret) {
 		return -1;
 	}
 
-	p = d->data;
+	p = d.data;
 
 	len = strlen(string);
 
@@ -907,9 +908,9 @@ static int principal_comp_strcmp_int(krb5_context context,
 	 * give the wrong result if the result overflows or loses data when
 	 * narrowed to int.
 	 */
-	if (d->length < len) {
+	if (d.length < len) {
 		return -1;
-	} else if (d->length > len) {
+	} else if (d.length > len) {
 		return 1;
 	}
 
