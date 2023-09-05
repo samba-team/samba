@@ -42,14 +42,10 @@ struct pac_blobs {
 	size_t num_types;
 };
 
-void pac_blobs_init(struct pac_blobs *pac_blobs);
-
-void pac_blobs_destroy(struct pac_blobs *pac_blobs);
-
-krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
-					TALLOC_CTX *mem_ctx,
+krb5_error_code pac_blobs_from_krb5_pac(TALLOC_CTX *mem_ctx,
 					krb5_context context,
-					const krb5_const_pac pac);
+					const krb5_const_pac pac,
+					struct pac_blobs **pac_blobs);
 
 #define pac_blobs_ensure_exists(pac_blobs, type) \
 	_pac_blobs_ensure_exists(pac_blobs, \
@@ -80,10 +76,8 @@ krb5_error_code _pac_blobs_replace_existing(struct pac_blobs *pac_blobs,
 					    const char *function);
 
 krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
-				   TALLOC_CTX *mem_ctx,
 				   const uint32_t type,
 				   const DATA_BLOB *blob);
 
 krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
-				      TALLOC_CTX *mem_ctx,
 				      const uint32_t type);

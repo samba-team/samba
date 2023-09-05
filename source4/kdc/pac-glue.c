@@ -2122,12 +2122,10 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     const krb5_const_pac pac)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
+	struct pac_blobs *pac_blobs = NULL;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
 	bool is_trusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
-
-	struct pac_blobs pac_blobs;
-	pac_blobs_init(&pac_blobs);
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -2229,40 +2227,40 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 
 	/* Check the types of the given PAC */
 
-	code = pac_blobs_from_krb5_pac(&pac_blobs,
-				       tmp_ctx,
+	code = pac_blobs_from_krb5_pac(tmp_ctx,
 				       context,
-				       pac);
+				       pac,
+				       &pac_blobs);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_ensure_exists(&pac_blobs,
+	code = pac_blobs_ensure_exists(pac_blobs,
 				       PAC_TYPE_LOGON_INFO);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_ensure_exists(&pac_blobs,
+	code = pac_blobs_ensure_exists(pac_blobs,
 				       PAC_TYPE_LOGON_NAME);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_ensure_exists(&pac_blobs,
+	code = pac_blobs_ensure_exists(pac_blobs,
 				       PAC_TYPE_SRV_CHECKSUM);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_ensure_exists(&pac_blobs,
+	code = pac_blobs_ensure_exists(pac_blobs,
 				       PAC_TYPE_KDC_CHECKSUM);
 	if (code != 0) {
 		goto done;
 	}
 
 	if (!(flags & SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION)) {
-		code = pac_blobs_ensure_exists(&pac_blobs,
+		code = pac_blobs_ensure_exists(pac_blobs,
 					       PAC_TYPE_REQUESTER_SID);
 		if (code != 0) {
 			code = KRB5KDC_ERR_TGT_REVOKED;
@@ -2273,7 +2271,6 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 	code = 0;
 
 done:
-	pac_blobs_destroy(&pac_blobs);
 	talloc_free(tmp_ctx);
 
 	return code;
@@ -2362,14 +2359,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	const DATA_BLOB *device_claims_blob = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
+	struct pac_blobs *pac_blobs = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
 	enum samba_compounded_auth compounded_auth;
 	size_t i = 0;
-
-	struct pac_blobs pac_blobs;
-	pac_blobs_init(&pac_blobs);
 
 	if (server_audit_info_out != NULL) {
 		*server_audit_info_out = NULL;
@@ -2651,15 +2646,15 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Check the types of the given PAC */
-	code = pac_blobs_from_krb5_pac(&pac_blobs,
-				       tmp_ctx,
+	code = pac_blobs_from_krb5_pac(tmp_ctx,
 				       context,
-				       old_pac);
+				       old_pac,
+				       &pac_blobs);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_replace_existing(&pac_blobs,
+	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_LOGON_INFO,
 					  pac_blob);
 	if (code != 0) {
@@ -2668,21 +2663,21 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 #ifdef SAMBA4_USES_HEIMDAL
 	/* Not needed with MIT Kerberos */
-	code = pac_blobs_replace_existing(&pac_blobs,
+	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_LOGON_NAME,
 					  &data_blob_null);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_replace_existing(&pac_blobs,
+	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_SRV_CHECKSUM,
 					  &data_blob_null);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_replace_existing(&pac_blobs,
+	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_KDC_CHECKSUM,
 					  &data_blob_null);
 	if (code != 0) {
@@ -2690,40 +2685,35 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	code = pac_blobs_add_blob(&pac_blobs,
-				  tmp_ctx,
+	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_CONSTRAINED_DELEGATION,
 				  deleg_blob);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_add_blob(&pac_blobs,
-				  tmp_ctx,
+	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_UPN_DNS_INFO,
 				  upn_blob);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_add_blob(&pac_blobs,
-				  tmp_ctx,
+	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_CLIENT_CLAIMS_INFO,
 				  client_claims_blob);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_add_blob(&pac_blobs,
-				  tmp_ctx,
+	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_DEVICE_INFO,
 				  device_info_blob);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = pac_blobs_add_blob(&pac_blobs,
-				  tmp_ctx,
+	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_DEVICE_CLAIMS_INFO,
 				  device_claims_blob);
 	if (code != 0) {
@@ -2731,8 +2721,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!client_pac_is_trusted || !is_tgs) {
-		code = pac_blobs_remove_blob(&pac_blobs,
-					     tmp_ctx,
+		code = pac_blobs_remove_blob(pac_blobs,
 					     PAC_TYPE_ATTRIBUTES_INFO);
 		if (code != 0) {
 			goto done;
@@ -2740,15 +2729,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!is_tgs) {
-		code = pac_blobs_remove_blob(&pac_blobs,
-					     tmp_ctx,
+		code = pac_blobs_remove_blob(pac_blobs,
 					     PAC_TYPE_REQUESTER_SID);
 		if (code != 0) {
 			goto done;
 		}
 	} else {
-		code = pac_blobs_add_blob(&pac_blobs,
-					  tmp_ctx,
+		code = pac_blobs_add_blob(pac_blobs,
 					  PAC_TYPE_REQUESTER_SID,
 					  requester_sid_blob);
 		if (code != 0) {
@@ -2791,10 +2778,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	for (i = 0; i < pac_blobs.num_types; ++i) {
+	for (i = 0; i < pac_blobs->num_types; ++i) {
 		krb5_data type_data;
-		const DATA_BLOB *type_blob = pac_blobs.type_blobs[i].data;
-		uint32_t type = pac_blobs.type_blobs[i].type;
+		const DATA_BLOB *type_blob = pac_blobs->type_blobs[i].data;
+		uint32_t type = pac_blobs->type_blobs[i].type;
 
 		static char null_byte = '\0';
 		const krb5_data null_data = smb_krb5_make_data(&null_byte, 0);
@@ -2848,7 +2835,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	code = 0;
 done:
-	pac_blobs_destroy(&pac_blobs);
 	TALLOC_FREE(tmp_ctx);
 	return code;
 }

@@ -24,23 +24,6 @@
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 
-void pac_blobs_init(struct pac_blobs *pac_blobs)
-{
-	size_t i;
-
-	for (i = 0; i < ARRAY_SIZE(pac_blobs->type_index); ++i) {
-		pac_blobs->type_index[i] = SIZE_MAX;
-	}
-
-	pac_blobs->type_blobs = NULL;
-	pac_blobs->num_types = 0;
-}
-
-void pac_blobs_destroy(struct pac_blobs *pac_blobs)
-{
-	TALLOC_FREE(pac_blobs->type_blobs);
-}
-
 static inline size_t *pac_blobs_get_index(struct pac_blobs *pac_blobs, size_t type)
 {
 	/* Ensure the type is valid. */
@@ -58,33 +41,50 @@ static inline struct type_data *pac_blobs_get(struct pac_blobs *pac_blobs, size_
 	return &pac_blobs->type_blobs[index];
 }
 
-krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
-					TALLOC_CTX *mem_ctx,
+krb5_error_code pac_blobs_from_krb5_pac(TALLOC_CTX *mem_ctx,
 					krb5_context context,
-					const krb5_const_pac pac)
+					const krb5_const_pac pac,
+					struct pac_blobs **pac_blobs)
 {
 	krb5_error_code code = 0;
 	uint32_t *types = NULL;
+	struct pac_blobs *blobs = NULL;
 	size_t i;
 
-	code = krb5_pac_get_types(context, pac, &pac_blobs->num_types, &types);
+	SMB_ASSERT(pac_blobs != NULL);
+	*pac_blobs = NULL;
+
+	blobs = talloc(mem_ctx, struct pac_blobs);
+	if (blobs == NULL) {
+		code = ENOMEM;
+		goto out;
+	}
+
+	*blobs = (struct pac_blobs) {};
+
+	/* Initialize the array indices. */
+	for (i = 0; i < ARRAY_SIZE(blobs->type_index); ++i) {
+		blobs->type_index[i] = SIZE_MAX;
+	}
+
+	code = krb5_pac_get_types(context, pac, &blobs->num_types, &types);
 	if (code != 0) {
 		DBG_ERR("krb5_pac_get_types failed\n");
 		goto out;
 	}
 
-	pac_blobs->type_blobs = talloc_array(mem_ctx, struct type_data, pac_blobs->num_types);
-	if (pac_blobs->type_blobs == NULL) {
+	blobs->type_blobs = talloc_array(blobs, struct type_data, blobs->num_types);
+	if (blobs->type_blobs == NULL) {
 		DBG_ERR("Out of memory\n");
 		code = ENOMEM;
 		goto out;
 	}
 
-	for (i = 0; i < pac_blobs->num_types; ++i) {
+	for (i = 0; i < blobs->num_types; ++i) {
 		uint32_t type = types[i];
 		size_t *type_index = NULL;
 
-		pac_blobs->type_blobs[i] = (struct type_data) {
+		blobs->type_blobs[i] = (struct type_data) {
 			.type = type,
 			.data = NULL,
 		};
@@ -105,10 +105,9 @@ krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
 		case PAC_TYPE_ATTRIBUTES_INFO:
 		case PAC_TYPE_REQUESTER_SID:
 		case PAC_TYPE_FULL_CHECKSUM:
-			type_index = pac_blobs_get_index(pac_blobs, type);
+			type_index = pac_blobs_get_index(blobs, type);
 			if (*type_index != SIZE_MAX) {
 				DBG_WARNING("PAC buffer type[%"PRIu32"] twice\n", type);
-				pac_blobs_destroy(pac_blobs);
 				code = EINVAL;
 				goto out;
 			}
@@ -120,8 +119,12 @@ krb5_error_code pac_blobs_from_krb5_pac(struct pac_blobs *pac_blobs,
 		}
 	}
 
+	*pac_blobs = blobs;
+	blobs = NULL;
+
 out:
 	SAFE_FREE(types);
+	TALLOC_FREE(blobs);
 	return code;
 }
 
@@ -163,7 +166,6 @@ krb5_error_code _pac_blobs_replace_existing(struct pac_blobs *pac_blobs,
 }
 
 krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
-				   TALLOC_CTX *mem_ctx,
 				   const uint32_t type,
 				   const DATA_BLOB *blob)
 {
@@ -177,7 +179,7 @@ krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
 	if (*index == SIZE_MAX) {
 		struct type_data *type_blobs = NULL;
 
-		type_blobs = talloc_realloc(mem_ctx,
+		type_blobs = talloc_realloc(pac_blobs,
 					    pac_blobs->type_blobs,
 					    struct type_data,
 					    pac_blobs->num_types + 1);
@@ -199,7 +201,6 @@ krb5_error_code pac_blobs_add_blob(struct pac_blobs *pac_blobs,
 }
 
 krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
-				      TALLOC_CTX *mem_ctx,
 				      const uint32_t type)
 {
 	struct type_data *type_blobs = NULL;
@@ -242,7 +243,7 @@ krb5_error_code pac_blobs_remove_blob(struct pac_blobs *pac_blobs,
 	/* We do not free the removed data blob, as it may be statically allocated (e.g., a null blob). */
 
 	/* Remove the last element from the array. */
-	type_blobs = talloc_realloc(mem_ctx,
+	type_blobs = talloc_realloc(pac_blobs,
 				    pac_blobs->type_blobs,
 				    struct type_data,
 				    --pac_blobs->num_types);
