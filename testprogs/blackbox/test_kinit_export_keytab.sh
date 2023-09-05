@@ -8,7 +8,7 @@
 
 if [ $# -lt 7 ]; then
 	cat <<EOF
-Usage: test_extract_keytab.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT CONFIGURATION
+Usage: test_kinit_export_keytab.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT CONFIGURATION
 EOF
 	exit 1
 fi

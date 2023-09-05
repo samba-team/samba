@@ -2,7 +2,7 @@
 
 if [ $# -lt 5 ]; then
 	cat <<EOF
-Usage: test_primary_group.sh SERVER USERNAME PASSWORD NETBIOSNAME PREFIX_ABS
+Usage: test_old_enctypes.sh SERVER USERNAME PASSWORD NETBIOSNAME PREFIX_ABS
 EOF
 	exit 1
 fi

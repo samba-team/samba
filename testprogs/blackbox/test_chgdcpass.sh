@@ -5,7 +5,7 @@
 
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: test_kinit.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT
+Usage: test_chgdcpass.sh SERVER USERNAME REALM DOMAIN PREFIX ENCTYPE PROVDIR SMBCLIENT
 EOF
 	exit 1
 fi

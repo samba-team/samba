@@ -5,7 +5,7 @@
 
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: net_rpc.sh SERVER ADMIN_ACCOUNT ADMIN_PASSWORD ADMIN_DOMAIN
+Usage: test_net_rpc_user.sh SERVER ADMIN_ACCOUNT ADMIN_PASSWORD ADMIN_DOMAIN
 EOF
 	exit 1
 fi

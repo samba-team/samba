@@ -7,7 +7,7 @@
 
 if [ $# -lt 7 ]; then
 	cat <<EOF
-Usage: test_pkinit_mit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLINET
+Usage: test_pkinit_simple.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLIENT
 EOF
 	exit 1
 fi

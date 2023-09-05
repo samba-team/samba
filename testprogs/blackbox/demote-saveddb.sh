@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ]; then
 	cat <<EOF
-Usage: demote.sh PREFIX RELEASE
+Usage: demote-saveddb.sh PREFIX RELEASE
 EOF
 	exit 1
 fi
