@@ -139,22 +139,6 @@ done:
 	return ret;
 }
 
-static krb5_error_code ks_is_tgs_principal(struct mit_samba_context *ctx,
-					   krb5_const_principal principal)
-{
-	char *p;
-	int eq = -1;
-
-	p = smb_krb5_principal_get_comp_string(ctx, ctx->context, principal, 0);
-
-	eq = krb5_princ_size(ctx->context, principal) == 2 &&
-	     (strcmp(p, KRB5_TGS_NAME) == 0);
-
-	talloc_free(p);
-
-	return eq;
-}
-
 int mit_samba_generate_salt(krb5_data *salt)
 {
 	if (salt == NULL) {
@@ -468,7 +452,14 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	if (server == NULL) {
 		return EINVAL;
 	}
-	is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
+	{
+		int result = smb_krb5_principal_is_tgs(smb_ctx->context, server->princ);
+		if (result == -1) {
+			return ENOMEM;
+		}
+
+		is_krbtgt = result;
+	}
 	server_entry = talloc_get_type_abort(server->e_data,
 					     struct samba_kdc_entry);
 
