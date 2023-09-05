@@ -4393,7 +4393,7 @@ static struct tevent_req *smbXcli_negprot_smb1_subreq(struct smbXcli_negprot_sta
 		}
 
 		/*
-		 * We now it is already ascii and
+		 * We know it is already ascii and
 		 * we want NULL termination.
 		 */
 		ok = data_blob_append(state, &bytes,
