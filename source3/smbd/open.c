@@ -3777,7 +3777,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 {
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	int flags=0;
-	int flags2=0;
 	bool file_existed = VALID_STAT(smb_fname->st);
 	bool def_acl = False;
 	bool posix_open = False;
@@ -3965,7 +3964,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	flags2 = disposition_to_open_flags(create_disposition);
+	flags = disposition_to_open_flags(create_disposition);
 
 	/* We only care about matching attributes on file exists and
 	 * overwrite. */
@@ -4002,7 +4001,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	open_access_mask = access_mask;
 
-	if (flags2 & O_TRUNC) {
+	if (flags & O_TRUNC) {
 		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 	}
 
@@ -4032,7 +4031,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	flags = calculate_open_access_flags(access_mask, private_flags);
+	flags |= calculate_open_access_flags(access_mask, private_flags);
 
 	/*
 	 * Currently we only look at FILE_WRITE_THROUGH for create options.
@@ -4040,12 +4039,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 #if defined(O_SYNC)
 	if ((create_options & FILE_WRITE_THROUGH) && lp_strict_sync(SNUM(conn))) {
-		flags2 |= O_SYNC;
+		flags |= O_SYNC;
 	}
 #endif /* O_SYNC */
 
 	if (posix_open && (access_mask & FILE_APPEND_DATA)) {
-		flags2 |= O_APPEND;
+		flags |= O_APPEND;
 	}
 
 	if (!posix_open && !CAN_WRITE(conn)) {
@@ -4054,7 +4053,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * O_CREAT or O_TRUNC are set, but for compatibility with
 		 * older versions of Samba we just AND them out.
 		 */
-		flags2 &= ~(O_CREAT|O_TRUNC);
+		flags &= ~(O_CREAT | O_TRUNC);
 	}
 
 	/*
@@ -4069,13 +4068,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * oplock we must periodically poll for available open
 	 * using O_NONBLOCK.
 	 */
-	flags2 |= O_NONBLOCK;
+	flags |= O_NONBLOCK;
 
 	/*
 	 * Ensure we can't write on a read-only share or file.
 	 */
 
-	if (flags != O_RDONLY && file_existed &&
+	if (((flags & O_ACCMODE) != O_RDONLY) && file_existed &&
 	    (!CAN_WRITE(conn) || IS_DOS_READONLY(existing_dos_attributes))) {
 		DEBUG(5,("open_file_ntcreate: write access requested for "
 			 "file %s on read only %s\n",
@@ -4101,9 +4100,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
 	}
 
-	if ((create_options & FILE_DELETE_ON_CLOSE) &&
-			(flags2 & O_CREAT) &&
-			!file_existed) {
+	if ((create_options & FILE_DELETE_ON_CLOSE) && (flags & O_CREAT) &&
+	    !file_existed) {
 		/* Delete on close semantics for new files. */
 		status = can_set_delete_on_close(fsp,
 						new_dos_attributes);
@@ -4117,21 +4115,22 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Ensure we pay attention to default ACLs on directories if required.
 	 */
 
-        if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-	    (def_acl = directory_has_default_acl_fsp(parent_dir_fname->fsp)))
-	{
+	if ((flags & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
+	    (def_acl = directory_has_default_acl_fsp(parent_dir_fname->fsp))) {
 		unx_mode = (0777 & lp_create_mask(SNUM(conn)));
 	}
 
-	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o, "
-		"access_mask = 0x%x, open_access_mask = 0x%x\n",
-		 (unsigned int)flags, (unsigned int)flags2,
-		 (unsigned int)unx_mode, (unsigned int)access_mask,
-		 (unsigned int)open_access_mask));
+	DEBUG(4,
+	      ("calling open_file with flags=0x%X mode=0%o, "
+	       "access_mask = 0x%x, open_access_mask = 0x%x\n",
+	       (unsigned int)flags,
+	       (unsigned int)unx_mode,
+	       (unsigned int)access_mask,
+	       (unsigned int)open_access_mask));
 
 	{
 		struct vfs_open_how how = {
-			.flags = flags | flags2,
+			.flags = flags,
 			.mode = unx_mode,
 		};
 		fsp_open = open_file(req,
@@ -4255,7 +4254,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (new_file_created) {
 		info = FILE_WAS_CREATED;
 	} else {
-		if (flags2 & O_TRUNC) {
+		if (flags & O_TRUNC) {
 			info = FILE_WAS_OVERWRITTEN;
 		} else {
 			info = FILE_WAS_OPENED;
@@ -4328,8 +4327,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	/* Should we atomically (to the client at least) truncate ? */
-	if ((!new_file_created) &&
-	    (flags2 & O_TRUNC) &&
+	if ((!new_file_created) && (flags & O_TRUNC) &&
 	    (S_ISREG(fsp->fsp_name->st.st_ex_mode))) {
 		int ret;
 
