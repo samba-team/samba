@@ -195,7 +195,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	WERROR wret;
 	krb5_error_code ret;
 	krb5_principal principal;
-	const krb5_data *component;
+	krb5_data component;
 	const char *service, *dns_name;
 	char *new_service;
 	char *new_princ;
@@ -213,18 +213,22 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 
 	/* grab cifs/, http/ etc */
 
-	/* This is checked for in callers, but be safe */
-	if (krb5_princ_size(smb_krb5_context->krb5_context, principal) < 2) {
+	ret = smb_krb5_princ_component(smb_krb5_context->krb5_context,
+				       principal, 0, &component);
+	if (ret) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return WERR_OK;
 	}
-	component = krb5_princ_component(smb_krb5_context->krb5_context,
-					 principal, 0);
-	service = (const char *)component->data;
-	component = krb5_princ_component(smb_krb5_context->krb5_context,
-					 principal, 1);
-	dns_name = (const char *)component->data;
+	service = (const char *)component.data;
+	ret = smb_krb5_princ_component(smb_krb5_context->krb5_context,
+				       principal, 1, &component);
+	if (ret) {
+		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
+		return WERR_OK;
+	}
+	dns_name = (const char *)component.data;
 
 	/* MAP it */
 	namestatus = LDB_lookup_spn_alias(sam_ctx, mem_ctx,
@@ -777,8 +781,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_principal principal;
 		char *unparsed_name_short;
 		const char *unparsed_name_short_encoded = NULL;
-		const krb5_data *component;
-		char *service;
+		bool principal_is_host = false;
 
 		ret = smb_krb5_init_context(mem_ctx, 
 					    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
@@ -821,20 +824,35 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		component = krb5_princ_component(smb_krb5_context->krb5_context,
-						 principal, 0);
-		service = (char *)component->data;
-		if ((krb5_princ_size(smb_krb5_context->krb5_context,
-							principal) == 2) &&
-			(strcasecmp(service, "host") == 0)) {
+		if ((krb5_princ_size(smb_krb5_context->krb5_context, principal) == 2)) {
+			krb5_data component;
+
+			ret = smb_krb5_princ_component(smb_krb5_context->krb5_context,
+						       principal, 0, &component);
+			if (ret) {
+				krb5_free_principal(smb_krb5_context->krb5_context, principal);
+				free(unparsed_name_short);
+				return WERR_INTERNAL_ERROR;
+			}
+
+			principal_is_host = strcasecmp(component.data, "host") == 0;
+		}
+
+		if (principal_is_host) {
 			/* the 'cn' attribute is just the leading part of the name */
+			krb5_data component;
 			char *computer_name;
 			const char *computer_name_encoded = NULL;
-			component = krb5_princ_component(
-						smb_krb5_context->krb5_context,
-						principal, 1);
-			computer_name = talloc_strndup(mem_ctx, (char *)component->data,
-							strcspn((char *)component->data, "."));
+			ret = smb_krb5_princ_component(
+				smb_krb5_context->krb5_context,
+				principal, 1, &component);
+			if (ret) {
+				krb5_free_principal(smb_krb5_context->krb5_context, principal);
+				free(unparsed_name_short);
+				return WERR_INTERNAL_ERROR;
+			}
+			computer_name = talloc_strndup(mem_ctx, (char *)component.data,
+							strcspn((char *)component.data, "."));
 			if (computer_name == NULL) {
 				krb5_free_principal(smb_krb5_context->krb5_context, principal);
 				free(unparsed_name_short);
