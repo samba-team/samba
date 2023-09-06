@@ -36,7 +36,6 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 	struct tdb_context *tdb;
 	TDB_DATA tdb_key, tdb_data;
 	char *value_str;
-	TALLOC_CTX *tmp_ctx;
 	int error = 0;
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
@@ -45,11 +44,6 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata tdb not initialized");
-	}
-
-	tmp_ctx = talloc_new(NULL);
-	if (tmp_ctx == NULL) {
-		return ldb_module_oom(module);
 	}
 
 	tdb = data->metadata->db->tdb;
@@ -68,21 +62,18 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 		}
 	}
 
-	value_str = talloc_strndup(tmp_ctx, (char *)tdb_data.dptr, tdb_data.dsize);
+	value_str = talloc_strndup(NULL, (char *)tdb_data.dptr, tdb_data.dsize);
+	SAFE_FREE(tdb_data.dptr);
 	if (value_str == NULL) {
-		SAFE_FREE(tdb_data.dptr);
-		talloc_free(tmp_ctx);
 		return ldb_module_oom(module);
 	}
 
 	*value = smb_strtoull(value_str, NULL, 10, &error, SMB_STR_STANDARD);
+	talloc_free(value_str);
 	if (error != 0) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: converision failed");
 	}
-
-	SAFE_FREE(tdb_data.dptr);
-	talloc_free(tmp_ctx);
 
 	return LDB_SUCCESS;
 }
