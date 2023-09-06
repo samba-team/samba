@@ -210,6 +210,11 @@ int net_offlinejoin_provision(struct net_context *c,
 
 		/* Add the unicode BOM mark */
 		blob = data_blob_talloc(c, NULL, ucs2_blob.length + 2);
+		if (blob.data == NULL) {
+			d_printf("Failed to allocate blob: %s\n",
+				 strerror(errno));
+			return -1;
+		}
 
 		blob.data[0] = 0xff;
 		blob.data[1] = 0xfe;
@@ -568,6 +573,11 @@ int net_offlinejoin_composeodj(struct net_context *c,
 
 		/* Add the unicode BOM mark */
 		blob = data_blob_talloc(c, NULL, ucs2_blob.length + 2);
+		if (blob.data == NULL) {
+			d_printf("Failed to allocate blob: %s\n",
+				 strerror(errno));
+			return -1;
+		}
 
 		blob.data[0] = 0xff;
 		blob.data[1] = 0xfe;
