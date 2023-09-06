@@ -2762,3 +2762,563 @@ struct ace_condition_script * ace_conditions_compile_sddl(
 	TALLOC_FREE(comp.program);
 	return NULL;
 }
+
+
+
+static bool check_resource_attr_type(struct ace_condition_token *tok, char c)
+{
+	/*
+	 * Check that a token matches the expected resource ace type (TU, TS,
+	 * etc).
+	 *
+	 * We're sticking to the [IUSDXB] codes rather than using converting
+	 * earlier to tok->type (whereby this who thing becomes "if (tok->type
+	 * == type)") to enable bounds checks on the various integer types.
+	 */
+	switch(c) {
+	case 'I':
+		/* signed int */
+		if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
+			goto wrong_type;
+		}
+		return true;
+	case 'U':
+		/* unsigned int, let's check the range */
+		if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
+			goto wrong_type;
+		}
+		if (tok->data.int64.value < 0) {
+			DBG_WARNING(
+				"invalid resource ACE value for unsigned TU\n");
+			goto error;
+		}
+		return true;
+	case 'S':
+		/* unicode string */
+		if (tok->type != CONDITIONAL_ACE_TOKEN_UNICODE) {
+			goto wrong_type;
+		}
+		return true;
+	case 'D':
+		/* SID */
+		if (tok->type != CONDITIONAL_ACE_TOKEN_SID) {
+			goto wrong_type;
+		}
+		return true;
+	case 'X':
+		/* Octet string */
+		if (tok->type != CONDITIONAL_ACE_TOKEN_OCTET_STRING) {
+			if (tok->type == CONDITIONAL_ACE_TOKEN_INT64)  {
+				/*
+				 * Windows 2022 will also accept even
+				 * numbers of digits, like "1234"
+				 * instead of "#1234". Samba does not.
+				 *
+				 * Fixing this is complicated by the
+				 * fact that a leading '0' will have
+				 * cast the integer to octal, while an
+				 * A-F character will have caused it
+				 * to not parse as a literal at all.
+				 *
+				 * This behaviour is not mentioned in
+				 * MS-DTYP or elsewhere.
+				 */
+				DBG_WARNING("Octet sequence uses bare digits, "
+					    "please prefix a '#'\n");
+			}
+			goto wrong_type;
+		}
+		return true;
+	case 'B':
+		/* Boolean, meaning an int that is 0 or 1 */
+		if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
+			goto wrong_type;
+		}
+		if (tok->data.int64.value != 0 &&
+		    tok->data.int64.value != 1) {
+			DBG_WARNING("invalid resource ACE value for boolean TB "
+				    "(should be 0 or 1).\n");
+			goto error;
+		}
+		return true;
+	default:
+		DBG_WARNING("Unknown resource ACE type T%c\n", c);
+		goto error;
+	};
+  wrong_type:
+	DBG_WARNING("resource ace type T%c doesn't match value\n", c);
+  error:
+	return false;
+}
+
+
+
+static bool parse_resource_attr_list(
+	struct ace_condition_sddl_compiler_context *comp,
+	char attr_type_char)
+{
+	/*
+	 * This is a bit like parse_composite() above, but with the following
+	 * differences:
+	 *
+	 * - it doesn't want '{...}' around the list.
+	 * - if there is just one value, it is not a composite
+	 * - all the values must be the expected type.
+	 * - there is no nesting.
+	 * - SIDs are not written with SID(...) around them.
+	 */
+	bool ok;
+	struct ace_condition_token composite = {
+		.type = CONDITIONAL_ACE_TOKEN_COMPOSITE
+	};
+	uint32_t start = comp->offset;
+	size_t alloc_size;
+	struct ace_condition_token *old_target = comp->target;
+	uint32_t *old_target_len = comp->target_len;
+
+	comp->state = (SDDL_FLAG_EXPECTING_LITERAL |
+		       SDDL_FLAG_IS_RESOURCE_ATTR_ACE);
+
+	/*
+	 * the worst case is one token for every two bytes: {1,1,1}, and we
+	 * allocate for that (counting commas and finding '}' gets hard because
+	 * string literals).
+	 */
+	alloc_size = MIN((comp->length - start) / 2 + 1,
+			 CONDITIONAL_ACE_MAX_LENGTH);
+
+	composite.data.composite.tokens = talloc_array(
+		comp->mem_ctx,
+		struct ace_condition_token,
+		alloc_size);
+	if (composite.data.composite.tokens == NULL) {
+		comp_error(comp, "allocation failure");
+		return false;
+	}
+
+	comp->target = composite.data.composite.tokens;
+	comp->target_len = &composite.data.composite.n_members;
+
+	/*
+	 * in this loop we are looking for:
+	 *
+	 * a) possible whitespace.
+	 * b) a literal, of the right type (checked after)
+	 * c) more possible whitespace
+	 * d) a comma
+	 *
+	 * Failures use a goto to reset comp->target, just in case we ever try
+	 * continuing after error.
+	 */
+	while (comp->offset < comp->length) {
+		uint8_t c;
+		ok = eat_whitespace(comp, false);
+		if (! ok) {
+			goto fail;
+		}
+		if (*comp->target_len >= alloc_size) {
+			comp_error(comp,
+				   "Too many tokens in composite "
+				   "(>= %"PRIu32" tokens)",
+				   *comp->target_len);
+			goto fail;
+		}
+		ok = parse_literal(comp);
+		if (!ok) {
+			goto fail;
+		}
+
+		if (*comp->target_len == 0) {
+			goto fail;
+		}
+
+		ok = check_resource_attr_type(
+			&comp->target[*comp->target_len - 1],
+			attr_type_char);
+		if (! ok) {
+			goto fail;
+		}
+
+		ok = eat_whitespace(comp, false);
+		if (! ok) {
+			goto fail;
+		}
+		c = comp->sddl[comp->offset];
+		if (c == ')') {
+			break;
+		}
+		if (c != ',') {
+			comp_error(comp,
+				   "malformed composite (expected comma)");
+			goto fail;
+		}
+		comp->offset++;
+	}
+	comp->target = old_target;
+	comp->target_len = old_target_len;
+
+	/*
+	 * If we only ended up collecting one token into the composite, we
+	 * write that instead.
+	 */
+	if (composite.data.composite.n_members == 1) {
+		ok = write_sddl_token(comp, composite.data.composite.tokens[0]);
+		talloc_free(composite.data.composite.tokens);
+	} else {
+		ok = write_sddl_token(comp, composite);
+	}
+	if (! ok) {
+		goto fail;
+	}
+
+	return true;
+fail:
+	comp->target = old_target;
+	comp->target_len = old_target_len;
+	TALLOC_FREE(composite.data.composite.tokens);
+	return false;
+}
+
+
+
+struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sddl_decode_resource_attr (
+	TALLOC_CTX *mem_ctx,
+	const char *str,
+	size_t *length)
+{
+	/*
+	 * Resource attribute ACEs define claims in object SACLs. They look like
+	 *
+	 *  "(RA; «flags» ;;;;WD;( «attribute-data» ))"
+	 *
+	 * attribute-data = DQUOTE 1*attr-char2 DQUOTE "," \
+	 *     ( TI-attr / TU-attr / TS-attr / TD-attr / TX-attr / TB-attr )
+	 * TI-attr = "TI" "," attr-flags *("," int-64)
+	 * TU-attr = "TU" "," attr-flags *("," uint-64)
+	 * TS-attr = "TS" "," attr-flags *("," char-string)
+	 * TD-attr = "TD" "," attr-flags *("," sid-string)
+	 * TX-attr = "TX" "," attr-flags *("," octet-string)
+	 * TB-attr = "TB" "," attr-flags *("," ( "0" / "1" ) )
+	 *
+	 * and the data types are all parsed in the SDDL way.
+	 * At this point we only have the "(«attribute-data»)".
+	 *
+	 * What we do is set up a conditional ACE compiler to be expecting a
+	 * literal, and ask it to parse the strings between the commas. It's a
+	 * hack.
+	 */
+	bool ok;
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim = NULL;
+	struct ace_condition_sddl_compiler_context comp = {};
+	char attr_type;
+	struct ace_condition_token *tok;
+	uint32_t flags;
+	size_t len;
+	struct ace_condition_unicode attr_name = {};
+
+	ok = init_compiler_context(mem_ctx, &comp, str, 3, 3);
+	if (!ok) {
+		return NULL;
+	}
+	if (comp.length < 6 || comp.length > CONDITIONAL_ACE_MAX_LENGTH) {
+		DBG_WARNING("invalid resource attribute: '%s'\n", str);
+		goto error;
+	}
+	/*
+	 *  Resource attribute ACEs list SIDs in a bare form "S-1-2-3", while
+	 *  conditional ACEs use a wrapper syntax "SID(S-1-2-3)". As almost
+	 *  everything is the same, we are reusing the conditional ACE parser,
+	 *  with a flag set to tell the SID parser which form to expect.
+	 */
+
+	/* Most examples on the web have leading whitespace */
+	ok = eat_whitespace(&comp, false);
+	if (!ok) {
+		return NULL;
+	}
+	if (comp.sddl[comp.offset] != '(' ||
+	    comp.sddl[comp.offset + 1] != '"') {
+		DBG_WARNING("invalid resource attribute --  expected '(\"'\n");
+		goto error;
+	}
+	comp.offset += 2;
+
+	/*
+	 * Read the name. Here we are not reading a token into comp->program,
+	 * just into a unicode blob.
+	 */
+	len = read_attr2_string(&comp, &attr_name);
+
+	if (len == -1) {
+		DBG_WARNING("invalid resource attr name: %s\n", str);
+		goto error;
+	}
+	comp.offset += len;
+
+	ok = eat_whitespace(&comp, false);
+	if (comp.offset + 6 > comp.length) {
+		DBG_WARNING("invalid resource attribute (too short): '%s'\n",
+			    str);
+		goto error;
+	}
+	/*
+	 * now we have the name. Next comes '",«T[IUSDXB]»,' followed
+	 * by the flags, which are a 32 bit number.
+	 */
+	if (comp.sddl[comp.offset] != '"' ||
+	    comp.sddl[comp.offset + 1] != ','||
+	    comp.sddl[comp.offset + 2] != 'T') {
+		DBG_WARNING("expected '\",T[IUSDXB]' after attr name\n");
+		goto error;
+	}
+	attr_type = comp.sddl[comp.offset + 3];
+
+	if (comp.sddl[comp.offset + 4] != ',') {
+		DBG_WARNING("expected ',' after attr type\n");
+		goto error;
+	}
+	comp.offset += 5;
+	comp.state = SDDL_FLAG_EXPECTING_LITERAL;
+	ok = parse_literal(&comp);
+	if (!ok ||
+	    comp.program->length != 1) {
+		DBG_WARNING("invalid attr flags: %s\n", str);
+		goto error;
+	}
+
+	tok = &comp.program->tokens[0];
+	if (tok->type != CONDITIONAL_ACE_TOKEN_INT64 ||
+	    tok->data.int64.value < 0 ||
+	    tok->data.int64.value > UINT32_MAX) {
+		DBG_WARNING("invalid attr flags (want 32 bit int): %s\n", str);
+		goto error;
+	}
+	flags = tok->data.int64.value;
+	if (flags & 0xff00) {
+		DBG_WARNING("invalid attr flags, "
+			    "stepping on reserved 0xff00 range: %s\n",
+			    str);
+		goto error;
+	}
+	if (comp.offset + 3 > comp.length) {
+		DBG_WARNING("invalid resource attribute (too short): '%s'\n",
+			    str);
+		goto error;
+	}
+	if (comp.sddl[comp.offset] != ',') {
+		DBG_WARNING("invalid resource attribute ace\n");
+		goto error;
+	}
+	comp.offset++;
+
+	ok = parse_resource_attr_list(&comp, attr_type);
+	if (!ok || comp.program->length != 2) {
+		DBG_WARNING("invalid attribute type or value: T%c, %s\n",
+			    attr_type, str);
+		goto error;
+	}
+	if (comp.sddl[comp.offset] != ')') {
+		DBG_WARNING("expected trailing ')'\n");
+		goto error;
+	}
+	comp.offset++;
+	*length = comp.offset;
+
+	ok = ace_token_to_claim_v1(mem_ctx,
+				   attr_name.value,
+				   &comp.program->tokens[1],
+				   &claim,
+				   flags);
+	if (!ok) {
+		goto error;
+	}
+	TALLOC_FREE(comp.program);
+	return claim;
+  error:
+	TALLOC_FREE(comp.program);
+	return NULL;
+}
+
+
+static bool write_resource_attr_from_token(struct sddl_write_context *ctx,
+					   struct ace_condition_token *tok)
+{
+	/*
+	 * this is a helper for sddl_resource_attr_from_claim(),
+	 * recursing into composites if necessary.
+	 */
+	bool ok;
+	char *sid = NULL;
+	size_t i;
+	struct ace_condition_composite *c = NULL;
+	switch (tok->type) {
+	case CONDITIONAL_ACE_TOKEN_INT64:
+		/*
+		 * Note that this includes uint and bool claim types,
+		 * but we don't check the validity of the ranges (0|1
+		 * and >=0, respectively), rather we trust the claim
+		 * to be self-consistent in this regard. Going the
+		 * other way, string-to-claim, we do check.
+		 */
+		return sddl_write_int(ctx, tok);
+
+	case CONDITIONAL_ACE_TOKEN_UNICODE:
+		return sddl_write_unicode(ctx, tok);
+
+	case CONDITIONAL_ACE_TOKEN_SID:
+		/* unlike conditional ACE, SID does not had "SID()" wrapper. */
+		sid = sddl_encode_sid(ctx->mem_ctx, tok->data.sid.sid, NULL);
+		if (sid == NULL) {
+			return false;
+		}
+		return sddl_write(ctx, sid);
+
+	case CONDITIONAL_ACE_TOKEN_OCTET_STRING:
+		return sddl_write_octet_string(ctx, tok);
+
+	case CONDITIONAL_ACE_TOKEN_COMPOSITE:
+		/*
+		 * write each token, separated by commas. If there
+		 * were nested composites, this would flatten them,
+		 * but that isn't really possible because the token we
+		 * are dealing with came from a claim, which has no
+		 * facility for nesting.
+		 */
+		c = &tok->data.composite;
+		for(i = 0; i < c->n_members; i++) {
+			ok = write_resource_attr_from_token(ctx, &c->tokens[i]);
+			if (!ok) {
+				return false;
+			}
+			if (i != c->n_members - 1) {
+				ok = sddl_write(ctx, ",");
+				if (!ok) {
+					return false;
+				}
+			}
+		}
+		return true;
+	default:
+		/* We really really don't expect to get here */
+		return false;
+	}
+}
+
+char *sddl_resource_attr_from_claim(
+	TALLOC_CTX *mem_ctx,
+	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim)
+{
+	char *s = NULL;
+	char attr_type;
+	bool ok;
+	struct ace_condition_token tok = {};
+	struct sddl_write_context ctx = {};
+	TALLOC_CTX *tmp_ctx = NULL;
+	char *name = NULL;
+	size_t name_len;
+
+	switch(claim->value_type) {
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64:
+		attr_type = 'I';
+		break;
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64:
+		attr_type = 'U';
+		break;
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING:
+		attr_type = 'S';
+		break;
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_SID:
+		attr_type = 'D';
+		break;
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN:
+		attr_type = 'B';
+		break;
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING:
+		attr_type = 'X';
+		break;
+	default:
+		return NULL;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	ctx.mem_ctx = tmp_ctx;
+
+	ok = claim_v1_to_ace_token(tmp_ctx, claim, &tok);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	/* this will construct the proper string in ctx.sddl */
+	ok = write_resource_attr_from_token(&ctx, &tok);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	/* escape the claim name */
+	ok = sddl_encode_attr_name(tmp_ctx,
+				   claim->name,
+				   strlen(claim->name),
+				   &name, &name_len);
+
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	s = talloc_asprintf(mem_ctx,
+			    "(\"%s\",T%c,0x%x,%s)",
+			    name,
+			    attr_type,
+			    claim->flags,
+			    ctx.sddl);
+	TALLOC_FREE(tmp_ctx);
+	return s;
+}
+
+
+struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *parse_sddl_literal_as_claim(
+	TALLOC_CTX *mem_ctx,
+	const char *name,
+	const char *str)
+{
+	/*
+	 * For testing purposes (and possibly for client tools), we
+	 * want to be able to create claim literals, and we might as
+	 * well use the SDDL syntax. So we pretend to be parsing SDDL
+	 * for one literal.
+	 */
+	bool ok;
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim = NULL;
+	struct ace_condition_sddl_compiler_context comp = {};
+
+	ok = init_compiler_context(mem_ctx, &comp, str, 2, 2);
+	if (!ok) {
+		return NULL;
+	}
+
+	comp.state = SDDL_FLAG_EXPECTING_LITERAL;
+	ok = parse_literal(&comp);
+
+	if (!ok) {
+		goto error;
+	}
+	if (comp.program->length != 1) {
+		goto error;
+	}
+
+	ok = ace_token_to_claim_v1(mem_ctx,
+				   name,
+				   &comp.program->tokens[0],
+				   &claim,
+				   0);
+	if (!ok) {
+		goto error;
+	}
+	TALLOC_FREE(comp.program);
+	return claim;
+  error:
+	TALLOC_FREE(comp.program);
+	return NULL;
+}

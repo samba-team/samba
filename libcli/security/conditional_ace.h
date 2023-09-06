@@ -51,4 +51,20 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 
 char *sddl_from_conditional_ace(TALLOC_CTX *mem_ctx,
 				struct ace_condition_script *program);
+
+struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *parse_sddl_literal_as_claim(
+	TALLOC_CTX *mem_ctx,
+	const char *name,
+	const char *str);
+
+struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sddl_decode_resource_attr (
+	TALLOC_CTX *mem_ctx,
+	const char *str,
+	size_t *length);
+
+char *sddl_resource_attr_from_claim(
+	TALLOC_CTX *mem_ctx,
+	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim);
+
+
 #endif /*_CONDITIONAL_ACE_H_*/
