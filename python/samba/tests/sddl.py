@@ -149,6 +149,9 @@ class SddlDecodeEncodeBase(TestCase):
         """
         filename = f"{dir}/{cls.name}.txt"
 
+        if not hasattr(cls, 'strings'):
+            cls.strings = []
+
         old_pairs = set()
         for s in cls.strings:
             if isinstance(s, str):
