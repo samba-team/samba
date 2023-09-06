@@ -36,7 +36,7 @@ import "misc.idl";
 		[default];
 	} fssagent_share_mapping;
 
-	const uint32 FSRVP_RPC_VERSION_1 = 0x000000001;
+	const uint32 FSRVP_RPC_VERSION_1 = 0x00000001;
 	DWORD fss_GetSupportedVersion(
 		[out] uint32 *MinVersion,
 		[out] uint32 *MaxVersion);
