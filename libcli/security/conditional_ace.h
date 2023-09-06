@@ -52,6 +52,27 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 char *sddl_from_conditional_ace(TALLOC_CTX *mem_ctx,
 				struct ace_condition_script *program);
 
+#define IS_INT_TOKEN(x)							\
+	(((x)->type) == CONDITIONAL_ACE_TOKEN_INT64           ||	\
+	 unlikely(((x)->type) == CONDITIONAL_ACE_TOKEN_INT32  ||	\
+		  ((x)->type) == CONDITIONAL_ACE_TOKEN_INT16  ||	\
+		  ((x)->type) == CONDITIONAL_ACE_TOKEN_INT8)		\
+		)
+
+#define IS_BOOL_TOKEN(x)					\
+	(((x)->type) == CONDITIONAL_ACE_SAMBA_RESULT_BOOL)
+
+#define IS_DERIVED_TOKEN(x)						\
+	((((x)->flags) & CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR) == 0)
+
+#define IS_LITERAL_TOKEN(x)						\
+	((IS_INT_TOKEN(x) ||						\
+	  (x->type) == CONDITIONAL_ACE_TOKEN_UNICODE ||		\
+	  (x->type) == CONDITIONAL_ACE_TOKEN_OCTET_STRING ||		\
+	  (x->type) == CONDITIONAL_ACE_TOKEN_SID ||			\
+	  (x->type) == CONDITIONAL_ACE_TOKEN_COMPOSITE) &&		\
+	 (! IS_DERIVED_TOKEN(x)))
+
 struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *parse_sddl_literal_as_claim(
 	TALLOC_CTX *mem_ctx,
 	const char *name,
