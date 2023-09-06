@@ -69,7 +69,7 @@ static void mit_samba_debug(void *private_ptr, int msg_level, const char *msg)
 		is_error = 0;
 	}
 
-	com_err("", is_error, "%s", msg);
+	com_err("mitkdc", is_error, "%s", msg);
 }
 
 krb5_error_code mit_samba_context_init(struct mit_samba_context **_ctx)
