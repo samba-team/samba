@@ -1540,7 +1540,7 @@ bool samba_dns_name_equal(const char *name1, const char *name2)
  * This becomes (NTTIME)-1ULL a.k.a. UINT64_MAX, 0xffffffffffffffff thence
  * 512409557 in hours since 1601. That in turn is 0xfffffffaf2028800 or
  * 18446744052000000000 in NTTIME (rounded to the hour), which might be
- * presented as -21709551616 or -0x50dfd7800, because NTITME is not completely
+ * presented as -21709551616 or -0x50dfd7800, because NTTIME is not completely
  * dedicated to being unsigned. If it gets shown as a year, it will be around
  * 60055.
  *
