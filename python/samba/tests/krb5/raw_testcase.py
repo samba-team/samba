@@ -4571,19 +4571,19 @@ class RawKerberosTest(TestCase):
                 else:
                     empty_msg = ' for {claims_type} (should be missing)'
 
-                client_claims = ndr_unpack(claims.CLAIMS_SET_METADATA_NDR,
-                                           remaining)
-                client_claims = client_claims.claims.metadata
-                self.assertIsNotNone(client_claims,
+                claims_metadata_ndr = ndr_unpack(claims.CLAIMS_SET_METADATA_NDR,
+                                                 remaining)
+                claims_metadata = claims_metadata_ndr.claims.metadata
+                self.assertIsNotNone(claims_metadata,
                                      f'got empty CLAIMS_SET_METADATA_NDR '
                                      f'inner structure {empty_msg}')
 
-                self.assertIsNotNone(client_claims.claims_set,
+                self.assertIsNotNone(claims_metadata.claims_set,
                                      f'got empty CLAIMS_SET_METADATA '
                                      f'structure {empty_msg}')
 
-                uncompressed_size = client_claims.uncompressed_claims_set_size
-                compression_format = client_claims.compression_format
+                uncompressed_size = claims_metadata.uncompressed_claims_set_size
+                compression_format = claims_metadata.compression_format
 
                 if uncompressed_size < (
                         claims.CLAIM_LOWER_COMPRESSION_THRESHOLD):
@@ -4600,7 +4600,7 @@ class RawKerberosTest(TestCase):
                         f'{claims_type} unexpectedly not compressed '
                         f'({uncompressed_size} bytes uncompressed)')
 
-                claims_set = client_claims.claims_set.claims.claims
+                claims_set = claims_metadata.claims_set.claims.claims
                 self.assertIsNotNone(claims_set,
                                      f'got empty CLAIMS_SET_NDR inner '
                                      f'structure {empty_msg}')
