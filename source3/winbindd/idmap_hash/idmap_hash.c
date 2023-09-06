@@ -53,7 +53,7 @@ static uint32_t hash_domain_sid(const struct dom_sid *sid)
 	   hash value */
 	hash = (((hash & 0xFFF00000) >> 20)
 		+ ((hash & 0x000FFF00) >> 8)
-		+ (hash & 0x000000FF)) & 0x0000FFF;
+		+ (hash & 0x000000FF)) & 0x00000FFF;
 
 	/* return a 12-bit hash value */
 
