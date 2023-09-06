@@ -75,7 +75,7 @@ static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 
 	/*
 	 * nt4 uses 41 bytes for the start_association call
-	 * so do it the same and as we don't know the meanings of this bytes
+	 * so do it the same and as we don't know the meanings of these bytes
 	 * we just send zeros and nt4, w2k and w2k3 seems to be happy with this
 	 *
 	 * if we don't do this nt4 uses an old version of the wins replication protocol

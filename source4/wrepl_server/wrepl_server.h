@@ -292,7 +292,7 @@ struct wreplsrv_service {
 	struct {
 		/*
 		 * the timestamp for the next event,
-		 * this is the timstamp passed to event_add_timed()
+		 * this is the timestamp passed to event_add_timed()
 		 */
 		struct timeval next_event;
 
@@ -304,7 +304,7 @@ struct wreplsrv_service {
 	struct {
 		/*
 		 * the timestamp for the next scavenging run,
-		 * this is the timstamp passed to event_add_timed()
+		 * this is the timestamp passed to event_add_timed()
 		 */
 		struct timeval next_run;
 
