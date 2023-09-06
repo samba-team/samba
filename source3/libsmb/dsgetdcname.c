@@ -55,11 +55,11 @@ static void debug_dsdcinfo_flags(int lvl, uint32_t flags)
 
 	if (flags & DS_FORCE_REDISCOVERY)
 		DEBUGADD(lvl,("DS_FORCE_REDISCOVERY "));
-	if (flags & 0x000000002)
+	if (flags & 0x00000002)
 		DEBUGADD(lvl,("0x00000002 "));
-	if (flags & 0x000000004)
+	if (flags & 0x00000004)
 		DEBUGADD(lvl,("0x00000004 "));
-	if (flags & 0x000000008)
+	if (flags & 0x00000008)
 		DEBUGADD(lvl,("0x00000008 "));
 	if (flags & DS_DIRECTORY_SERVICE_REQUIRED)
 		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_REQUIRED "));
