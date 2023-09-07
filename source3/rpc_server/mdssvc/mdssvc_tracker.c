@@ -54,7 +54,7 @@ static void tracker_con_cb(GObject *object,
 		return;
 	}
 	/*
-	 * Ok, we're not canclled, we can now safely use user_data.
+	 * Ok, we're not cancelled, we can now safely use user_data.
 	 */
 	ctx = talloc_get_type_abort(user_data, struct mds_tracker_ctx);
 	ctx->async_pending = false;
@@ -183,7 +183,7 @@ static void tracker_cursor_cb(GObject *object,
 		return;
 	}
 	/*
-	 * Ok, we're not canclled, we can now safely use user_data.
+	 * Ok, we're not cancelled, we can now safely use user_data.
 	 */
 	tq = talloc_get_type_abort(user_data, struct sl_tracker_query);
 	tq->async_pending = false;
