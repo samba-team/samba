@@ -110,7 +110,7 @@ def main():
     parser.add_argument('--export-bytes', const='sddl_bytes.json', nargs='?',
                         help='write JSON file containing SD bytes')
     parser.add_argument('--quiet', action='store_true',
-                        help='avoid printing to sdtout')
+                        help='avoid printing to stdout')
     parser.add_argument('files', nargs='+', help='read these files')
 
     args = parser.parse_args()
