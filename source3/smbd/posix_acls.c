@@ -2076,7 +2076,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
  ASCII art time again... JRA :-).
 
  We have 4 cases to process when moving from an NT ACL to a POSIX ACL. Firstly,
- we insist the ACL is in canonical form (ie. all DENY entries preceede ALLOW
+ we insist the ACL is in canonical form (ie. all DENY entries precede ALLOW
  entries). Secondly, the merge code has ensured that all duplicate SID entries for
  allow or deny have been merged, so the same SID can only appear once in the deny
  list or once in the allow list.

@@ -357,7 +357,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	in_sign_algo = smb2_negotiate_context_find(&in_c,
 					SMB2_SIGNING_CAPABILITIES);
 
-	/* negprot_spnego() returns a the server guid in the first 16 bytes */
+	/* negprot_spnego() returns the server guid in the first 16 bytes */
 	negprot_spnego_blob = negprot_spnego(req, xconn);
 	if (negprot_spnego_blob.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);

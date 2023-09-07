@@ -2508,7 +2508,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				SBIG_UINT(pdata,32,svfs.TotalFileNodes);
 				SBIG_UINT(pdata,40,svfs.FreeFileNodes);
 				SBIG_UINT(pdata,48,svfs.FsIdentifier);
-				DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_POSIX_FS_INFO succsessful\n"));
+				DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_POSIX_FS_INFO successful\n"));
 #ifdef EOPNOTSUPP
 			} else if (rc == EOPNOTSUPP) {
 				return NT_STATUS_INVALID_LEVEL;
