@@ -1655,7 +1655,7 @@ bool tevent_req_set_profile(struct tevent_req *req);
 struct tevent_req_profile;
 
 /**
- * @brief Get the a request's profile for inspection
+ * @brief Get a request's profile for inspection
  *
  * @param[in] req The request to get the profile from
  *
