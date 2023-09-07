@@ -49,7 +49,7 @@ void remove_all_servers(struct work_record *work)
 }
 
 /***************************************************************************
-  Add a server into the a workgroup serverlist.
+  Add a server into a workgroup serverlist.
   **************************************************************************/
 
 static void add_server_to_workgroup(struct work_record *work,
