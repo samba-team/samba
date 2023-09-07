@@ -41,7 +41,7 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 
 	load_interfaces();
 
-	status = libnetapi_net_init(&ctx);
+	status = libnetapi_net_init(&ctx, tctx->lp_ctx);
 	if (status != 0) {
 		talloc_free(frame);
 		return false;

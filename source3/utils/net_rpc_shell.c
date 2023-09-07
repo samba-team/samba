@@ -229,7 +229,7 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (libnetapi_net_init(&c->netapi_ctx) != 0) {
+	if (libnetapi_net_init(&c->netapi_ctx, c->lp_ctx) != 0) {
 		return -1;
 	}
 

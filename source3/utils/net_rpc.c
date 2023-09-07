@@ -1312,7 +1312,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
 	if (status != 0) {
 		return -1;
 	}
@@ -3505,7 +3505,7 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
 	if (status != 0) {
 		return -1;
 	}
@@ -5474,7 +5474,7 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
 	if (status != 0) {
 		return -1;
 	}
@@ -5757,7 +5757,7 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
 	if (status != 0) {
 		return -1;
 	}
@@ -8369,7 +8369,7 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
 	if (status != 0) {
 		return -1;
 	}

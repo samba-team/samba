@@ -62,6 +62,8 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
 	NET_API_STATUS ret;
 	TALLOC_CTX *frame;
+	struct loadparm_context *lp_ctx = NULL;
+
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
 		return NET_API_STATUS_SUCCESS;
@@ -89,7 +91,13 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	BlockSignals(True, SIGPIPE);
 
-	ret = libnetapi_net_init(context);
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
+	}
+
+	ret = libnetapi_net_init(context, lp_ctx);
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -102,12 +110,12 @@ level etc, this avoids doing so again (which causes trouble with -d on
 the command line).
 ****************************************************************/
 
-NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
+NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context,
+				  struct loadparm_context *lp_ctx)
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct loadparm_context *lp_ctx = NULL;
 
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
 	if (!ctx) {
@@ -117,12 +125,6 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 
 	ctx->creds = cli_credentials_init(ctx);
 	if (ctx->creds == NULL) {
-		TALLOC_FREE(frame);
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
-	}
-
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
 		TALLOC_FREE(frame);
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}

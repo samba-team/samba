@@ -21,4 +21,5 @@
 
 /* This function is to init the libnetapi subsystem, without
  * re-reading config files or setting debug levels etc */
-NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **ctx);
+NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **ctx,
+				  struct loadparm_context *lp_ctx);
