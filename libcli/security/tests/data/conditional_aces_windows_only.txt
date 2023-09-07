@@ -1,0 +1,14 @@
+# Windows is far less fussy about case in general SDDL
+O:S-1-1-0D:(xd;;;;;WD;(Member_Of SID(S-1-1-0))) -> O:WDD:(XD;;;;;WD;(Member_of SID(WD)))
+O:s-1-1-0D:(xa;;;;;wd;(Member_Of SID(S-1-1-0))) -> O:WDD:(XA;;;;;WD;(Member_of SID(WD)))
+O:s-1-1-0D:(xa;;;;;wd;(member_of sid(s-1-1-0))) -> O:WDD:(XA;;;;;WD;(Member_of SID(WD)))
+O:s-1-1-0D:(xa;;;;;wd;(member_of(sid(s-1-1-0)))) -> O:WDD:(XA;;;;;WD;(Member_of SID(WD)))
+O:s-1-1-0D:(xa;;;;;wd;(member_of((sid(s-1-1-0))))) -> O:WDD:(XA;;;;;WD;(Member_of SID(WD)))
+# spaces in general SDDL
+D:(D;OICI;GA;;;BG)(D;OICI;GA;;;AN)(A; OICI; GRGWGX;;;AU)(XA;;FX;;;S-1-1-0;(@User.TEETH == "5"))(A;OICI;GA;;;BA) -> D:(D;OICI;GA;;;BG)(D;OICI;GA;;;AN)(A;OICI;GXGWGR;;;AU)(XA;;FX;;;WD;(@USER.TEETH == "5"))(A;OICI;GA;;;BA)
+D:(D;OICI;GA;;;BG)(D;OICI;GA;;;AN)(A; OICI; GRGWGX;;;AU)(XA;;FX;;;S-1-1-0;(@User.title == "perambuator"))(A;OICI;GA;;;BA) -> D:(D;OICI;GA;;;BG)(D;OICI;GA;;;AN)(A;OICI;GXGWGR;;;AU)(XA;;FX;;;WD;(@USER.title == "perambuator"))(A;OICI;GA;;;BA)
+D:(XA;;FR;;;S-1-1-0; (Member_of {SID(S-1-1-0), SID(BO)} && @Device.Bitlocker)) -> D:(XA;;FR;;;WD;((Member_of {SID(WD), SID(BO)}) && (@DEVICE.Bitlocker)))
+D:(XD;;FX;;;S-1-1-0; (@User.Project Any_of @Resource.Project)) -> D:(XD;;FX;;;WD;(@USER.Project Any_of @RESOURCE.Project))
+# note the odd  number of characters in this octet string; implies a leading '0'
+D:AI(XA;OICI;FA;;;WD;(OctetStringType==#1#2#3##)) -> D:AI(XA;OICI;FA;;;WD;(OctetStringType == #01020300))
+D:(XA;;;;;WD;(@Device.bb == 0xffffffffffffffff)) -> D:(XA;;;;;WD;(@DEVICE.bb == 0xffffffffffffffff))

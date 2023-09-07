@@ -1,0 +1,14 @@
+# Lines starting with # are ignored.
+# These SDDL strings are expected to fail.
+D:(XA;;FR;;;S-1-1-0; (Member_of {SID(ernie), SID(BO)} && @Device.Bitlocker)) -> D:(XA;;FR;;;S-1-1-0; (Member_of {SID(ernie), SID(BO)} && @Device.Bitlocker))
+D:(XA;;0x1f;;;AA;(!!! !!!  !!! Member_of{SID(BA)})) -> D:(XA;;0x1f;;;AA;(!!! !!!  !!! Member_of{SID(BA)}))
+D:(XA;;0x1f;;;AA;(!!! !!!  !!! Not_Member_of{SID(AA)})) -> D:(XA;;0x1f;;;AA;(!!! !!!  !!! Not_Member_of{SID(AA)}))
+O:S-1-1-0D:(XA;;0x1ff;;;WD;(Member_of_AnySID(S-1-1-0))) -> O:S-1-1-0D:(XA;;0x1ff;;;WD;(Member_of_AnySID(S-1-1-0)))
+D:(XA;;CC;;;S-1-2-3;(@User.Title == !(@User.Title))) -> x
+D:(XA;;0x1f;;;AA;(! Member_of{SID(BA)})) -> x
+# local attributes on the RHS fail (ok on the LHS)
+D:(XA;;0x1f;;;AA;(a == a))
+D:(XA;;;;;WD;(@Device.bb == 055555624677746777766777767))
+D:(XA;;;;;WD;(@Device.bb == 0x624677746777766777767))
+D:(XA;;;;;WD;(@Device.bb == 624677746777766777767))
+D:(XA;;;;;WD;(@Device.bb == 0x10000000000000000))
