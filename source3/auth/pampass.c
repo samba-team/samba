@@ -297,7 +297,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	bool found; 
 	*resp = NULL;
 
-	DEBUG(10,("smb_pam_passchange_conv: starting converstation for %d messages\n", num_msg));
+	DEBUG(10,("smb_pam_passchange_conv: starting conversation for %d messages\n", num_msg));
 
 	if (num_msg <= 0)
 		return PAM_CONV_ERR;
