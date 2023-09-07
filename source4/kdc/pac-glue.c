@@ -1072,7 +1072,7 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 						     user_info_dc,
 						     requester_sid_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Building PAC LOGON INFO failed: %s\n",
+		DBG_ERR("Building PAC REQUESTER SID failed: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
