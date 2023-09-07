@@ -31,6 +31,10 @@ class SddlDecodeEncodeBase(TestCase):
     def setUpDynamicTestCases(cls):
         cls.domain_sid = security.dom_sid("S-1-2-3-4")
 
+        strings_dir = getattr(cls, 'strings_dir', None)
+        if strings_dir is not None:
+            cls.read_windows_strings(strings_dir, False)
+
         for (key, fn) in [
                 ("SAMBA_WRITE_WINDOWS_STRINGS_DIR",
                  cls.write_windows_strings),
@@ -136,7 +140,7 @@ class SddlDecodeEncodeBase(TestCase):
                 print(f"{p[0]} -> {p[1]}", file=f)
 
     @classmethod
-    def read_windows_strings(cls, dir):
+    def read_windows_strings(cls, dir, verbose=True):
         """This is complementary to cls.write_windows_strings(), which writes
         these tests in a format usable on Windows. In this case
         examples will be read in, replacing the strings here with the
@@ -170,17 +174,19 @@ class SddlDecodeEncodeBase(TestCase):
                 new_pairs.add((o, c))
 
         if old_pairs == new_pairs:
-            print(f"no change in {c_GREEN(cls.name)}")
             # nothing to do
+            if verbose:
+                print(f"no change in {c_GREEN(cls.name)}")
             return
 
-        print(f"change in {c_RED(cls.name)}")
-        print("added:")
-        for x in sorted(new_pairs - old_pairs):
-            print(x)
-        print("removed:")
-        for x in sorted(old_pairs - new_pairs):
-            print(x)
+        if verbose:
+            print(f"change in {c_RED(cls.name)}")
+            print("added:")
+            for x in sorted(new_pairs - old_pairs):
+                print(x)
+            print("removed:")
+            for x in sorted(old_pairs - new_pairs):
+                print(x)
 
         cls.strings[:] = sorted(new_pairs)
 
