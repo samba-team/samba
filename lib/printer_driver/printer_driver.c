@@ -1153,7 +1153,7 @@ static NTSTATUS setup_driver_by_name(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
- parse the a printer inf file
+ parse a printer inf file
 ****************************************************************/
 
 NTSTATUS driver_inf_parse(TALLOC_CTX *mem_ctx,
