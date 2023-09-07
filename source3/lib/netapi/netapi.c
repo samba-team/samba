@@ -97,7 +97,7 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
-	ret = libnetapi_net_init(context, lp_ctx);
+	ret = libnetapi_net_init(context, lp_ctx, NULL);
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -111,7 +111,8 @@ the command line).
 ****************************************************************/
 
 NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context,
-				  struct loadparm_context *lp_ctx)
+				  struct loadparm_context *lp_ctx,
+				  struct cli_credentials *creds)
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
@@ -123,16 +124,18 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context,
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
-	ctx->creds = cli_credentials_init(ctx);
+	ctx->creds = creds;
 	if (ctx->creds == NULL) {
-		TALLOC_FREE(frame);
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
+		ctx->creds = cli_credentials_init(ctx);
+		if (ctx->creds == NULL) {
+			TALLOC_FREE(frame);
+			return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
+		}
+		/* Ignore return code, as we might not have a smb.conf */
+		(void)cli_credentials_guess(ctx->creds, lp_ctx);
 	}
 
 	BlockSignals(True, SIGPIPE);
-
-	/* Ignore return code, as we might not have a smb.conf */
-	(void)cli_credentials_guess(ctx->creds, lp_ctx);
 
 	status = libnetapi_init_private_context(ctx);
 	if (status != 0) {

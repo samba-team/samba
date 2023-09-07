@@ -229,11 +229,7 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (libnetapi_net_init(&c->netapi_ctx, c->lp_ctx) != 0) {
-		return -1;
-	}
-
-	net_api_status = libnetapi_set_creds(c->netapi_ctx, c->creds);
+	net_api_status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx, c->creds);
 	if (net_api_status != 0) {
 		return -1;
 	}

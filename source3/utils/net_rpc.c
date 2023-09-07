@@ -1312,12 +1312,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
-	if (status != 0) {
-		return -1;
-	}
-
-	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -3505,12 +3500,7 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
-	if (status != 0) {
-		return -1;
-	}
-
-	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -5474,16 +5464,10 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
-
-	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
-	if (status != 0) {
-		return -1;
-	}
-
 
 	if (argc == 0) {
 		if (c->display_usage) {
@@ -5757,12 +5741,7 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
-	if (status != 0) {
-		return -1;
-	}
-
-	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -8369,12 +8348,7 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx);
-	if (status != 0) {
-		return -1;
-	}
-
-	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
+	status = libnetapi_net_init(&c->netapi_ctx, c->lp_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
