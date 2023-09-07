@@ -22,7 +22,7 @@
 */
 
 /*
- * This (arcfour over data with a key combined from two imputs, one
+ * This (arcfour over data with a key combined from two inputs, one
  * the key another the confounder), is a common pattern in pre-AES
  * windows cryptography
  *
