@@ -1,4 +1,93 @@
                    ===============================
+                   Release Notes for Samba 4.17.11
+                         September 07, 2023
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.17 release series.
+
+
+Changes since 4.17.10
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15419: Weird filename can cause assert to fail in
+     openat_pathref_fsp_nosymlink().
+   * BUG 15420: reply_sesssetup_and_X() can dereference uninitialized tmp
+     pointer.
+   * BUG 15430: Missing return in reply_exit_done().
+   * BUG 15432: TREE_CONNECT without SETUP causes smbd to use uninitialized
+     pointer.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15401: Improve GetNChanges to address some (but not all "Azure AD
+     Connect") syncronisation tool looping during the initial user sync phase.
+   * BUG 15407: Samba replication logs show (null) DN.
+   * BUG 9959: Windows client join fails if a second container CN=System exists
+    somewhere.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15342: Spotlight sometimes returns no results on latest macOS.
+   * BUG 15417: Renaming results in NT_STATUS_SHARING_VIOLATION if previously
+     attempted to remove the destination.
+   * BUG 15427: Spotlight results return wrong date in result list.
+   * BUG 15463: macOS mdfind returns only 50 results.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15346: 2-3min delays at reconnect with smb2_validate_sequence_number:
+     bad message_id 2.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15346: 2-3min delays at reconnect with smb2_validate_sequence_number:
+     bad message_id 2.
+   * BUG 15441: samba-tool ntacl get segfault if aio_pthread appended.
+   * BUG 15446: DCERPC_PKT_CO_CANCEL and DCERPC_PKT_ORPHANED can't be parsed.
+
+o  MikeLiu <mikeliu@qnap.com>
+   * BUG 15453: File doesn't show when user doesn't have permission if
+     aio_pthread is loaded.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15384: net ads lookup (with unspecified realm) fails
+   * BUG 15435: Regression DFS not working with widelinks = true.
+
+o  Arvid Requate <requate@univention.de>
+   * BUG 9959: Windows client join fails if a second container CN=System exists
+    somewhere.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15451: ctdb_killtcp fails to work with --enable-pcap and libpcap ≥
+     1.9.1.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15441: samba-tool ntacl get segfault if aio_pthread appended.
+   * BUG 15449: mdssvc: Do an early talloc_free() in _mdssvc_open().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.17.10
                             July 19, 2023
                    ===============================
@@ -70,8 +159,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.17.9
                            July 06, 2023
