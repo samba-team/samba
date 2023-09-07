@@ -265,7 +265,7 @@ bool prs_copy_data_in(prs_struct *dst, const char *src, uint32_t len)
 }
 
 /*******************************************************************
- Align a the data_len to a multiple of align bytes - filling with
+ Align the data_len to a multiple of align bytes - filling with
  zeros.
  ********************************************************************/
 
