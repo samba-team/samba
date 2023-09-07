@@ -104,7 +104,6 @@ static void wb_thread_ctx_initialize(void)
 				 wb_thread_ctx_destructor);
 	assert(ret == 0);
 }
-#endif
 
 static struct winbindd_context *get_wb_thread_ctx(void)
 {
@@ -139,6 +138,7 @@ static struct winbindd_context *get_wb_thread_ctx(void)
 	}
 	return ctx;
 }
+#endif /* HAVE_PTHREAD */
 
 static struct winbindd_context *get_wb_global_ctx(void)
 {
