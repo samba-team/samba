@@ -119,8 +119,8 @@ size_t utf16_len_n(const void *src, size_t n);
 char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
- * destination charset), that would be needed to convert the input
- * string which is expected to be in in src_charset encoding to the
+ * destination charset) that would be needed to convert the input
+ * string, which is expected to be in src_charset encoding, to the
  * destination charset (which should be a unicode charset).
  */
 size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,

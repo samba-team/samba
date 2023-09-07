@@ -200,8 +200,8 @@ _PUBLIC_ bool strcsequal(const char *s1,const char *s2)
 
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
- * destination charset), that would be needed to convert the input
- * string which is expected to be in in src_charset encoding to the
+ * destination charset) that would be needed to convert the input
+ * string, which is expected to be in src_charset encoding, to the
  * destination charset (which should be a unicode charset).
  */
 _PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
@@ -287,8 +287,8 @@ _PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
 
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
- * destination charset), that would be needed to convert the input
- * string which is expected to be in in src_charset encoding to the
+ * destination charset) that would be needed to convert the input
+ * string, which is expected to be in src_charset encoding, to the
  * destination charset (which should be a unicode charset).
  */
 _PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset)
@@ -324,7 +324,7 @@ _PUBLIC_ size_t strlen_m_ext_term_null(const char *s,
 
 /**
  * Calculate the number of 16-bit units that would be needed to convert
- * the input string which is expected to be in CH_UNIX encoding to UTF16.
+ * the input string, which is expected to be in CH_UNIX encoding, to UTF16.
  *
  * This will be the same as the number of bytes in a string for single
  * byte strings, but will be different for multibyte.
