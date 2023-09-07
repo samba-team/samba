@@ -724,9 +724,9 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 		return WERR_INVALID_DATA;
 	}
 
-	/* There is a magic value a the beginning of the data
-	 * we can use an adhoc structure but as the
-	 * parent structure is just an array of bytes it a lot of work
+	/* There is a magic value at the beginning of the data
+	 * we can use an ad hoc structure but as the
+	 * parent structure is just an array of bytes it is a lot of
 	 * work just prepending 4 bytes
 	 */
 	*(r->out.data_out) = talloc_zero_array(mem_ctx, uint8_t, uncrypted_data->length + 4);
