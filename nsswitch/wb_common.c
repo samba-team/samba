@@ -26,6 +26,7 @@
 #include "replace.h"
 #include "system/select.h"
 #include "winbind_client.h"
+#include "lib/util/dlinklist.h"
 #include <assert.h>
 
 #ifdef HAVE_PTHREAD_H
@@ -37,67 +38,112 @@ static __thread char client_name[32];
 /* Global context */
 
 struct winbindd_context {
+	struct winbindd_context *prev, *next;
 	int winbindd_fd;	/* winbind file descriptor */
 	bool is_privileged;	/* using the privileged socket? */
 	pid_t our_pid;		/* calling process pid */
+	bool autofree;		/* this is a thread global context */
 };
 
 static struct wb_global_ctx {
-	bool initialized;
 #ifdef HAVE_PTHREAD
 	pthread_once_t control;
 	pthread_key_t key;
+	bool key_initialized;
+#ifdef PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP
+#define WB_GLOBAL_MUTEX_INITIALIZER PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP
 #else
-	bool dummy;
+#define WB_GLOBAL_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 #endif
+#define WB_GLOBAL_LIST_LOCK do { \
+	int __pret = pthread_mutex_lock(&wb_global_ctx.list_mutex); \
+	assert(__pret == 0); \
+} while(0)
+#define WB_GLOBAL_LIST_UNLOCK do { \
+	int __pret = pthread_mutex_unlock(&wb_global_ctx.list_mutex); \
+	assert(__pret == 0); \
+} while(0)
+	pthread_mutex_t list_mutex;
+#else /* => not HAVE_PTHREAD */
+#define WB_GLOBAL_LIST_LOCK do { } while(0)
+#define WB_GLOBAL_LIST_UNLOCK do { } while(0)
+#endif /* not HAVE_PTHREAD */
+	struct winbindd_context *list;
 } wb_global_ctx = {
 #ifdef HAVE_PTHREAD
 	.control = PTHREAD_ONCE_INIT,
+	.list_mutex = WB_GLOBAL_MUTEX_INITIALIZER,
 #endif
+	.list = NULL,
 };
 
 static void winbind_close_sock(struct winbindd_context *ctx);
+static void winbind_ctx_free_locked(struct winbindd_context *ctx);
+static void winbind_cleanup_list(void);
 
 #ifdef HAVE_PTHREAD
 static void wb_thread_ctx_initialize(void);
 
+static void wb_atfork_prepare(void)
+{
+	WB_GLOBAL_LIST_LOCK;
+}
+
+static void wb_atfork_parent(void)
+{
+	WB_GLOBAL_LIST_UNLOCK;
+}
+
 static void wb_atfork_child(void)
 {
-	struct winbindd_context *ctx = NULL;
-	int ret;
+	wb_global_ctx.list_mutex = (pthread_mutex_t)WB_GLOBAL_MUTEX_INITIALIZER;
 
-	ctx = (struct winbindd_context *)pthread_getspecific(wb_global_ctx.key);
-	if (ctx == NULL) {
-		return;
+	if (wb_global_ctx.key_initialized) {
+		int ret;
+
+		/*
+		 * After a fork the child still believes
+		 * it is the same thread as in the parent.
+		 * So pthread_getspecific() would return the
+		 * value of the thread that called fork().
+		 *
+		 * But we don't want that behavior, so
+		 * we just clear the reference and let
+		 * winbind_cleanup_list() below 'autofree'
+		 * the parent threads global context.
+		 */
+		ret = pthread_setspecific(wb_global_ctx.key, NULL);
+		assert(ret == 0);
 	}
 
-	ret = pthread_setspecific(wb_global_ctx.key, NULL);
-	assert(ret == 0);
-
-	winbind_close_sock(ctx);
-	free(ctx);
+	/*
+	 * But we need to close/cleanup the global state
+	 * of the parents threads.
+	 */
+	winbind_cleanup_list();
 }
 
 static void wb_thread_ctx_destructor(void *p)
 {
 	struct winbindd_context *ctx = (struct winbindd_context *)p;
 
-	winbind_close_sock(ctx);
-	free(ctx);
+	winbindd_ctx_free(ctx);
 }
 
 static void wb_thread_ctx_initialize(void)
 {
 	int ret;
 
-	ret = pthread_atfork(NULL,
-			     NULL,
+	ret = pthread_atfork(wb_atfork_prepare,
+			     wb_atfork_parent,
 			     wb_atfork_child);
 	assert(ret == 0);
 
 	ret = pthread_key_create(&wb_global_ctx.key,
 				 wb_thread_ctx_destructor);
 	assert(ret == 0);
+
+	wb_global_ctx.key_initialized = true;
 }
 
 static struct winbindd_context *get_wb_thread_ctx(void)
@@ -123,8 +169,13 @@ static struct winbindd_context *get_wb_thread_ctx(void)
 	*ctx = (struct winbindd_context) {
 		.winbindd_fd = -1,
 		.is_privileged = false,
-		.our_pid = 0
+		.our_pid = 0,
+		.autofree = true,
 	};
+
+	WB_GLOBAL_LIST_LOCK;
+	DLIST_ADD_END(wb_global_ctx.list, ctx);
+	WB_GLOBAL_LIST_UNLOCK;
 
 	ret = pthread_setspecific(wb_global_ctx.key, ctx);
 	if (ret != 0) {
@@ -142,7 +193,8 @@ static struct winbindd_context *get_wb_global_ctx(void)
 	static struct winbindd_context _ctx = {
 		.winbindd_fd = -1,
 		.is_privileged = false,
-		.our_pid = 0
+		.our_pid = 0,
+		.autofree = false,
 	};
 #endif
 
@@ -150,9 +202,11 @@ static struct winbindd_context *get_wb_global_ctx(void)
 	ctx = get_wb_thread_ctx();
 #else
 	ctx = &_ctx;
+	if (ctx->prev == NULL && ctx->next == NULL) {
+		DLIST_ADD_END(wb_global_ctx.list, ctx);
+	}
 #endif
 
-	wb_global_ctx.initialized = true;
 	return ctx;
 }
 
@@ -226,6 +280,30 @@ static void winbind_close_sock(struct winbindd_context *ctx)
 	}
 }
 
+static void winbind_ctx_free_locked(struct winbindd_context *ctx)
+{
+	winbind_close_sock(ctx);
+	DLIST_REMOVE(wb_global_ctx.list, ctx);
+	free(ctx);
+}
+
+static void winbind_cleanup_list(void)
+{
+	struct winbindd_context *ctx = NULL, *next = NULL;
+
+	WB_GLOBAL_LIST_LOCK;
+	for (ctx = wb_global_ctx.list; ctx != NULL; ctx = next) {
+		next = ctx->next;
+
+		if (ctx->autofree) {
+			winbind_ctx_free_locked(ctx);
+		} else {
+			winbind_close_sock(ctx);
+		}
+	}
+	WB_GLOBAL_LIST_UNLOCK;
+}
+
 /* Destructor for global context to ensure fd is closed */
 
 #ifdef HAVE_DESTRUCTOR_ATTRIBUTE
@@ -235,18 +313,18 @@ __attribute__((destructor))
 #endif
 static void winbind_destructor(void)
 {
-	struct winbindd_context *ctx;
-
-	if (!wb_global_ctx.initialized) {
-		return;
+#ifdef HAVE_PTHREAD
+	if (wb_global_ctx.key_initialized) {
+		int ret;
+		ret = pthread_key_delete(wb_global_ctx.key);
+		assert(ret == 0);
+		wb_global_ctx.key_initialized = false;
 	}
 
-	ctx = get_wb_global_ctx();
-	if (ctx == NULL) {
-		return;
-	}
+	wb_global_ctx.control = (pthread_once_t)PTHREAD_ONCE_INIT;
+#endif /* HAVE_PTHREAD */
 
-	winbind_close_sock(ctx);
+	winbind_cleanup_list();
 }
 
 #define CONNECT_TIMEOUT 30
@@ -928,11 +1006,16 @@ struct winbindd_context *winbindd_ctx_create(void)
 
 	ctx->winbindd_fd = -1;
 
+	WB_GLOBAL_LIST_LOCK;
+	DLIST_ADD_END(wb_global_ctx.list, ctx);
+	WB_GLOBAL_LIST_UNLOCK;
+
 	return ctx;
 }
 
 void winbindd_ctx_free(struct winbindd_context *ctx)
 {
-	winbind_close_sock(ctx);
-	free(ctx);
+	WB_GLOBAL_LIST_LOCK;
+	winbind_ctx_free_locked(ctx);
+	WB_GLOBAL_LIST_UNLOCK;
 }
