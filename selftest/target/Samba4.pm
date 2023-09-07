@@ -3361,7 +3361,7 @@ sub setup_restoredc
 	}
 
 	#
-	# As we create a the same domain as a clone
+	# As we create the same domain as a clone
 	# we need a separate resolv.conf!
 	#
 	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
@@ -3466,7 +3466,7 @@ sub setup_offlinebackupdc
 	}
 
 	#
-	# As we create a the same domain as a clone
+	# As we create the same domain as a clone
 	# we need a separate resolv.conf!
 	#
 	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
@@ -3630,7 +3630,7 @@ sub setup_customdc
 	}
 
 	#
-	# As we create a the same domain as a clone
+	# As we create the same domain as a clone
 	# we need a separate resolv.conf!
 	#
 	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
