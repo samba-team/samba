@@ -78,7 +78,7 @@ static void single_accept_connection(struct tevent_context *ev,
 	/*
 	 * We use the PID so we cannot collide in with cluster ids
 	 * generated in other single mode tasks, and, and won't
-	 * collide with PIDs from process model standard because a the
+	 * collide with PIDs from process model standard because the
 	 * combination of pid/fd should be unique system-wide
 	 */
 	new_conn(ev, lp_ctx, connected_socket,
@@ -106,7 +106,7 @@ static void single_new_task(struct tevent_context *ev,
 	/*
 	 * We use the PID so we cannot collide in with cluster ids
 	 * generated in other single mode tasks, and, and won't
-	 * collide with PIDs from process model starndard because a the
+	 * collide with PIDs from process model standard because the
 	 * combination of pid/task_id should be unique system-wide
 	 *
 	 * Using the pid unaltered makes debugging of which process
