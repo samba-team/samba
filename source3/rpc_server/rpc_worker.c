@@ -172,7 +172,7 @@ static void rpc_worker_new_client(
 	int sock)
 {
 	struct dcesrv_context *dce_ctx = worker->dce_ctx;
-	struct named_pipe_auth_req_info7 *info7 = client->npa_info7;
+	struct named_pipe_auth_req_info8 *info8 = client->npa_info8;
 	struct tsocket_address *remote_client_addr = NULL;
 	struct tsocket_address *local_server_addr = NULL;
 	struct dcerpc_binding *b = NULL;
@@ -265,84 +265,84 @@ static void rpc_worker_new_client(
 
 	if (transport == NCALRPC) {
 		ret = tsocket_address_unix_from_path(ncacn_conn,
-						     info7->remote_client_addr,
+						     info8->remote_client_addr,
 						     &remote_client_addr);
 		if (ret == -1) {
 			DBG_DEBUG("tsocket_address_unix_from_path"
 				  "(%s) failed: %s\n",
-				  info7->remote_client_addr,
+				  info8->remote_client_addr,
 				  strerror(errno));
 			goto fail;
 		}
 
 		ncacn_conn->remote_client_name =
-			talloc_strdup(ncacn_conn, info7->remote_client_name);
+			talloc_strdup(ncacn_conn, info8->remote_client_name);
 		if (ncacn_conn->remote_client_name == NULL) {
 			DBG_DEBUG("talloc_strdup(%s) failed\n",
-				  info7->remote_client_name);
+				  info8->remote_client_name);
 			goto fail;
 		}
 
 		ret = tsocket_address_unix_from_path(ncacn_conn,
-						     info7->local_server_addr,
+						     info8->local_server_addr,
 						     &local_server_addr);
 		if (ret == -1) {
 			DBG_DEBUG("tsocket_address_unix_from_path"
 				  "(%s) failed: %s\n",
-				  info7->local_server_addr,
+				  info8->local_server_addr,
 				  strerror(errno));
 			goto fail;
 		}
 
 		ncacn_conn->local_server_name =
-			talloc_strdup(ncacn_conn, info7->local_server_name);
+			talloc_strdup(ncacn_conn, info8->local_server_name);
 		if (ncacn_conn->local_server_name == NULL) {
 			DBG_DEBUG("talloc_strdup(%s) failed\n",
-				  info7->local_server_name);
+				  info8->local_server_name);
 			goto fail;
 		}
 	} else {
 		ret = tsocket_address_inet_from_strings(
 			ncacn_conn,
 			"ip",
-			info7->remote_client_addr,
-			info7->remote_client_port,
+			info8->remote_client_addr,
+			info8->remote_client_port,
 			&remote_client_addr);
 		if (ret == -1) {
 			DBG_DEBUG("tsocket_address_inet_from_strings"
 				  "(%s, %" PRIu16 ") failed: %s\n",
-				  info7->remote_client_addr,
-				  info7->remote_client_port,
+				  info8->remote_client_addr,
+				  info8->remote_client_port,
 				  strerror(errno));
 			goto fail;
 		}
 		ncacn_conn->remote_client_name =
-			talloc_strdup(ncacn_conn, info7->remote_client_name);
+			talloc_strdup(ncacn_conn, info8->remote_client_name);
 		if (ncacn_conn->remote_client_name == NULL) {
 			DBG_DEBUG("talloc_strdup(%s) failed\n",
-				  info7->remote_client_name);
+				  info8->remote_client_name);
 			goto fail;
 		}
 
 		ret = tsocket_address_inet_from_strings(
 			ncacn_conn,
 			"ip",
-			info7->local_server_addr,
-			info7->local_server_port,
+			info8->local_server_addr,
+			info8->local_server_port,
 			&local_server_addr);
 		if (ret == -1) {
 			DBG_DEBUG("tsocket_address_inet_from_strings"
 				  "(%s, %" PRIu16 ") failed: %s\n",
-				  info7->local_server_addr,
-				  info7->local_server_port,
+				  info8->local_server_addr,
+				  info8->local_server_port,
 				  strerror(errno));
 			goto fail;
 		}
 		ncacn_conn->local_server_name =
-			talloc_strdup(ncacn_conn, info7->local_server_name);
+			talloc_strdup(ncacn_conn, info8->local_server_name);
 		if (ncacn_conn->local_server_name == NULL) {
 			DBG_DEBUG("talloc_strdup(%s) failed\n",
-				  info7->local_server_name);
+				  info8->local_server_name);
 			goto fail;
 		}
 	}
@@ -364,10 +364,10 @@ static void rpc_worker_new_client(
 		 * socket that the client connected to, passed in from
 		 * samba-dcerpcd via the binding. For NCACN_NP (root
 		 * only by unix permissions) we got a
-		 * named_pipe_auth_req_info7 where the transport can
+		 * named_pipe_auth_req_info8 where the transport can
 		 * be overridden.
 		 */
-		transport = info7->transport;
+		transport = info8->transport;
 	} else {
 		ret = tstream_bsd_existing_socket(
 			ncacn_conn, sock, &tstream);
@@ -379,7 +379,7 @@ static void rpc_worker_new_client(
 	}
 	sock = -1;
 
-	token = info7->session_info->session_info->security_token;
+	token = info8->session_info->session_info->security_token;
 
 	if (security_token_is_system(token) && (transport != NCALRPC)) {
 		DBG_DEBUG("System token only allowed on NCALRPC\n");
@@ -410,7 +410,7 @@ static void rpc_worker_new_client(
 	status = dcesrv_endpoint_connect(dce_ctx,
 					 ncacn_conn,
 					 ep,
-					 info7->session_info->session_info,
+					 info8->session_info->session_info,
 					 global_event_context(),
 					 state_flags,
 					 &dcesrv_conn);
