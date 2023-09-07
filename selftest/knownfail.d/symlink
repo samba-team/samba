@@ -2,3 +2,4 @@
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_file
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_absolute_outside_share
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_absolute_inshare
+^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlink_reparse_data_buffer_parse
