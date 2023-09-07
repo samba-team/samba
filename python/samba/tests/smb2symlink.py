@@ -34,10 +34,12 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
                 self.server_ip,
                 share,
                 self.lp,
-                self.creds)
+                self.creds,
+                force_smb1=True)
         except NTSTATUSError as e:
             if e.args[0] != ntstatus.NT_STATUS_CONNECTION_RESET:
                 raise
+        smb1.smb1_posix()
 
         share = samba.tests.env_get_var_value(
             "SMB2_SHARE", allow_missing=True)
