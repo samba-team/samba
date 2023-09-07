@@ -1821,7 +1821,7 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 }
 
 /**
- * Schedule a record for deletetion.
+ * Schedule a record for deletion.
  * Called from the parent context.
  */
 int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
