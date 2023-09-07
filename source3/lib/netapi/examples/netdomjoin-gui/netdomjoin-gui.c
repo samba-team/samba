@@ -484,7 +484,7 @@ static void callback_do_hostname_change(GtkWidget *widget,
 			if (!state->account || !state->password) {
 				debug("callback_do_hostname_change: no creds yet\n");
 				callback_creds_prompt(NULL, state,
-						      "Enter the name and password of an account with permission to change a computer name in a the domain.",
+						      "Enter the name and password of an account with permission to change a computer name in the domain.",
 						      callback_do_storeauth_and_continue);
 			}
 
