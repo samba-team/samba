@@ -1555,6 +1555,10 @@ _PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credenti
 	char *p;
 	char pass[128];
 
+	if (credentials->password_obtained >= obtained) {
+		return false;
+	}
+
 	for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
 		p && p - pass < sizeof(pass) - 1;) {
 		switch (read(fd, p, 1)) {
