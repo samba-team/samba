@@ -1100,7 +1100,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	const struct authn_server_policy *authn_server_policy = NULL;
 	int64_t enforced_tgt_lifetime_raw;
 
-	ZERO_STRUCTP(entry);
+	*entry = (struct sdb_entry) {};
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -1770,7 +1770,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
 
-	ZERO_STRUCTP(entry);
+	*entry = (struct sdb_entry) {};
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -2753,6 +2753,8 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 	bool ok;
 	char *upper = NULL;
 
+	*entry = (struct sdb_entry) {};
+
 	num_comp = krb5_princ_size(context, principal);
 
 	if (flags & SDB_F_GET_CLIENT) {
@@ -2902,8 +2904,6 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		TALLOC_FREE(frame);
 		return 0;
 	}
-
-	ZERO_STRUCTP(entry);
 
 	ret = krb5_copy_principal(context, principal,
 				  &entry->principal);

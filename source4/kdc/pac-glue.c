@@ -60,11 +60,9 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	struct netr_SamInfo3 *info3 = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups = NULL;
-	union PAC_INFO pac_info;
+	union PAC_INFO pac_info = {};
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
-
-	ZERO_STRUCT(pac_info);
 
 	*pac_data = data_blob_null;
 
@@ -143,9 +141,7 @@ NTSTATUS samba_get_requester_sid_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	if (requester_sid_blob != NULL && info->num_sids > 0) {
-		union PAC_INFO pac_requester_sid;
-
-		ZERO_STRUCT(pac_requester_sid);
+		union PAC_INFO pac_requester_sid = {};
 
 		pac_requester_sid.requester_sid.sid = info->sids[PRIMARY_USER_SID_INDEX].sid;
 
@@ -169,12 +165,10 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 				     const struct auth_user_info_dc *info,
 				     DATA_BLOB *upn_data)
 {
-	union PAC_INFO pac_upn;
+	union PAC_INFO pac_upn = {};
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
 	bool ok;
-
-	ZERO_STRUCT(pac_upn);
 
 	*upn_data = data_blob_null;
 
@@ -219,11 +213,9 @@ NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 				  uint64_t pac_attributes,
 				  DATA_BLOB *pac_attrs_data)
 {
-	union PAC_INFO pac_attrs;
+	union PAC_INFO pac_attrs = {};
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
-
-	ZERO_STRUCT(pac_attrs);
 
 	*pac_attrs_data = data_blob_null;
 
@@ -263,9 +255,7 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 	struct PAC_CREDENTIAL_DATA cred_data = {
 		.credential_count = 0,
 	};
-	struct PAC_CREDENTIAL_DATA_NDR cred_ndr;
-
-	ZERO_STRUCT(cred_ndr);
+	struct PAC_CREDENTIAL_DATA_NDR cred_ndr = {};
 
 	*cred_blob = data_blob_null;
 
@@ -1302,13 +1292,13 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 						      const krb5_const_principal proxy_principal,
 						      DATA_BLOB *new_blob)
 {
-	krb5_data old_data;
+	krb5_data old_data = {};
 	DATA_BLOB old_blob;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	enum ndr_err_code ndr_err;
-	union PAC_INFO info;
-	struct PAC_CONSTRAINED_DELEGATION _d;
+	union PAC_INFO info = {};
+	struct PAC_CONSTRAINED_DELEGATION _d = {};
 	struct PAC_CONSTRAINED_DELEGATION *d = NULL;
 	char *server = NULL;
 	char *proxy = NULL;
@@ -1321,7 +1311,7 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 
 	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_CONSTRAINED_DELEGATION, &old_data);
 	if (ret == ENOENT) {
-		ZERO_STRUCT(old_data);
+		/* OK. */
 	} else if (ret) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1330,7 +1320,6 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	old_blob.length = old_data.length;
 	old_blob.data = (uint8_t *)old_data.data;
 
-	ZERO_STRUCT(info);
 	if (old_blob.length > 0) {
 		ndr_err = ndr_pull_union_blob(&old_blob, mem_ctx,
 				&info, PAC_TYPE_CONSTRAINED_DELEGATION,
@@ -1343,7 +1332,6 @@ static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 			return nt_status;
 		}
 	} else {
-		ZERO_STRUCT(_d);
 		info.constrained_delegation.info = &_d;
 	}
 	smb_krb5_free_data_contents(context, &old_data);
@@ -1805,7 +1793,7 @@ static krb5_error_code samba_kdc_make_device_info(TALLOC_CTX *mem_ctx,
 	struct PAC_DEVICE_INFO *device_info = NULL;
 	uint32_t i;
 
-	ZERO_STRUCT(*info);
+	*info = (union PAC_INFO) {};
 
 	info->device_info.info = NULL;
 
