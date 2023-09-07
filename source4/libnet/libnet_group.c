@@ -340,7 +340,7 @@ static void continue_name_found(struct composite_context *ctx)
 	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
 	if (!composite_is_ok(c)) return;
 
-	/* Is is a group SID actually ? */
+	/* Is it a group SID actually ? */
 	if (s->lookup.out.sid_type != SID_NAME_DOM_GRP &&
 	    s->lookup.out.sid_type != SID_NAME_ALIAS) {
 		composite_error(c, NT_STATUS_NO_SUCH_GROUP);
