@@ -31,7 +31,7 @@
 #include "ntvfs/simple/proto.h"
 
 /*
-  convert a windows path to a unix path - don't do any manging or case sensitive handling
+  convert a windows path to a unix path - don't do any mangling or case sensitive handling
 */
 char *svfs_unix_path(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req, const char *name)
