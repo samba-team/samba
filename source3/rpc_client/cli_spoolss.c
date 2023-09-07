@@ -31,7 +31,7 @@
 #include "rpc_client/init_spoolss.h"
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_OpenPrinterEx
+ convenience wrapper around rpccli_spoolss_OpenPrinterEx
 **********************************************************************/
 
 WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
@@ -81,7 +81,7 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_GetPrinterDriver
+ convenience wrapper around rpccli_spoolss_GetPrinterDriver
 **********************************************************************/
 
 WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
@@ -138,7 +138,7 @@ WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_GetPrinterDriver2
+ convenience wrapper around rpccli_spoolss_GetPrinterDriver2
 **********************************************************************/
 
 WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
@@ -208,7 +208,7 @@ WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_AddPrinterEx
+ convenience wrapper around rpccli_spoolss_AddPrinterEx
 **********************************************************************/
 
 WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
@@ -254,7 +254,7 @@ WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_GetPrinter
+ convenience wrapper around rpccli_spoolss_GetPrinter
 **********************************************************************/
 
 WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli,
@@ -310,7 +310,7 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_GetJob
+ convenience wrapper around rpccli_spoolss_GetJob
 **********************************************************************/
 
 WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli,
@@ -368,7 +368,7 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumForms
+ convenience wrapper around rpccli_spoolss_EnumForms
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli,
@@ -426,7 +426,7 @@ WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrintProcessors
+ convenience wrapper around rpccli_spoolss_EnumPrintProcessors
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprintprocessors(struct rpc_pipe_client *cli,
@@ -487,7 +487,7 @@ WERROR rpccli_spoolss_enumprintprocessors(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrintProcessorDataTypes
+ convenience wrapper around rpccli_spoolss_EnumPrintProcessorDataTypes
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
@@ -548,7 +548,7 @@ WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPorts
+ convenience wrapper around rpccli_spoolss_EnumPorts
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumports(struct rpc_pipe_client *cli,
@@ -606,7 +606,7 @@ WERROR rpccli_spoolss_enumports(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumMonitors
+ convenience wrapper around rpccli_spoolss_EnumMonitors
 **********************************************************************/
 
 WERROR rpccli_spoolss_enummonitors(struct rpc_pipe_client *cli,
@@ -664,7 +664,7 @@ WERROR rpccli_spoolss_enummonitors(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumJobs
+ convenience wrapper around rpccli_spoolss_EnumJobs
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli,
@@ -728,7 +728,7 @@ WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrinterDrivers
+ convenience wrapper around rpccli_spoolss_EnumPrinterDrivers
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprinterdrivers(struct rpc_pipe_client *cli,
@@ -789,7 +789,7 @@ WERROR rpccli_spoolss_enumprinterdrivers(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrinters
+ convenience wrapper around rpccli_spoolss_EnumPrinters
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprinters(struct rpc_pipe_client *cli,
@@ -850,7 +850,7 @@ WERROR rpccli_spoolss_enumprinters(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_GetPrinterData
+ convenience wrapper around rpccli_spoolss_GetPrinterData
 **********************************************************************/
 
 WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
@@ -908,7 +908,7 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrinterKey
+ convenience wrapper around rpccli_spoolss_EnumPrinterKey
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
@@ -958,7 +958,7 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrinterDataEx
+ convenience wrapper around rpccli_spoolss_EnumPrinterDataEx
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli,
