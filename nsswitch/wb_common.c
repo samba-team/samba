@@ -246,14 +246,10 @@ static void winbind_destructor(void)
 		return;
 	}
 
-#ifdef HAVE_PTHREAD_H
-	ctx = (struct winbindd_context *)pthread_getspecific(wb_global_ctx.key);
+	ctx = get_wb_global_ctx();
 	if (ctx == NULL) {
 		return;
 	}
-#else
-	ctx = get_wb_global_ctx();
-#endif
 
 	winbind_close_sock(ctx);
 }
