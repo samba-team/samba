@@ -67,6 +67,8 @@ except KeyError:
     samba4bindir = bindir()
     config_h = os.path.join(samba4bindir, "default/include/config.h")
 
+bbdir = os.path.join(srcdir(), "testprogs/blackbox")
+
 # check available features
 config_hash = dict()
 f = open(config_h, 'r')
@@ -958,6 +960,10 @@ if with_pthreadpool:
                   [os.path.join(samba3srcdir,
                                 "script/tests/test_libwbclient_threads.sh"),
                    "$DOMAIN", "$DC_USERNAME"])
+    plantestsuite("b15464_testcase", "none",
+                  [os.path.join(bbdir, "b15464-testcase.sh"),
+                   binpath("b15464-testcase"),
+                   binpath("plugins/libnss_winbind.so.2")])
 
 plantestsuite("samba3.test_nfs4_acl", "none",
               [os.path.join(bindir(), "test_nfs4_acls"),
