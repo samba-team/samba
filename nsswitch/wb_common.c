@@ -76,11 +76,6 @@ static void wb_atfork_child(void)
 
 	winbind_close_sock(ctx);
 	free(ctx);
-
-	ret = pthread_key_delete(wb_global_ctx.key);
-	assert(ret == 0);
-
-	wb_global_ctx.control = (pthread_once_t)PTHREAD_ONCE_INIT;
 }
 
 static void wb_thread_ctx_destructor(void *p)
