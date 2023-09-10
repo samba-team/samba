@@ -295,7 +295,7 @@ class wintest():
         if i == 0:
             child.expect('your original resolv.conf')
             child.expect('nameserver')
-        child.expect('\d+.\d+.\d+.\d+')
+        child.expect(r'\d+.\d+.\d+.\d+')
         return child.after
 
     def rndc_cmd(self, cmd, checkfail=True):
@@ -554,16 +554,16 @@ options {
         '''get the IP configuration of the child'''
         child.sendline("ipconfig /all")
         child.expect('Ethernet adapter ')
-        child.expect("[\w\s]+")
+        child.expect(r"[\w\s]+")
         self.setvar("WIN_NIC", child.after)
         child.expect(['IPv4 Address', 'IP Address'])
-        child.expect('\d+.\d+.\d+.\d+')
+        child.expect(r'\d+.\d+.\d+.\d+')
         self.setvar('WIN_IPV4_ADDRESS', child.after)
         child.expect('Subnet Mask')
-        child.expect('\d+.\d+.\d+.\d+')
+        child.expect(r'\d+.\d+.\d+.\d+')
         self.setvar('WIN_SUBNET_MASK', child.after)
         child.expect('Default Gateway')
-        i = child.expect(['\d+.\d+.\d+.\d+', "C:"])
+        i = child.expect([r'\d+.\d+.\d+.\d+', "C:"])
         if i == 0:
             self.setvar('WIN_DEFAULT_GATEWAY', child.after)
             child.expect("C:")
@@ -581,7 +581,7 @@ options {
             child.expect("C:")
             child.sendline("net config Workstation")
             child.expect("Workstation domain")
-            child.expect('[\S]+')
+            child.expect(r'[\S]+')
             domain = child.after
             i = child.expect(["Workstation Domain DNS Name", "Logon domain"])
             '''If we get the Logon domain first, we are not in an AD domain'''
@@ -590,7 +590,7 @@ options {
             if domain.upper() == self.getvar("WIN_DOMAIN").upper():
                 return True
 
-        child.expect('[\S]+')
+        child.expect(r'[\S]+')
         hostname = child.after
         if hostname.upper() == self.getvar("WIN_HOSTNAME").upper():
             return True
@@ -659,7 +659,7 @@ options {
             child = self.pexpect_spawn("bin/nmblookup %s" % hostname)
             i = 0
             while i == 0:
-                i = child.expect(["querying", '\d+.\d+.\d+.\d+', hostname, "Lookup failed"])
+                i = child.expect(["querying", r'\d+.\d+.\d+.\d+', hostname, "Lookup failed"])
                 if i == 0:
                     child.expect("\r")
             if i == 1:
@@ -833,7 +833,7 @@ options {
 
         """This server must therefore not yet be a directory server, so we must promote it"""
         child.sendline("copy /Y con answers.txt")
-        child.sendline(b'''
+        child.sendline(br'''
 [DCInstall]
 ; New forest promotion
 ReplicaOrNewDomain=Domain
