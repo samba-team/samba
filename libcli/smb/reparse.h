@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UTIL_REPARSE_H__
-#define __UTIL_REPARSE_H__
+#ifndef __LIBCLI_SMB_REPARSE_H__
+#define __LIBCLI_SMB_REPARSE_H__
 
 #include <talloc.h>
 #include "replace.h"
