@@ -187,7 +187,7 @@ def buildScript(buf, sections, group, user, ostype, machine, debug, pause):
                                 print "Error: No substitution text provided line: %d" % idx
                                 sys.exit(1)
 
-                            if macros.has_key(varname):
+                            if varname in macros:
                                 print "Warning: macro %s redefined line: %d" % (varname, idx)
 
                             macros[varname] = varsub
