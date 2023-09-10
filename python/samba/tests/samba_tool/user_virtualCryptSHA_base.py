@@ -39,7 +39,7 @@ HASH_OPTION = "password hash userPassword schemes"
 
 
 def _get_attribute(out, name):
-    p = re.compile("^" + name + ":\s+(\S+)")
+    p = re.compile("^" + name + r":\s+(\S+)")
     for line in out.split("\n"):
         m = p.match(line)
         if m:
