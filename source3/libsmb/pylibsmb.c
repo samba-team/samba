@@ -1860,7 +1860,7 @@ static PyMethodDef py_cli_notify_state_methods[] = {
 			   "\t\tList contents of a directory. The keys are, \n"
 			   "\t\t\tname: name of changed object\n"
 			   "\t\t\taction: type of the change\n"
-			   "None is returned if there's no response jet and "
+			   "None is returned if there's no response yet and "
 			   "wait=False is passed"
 	},
 	{
