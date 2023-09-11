@@ -454,7 +454,7 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 
 	d_state->domain_sid = talloc_steal(d_state, r->in.sid);
 
-	if (dom_sid_equal(d_state->domain_sid, dom_sid_parse_talloc(mem_ctx, SID_BUILTIN))) {
+	if (dom_sid_equal(d_state->domain_sid, &global_sid_Builtin)) {
 		d_state->builtin = true;
 		d_state->domain_name = "BUILTIN";
 	} else {
