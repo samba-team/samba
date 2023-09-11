@@ -853,7 +853,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 				 "descriptor_add: Error creating new add request.");
 	}
 
-	dom_sid_parse("S-1-0-0", control_sd->default_sd->owner_sid);
+	*control_sd->default_sd->owner_sid = global_sid_NULL;
 	ret = ldb_request_add_control(add_req,
 				      DSDB_CONTROL_CALCULATED_DEFAULT_SD_OID,
 				      false, (void *)control_sd);
