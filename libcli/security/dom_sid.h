@@ -37,6 +37,7 @@ extern const struct dom_sid global_sid_NT_Authority;
 extern const struct dom_sid global_sid_Enterprise_DCs;
 extern const struct dom_sid global_sid_System;
 extern const struct dom_sid global_sid_NULL;
+extern const struct dom_sid global_sid_Self;
 extern const struct dom_sid global_sid_Authenticated_Users;
 extern const struct dom_sid global_sid_Network;
 extern const struct dom_sid global_sid_Asserted_Identity;

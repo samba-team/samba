@@ -61,6 +61,9 @@ const struct dom_sid global_sid_System =			/* System */
 /* S-1-0-0 */
 const struct dom_sid global_sid_NULL =            		/* NULL sid */
 { 1, 1, {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-10 */
+const struct dom_sid global_sid_Self =				/* SELF */
+{ 1, 1, {0,0,0,0,0,5}, {10,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 /* S-1-5-11 */
 const struct dom_sid global_sid_Authenticated_Users =	/* All authenticated rids */
 { 1, 1, {0,0,0,0,0,5}, {11,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
