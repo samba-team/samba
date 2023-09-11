@@ -822,15 +822,9 @@ NTSTATUS samba_kdc_add_claims_valid(enum samba_claims_valid claims_valid,
 		return NT_STATUS_OK;
 	case SAMBA_CLAIMS_VALID_INCLUDE:
 	{
-		struct dom_sid claims_valid_sid;
-
-		if (!dom_sid_parse(SID_CLAIMS_VALID, &claims_valid_sid)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
 		return add_sid_to_array_attrs_unique(
 			user_info_dc,
-			&claims_valid_sid,
+			&global_sid_Claims_Valid,
 			SE_GROUP_DEFAULT_FLAGS,
 			&user_info_dc->sids,
 			&user_info_dc->num_sids);
@@ -848,15 +842,9 @@ NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_aut
 		return NT_STATUS_OK;
 	case SAMBA_COMPOUNDED_AUTH_INCLUDE:
 	{
-		struct dom_sid compounded_auth_sid;
-
-		if (!dom_sid_parse(SID_COMPOUNDED_AUTHENTICATION, &compounded_auth_sid)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
 		return add_sid_to_array_attrs_unique(
 			user_info_dc,
-			&compounded_auth_sid,
+			&global_sid_Compounded_Authentication,
 			SE_GROUP_DEFAULT_FLAGS,
 			&user_info_dc->sids,
 			&user_info_dc->num_sids);
