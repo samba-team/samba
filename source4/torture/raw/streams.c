@@ -2006,7 +2006,7 @@ static bool test_stream_permissions(struct torture_context *tctx,
 	ace.type = SEC_ACE_TYPE_ACCESS_DENIED;
 	ace.flags = 0;
 	ace.access_mask = SEC_FILE_WRITE_DATA;
-	ace.trustee = *dom_sid_parse_talloc(tctx, SID_WORLD);
+	ace.trustee = global_sid_World;
 
 	status = security_descriptor_dacl_add(sd, &ace);
 	CHECK_STATUS(status, NT_STATUS_OK);

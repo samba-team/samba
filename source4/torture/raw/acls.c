@@ -142,7 +142,7 @@ static bool test_sd(struct torture_context *tctx, struct smbcli_state *cli)
 	union smb_setfileinfo set;
 	struct security_ace ace = {};
 	struct security_descriptor *sd;
-	struct dom_sid *test_sid;
+	const struct dom_sid *test_sid;
 
 	if (!torture_setup_dir(cli, BASEDIR))
 		return false;
@@ -179,7 +179,7 @@ static bool test_sd(struct torture_context *tctx, struct smbcli_state *cli)
 
 	torture_comment(tctx, "add a new ACE to the DACL\n");
 
-	test_sid = dom_sid_parse_talloc(tctx, SID_NT_AUTHENTICATED_USERS);
+	test_sid = &global_sid_Authenticated_Users;
 
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
@@ -231,7 +231,7 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 	union smb_fileinfo q = {};
 	struct security_ace ace;
 	struct security_descriptor *sd;
-	struct dom_sid *test_sid;
+	const struct dom_sid *test_sid;
 	uint32_t attrib =
 	    FILE_ATTRIBUTE_HIDDEN |
 	    FILE_ATTRIBUTE_SYSTEM |
@@ -287,7 +287,7 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	torture_comment(tctx, "adding a new ACE\n");
-	test_sid = dom_sid_parse_talloc(tctx, SID_NT_AUTHENTICATED_USERS);
+	test_sid = &global_sid_Authenticated_Users;
 
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
