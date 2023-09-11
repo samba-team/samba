@@ -319,7 +319,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 							   &error_string);
 		if (ret) {
 			*reason = talloc_asprintf(mem_ctx,
-						  "Failed to set pipe forwarded"
+						  "Failed to set pipe forwarded "
 						  "creds: %s\n", error_string);
 			return NULL;
 		}
