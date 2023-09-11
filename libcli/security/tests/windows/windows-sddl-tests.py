@@ -65,6 +65,7 @@ def read_strings(files):
                 pass
 
             print(f"loading {filename} as 'a -> b' style")
+            f.seek(0)
             for line in f:
                 line = line.rstrip()
                 if line.startswith('#') or line == '':
