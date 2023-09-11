@@ -62,23 +62,9 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 	uint32_t num_sids = 0;
 	const char *filter = NULL;
 	struct auth_SidAttr *sids = NULL;
-	const struct dom_sid *anonymous_sid = NULL;
-	const struct dom_sid *system_sid = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	anonymous_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_ANONYMOUS);
-	if (anonymous_sid == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	system_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_SYSTEM);
-	if (system_sid == NULL) {
-		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -144,9 +130,9 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 	}
 
 
-	if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &sids[PRIMARY_USER_SID_INDEX].sid)) {
+	if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(&global_sid_Anonymous, &sids[PRIMARY_USER_SID_INDEX].sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
-	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &sids[PRIMARY_USER_SID_INDEX].sid)) {
+	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(&global_sid_System, &sids[PRIMARY_USER_SID_INDEX].sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (sam_ctx != NULL) {
 		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:"LDB_OID_COMPARATOR_AND":=%u))",
