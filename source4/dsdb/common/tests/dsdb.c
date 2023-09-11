@@ -38,15 +38,15 @@ bool torture_ldb_no_attrs(struct torture_context *torture)
 	const char *attrs[] = { NULL };
 
 	struct auth_session_info *session;
-	struct dom_sid *domain_sid = NULL;
+	struct dom_sid domain_sid;
 	const char *path;
 
 	path = lpcfg_private_path(NULL, torture->lp_ctx, "sam.ldb");
 	torture_assert(torture, path != NULL,
 		       "Couldn't find sam.ldb. Run with -s $SERVERCONFFILE");
 
-	domain_sid = dom_sid_parse_talloc(NULL, SID_BUILTIN);
-	session = admin_session(NULL, torture->lp_ctx, domain_sid);
+	domain_sid = global_sid_Builtin;
+	session = admin_session(NULL, torture->lp_ctx, &domain_sid);
 	ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx,
 			       path, session, NULL, 0);
 	torture_assert(torture, ldb, "Failed to connect to LDB target");

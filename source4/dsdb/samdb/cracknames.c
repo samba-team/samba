@@ -1260,7 +1260,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
 				return WERR_OK;
 			}
-			if (dom_sid_in_domain(dom_sid_parse_talloc(mem_ctx, SID_BUILTIN), sid)) {
+			if (dom_sid_in_domain(&global_sid_Builtin, sid)) {
 				_dom = "BUILTIN";
 			} else {
 				const char *attrs[] = { NULL };
