@@ -726,9 +726,6 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 {
 	uint32_t i;
 	uint32_t bits_remaining;
-	struct dom_sid self_sid;
-
-	dom_sid_parse(SID_NT_SELF, &self_sid);
 
 	*access_granted = access_desired;
 	bits_remaining = access_desired;
@@ -789,7 +786,7 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 			continue;
 		}
 
-		if (dom_sid_equal(&ace->trustee, &self_sid) && replace_sid) {
+		if (dom_sid_equal(&ace->trustee, &global_sid_Self) && replace_sid) {
 			trustee = replace_sid;
 		} else {
 			trustee = &ace->trustee;
