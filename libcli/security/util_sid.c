@@ -102,6 +102,12 @@ const struct dom_sid global_sid_Anonymous =			/* Anonymous login */
 /* S-1-5-9 */
 const struct dom_sid global_sid_Enterprise_DCs =		/* Enterprise DCs */
 { 1, 1, {0,0,0,0,0,5}, {9,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-21-0-0-0-496 */
+const struct dom_sid global_sid_Compounded_Authentication = 	/* Compounded Authentication */
+{1, 5, {0,0,0,0,0,5}, {21,0,0,0,496,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-21-0-0-0-497 */
+const struct dom_sid global_sid_Claims_Valid = 		/* Claims Valid */
+{1, 5, {0,0,0,0,0,5}, {21,0,0,0,497,0,0,0,0,0,0,0,0,0,0}};
 /* S-1-5-32 */
 const struct dom_sid global_sid_Builtin = 			/* Local well-known domain */
 { 1, 1, {0,0,0,0,0,5}, {32,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
