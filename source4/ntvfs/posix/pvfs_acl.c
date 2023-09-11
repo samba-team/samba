@@ -226,7 +226,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 
 	/* setup other ACE */
-	ace.trustee = *dom_sid_parse_talloc(req, SID_WORLD);
+	ace.trustee = global_sid_World;
 	ace.access_mask = 0;
 	if (mode & S_IROTH) {
 		ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
@@ -239,7 +239,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 
 	/* setup system ACE */
-	ace.trustee = *dom_sid_parse_talloc(req, SID_NT_SYSTEM);
+	ace.trustee = global_sid_System;
 	ace.access_mask = SEC_RIGHTS_FILE_ALL;
 	security_descriptor_dacl_add(sd, &ace);
 	
