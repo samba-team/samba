@@ -791,15 +791,14 @@ krb5_error_code samba_krbtgt_is_in_db(const struct samba_kdc_entry *p,
 NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 					 struct auth_user_info_dc *user_info_dc)
 {
-	struct dom_sid ai_sid;
-	const char *sid_str = NULL;
+	const struct dom_sid *ai_sid = NULL;
 
 	switch (ai) {
 	case SAMBA_ASSERTED_IDENTITY_SERVICE:
-		sid_str = SID_SERVICE_ASSERTED_IDENTITY;
+		ai_sid = &global_sid_Asserted_Identity_Service;
 		break;
 	case SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY:
-		sid_str = SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY;
+		ai_sid = &global_sid_Asserted_Identity_Authentication_Authority;
 		break;
 	case SAMBA_ASSERTED_IDENTITY_IGNORE:
 		return NT_STATUS_OK;
@@ -807,13 +806,9 @@ NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!dom_sid_parse(sid_str, &ai_sid)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	return add_sid_to_array_attrs_unique(
 		user_info_dc,
-		&ai_sid,
+		ai_sid,
 		SE_GROUP_DEFAULT_FLAGS,
 		&user_info_dc->sids,
 		&user_info_dc->num_sids);
