@@ -19,6 +19,8 @@
 #include "rpc_worker.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_scompat.h"
+#include "param/loadparm.h"
+#include "libds/common/roles.h"
 
 static size_t epmapper_interfaces(
 	const struct ndr_interface_table ***pifaces,
@@ -27,8 +29,22 @@ static size_t epmapper_interfaces(
 	static const struct ndr_interface_table *ifaces[] = {
 		&ndr_table_epmapper,
 	};
+	size_t num_ifaces = ARRAY_SIZE(ifaces);
+
+	switch(lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/*
+		 * On the AD DC epmapper is provided by the 'samba'
+		 * binary from source4/
+		 */
+		num_ifaces = 0;
+		break;
+	default:
+		break;
+	}
+
 	*pifaces = ifaces;
-	return ARRAY_SIZE(ifaces);
+	return num_ifaces;
 }
 
 static size_t epmapper_servers(
@@ -37,11 +53,24 @@ static size_t epmapper_servers(
 	void *private_data)
 {
 	static const struct dcesrv_endpoint_server *ep_servers[] = { NULL };
+	size_t num_servers = ARRAY_SIZE(ep_servers);
 
 	ep_servers[0] = epmapper_get_ep_server();
 
+	switch(lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/*
+		 * On the AD DC epmapper is provided by the 'samba'
+		 * binary from source4/
+		 */
+		num_servers = 0;
+		break;
+	default:
+		break;
+	}
+
 	*_ep_servers = ep_servers;
-	return ARRAY_SIZE(ep_servers);
+	return num_servers;
 }
 
 int main(int argc, const char *argv[])
