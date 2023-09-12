@@ -6,5 +6,5 @@ bld.SAMBA_MODULE('ECHO',
         init_function='server_service_echo_init',
         deps='samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET',
         local_include=False,
-        enabled=bld.AD_DC_BUILD_IS_ENABLED()
+        enabled=bld.CONFIG_GET('ENABLE_SELFTEST'),
         )
