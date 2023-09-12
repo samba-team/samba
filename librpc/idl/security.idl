@@ -651,7 +651,6 @@ interface security
 	typedef [public,gensize] struct {
 		[relative] nstring *name;
 		uint16 value_type;
-		uint16 _reserved;
 		uint32 flags;
 		uint32 value_count;
 		[switch_is(value_type)] claim_values values[value_count];
