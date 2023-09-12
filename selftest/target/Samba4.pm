@@ -783,7 +783,7 @@ sub provision_raw_step1($$)
 	wins support = yes
 	server role = $ctx->{server_role}
 	server services = +echo $services
-        dcerpc endpoint servers = +winreg +srvsvc
+        dcerpc endpoint servers = +winreg +srvsvc +rpcecho
 	notify:inotify = false
 	ldb:nosync = true
 	ldap server require strong auth = yes
