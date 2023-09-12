@@ -1476,62 +1476,54 @@ static bool compare_composites(const struct ace_condition_token *op,
 			       int *cmp)
 {
 	/*
-	 * The thing to do is iterate recursively over the composites
-	 * until we hit a difference that we care about.
-	 */
-	struct ace_condition_composite a = lhs->data.composite;
-	struct ace_condition_composite b = rhs->data.composite;
-	size_t i;
-
-	for (i = 0; i <  MIN(a.n_members, b.n_members); i++) {
-		const struct ace_condition_token *lhs2 = &a.tokens[i];
-		const struct ace_condition_token *rhs2 = &b.tokens[i];
-		bool ok = simple_relational_operator(op, lhs2, rhs2, cmp);
-		if (!ok) {
-			return false;
-		}
-		/*
-		 * Now here's the annoying thing. If the op is !=, a
-		 * true result means the whole thing is !=. For other
-		 * ops, a true result means we need to keep looking.
-		 */
-		switch (op->type) {
-		case CONDITIONAL_ACE_TOKEN_NOT_EQUAL:
-		case CONDITIONAL_ACE_TOKEN_EQUAL:
-			if (*cmp != 0) {
-				return true;
-			}
-			break;
-		case CONDITIONAL_ACE_TOKEN_LESS_THAN:
-		case CONDITIONAL_ACE_TOKEN_LESS_OR_EQUAL:
-			if (*cmp > 0) {
-				return true;
-			}
-			break;
-		case CONDITIONAL_ACE_TOKEN_GREATER_THAN:
-		case CONDITIONAL_ACE_TOKEN_GREATER_OR_EQUAL:
-			if (*cmp < 0) {
-				return true;
-			}
-			break;
-		default:
-			return false;
-		}
-	}
-	/*
-	 * We have got to the end of the list without finding a
-	 * short-circuit failure.
+	 * We treat composites as if they are sets, which is to say we
+	 * don't care about order. This rules out < and > operations.
 	 *
-	 * If the lists are the same length, the comparison of the
-	 * last thing is the final result. Otherwise the longest list
-	 * is the greater.
+	 * In Kerberos clams it is not possible to add duplicate
+	 * values to a composite, but in Conditional ACEs you can do
+	 * that. This means we can't short-cut by comparing the
+	 * lengths.
+	 *
+	 * THe extra sad thing is we might have to do it both ways
+	 * round. For example, comparing {a, a, b, a} to {a, b, c}, we
+	 * find all of the first group in the second, but that doesn't
+	 * mean all of the second are in the first.
 	 */
-	if (*cmp == 0) {
-		*cmp = a.n_members - b.n_members;
+	struct ace_condition_composite args[2] = {
+		lhs->data.composite,
+		rhs->data.composite
+	};
+	size_t i, j, k;
+
+	for (k = 0; k < 2; k++) {
+		struct ace_condition_composite a = args[k];
+		struct ace_condition_composite b = args[1 - k];
+
+		for (i = 0; i < a.n_members; i++) {
+			const struct ace_condition_token *lhs2 = &a.tokens[i];
+			bool found = false;
+			for (j = 0; j < b.n_members; j++) {
+				const struct ace_condition_token *rhs2 = &b.tokens[j];
+				int cmp_pair;
+				bool ok = simple_relational_operator(op, lhs2, rhs2, &cmp_pair);
+				if (! ok) {
+					return false;
+				}
+				if (cmp_pair == 0) {
+					/* This item in A is also in B. */
+					found = true;
+					break;
+				}
+			}
+			if (! found) {
+				*cmp = -1;
+				return true;
+			}
+		}
 	}
+	*cmp = 0;
 	return true;
 }
-
 
 
 static bool simple_relational_operator(const struct ace_condition_token *op,
