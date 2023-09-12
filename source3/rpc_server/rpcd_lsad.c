@@ -36,6 +36,11 @@ static size_t lsad_interfaces(
 		&ndr_table_lsarpc,
 		&ndr_table_samr,
 		&ndr_table_dssetup,
+		/*
+		 * This last item is truncated from the list by the
+		 * num_ifaces -= 1 below for the fileserver.  Take
+		 * care when adding new services.
+		 */
 		&ndr_table_netlogon,
 	};
 	size_t num_ifaces = ARRAY_SIZE(ifaces);
@@ -45,6 +50,14 @@ static size_t lsad_interfaces(
 	case ROLE_DOMAIN_MEMBER:
 		/* no netlogon for non-dc */
 		num_ifaces -= 1;
+		break;
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/*
+		 * All these services are provided by the 'samba'
+		 * binary from source4, not this code which is the
+		 * source3 / NT4-like "classic" DC implementation
+		 */
+		num_ifaces = 0;
 		break;
 	default:
 		break;
@@ -79,6 +92,14 @@ static size_t lsad_servers(
 	case ROLE_DOMAIN_MEMBER:
 		/* no netlogon for non-dc */
 		num_servers -= 1;
+		break;
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/*
+		 * All these services are provided by the 'samba'
+		 * binary from source4, not this code which is the
+		 * source3 / NT4-like "classic" DC implementation
+		 */
+		num_servers = 0;
 		break;
 	default:
 		break;
