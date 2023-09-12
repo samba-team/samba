@@ -1,5 +1,5 @@
 #include "includes.h"
-#include "bin/default/librpc/gen_ndr/ndr_claims.h"
+#include "librpc/gen_ndr/ndr_claims.h"
 #include "librpc/ndr/ndr_claims.h"
 
 #include "librpc/ndr/ndr_compression.h"
