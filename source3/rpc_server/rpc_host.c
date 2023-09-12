@@ -214,7 +214,6 @@ struct rpc_server_get_endpoints_state {
 	char **argl;
 	char *ncalrpc_endpoint;
 	enum dcerpc_transport_t only_transport;
-	struct dcerpc_binding **existing_bindings;
 
 	struct rpc_host_iface_name *iface_names;
 	struct rpc_host_endpoint **endpoints;
@@ -235,7 +234,6 @@ static void rpc_server_get_endpoints_done(struct tevent_req *subreq);
  * @param[in] ev Event context to run this on
  * @param[in] rpc_server_exe Binary to ask with --list-interfaces
  * @param[in] only_transport Filter out anything but this
- * @param[in] existing_bindings Filter out endpoints served by "samba"
  * @return The tevent_req representing this process
  */
 
@@ -243,8 +241,7 @@ static struct tevent_req *rpc_server_get_endpoints_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	const char *rpc_server_exe,
-	enum dcerpc_transport_t only_transport,
-	struct dcerpc_binding **existing_bindings)
+	enum dcerpc_transport_t only_transport)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct rpc_server_get_endpoints_state *state = NULL;
@@ -256,7 +253,6 @@ static struct tevent_req *rpc_server_get_endpoints_send(
 		return NULL;
 	}
 	state->only_transport = only_transport;
-	state->existing_bindings = existing_bindings;
 
 	progname = strrchr(rpc_server_exe, '/');
 	if (progname != NULL) {
@@ -417,37 +413,17 @@ static bool dcerpc_binding_same_endpoint(
  * In member mode, we only serve named pipes. Indicated by NCACN_NP
  * passed in via "only_transport".
  *
- * In AD mode, the "samba" process already serves many endpoints,
- * passed in via "existing_binding". Don't serve those from
- * samba-dcerpcd.
- *
  * @param[in] binding Which binding is in question?
  * @param[in] only_transport Exclusive transport to serve
- * @param[in] existing_bindings Endpoints served by "samba" already
  * @return Do we want to serve "binding" from samba-dcerpcd?
  */
 
 static bool rpc_host_serve_endpoint(
 	struct dcerpc_binding *binding,
-	enum dcerpc_transport_t only_transport,
-	struct dcerpc_binding **existing_bindings)
+	enum dcerpc_transport_t only_transport)
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(binding);
-	size_t i, num_existing_bindings;
-
-	num_existing_bindings = talloc_array_length(existing_bindings);
-
-	for (i=0; i<num_existing_bindings; i++) {
-		bool same = dcerpc_binding_same_endpoint(
-			binding, existing_bindings[i]);
-		if (same) {
-			DBG_DEBUG("%s served by samba\n",
-				  dcerpc_binding_get_string_option(
-					  binding, "endpoint"));
-			return false;
-		}
-	}
 
 	if (only_transport == NCA_UNKNOWN) {
 		/* no filter around */
@@ -486,7 +462,7 @@ static struct rpc_host_endpoint *rpc_host_endpoint_find(
 	}
 
 	serve_this = rpc_host_serve_endpoint(
-		ep->binding, state->only_transport, state->existing_bindings);
+		ep->binding, state->only_transport);
 	if (!serve_this) {
 		goto fail;
 	}
@@ -1607,7 +1583,6 @@ static struct tevent_req *rpc_server_setup_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct rpc_host *host,
-	struct dcerpc_binding **existing_bindings,
 	const char *rpc_server_exe)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
@@ -1639,8 +1614,7 @@ static struct tevent_req *rpc_server_setup_send(
 		state,
 		ev,
 		rpc_server_exe,
-		host->np_helper ? NCACN_NP : NCA_UNKNOWN,
-		existing_bindings);
+		host->np_helper ? NCACN_NP : NCA_UNKNOWN);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2344,7 +2318,6 @@ static struct tevent_req *rpc_host_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct messaging_context *msg_ctx,
-	struct dcerpc_binding **existing_bindings,
 	char *servers,
 	int ready_signal_fd,
 	const char *daemon_ready_progname,
@@ -2465,7 +2438,6 @@ static struct tevent_req *rpc_host_send(
 			state,
 			ev,
 			host,
-			existing_bindings,
 			exe);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -2648,117 +2620,6 @@ static int rpc_host_pidfile_create(
 	return EAGAIN;
 }
 
-/*
- * Find which interfaces are already being served by the samba AD
- * DC so we know not to serve them. Some interfaces like netlogon
- * are served by "samba", some like srvsvc will be served by the
- * source3 based RPC servers.
- */
-static NTSTATUS rpc_host_epm_lookup(
-	TALLOC_CTX *mem_ctx,
-	struct dcerpc_binding ***pbindings)
-{
-	struct rpc_pipe_client *cli = NULL;
-	struct pipe_auth_data *auth = NULL;
-	struct policy_handle entry_handle = { .handle_type = 0 };
-	struct dcerpc_binding **bindings = NULL;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-
-	status = rpc_pipe_open_ncalrpc(mem_ctx, &ndr_table_epmapper, &cli);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("rpc_pipe_open_ncalrpc failed: %s\n",
-			  nt_errstr(status));
-		goto fail;
-	}
-	status = rpccli_ncalrpc_bind_data(cli, &auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("rpccli_ncalrpc_bind_data failed: %s\n",
-			  nt_errstr(status));
-		goto fail;
-	}
-	status = rpc_pipe_bind(cli, auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("rpc_pipe_bind failed: %s\n", nt_errstr(status));
-		goto fail;
-	}
-
-	for (;;) {
-		size_t num_bindings = talloc_array_length(bindings);
-		struct dcerpc_binding **tmp = NULL;
-		uint32_t num_entries = 0;
-		struct epm_entry_t *entry = NULL;
-		struct dcerpc_binding *binding = NULL;
-		uint32_t result;
-
-		entry = talloc(cli, struct epm_entry_t);
-		if (entry == NULL) {
-			goto fail;
-		}
-
-		status = dcerpc_epm_Lookup(
-			cli->binding_handle, /* binding_handle */
-			cli,		     /* mem_ctx */
-			0,		     /* rpc_c_ep_all */
-			NULL,		     /* object */
-			NULL,		     /* interface id */
-			0,		     /* rpc_c_vers_all */
-			&entry_handle,	     /* entry_handle */
-			1,		     /* max_ents */
-			&num_entries,	     /* num_ents */
-			entry,		     /* entries */
-			&result);	     /* result */
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dcerpc_epm_Lookup failed: %s\n",
-				  nt_errstr(status));
-			goto fail;
-		}
-
-		if (result == EPMAPPER_STATUS_NO_MORE_ENTRIES) {
-			break;
-		}
-
-		if (result != EPMAPPER_STATUS_OK) {
-			DBG_DEBUG("dcerpc_epm_Lookup returned %"PRIu32"\n",
-				  result);
-			break;
-		}
-
-		if (num_entries != 1) {
-			DBG_DEBUG("epm_Lookup returned %"PRIu32" "
-				  "entries, expected one\n",
-				  num_entries);
-			break;
-		}
-
-		status = dcerpc_binding_from_tower(
-			mem_ctx, &entry->tower->tower, &binding);
-		if (!NT_STATUS_IS_OK(status)) {
-			break;
-		}
-
-		tmp = talloc_realloc(
-			mem_ctx,
-			bindings,
-			struct dcerpc_binding *,
-			num_bindings+1);
-		if (tmp == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-		bindings = tmp;
-
-		bindings[num_bindings] = talloc_move(bindings, &binding);
-
-		TALLOC_FREE(entry);
-	}
-
-	*pbindings = bindings;
-	status = NT_STATUS_OK;
-fail:
-	TALLOC_FREE(cli);
-	return status;
-}
-
 static void samba_dcerpcd_stdin_handler(
 	struct tevent_context *ev,
 	struct tevent_fd *fde,
@@ -2788,7 +2649,6 @@ int main(int argc, const char *argv[])
 	struct tevent_context *ev_ctx = NULL;
 	struct messaging_context *msg_ctx = NULL;
 	struct tevent_req *req = NULL;
-	struct dcerpc_binding **existing_bindings = NULL;
 	char *servers = NULL;
 	const char *arg = NULL;
 	size_t num_servers;
@@ -2995,11 +2855,6 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	status = rpc_host_epm_lookup(frame, &existing_bindings);
-	DBG_DEBUG("rpc_host_epm_lookup returned %s, %zu bindings\n",
-		  nt_errstr(status),
-		  talloc_array_length(existing_bindings));
-
 	ret = rpc_host_pidfile_create(msg_ctx, progname, ready_signal_fd);
 	if (ret != 0) {
 		DBG_DEBUG("rpc_host_pidfile_create failed: %s\n",
@@ -3013,7 +2868,6 @@ int main(int argc, const char *argv[])
 		ev_ctx,
 		ev_ctx,
 		msg_ctx,
-		existing_bindings,
 		servers,
 		ready_signal_fd,
 		cmdline_daemon_cfg->fork ? NULL : progname,
