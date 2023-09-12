@@ -33,7 +33,8 @@ bld.SAMBA_MODULE('dcerpc_rpcecho',
                  source='echo/rpc_echo.c',
                  subsystem='dcerpc_server',
                  init_function='dcerpc_server_rpcecho_init',
-                 deps='ndr-standard events'
+                 deps='ndr-standard events',
+                 enabled=bld.CONFIG_GET('ENABLE_SELFTEST')
                  )
 
 
