@@ -914,18 +914,32 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 			}
 			break;
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
-		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
-			status = check_callback_ace_access(ace, token, sd,
-                                                           &grant_access);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
+		{
+			enum ace_callback_result allow =
+				check_callback_ace_allow(ace, token, sd);
+			if (allow == ACE_CALLBACK_INVALID) {
+				return NT_STATUS_INVALID_ACE_CONDITION;
 			}
-
-			if (grant_access) {
-				return NT_STATUS_OK;
+			if (allow == ACE_CALLBACK_ALLOW) {
+				bits_remaining &= ~ace->access_mask;
 			}
 			break;
+		}
+
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+		{
+			enum ace_callback_result deny =
+				check_callback_ace_deny(ace, token, sd);
+			if (deny == ACE_CALLBACK_INVALID) {
+				return NT_STATUS_INVALID_ACE_CONDITION;
+			}
+			if (deny == ACE_CALLBACK_DENY) {
+				if (bits_remaining & ace->access_mask) {
+					return NT_STATUS_ACCESS_DENIED;
+				}
+			}
+			break;
+		}
 
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
