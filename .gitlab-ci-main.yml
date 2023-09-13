@@ -585,6 +585,7 @@ ubuntu2204-samba-o3:
     # (this uses the same variable as autobuild.py)
     - if: $AUTOBUILD_SKIP_SAMBA_O3 == "1"
       when: never
+    - when: on_success
 
 # All other jobs do not want code coverage.
 .samba-o3-template:
