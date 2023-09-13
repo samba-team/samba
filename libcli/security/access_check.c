@@ -105,6 +105,130 @@ void se_map_standard(uint32_t *access_mask, const struct standard_mapping *mappi
 	}
 }
 
+enum ace_callback_result {
+	ACE_CALLBACK_DENY,
+	ACE_CALLBACK_ALLOW,
+	ACE_CALLBACK_SKIP,      /* do not apply this ACE */
+	ACE_CALLBACK_INVALID    /* we don't want to process the conditional ACE */
+};
+
+
+static enum ace_callback_result check_callback_ace_allow(
+	const struct security_ace *ace,
+	const struct security_token *token,
+	const struct security_descriptor *sd)
+{
+	bool ok;
+	int result;
+
+	switch (token->evaluate_claims) {
+	case CLAIMS_EVALUATION_ALWAYS:
+		break;
+
+	case CLAIMS_EVALUATION_INVALID_STATE:
+		DBG_WARNING("Refusing to evaluate ACL with "
+			    "conditional ACE against security "
+			    "token with CLAIMS_EVALUATION_INVALID_STATE\n");
+		return ACE_CALLBACK_INVALID;
+	case CLAIMS_EVALUATION_NEVER:
+	default:
+		/*
+		 * We are asked to pretend we never understood this
+		 * ACE type.
+		 *
+		 * By returning SKIP, this ACE will not adjust any
+		 * permission bits making it an effective no-op, which
+		 * was the default behaviour up to Samba 4.19.
+		 */
+		return ACE_CALLBACK_SKIP;
+	}
+
+	if (ace->type != SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK &&
+	    ace->type != SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT) {
+		/* This indicates a programming error */
+		DBG_ERR("bad conditional allow ACE type: %u\n", ace->type);
+		return ACE_CALLBACK_INVALID;
+	}
+
+	/*
+	 * Until we discover otherwise, we assume all callback ACEs
+	 * are conditional ACEs.
+	 */
+	ok = access_check_conditional_ace(ace, token, sd, &result);
+	if (!ok) {
+		/*
+		 * An error in processing the conditional ACE is
+		 * treated as UNKNOWN, which amounts to a DENY/SKIP
+		 * result.
+		 *
+		 * This is different from the INVALID result which
+		 * means we should not be thinking about conditional
+		 * ACES at all, and will abort the whole access check.
+		 */
+		DBG_WARNING("callback ACE was not a valid conditional ACE\n");
+		return ACE_CALLBACK_SKIP;
+	}
+	if (result == ACE_CONDITION_TRUE) {
+		return ACE_CALLBACK_ALLOW;
+	}
+	/* UNKNOWN means do not allow */
+	return ACE_CALLBACK_SKIP;
+}
+
+
+static enum ace_callback_result check_callback_ace_deny(
+	const struct security_ace *ace,
+	const struct security_token *token,
+	const struct security_descriptor *sd)
+{
+	bool ok;
+	int result;
+
+	switch (token->evaluate_claims) {
+	case CLAIMS_EVALUATION_ALWAYS:
+		break;
+
+	case CLAIMS_EVALUATION_INVALID_STATE:
+		DBG_WARNING("Refusing to evaluate ACL with "
+			    "conditional ACE against security "
+			    "token with CLAIMS_EVALUATION_INVALID_STATE\n");
+		return ACE_CALLBACK_INVALID;
+	case CLAIMS_EVALUATION_NEVER:
+	default:
+		/*
+		 * We are asked to pretend we never understood this
+		 * ACE type.
+		 */
+		return ACE_CALLBACK_SKIP;
+	}
+
+	if (ace->type != SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK &&
+	    ace->type != SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT) {
+		DBG_ERR("bad conditional deny ACE type: %u\n", ace->type);
+		return ACE_CALLBACK_INVALID;
+	}
+
+	/*
+	 * Until we discover otherwise, we assume all callback ACEs
+	 * are conditional ACEs.
+	 */
+	ok = access_check_conditional_ace(ace, token, sd, &result);
+	if (!ok) {
+		/*
+		 * An error in processing the conditional ACE is
+		 * treated as UNKNOWN, which means DENY.
+		 */
+		DBG_WARNING("callback ACE was not a valid conditional ACE\n");
+		return ACE_CALLBACK_DENY;
+	}
+	if (result != ACE_CONDITION_FALSE) {
+		/* UNKNOWN means deny */
+		return ACE_CALLBACK_DENY;
+	}
+	return ACE_CALLBACK_SKIP;
+}
+
+
 /*
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
@@ -193,6 +317,33 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 			denied |= ~granted & ace->access_mask;
 			break;
+
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
+		{
+			enum ace_callback_result allow =
+				check_callback_ace_allow(ace, token, sd);
+			if (allow == ACE_CALLBACK_INVALID) {
+				return 0;
+			}
+			if (allow == ACE_CALLBACK_ALLOW) {
+				granted |= ace->access_mask;
+			}
+			break;
+		}
+
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+		{
+			enum ace_callback_result deny =
+				check_callback_ace_deny(ace, token, sd);
+			if (deny == ACE_CALLBACK_INVALID) {
+				return 0;
+			}
+			if (deny == ACE_CALLBACK_DENY) {
+				denied |= ~granted & ace->access_mask;
+			}
+			break;
+		}
+
 		default:	/* Other ACE types not handled/supported */
 			break;
 		}
