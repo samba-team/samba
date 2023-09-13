@@ -77,7 +77,6 @@ if conf.env['WITH_KERNEL_KEYRING'] is not False:
 
 heimdal_no_error_flags = ['-Wno-error=discarded-qualifiers',
                           '-Wno-error=cast-qual',
-                          '-Wno-error=missing-field-initializers',
                           '-Wno-error=shadow',
                           '-Wno-error=implicit-fallthrough',
                           '-Wno-error=enum-compare',
