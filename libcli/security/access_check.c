@@ -201,6 +201,13 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	return granted & ~denied;
 }
 
+
+static NTSTATUS check_callback_ace_access(const struct security_ace *ace,
+					  const struct security_token *token,
+					  const struct security_descriptor *sd,
+					  bool *grant_access);
+
+
 static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor *sd,
 					       const struct security_token *token,
 					       uint32_t access_desired,
@@ -279,6 +286,8 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 		bool is_owner_rights_ace = false;
+		bool callback_ok = false;
+		NTSTATUS status;
 
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 			continue;
@@ -301,6 +310,33 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 			break;
 		case SEC_ACE_TYPE_ACCESS_DENIED:
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			explicitly_denied_bits |= (bits_remaining & ace->access_mask);
+			break;
+
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
+			status = check_callback_ace_access(ace, token, sd,
+							   &callback_ok);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			if (callback_ok) {
+				bits_remaining &= ~ace->access_mask;
+			}
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+			status = check_callback_ace_access(ace, token, sd,
+							   &callback_ok);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			if (callback_ok) {
+				explicitly_denied_bits |= (bits_remaining & ace->access_mask);
+			}
+			break;
+
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
 			explicitly_denied_bits |= (bits_remaining & ace->access_mask);
 			break;
 		default:	/* Other ACE types not handled/supported */
