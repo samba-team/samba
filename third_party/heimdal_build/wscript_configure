@@ -75,16 +75,12 @@ if conf.env['WITH_KERNEL_KEYRING'] is not False:
     conf.CHECK_SIZEOF('key_serial_t', headers='keyutils.h',
                       critical=require_keyutils)
 
-heimdal_no_error_flags = ['-Wno-error=discarded-qualifiers',
-                          '-Wno-error=cast-qual',
-                          '-Wno-error=shadow',
-                          '-Wno-error=implicit-fallthrough',
-                          '-Wno-error=enum-compare',
-                          '-Wno-error=unused-but-set-variable',
-                          '-Wno-error=unused-const-variable',
-                          '-Wno-error=unused-variable',
+heimdal_no_error_flags = ['-Wno-error=cast-qual',
+                          '-Wno-error=discarded-qualifiers',
+                          '-Wno-error=old-style-definition',
                           '-Wno-error=unused-result',
-                          '-Wno-error=old-style-definition']
+                          '-Wno-error=unused-variable'
+]
 for flag in heimdal_no_error_flags:
     conf.ADD_NAMED_CFLAGS('HEIMDAL_NO_ERROR_CFLAGS',
                           flag,
