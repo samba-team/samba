@@ -23,8 +23,8 @@
 #
 #
 # Our current private runner 'docker', 'samba-ci-private', 'shared' and
-# 'ubuntu1804'. It runs with an ubuntu1804 kernel and privides an ext4 filesystem
-# and similar RAM as the n1-standard-2 runners.
+# 'ubuntu2204'. It runs with an ubuntu2204 kernel (5.15) and provides an
+# ext4 filesystem and similar RAM as the n1-standard-2 runners.
 #
 
 .shared_runner_build:
