@@ -39,7 +39,7 @@
 struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx,
 						 enum claims_evaluation_control evaluate_claims);
 
-struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_token *ptoken);
+struct security_token *security_token_duplicate(TALLOC_CTX *mem_ctx, const struct security_token *src);
 
 /****************************************************************************
  prints a struct security_token to debug output.

@@ -206,7 +206,7 @@ bool push_sec_ctx(void)
  	DEBUG(4, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
  		  (unsigned int)ctx_p->ut.uid, (unsigned int)ctx_p->ut.gid, sec_ctx_stack_ndx ));
 
-	ctx_p->token = dup_nt_token(NULL,
+	ctx_p->token = security_token_duplicate(NULL,
 				    sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 
 	ctx_p->ut.ngroups = sys_getgroups(0, NULL);
@@ -340,9 +340,9 @@ static void set_sec_ctx_internal(uid_t uid, gid_t gid,
 	}
 
 	if (token) {
-		ctx_p->token = dup_nt_token(NULL, token);
+		ctx_p->token = security_token_duplicate(NULL, token);
 		if (!ctx_p->token) {
-			smb_panic("dup_nt_token failed");
+			smb_panic("security_token_duplicate failed");
 		}
 	} else {
 		ctx_p->token = NULL;

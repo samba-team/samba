@@ -145,7 +145,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	SMB_ASSERT(strchr(name, '\\') == NULL);
 
 	if (!(regkey = talloc_zero(mem_ctx, struct registry_key)) ||
-	    !(regkey->token = dup_nt_token(regkey, token)) ||
+	    !(regkey->token = security_token_duplicate(regkey, token)) ||
 	    !(regkey->key = talloc_zero(regkey, struct registry_key_handle)))
 	{
 		result = WERR_NOT_ENOUGH_MEMORY;

@@ -792,7 +792,7 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 	dtl = &d->delete_tokens[d->num_delete_tokens];
 
 	dtl->name_hash = name_hash;
-	dtl->delete_nt_token = dup_nt_token(d->delete_tokens, nt_tok);
+	dtl->delete_nt_token = security_token_duplicate(d->delete_tokens, nt_tok);
 	if (dtl->delete_nt_token == NULL) {
 		return false;
 	}
@@ -909,7 +909,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 
 			/* Replace this token with the given tok. */
 			TALLOC_FREE(dt->delete_nt_token);
-			dt->delete_nt_token = dup_nt_token(dt, nt_tok);
+			dt->delete_nt_token = security_token_duplicate(dt, nt_tok);
 			SMB_ASSERT(dt->delete_nt_token != NULL);
 			TALLOC_FREE(dt->delete_token);
 			dt->delete_token = copy_unix_token(dt, tok);
