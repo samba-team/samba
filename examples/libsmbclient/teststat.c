@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <libsmbclient.h>
+#include <stdbool.h>
 #include "get_auth_data_fn.h"
 
 static const char *filetypestr(mode_t mode)
@@ -71,6 +72,7 @@ int main(int argc, char * argv[])
 	smbc_setDebug(ctx, debug);
 	smbc_init_context(ctx);
 	smbc_setFunctionAuthData(ctx, get_auth_data_fn);
+	smbc_setOptionPosixExtensions(ctx, true);
 
 	ret = smbc_getFunctionStat(ctx)(ctx, pSmbPath, &st);
 	if (ret < 0) {
