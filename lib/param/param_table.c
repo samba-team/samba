@@ -439,6 +439,12 @@ static const struct enum_list enum_ad_functional_level[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_acl_claims_evaluation[] = {
+	{ACL_CLAIMS_EVALUATION_AD_DC_ONLY, "AD DC only"},
+	{ACL_CLAIMS_EVALUATION_NEVER, "never"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * NOTE: Handling of duplicated (synonym) parameters:

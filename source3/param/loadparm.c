@@ -997,6 +997,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.ad_dc_functional_level = DS_DOMAIN_FUNCTION_2008_R2,
 
+	Globals.acl_claims_evaluation = ACL_CLAIMS_EVALUATION_AD_DC_ONLY;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }

@@ -258,6 +258,12 @@ enum store_nt_hash {
 	NT_HASH_STORE_ALWAYS
 };
 
+/* Controlling the storage of the NT password has on the AD DC */
+enum acl_claims_evaluation {
+	ACL_CLAIMS_EVALUATION_AD_DC_ONLY,
+	ACL_CLAIMS_EVALUATION_NEVER
+};
+
 /*
  * Default passwd chat script.
  */

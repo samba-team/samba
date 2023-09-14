@@ -1,0 +1,42 @@
+<samba:parameter name="acl claims evaluation"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_acl_claims_evaluation"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls the way Samba handles evaluation of
+	security descriptors in Samba, with regards to Active
+	Directory Claims.  AD Claims, introduced with Windows 2012,
+	are essentially administrator-defined key-value pairs that can
+	be set both in Active Directory (communicated via the Kerberos
+	PAC) and in the security descriptor themselves.
+	</para>
+
+ 	<para>Active Directory claims are new with Samba 4.20.
+	Because the claims are evaluated against a very flexible
+	expression language within the security descriptor, this option provides a mechanism
+	to disable this logic if required by the administrator.</para>
+
+	<para>This default behaviour is that claims evaluation is
+	enabled in the AD DC only.  Additionally, claims evaluation on
+	the AD DC is only enabled if the DC functional level
+	is 2012 or later.  See <smbconfoption name="ad dc functional
+	level"/>.</para>
+
+	<para>Possible values are :</para>
+	<itemizedlist>
+	  <listitem>
+	    <para><constant>AD DC only</constant>: Enabled for the Samba AD
+	    DC (for DC functional level 2012 or higher).</para>
+	  </listitem>
+	  <listitem>
+	    <para><constant>never</constant>: Disabled in all cases.
+	    This option disables some but not all of the
+	    Authentication Policies and Authentication Policy Silos features of
+	    the Windows 2012R2 functional level in the AD DC.</para>
+	  </listitem>
+	</itemizedlist>
+</description>
+
+<value type="default">AD DC only</value>
+</samba:parameter>
