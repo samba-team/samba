@@ -578,16 +578,6 @@ bool wins_server_tag_ips(const char *tag, TALLOC_CTX *mem_ctx,
 			 struct in_addr **pservers, size_t *pnum_servers);
 unsigned wins_srv_count_tag(const char *tag);
 
-#ifndef ASN1_MAX_OIDS
-#define ASN1_MAX_OIDS 20
-#endif
-bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
-			       DATA_BLOB blob,
-			       char *OIDs[ASN1_MAX_OIDS],
-			       char **principal,
-			       DATA_BLOB *secblob);
-DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8_t tok_id[2]);
-
 /* The following definitions come from libsmb/conncache.c  */
 
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server);

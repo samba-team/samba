@@ -32,12 +32,55 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "../libcli/auth/spnego.h"
+#include "lib/util/asn1.h"
 
 #ifdef HAVE_KRB5
 
 #include "auth/kerberos/pac_utils.h"
 
 struct smb_krb5_context;
+
+/*
+  generate a krb5 GSS-API wrapper packet given a ticket
+*/
+static DATA_BLOB spnego_gen_krb5_wrap(
+	TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8_t tok_id[2])
+{
+	ASN1_DATA *data;
+	DATA_BLOB ret = data_blob_null;
+
+	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
+	if (data == NULL) {
+		return data_blob_null;
+	}
+
+	if (!asn1_push_tag(data, ASN1_APPLICATION(0))) goto err;
+	if (!asn1_write_OID(data, OID_KERBEROS5)) goto err;
+
+	if (!asn1_write(data, tok_id, 2)) goto err;
+	if (!asn1_write(data, ticket.data, ticket.length)) goto err;
+	if (!asn1_pop_tag(data)) goto err;
+
+	if (!asn1_extract_blob(data, ctx, &ret)) {
+		goto err;
+	}
+
+	asn1_free(data);
+	data = NULL;
+
+  err:
+
+	if (data != NULL) {
+		if (asn1_has_error(data)) {
+			DEBUG(1, ("Failed to build krb5 wrapper at offset %d\n",
+				  (int)asn1_current_ofs(data)));
+		}
+
+		asn1_free(data);
+	}
+
+	return ret;
+}
 
 /*
  * Given the username/password, do a kinit, store the ticket in

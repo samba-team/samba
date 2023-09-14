@@ -422,7 +422,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                           libsmb/clientgen.c
                           libsmb/cliconnect.c
                           libsmb/clifile.c
-                          libsmb/clispnego.c
                           libsmb/clirap.c
                           libsmb/clierror.c
                           libsmb/climessage.c
