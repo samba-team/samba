@@ -35,23 +35,17 @@
 
 struct security_token *registry_create_system_token(TALLOC_CTX *mem_ctx)
 {
-	struct security_token *token = NULL;
+	const struct security_token *system_token = get_system_token();
 
-	token = talloc_zero(mem_ctx, struct security_token);
-	if (!token) {
-		DEBUG(1,("talloc failed\n"));
+	struct security_token *dup_token
+		= security_token_duplicate(mem_ctx, system_token);
+
+	if (dup_token == NULL) {
+		DBG_WARNING("security_token_duplicate() failed\n");
 		return NULL;
 	}
 
-	token->privilege_mask = SE_ALL_PRIVS;
-
-	if (!NT_STATUS_IS_OK(add_sid_to_array(token, &global_sid_System,
-			 &token->sids, &token->num_sids))) {
-		DEBUG(1,("Error adding nt-authority system sid to token\n"));
-		return NULL;
-	}
-
-	return token;
+	return dup_token;
 }
 
 /****************************************************************
