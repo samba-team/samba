@@ -43,6 +43,7 @@
 #include "param/secrets.h"
 #include "auth/auth.h"
 #include "lib/tsocket/tsocket.h"
+#include "lib/param/loadparm.h"
 
 /*
   connect to the SAM database specified by URL
@@ -170,8 +171,32 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	struct security_token *ptoken;
 	uint32_t i;
 	NTSTATUS status;
+	enum claims_evaluation_control evaluate_claims;
 
-	ptoken = security_token_initialise(mem_ctx);
+	/*
+	 * Some special-case callers can't supply the lp_ctx, but do
+	 * not interact with claims or conditional ACEs
+	 */
+	if (lp_ctx == NULL) {
+		evaluate_claims = CLAIMS_EVALUATION_INVALID_STATE;
+	} else {
+		enum acl_claims_evaluation claims_evaultion_setting
+			= lpcfg_acl_claims_evaluation(lp_ctx);
+
+		/*
+		 * We are well inside the AD DC, so we do not need to check
+		 * the server role etc
+		 */
+		switch (claims_evaultion_setting) {
+		case ACL_CLAIMS_EVALUATION_AD_DC_ONLY:
+			evaluate_claims = CLAIMS_EVALUATION_ALWAYS;
+			break;
+		default:
+			evaluate_claims = CLAIMS_EVALUATION_NEVER;
+		}
+	}
+
+	ptoken = security_token_initialise(mem_ctx, evaluate_claims);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
 	if (num_sids > UINT32_MAX - 6) {

@@ -229,7 +229,7 @@ def token(sids=None, **kwargs):
         else:
             raise TypeError(f"{k} is an invalid keyword argument")
 
-    t = security.token()
+    t = security.token(evaluate_claims=security.CLAIMS_EVALUATION_ALWAYS)
 
     for k, v in norm_args.items():
         setattr(t, k, v)

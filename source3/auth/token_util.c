@@ -307,6 +307,26 @@ NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,
 	return NT_STATUS_OK;
 }
 
+static struct security_token *init_local_nt_token(TALLOC_CTX *mem_ctx) 
+{
+	/*
+	 * We do not have a method to populate the claims into this
+	 * buffer in the source3/ stack.  When that changes, we will
+	 * instead this optional based on lp_acl_claims_evaluation()
+	 */
+
+	struct security_token *result
+		= security_token_initialise(mem_ctx,
+					    CLAIMS_EVALUATION_NEVER);
+
+	if (result == NULL) {
+		DBG_ERR("talloc failed for security_token\n");
+		return NULL;
+	}
+
+	return result;
+}
+
 NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 					  bool is_guest,
 					  const struct netr_SamInfo3 *info3,
@@ -321,9 +341,8 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("Create local NT token for %s\n",
 		   info3->base.account_name.string));
 
-	usrtok = talloc_zero(mem_ctx, struct security_token);
+	usrtok = init_local_nt_token(mem_ctx);
 	if (!usrtok) {
-		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -441,8 +460,8 @@ NTSTATUS create_local_nt_token(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("Create local NT token for %s\n",
 		   dom_sid_str_buf(user_sid, &buf)));
 
-	if (!(result = talloc_zero(mem_ctx, struct security_token))) {
-		DEBUG(0, ("talloc failed\n"));
+	result = init_local_nt_token(mem_ctx);
+	if (result == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}

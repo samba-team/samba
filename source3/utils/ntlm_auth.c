@@ -731,6 +731,10 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
     return nt_status;
 }
 
+/*
+ * This function does not create a full auth_session_info, just enough
+ * for the caller to get the "unix" username
+ */
 static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_context,
 						TALLOC_CTX *mem_ctx,
 						void *server_returned_info,
@@ -759,7 +763,17 @@ static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_conte
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	session_info->security_token = talloc_zero(session_info, struct security_token);
+	/*
+	 * This is not a full session_info - it is not created
+	 * correctly and misses any claims etc, because all we
+	 * actually use in the caller is the unix username.
+	 *
+	 * Therefore so no claims need to be added and
+	 * se_access_check() will never run.
+	 */
+	session_info->security_token
+		= security_token_initialise(talloc_tos(),
+					    CLAIMS_EVALUATION_INVALID_STATE);
 	if (session_info->security_token == NULL) {
 		TALLOC_FREE(session_info);
 		return NT_STATUS_NO_MEMORY;

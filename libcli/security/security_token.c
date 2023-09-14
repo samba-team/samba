@@ -22,6 +22,8 @@
 */
 
 #include "replace.h"
+#include <talloc.h>
+#include "lib/util/talloc_stack.h"
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
 #include "libcli/security/security_token.h"
@@ -31,10 +33,13 @@
 /*
   return a blank security token
 */
-struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
+struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx,
+						 enum claims_evaluation_control evaluate_claims)
 {
 	struct security_token *st = talloc_zero(
 		mem_ctx, struct security_token);
+	st->evaluate_claims = evaluate_claims;
+
 	return st;
 }
 

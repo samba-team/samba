@@ -471,8 +471,17 @@ static PyObject *py_token_set_privilege(PyObject *self, PyObject *args)
 
 static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	return pytalloc_steal(self, security_token_initialise(NULL));
-}	
+	int evaluate_claims = CLAIMS_EVALUATION_INVALID_STATE;
+	const char *kwnames[] = { "evaluate_claims", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i",
+					 discard_const_p(char *, kwnames),
+					 &evaluate_claims)) {
+		return NULL;
+	}
+
+	return pytalloc_steal(self, security_token_initialise(NULL, evaluate_claims));
+}
 
 static PyMethodDef py_token_extra_methods[] = {
 	{ "is_sid", (PyCFunction)py_token_is_sid, METH_VARARGS,

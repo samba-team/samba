@@ -457,7 +457,13 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 		return NT_STATUS_OK;
 	}
 
-	token = talloc_zero(talloc_tos(), struct security_token);
+	/*
+	 * This is a limited-use security_token for the purpose of
+	 * checking the SID list below, so no claims need to be added
+	 * and se_access_check() will never run.
+	 */
+	token = security_token_initialise(talloc_tos(),
+					  CLAIMS_EVALUATION_INVALID_STATE);
 	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
