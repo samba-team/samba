@@ -756,7 +756,21 @@ interface security
 		SE_GROUP_ENABLED_BY_DEFAULT |
 		SE_GROUP_ENABLED;
 
-	/* This is not yet sent over the network, but is simply defined in IDL */
+	/*
+	 * Should cliams be evaluated on this token?
+	 *
+	 * 0 is invalid to catch a zeroed token
+	 */
+	typedef enum {
+		CLAIMS_EVALUATION_INVALID_STATE=0,
+		CLAIMS_EVALUATION_NEVER = 1,
+		CLAIMS_EVALUATION_ALWAYS = 2
+	} claims_evaluation_control;
+
+	/*
+	 * This is linearised to pass authentication over the NP proxy
+	 * from smbd to RPC servers, but is not in public network protocols
+	 */
 	typedef [public] struct {
 		uint32 num_sids;
 		[size_is(num_sids)] dom_sid sids[*];
@@ -770,6 +784,14 @@ interface security
 		[size_is(num_user_claims)] CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 user_claims[*];
 		[size_is(num_device_claims)] CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 device_claims[*];
 		[size_is(num_device_sids)] dom_sid device_sids[*];
+
+		/*
+		 * This allows us to disable claims evaluation on a
+		 * per-token basis, allowing library code to remain
+		 * distinct from configuration by passing this in as a
+		 * flag here
+		 */
+		claims_evaluation_control evaluate_claims;
 	} security_token;
 
         typedef [public] struct {
