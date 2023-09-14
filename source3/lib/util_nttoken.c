@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Authentication utility functions
  *  Copyright (C) Andrew Tridgell 1992-1998
- *  Copyright (C) Andrew Bartlett 2001
+ *  Copyright (C) Andrew Bartlett 2001-2023
  *  Copyright (C) Jeremy Allison 2000-2001
  *  Copyright (C) Rafal Szczesniak 2002
  *  Copyright (C) Volker Lendecke 2006
@@ -27,40 +27,61 @@
 
 #include "includes.h"
 #include "../libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /****************************************************************************
  Duplicate a SID token.
 ****************************************************************************/
 
-struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_token *ptoken)
+struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_token *src)
 {
-	struct security_token *token;
+	TALLOC_CTX *frame = NULL;
+	struct security_token *dst = NULL;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
 
-	if (!ptoken)
-		return NULL;
-
-	token = talloc_zero(mem_ctx, struct security_token);
-	if (token == NULL) {
-		DEBUG(0, ("talloc failed\n"));
+	if (src == NULL) {
 		return NULL;
 	}
 
-	if (ptoken->sids && ptoken->num_sids) {
-		token->sids = (struct dom_sid *)talloc_memdup(
-			token, ptoken->sids, sizeof(struct dom_sid) * ptoken->num_sids );
+	frame = talloc_stackframe();
 
-		if (token->sids == NULL) {
-			DEBUG(0, ("talloc_memdup failed\n"));
-			TALLOC_FREE(token);
-			return NULL;
-		}
-		token->num_sids = ptoken->num_sids;
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		frame,
+		src,
+		(ndr_push_flags_fn_t)ndr_push_security_token);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_ERR("Failed to duplicate security_token ndr_push_security_token failed: %s\n",
+			ndr_errstr(ndr_err));
+		TALLOC_FREE(frame);
+		return NULL;
 	}
-	
-	token->privilege_mask = ptoken->privilege_mask;
-	token->rights_mask = ptoken->rights_mask;
 
-	return token;
+	dst = talloc_zero(mem_ctx, struct security_token);
+	if (dst == NULL) {
+		DBG_ERR("talloc failed\n");
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	ndr_err = ndr_pull_struct_blob(
+		&blob,
+		dst,
+		dst,
+		(ndr_pull_flags_fn_t)ndr_pull_security_token);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_ERR("Failed to duplicate security_token ndr_pull_security_token "
+			"failed: %s\n",
+			ndr_errstr(ndr_err));
+		TALLOC_FREE(dst);
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	TALLOC_FREE(frame);
+	return dst;
 }
 
 /****************************************************************************
