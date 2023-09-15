@@ -181,6 +181,9 @@ def assemble_ace(tokens=[],
         'XA': security.SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK,
         'XD': security.SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK,
         'ZA': security.SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT,
+        # this can also make plain ACEs
+        'A': security.SEC_ACE_TYPE_ACCESS_ALLOWED,
+        'D': security.SEC_ACE_TYPE_ACCESS_DENIED,
     }
 
     a = security.ace()
@@ -191,6 +194,34 @@ def assemble_ace(tokens=[],
         a.flags = flags
     if object is not None:
         a.object = object
-
-    a.coda = assemble(*tokens)
+    if tokens:
+        a.coda = assemble(*tokens)
     return a
+
+
+def assemble_sd(base_sddl='D:',
+                add_trailing_allow_ace=False,
+                domain_sid=None,
+                **ace_args):
+    """Make a security descriptor using the base_sddl, then add the
+    assembled conditional ACE on the end of its DACL. If
+    add_trailing_allow_ace is true, an allow ace matching
+    '(A;;0x1ff;;;WD)' is added to the end, allowing successful deny
+    ACEs to be detected.
+    """
+    if domain_sid is None:
+        domain_sid = security.dom_sid('S-1-2-3-4')
+
+    sd = security.descriptor.from_sddl(base_sddl, domain_sid)
+    ace = assemble_ace(**ace_args)
+    sd.dacl_add(ace)
+    if add_trailing_allow_ace:
+        # If the compiled ACE is a deny ACE, we won't know if it
+        # worked unless there is a wide ranging allow ACE following
+        # it.
+        allow_ace = assemble_ace(type='A',
+                                 trustee=security.dom_sid(security.SID_WORLD),
+                                 access_mask=security.SEC_FILE_ALL)
+        sd.dacl_add(allow_ace)
+
+    return sd
