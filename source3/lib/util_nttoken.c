@@ -32,11 +32,11 @@
  merge NT tokens
 ****************************************************************************/
 
-NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
-			const struct security_token *token_1,
-			const struct security_token *token_2,
-			struct security_token **token_out)
+NTSTATUS merge_with_system_token(TALLOC_CTX *mem_ctx,
+				 const struct security_token *token_1,
+				 struct security_token **token_out)
 {
+	const struct security_token *token_2 = get_system_token();
 	struct security_token *token = NULL;
 	NTSTATUS status;
 	uint32_t i;
@@ -75,6 +75,11 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 
 	token->rights_mask |= token_1->rights_mask;
 	token->rights_mask |= token_2->rights_mask;
+
+	/*
+	 * We don't need to merge claims as the system token has no
+	 * claims
+	 */
 
 	*token_out = token;
 

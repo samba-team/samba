@@ -578,8 +578,8 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
-	ntstatus = merge_nt_token(mem_ctx, ad_token, get_system_token(),
-				  token);
+	ntstatus = merge_with_system_token(mem_ctx, ad_token,
+					   token);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ADS_ERROR_NT(ntstatus);
 	}

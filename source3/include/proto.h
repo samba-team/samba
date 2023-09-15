@@ -394,10 +394,9 @@ void smb_nscd_flush_group_cache(void);
 
 /* The following definitions come from lib/util_nttoken.c  */
 
-NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
-			const struct security_token *token_1,
-			const struct security_token *token_2,
-			struct security_token **token_out);
+NTSTATUS merge_with_system_token(TALLOC_CTX *mem_ctx,
+				 const struct security_token *token_1,
+				 struct security_token **token_out);
 bool token_sid_in_ace(const struct security_token *token, const struct security_ace *ace);
 
 /* The following definitions come from lib/util_sec.c  */
