@@ -220,6 +220,22 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 	bool am_owner = false;
 	bool have_owner_rights_ace = false;
 
+	switch (token->evaluate_claims) {
+	case CLAIMS_EVALUATION_INVALID_STATE:
+		if (token->num_local_claims > 0 ||
+		    token->num_user_claims > 0 ||
+		    token->num_device_claims > 0 ||
+		    token->num_device_sids > 0) {
+			DBG_WARNING("Refusing to evaluate token with claims or device SIDs but also "
+				    "with CLAIMS_EVALUATION_INVALID_STATE\n");
+			return NT_STATUS_INVALID_TOKEN;
+		}
+		break;
+	case CLAIMS_EVALUATION_ALWAYS:
+	case CLAIMS_EVALUATION_NEVER:
+		break;
+	}
+
 	*access_granted = access_desired;
 	bits_remaining = access_desired;
 
@@ -314,6 +330,30 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 			break;
 
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
+		{
+			bool evaluate_claims = true;
+			switch (token->evaluate_claims) {
+			case CLAIMS_EVALUATION_INVALID_STATE:
+				DBG_WARNING("Refusing to evaluate ACL with "
+					    "conditional ACE against security "
+					    "token with CLAIMS_EVALUATION_INVALID_STATE\n");
+				return NT_STATUS_INVALID_ACE_CONDITION;
+			case CLAIMS_EVALUATION_NEVER:
+				evaluate_claims = false;
+				break;
+			case CLAIMS_EVALUATION_ALWAYS:
+				evaluate_claims = true;
+				break;
+			}
+
+			if (!evaluate_claims) {
+				/*
+				 * We are asked to pretend we never
+				 * understood this ACE type
+				 */
+				break;
+			}
+
 			status = check_callback_ace_access(ace, token, sd,
 							   &callback_ok);
 
@@ -324,7 +364,33 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 				bits_remaining &= ~ace->access_mask;
 			}
 			break;
+		}
+
 		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+		{
+			bool evaluate_claims = true;
+			switch (token->evaluate_claims) {
+			case CLAIMS_EVALUATION_INVALID_STATE:
+				DBG_WARNING("Refusing to evaluate ACL with "
+					    "conditional ACE against security "
+					    "token with CLAIMS_EVALUATION_INVALID_STATE\n");
+				return NT_STATUS_INVALID_ACE_CONDITION;
+			case CLAIMS_EVALUATION_NEVER:
+				evaluate_claims = false;
+				break;
+			case CLAIMS_EVALUATION_ALWAYS:
+				evaluate_claims = true;
+				break;
+			}
+
+			if (!evaluate_claims) {
+				/*
+				 * We are asked to pretend we never
+				 * understood this ACE type
+				 */
+				break;
+			}
+
 			status = check_callback_ace_access(ace, token, sd,
 							   &callback_ok);
 
@@ -335,6 +401,7 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 				explicitly_denied_bits |= (bits_remaining & ace->access_mask);
 			}
 			break;
+		}
 
 		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
 			explicitly_denied_bits |= (bits_remaining & ace->access_mask);
