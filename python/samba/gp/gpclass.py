@@ -776,12 +776,14 @@ def add_gplink_to_gpo_list(samdb, gpo_list, forced_gpo_list, link_dn, gp_link,
             log.debug("add_gplink_to_gpo_list: added GPLINK #%d %s "
                       "to GPO list" % (i, gp_link.link_names[i]))
 
-def merge_nt_token(token_1, token_2):
+def merge_with_system_token(token_1):
     sids = token_1.sids
-    sids.extend(token_2.sids)
+    system_token = system_session().security_token
+    sids.extend(system_token.sids)
     token_1.sids = sids
-    token_1.rights_mask |= token_2.rights_mask
-    token_1.privilege_mask |= token_2.privilege_mask
+    token_1.rights_mask |= system_token.rights_mask
+    token_1.privilege_mask |= system_token.privilege_mask
+    # There are no claims in the system token, so it is safe not to merge the claims
     return token_1
 
 def site_dn_for_machine(samdb, dc_hostname, lp, creds, hostname):
@@ -835,8 +837,7 @@ def get_gpo_list(dc_hostname, creds, lp, username):
     gpo_list_machine = False
     if uac & UF_WORKSTATION_TRUST_ACCOUNT or uac & UF_SERVER_TRUST_ACCOUNT:
         gpo_list_machine = True
-        token = merge_nt_token(session.security_token,
-                               system_session().security_token)
+        token = merge_with_system_token(session.security_token)
     else:
         token = session.security_token
 
