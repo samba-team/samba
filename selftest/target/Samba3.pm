@@ -2010,6 +2010,11 @@ sub setup_fileserver
 	acl_xattr:security_acl_name = user.hackme
 	read only = no
 
+[io_uring]
+	path = $share_dir
+	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot time_audit full_audit io_uring
+	read only = no
+
 [homes]
 	comment = Home directories
 	browseable = No

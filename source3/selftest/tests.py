@@ -1391,6 +1391,18 @@ plansmbtorture4testsuite(
     "simpleserver",
     '//$SERVER/external_streams_depot -U$USERNAME%$PASSWORD')
 
+vfs_io_uring_tests = {
+    "smb2.connect",
+    "smb2.credits",
+    "smb2.rw",
+    "smb2.bench",
+    "smb2.ioctl",
+}
+for t in vfs_io_uring_tests:
+    plansmbtorture4testsuite(t, "fileserver",
+                             '//$SERVER_IP/io_uring -U$USERNAME%$PASSWORD',
+                             "vfs_io_uring")
+
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]
 signseal_options = ["", ",connect", ",packet", ",sign", ",seal"]
