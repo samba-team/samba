@@ -801,7 +801,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 
 	if (max_runtime) {
 		struct tevent_timer *te;
-		DBG_ERR("%s PID %d was called with maxruntime %d - "
+		DBG_NOTICE("%s PID %d was called with maxruntime %d - "
 			"current ts %llu\n",
 			binary_name, (int)getpid(),
 			max_runtime, (unsigned long long) time(NULL));
@@ -905,7 +905,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	DBG_ERR("%s: using '%s' process model\n", binary_name, model);
+	DBG_NOTICE("%s: using '%s' process model\n", binary_name, model);
 
 	{
 		int child_pipe[2];
