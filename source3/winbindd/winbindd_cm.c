@@ -1426,9 +1426,12 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 	 * Check the negative connection cache before talking to it. It going
 	 * down may have triggered the reconnection.
 	 */
-	status = check_negative_conn_cache(domain->name, saf_servername);
-	if (!NT_STATUS_IS_OK(status)) {
-		saf_servername = NULL;
+	if (saf_servername != NULL) {
+		status = check_negative_conn_cache(domain->name,
+						   saf_servername);
+		if (!NT_STATUS_IS_OK(status)) {
+			saf_servername = NULL;
+		}
 	}
 
 	if (saf_servername != NULL) {
