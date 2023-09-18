@@ -27,5 +27,5 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 
 void set_profile_level(int level, const struct server_id *src)
 {
-	DEBUG(1,("INFO: Profiling support unavailable in this build.\n"));
+	DBG_NOTICE("INFO: Profiling support unavailable in this build.\n");
 }
