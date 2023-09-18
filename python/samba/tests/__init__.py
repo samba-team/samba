@@ -19,7 +19,6 @@
 """Samba Python tests."""
 import os
 import tempfile
-import warnings
 import collections
 import ldb
 import samba
