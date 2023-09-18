@@ -48,6 +48,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  smb3 unix extensions                    removed         always offered
 
 
 KNOWN ISSUES

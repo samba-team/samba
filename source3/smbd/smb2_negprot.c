@@ -276,40 +276,40 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req, status);
 		}
 
-		if (lp_smb3_unix_extensions()) {
-			in_posix = smb2_negotiate_context_find(&in_c,
-					SMB2_POSIX_EXTENSIONS_AVAILABLE);
+		in_posix = smb2_negotiate_context_find(
+			&in_c,
+			SMB2_POSIX_EXTENSIONS_AVAILABLE);
 
-			if (in_posix != NULL) {
-				const uint8_t *inbuf = in_posix->data.data;
-				size_t inbuflen = in_posix->data.length;
-				bool posix_found = false;
-				/*
-				 * For now the server only supports one variant.
-				 * Check it's the right one.
-				 */
-				if ((inbuflen % 16) != 0) {
-					return smbd_smb2_request_error(req,
-						NT_STATUS_INVALID_PARAMETER);
+		if (in_posix != NULL) {
+			const uint8_t *inbuf = in_posix->data.data;
+			size_t inbuflen = in_posix->data.length;
+			bool posix_found = false;
+			/*
+			 * For now the server only supports one variant.
+			 * Check it's the right one.
+			 */
+			if ((inbuflen % 16) != 0) {
+				return smbd_smb2_request_error(
+					req,
+					NT_STATUS_INVALID_PARAMETER);
+			}
+			SMB_ASSERT(strlen(SMB2_CREATE_TAG_POSIX) == 16);
+			for (ofs = 0; ofs < inbuflen; ofs += 16) {
+				if (memcmp(inbuf + ofs,
+					   SMB2_CREATE_TAG_POSIX,
+					   16) == 0) {
+					posix_found = true;
+					break;
 				}
-				SMB_ASSERT(strlen(SMB2_CREATE_TAG_POSIX) == 16);
-				for (ofs=0; ofs<inbuflen; ofs+=16) {
-					if (memcmp(inbuf+ofs,
-							SMB2_CREATE_TAG_POSIX,
-							16) == 0) {
-						posix_found = true;
-						break;
-					}
-				}
-				if (posix_found) {
-					DBG_DEBUG("Client requested SMB2 unix "
-						"extensions\n");
-				} else {
-					DBG_DEBUG("Client requested unknown "
-						"SMB2 unix extensions:\n");
-					dump_data(10, inbuf, inbuflen);
-					in_posix = NULL;
-				}
+			}
+			if (posix_found) {
+				DBG_DEBUG("Client requested SMB2 unix "
+					  "extensions\n");
+			} else {
+				DBG_DEBUG("Client requested unknown "
+					  "SMB2 unix extensions:\n");
+				dump_data(10, inbuf, inbuflen);
+				in_posix = NULL;
 			}
 		}
 	}

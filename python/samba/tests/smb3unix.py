@@ -26,129 +26,67 @@ def posix_context(mode):
 
 class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
-    def enable_smb3unix(self):
-        with open(self.global_inject, 'w') as f:
-            f.write("smb3 unix extensions = yes\n")
-
-    def disable_smb3unix(self):
-        with open(self.global_inject, 'w') as f:
-            f.truncate()
-
     def test_negotiate_context_posix(self):
-        try:
-            self.enable_smb3unix()
-
-            c = libsmb.Conn(
-                self.server_ip,
-                "tmp",
-                self.lp,
-                self.creds,
-                posix=True)
-            self.assertTrue(c.have_posix())
-
-        finally:
-            self.disable_smb3unix()
-
-    def test_negotiate_context_noposix(self):
-        c = libsmb.Conn(
-                self.server_ip,
-                "tmp",
-                self.lp,
-                self.creds,
-                posix=True)
-        self.assertFalse(c.have_posix())
-
-    def test_negotiate_context_posix_invalid_length(self):
-        try:
-            self.enable_smb3unix()
-
-            with self.assertRaises(NTSTATUSError) as cm:
-                c = libsmb.Conn(
-                    self.server_ip,
-                    "tmp",
-                    self.lp,
-                    self.creds,
-                    negotiate_contexts=[(0x100, b'01234')])
-
-            e = cm.exception
-            self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
-
-        finally:
-            self.disable_smb3unix()
-
-    def test_negotiate_context_posix_invalid_blob(self):
-        try:
-            self.enable_smb3unix()
-
-            c = libsmb.Conn(
-                self.server_ip,
-                "tmp",
-                self.lp,
-                self.creds,
-                negotiate_contexts=[(0x100, b'0123456789012345')])
-            self.assertFalse(c.have_posix())
-
-        finally:
-            self.disable_smb3unix()
-
-    def test_posix_create_context(self):
-        try:
-            self.enable_smb3unix()
-
-            c = libsmb.Conn(
-                self.server_ip,
-                "tmp",
-                self.lp,
-                self.creds,
-                posix=True)
-            self.assertTrue(c.have_posix())
-
-            cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'0000')]
-            fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
-            self.assertEqual(cc_in[0][0],cc_out[0][0])
-
-            c.close(fnum)
-
-        finally:
-            self.disable_smb3unix()
-
-    def test_posix_create_context_noposix(self):
         c = libsmb.Conn(
             self.server_ip,
             "tmp",
             self.lp,
             self.creds,
             posix=True)
-        self.assertFalse(c.have_posix())
+        self.assertTrue(c.have_posix())
 
-        cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'0000')]
-        fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
-        self.assertEqual(len(cc_out), 0)
-
-        c.close(fnum)
-
-    def test_posix_create_invalid_context_length(self):
-        try:
-            self.enable_smb3unix()
-
+    def test_negotiate_context_posix_invalid_length(self):
+        with self.assertRaises(NTSTATUSError) as cm:
             c = libsmb.Conn(
                 self.server_ip,
                 "tmp",
                 self.lp,
                 self.creds,
-                posix=True)
-            self.assertTrue(c.have_posix())
+                negotiate_contexts=[(0x100, b'01234')])
 
-            cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'00000')]
+        e = cm.exception
+        self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
 
-            with self.assertRaises(NTSTATUSError) as cm:
-                fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
+    def test_negotiate_context_posix_invalid_blob(self):
+        c = libsmb.Conn(
+            self.server_ip,
+            "tmp",
+            self.lp,
+            self.creds,
+            negotiate_contexts=[(0x100, b'0123456789012345')])
+        self.assertFalse(c.have_posix())
 
-            e = cm.exception
-            self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
+    def test_posix_create_context(self):
+        c = libsmb.Conn(
+            self.server_ip,
+            "tmp",
+            self.lp,
+            self.creds,
+            posix=True)
+        self.assertTrue(c.have_posix())
 
-        finally:
-            self.disable_smb3unix()
+        cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'0000')]
+        fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
+        self.assertEqual(cc_in[0][0],cc_out[0][0])
+
+        c.close(fnum)
+
+    def test_posix_create_invalid_context_length(self):
+        c = libsmb.Conn(
+            self.server_ip,
+            "tmp",
+            self.lp,
+            self.creds,
+            posix=True)
+        self.assertTrue(c.have_posix())
+
+        cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'00000')]
+
+        with self.assertRaises(NTSTATUSError) as cm:
+            fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
+
+        e = cm.exception
+        self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
 
     def delete_test_file(self, c, fname, mode=0):
         f,_,cc_out = c.create_ex(fname,
@@ -161,8 +99,6 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_posix_query_dir(self):
         test_files = []
         try:
-            self.enable_smb3unix()
-
             c = libsmb.Conn(
                 self.server_ip,
                 "smb3_posix_share",
@@ -193,63 +129,47 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 for fname in test_files:
                     self.delete_test_file(c, fname)
 
-            self.disable_smb3unix()
-
     def test_posix_reserved_char(self):
-        try:
-            self.enable_smb3unix()
+        c = libsmb.Conn(
+            self.server_ip,
+            "smb3_posix_share",
+            self.lp,
+            self.creds,
+            posix=True)
+        self.assertTrue(c.have_posix())
 
-            c = libsmb.Conn(
-                self.server_ip,
-                "smb3_posix_share",
-                self.lp,
-                self.creds,
-                posix=True)
-            self.assertTrue(c.have_posix())
+        test_files = ['a ', 'a  ', '. ', '.  ', 'a.',
+                      '.a', ' \\ ', '>', '<' '?']
 
-            test_files = ['a ', 'a  ', '. ', '.  ', 'a.',
-                          '.a', ' \\ ', '>', '<' '?']
-
-            for fname in test_files:
-                try:
-                    f,_,cc_out = c.create_ex('\\%s' % fname,
-                                    CreateDisposition=libsmb.FILE_CREATE,
-                                    DesiredAccess=security.SEC_STD_DELETE,
-                                    CreateContexts=[posix_context(0o744)])
-                except NTSTATUSError as e:
-                    self.fail(e)
-                c.delete_on_close(f, True)
-                c.close(f)
-
-        finally:
-            self.disable_smb3unix()
-
-    def test_posix_delete_on_close(self):
-        try:
-            self.enable_smb3unix()
-
-            c = libsmb.Conn(
-                self.server_ip,
-                "smb3_posix_share",
-                self.lp,
-                self.creds,
-                posix=True)
-            self.assertTrue(c.have_posix())
-
-            f,_,cc_out = c.create_ex('\\TESTING999',
-                            DesiredAccess=security.SEC_STD_ALL,
-                            CreateDisposition=libsmb.FILE_CREATE,
-                            CreateContexts=[posix_context(0o744)])
+        for fname in test_files:
+            try:
+                f,_,cc_out = c.create_ex('\\%s' % fname,
+                                CreateDisposition=libsmb.FILE_CREATE,
+                                DesiredAccess=security.SEC_STD_DELETE,
+                                CreateContexts=[posix_context(0o744)])
+            except NTSTATUSError as e:
+                self.fail(e)
             c.delete_on_close(f, True)
             c.close(f)
 
-        finally:
-            self.disable_smb3unix()
+    def test_posix_delete_on_close(self):
+        c = libsmb.Conn(
+            self.server_ip,
+            "smb3_posix_share",
+            self.lp,
+            self.creds,
+            posix=True)
+        self.assertTrue(c.have_posix())
+
+        f,_,cc_out = c.create_ex('\\TESTING999',
+                        DesiredAccess=security.SEC_STD_ALL,
+                        CreateDisposition=libsmb.FILE_CREATE,
+                        CreateContexts=[posix_context(0o744)])
+        c.delete_on_close(f, True)
+        c.close(f)
 
     def test_posix_case_sensitive(self):
         try:
-            self.enable_smb3unix()
-
             c = libsmb.Conn(
                 self.server_ip,
                 "smb3_posix_share",
@@ -281,13 +201,9 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         finally:
             self.delete_test_file(c, '\\xx')
 
-            self.disable_smb3unix()
-
     def test_posix_perm_files(self):
         test_files = {}
         try:
-            self.enable_smb3unix()
-
             c = libsmb.Conn(
                 self.server_ip,
                 "smb3_posix_share",
@@ -337,28 +253,21 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 for fname in test_files.keys():
                     self.delete_test_file(c, '\\%s' % fname)
 
-            self.disable_smb3unix()
-
     def test_share_root_null_sids_fid(self):
-        try:
-            self.enable_smb3unix()
+        c = libsmb.Conn(
+            self.server_ip,
+            "smb3_posix_share",
+            self.lp,
+            self.creds,
+            posix=True)
+        self.assertTrue(c.have_posix())
 
-            c = libsmb.Conn(
-                self.server_ip,
-                "smb3_posix_share",
-                self.lp,
-                self.creds,
-                posix=True)
-            self.assertTrue(c.have_posix())
-
-            res = c.list("", info_level=100, posix=True)
-            found_files = {get_string(i['name']): i for i in res}
-            dotdot = found_files['..']
-            self.assertEqual('S-1-0-0', dotdot['owner_sid'],
-                             'The owner sid for .. was not NULL')
-            self.assertEqual('S-1-0-0', dotdot['group_sid'],
-                             'The group sid for .. was not NULL')
-            self.assertEqual(0, dotdot['ino'], 'The ino for .. was not 0')
-            self.assertEqual(0, dotdot['dev'], 'The dev for .. was not 0')
-        finally:
-            self.disable_smb3unix()
+        res = c.list("", info_level=100, posix=True)
+        found_files = {get_string(i['name']): i for i in res}
+        dotdot = found_files['..']
+        self.assertEqual('S-1-0-0', dotdot['owner_sid'],
+                         'The owner sid for .. was not NULL')
+        self.assertEqual('S-1-0-0', dotdot['group_sid'],
+                         'The group sid for .. was not NULL')
+        self.assertEqual(0, dotdot['ino'], 'The ino for .. was not 0')
+        self.assertEqual(0, dotdot['dev'], 'The dev for .. was not 0')

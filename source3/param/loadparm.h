@@ -182,7 +182,6 @@ void widelinks_warning(int snum);
 const char *lp_ncalrpc_dir(void);
 void _lp_set_server_role(int server_role);
 uint32_t lp_get_async_dns_timeout(void);
-bool lp_smb3_unix_extensions(void);
 
 /* The following definitions come from param/loadparm_ctx.c  */
 

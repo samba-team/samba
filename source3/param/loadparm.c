@@ -4677,12 +4677,6 @@ void widelinks_warning(int snum)
 			"These parameters are incompatible. "
 			"Wide links will be disabled for this share.\n",
 			 lp_const_servicename(snum));
-		} else if (lp_smb3_unix_extensions()) {
-			DBG_ERR("Share '%s' has wide links and SMB3 unix "
-			"extensions enabled. "
-			"These parameters are incompatible. "
-			"Wide links will be disabled for this share.\n",
-			 lp_const_servicename(snum));
 		}
 	}
 }
@@ -4690,7 +4684,7 @@ void widelinks_warning(int snum)
 bool lp_widelinks(int snum)
 {
 	/* wide links is always incompatible with unix extensions */
-	if (lp_smb1_unix_extensions() || lp_smb3_unix_extensions()) {
+	if (lp_smb1_unix_extensions()) {
 		/*
 		 * Unless we have "allow insecure widelinks"
 		 * turned on.
@@ -4829,17 +4823,4 @@ uint32_t lp_get_async_dns_timeout(void)
 	 * as per the man page.
 	 */
 	return MAX(Globals.async_dns_timeout, 1);
-}
-
-bool lp_smb3_unix_extensions(void)
-{
-	/*
-	 * FIXME: If this gets always enabled, check source3/selftest/tests.py
-	 * and source3/wscript for HAVE_SMB3_UNIX_EXTENSIONS.
-	 */
-#if defined(DEVELOPER)
-	return lp__smb3_unix_extensions();
-#else
-	return false;
-#endif
 }

@@ -1712,9 +1712,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			if (!(conn->sconn->using_smb2)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
-			if (!lp_smb3_unix_extensions()) {
-				return NT_STATUS_INVALID_LEVEL;
-			}
 
 			/* Determine the size of the posix info context */
 			plen = store_smb2_posix_info(conn,
@@ -1976,8 +1973,7 @@ static bool fsinfo_unix_valid_level(connection_struct *conn,
 				    uint16_t info_level)
 {
 	if (conn->sconn->using_smb2 &&
-			lp_smb3_unix_extensions() &&
-			info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL) {
+	    info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL) {
 		return true;
 	}
 #if defined(SMB1SERVER)
@@ -3019,8 +3015,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			ok = true;
 		}
 
-		if (lp_smb3_unix_extensions() &&
-		    (fsp != NULL) &&
+		if ((fsp != NULL) &&
 		    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
 			DBG_DEBUG("SMB2 posix open\n");
 			ok = true;
@@ -3668,9 +3663,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			ssize_t plen = 0;
 
 			if (!(conn->sconn->using_smb2)) {
-				return NT_STATUS_INVALID_LEVEL;
-			}
-			if (!lp_smb3_unix_extensions()) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 			if (fsp == NULL) {
