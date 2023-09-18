@@ -898,7 +898,9 @@ static bool open_sockets(bool isdaemon, int port)
 
 	reopen_logs();
 
-	DBG_ERR("nmbd version %s started.\n%s\n", samba_version_string(), COPYRIGHT_STARTUP_MESSAGE);
+	DBG_STARTUP_NOTICE("nmbd version %s started.\n"
+			COPYRIGHT_STARTUP_MESSAGE "\n",
+		samba_version_string());
 
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
 	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
