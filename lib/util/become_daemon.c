@@ -147,5 +147,5 @@ void daemon_status(const char *daemon, const char *msg)
 		sd_notifyf(0, "STATUS=%s: %s", daemon, msg);
 	}
 #endif
-	DBG_ERR("daemon '%s' : %s\n", daemon, msg);
+	DBG_STARTUP_NOTICE("daemon '%s' : %s\n", daemon, msg);
 }
