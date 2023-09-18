@@ -64,6 +64,9 @@ struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 }
 
 struct aio_req_fsp_link {
+#ifdef DEVELOPER
+	struct smbd_server_connection *sconn;
+#endif
 	files_struct *fsp;
 	struct tevent_req *req;
 };
@@ -73,6 +76,24 @@ static int aio_del_req_from_fsp(struct aio_req_fsp_link *lnk)
 	unsigned i;
 	files_struct *fsp = lnk->fsp;
 	struct tevent_req *req = lnk->req;
+
+#ifdef DEVELOPER
+	struct files_struct *ifsp = NULL;
+	bool found = false;
+
+	/*
+	 * When this is called, lnk->fsp must still exist
+	 * on the files list for this connection. Panic if not.
+	 */
+	for (ifsp = lnk->sconn->files; ifsp; ifsp = ifsp->next) {
+		if (ifsp == fsp) {
+			found = true;
+		}
+	}
+	if (!found) {
+		smb_panic("orphaned lnk on fsp aio list.\n");
+	}
+#endif
 
 	for (i=0; i<fsp->num_aio_requests; i++) {
 		if (fsp->aio_requests[i] == req) {
@@ -130,6 +151,9 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
 
 	lnk->fsp = fsp;
 	lnk->req = req;
+#ifdef DEVELOPER
+	lnk->sconn = fsp->conn->sconn;
+#endif
 	talloc_set_destructor(lnk, aio_del_req_from_fsp);
 
 	return true;
