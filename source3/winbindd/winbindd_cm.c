@@ -1480,7 +1480,10 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 				 NULL, -1, NULL, -1,
 				 fd, NULL, 10);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		winbind_add_failed_connection_entry(domain,
+						    domain->dcname,
+						    NT_STATUS_UNSUCCESSFUL);
+		return false;
 	}
 	return true;
 
