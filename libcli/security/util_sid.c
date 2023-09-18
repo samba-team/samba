@@ -77,10 +77,10 @@ const struct dom_sid global_sid_Restriced =			/* Restricted Code */
 const struct dom_sid global_sid_Asserted_Identity =       /* Asserted Identity */
 { 1, 0, {0,0,0,0,0,18}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 /* S-1-18-1 */
-const struct dom_sid global_sid_Asserted_Identity_Service =	/* Asserted Identity Service */
+const struct dom_sid global_sid_Asserted_Identity_Authentication_Authority =	/* Asserted Identity Authentication Authority */
 { 1, 1, {0,0,0,0,0,18}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 /* S-1-18-2 */
-const struct dom_sid global_sid_Asserted_Identity_Authentication_Authority =	/* Asserted Identity Authentication Authority */
+const struct dom_sid global_sid_Asserted_Identity_Service =	/* Asserted Identity Service */
 { 1, 1, {0,0,0,0,0,18}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
 /* S-1-5-2 */
