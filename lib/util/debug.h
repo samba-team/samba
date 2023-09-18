@@ -269,12 +269,14 @@ void debuglevel_set_class(size_t idx, int level);
 /*
  * Debug levels matching RFC 3164
  */
+#define DBGLVL_STARTUP_NOTICE	 -1	/* startup notice */
 #define DBGLVL_ERR	 0	/* error conditions */
 #define DBGLVL_WARNING	 1	/* warning conditions */
 #define DBGLVL_NOTICE	 3	/* normal, but significant, condition */
 #define DBGLVL_INFO	 5	/* informational message */
 #define DBGLVL_DEBUG	10	/* debug-level message */
 
+#define DBG_STARTUP_NOTICE(...)	DBG_PREFIX(DBGLVL_STARTUP_NOTICE,	(__VA_ARGS__))
 #define DBG_ERR(...)		DBG_PREFIX(DBGLVL_ERR,		(__VA_ARGS__))
 #define DBG_WARNING(...)	DBG_PREFIX(DBGLVL_WARNING,	(__VA_ARGS__))
 #define DBG_NOTICE(...)		DBG_PREFIX(DBGLVL_NOTICE,	(__VA_ARGS__))
