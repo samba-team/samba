@@ -2461,7 +2461,7 @@ struct tevent_queue_entry *_tevent_queue_add_optimize_empty(
  * must be the first one in the queue! Otherwise it calls abort().
  *
  * @note You can't use this together with tevent_queue_add_optimize_empty()
- * because the trigger function don't have access to the quene entry
+ * because the trigger function doesn't have access to the queue entry
  * in the case of an empty queue.
  *
  * @param[in]  queue_entry The queue entry to rearm.
@@ -2694,7 +2694,7 @@ int tevent_re_initialise(struct tevent_context *ev);
  * @ingroup tevent
  *
  * The following structure and registration functions are exclusively
- * needed for people writing and pluggin a different event engine.
+ * needed for people writing and plugging a different event engine.
  * There is nothing useful for normal tevent user in here.
  * @{
  */
