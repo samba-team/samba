@@ -170,6 +170,8 @@ int main(int argc, const char *argv[])
 	const char *test_mode;
 	bool ok;
 
+	setproctitle_init(argc, discard_const(argv), environ);
+
 	/*
 	 * Basic setup
 	 */
