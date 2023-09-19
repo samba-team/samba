@@ -25,8 +25,6 @@
 #include "libcli/security/security.h"
 #include "lib/util/tsort.h"
 
-#define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8_t) + sizeof(uint16_t) + sizeof(uint32_t))
-
 /**
  * Check if ACE has OBJECT type.
  */
