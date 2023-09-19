@@ -6481,7 +6481,6 @@ void reply_mv(struct smb_request *req)
 				req,
 				src_dirfsp, /* src_dirfsp */
 				smb_fname_src,
-				NULL, /* dst_dirfsp */
 				smb_fname_dst,
 				dst_original_lcomp,
 				attrs,
