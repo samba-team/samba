@@ -3861,9 +3861,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				  conn,
 				  req,
 				  false,
-				  NULL,
 				  smb_fname_old,
-				  NULL, /* new_dirfsp */
 				  smb_fname_new);
 }
 
