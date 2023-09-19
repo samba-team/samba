@@ -1577,7 +1577,7 @@ void reply_ntrename(struct smb_request *req)
 						req,
 						src_dirfsp,
 						smb_fname_old,
-						dst_dirfsp,
+						NULL,
 						smb_fname_new,
 						dst_original_lcomp,
 						attrs,
