@@ -5136,3 +5136,120 @@ bool run_smb2_dfs_filename_leading_backslash(int dummy)
 	(void)smb2_dfs_delete(cli, dfs_filename_slash);
 	return retval;
 }
+
+/*
+ * Ensure a named pipe async read followed by a disconnect
+ * doesn't crash the server (server crash checked for in
+ * containing test script:
+ * source3/script/tests/test_smbtorture_nocrash_s3.sh)
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15423
+ */
+
+bool run_smb2_pipe_read_async_disconnect(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	bool retval = false;
+
+	printf("Starting SMB2-PIPE-READ-ASYNC-DISCONNECT\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect_creds(cli, "IPC$", "IPC", torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect to IPC$ returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	/* Open the SAMR pipe. */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				"SAMR",
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_FILE_READ_DATA|
+					SEC_FILE_WRITE_DATA, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_OPEN, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL, /* struct smb2_create_blobs * */
+				NULL); /* psymlink */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb2cli_create on SAMR returned %s\n",
+			__FILE__,
+			__LINE__,
+			nt_errstr(status));
+		goto err;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto err;
+	}
+
+	/* Start an async read. */
+	req = smb2cli_read_send(talloc_tos(),
+				ev,
+				cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				16*1024,
+				0, /* offset */
+				fid_persistent,
+				fid_volatile,
+				0, /* minimum_count */
+				0); /* remaining_bytes */
+	if (req == NULL) {
+		goto err;
+	}
+
+	/* Force disconnect. */
+	smbXcli_conn_disconnect(cli->conn, NT_STATUS_LOCAL_DISCONNECT);
+	fid_volatile = 0;
+	retval = true;
+
+  err:
+
+	if (fid_volatile != 0) {
+		smb2cli_close(cli->conn,
+			      cli->timeout,
+			      cli->smb2.session,
+			      cli->smb2.tcon,
+			      0, /* flags */
+			      fid_persistent,
+			      fid_volatile);
+	}
+	return retval;
+}
