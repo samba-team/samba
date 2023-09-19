@@ -7463,9 +7463,13 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 		}
 		return false;
 	}
-	status = smbXcli_negprot(cli->conn, cli->timeout,
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
 				 lp_client_min_protocol(),
-				 lp_client_max_protocol());
+				 lp_client_max_protocol(),
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_NT1)

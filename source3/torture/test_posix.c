@@ -320,7 +320,10 @@ bool run_posix_ls_single_test(int dummy)
 	status = smbXcli_negprot(cli_win->conn,
 				 cli_win->timeout,
 				 lp_client_min_protocol(),
-				 lp_client_max_protocol());
+				 lp_client_max_protocol(),
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		TALLOC_FREE(frame);

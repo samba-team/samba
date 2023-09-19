@@ -782,9 +782,13 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	set_socket_options(sockfd, lp_socket_options());
 
-	result = smbXcli_negprot((*cli)->conn, (*cli)->timeout,
+	result = smbXcli_negprot((*cli)->conn,
+				 (*cli)->timeout,
 				 lp_client_ipc_min_protocol(),
-				 lp_client_ipc_max_protocol());
+				 lp_client_ipc_max_protocol(),
+				 NULL,
+				 NULL,
+				 NULL);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("cli_negprot failed: %s\n", nt_errstr(result)));

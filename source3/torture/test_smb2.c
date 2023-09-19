@@ -55,8 +55,13 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB2_02,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -257,8 +262,13 @@ bool run_smb2_negprot(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_CORE, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_CORE,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -274,8 +284,13 @@ bool run_smb2_negprot(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 protocol, protocol);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 protocol,
+				 protocol,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_ABORTED)) {
@@ -306,8 +321,13 @@ bool run_smb2_anonymous(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -358,8 +378,13 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli1->conn, cli1->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli1->conn,
+				 cli1->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -446,8 +471,13 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli2->conn, cli2->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli2->conn,
+				 cli2->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -802,8 +832,13 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -949,22 +984,37 @@ bool run_smb2_multi_channel(int dummy)
 
 	cli_state_client_guid = saved_guid;
 
-	status = smbXcli_negprot(cli1->conn, cli1->timeout,
-				 PROTOCOL_SMB3_00, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli1->conn,
+				 cli1->timeout,
+				 PROTOCOL_SMB3_00,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = smbXcli_negprot(cli2->conn, cli2->timeout,
-				 PROTOCOL_SMB3_00, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli2->conn,
+				 cli2->timeout,
+				 PROTOCOL_SMB3_00,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = smbXcli_negprot(cli3->conn, cli3->timeout,
-				 PROTOCOL_SMB3_00, PROTOCOL_LATEST);
+	status = smbXcli_negprot(cli3->conn,
+				 cli3->timeout,
+				 PROTOCOL_SMB3_00,
+				 PROTOCOL_LATEST,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -1556,8 +1606,13 @@ bool run_smb2_session_reauth(int dummy)
 	 * and returns NT_STATUS_REQUEST_NOT_ACCEPTED,
 	 * while it allows it on PROTOCOL_SMB2_10.
 	 */
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_10, PROTOCOL_SMB2_10);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_10,
+				 PROTOCOL_SMB2_10,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -2110,8 +2165,13 @@ bool run_smb2_ftruncate(int dummy)
 		goto fail;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB2_02,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		goto fail;
@@ -2478,8 +2538,13 @@ bool run_smb2_dir_fsync(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB2_02,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -2541,8 +2606,13 @@ bool run_smb2_path_slash(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
+	status = smbXcli_negprot(cli->conn,
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB2_02,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -2786,9 +2856,12 @@ bool run_smb2_sacl(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -3094,9 +3167,12 @@ bool run_smb2_quota1(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -3164,9 +3240,12 @@ bool run_smb2_stream_acl(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -3386,9 +3465,12 @@ bool run_list_dir_async_test(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -3461,9 +3543,12 @@ bool run_delete_on_close_non_empty(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -3615,9 +3700,12 @@ bool run_delete_on_close_nonwrite_delete_yes_test(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -3726,9 +3814,12 @@ bool run_delete_on_close_nonwrite_delete_no_test(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -4195,9 +4286,12 @@ bool run_smb2_dfs_paths(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -4599,9 +4693,12 @@ bool run_smb2_non_dfs_share(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -4764,9 +4861,12 @@ bool run_smb2_dfs_share_non_dfs_path(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -4979,9 +5079,12 @@ bool run_smb2_dfs_filename_leading_backslash(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -5162,9 +5265,12 @@ bool run_smb2_pipe_read_async_disconnect(int dummy)
 	}
 
 	status = smbXcli_negprot(cli->conn,
-				cli->timeout,
-				PROTOCOL_SMB2_02,
-				PROTOCOL_SMB3_11);
+				 cli->timeout,
+				 PROTOCOL_SMB2_02,
+				 PROTOCOL_SMB3_11,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;

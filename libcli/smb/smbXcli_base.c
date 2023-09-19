@@ -5595,7 +5595,10 @@ NTSTATUS smbXcli_negprot_recv(
 NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 			 uint32_t timeout_msec,
 			 enum protocol_types min_protocol,
-			 enum protocol_types max_protocol)
+			 enum protocol_types max_protocol,
+			 struct smb2_negotiate_contexts *in_ctx,
+			 TALLOC_CTX *mem_ctx,
+			 struct smb2_negotiate_contexts **out_ctx)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -5622,7 +5625,7 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 		min_protocol,
 		max_protocol,
 		WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK,
-		NULL);
+		in_ctx);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -5630,7 +5633,7 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 	if (!ok) {
 		goto fail;
 	}
-	status = smbXcli_negprot_recv(req, NULL, NULL);
+	status = smbXcli_negprot_recv(req, mem_ctx, out_ctx);
  fail:
 	TALLOC_FREE(frame);
 	return status;

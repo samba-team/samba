@@ -74,9 +74,13 @@ NTSTATUS remote_password_change(const char *remote_machine,
 				       false); /* password_is_nt_hash */
 	SMB_ASSERT(creds != NULL);
 
-	result = smbXcli_negprot(cli->conn, cli->timeout,
+	result = smbXcli_negprot(cli->conn,
+				 cli->timeout,
 				 lp_client_ipc_min_protocol(),
-				 lp_client_ipc_max_protocol());
+				 lp_client_ipc_max_protocol(),
+				 NULL,
+				 NULL,
+				 NULL);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		if (asprintf(err_str, "machine %s rejected the negotiate "

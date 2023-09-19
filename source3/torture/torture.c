@@ -10318,8 +10318,13 @@ static bool run_error_map_extract(int dummy) {
 	}
 	disable_spnego = false;
 
-	status = smbXcli_negprot(c_nt->conn, c_nt->timeout, PROTOCOL_CORE,
-				 PROTOCOL_NT1);
+	status = smbXcli_negprot(c_nt->conn,
+				 c_nt->timeout,
+				 PROTOCOL_CORE,
+				 PROTOCOL_NT1,
+				 NULL,
+				 NULL,
+				 NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the NT-error negprot (%s)\n", host,
@@ -10346,8 +10351,13 @@ static bool run_error_map_extract(int dummy) {
 	disable_spnego = false;
 	force_dos_errors = false;
 
-	status = smbXcli_negprot(c_dos->conn, c_dos->timeout, PROTOCOL_CORE,
-				 PROTOCOL_NT1);
+	status = smbXcli_negprot(c_dos->conn,
+				 c_dos->timeout,
+				 PROTOCOL_CORE,
+				 PROTOCOL_NT1,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the DOS-error negprot (%s)\n", host,
 		       nt_errstr(status));
@@ -11525,7 +11535,10 @@ static bool run_large_readx(int dummy)
 		status = smbXcli_negprot(cli2->conn,
 					 cli2->timeout,
 					 runs[i].protocol,
-					 runs[i].protocol);
+					 runs[i].protocol,
+					 NULL,
+					 NULL,
+					 NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -14865,7 +14878,13 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(conn, 0, PROTOCOL_NT1, PROTOCOL_NT1);
+	status = smbXcli_negprot(conn,
+				 0,
+				 PROTOCOL_NT1,
+				 PROTOCOL_NT1,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "smbXcli_negprot failed!\n");
 		return false;
@@ -15048,7 +15067,13 @@ static bool run_smb1_negotiate_exit(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(conn, 0, PROTOCOL_NT1, PROTOCOL_NT1);
+	status = smbXcli_negprot(conn,
+				 0,
+				 PROTOCOL_NT1,
+				 PROTOCOL_NT1,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "smbXcli_negprot failed!\n");
 		return false;
@@ -15094,7 +15119,13 @@ static bool run_smb1_negotiate_tcon(int dummy)
 	}
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
-	status = smbXcli_negprot(cli->conn, 0, PROTOCOL_NT1, PROTOCOL_NT1);
+	status = smbXcli_negprot(cli->conn,
+				 0,
+				 PROTOCOL_NT1,
+				 PROTOCOL_NT1,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "smbXcli_negprot failed %s!\n",
 			nt_errstr(status));
@@ -15147,7 +15178,13 @@ static bool run_ign_bad_negprot(int dummy)
 		return false;
 	}
 
-	status = smbXcli_negprot(conn, 0, PROTOCOL_CORE, PROTOCOL_CORE);
+	status = smbXcli_negprot(conn,
+				 0,
+				 PROTOCOL_CORE,
+				 PROTOCOL_CORE,
+				 NULL,
+				 NULL,
+				 NULL);
 	if (NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "smbXcli_negprot succeeded!\n");
 		return false;

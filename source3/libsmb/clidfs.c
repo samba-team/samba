@@ -193,9 +193,13 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 
 	DEBUG(4,(" session request ok\n"));
 
-	status = smbXcli_negprot(c->conn, c->timeout,
+	status = smbXcli_negprot(c->conn,
+				 c->timeout,
 				 lp_client_min_protocol(),
-				 lp_client_max_protocol());
+				 lp_client_max_protocol(),
+				 NULL,
+				 NULL,
+				 NULL);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		d_printf("Protocol negotiation (with timeout %d ms) timed out against server %s\n",
