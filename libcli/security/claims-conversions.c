@@ -364,14 +364,16 @@ static bool ace_sid_to_claim_v1_sid(TALLOC_CTX *mem_ctx,
 				    size_t offset)
 {
 	/* claim_v1 sid is an "S-1-*" string data blob, not struct dom_sid. */
+	char *s = NULL;
+
 	DATA_BLOB *blob = NULL;
-	char *s = dom_sid_string(mem_ctx, &tok->data.sid.sid);
-	if (s == NULL) {
-		return false;
-	}
 	blob = talloc(mem_ctx, DATA_BLOB);
 	if (blob == NULL) {
-		TALLOC_FREE(s);
+		return false;
+	}
+	s = dom_sid_string(blob, &tok->data.sid.sid);
+	if (s == NULL) {
+		TALLOC_FREE(blob);
 		return false;
 	}
 	*blob = data_blob_string_const(s);
@@ -390,7 +392,7 @@ static bool ace_octet_string_to_claim_v1_octet_string(
 		return false;
 	}
 
-	*v = data_blob_talloc(mem_ctx,
+	*v = data_blob_talloc(v,
 			      tok->data.bytes.data,
 			      tok->data.bytes.length);
 	if (v->data == NULL) {
