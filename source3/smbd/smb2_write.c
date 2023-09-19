@@ -307,6 +307,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 
 	if (IS_IPC(smbreq->conn)) {
 		struct tevent_req *subreq = NULL;
+                bool ok;
 
 		if (!fsp_is_np(fsp)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
@@ -323,6 +324,18 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		tevent_req_set_callback(subreq,
 					smbd_smb2_write_pipe_done,
 					req);
+
+		/*
+		 * Make sure we mark the fsp as having outstanding async
+		 * activity so we don't crash on shutdown close.
+		 */
+
+		ok = aio_add_req_to_fsp(fsp, req);
+		if (!ok) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return tevent_req_post(req, ev);
+		}
+
 		return req;
 	}
 
