@@ -3179,62 +3179,36 @@ static int cmd_posix(void)
 	d_printf("Server supports CIFS extensions %u.%u\n", (unsigned int)major, (unsigned int)minor);
 
 	caps = talloc_strdup(ctx, "");
-	if (!caps) {
-		return 1;
-	}
-        if (caplow & CIFS_UNIX_FCNTL_LOCKS_CAP) {
-		caps = talloc_asprintf_append(caps, "locks ");
-		if (!caps) {
-			return 1;
-		}
+	if (caplow & CIFS_UNIX_FCNTL_LOCKS_CAP) {
+		talloc_asprintf_addbuf(&caps, "locks ");
 	}
         if (caplow & CIFS_UNIX_POSIX_ACLS_CAP) {
-		caps = talloc_asprintf_append(caps, "acls ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "acls ");
 	}
         if (caplow & CIFS_UNIX_XATTTR_CAP) {
-		caps = talloc_asprintf_append(caps, "eas ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "eas ");
 	}
         if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
-		caps = talloc_asprintf_append(caps, "pathnames ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "pathnames ");
 	}
         if (caplow & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP) {
-		caps = talloc_asprintf_append(caps, "posix_path_operations ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "posix_path_operations ");
 	}
         if (caplow & CIFS_UNIX_LARGE_READ_CAP) {
-		caps = talloc_asprintf_append(caps, "large_read ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "large_read ");
 	}
         if (caplow & CIFS_UNIX_LARGE_WRITE_CAP) {
-		caps = talloc_asprintf_append(caps, "large_write ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "large_write ");
 	}
 	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP) {
-		caps = talloc_asprintf_append(caps, "posix_encrypt ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "posix_encrypt ");
 	}
 	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP) {
-		caps = talloc_asprintf_append(caps, "mandatory_posix_encrypt ");
-		if (!caps) {
-			return 1;
-		}
+		talloc_asprintf_addbuf(&caps, "mandatory_posix_encrypt ");
+	}
+
+	if (caps == NULL) {
+		return 1;
 	}
 
 	if (*caps && caps[strlen(caps)-1] == ' ') {
