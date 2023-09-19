@@ -160,18 +160,48 @@ ctdb_check_args()
 # determine on what type of system (init style) we are running
 detect_init_style()
 {
-	# only do detection if not already set:
-	if [ -n "$CTDB_INIT_STYLE" ]; then
-		return
+	_init_style_file="${CTDB_SCRIPT_VARDIR}/init-style"
+
+	if [ ! -f "$_init_style_file" ]; then
+		if [ -n "$CTDB_INIT_STYLE" ]; then
+			echo "$CTDB_INIT_STYLE" >"$_init_style_file"
+			return
+		fi
+
+		# Subshell to contain variables in os-release file
+		(
+			_os_release="${CTDB_SYS_ETCDIR}/os-release"
+			if [ -f "$_os_release" ]; then
+				. "$_os_release"
+				case "$ID" in
+				centos | fedora | rhel)
+					echo "redhat"
+					;;
+				debian | ubuntu)
+					echo "debian"
+					;;
+				sles | suse)
+					echo "suse"
+					;;
+				*)
+					case "$ID_LIKE" in
+					*centos* | *rhel*)
+						echo "redhat"
+						;;
+					*)
+						echo "$ID"
+						;;
+					esac
+					;;
+				esac
+			else
+				echo "WARNING: unknown distribution ${ID}" >&2
+				echo "unknown"
+			fi
+		) >"$_init_style_file"
 	fi
 
-	if [ -x /sbin/startproc ]; then
-		CTDB_INIT_STYLE="suse"
-	elif [ -x /sbin/start-stop-daemon ]; then
-		CTDB_INIT_STYLE="debian"
-	else
-		CTDB_INIT_STYLE="redhat"
-	fi
+	read -r CTDB_INIT_STYLE <"$_init_style_file"
 }
 
 ######################################################
