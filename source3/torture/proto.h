@@ -132,6 +132,7 @@ bool run_smb2_dfs_paths(int dummy);
 bool run_smb2_non_dfs_share(int dummy);
 bool run_smb2_dfs_share_non_dfs_path(int dummy);
 bool run_smb2_dfs_filename_leading_backslash(int dummy);
+bool run_smb2_pipe_read_async_disconnect(int dummy);
 bool run_smb1_dfs_paths(int dummy);
 bool run_smb1_dfs_search_paths(int dummy);
 bool run_smb1_dfs_operations(int dummy);
