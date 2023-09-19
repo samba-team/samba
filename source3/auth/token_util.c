@@ -312,7 +312,7 @@ static struct security_token *init_local_nt_token(TALLOC_CTX *mem_ctx)
 	/*
 	 * We do not have a method to populate the claims into this
 	 * buffer in the source3/ stack.  When that changes, we will
-	 * instead this optional based on lp_acl_claims_evaluation()
+	 * instead make this optional based on lp_acl_claims_evaluation()
 	 */
 
 	struct security_token *result
