@@ -4473,7 +4473,7 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 				overwrite,
 				NULL, /* src_dirfsp */
 				fsp->fsp_name,
-				dst_dirfsp, /* dst_dirfsp */
+				NULL, /* dst_dirfsp */
 				smb_fname_dst);
 
 	TALLOC_FREE(smb_fname_dst);
@@ -4571,7 +4571,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				overwrite,
 				NULL, /* src_dirfsp */
 				fsp->fsp_name,
-				dst_dirfsp, /* dst_dirfsp */
+				NULL, /* dst_dirfsp */
 				smb_fname_dst);
 
 	TALLOC_FREE(smb_fname_dst);
