@@ -246,6 +246,24 @@ struct tevent_req *cli_smb2_create_fnum_send(
 		create_options |= FILE_OPEN_FOR_BACKUP_INTENT;
 	}
 
+	if (cli->smb2.client_smb311_posix) {
+		uint8_t modebuf[4] = {
+			0,
+		};
+
+		status =
+			smb2_create_blob_add(state,
+					     &state->in_cblobs,
+					     SMB2_CREATE_TAG_POSIX,
+					     (DATA_BLOB){
+						     .data = modebuf,
+						     .length = sizeof(modebuf),
+					     });
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
 	/* Check for @GMT- paths. Remove the @GMT and turn into TWrp if so. */
 	have_twrp = clistr_smb2_extract_snapshot_token(fname, &ntt);
 	if (have_twrp) {
