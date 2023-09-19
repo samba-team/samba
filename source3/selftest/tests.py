@@ -481,6 +481,22 @@ plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-DEL-ON-CLOSE-NONWRITE-DELE
                 "",
                 "-l $LOCAL_PATH"])
 
+#
+# Test doing an async read + disconnect on a pipe doesn't crash the server.
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=15423
+#
+plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-PIPE-READ-ASYNC-DISCONNECT",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_nocrash_s3.sh"),
+                'SMB2-PIPE-READ-ASYNC-DISCONNECT',
+                '//$SERVER_IP/tmp',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "",
+                "-l $LOCAL_PATH"])
+
 shares = [
     "vfs_aio_pthread_async_dosmode_default1",
     "vfs_aio_pthread_async_dosmode_default2"
