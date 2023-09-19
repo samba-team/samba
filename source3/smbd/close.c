@@ -1630,6 +1630,14 @@ NTSTATUS close_file_smb(struct smb_request *req,
 	SMB_ASSERT(fsp->stream_fsp == NULL);
 
 	if (fsp->fake_file_handle != NULL) {
+		/*
+		 * Named pipes are opened as fake files and
+		 * can have pending aio requests. Ensure
+		 * we clear out all pending aio on force
+		 * shutdown of named pipes also.
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15423
+		 */
+		assert_no_pending_aio(fsp, close_type);
 		status = close_fake_file(req, fsp);
 	} else if (fsp->print_file != NULL) {
 		/* FIXME: return spool errors */
