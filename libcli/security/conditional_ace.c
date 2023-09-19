@@ -18,6 +18,7 @@
 
 #include "replace.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_conditional_ace.h"
 #include "librpc/gen_ndr/conditional_ace.h"
 #include "libcli/security/security.h"
 #include "libcli/security/conditional_ace.h"
@@ -264,25 +265,21 @@ static ssize_t pull_sid(TALLOC_CTX *mem_ctx,
 			uint8_t *data, size_t length,
 			struct ace_condition_sid *tok)
 {
-	uint32_t tok_length;
-	ssize_t sidlen;
-	if (length < 4) {
+	ssize_t bytes_used;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB v = data_blob_const(data, length);
+	struct ndr_pull *ndr = ndr_pull_init_blob(&v, mem_ctx);
+	if (ndr == NULL) {
 		return -1;
 	}
-	tok_length = PULL_LE_U32(data, 0);
-	if (tok_length > length - 4) {
+	ndr_err = ndr_pull_ace_condition_sid(ndr, NDR_SCALARS|NDR_BUFFERS, tok);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(ndr);
 		return -1;
 	}
-	tok->sid = talloc(mem_ctx, struct dom_sid);
-	if (tok->sid == NULL) {
-		return -1;
-	}
-	sidlen = sid_parse(data + 4, tok_length, tok->sid);
-	if (sidlen == -1) {
-		talloc_free(tok->sid);
-		return -1;
-	}
-	return tok_length + 4;
+	bytes_used = ndr->offset;
+	TALLOC_FREE(ndr);
+	return bytes_used;
 }
 
 static ssize_t push_sid(uint8_t *data, size_t available,
@@ -290,22 +287,19 @@ static ssize_t push_sid(uint8_t *data, size_t available,
 {
 	enum ndr_err_code ndr_err;
 	DATA_BLOB v;
-	ssize_t total_length;
 	ndr_err = ndr_push_struct_blob(&v, NULL,
-				       tok->sid,
-				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+				       tok,
+				       (ndr_push_flags_fn_t)ndr_push_ace_condition_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
-	total_length = v.length + 4;
-	if (available < total_length) {
+	if (available < v.length) {
 		talloc_free(v.data);
 		return -1;
 	}
-	PUSH_LE_U32(data, 0, v.length);
-	memcpy(data + 4, v.data, v.length);
+	memcpy(data, v.data, v.length);
 	talloc_free(v.data);
-	return total_length;
+	return v.length;
 }
 
 
@@ -904,7 +898,7 @@ static bool member_lookup(
 	bool arg_is_a_single_sid;
 	struct dom_sid *sid_array = NULL;
 	size_t num_sids, i, j;
-	struct dom_sid *sid = NULL;
+	const struct dom_sid *sid = NULL;
 
 	result->type = CONDITIONAL_ACE_SAMBA_RESULT_BOOL;
 	result->data.result.value = ACE_CONDITION_UNKNOWN;
@@ -973,7 +967,7 @@ static bool member_lookup(
 		 * In this case the any and all operations are the
 		 * same.
 		 */
-		sid = arg->data.sid.sid;
+		sid = &arg->data.sid.sid;
 		match = false;
 		for (i = 0; i < num_sids; i++) {
 			match = dom_sid_equal(sid, &sid_array[i]);
@@ -1007,7 +1001,7 @@ static bool member_lookup(
 				    j, member->type);
 			return false;
 		}
-		sid = member->data.sid.sid;
+		sid = &member->data.sid.sid;
 		match = false;
 		for (i = 0; i < num_sids; i++) {
 			match = dom_sid_equal(sid, &sid_array[i]);
@@ -1397,8 +1391,8 @@ static bool compare_sids(const struct ace_condition_token *op,
 			 const struct ace_condition_token *rhs,
 			 int *cmp)
 {
-	*cmp = dom_sid_compare(lhs->data.sid.sid,
-			       rhs->data.sid.sid);
+	*cmp = dom_sid_compare(&lhs->data.sid.sid,
+			       &rhs->data.sid.sid);
 	return true;
 }
 

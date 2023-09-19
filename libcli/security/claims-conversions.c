@@ -152,7 +152,7 @@ static bool claim_v1_sid_to_ace_sid(
 	}
 
 	result->type = CONDITIONAL_ACE_TOKEN_SID;
-	result->data.sid.sid = sid;
+	result->data.sid.sid = *sid;
 	return true;
 }
 
@@ -370,7 +370,7 @@ static bool ace_sid_to_claim_v1_sid(TALLOC_CTX *mem_ctx,
 {
 	/* claim_v1 sid is an "S-1-*" string data blob, not struct dom_sid. */
 	DATA_BLOB *blob = NULL;
-	char *s = dom_sid_string(mem_ctx, tok->data.sid.sid);
+	char *s = dom_sid_string(mem_ctx, &tok->data.sid.sid);
 	if (s == NULL) {
 		return false;
 	}

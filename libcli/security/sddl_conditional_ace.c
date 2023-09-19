@@ -560,7 +560,7 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 			break;
 		case CONDITIONAL_ACE_TOKEN_SID:
 			utf8 = sddl_encode_sid(mem_ctx,
-					       tok->data.sid.sid,
+					       &tok->data.sid.sid,
 					       NULL);
 			snprintf(line, sizeof(line),
 				 "%s (%s)\n",
@@ -883,7 +883,7 @@ static bool sddl_write_sid(struct sddl_write_context *ctx,
 	bool ok;
 	char *sddl = NULL;
 	char *sid = sddl_encode_sid(ctx->mem_ctx,
-				    tok->data.sid.sid,
+				    &tok->data.sid.sid,
 				    NULL);
 	if (sid == NULL) {
 		return false;
@@ -2019,7 +2019,7 @@ static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 		comp->offset++;
 	}
 	token.type = CONDITIONAL_ACE_TOKEN_SID;
-	token.data.sid.sid = sid;
+	token.data.sid.sid = *sid;
 	return write_sddl_token(comp, token);
 }
 
@@ -3167,7 +3167,7 @@ static bool write_resource_attr_from_token(struct sddl_write_context *ctx,
 
 	case CONDITIONAL_ACE_TOKEN_SID:
 		/* unlike conditional ACE, SID does not had "SID()" wrapper. */
-		sid = sddl_encode_sid(ctx->mem_ctx, tok->data.sid.sid, NULL);
+		sid = sddl_encode_sid(ctx->mem_ctx, &tok->data.sid.sid, NULL);
 		if (sid == NULL) {
 			return false;
 		}

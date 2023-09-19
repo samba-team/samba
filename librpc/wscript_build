@@ -448,6 +448,11 @@ bld.SAMBA_SUBSYSTEM('NDR_WINSTATION',
 	public_deps='ndr'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_CONDITIONAL_ACE',
+	source='gen_ndr/ndr_conditional_ace.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ATSVC',
     source='gen_ndr/ndr_atsvc_c.c',
     public_deps='dcerpc-binding NDR_ATSVC'
