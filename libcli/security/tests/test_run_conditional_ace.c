@@ -129,7 +129,9 @@ static bool fill_token_sids(TALLOC_CTX *mem_ctx,
 static void test_device_claims_composite(void **state)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct security_token token = {};
+	struct security_token token = {
+		.evaluate_claims = CLAIMS_EVALUATION_ALWAYS
+	};
 	bool ok;
 	NTSTATUS status;
 	uint32_t access_granted = 0;
@@ -217,9 +219,11 @@ static bool fill_sd(TALLOC_CTX *mem_ctx,
 	} while (0)
 
 
-#define INIT()					\
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);	\
-	struct security_token token = {};	\
+#define INIT()							\
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);			\
+	struct security_token token = {				\
+		.evaluate_claims = CLAIMS_EVALUATION_ALWAYS	\
+	};							\
 	struct security_descriptor *sd = NULL;
 
 
@@ -630,8 +634,8 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_composite_mixed_types),
 		cmocka_unit_test(test_composite_different_order_with_SID_dupes),
 		cmocka_unit_test(test_device_claim_eq_resource_claim_2),
-		cmocka_unit_test(test_not_Not_Any_of_1),		
-		cmocka_unit_test(test_not_any_of_composite_1),		
+		cmocka_unit_test(test_not_Not_Any_of_1),
+		cmocka_unit_test(test_not_any_of_composite_1),
 		cmocka_unit_test(test_resource_ace_single),
 		cmocka_unit_test(test_horrible_fuzz_derived_test_4),
 		cmocka_unit_test(test_horrible_fuzz_derived_test_3),
