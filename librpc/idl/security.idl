@@ -757,7 +757,7 @@ interface security
 		SE_GROUP_ENABLED;
 
 	/*
-	 * Should cliams be evaluated on this token?
+	 * Should claims be evaluated on this token?
 	 *
 	 * 0 is invalid to catch a zeroed token
 	 */
