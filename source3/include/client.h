@@ -91,6 +91,8 @@ struct cli_state {
 		struct smbXcli_session *session;
 		struct smbXcli_tcon *tcon;
 		struct idr_context *open_handles;
+		bool server_smb311_posix;
+		bool client_smb311_posix;
 	} smb2;
 };
 
