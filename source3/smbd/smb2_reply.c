@@ -1938,7 +1938,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	status = rename_internals_fsp(conn,
 					fsp,
-					dst_dirfsp,
+					NULL,
 					smb_fname_dst,
 					dst_original_lcomp,
 					attrs,
