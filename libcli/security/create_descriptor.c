@@ -345,9 +345,21 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 				case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
 					tmp_ace->type = SEC_ACE_TYPE_SYSTEM_AUDIT;
 					break;
-                                default:
-                                        /* all the _CALLBACK types */
-                                        break;
+				case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK;
+					break;
+				case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK;
+					break;
+				case SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK_OBJECT:
+					tmp_ace->type = SEC_ACE_TYPE_SYSTEM_AUDIT_CALLBACK;
+					break;
+				default:
+					/*
+					 * SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK_OBJECT
+					 * is reserved.
+					 */
+					break;
 				}
 			}
 
