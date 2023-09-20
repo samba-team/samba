@@ -1943,7 +1943,7 @@ static bool torture_smb1_twrp_openroot(struct torture_context *tctx,
 	const char *snapshot = NULL;
 	const char *p = NULL;
 	NTSTATUS status;
-	struct tm tm;
+	struct tm tm = {};
 	bool ret = true;
 
 	snapshot = torture_setting_string(tctx, "twrp_snapshot", NULL);
