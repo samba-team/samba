@@ -283,7 +283,7 @@ done
 # library B as a dependency of A from the wrong place.
 chrpath -d $OUT/lib/*
 
-# Grap the seeds dictionary from github and put the seed zips in place
+# Grab the seeds dictionary from github and put the seed zips in place
 # beside their executables.
 
 wget https://gitlab.com/samba-team/samba-fuzz-seeds/-/jobs/artifacts/master/download?job=zips \
