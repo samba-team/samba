@@ -441,7 +441,7 @@ static int ldapsam_delete_entry(struct ldapsam_privates *priv,
 static time_t ldapsam_get_entry_timestamp( struct ldapsam_privates *ldap_state, LDAPMessage * entry)
 {
 	char *temp;
-	struct tm tm;
+	struct tm tm = {};
 
 	temp = smbldap_talloc_single_attribute(
 		smbldap_get_ldap(ldap_state->smbldap_state), entry,
