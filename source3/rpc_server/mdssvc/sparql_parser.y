@@ -196,7 +196,7 @@ DATE_ISO OBRACE WORD CBRACE    {$$ = isodate2unix($3);}
 
 static time_t isodate2unix(const char *s)
 {
-	struct tm tm;
+	struct tm tm = {};
 	const char *p;
 
 	p = strptime(s, "%Y-%m-%dT%H:%M:%SZ", &tm);

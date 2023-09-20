@@ -259,7 +259,7 @@ DATE_ISO OBRACE WORD CBRACE {
 static char *isodate_to_sldate(const char *isodate)
 {
 	struct es_parser_state *s = global_es_parser_state;
-	struct tm tm;
+	struct tm tm = {};
 	const char *p = NULL;
 	char *tstr = NULL;
 	time_t t;
