@@ -2448,6 +2448,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	krb5_error_code ret = 0;
+	int is_krbtgt;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 	char *realm_from_princ;
@@ -2467,8 +2468,11 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		goto out;
 	}
 
-	if (krb5_princ_size(context, principal) != 2
-	    || (principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME) != 0)) {
+	is_krbtgt = smb_krb5_principal_is_tgs(context, principal);
+	if (is_krbtgt == -1) {
+		ret = ENOMEM;
+		goto out;
+	} else if (!is_krbtgt) {
 		/* Not a krbtgt */
 		ret = SDB_ERR_NOENTRY;
 		goto out;
