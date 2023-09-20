@@ -215,6 +215,33 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
             c1.unlink("x")
             c1 = None
 
+    def test_gencache_pollution_bz15481(self):
+        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        fh = c.create("file",
+                      DesiredAccess=security.SEC_STD_DELETE,
+                      CreateDisposition=libsmb.FILE_CREATE)
+
+        # prime the gencache File->file
+        fh_upper = c.create("File",
+                            DesiredAccess=security.SEC_FILE_READ_ATTRIBUTE,
+                            CreateDisposition=libsmb.FILE_OPEN)
+        c.close(fh_upper)
+
+        c.delete_on_close(fh, 1)
+        c.close(fh)
+
+        fh = c.create("File",
+                      DesiredAccess=security.SEC_STD_DELETE,
+                      CreateDisposition=libsmb.FILE_CREATE)
+
+        directory = c.list("\\", "File")
+
+        c.delete_on_close(fh, 1)
+        c.close(fh)
+
+        # Without the bugfix for 15481 we get 'file' not 'File'
+        self.assertEqual(directory[0]['name'], 'File')
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
