@@ -2042,6 +2042,7 @@ bool conditional_ace_encode_binary(TALLOC_CTX *mem_ctx,
 {
 	size_t i, j, alloc_size, required_size;
 	uint8_t *data = NULL;
+	uint8_t *new_data = NULL;
 	*dest = (DATA_BLOB){NULL, 0};
 
 	alloc_size = CONDITIONAL_ACE_MAX_LENGTH;
@@ -2165,13 +2166,14 @@ bool conditional_ace_encode_binary(TALLOC_CTX *mem_ctx,
 		data[j] = 0;
 		j++;
 	}
-	data = talloc_realloc(mem_ctx,
-			      data,
-			      uint8_t,
-			      required_size);
-	if (data == NULL) {
-		return false;
+	new_data = talloc_realloc(mem_ctx,
+				  data,
+				  uint8_t,
+				  required_size);
+	if (new_data == NULL) {
+		goto error;
 	}
+	data = new_data;
 
 	(*dest).data = data;
 	(*dest).length = j;
