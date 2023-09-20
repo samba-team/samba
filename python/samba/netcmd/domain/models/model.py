@@ -27,8 +27,8 @@ from ldb import ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError,\
     Message, MessageElement, SCOPE_BASE, SCOPE_SUBTREE, binary_encode
 from samba.sd_utils import SDUtils
 
-from .exceptions import DeleteError, DoesNotExist, MultipleObjectsReturned,\
-    ProtectError, UnprotectError
+from .exceptions import DeleteError, DoesNotExist, ModelError,\
+    MultipleObjectsReturned, ProtectError, UnprotectError
 from .fields import DateTimeField, DnField, Field, GUIDField, IntegerField,\
     StringField
 
@@ -359,7 +359,10 @@ class Model(metaclass=ModelMeta):
             for attr, field in self.fields.items():
                 if attr != "dn":
                     value = getattr(self, attr)
-                    db_value = field.to_db_value(value, FLAG_MOD_ADD)
+                    try:
+                        db_value = field.to_db_value(ldb, value, FLAG_MOD_ADD)
+                    except ValueError as e:
+                        raise ModelError(e)
 
                     # Don't add empty fields.
                     if db_value is not None and len(db_value):
@@ -384,7 +387,11 @@ class Model(metaclass=ModelMeta):
                     old_value = getattr(existing_obj, attr)
 
                     if value != old_value:
-                        db_value = field.to_db_value(value, FLAG_MOD_REPLACE)
+                        try:
+                            db_value = field.to_db_value(ldb, value,
+                                                         FLAG_MOD_REPLACE)
+                        except ValueError as e:
+                            raise ModelError(e)
 
                         # When a field returns None or empty list, delete attr.
                         if db_value in (None, []):

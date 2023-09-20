@@ -58,7 +58,7 @@ class FieldTestMixin:
         # If the expected value is callable, treat it as a validation callback.
         # NOTE: perhaps we should be using subtests for this.
         for (value, expected) in self.to_db_value:
-            db_value = self.field.to_db_value(value, FLAG_MOD_ADD)
+            db_value = self.field.to_db_value(self.samdb, value, FLAG_MOD_ADD)
             if callable(expected):
                 self.assertTrue(expected(db_value))
             else:
