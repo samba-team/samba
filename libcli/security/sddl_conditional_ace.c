@@ -42,7 +42,6 @@
 
 #define SDDL_FLAG_IS_UNARY_OP               (1 << 20)
 #define SDDL_FLAG_IS_BINARY_OP              (1 << 21)
-#define SDDL_FLAG_IS_FAKE_OP                (1 << 22)
 
 
 /*
@@ -85,8 +84,7 @@
 #define SDDL_FLAGS_LITERAL SDDL_FLAG_EXPECTING_BINARY_LOGIC_OP
 
 #define SDDL_FLAGS_PAREN_END (SDDL_FLAG_EXPECTING_BINARY_LOGIC_OP | \
-			      SDDL_FLAG_EXPECTING_BINARY_OP | \
-			      SDDL_FLAG_IS_FAKE_OP)
+			      SDDL_FLAG_EXPECTING_BINARY_OP)
 
 enum {
 	SDDL_NOT_AN_OP = 0,
@@ -271,7 +269,7 @@ static struct sddl_data sddl_strings[256] = {
 	/* pseudo-operator pseudo-tokens */
 	[CONDITIONAL_ACE_SAMBA_SDDL_PAREN] = {
 		"(",
-		SDDL_FLAG_IS_FAKE_OP,
+		0,
 		SDDL_PRECEDENCE_PAREN_START,
 		0
 	},
