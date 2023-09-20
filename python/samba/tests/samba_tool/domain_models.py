@@ -25,10 +25,11 @@ from datetime import datetime
 from xml.etree import ElementTree
 
 from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
+from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
 from samba.netcmd.domain.models import User, fields
 from samba.netcmd.domain.models.auth_policy import StrongNTLMPolicy
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_pack, ndr_unpack
 
 from .base import SambaToolCmdTest
 
@@ -274,6 +275,45 @@ class GUIDFieldTest(FieldTestMixin, SambaToolCmdTest):
             ),
             (None, None),
         ]
+
+
+class SDDLFieldTest(FieldTestMixin, SambaToolCmdTest):
+    field = fields.SDDLField("FieldName")
+
+    def setUp(self):
+        super().setUp()
+        self.domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+
+    def encode(self, value):
+        return ndr_pack(security.descriptor.from_sddl(value, self.domain_sid))
+
+    @property
+    def to_db_value(self):
+        values = [
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))",
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))",
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;((Member_of {SID(AO)}) || (Member_of {SID(BO)})))",
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(%s)}))" % self.domain_sid,
+        ]
+        expected = [
+            (value, MessageElement(self.encode(value))) for value in values
+        ]
+        expected.append((None, None))
+        return expected
+
+    @property
+    def from_db_value(self):
+        values = [
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))",
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))",
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;((Member_of {SID(AO)}) || (Member_of {SID(BO)})))",
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(%s)}))" % self.domain_sid,
+        ]
+        expected = [
+            (MessageElement(self.encode(value)), value) for value in values
+        ]
+        expected.append((None, None))
+        return expected
 
 
 class PossibleClaimValuesFieldTest(FieldTestMixin, SambaToolCmdTest):

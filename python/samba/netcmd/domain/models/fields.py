@@ -28,6 +28,7 @@ from datetime import datetime
 from xml.etree import ElementTree
 
 from ldb import Dn, MessageElement, string_to_time, timestring
+from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
 from samba.ndr import ndr_pack, ndr_unpack
 
@@ -309,6 +310,36 @@ class GUIDField(Field):
                 [ndr_pack(GUID(item)) for item in value], flags, self.name)
         else:
             return MessageElement(ndr_pack(GUID(value)), flags, self.name)
+
+
+class SDDLField(Field):
+    """A SDDL field encodes and decodes SDDL data."""
+
+    def from_db_value(self, ldb, value):
+        if value is None:
+            return
+        elif len(value) > 1 or self.many:
+            return [ndr_unpack(security.descriptor, item).as_sddl()
+                    for item in value]
+        else:
+            return ndr_unpack(security.descriptor, value[0]).as_sddl()
+
+    def to_db_value(self, ldb, value, flags):
+        domain_sid = security.dom_sid(ldb.get_domain_sid())
+        if value is None:
+            return
+        elif isinstance(value, list):
+            return MessageElement([ndr_pack(security.descriptor.from_sddl(
+                item, domain_sid)) for item in value],
+                flags,
+                self.name)
+        else:
+            return MessageElement(
+                ndr_pack(security.descriptor.from_sddl(value,
+                                                       domain_sid)),
+                flags,
+                self.name
+            )
 
 
 class BooleanField(Field):
