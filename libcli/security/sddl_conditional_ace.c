@@ -44,7 +44,6 @@
 #define SDDL_FLAG_IS_BINARY_OP              (1 << 21)
 #define SDDL_FLAG_IS_FAKE_OP                (1 << 22)
 #define SDDL_FLAG_IS_LITERAL                (1 << 23)
-#define SDDL_FLAG_IS_ATTR                   (1 << 24)
 
 
 /*
@@ -82,8 +81,7 @@
 			     SDDL_FLAG_IS_BINARY_OP)
 
 #define SDDL_FLAGS_ATTRIBUTE (SDDL_FLAG_EXPECTING_BINARY_OP | \
-			      SDDL_FLAG_EXPECTING_BINARY_LOGIC_OP | \
-			      SDDL_FLAG_IS_ATTR)
+			      SDDL_FLAG_EXPECTING_BINARY_LOGIC_OP)
 
 #define SDDL_FLAGS_LITERAL (SDDL_FLAG_EXPECTING_BINARY_LOGIC_OP | \
 			    SDDL_FLAG_IS_LITERAL)
