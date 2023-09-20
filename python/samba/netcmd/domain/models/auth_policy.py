@@ -23,7 +23,8 @@
 from enum import IntEnum
 from ldb import Dn
 
-from .fields import BooleanField, EnumField, IntegerField, StringField
+from .fields import (BooleanField, EnumField, IntegerField, SDDLField,
+                     StringField)
 from .model import Model
 
 # Ticket-Granting-Ticket lifetimes.
@@ -56,6 +57,16 @@ class AuthenticationPolicy(Model):
         "msDS-ServiceAllowedNTLMNetworkAuthentication")
     service_tgt_lifetime = IntegerField("msDS-ServiceTGTLifetime")
     computer_tgt_lifetime = IntegerField("msDS-ComputerTGTLifetime")
+    user_allowed_to_authenticate_from = SDDLField(
+        "msDS-UserAllowedToAuthenticateFrom")
+    user_allowed_to_authenticate_to = SDDLField(
+        "msDS-UserAllowedToAuthenticateTo")
+    service_allowed_to_authenticate_from = SDDLField(
+        "msDS-ServiceAllowedToAuthenticateFrom")
+    service_allowed_to_authenticate_to = SDDLField(
+        "msDS-ServiceAllowedToAuthenticateTo")
+    computer_allowed_to_authenticate_to = SDDLField(
+        "msDS-ComputerAllowedToAuthenticateTo")
 
     @staticmethod
     def get_base_dn(ldb):
