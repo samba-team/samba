@@ -3454,6 +3454,10 @@ int smb_krb5_principal_is_tgs(krb5_context context,
 	int eq = 1;
 	krb5_error_code ret = 0;
 
+	if (krb5_princ_size(context, principal) > 2) {
+		return 0;
+	}
+
 	ret = smb_krb5_principal_get_comp_string(NULL, context, principal, 0, &p);
 	if (ret == ENOENT) {
 		return 0;
@@ -3461,8 +3465,7 @@ int smb_krb5_principal_is_tgs(krb5_context context,
 		return -1;
 	}
 
-	eq = krb5_princ_size(context, principal) == 2 &&
-	     (strcmp(p, KRB5_TGS_NAME) == 0);
+	eq = strcmp(p, KRB5_TGS_NAME) == 0;
 
 	talloc_free(p);
 

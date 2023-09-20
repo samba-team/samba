@@ -2488,7 +2488,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	}
 
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
-	    && lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp)) {
+	    && (realm_princ_comp == NULL || lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp))) {
 		/* us, or someone quite like us */
 		/* Kludge, kludge, kludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
