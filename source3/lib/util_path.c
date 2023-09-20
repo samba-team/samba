@@ -215,7 +215,7 @@ static bool find_snapshot_token(
 {
 	const char *start = NULL;
 	const char *end = NULL;
-	struct tm tm;
+	struct tm tm = {};
 	time_t t;
 
 	start = strstr_m(filename, "@GMT-");
