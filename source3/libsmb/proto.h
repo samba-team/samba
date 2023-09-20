@@ -1024,6 +1024,13 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 /* The following definitions come from libsmb/clisymlink.c  */
 
+struct tevent_req *cli_create_reparse_point_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct cli_state *cli,
+						 const char *fname,
+						 DATA_BLOB reparse_blob);
+NTSTATUS cli_create_reparse_point_recv(struct tevent_req *req);
+
 struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct cli_state *cli,
