@@ -779,7 +779,7 @@ static NTSTATUS btrfs_snap_delete(struct vfs_handle_struct *handle,
 				  char *snap_path)
 {
 	char *tstr;
-	struct tm t_gmt;
+	struct tm t_gmt = {};
 	DIR *dest_dir;
 	int dest_fd;
 	struct btrfs_ioctl_vol_args ioctl_arg;
