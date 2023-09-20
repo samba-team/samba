@@ -830,7 +830,7 @@ static void test_audit_get_timestamp(_UNUSED_ void **state)
 {
 	const char *t = NULL;
 	char *c;
-	struct tm tm;
+	struct tm tm = {};
 	time_t before;
 	time_t after;
 	time_t actual;
