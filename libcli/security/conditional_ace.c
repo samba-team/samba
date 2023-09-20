@@ -381,15 +381,18 @@ static ssize_t pull_composite(TALLOC_CTX *mem_ctx,
 			return -1;
 		}
 		if (j == alloc_length) {
-			alloc_length += 5;
-			tokens = talloc_realloc(mem_ctx,
-						tokens,
-						struct ace_condition_token,
-						alloc_length);
+			struct ace_condition_token *new_tokens = NULL;
 
-			if (tokens == NULL) {
-				return -1;
+			alloc_length += 5;
+			new_tokens = talloc_realloc(mem_ctx,
+						    tokens,
+						    struct ace_condition_token,
+						    alloc_length);
+
+			if (new_tokens == NULL) {
+				goto error;
 			}
+			tokens = new_tokens;
 		}
 	}
 	tok->n_members = j;
