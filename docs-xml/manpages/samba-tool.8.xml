@@ -729,6 +729,34 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--user-allowed-to-authenticate-from</term>
+			<listitem>
+				<para>
+					Conditions user is allowed to authenticate from.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-allowed-to-authenticate-to</term>
+			<listitem>
+				<para>
+					Conditions user is allowed to authenticate to.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--service-tgt-lifetime</term>
 			<listitem>
 				<para>
@@ -746,10 +774,52 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--service-allowed-to-authenticate-from</term>
+			<listitem>
+				<para>
+					Conditions service is allowed to authenticate from.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-allowed-to-authenticate-to</term>
+			<listitem>
+				<para>
+					Conditions service is allowed to authenticate to.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--computer-tgt-lifetime</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for computer accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-computer-allowed-to-authenticate-to</term>
+			<listitem>
+				<para>
+					Conditions computer is allowed to authenticate to.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
 				</para>
 			</listitem>
 		</varlistentry>
@@ -848,6 +918,34 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--user-allowed-to-authenticate-from</term>
+			<listitem>
+				<para>
+					Conditions user is allowed to authenticate from.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-allowed-to-authenticate-to</term>
+			<listitem>
+				<para>
+					Conditions user is allowed to authenticate to.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--service-tgt-lifetime</term>
 			<listitem>
 				<para>
@@ -865,10 +963,52 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--service-allowed-to-authenticate-from</term>
+			<listitem>
+				<para>
+					Conditions service is allowed to authenticate from.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-allowed-to-authenticate-to</term>
+			<listitem>
+				<para>
+					Conditions service is allowed to authenticate to.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--computer-tgt-lifetime</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for computer accounts.
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-computer-allowed-to-authenticate-to</term>
+			<listitem>
+				<para>
+					Conditions computer is allowed to authenticate to.
+				</para>
+				<para>
+					Must be a valid SDDL string.
+				</para>
+				<para>
+					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
 				</para>
 			</listitem>
 		</varlistentry>
