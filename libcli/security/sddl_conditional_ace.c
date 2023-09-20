@@ -1409,7 +1409,7 @@ static ssize_t read_attr2_string(
 	for (i = 0; i < max_len; i++) {
 		uint8_t c = src[i];
 		/*
-		 * A codepoint that must be escaped but isn't tells us that
+		 * A double‐byte that must be escaped but isn't tells us that
 		 * the attribute name has ended.
 		 *
 		 * The exception is '%', which must also be escaped
@@ -1435,7 +1435,7 @@ static ssize_t read_attr2_string(
 		/*
 		 * This is imprecise; the limit for the whole ACL is 64k.
 		 * However there could be many escapes in the SDDL name which
-		 * would reduce down to single utf16 codepoints in the
+		 * would reduce down to single utf16 code units in the
 		 * compiled string.
 		 */
 		comp_error(comp, "attribute is way too long (%zu)", i);
