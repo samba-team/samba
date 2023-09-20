@@ -660,7 +660,17 @@ static void test_round_trips(void **state)
 		}
 
 		resddl1 = sddl_from_conditional_ace(mem_ctx, s1);
+		if (resddl1 == NULL) {
+			failed = true;
+			debug_fail("could not re-make SDDL of %s\n", sddl[i]);
+			continue;
+		}
 		resddl2 = sddl_from_conditional_ace(mem_ctx, s2);
+		if (resddl2 == NULL) {
+			failed = true;
+			debug_fail("could not re-make SDDL of %s\n", sddl[i]);
+			continue;
+		}
 		if (strcmp(resddl1, resddl2) != 0) {
 			print_message("SDDL 2: %s\n", resddl2);
 			failed = failed || ok;
