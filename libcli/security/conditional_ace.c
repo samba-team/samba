@@ -708,6 +708,9 @@ struct ace_condition_script *parse_conditional_ace(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 
+		if (consumed < 0) {
+			goto fail;
+		}
 		if (consumed + i < i || consumed + i > data.length) {
 			goto fail;
 		}
