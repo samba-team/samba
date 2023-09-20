@@ -426,8 +426,7 @@ int smb_krb5_get_pw_salt(krb5_context context,
 		return ret;
 	}
 
-	psalt->data = salt.saltvalue.data;
-	psalt->length = salt.saltvalue.length;
+	*psalt = salt.saltvalue;
 
 	return ret;
 }
