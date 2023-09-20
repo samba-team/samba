@@ -133,20 +133,17 @@ static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx,
 
 static time_t ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, time_t default_val)
 {
-    const char *tmp;
-    const char *gentime;
-    struct tm tm = {};
+    const struct ldb_val *gentime = NULL;
+    time_t t;
+    int ret;
 
-    gentime = ldb_msg_find_attr_as_string(msg, attr, NULL);
-    if (!gentime)
-	return default_val;
-
-    tmp = strptime(gentime, "%Y%m%d%H%M%SZ", &tm);
-    if (tmp == NULL) {
+    gentime = ldb_msg_find_ldb_val(msg, attr);
+    ret = ldb_val_to_time(gentime, &t);
+    if (ret) {
 	    return default_val;
     }
 
-    return timegm(&tm);
+    return t;
 }
 
 static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountControl, enum samba_kdc_ent_type ent_type)
