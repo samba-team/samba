@@ -1058,7 +1058,14 @@ char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
 					 unsigned int component)
 {
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
-	return talloc_strdup(mem_ctx, krb5_principal_get_comp_string(context, principal, component));
+	const char *str = NULL;
+
+	str = krb5_principal_get_comp_string(context, principal, component);
+	if (str == NULL) {
+		return NULL;
+	}
+
+	return talloc_strdup(mem_ctx, str);
 #else
 	krb5_data *data;
 
