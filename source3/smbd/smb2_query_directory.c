@@ -268,7 +268,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		loadparm_s3_global_substitution();
 	NTSTATUS status;
 	bool wcard_has_wild = false;
-	struct tm tm;
+	struct tm tm = {};
 	char *p;
 	bool stop = false;
 	bool ok;
