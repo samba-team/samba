@@ -883,35 +883,44 @@ out:
 	return ret;
 }
 
-static int principal_comp_strcmp_int(krb5_context context,
-				     krb5_const_principal principal,
-				     unsigned int component,
-				     const char *string,
-				     bool do_strcasecmp)
+static krb5_error_code principal_comp_strcmp_int(krb5_context context,
+						 krb5_const_principal principal,
+						 unsigned int component,
+						 const char *string,
+						 bool do_strcasecmp,
+						 int *cmp)
 {
 	const char *p;
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
+	if (component >= krb5_princ_size(context, principal)) {
+		/* A non‐existent component compares less than any string. */
+		*cmp = -1;
+		return 0;
+	}
 	p = krb5_principal_get_comp_string(context, principal, component);
 	if (p == NULL) {
-		return -1;
+		return ENOENT;
 	}
 	if (do_strcasecmp) {
-		return strcasecmp(p, string);
+		*cmp = strcasecmp(p, string);
 	} else {
-		return strcmp(p, string);
+		*cmp = strcmp(p, string);
 	}
+	return 0;
 #else
 	size_t len;
 	krb5_data d;
 	krb5_error_code ret = 0;
 	if (component >= krb5_princ_size(context, principal)) {
-		return -1;
+		/* A non‐existent component compares less than any string. */
+		*cmp = -1;
+		return 0;
 	}
 
 	ret = smb_krb5_princ_component(context, principal, component, &d);
 	if (ret) {
-		return -1;
+		return ret;
 	}
 
 	p = d.data;
@@ -924,41 +933,55 @@ static int principal_comp_strcmp_int(krb5_context context,
 	 * narrowed to int.
 	 */
 	if (d.length < len) {
-		return -1;
+		*cmp = -1;
+		return 0;
 	} else if (d.length > len) {
-		return 1;
+		*cmp = 1;
+		return 0;
 	}
 
 	if (do_strcasecmp) {
-		return strncasecmp(p, string, len);
+		*cmp = strncasecmp(p, string, len);
 	} else {
-		return memcmp(p, string, len);
+		*cmp = memcmp(p, string, len);
 	}
+	return 0;
 #endif
 }
 
-static int principal_comp_strcasecmp(krb5_context context,
-				     krb5_const_principal principal,
-				     unsigned int component,
-				     const char *string)
+static krb5_error_code principal_comp_strcasecmp(krb5_context context,
+						 krb5_const_principal principal,
+						 unsigned int component,
+						 const char *string,
+						 int *cmp)
 {
-	return principal_comp_strcmp_int(context, principal,
-					 component, string, true);
+	return principal_comp_strcmp_int(context,
+					 principal,
+					 component,
+					 string,
+					 true /* do_strcasecmp */,
+					 cmp);
 }
 
-static int principal_comp_strcmp(krb5_context context,
-				 krb5_const_principal principal,
-				 unsigned int component,
-				 const char *string)
+static krb5_error_code principal_comp_strcmp(krb5_context context,
+					     krb5_const_principal principal,
+					     unsigned int component,
+					     const char *string,
+					     int *cmp)
 {
-	return principal_comp_strcmp_int(context, principal,
-					 component, string, false);
+	return principal_comp_strcmp_int(context,
+					 principal,
+					 component,
+					 string,
+					 false /* do_strcasecmp */,
+					 cmp);
 }
 
 static krb5_error_code is_kadmin_changepw(krb5_context context,
 					  krb5_const_principal principal,
 					  bool *is_changepw)
 {
+	krb5_error_code ret = 0;
 	int cmp = 0;
 
 	if (krb5_princ_size(context, principal) != 2) {
@@ -966,13 +989,20 @@ static krb5_error_code is_kadmin_changepw(krb5_context context,
 		return 0;
 	}
 
-	cmp = principal_comp_strcmp(context, principal, 0, "kadmin");
+	ret = principal_comp_strcmp(context, principal, 0, "kadmin", &cmp);
+	if (ret) {
+		return ret;
+	}
+
 	if (cmp != 0) {
 		*is_changepw = false;
 		return 0;
 	}
 
-	cmp = principal_comp_strcmp(context, principal, 1, "changepw");
+	ret = principal_comp_strcmp(context, principal, 1, "changepw", &cmp);
+	if (ret) {
+		return ret;
+	}
 
 	*is_changepw = cmp == 0;
 	return 0;
@@ -2561,19 +2591,28 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			/* look for inbound trust */
 			direction = INBOUND;
 			realm = realm_princ_comp;
-		} else if (principal_comp_strcasecmp(context, principal, 1, lpcfg_realm(lp_ctx)) == 0) {
-			/* look for outbound trust */
-			direction = OUTBOUND;
-			realm = realm_from_princ;
 		} else {
-			krb5_warnx(context, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
-				   realm_from_princ,
-				   realm_princ_comp);
-			krb5_set_error_message(context, SDB_ERR_NOENTRY, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
-					       realm_from_princ,
-					       realm_princ_comp);
-			ret = SDB_ERR_NOENTRY;
-			goto out;
+			int cmp = 0;
+
+			ret = principal_comp_strcasecmp(context, principal, 1, lpcfg_realm(lp_ctx), &cmp);
+			if (ret) {
+				goto out;
+			}
+
+			if (cmp == 0) {
+				/* look for outbound trust */
+				direction = OUTBOUND;
+				realm = realm_from_princ;
+			} else {
+				krb5_warnx(context, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
+					   realm_from_princ,
+					   realm_princ_comp);
+				krb5_set_error_message(context, SDB_ERR_NOENTRY, "samba_kdc_fetch_krbtgt: not our realm for trusts ('%s', '%s')",
+						       realm_from_princ,
+						       realm_princ_comp);
+				ret = SDB_ERR_NOENTRY;
+				goto out;
+			}
 		}
 
 		/* Trusted domains are under CN=system */
@@ -2907,8 +2946,15 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 	}
 
 	if (flags & SDB_F_GET_SERVER) {
-		ret = principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME);
-		if (ret == 0) {
+		int cmp = 0;
+
+		ret = principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME, &cmp);
+		if (ret) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+
+		if (cmp == 0) {
 			/*
 			 * we need to search krbtgt/ locally
 			 */
