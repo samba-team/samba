@@ -135,7 +135,7 @@ static time_t ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const cha
 {
     const char *tmp;
     const char *gentime;
-    struct tm tm;
+    struct tm tm = {};
 
     gentime = ldb_msg_find_attr_as_string(msg, attr, NULL);
     if (!gentime)
