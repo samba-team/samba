@@ -782,6 +782,10 @@ static void test_a_number_of_invalid_strings(void **state)
 		"()",
 		/* relational op with with complex RHS */
 		"(@Device.bb == (@USER.x < 62))",
+		/* hex‐escapes that should be literals */
+		("(@Device.%002e == 3)"),
+		("(@Device.%002f == 3)"),
+		("(@Device.%003a == 3)"),
 	};
 	size_t i, length;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
