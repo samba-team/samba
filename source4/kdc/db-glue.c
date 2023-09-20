@@ -955,12 +955,27 @@ static int principal_comp_strcmp(krb5_context context,
 					 component, string, false);
 }
 
-static bool is_kadmin_changepw(krb5_context context,
-			       krb5_const_principal principal)
+static krb5_error_code is_kadmin_changepw(krb5_context context,
+					  krb5_const_principal principal,
+					  bool *is_changepw)
 {
-	return krb5_princ_size(context, principal) == 2 &&
-		(principal_comp_strcmp(context, principal, 0, "kadmin") == 0) &&
-		(principal_comp_strcmp(context, principal, 1, "changepw") == 0);
+	int cmp = 0;
+
+	if (krb5_princ_size(context, principal) != 2) {
+		*is_changepw = false;
+		return 0;
+	}
+
+	cmp = principal_comp_strcmp(context, principal, 0, "kadmin");
+	if (cmp != 0) {
+		*is_changepw = false;
+		return 0;
+	}
+
+	cmp = principal_comp_strcmp(context, principal, 1, "changepw");
+
+	*is_changepw = cmp == 0;
+	return 0;
 }
 
 static krb5_error_code samba_kdc_get_entry_principal(
@@ -1333,10 +1348,17 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * 'change password', as otherwise we could get into
 		 * trouble, and not enforce the password expiry.
 		 * Instead, only do it when request is for the kpasswd service */
-		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER &&
-		    is_kadmin_changepw(context, principal) &&
-		    lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
-			entry->flags.change_pw = 1;
+		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
+			bool is_changepw = false;
+
+			ret = is_kadmin_changepw(context, principal, &is_changepw);
+			if (ret) {
+				goto out;
+			}
+
+			if (is_changepw && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
+				entry->flags.change_pw = 1;
+			}
 		}
 
 		TALLOC_FREE(realm);
