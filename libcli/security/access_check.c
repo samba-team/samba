@@ -353,11 +353,6 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 }
 
 
-static NTSTATUS check_callback_ace_access(const struct security_ace *ace,
-					  const struct security_token *token,
-					  const struct security_descriptor *sd,
-					  bool *grant_access);
-
 
 static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor *sd,
 					       const struct security_token *token,
@@ -453,8 +448,6 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 		bool is_owner_rights_ace = false;
-		bool callback_ok = false;
-		NTSTATUS status;
 
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 			continue;
@@ -482,81 +475,31 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
 		{
-			bool evaluate_claims = true;
-			switch (token->evaluate_claims) {
-			case CLAIMS_EVALUATION_INVALID_STATE:
-				DBG_WARNING("Refusing to evaluate ACL with "
-					    "conditional ACE against security "
-					    "token with CLAIMS_EVALUATION_INVALID_STATE\n");
+			enum ace_callback_result allow =
+				check_callback_ace_allow(ace, token, sd);
+			if (allow == ACE_CALLBACK_INVALID) {
 				return NT_STATUS_INVALID_ACE_CONDITION;
-			case CLAIMS_EVALUATION_NEVER:
-				evaluate_claims = false;
-				break;
-			case CLAIMS_EVALUATION_ALWAYS:
-				evaluate_claims = true;
-				break;
 			}
-
-			if (!evaluate_claims) {
-				/*
-				 * We are asked to pretend we never
-				 * understood this ACE type
-				 */
-				break;
-			}
-
-			status = check_callback_ace_access(ace, token, sd,
-							   &callback_ok);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			if (callback_ok) {
+			if (allow == ACE_CALLBACK_ALLOW) {
 				bits_remaining &= ~ace->access_mask;
 			}
 			break;
 		}
 
 		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
 		{
-			bool evaluate_claims = true;
-			switch (token->evaluate_claims) {
-			case CLAIMS_EVALUATION_INVALID_STATE:
-				DBG_WARNING("Refusing to evaluate ACL with "
-					    "conditional ACE against security "
-					    "token with CLAIMS_EVALUATION_INVALID_STATE\n");
+			enum ace_callback_result deny =
+				check_callback_ace_deny(ace, token, sd);
+			if (deny == ACE_CALLBACK_INVALID) {
 				return NT_STATUS_INVALID_ACE_CONDITION;
-			case CLAIMS_EVALUATION_NEVER:
-				evaluate_claims = false;
-				break;
-			case CLAIMS_EVALUATION_ALWAYS:
-				evaluate_claims = true;
-				break;
 			}
-
-			if (!evaluate_claims) {
-				/*
-				 * We are asked to pretend we never
-				 * understood this ACE type
-				 */
-				break;
-			}
-
-			status = check_callback_ace_access(ace, token, sd,
-							   &callback_ok);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			if (callback_ok) {
+			if (deny == ACE_CALLBACK_DENY) {
 				explicitly_denied_bits |= (bits_remaining & ace->access_mask);
 			}
 			break;
 		}
 
-		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
-			explicitly_denied_bits |= (bits_remaining & ace->access_mask);
-			break;
 		default:	/* Other ACE types not handled/supported */
 			break;
 		}
@@ -769,50 +712,6 @@ static NTSTATUS check_object_specific_access(const struct security_ace *ace,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-	return NT_STATUS_OK;
-}
-
-
-static NTSTATUS check_callback_ace_access(const struct security_ace *ace,
-					  const struct security_token *token,
-					  const struct security_descriptor *sd,
-					  bool *grant_access)
-{
-        bool ok;
-	int result;
-	*grant_access = false;
-	/*
-	 * Until we discover otherwise, we assume all callback ACEs
-	 * are conditional ACEs.
-	 */
-        ok = access_check_conditional_ace(ace, token, sd, &result);
-        if (!ok) {
-                DBG_WARNING("callback ACE was not a valid conditional ACE\n");
-		return NT_STATUS_INVALID_ACE_CONDITION;
-        }
-        switch (ace->type) {
-	case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK:
-                if (result == ACE_CONDITION_TRUE) {
-			*grant_access = true;
-                        return NT_STATUS_OK;
-                }
-                return NT_STATUS_ACCESS_DENIED;
-        case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK:
-        case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
-                if (result == ACE_CONDITION_FALSE) {
-                        return NT_STATUS_OK;
-                }
-                return NT_STATUS_ACCESS_DENIED;
-	case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT:
-                if (result == ACE_CONDITION_TRUE) {
-                        return NT_STATUS_OK;
-                }
-                return NT_STATUS_ACCESS_DENIED;
-        default:
-                DBG_ERR("unknown conditional ACE type: %u\n", ace->type);
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
 	return NT_STATUS_OK;
 }
 
