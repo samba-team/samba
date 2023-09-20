@@ -785,6 +785,7 @@ static NTSTATUS openat_pathref_fsp_case_insensitive(
 
 	if (lp_stat_cache()) {
 		char *base_name = smb_fname_rel->base_name;
+		char *original_relname = NULL;
 		DATA_BLOB value = { .data = NULL };
 
 		ok = get_real_filename_cache_key(
@@ -806,7 +807,13 @@ static NTSTATUS openat_pathref_fsp_case_insensitive(
 		}
 		DO_PROFILE_INC(statcache_hits);
 
-		TALLOC_FREE(smb_fname_rel->base_name);
+		/*
+		 * For the "new filename" case we need to preserve the
+		 * capitalization the client sent us, see
+		 * https://bugzilla.samba.org/show_bug.cgi?id=15481
+		 */
+		original_relname = smb_fname_rel->base_name;
+
 		smb_fname_rel->base_name = talloc_memdup(
 			smb_fname_rel, value.data, value.length);
 		if (smb_fname_rel->base_name == NULL) {
@@ -824,10 +831,13 @@ static NTSTATUS openat_pathref_fsp_case_insensitive(
 		status = openat_pathref_fsp(dirfsp, smb_fname_rel);
 		if (NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(cache_key.data);
+			TALLOC_FREE(original_relname);
 			return NT_STATUS_OK;
 		}
 
 		memcache_delete(NULL, GETREALFILENAME_CACHE, cache_key);
+		TALLOC_FREE(smb_fname_rel->base_name);
+		smb_fname_rel->base_name = original_relname;
 	}
 
 lookup:
