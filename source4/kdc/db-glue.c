@@ -883,19 +883,19 @@ out:
 	return ret;
 }
 
-static krb5_error_code principal_comp_strcmp_int(krb5_context context,
-						 krb5_const_principal principal,
-						 unsigned int component,
-						 const char *string,
-						 bool do_strcasecmp,
-						 int *cmp)
+static krb5_error_code is_principal_component_equal_impl(krb5_context context,
+							 krb5_const_principal principal,
+							 unsigned int component,
+							 const char *string,
+							 bool do_strcasecmp,
+							 bool *eq)
 {
 	const char *p;
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
 	if (component >= krb5_princ_size(context, principal)) {
-		/* A non‐existent component compares less than any string. */
-		*cmp = -1;
+		/* A non‐existent component compares equal to no string. */
+		*eq = false;
 		return 0;
 	}
 	p = krb5_principal_get_comp_string(context, principal, component);
@@ -903,9 +903,9 @@ static krb5_error_code principal_comp_strcmp_int(krb5_context context,
 		return ENOENT;
 	}
 	if (do_strcasecmp) {
-		*cmp = strcasecmp(p, string);
+		*eq = strcasecmp(p, string) == 0;
 	} else {
-		*cmp = strcmp(p, string);
+		*eq = strcmp(p, string) == 0;
 	}
 	return 0;
 #else
@@ -918,8 +918,8 @@ static krb5_error_code principal_comp_strcmp_int(krb5_context context,
 	}
 
 	if (component >= krb5_princ_size(context, principal)) {
-		/* A non‐existent component compares less than any string. */
-		*cmp = -1;
+		/* A non‐existent component compares equal to no string. */
+		*eq = false;
 		return 0;
 	}
 
@@ -931,55 +931,46 @@ static krb5_error_code principal_comp_strcmp_int(krb5_context context,
 	p = d.data;
 
 	len = strlen(string);
-
-	/*
-	 * We explicitly return -1 or 1. Subtracting of the two lengths might
-	 * give the wrong result if the result overflows or loses data when
-	 * narrowed to int.
-	 */
-	if (d.length < len) {
-		*cmp = -1;
-		return 0;
-	} else if (d.length > len) {
-		*cmp = 1;
+	if (d.length != len) {
+		*eq = false;
 		return 0;
 	}
 
 	if (do_strcasecmp) {
-		*cmp = strncasecmp(p, string, len);
+		*eq = strncasecmp(p, string, len) == 0;
 	} else {
-		*cmp = memcmp(p, string, len);
+		*eq = memcmp(p, string, len) == 0;
 	}
 	return 0;
 #endif
 }
 
-static krb5_error_code principal_comp_strcasecmp(krb5_context context,
-						 krb5_const_principal principal,
-						 unsigned int component,
-						 const char *string,
-						 int *cmp)
+static krb5_error_code is_principal_component_equal_ignoring_case(krb5_context context,
+								  krb5_const_principal principal,
+								  unsigned int component,
+								  const char *string,
+								  bool *eq)
 {
-	return principal_comp_strcmp_int(context,
-					 principal,
-					 component,
-					 string,
-					 true /* do_strcasecmp */,
-					 cmp);
+	return is_principal_component_equal_impl(context,
+						 principal,
+						 component,
+						 string,
+						 true /* do_strcasecmp */,
+						 eq);
 }
 
-static krb5_error_code principal_comp_strcmp(krb5_context context,
-					     krb5_const_principal principal,
-					     unsigned int component,
-					     const char *string,
-					     int *cmp)
+static krb5_error_code is_principal_component_equal(krb5_context context,
+						    krb5_const_principal principal,
+						    unsigned int component,
+						    const char *string,
+						    bool *eq)
 {
-	return principal_comp_strcmp_int(context,
-					 principal,
-					 component,
-					 string,
-					 false /* do_strcasecmp */,
-					 cmp);
+	return is_principal_component_equal_impl(context,
+						 principal,
+						 component,
+						 string,
+						 false /* do_strcasecmp */,
+						 eq);
 }
 
 static krb5_error_code is_kadmin_changepw(krb5_context context,
@@ -987,29 +978,29 @@ static krb5_error_code is_kadmin_changepw(krb5_context context,
 					  bool *is_changepw)
 {
 	krb5_error_code ret = 0;
-	int cmp = 0;
+	bool eq = false;
 
 	if (krb5_princ_size(context, principal) != 2) {
 		*is_changepw = false;
 		return 0;
 	}
 
-	ret = principal_comp_strcmp(context, principal, 0, "kadmin", &cmp);
+	ret = is_principal_component_equal(context, principal, 0, "kadmin", &eq);
 	if (ret) {
 		return ret;
 	}
 
-	if (cmp != 0) {
+	if (!eq) {
 		*is_changepw = false;
 		return 0;
 	}
 
-	ret = principal_comp_strcmp(context, principal, 1, "changepw", &cmp);
+	ret = is_principal_component_equal(context, principal, 1, "changepw", &eq);
 	if (ret) {
 		return ret;
 	}
 
-	*is_changepw = cmp == 0;
+	*is_changepw = eq;
 	return 0;
 }
 
@@ -2597,14 +2588,14 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			direction = INBOUND;
 			realm = realm_princ_comp;
 		} else {
-			int cmp = 0;
+			bool eq = false;
 
-			ret = principal_comp_strcasecmp(context, principal, 1, lpcfg_realm(lp_ctx), &cmp);
+			ret = is_principal_component_equal_ignoring_case(context, principal, 1, lpcfg_realm(lp_ctx), &eq);
 			if (ret) {
 				goto out;
 			}
 
-			if (cmp == 0) {
+			if (eq) {
 				/* look for outbound trust */
 				direction = OUTBOUND;
 				realm = realm_from_princ;
@@ -2951,15 +2942,15 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 	}
 
 	if (flags & SDB_F_GET_SERVER) {
-		int cmp = 0;
+		bool is_krbtgt = false;
 
-		ret = principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME, &cmp);
+		ret = is_principal_component_equal(context, principal, 0, KRB5_TGS_NAME, &is_krbtgt);
 		if (ret) {
 			TALLOC_FREE(frame);
 			return ret;
 		}
 
-		if (cmp == 0) {
+		if (is_krbtgt) {
 			/*
 			 * we need to search krbtgt/ locally
 			 */
