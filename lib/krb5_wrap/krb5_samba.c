@@ -1047,39 +1047,50 @@ done:
  * @param[in] context		The krb5_context
  * @param[in] principal		The principal
  * @param[in] component		The component
- * @return string component
+ * @param[out] out			The output string
+ * @return krb5_error_code
  *
  * Caller must talloc_free if the return value is not NULL.
  *
  */
-char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
-					 krb5_context context,
-					 krb5_const_principal principal,
-					 unsigned int component)
+krb5_error_code smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
+						   krb5_context context,
+						   krb5_const_principal principal,
+						   unsigned int component,
+						   char **out)
 {
+	char *out_str = NULL;
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
 	const char *str = NULL;
 
 	str = krb5_principal_get_comp_string(context, principal, component);
 	if (str == NULL) {
-		return NULL;
+		return ENOENT;
 	}
 
-	return talloc_strdup(mem_ctx, str);
+	out_str = talloc_strdup(mem_ctx, str);
+	if (out_str == NULL) {
+		return ENOMEM;
+	}
 #else
 	krb5_data *data;
 
 	if (component >= krb5_princ_size(context, principal)) {
-		return NULL;
+		return ENOENT;
 	}
 
 	data = krb5_princ_component(context, principal, component);
 	if (data == NULL) {
-		return NULL;
+		return ENOENT;
 	}
 
-	return talloc_strndup(mem_ctx, data->data, data->length);
+	out_str = talloc_strndup(mem_ctx, data->data, data->length);
+	if (out_str == NULL) {
+		return ENOMEM;
+	}
 #endif
+	*out = out_str;
+	return 0;
 }
 
 /**
@@ -3441,9 +3452,12 @@ int smb_krb5_principal_is_tgs(krb5_context context,
 {
 	char *p = NULL;
 	int eq = 1;
+	krb5_error_code ret = 0;
 
-	p = smb_krb5_principal_get_comp_string(NULL, context, principal, 0);
-	if (p == NULL) {
+	ret = smb_krb5_principal_get_comp_string(NULL, context, principal, 0, &p);
+	if (ret == ENOENT) {
+		return 0;
+	} else if (ret) {
 		return -1;
 	}
 

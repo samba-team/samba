@@ -400,10 +400,11 @@ int smb_krb5_create_key_from_string(krb5_context context,
 #endif
 #endif
 
-char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
-					 krb5_context context,
-					 krb5_const_principal principal,
-					 unsigned int component);
+krb5_error_code smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
+						   krb5_context context,
+						   krb5_const_principal principal,
+						   unsigned int component,
+						   char **out);
 
 krb5_error_code smb_krb5_copy_data_contents(krb5_data *p,
 					    const void *data,

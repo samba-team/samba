@@ -1233,12 +1233,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		bool is_our_realm;
 		bool is_dc;
 
-		third_part = smb_krb5_principal_get_comp_string(tmp_ctx,
-								context,
-								principal,
-								2);
-		if (third_part == NULL) {
-			ret = ENOMEM;
+		ret = smb_krb5_principal_get_comp_string(tmp_ctx,
+							 context,
+							 principal,
+							 2,
+							 &third_part);
+		if (ret) {
 			krb5_set_error_message(context, ret, "smb_krb5_principal_get_comp_string: out of memory");
 			goto out;
 		}
@@ -2265,10 +2265,12 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 	char *principal_string = NULL;
 
 	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
-		principal_string = smb_krb5_principal_get_comp_string(mem_ctx, context,
-								      principal, 0);
-		if (principal_string == NULL) {
-			return ENOMEM;
+		krb5_error_code ret = 0;
+
+		ret = smb_krb5_principal_get_comp_string(mem_ctx, context,
+							 principal, 0, &principal_string);
+		if (ret) {
+			return ret;
 		}
 	} else {
 		char *principal_string_m = NULL;
@@ -2314,12 +2316,12 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		if (num_comp == 1) {
 			size_t len;
 
-			fallback_account = smb_krb5_principal_get_comp_string(mem_ctx,
-						context, fallback_principal, 0);
-			if (fallback_account == NULL) {
+			ret = smb_krb5_principal_get_comp_string(mem_ctx,
+								 context, fallback_principal, 0, &fallback_account);
+			if (ret) {
 				krb5_free_principal(context, fallback_principal);
 				TALLOC_FREE(fallback_realm);
-				return ENOMEM;
+				return ret;
 			}
 
 			len = strlen(fallback_account);
@@ -2452,7 +2454,12 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 	/* krbtgt case.  Either us or a trusted realm */
 
-	realm_princ_comp = smb_krb5_principal_get_comp_string(tmp_ctx, context, principal, 1);
+	ret = smb_krb5_principal_get_comp_string(tmp_ctx, context, principal, 1, &realm_princ_comp);
+	if (ret == ENOENT) {
+		/* OK. */
+	} else if (ret) {
+		goto out;
+	}
 
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
 	    && lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp)) {
@@ -2659,8 +2666,8 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 						       krb5_princ_size(context, principal));
 				return ret;
 			}
-			str = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 0);
-			if (str == NULL) {
+			ret = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 0, &str);
+			if (ret) {
 				return KRB5_PARSE_MALFORMED;
 			}
 			ret = krb5_parse_name(context, str,
@@ -2850,11 +2857,11 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 			return SDB_ERR_NOENTRY;
 		}
 
-		principal_string = smb_krb5_principal_get_comp_string(frame, context,
-								      principal, 0);
-		if (principal_string == NULL) {
+		ret = smb_krb5_principal_get_comp_string(frame, context,
+							 principal, 0, &principal_string);
+		if (ret) {
 			TALLOC_FREE(frame);
-			return ENOMEM;
+			return ret;
 		}
 
 		ret = krb5_parse_name(context, principal_string,
@@ -2874,8 +2881,6 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 	}
 
 	if (flags & SDB_F_GET_SERVER) {
-		char *service_realm = NULL;
-
 		ret = principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME);
 		if (ret == 0) {
 			/*
@@ -2897,14 +2902,19 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		 */
 
 		if (num_comp == 2 || num_comp == 3) {
-			service_realm = smb_krb5_principal_get_comp_string(frame,
-									   context,
-									   principal,
-									   num_comp - 1);
-		}
+			char *service_realm = NULL;
 
-		if (service_realm != NULL) {
-			realm = service_realm;
+			ret = smb_krb5_principal_get_comp_string(frame,
+								 context,
+								 principal,
+								 num_comp - 1,
+								 &service_realm);
+			if (ret) {
+				TALLOC_FREE(frame);
+				return ret;
+			} else {
+				realm = service_realm;
+			}
 		}
 	}
 
