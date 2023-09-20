@@ -289,8 +289,8 @@ static enum ndr_err_code ndr_push_compression_mszip_cab_chunk(struct ndr_push *n
 	 *
 	 * Ideally we would just store the input pointer and length
 	 * without copying but the memory gets invalidated between the
-	 * calls, so we just copy to a dedicated buffer we now is
-	 * still going to been valid for the lifetime of the
+	 * calls, so we just copy to a dedicated buffer we know is
+	 * still going to be valid for the lifetime of the
 	 * compressions state object.
 	 */
 	memcpy(state->alg.mszip.dict, plain_chunk.data, plain_chunk.length);
