@@ -261,13 +261,10 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 
 	errpkt.text.length = 0;
 	if (e_text != NULL) {
-		errpkt.text.length = strlen(e_text);
-		errpkt.text.data = discard_const_p(char, e_text);
+		errpkt.text = smb_krb5_make_data(discard_const_p(char, e_text), strlen(e_text));
 	}
 
-	errpkt.e_data.magic = KV5M_DATA;
-	errpkt.e_data.length = 0;
-	errpkt.e_data.data = NULL;
+	errpkt.e_data = smb_krb5_make_data(NULL, 0);
 	if (e_data != NULL) {
 		errpkt.e_data = *e_data;
 	}
