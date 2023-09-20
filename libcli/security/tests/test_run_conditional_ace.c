@@ -660,7 +660,7 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_different_case),
 		cmocka_unit_test(test_composite_different_order_with_dupes),
 		cmocka_unit_test(test_more_values_not_equal),
-};
+	};
 	if (!isatty(1)) {
 		cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
 	}
