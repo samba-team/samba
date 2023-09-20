@@ -447,8 +447,8 @@ static void test_full_sddl_ra_encode(void **state)
 	sec_desc_samba = sddl_decode(mem_ctx, sddl, &domain_sid);
 
 	/* hack the acl revision numbers */
-	sec_desc_windows.dacl->revision = 4;
-	sec_desc_windows.sacl->revision = 4;
+	sec_desc_windows.dacl->revision = SECURITY_ACL_REVISION_ADS;
+	sec_desc_windows.sacl->revision = SECURITY_ACL_REVISION_ADS;
 	ok = security_descriptor_equal(sec_desc_samba, &sec_desc_windows);
 	assert_true(ok);
 	talloc_free(mem_ctx);
