@@ -328,7 +328,8 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	union PAC_INFO _upn_dns_info;
 	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
 	struct auth_user_info_dc *user_info_dc_out;
-	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_in = NULL;
+	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_in = NULL;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_out = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
@@ -344,11 +345,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	pac_logon_info_in = data_blob_const(k5pac_logon_info_in.data, k5pac_logon_info_in.length);
 
-	/*
-	 * Allocate this structure on mem_ctx so we can return its resource
-	 * groups to the caller.
-	 */
-	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, mem_ctx, &info,
+	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, tmp_ctx, &info,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 	smb_krb5_free_data_contents(context, &k5pac_logon_info_in);
@@ -480,10 +477,25 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	 */
 	resource_groups_in = &info.logon_info.info->resource_groups;
 	if (resource_groups != NULL && resource_groups_in->groups.count != 0) {
-		*resource_groups = resource_groups_in;
+		resource_groups_out = talloc(tmp_ctx, struct PAC_DOMAIN_GROUP_MEMBERSHIP);
+		if (resource_groups_out == NULL) {
+			talloc_free(tmp_ctx);
+			return ENOMEM;
+		}
+
+		*resource_groups_out = (struct PAC_DOMAIN_GROUP_MEMBERSHIP) {
+			.domain_sid = talloc_steal(resource_groups_out, resource_groups_in->domain_sid),
+			.groups = {
+				.count = resource_groups_in->groups.count,
+				.rids = talloc_steal(resource_groups_out, resource_groups_in->groups.rids),
+			},
+		};
 	}
 
 	*user_info_dc = user_info_dc_out;
+	if (resource_groups_out != NULL) {
+		*resource_groups = talloc_steal(mem_ctx, resource_groups_out);
+	}
 
 	return 0;
 }
