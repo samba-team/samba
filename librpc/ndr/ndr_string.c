@@ -94,6 +94,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		conv_src_len = len1 + c_len_term;
 		break;
 
+	case LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_BYTESIZE:
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
+		conv_src_len = len1;
+		byte_mul = 1; /* the length is now absolute */
+		break;
+
 	case LIBNDR_FLAG_STR_LEN4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &ofs));
