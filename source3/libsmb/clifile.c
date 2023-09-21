@@ -28,6 +28,7 @@
 #include "ntioctl.h"
 #include "libcli/security/security.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "libcli/smb/reparse.h"
 
 struct cli_setpathinfo_state {
 	uint16_t setup;
@@ -1266,10 +1267,11 @@ static NTSTATUS cli_smb1_posix_mknod_recv(struct tevent_req *req)
 }
 
 struct cli_mknod_state {
-	uint8_t dummy;
+	uint8_t buf[24];
 };
 
 static void cli_mknod_done1(struct tevent_req *subreq);
+static void cli_mknod_reparse_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_mknod_send(
 	TALLOC_CTX *mem_ctx,
@@ -1281,6 +1283,11 @@ struct tevent_req *cli_mknod_send(
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_mknod_state *state = NULL;
+	struct reparse_data_buffer reparse_buf = {
+		.tag = IO_REPARSE_TAG_NFS,
+	};
+	struct nfs_reparse_data_buffer *nfs = &reparse_buf.parsed.nfs;
+	ssize_t buflen;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_mknod_state);
 	if (req == NULL) {
@@ -1297,13 +1304,59 @@ struct tevent_req *cli_mknod_send(
 		return req;
 	}
 
-	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
-	return tevent_req_post(req, ev);
+	/*
+	 * Ignored for all but BLK and CHR
+	 */
+	nfs->data.dev.major = major(dev);
+	nfs->data.dev.minor = minor(dev);
+
+	switch (mode & S_IFMT) {
+	case S_IFIFO:
+		nfs->type = NFS_SPECFILE_FIFO;
+		break;
+	case S_IFSOCK:
+		nfs->type = NFS_SPECFILE_SOCK;
+		break;
+	case S_IFCHR:
+		nfs->type = NFS_SPECFILE_CHR;
+		break;
+	case S_IFBLK:
+		nfs->type = NFS_SPECFILE_BLK;
+		break;
+	}
+
+	buflen = reparse_data_buffer_marshall(&reparse_buf,
+					      state->buf,
+					      sizeof(state->buf));
+	if ((buflen == -1) || (buflen > sizeof(state->buf))) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_create_reparse_point_send(state,
+					       ev,
+					       cli,
+					       fname,
+					       (DATA_BLOB){
+						       .data = state->buf,
+						       .length = buflen,
+					       });
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_mknod_reparse_done, req);
+	return req;
 }
 
 static void cli_mknod_done1(struct tevent_req *subreq)
 {
 	NTSTATUS status = cli_smb1_posix_mknod_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_mknod_reparse_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_create_reparse_point_recv(subreq);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
