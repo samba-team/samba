@@ -551,7 +551,7 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 
 		case CONDITIONAL_ACE_TOKEN_OCTET_STRING:
 			utf8_len = MIN(tok->data.bytes.length, 9);
-			hex_encode_buf(hex, tok->data.bytes.bytes, utf8_len);
+			hex_encode_buf(hex, tok->data.bytes.data, utf8_len);
 
 			snprintf(line, sizeof(line),
 				 "%s %.*s (%d)\n",
@@ -865,7 +865,7 @@ static bool sddl_write_octet_string(struct sddl_write_context *ctx,
 {
 	bool ok;
 	char *hex  = hex_encode_talloc(ctx->mem_ctx,
-				       tok->data.bytes.bytes,
+				       tok->data.bytes.data,
 				       tok->data.bytes.length);
 	ok = sddl_write(ctx, "#");
 	if (!ok) {
@@ -1909,8 +1909,7 @@ static bool parse_octet_string(struct ace_condition_sddl_compiler_context *comp)
 
 	length /= 2;
 
-	token.data.bytes.bytes = talloc_array(comp->mem_ctx, uint8_t, length);
-	token.data.bytes.length = length;
+	token.data.bytes = data_blob_talloc_zero(comp->mem_ctx, length);
 	token.type = CONDITIONAL_ACE_TOKEN_OCTET_STRING;
 
 	for (i = 0; i < length; i++) {
@@ -1932,9 +1931,9 @@ static bool parse_octet_string(struct ace_condition_sddl_compiler_context *comp)
 		pair[0] = (comp->sddl[j]     == '#') ? '0' : comp->sddl[j];
 		pair[1] = (comp->sddl[j + 1] == '#') ? '0' : comp->sddl[j + 1];
 
-		ok = hex_byte(pair, &token.data.bytes.bytes[i]);
+		ok = hex_byte(pair, &token.data.bytes.data[i]);
 		if (!ok) {
-			talloc_free(token.data.bytes.bytes);
+			talloc_free(token.data.bytes.data);
 			comp_error(comp, "inexplicable error in octet string");
 			return false;
 		}

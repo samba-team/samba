@@ -26,6 +26,7 @@
 #include "lib/util/tsort.h"
 #include "lib/util/debug.h"
 #include "lib/util/bytearray.h"
+#include "lib/util/talloc_stack.h"
 #include "util/discard.h"
 
 /*
@@ -230,36 +231,52 @@ static ssize_t push_unicode(uint8_t *data, size_t length,
 
 static ssize_t pull_bytes(TALLOC_CTX *mem_ctx,
 			  uint8_t *data, size_t length,
-			  struct ace_condition_bytes *tok)
+			  DATA_BLOB *tok)
 {
-	if (length < 4) {
+	ssize_t bytes_used;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB v = data_blob_const(data, length);
+	struct ndr_pull *ndr = ndr_pull_init_blob(&v, mem_ctx);
+	if (ndr == NULL) {
 		return -1;
 	}
-	tok->length = PULL_LE_U32(data, 0);
-	if (tok->length > length - 4) {
+	ndr_err = ndr_pull_DATA_BLOB(ndr, NDR_SCALARS|NDR_BUFFERS, tok);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(ndr);
 		return -1;
 	}
-	tok->bytes = talloc_size(mem_ctx, tok->length + 1);
-	if (tok->bytes == NULL) {
-		return -1;
-	}
-	memcpy(tok->bytes, data + 4, tok->length);
-	tok->bytes[tok->length] = 0;
-	return tok->length + 4;
+	bytes_used = ndr->offset;
+	talloc_free(ndr);
+	return bytes_used;
 }
 
-
-static ssize_t push_bytes(uint8_t *data, size_t length,
-			  const struct ace_condition_bytes *tok)
+static ssize_t push_bytes(uint8_t *data, size_t available,
+			const DATA_BLOB *tok)
 {
-	if (length < tok->length + 4) {
+	size_t offset;
+	enum ndr_err_code ndr_err;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ndr_push *ndr = ndr_push_init_ctx(frame);
+	if (ndr == NULL) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
-	PUSH_LE_U32(data, 0, tok->length);
-	memcpy(data + 4, tok->bytes, tok->length);
-	return tok->length + 4;
-}
 
+	ndr_err = ndr_push_DATA_BLOB(ndr, NDR_SCALARS|NDR_BUFFERS, *tok);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (available < ndr->offset) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	memcpy(data, ndr->data, ndr->offset);
+	offset = ndr->offset;
+	TALLOC_FREE(frame);
+	return offset;
+}
 
 static ssize_t pull_sid(TALLOC_CTX *mem_ctx,
 			uint8_t *data, size_t length,
@@ -1376,12 +1393,9 @@ static bool compare_bytes(const struct ace_condition_token *op,
 			  const struct ace_condition_token *rhs,
 			  int *cmp)
 {
-	struct ace_condition_bytes a = lhs->data.bytes;
-	struct ace_condition_bytes b = rhs->data.bytes;
-	*cmp = memcmp(a.bytes, b.bytes, MIN(a.length, b.length));
-	if (*cmp == 0) {
-		*cmp = a.length - b.length;
-	}
+	DATA_BLOB a = lhs->data.bytes;
+	DATA_BLOB b = rhs->data.bytes;
+	*cmp = data_blob_cmp(&a, &b);
 	return true;
 }
 

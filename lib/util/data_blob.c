@@ -125,6 +125,7 @@ _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2)
 	}
 	ret = memcmp(d1->data, d2->data, MIN(d1->length, d2->length));
 	if (ret == 0) {
+		/* Note this ordering is used in conditional aces */
 		return d1->length - d2->length;
 	}
 	return ret;

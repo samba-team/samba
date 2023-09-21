@@ -89,7 +89,7 @@ static bool claim_v1_octet_string_to_ace_octet_string(
 	struct ace_condition_token *result)
 {
 	DATA_BLOB *v = NULL;
-	struct ace_condition_bytes w = {0};
+	DATA_BLOB w = data_blob_null;
 
 	v = claim->values[offset].octet_value;
 
@@ -99,16 +99,11 @@ static bool claim_v1_octet_string_to_ace_octet_string(
 			    v->length, CONDITIONAL_ACE_MAX_LENGTH);
 		return false;
 	}
-	if (v->length == 0) {
-		w.bytes = NULL;
-		w.length = 0;
-	} else {
-		w.bytes = talloc_memdup(mem_ctx, v->data, v->length);
-		if (w.bytes == NULL) {
+	if (v->length != 0) {
+		w = data_blob_talloc(mem_ctx, v->data, v->length);
+		if (w.data == NULL) {
 			return false;
 		}
-
-		w.length = v->length;
 	}
 
 	result->type = CONDITIONAL_ACE_TOKEN_OCTET_STRING;
@@ -396,7 +391,7 @@ static bool ace_octet_string_to_claim_v1_octet_string(
 	}
 
 	*v = data_blob_talloc(mem_ctx,
-			      tok->data.bytes.bytes,
+			      tok->data.bytes.data,
 			      tok->data.bytes.length);
 	if (v->data == NULL) {
 		return false;

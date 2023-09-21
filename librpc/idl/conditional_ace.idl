@@ -280,11 +280,6 @@ interface conditional_ace
 		uint32 length;
 	} ace_condition_unicode;
 
-	typedef struct {
-		uint8 *bytes;
-		uint32 length;
-	} ace_condition_bytes;
-
 	typedef [public] struct {
 		[subcontext(4)] dom_sid sid;
 	} ace_condition_sid;
@@ -323,7 +318,7 @@ interface conditional_ace
 	typedef [nodiscriminant] union {
 		[case(CONDITIONAL_ACE_TOKEN_SID)] ace_condition_sid sid;
 		[case(CONDITIONAL_ACE_TOKEN_COMPOSITE)]ace_condition_composite composite;
-		[case(CONDITIONAL_ACE_TOKEN_OCTET_STRING)] ace_condition_bytes bytes;
+		[case(CONDITIONAL_ACE_TOKEN_OCTET_STRING)] DATA_BLOB bytes;
 		[case(CONDITIONAL_ACE_TOKEN_UNICODE)]ace_condition_unicode unicode;
 
 		[case(CONDITIONAL_ACE_LOCAL_ATTRIBUTE)]ace_condition_unicode local_attr;
