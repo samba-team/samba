@@ -86,7 +86,7 @@ static krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
 	}
 
 	/* This song-and-dance effectivly puts the principal
-	 * into talloc, so we can't loose it. */
+	 * into talloc, so we can't lose it. */
 	mem_ctx->principal = *princ;
 	talloc_set_destructor(mem_ctx, free_principal);
 	return 0;
