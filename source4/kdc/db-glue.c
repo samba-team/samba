@@ -912,6 +912,11 @@ static krb5_error_code principal_comp_strcmp_int(krb5_context context,
 	size_t len;
 	krb5_data d;
 	krb5_error_code ret = 0;
+
+	if (component > INT_MAX) {
+		return EINVAL;
+	}
+
 	if (component >= krb5_princ_size(context, principal)) {
 		/* A non‐existent component compares less than any string. */
 		*cmp = -1;
