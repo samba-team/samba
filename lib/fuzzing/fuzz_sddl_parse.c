@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/conditional_ace.h"
 #include "fuzzing/fuzzing.h"
 
 #define MAX_LENGTH (100 * 1024 - 1)
@@ -55,6 +56,27 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 	}
 	result = sddl_encode(mem_ctx, sd1, &dom_sid);
 	sd2 = sddl_decode(mem_ctx, result, &dom_sid);
+	if (sd2 == NULL) {
+		if (strlen(result) > CONDITIONAL_ACE_MAX_LENGTH) {
+			/*
+			 * This could fail if a unicode string or
+			 * attribute name that contains escapable
+			 * bytes (e.g '\x0b') in an unescaped form in
+			 * the original string ends up with them in
+			 * the escaped form ("%000b") in the result
+			 * string, making the entire attribute name
+			 * too long for the arbitrary limit we set for
+			 * SDDL attribute names.
+			 *
+			 * We could increase that arbitrary limit (to,
+			 * say, CONDITIONAL_ACE_MAX_LENGTH * 5), but
+			 * that is getting very far from real world
+			 * needs.
+			 */
+			goto end;
+		}
+		abort();
+	}
 	ok = security_descriptor_equal(sd1, sd2);
 	if (!ok) {
 		abort();
