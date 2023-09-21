@@ -179,7 +179,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (pac_data->num_buffers < 4) {
-		/* we need logon_ingo, service_key and kdc_key */
+		/* we need logon_info, service_key and kdc_key */
 		DEBUG(0,("less than 4 PAC buffers\n"));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -197,14 +197,14 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (pac_data_raw->num_buffers < 4) {
-		/* we need logon_ingo, service_key and kdc_key */
+		/* we need logon_info, service_key and kdc_key */
 		DEBUG(0,("less than 4 PAC buffers\n"));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (pac_data->num_buffers != pac_data_raw->num_buffers) {
-		/* we need logon_ingo, service_key and kdc_key */
+		/* we need logon_info, service_key and kdc_key */
 		DEBUG(0, ("misparse! PAC_DATA has %d buffers while "
 			  "PAC_DATA_RAW has %d\n", pac_data->num_buffers,
 			  pac_data_raw->num_buffers));
@@ -368,7 +368,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (tgs_authtime) {
-		/* Convert to NT time, so as not to loose accuracy in comparison */
+		/* Convert to NT time, so as not to lose accuracy in comparison */
 		unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
 
 		if (tgs_authtime_nttime != logon_name->logon_time) {
