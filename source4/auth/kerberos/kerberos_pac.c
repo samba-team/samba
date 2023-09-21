@@ -392,7 +392,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Pull this right into the normal auth system structures */
-	nt_status = make_user_info_dc_pac(mem_ctx,
+	nt_status = make_user_info_dc_pac(tmp_ctx,
 					 info.logon_info.info,
 					 upn_dns_info,
 					 group_inclusion,
@@ -492,7 +492,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 		};
 	}
 
-	*user_info_dc = user_info_dc_out;
+	*user_info_dc = talloc_steal(mem_ctx, user_info_dc_out);
 	if (resource_groups_out != NULL) {
 		*resource_groups = talloc_steal(mem_ctx, resource_groups_out);
 	}
