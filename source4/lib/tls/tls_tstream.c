@@ -1520,7 +1520,7 @@ static void tstream_tls_retry_handshake(struct tstream_context *stream)
 				 status & GNUTLS_CERT_EXPIRED ?
 					"expired " : "",
 				 status & GNUTLS_CERT_UNEXPECTED_OWNER ?
-					"unexptected_owner " : ""));
+					"unexpected_owner " : ""));
 			tlss->error = EINVAL;
 			tevent_req_error(req, tlss->error);
 			return;
