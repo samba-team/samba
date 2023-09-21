@@ -207,28 +207,46 @@ struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_symlink_state *state = NULL;
-	DATA_BLOB blob = {};
-	bool ok;
+	struct reparse_data_buffer reparse_buf = {
+		.tag = IO_REPARSE_TAG_SYMLINK,
+		.parsed.lnk.substitute_name =
+			discard_const_p(char, link_target),
+		.parsed.lnk.print_name = discard_const_p(char, link_target),
+		.parsed.lnk.flags = flags,
+	};
+	uint8_t *buf;
+	ssize_t buflen;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_symlink_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	ok = symlink_reparse_buffer_marshall(link_target,
-					     NULL,
-					     0,
-					     flags,
-					     state,
-					     &blob.data,
-					     &blob.length);
-
-	if (!ok) {
+	buflen = reparse_data_buffer_marshall(&reparse_buf, NULL, 0);
+	if (buflen == -1) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_create_reparse_point_send(state, ev, cli, newpath, blob);
+	buf = talloc_array(state, uint8_t, buflen);
+	if (tevent_req_nomem(buf, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	buflen = reparse_data_buffer_marshall(&reparse_buf, buf, buflen);
+	if (buflen != talloc_array_length(buf)) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_create_reparse_point_send(state,
+					       ev,
+					       cli,
+					       newpath,
+					       (DATA_BLOB){
+						       .data = buf,
+						       .length = buflen,
+					       });
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
