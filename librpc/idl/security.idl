@@ -645,7 +645,7 @@ interface security
 		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING),relative] nstring *string_value;
 		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_SID),relative] DATA_BLOB *sid_value;
 		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING),relative] DATA_BLOB *octet_value;
-		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN),relative] hyper *bool_value;
+		[case(CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN),relative] hyper *uint_value;
 	} claim_values;
 
 	typedef [public,gensize] struct {
