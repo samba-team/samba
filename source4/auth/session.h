@@ -21,10 +21,14 @@
 #ifndef _SAMBA_AUTH_SESSION_H
 #define _SAMBA_AUTH_SESSION_H
 
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/security.h"
+#include "libcli/util/werror.h"
+#include "lib/util/time.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/auth.h"
 
+struct loadparm_context;
 struct tevent_context;
 struct ldb_context;
 struct ldb_dn;
