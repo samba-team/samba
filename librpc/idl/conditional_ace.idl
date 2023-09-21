@@ -287,6 +287,8 @@ interface conditional_ace
 	 * The composite type has an array of sub-tokens, which can
 	 * themselves be composites containing composites, though this
 	 * is unlikely to be useful when dealing with claims.
+	 *
+	 * This structure is not representative of the wire format.
 	 */
 	typedef struct {
 		ace_condition_token *tokens;
