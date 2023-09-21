@@ -17,10 +17,12 @@
 
 #include "replace.h"
 #include "libcli/smb/reparse.h"
+#include "libcli/smb/reparse_symlink.h"
 #include "libcli/smb/smb_constants.h"
 #include "libcli/util/error.h"
 #include "lib/util/debug.h"
 #include "lib/util/bytearray.h"
+#include "lib/util/talloc_stack.h"
 #include "lib/util/charset/charset.h"
 #include "smb_util.h"
 
@@ -345,4 +347,188 @@ char *reparse_data_buffer_str(TALLOC_CTX *mem_ctx,
 		break;
 	}
 	return s;
+}
+
+static ssize_t
+reparse_data_buffer_marshall_syml(const struct symlink_reparse_struct *src,
+				  uint8_t *buf,
+				  size_t buflen)
+{
+	uint8_t sbuf[12];
+	struct iovec iov[3];
+	uint8_t *subst_utf16 = NULL;
+	uint8_t *print_utf16 = NULL;
+	size_t subst_len = 0;
+	size_t print_len = 0;
+	ssize_t ret = -1;
+	bool ok;
+
+	if (src->substitute_name == NULL) {
+		return -1;
+	}
+	if (src->print_name == NULL) {
+		return -1;
+	}
+
+	iov[0] = (struct iovec){
+		.iov_base = sbuf,
+		.iov_len = sizeof(sbuf),
+	};
+
+	ok = convert_string_talloc(talloc_tos(),
+				   CH_UNIX,
+				   CH_UTF16,
+				   src->substitute_name,
+				   strlen(src->substitute_name),
+				   &subst_utf16,
+				   &subst_len);
+	if (!ok) {
+		goto fail;
+	}
+	if (subst_len > UINT16_MAX) {
+		goto fail;
+	}
+	iov[1] = (struct iovec){
+		.iov_base = subst_utf16,
+		.iov_len = subst_len,
+	};
+
+	ok = convert_string_talloc(talloc_tos(),
+				   CH_UNIX,
+				   CH_UTF16,
+				   src->print_name,
+				   strlen(src->print_name),
+				   &print_utf16,
+				   &print_len);
+	if (!ok) {
+		goto fail;
+	}
+	if (print_len > UINT16_MAX) {
+		goto fail;
+	}
+	iov[2] = (struct iovec){
+		.iov_base = print_utf16,
+		.iov_len = print_len,
+	};
+
+	PUSH_LE_U16(sbuf, 0, 0);	  /* SubstituteNameOffset */
+	PUSH_LE_U16(sbuf, 2, subst_len);  /* SubstituteNameLength */
+	PUSH_LE_U16(sbuf, 4, subst_len);  /* PrintNameOffset */
+	PUSH_LE_U16(sbuf, 6, print_len);  /* PrintNameLength */
+	PUSH_LE_U32(sbuf, 8, src->flags); /* Flags */
+
+	ret = reparse_buffer_marshall(IO_REPARSE_TAG_SYMLINK,
+				      src->unparsed_path_length,
+				      iov,
+				      ARRAY_SIZE(iov),
+				      buf,
+				      buflen);
+
+fail:
+	TALLOC_FREE(subst_utf16);
+	TALLOC_FREE(print_utf16);
+	return ret;
+}
+
+static ssize_t
+reparse_data_buffer_marshall_nfs(const struct nfs_reparse_data_buffer *src,
+				 uint8_t *buf,
+				 size_t buflen)
+{
+	uint8_t typebuf[8];
+	uint8_t devbuf[8];
+	struct iovec iov[2] = {};
+	size_t iovlen;
+	uint8_t *lnk_utf16 = NULL;
+	size_t lnk_len = 0;
+	ssize_t ret;
+
+	PUSH_LE_U64(typebuf, 0, src->type);
+	iov[0] = (struct iovec){
+		.iov_base = typebuf,
+		.iov_len = sizeof(typebuf),
+	};
+	iovlen = 1;
+
+	switch (src->type) {
+	case NFS_SPECFILE_LNK: {
+		bool ok = convert_string_talloc(talloc_tos(),
+						CH_UNIX,
+						CH_UTF16,
+						src->data.lnk_target,
+						strlen(src->data.lnk_target),
+						&lnk_utf16,
+						&lnk_len);
+		if (!ok) {
+			return -1;
+		}
+		iov[1] = (struct iovec){
+			.iov_base = lnk_utf16,
+			.iov_len = lnk_len,
+		};
+		iovlen = 2;
+		break;
+	}
+	case NFS_SPECFILE_CHR:
+		FALL_THROUGH;
+	case NFS_SPECFILE_BLK:
+		PUSH_LE_U32(devbuf, 0, src->data.dev.major);
+		PUSH_LE_U32(devbuf, 4, src->data.dev.minor);
+		iov[1] = (struct iovec){
+			.iov_base = devbuf,
+			.iov_len = sizeof(devbuf),
+		};
+		iovlen = 2;
+		break;
+	default:
+		break;
+		/* Nothing to do for NFS_SPECFILE_FIFO and _SOCK */
+	}
+
+	ret = reparse_buffer_marshall(IO_REPARSE_TAG_NFS,
+				      0,
+				      iov,
+				      iovlen,
+				      buf,
+				      buflen);
+	TALLOC_FREE(lnk_utf16);
+	return ret;
+}
+
+ssize_t reparse_data_buffer_marshall(const struct reparse_data_buffer *src,
+				     uint8_t *buf,
+				     size_t buflen)
+{
+	ssize_t ret = -1;
+
+	switch (src->tag) {
+	case IO_REPARSE_TAG_SYMLINK:
+
+		ret = reparse_data_buffer_marshall_syml(&src->parsed.lnk,
+							buf,
+							buflen);
+		break;
+
+	case IO_REPARSE_TAG_NFS:
+
+		ret = reparse_data_buffer_marshall_nfs(&src->parsed.nfs,
+						       buf,
+						       buflen);
+		break;
+
+	default: {
+		struct iovec iov = {
+			.iov_base = src->parsed.raw.data,
+			.iov_len = src->parsed.raw.length,
+		};
+		ret = reparse_buffer_marshall(src->tag,
+					      src->parsed.raw.reserved,
+					      &iov,
+					      1,
+					      buf,
+					      buflen);
+	}
+	}
+
+	return ret;
 }

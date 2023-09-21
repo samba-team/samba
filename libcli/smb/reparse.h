@@ -70,4 +70,8 @@ NTSTATUS reparse_data_buffer_parse(TALLOC_CTX *mem_ctx,
 char *reparse_data_buffer_str(TALLOC_CTX *mem_ctx,
 			      const struct reparse_data_buffer *dst);
 
+ssize_t reparse_data_buffer_marshall(const struct reparse_data_buffer *src,
+				     uint8_t *buf,
+				     size_t buflen);
+
 #endif
