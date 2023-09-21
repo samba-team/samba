@@ -195,7 +195,7 @@ static bool claim_v1_bool_to_ace_int(
 	size_t offset,
 	struct ace_condition_token *result)
 {
-	int64_t v = *claim->values[offset].int_value;
+	uint64_t v = *claim->values[offset].bool_value;
 	result->type = CONDITIONAL_ACE_TOKEN_INT64;
 	result->data.int64.base = CONDITIONAL_ACE_INT_BASE_10;
 	result->data.int64.sign = CONDITIONAL_ACE_INT_SIGN_NONE;
