@@ -31,10 +31,10 @@ static PyObject *py_reparse_put(PyObject *module, PyObject *args)
 	Py_ssize_t reparse_len;
 	unsigned long long tag = 0;
 	unsigned reserved = 0;
-	struct iovec iov;
 	uint8_t *buf = NULL;
 	ssize_t buflen;
 	PyObject *result = NULL;
+	struct reparse_data_buffer reparse_buf = {};
 	bool ok;
 
 	ok = PyArg_ParseTuple(
@@ -47,11 +47,13 @@ static PyObject *py_reparse_put(PyObject *module, PyObject *args)
 	if (!ok) {
 		return NULL;
 	}
-	iov = (struct iovec) {
-		.iov_base = reparse, .iov_len = reparse_len,
-	};
 
-	buflen = reparse_buffer_marshall(tag, reserved, &iov, 1, NULL, 0);
+	reparse_buf.tag = tag;
+	reparse_buf.parsed.raw.data = (uint8_t *)reparse;
+	reparse_buf.parsed.raw.length = reparse_len;
+	reparse_buf.parsed.raw.reserved = reserved;
+
+	buflen = reparse_data_buffer_marshall(&reparse_buf, NULL, 0);
 	if (buflen == -1) {
 		errno = EINVAL;
 		PyErr_SetFromErrno(PyExc_RuntimeError);
@@ -62,7 +64,7 @@ static PyObject *py_reparse_put(PyObject *module, PyObject *args)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	reparse_buffer_marshall(tag, reserved, &iov, 1, buf, buflen);
+	reparse_data_buffer_marshall(&reparse_buf, buf, buflen);
 
 	result = PyBytes_FromStringAndSize((char *)buf, buflen);
 	TALLOC_FREE(buf);
