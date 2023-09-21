@@ -328,6 +328,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	union PAC_INFO _upn_dns_info;
 	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
 	struct auth_user_info_dc *user_info_dc_out;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_in = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
@@ -477,10 +478,9 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	 * If we have resource groups and the caller wants them returned, we
 	 * oblige.
 	 */
-	if (resource_groups != NULL &&
-	    info.logon_info.info->resource_groups.groups.count != 0)
-	{
-		*resource_groups = &info.logon_info.info->resource_groups;
+	resource_groups_in = &info.logon_info.info->resource_groups;
+	if (resource_groups != NULL && resource_groups_in->groups.count != 0) {
+		*resource_groups = resource_groups_in;
 	}
 
 	*user_info_dc = user_info_dc_out;
