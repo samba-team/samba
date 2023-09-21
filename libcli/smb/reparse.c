@@ -17,7 +17,7 @@
 
 #include "replace.h"
 #include "libcli/smb/reparse.h"
-#include "libcli/smb/reparse_symlink.h"
+#include "lib/util/iov_buf.h"
 #include "libcli/smb/smb_constants.h"
 #include "libcli/util/error.h"
 #include "lib/util/debug.h"
@@ -347,6 +347,38 @@ char *reparse_data_buffer_str(TALLOC_CTX *mem_ctx,
 		break;
 	}
 	return s;
+}
+
+static ssize_t reparse_buffer_marshall(uint32_t reparse_tag,
+				       uint16_t reserved,
+				       const struct iovec *iov,
+				       int iovlen,
+				       uint8_t *buf,
+				       size_t buflen)
+{
+	ssize_t reparse_data_length = iov_buflen(iov, iovlen);
+	size_t needed;
+
+	if (reparse_data_length == -1) {
+		return -1;
+	}
+	if (reparse_data_length > UINT16_MAX) {
+		return -1;
+	}
+
+	needed = reparse_data_length + 8;
+	if (needed < reparse_data_length) {
+		return -1;
+	}
+
+	if (buflen >= needed) {
+		PUSH_LE_U32(buf, 0, reparse_tag);
+		PUSH_LE_U16(buf, 4, reparse_data_length);
+		PUSH_LE_U16(buf, 6, reserved);
+		iov_buf(iov, iovlen, buf + 8, buflen - 8);
+	}
+
+	return needed;
 }
 
 static ssize_t

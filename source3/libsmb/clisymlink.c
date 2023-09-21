@@ -28,7 +28,6 @@
 #include "libcli/security/security.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "libcli/smb/reparse.h"
-#include "libcli/smb/reparse_symlink.h"
 
 struct cli_create_reparse_point_state {
 	struct tevent_context *ev;
