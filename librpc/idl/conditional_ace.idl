@@ -269,10 +269,10 @@ interface conditional_ace
 		int64 value;
 	} ace_condition_result;
 
-	typedef struct {
+	typedef [public] struct {
 		int64 value;
-		uint8 base;
 		uint8 sign;
+		uint8 base;
 	} ace_condition_int;
 
 	typedef struct {

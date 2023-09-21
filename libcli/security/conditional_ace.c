@@ -110,28 +110,45 @@ static bool check_integer_range(const struct ace_condition_token *tok)
 }
 
 
-static ssize_t pull_integer(uint8_t *data, size_t length,
-			    struct ace_condition_int *tok)
+static ssize_t pull_integer(TALLOC_CTX *mem_ctx,
+			uint8_t *data, size_t length,
+			struct ace_condition_int *tok)
 {
-	if (length < 10) {
+	ssize_t bytes_used;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB v = data_blob_const(data, length);
+	struct ndr_pull *ndr = ndr_pull_init_blob(&v, mem_ctx);
+	if (ndr == NULL) {
 		return -1;
 	}
-	tok->value = PULL_LE_I64(data, 0);
-	tok->sign = data[8];
-	tok->base = data[9];
-	return 10;
+	ndr_err = ndr_pull_ace_condition_int(ndr, NDR_SCALARS|NDR_BUFFERS, tok);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(ndr);
+		return -1;
+	}
+	bytes_used = ndr->offset;
+	TALLOC_FREE(ndr);
+	return bytes_used;
 }
 
-static ssize_t push_integer(uint8_t *data, size_t length,
-			    const struct ace_condition_int *tok)
+static ssize_t push_integer(uint8_t *data, size_t available,
+			const struct ace_condition_int *tok)
 {
-	if (length < 10) {
+	enum ndr_err_code ndr_err;
+	DATA_BLOB v;
+	ndr_err = ndr_push_struct_blob(&v, NULL,
+				       tok,
+				       (ndr_push_flags_fn_t)ndr_push_ace_condition_int);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
-	PUSH_LE_I64(data, 0, tok->value);
-	data[8] = tok->sign;
-	data[9] = tok->base;
-	return 10;
+	if (available < v.length) {
+		talloc_free(v.data);
+		return -1;
+	}
+	memcpy(data, v.data, v.length);
+	talloc_free(v.data);
+	return v.length;
 }
 
 
@@ -368,7 +385,8 @@ static ssize_t pull_composite(TALLOC_CTX *mem_ctx,
 		case CONDITIONAL_ACE_TOKEN_INT16:
 		case CONDITIONAL_ACE_TOKEN_INT32:
 		case CONDITIONAL_ACE_TOKEN_INT64:
-			consumed = pull_integer(el_data,
+			consumed = pull_integer(mem_ctx,
+						el_data,
 						available,
 						&el->data.int64);
 			ok = check_integer_range(el);
@@ -622,7 +640,8 @@ struct ace_condition_script *parse_conditional_ace(TALLOC_CTX *mem_ctx,
 		case CONDITIONAL_ACE_TOKEN_INT16:
 		case CONDITIONAL_ACE_TOKEN_INT32:
 		case CONDITIONAL_ACE_TOKEN_INT64:
-			consumed = pull_integer(tok_data,
+			consumed = pull_integer(mem_ctx,
+						tok_data,
 						available,
 						&tok->data.int64);
 			ok = check_integer_range(tok);
