@@ -64,7 +64,7 @@ kerb_prompter(krb5_context ctx, void *data,
 		     prompts[1].type == KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN) {
 			/*
 			 * We don't want to change passwords here. We're
-			 * called from heimal when the KDC returns
+			 * called from heimdal when the KDC returns
 			 * KRB5KDC_ERR_KEY_EXPIRED, but at this point we don't
 			 * have the chance to ask the user for a new
 			 * password. If we return 0 (i.e. success), we will be
