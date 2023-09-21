@@ -27,6 +27,7 @@
 #include "lib/util/bytearray.h"
 
 #include "librpc/gen_ndr/conditional_ace.h"
+#include "librpc/gen_ndr/claims.h"
 
 /*
  * We support three formats for claims, all slightly different.
@@ -664,4 +665,240 @@ bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 	(*n)++;
 	*list = tmp;
 	return true;
+}
+
+NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
+				   const struct CLAIMS_SET *claims_set,
+				   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **out_claims,
+				   uint32_t *out_n_claims)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claims = NULL;
+	uint32_t n_claims = 0;
+	uint32_t i;
+
+	if (out_claims == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (out_n_claims == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*out_claims = NULL;
+	*out_n_claims = 0;
+
+	if (claims_set == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < claims_set->claims_array_count; ++i) {
+		const struct CLAIMS_ARRAY *claims_array = &claims_set->claims_arrays[i];
+		uint32_t j;
+
+		switch (claims_array->claims_source_type) {
+		case CLAIMS_SOURCE_TYPE_AD:
+		case CLAIMS_SOURCE_TYPE_CERTIFICATE:
+			break;
+		default:
+			/* Ignore any claims of a type we don’t recognize. */
+			continue;
+		}
+
+		for (j = 0; j < claims_array->claims_count; ++j) {
+			const struct CLAIM_ENTRY *claim_entry = &claims_array->claim_entries[j];
+			const char *name = NULL;
+			union claim_values *claim_values = NULL;
+			uint32_t n_values;
+			enum security_claim_value_type value_type;
+
+			switch (claim_entry->type) {
+			case CLAIM_TYPE_INT64:
+			{
+				const struct CLAIM_INT64 *values = &claim_entry->values.claim_int64;
+				uint32_t k;
+
+				n_values = values->value_count;
+				value_type = CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64;
+
+				claim_values = talloc_array(claims,
+							    union claim_values,
+							    n_values);
+				if (claim_values == NULL) {
+					talloc_free(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
+
+				for (k = 0; k < n_values; ++k) {
+					int64_t *value = NULL;
+					uint32_t m;
+
+					/*
+					 * Ensure that there are no duplicate
+					 * values (very inefficiently, in
+					 * O(n²)).
+					 */
+					for (m = 0; m < k; ++m) {
+						if (values->values[m] == values->values[k]) {
+							talloc_free(tmp_ctx);
+							return NT_STATUS_INVALID_PARAMETER;
+						}
+					}
+
+					value = talloc(mem_ctx, int64_t);
+					if (value == NULL) {
+						talloc_free(tmp_ctx);
+						return NT_STATUS_NO_MEMORY;
+					}
+
+					*value = values->values[k];
+					claim_values[k].int_value = value;
+				}
+
+				break;
+			}
+			case CLAIM_TYPE_UINT64:
+			case CLAIM_TYPE_BOOLEAN:
+			{
+				const struct CLAIM_UINT64 *values = &claim_entry->values.claim_uint64;
+				uint32_t k;
+
+				n_values = values->value_count;
+				value_type = (claim_entry->type == CLAIM_TYPE_UINT64)
+					? CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64
+					: CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN;
+
+				claim_values = talloc_array(claims,
+							    union claim_values,
+							    n_values);
+				if (claim_values == NULL) {
+					talloc_free(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
+
+				for (k = 0; k < n_values; ++k) {
+					uint64_t *value = NULL;
+					uint32_t m;
+
+					/*
+					 * Ensure that there are no duplicate
+					 * values (very inefficiently, in
+					 * O(n²)).
+					 */
+					for (m = 0; m < k; ++m) {
+						if (values->values[m] == values->values[k]) {
+							talloc_free(tmp_ctx);
+							return NT_STATUS_INVALID_PARAMETER;
+						}
+					}
+
+					value = talloc(mem_ctx, uint64_t);
+					if (value == NULL) {
+						talloc_free(tmp_ctx);
+						return NT_STATUS_NO_MEMORY;
+					}
+
+					*value = values->values[k];
+					claim_values[k].uint_value = value;
+				}
+
+				break;
+			}
+			case CLAIM_TYPE_STRING:
+			{
+				const struct CLAIM_STRING *values = &claim_entry->values.claim_string;
+				uint32_t k;
+
+				n_values = values->value_count;
+				value_type = CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING;
+
+				claim_values = talloc_array(claims,
+							    union claim_values,
+							    n_values);
+				if (claim_values == NULL) {
+					talloc_free(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
+
+				for (k = 0; k < n_values; ++k) {
+					const char *string_value = NULL;
+					uint32_t m;
+
+					/*
+					 * Ensure that there are no duplicate
+					 * values (very inefficiently, in
+					 * O(n²)).
+					 */
+					for (m = 0; m < k; ++m) {
+						if (values->values[m] == NULL && values->values[k] == NULL) {
+							talloc_free(tmp_ctx);
+							return NT_STATUS_INVALID_PARAMETER;
+						}
+
+						if (values->values[m] != NULL &&
+						    values->values[k] != NULL &&
+						    strcasecmp_m(values->values[m], values->values[k]) == 0)
+						{
+							talloc_free(tmp_ctx);
+							return NT_STATUS_INVALID_PARAMETER;
+						}
+					}
+
+					if (values->values[k] != NULL) {
+						string_value = talloc_strdup(claim_values, values->values[k]);
+						if (string_value == NULL) {
+							talloc_free(tmp_ctx);
+							return NT_STATUS_NO_MEMORY;
+						}
+					}
+
+					claim_values[k].string_value = string_value;
+				}
+
+				break;
+			}
+			default:
+				/*
+				 * Other claim types are unsupported — just skip
+				 * them.
+				 */
+				continue;
+			}
+
+			claims = talloc_realloc(tmp_ctx,
+						claims,
+						struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1,
+						++n_claims);
+			if (claims == NULL) {
+				talloc_free(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			if (claim_entry->id != NULL) {
+				name = talloc_strdup(claims, claim_entry->id);
+				if (name == NULL) {
+					talloc_free(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
+
+			claims[n_claims - 1] = (struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1) {
+				.name = name,
+				.value_type = value_type,
+				.flags = 0,
+				.value_count = n_values,
+				.values = claim_values,
+			};
+		}
+	}
+
+	*out_claims = talloc_move(mem_ctx, &claims);
+	*out_n_claims = n_claims;
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
 }

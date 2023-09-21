@@ -21,7 +21,9 @@
 
 #include "replace.h"
 #include <talloc.h>
+#include "libcli/util/ntstatus.h"
 
+struct CLAIMS_SET;
 struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1;
 struct ace_condition_token;
 struct security_token;
@@ -40,5 +42,10 @@ bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 			struct security_token *token,
 			const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 			const char *claim_type);
+
+NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
+				   const struct CLAIMS_SET *claims_set,
+				   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **out_claims,
+				   uint32_t *out_n_claims);
 
 #endif /* LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H */
