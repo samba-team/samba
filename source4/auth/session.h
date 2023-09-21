@@ -81,5 +81,8 @@ struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx,
 					struct loadparm_context *lp_ctx,
 					struct dom_sid *domain_sid);
 
+NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
+			   struct CLAIMS_SET *claims_set,
+			   DATA_BLOB *claims_blob);
 
 #endif /* _SAMBA_AUTH_SESSION_H */

@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "lzxpress_huffman.h"
 #include "lib/util/binsearch.h"
+#include "auth/session.h"
 
 #undef strcasecmp
 
@@ -677,65 +678,6 @@ static uint32_t claim_get_value_count(const struct CLAIM_ENTRY *claim)
 
 	smb_panic(__location__ ": unknown claim type");
 	return 0;
-}
-
-static NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
-				  struct CLAIMS_SET *claims_set,
-				  DATA_BLOB *claims_blob)
-{
-	TALLOC_CTX *tmp_ctx = NULL;
-	enum ndr_err_code ndr_err;
-	struct CLAIMS_SET_NDR *claims_set_info = NULL;
-	struct CLAIMS_SET_METADATA *metadata = NULL;
-	struct CLAIMS_SET_METADATA_NDR *metadata_ndr = NULL;
-
-	if (claims_blob == NULL) {
-		return NT_STATUS_INVALID_PARAMETER_3;
-	}
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	metadata_ndr = talloc_zero(tmp_ctx, struct CLAIMS_SET_METADATA_NDR);
-	if (metadata_ndr == NULL) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	metadata = talloc_zero(metadata_ndr, struct CLAIMS_SET_METADATA);
-	if (metadata == NULL) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	claims_set_info = talloc_zero(metadata, struct CLAIMS_SET_NDR);
-	if (claims_set_info == NULL) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	metadata_ndr->claims.metadata = metadata;
-
-	metadata->claims_set = claims_set_info;
-	metadata->compression_format = CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF;
-
-	claims_set_info->claims.claims = claims_set;
-
-	ndr_err = ndr_push_struct_blob(claims_blob, mem_ctx, metadata_ndr,
-				       (ndr_push_flags_fn_t)ndr_push_CLAIMS_SET_METADATA_NDR);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
-		DBG_ERR("CLAIMS_SET_METADATA_NDR push failed: %s\n",
-			nt_errstr(nt_status));
-
-		talloc_free(tmp_ctx);
-		return nt_status;
-	}
-
-	talloc_free(tmp_ctx);
-	return NT_STATUS_OK;
 }
 
 static bool is_schema_dn(struct ldb_dn *dn,
