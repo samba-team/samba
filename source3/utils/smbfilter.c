@@ -120,7 +120,7 @@ static void filter_request(char *buf, size_t buf_len)
 				return;
 			}
 
-			d_printf("sesion_request: %s -> %s\n",
+			d_printf("session_request: %s -> %s\n",
 				 name1, name2);
 			if (netbiosname) {
 				char *mangled = name_mangle(
