@@ -453,16 +453,6 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * If we have resource groups and the caller wants them returned, we
-	 * oblige.
-	 */
-	if (resource_groups != NULL &&
-	    info.logon_info.info->resource_groups.groups.count != 0)
-	{
-		*resource_groups = &info.logon_info.info->resource_groups;
-	}
-
-	/*
 	 * Based on the presence of a REQUESTER_SID PAC buffer, ascertain
 	 * whether the ticket is a TGT. This helps the KDC and kpasswd service
 	 * ensure they do not accept tickets meant for the other.
@@ -481,6 +471,16 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	} else {
 		/* This probably is a TGT. */
 		user_info_dc_out->ticket_type = TICKET_TYPE_TGT;
+	}
+
+	/*
+	 * If we have resource groups and the caller wants them returned, we
+	 * oblige.
+	 */
+	if (resource_groups != NULL &&
+	    info.logon_info.info->resource_groups.groups.count != 0)
+	{
+		*resource_groups = &info.logon_info.info->resource_groups;
 	}
 
 	*user_info_dc = user_info_dc_out;
