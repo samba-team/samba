@@ -70,7 +70,7 @@ kerb_prompter(krb5_context ctx, void *data,
 			 * password. If we return 0 (i.e. success), we will be
 			 * spinning in the endless for-loop in
 			 * change_password() in
-			 * source4/heimdal/lib/krb5/init_creds_pw.c:526ff
+			 * third_party/heimdal/lib/krb5/init_creds_pw.c
 			 */
 			return KRB5KDC_ERR_KEY_EXPIRED;
 		}
