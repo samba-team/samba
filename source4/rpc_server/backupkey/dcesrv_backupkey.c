@@ -445,7 +445,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 
 		/*
 		 * We free it after the sha1 calculation because blob.data
-		 * point to the same area
+		 * points to the same area
 		 */
 
 		if (!mem_equal_const_time(hash, uncrypted_accesscheckv2.hash, hash_size)) {
@@ -486,7 +486,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 
 		/*
 		 * We free it after the sha1 calculation because blob.data
-		 * point to the same area
+		 * points to the same area
 		 */
 
 		if (!mem_equal_const_time(hash, uncrypted_accesscheckv3.hash, hash_size)) {
@@ -1598,7 +1598,7 @@ static WERROR bkrp_generic_decrypt_data(struct dcesrv_call_state *dce_call, TALL
  * will be stored.  There is only one active encryption key per domain,
  * it is pointed at with G$BCKUPKEY_P in the LSA secrets store.
  *
- * The potentially multiple valid decryptiong keys (and the encryption
+ * The potentially multiple valid decryption keys (and the encryption
  * key) are in turn stored in the LSA secrets store as
  * G$BCKUPKEY_keyGuidString.
  *

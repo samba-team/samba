@@ -482,7 +482,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	bool is_schema_nc = getnc_state->is_schema_nc;
 	uint64_t highest_usn = getnc_state->min_usn;
 
-	/* make dsdb sytanx context for conversions */
+	/* make dsdb syntax context for conversions */
 	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
 	syntax_ctx.is_schema_nc = is_schema_nc;
 
@@ -2955,7 +2955,7 @@ allowed:
 	}
 
 	if (req10->replica_flags & DRSUAPI_DRS_FULL_SYNC_PACKET) {
-		/* Ignore the _in_ uptpdateness vector*/
+		/* Ignore the _in_ uptodateness vector*/
 		req10->uptodateness_vector = NULL;
 	}
 
@@ -3824,7 +3824,7 @@ allowed:
 			 * We need to make sure that we never return the
 			 * same highwatermark within the same replication
 			 * cycle more than once. Otherwise we cannot detect
-			 * when the client uses an unexptected highwatermark.
+			 * when the client uses an unexpected highwatermark.
 			 *
 			 * This is a HACK which is needed because our
 			 * object ordering is wrong and set tmp_highest_usn
