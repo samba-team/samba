@@ -27,7 +27,7 @@
 #endif
 
 /*
- * These variables are static so that we can print them in access them
+ * These variables are static so that we can access them
  * with process_get_short_title() and process_get_long_title().  The
  * purpose of this is to allow smb_panic_log() to print them.
  */
