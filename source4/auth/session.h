@@ -37,6 +37,30 @@ struct ldb_dn;
  * the off-host credentials */
 struct auth_session_info *system_session(struct loadparm_context *lp_ctx) ;
 
+enum claims_data_present {
+	CLAIMS_DATA_ENCODED_CLAIMS_PRESENT = 0x01,
+	CLAIMS_DATA_CLAIMS_PRESENT = 0x02,
+	CLAIMS_DATA_SECURITY_CLAIMS_PRESENT = 0x04,
+};
+
+struct claims_data {
+	DATA_BLOB encoded_claims_set;
+	struct CLAIMS_SET *claims_set;
+	/*
+	 * These security claims are here treated as only a product — the result
+	 * of conversion from another format — and ought not to be treated as
+	 * authoritative.
+	 */
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *security_claims;
+	uint32_t n_security_claims;
+	enum claims_data_present flags;
+};
+
+struct auth_claims {
+	struct claims_data *user_claims;
+	struct claims_data *device_claims;
+};
+
 NTSTATUS auth_anonymous_user_info_dc(TALLOC_CTX *mem_ctx,
 					     const char *netbios_name,
 					     struct auth_user_info_dc **interim_info);
@@ -88,5 +112,38 @@ struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx,
 NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
 			   struct CLAIMS_SET *claims_set,
 			   DATA_BLOB *claims_blob);
+
+/*
+ * Construct a ‘claims_data’ structure from a claims blob, such as is found in a
+ * PAC.
+ */
+NTSTATUS claims_data_from_encoded_claims_set(TALLOC_CTX *claims_data_ctx,
+					     const DATA_BLOB *encoded_claims_set,
+					     struct claims_data **out);
+
+/*
+ * Construct a ‘claims_data’ structure from a talloc‐allocated claims set, such
+ * as we might build from searching the database. If this function returns
+ * successfully, it assumes ownership of the claims set.
+ */
+NTSTATUS claims_data_from_claims_set(TALLOC_CTX *claims_data_ctx,
+				     struct CLAIMS_SET *claims_set,
+				     struct claims_data **out);
+
+/*
+ * From a ‘claims_data’ structure, return an encoded claims blob that can be put
+ * into a PAC.
+ */
+NTSTATUS claims_data_encoded_claims_set(struct claims_data *claims_data,
+					DATA_BLOB *encoded_claims_set_out);
+
+/*
+ * From a ‘claims_data’ structure, return an array of security claims that can
+ * be put in a security token for access checks.
+ */
+NTSTATUS claims_data_security_claims(TALLOC_CTX *mem_ctx,
+				     struct claims_data *claims_data,
+				     struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **security_claims_out,
+				     uint32_t *n_security_claims_out);
 
 #endif /* _SAMBA_AUTH_SESSION_H */

@@ -27,7 +27,10 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "libcli/security/security.h"
+#include "libcli/security/claims-conversions.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/claims.h"
+#include "librpc/gen_ndr/ndr_claims.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/session_proto.h"
 #include "system/kerberos.h"
@@ -506,5 +509,237 @@ NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
 	}
 
 	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/*
+ * Construct a ‘claims_data’ structure from a claims blob, such as is found in a
+ * PAC.
+ */
+NTSTATUS claims_data_from_encoded_claims_set(TALLOC_CTX *claims_data_ctx,
+					     const DATA_BLOB *encoded_claims_set,
+					     struct claims_data **out)
+{
+	struct claims_data *claims_data = NULL;
+	DATA_BLOB data = {};
+
+	if (out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*out = NULL;
+
+	claims_data = talloc(claims_data_ctx, struct claims_data);
+	if (claims_data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (encoded_claims_set != NULL) {
+		/*
+		 * We make a copy of the data, for it might not be
+		 * talloc‐allocated — we might have obtained it directly with
+		 * krb5_pac_get_buffer().
+		 */
+		data = data_blob_dup_talloc(claims_data, *encoded_claims_set);
+		if (data.length != encoded_claims_set->length) {
+			talloc_free(claims_data);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	*claims_data = (struct claims_data) {
+		.encoded_claims_set = data,
+		.flags = CLAIMS_DATA_ENCODED_CLAIMS_PRESENT,
+	};
+
+	*out = claims_data;
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Construct a ‘claims_data’ structure from a talloc‐allocated claims set, such
+ * as we might build from searching the database. If this function returns
+ * successfully, it assumes ownership of the claims set.
+ */
+NTSTATUS claims_data_from_claims_set(TALLOC_CTX *claims_data_ctx,
+				     struct CLAIMS_SET *claims_set,
+				     struct claims_data **out)
+{
+	struct claims_data *claims_data = NULL;
+
+	if (out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*out = NULL;
+
+	claims_data = talloc(claims_data_ctx, struct claims_data);
+	if (claims_data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*claims_data = (struct claims_data) {
+		.claims_set = talloc_steal(claims_data, claims_set),
+		.flags = CLAIMS_DATA_CLAIMS_PRESENT,
+	};
+
+	*out = claims_data;
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * From a ‘claims_data’ structure, return an encoded claims blob that can be put
+ * into a PAC.
+ */
+NTSTATUS claims_data_encoded_claims_set(struct claims_data *claims_data,
+					DATA_BLOB *encoded_claims_set_out)
+{
+	if (encoded_claims_set_out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*encoded_claims_set_out = data_blob_null;
+
+	if (claims_data == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (!(claims_data->flags & CLAIMS_DATA_ENCODED_CLAIMS_PRESENT)) {
+		NTSTATUS status;
+
+		/* See whether we have a claims set that we can encode. */
+		if (!(claims_data->flags & CLAIMS_DATA_CLAIMS_PRESENT)) {
+			return NT_STATUS_OK;
+		}
+
+		status = encode_claims_set(claims_data,
+					   claims_data->claims_set,
+					   &claims_data->encoded_claims_set);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		claims_data->flags |= CLAIMS_DATA_ENCODED_CLAIMS_PRESENT;
+	}
+
+	*encoded_claims_set_out = claims_data->encoded_claims_set;
+	return NT_STATUS_OK;
+}
+
+/*
+ * From a ‘claims_data’ structure, return an array of security claims that can
+ * be put in a security token for access checks.
+ */
+NTSTATUS claims_data_security_claims(TALLOC_CTX *mem_ctx,
+				     struct claims_data *claims_data,
+				     struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **security_claims_out,
+				     uint32_t *n_security_claims_out)
+{
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *security_claims = NULL;
+	uint32_t n_security_claims;
+	NTSTATUS status;
+
+	if (security_claims_out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (n_security_claims_out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*security_claims_out = NULL;
+	*n_security_claims_out = 0;
+
+	if (claims_data == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (!(claims_data->flags & CLAIMS_DATA_SECURITY_CLAIMS_PRESENT)) {
+		struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *decoded_claims = NULL;
+		uint32_t n_decoded_claims = 0;
+
+		/* See whether we have a claims set that we can convert. */
+		if (!(claims_data->flags & CLAIMS_DATA_CLAIMS_PRESENT)) {
+
+			/*
+			 * See whether we have an encoded claims set that we can
+			 * decode.
+			 */
+			if (!(claims_data->flags & CLAIMS_DATA_ENCODED_CLAIMS_PRESENT)) {
+				/* We don’t have anything. */
+				return NT_STATUS_OK;
+			}
+
+			/* Decode an existing claims set. */
+
+			if (claims_data->encoded_claims_set.length) {
+				TALLOC_CTX *tmp_ctx = NULL;
+				struct CLAIMS_SET_METADATA_NDR claims;
+				const struct CLAIMS_SET_METADATA *metadata = NULL;
+				enum ndr_err_code ndr_err;
+
+				tmp_ctx = talloc_new(claims_data);
+				if (tmp_ctx == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+
+				ndr_err = ndr_pull_struct_blob(&claims_data->encoded_claims_set,
+							       tmp_ctx,
+							       &claims,
+							       (ndr_pull_flags_fn_t)ndr_pull_CLAIMS_SET_METADATA_NDR);
+				if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+					status = ndr_map_error2ntstatus(ndr_err);
+					DBG_ERR("Failed to parse encoded claims set: %s\n",
+						nt_errstr(status));
+					talloc_free(tmp_ctx);
+					return status;
+				}
+
+				metadata = claims.claims.metadata;
+				if (metadata != NULL) {
+					struct CLAIMS_SET_NDR *claims_set_ndr = metadata->claims_set;
+					if (claims_set_ndr != NULL) {
+						struct CLAIMS_SET **claims_set = &claims_set_ndr->claims.claims;
+
+						claims_data->claims_set = talloc_move(claims_data, claims_set);
+					}
+				}
+
+				talloc_free(tmp_ctx);
+			}
+
+			claims_data->flags |= CLAIMS_DATA_CLAIMS_PRESENT;
+		}
+
+		/*
+		 * Convert the decoded claims set to the security attribute
+		 * claims format.
+		 */
+		status = token_claims_to_claims_v1(claims_data,
+						   claims_data->claims_set,
+						   &decoded_claims,
+						   &n_decoded_claims);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		claims_data->security_claims = decoded_claims;
+		claims_data->n_security_claims = n_decoded_claims;
+
+		claims_data->flags |= CLAIMS_DATA_SECURITY_CLAIMS_PRESENT;
+	}
+
+	if (claims_data->security_claims != NULL) {
+		security_claims = talloc_reference(mem_ctx, claims_data->security_claims);
+		if (security_claims == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	n_security_claims = claims_data->n_security_claims;
+
+	*security_claims_out = security_claims;
+	*n_security_claims_out = n_security_claims;
+
 	return NT_STATUS_OK;
 }
