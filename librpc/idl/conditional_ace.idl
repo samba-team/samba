@@ -275,9 +275,8 @@ interface conditional_ace
 		uint8 base;
 	} ace_condition_int;
 
-	typedef struct {
-		[string, charset(UTF16)]uint8 *value;
-		uint32 length;
+	typedef [public] struct {
+		[flag(STR_SIZE4|STR_NOTERM|STR_BYTESIZE)] string value;
 	} ace_condition_unicode;
 
 	typedef [public] struct {

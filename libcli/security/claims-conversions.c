@@ -56,28 +56,14 @@ static bool claim_v1_string_to_ace_string(
 	size_t offset,
 	struct ace_condition_token *result)
 {
-	/*
-	 * A _v1 name string is NUL-terminated, while a conditional
-	 * ACE is length-deliminated. We choose to copy the \0.
-	 */
-	size_t len;
-	char *s = talloc_strndup(mem_ctx,
-				 claim->values[offset].string_value,
-				 CONDITIONAL_ACE_MAX_LENGTH);
+	char *s = talloc_strdup(mem_ctx,
+				claim->values[offset].string_value);
 	if (s == NULL) {
 		return false;
 	}
 
-	len = talloc_get_size(s) - 1;
-	if (len >= CONDITIONAL_ACE_MAX_LENGTH) {
-		DBG_WARNING("claim has string of unexpected length %zu or more\n",
-			    len);
-		TALLOC_FREE(s);
-		return false;
-	}
 	result->type = CONDITIONAL_ACE_TOKEN_UNICODE;
 	result->data.unicode.value = s;
-	result->data.unicode.length = len;
 	return true;
 }
 
@@ -346,9 +332,8 @@ static bool ace_string_to_claim_v1_string(TALLOC_CTX *mem_ctx,
 					  struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 					  size_t offset)
 {
-	const char *s = talloc_strndup(mem_ctx,
-				       tok->data.unicode.value,
-				       tok->data.unicode.length);
+	const char *s = talloc_strdup(mem_ctx,
+				      tok->data.unicode.value);
 	if (s == NULL) {
 		return false;
 	}

@@ -530,20 +530,18 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 		case CONDITIONAL_ACE_USER_ATTRIBUTE:
 		case CONDITIONAL_ACE_RESOURCE_ATTRIBUTE:
 		case CONDITIONAL_ACE_DEVICE_ATTRIBUTE:
-			utf8_len = MIN(tok->data.unicode.length, 40);
 			snprintf(line, sizeof(line),
-				 "%s.%.*s  (any type)\n",
-				 nom, utf8_len,
+				 "%s.%s  (any type)\n",
+				 nom,
 				 tok->data.unicode.value
 				);
 			type = '?';
 			break;
 
 		case CONDITIONAL_ACE_TOKEN_UNICODE:
-			utf8_len = MIN(tok->data.unicode.length, 20);
 			snprintf(line, sizeof(line),
-				 "%s.%.*s  (any type)\n",
-				 nom, utf8_len,
+				 "%s.%s  (any type)\n",
+				 nom,
 				 tok->data.unicode.value
 				);
 			type = 'u';
@@ -720,7 +718,6 @@ static bool sddl_should_escape_utf16(uint16_t c)
 
 static bool sddl_encode_attr_name(TALLOC_CTX *mem_ctx,
 				  const char *src,
-				  size_t src_len,
 				  char **dest,
 				  size_t *dest_len)
 {
@@ -730,6 +727,7 @@ static bool sddl_encode_attr_name(TALLOC_CTX *mem_ctx,
 	char *escaped = NULL;
 	size_t utf16_byte_len;
 	size_t utf16_len;
+	size_t src_len = strlen(src);
 	size_t escapees;
 	size_t required;
 	*dest = NULL;
@@ -809,7 +807,6 @@ static bool sddl_write_attr(struct sddl_write_context *ctx,
 	size_t i;
 	bool ok = sddl_encode_attr_name(ctx->mem_ctx,
 					tok->data.local_attr.value,
-					tok->data.local_attr.length,
 					&name, &name_len);
 	if (!ok) {
 		return false;
@@ -844,17 +841,14 @@ static bool sddl_write_unicode(struct sddl_write_context *ctx,
 	 * Apparently unicode strings have no mechanism for escapes, which is
 	 * nice at this point.
 	 *
-	 * Probably we could rely on tok->data.unicode.value being
-	 * nul-terminated and a talloc_asprintf().
+	 * We rely on tok->data.unicode.value being
+	 * nul-terminated.
 	 */
-	quoted = talloc_size(ctx->mem_ctx, tok->data.unicode.length + 3);
+	quoted = talloc_asprintf(ctx->mem_ctx, "\"%s\"",
+				 tok->data.unicode.value);
 	if (quoted == NULL) {
 		return false;
 	}
-	quoted[0] = '"';
-	memcpy(quoted + 1, tok->data.unicode.value, tok->data.unicode.length);
-	quoted[tok->data.unicode.length + 1] = '"';
-	quoted[tok->data.unicode.length + 2] = '\0';
 	ok = sddl_write(ctx, quoted);
 	TALLOC_FREE(quoted);
 	return ok;
@@ -1535,7 +1529,6 @@ static ssize_t read_attr2_string(
 		return -1;
 	}
 
-	dest->length = utf8_len;
 	/* returning bytes consumed, not necessarily the length of token */
 	return src_len;
 }
@@ -1878,7 +1871,6 @@ static bool parse_unicode(struct ace_condition_sddl_compiler_context *comp)
 	comp->offset += len + 1;	/* +1 for the final quote */
 	token.type = CONDITIONAL_ACE_TOKEN_UNICODE;
 	token.data.unicode.value = s;
-	token.data.unicode.length = len;
 
 	return write_sddl_token(comp, token);
 }
@@ -2302,7 +2294,6 @@ static bool parse_word(struct ace_condition_sddl_compiler_context *comp)
 	}
 	s[i] = 0;
 	token.data.local_attr.value = s;
-	token.data.local_attr.length = i;
 	comp->offset += i;
 	return write_sddl_token(comp, token);
 }
@@ -3258,7 +3249,6 @@ char *sddl_resource_attr_from_claim(
 	/* escape the claim name */
 	ok = sddl_encode_attr_name(tmp_ctx,
 				   claim->name,
-				   strlen(claim->name),
 				   &name, &name_len);
 
 	if (!ok) {

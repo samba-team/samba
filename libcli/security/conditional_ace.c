@@ -152,97 +152,45 @@ static ssize_t push_integer(uint8_t *data, size_t available,
 }
 
 
-static ssize_t pull_unicode(TALLOC_CTX *mem_ctx, uint8_t *data, size_t length,
-			    struct ace_condition_unicode *tok)
+static ssize_t pull_unicode(TALLOC_CTX *mem_ctx,
+			uint8_t *data, size_t length,
+			struct ace_condition_unicode *tok)
 {
-	char *utf8 = NULL;
-	uint8_t *utf16 = NULL;
-	size_t utf8_len;
-	uint32_t utf16_len;
-	uint32_t i;
-	bool ok;
-	if (length < 4) {
+	ssize_t bytes_used;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB v = data_blob_const(data, length);
+	struct ndr_pull *ndr = ndr_pull_init_blob(&v, mem_ctx);
+	if (ndr == NULL) {
 		return -1;
 	}
-	utf16_len = PULL_LE_U32(data, 0);
-	if (utf16_len > length - 4) {
+	ndr_err = ndr_pull_ace_condition_unicode(ndr, NDR_SCALARS|NDR_BUFFERS, tok);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(ndr);
 		return -1;
 	}
-	if (utf16_len & 1) {
-		/* we need an even number of bytes */
-		return -1;
-	}
-	utf16 = data + 4;
-	/*
-	 * The string in the ACE blob is utf-16, which we convert to
-	 * utf-8 for further processing.
-	 *
-	 * There may be inefficencies here (FIXME, etc, if you dare),
-	 * and we might prefer to keep it as utf-16 in the runtime.
-	 * But maybe not.
-	 */
-	for (i = 0; i < utf16_len; i += 2) {
-		/*
-		 * A 0x0000 codepoint is illegal. The string is length-bound,
-		 * not NUL-terminated. If we don't do this the string will be
-		 * truncated at the first 0x0000, which is not terrible, but
-		 * not expected, and it makes round-trip assertions
-		 * impossible.
-		 */
-		if (utf16[i] == 0 && utf16[i + 1] == 0) {
-			return -1;
-		}
-	}
-
-	ok = convert_string_talloc(mem_ctx,
-				   CH_UTF16LE, CH_UTF8,
-				   utf16, utf16_len,
-				   &utf8, &utf8_len);
-	if (!ok) {
-		return -1;
-	}
-	if (utf16_len == 0) {
-		/*
-		 * This is a special case, because convert_string_talloc()
-		 * will turn a length 0 string into a length 1 string
-		 * containing a zero byte. This is not the same as returning
-		 * the truly allocated size, counting the '\0' for all strings
-		 * -- it only happens for the empty string.
-		 */
-		utf8_len = 0;
-	}
-	tok->value = utf8;
-	tok->length = utf8_len;
-	return utf16_len + 4;
+	bytes_used = ndr->offset;
+	TALLOC_FREE(ndr);
+	return bytes_used;
 }
 
-static ssize_t push_unicode(uint8_t *data, size_t length,
-			    const struct ace_condition_unicode *tok)
+static ssize_t push_unicode(uint8_t *data, size_t available,
+			const struct ace_condition_unicode *tok)
 {
-	/*
-	 * The string stored in the token is utf-8, but must be
-	 * converted to utf-16 in the compiled ACE.
-	 */
-	bool ok;
-	size_t bytes_written;
-	uint8_t *length_goes_here = data;
-
-	if (length < 4) {
+	enum ndr_err_code ndr_err;
+	DATA_BLOB v;
+	ndr_err = ndr_push_struct_blob(&v, NULL,
+				       tok,
+				       (ndr_push_flags_fn_t)ndr_push_ace_condition_unicode);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
-	length -= 4;
-	data += 4;
-
-	//XXX do we allow an empty string?
-	ok = convert_string_error(CH_UTF8, CH_UTF16LE,
-				  tok->value, tok->length,
-				  data, length,
-				  &bytes_written);
-	if (! ok || bytes_written > length) {
+	if (available < v.length) {
+		talloc_free(v.data);
 		return -1;
 	}
-	PUSH_LE_U32(length_goes_here, 0, bytes_written);
-	return bytes_written + 4;
+	memcpy(data, v.data, v.length);
+	talloc_free(v.data);
+	return v.length;
 }
 
 
@@ -812,9 +760,9 @@ static bool resource_claim_lookup(
 	name = op->data.resource_attr;
 
 	if (sd->sacl == NULL) {
-		DBG_NOTICE("Resource attribute ACE '%*s' not found, "
+		DBG_NOTICE("Resource attribute ACE '%s' not found, "
 			   "because there is no SACL\n",
-			   name.length, name.value);
+			   name.value);
 		return true;
 	}
 
@@ -825,9 +773,8 @@ static bool resource_claim_lookup(
 		if (ace->type != SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE) {
 			continue;
 		}
-		if (strncasecmp_m(name.value,
-				  ace->coda.claim.name,
-				  name.length) != 0) {
+		if (strcasecmp_m(name.value,
+				 ace->coda.claim.name) != 0) {
 			continue;
 		}
 		/* this is the one */
@@ -836,8 +783,8 @@ static bool resource_claim_lookup(
 			return true;
 		}
 	}
-	DBG_NOTICE("Resource attribute ACE '%*s' not found.\n",
-		   name.length, name.value);
+	DBG_NOTICE("Resource attribute ACE '%s' not found.\n",
+		   name.value);
 	return false;
 }
 
@@ -894,7 +841,7 @@ static bool token_claim_lookup(
 			DBG_ERR("claim %zu has no name!\n", i);
 			continue;
 		}
-		if (strncasecmp_m(claims[i].name, name->value, name->length) == 0) {
+		if (strcasecmp_m(claims[i].name, name->value) == 0) {
 			/* this is the one */
 			ok = claim_lookup_internal(mem_ctx, &claims[i], result);
 			return ok;
@@ -1111,7 +1058,7 @@ static bool ternary_value(
 	}
 	if (arg->type == CONDITIONAL_ACE_TOKEN_UNICODE) {
 		/* empty is false */
-		if (arg->data.unicode.length == 0) {
+		if (arg->data.unicode.value[0] == '\0') {
 			result->data.result.value = ACE_CONDITION_FALSE;
 		} else {
 			result->data.result.value = ACE_CONDITION_TRUE;
@@ -1399,12 +1346,9 @@ static bool compare_unicode(const struct ace_condition_token *op,
 	 */
 	uint8_t flags = lhs->flags | rhs->flags;
 	if (flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE) {
-		*cmp = memcmp(a.value, b.value, MIN(a.length, b.length));
+		*cmp = strcmp(a.value, b.value);
 	} else {
-		*cmp = strncasecmp_m(a.value, b.value, MIN(a.length, b.length));
-	}
-	if (*cmp == 0) {
-		*cmp = a.length - b.length;
+		*cmp = strcasecmp_m(a.value, b.value);
 	}
 	return true;
 }
