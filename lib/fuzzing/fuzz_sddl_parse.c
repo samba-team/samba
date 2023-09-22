@@ -20,6 +20,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/conditional_ace.h"
 #include "fuzzing/fuzzing.h"
+#include "util/charset/charset.h"
 
 #define MAX_LENGTH (100 * 1024 - 1)
 static char sddl_string[MAX_LENGTH + 1] = {0};
@@ -55,6 +56,28 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 		goto end;
 	}
 	result = sddl_encode(mem_ctx, sd1, &dom_sid);
+	if (result == NULL) {
+		/*
+		 * Because Samba currently doesn't enforce strict
+		 * utf-8 parsing, illegal utf-8 sequences in
+		 * sddl_string could have ferried bad characters
+		 * through into the security descriptor conditions
+		 * that we then find we can't encode.
+		 *
+		 * The proper solution is strict UTF-8 enforcement in
+		 * sddl_decode, but for now we forgive unencodable
+		 * security descriptors made from bad utf-8.
+		 */
+		size_t byte_len, char_len, utf16_len;
+		ok = utf8_check(sddl_string, len,
+				&byte_len, &char_len, &utf16_len);
+		if (!ok) {
+			goto end;
+		}
+		/* utf-8 was fine, but we couldn't encode! */
+		abort();
+	}
+
 	sd2 = sddl_decode(mem_ctx, result, &dom_sid);
 	if (sd2 == NULL) {
 		if (strlen(result) > CONDITIONAL_ACE_MAX_LENGTH) {
