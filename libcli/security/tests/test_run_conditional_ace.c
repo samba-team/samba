@@ -570,16 +570,7 @@ static void test_resource_ace_multi_any_of(void **state)
 	ALLOW_CHECK(0x10);
 }
 
-
 static void test_horrible_fuzz_derived_test_3(void **state)
-{
-	INIT();
-	USER_SIDS("WD", "AA", "IS");
-	SD("S:PPPPPPD:(XD;OI;0x1;;;IS;())(OL;;GR;;;S-1-5-75-552)");
-	DENY_CHECK(0x1);
-}
-
-static void test_horrible_fuzz_derived_test_4(void **state)
 {
 	INIT();
 	USER_SIDS("WD", "AA", "IS");
@@ -637,7 +628,6 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_not_Not_Any_of_1),
 		cmocka_unit_test(test_not_any_of_composite_1),
 		cmocka_unit_test(test_resource_ace_single),
-		cmocka_unit_test(test_horrible_fuzz_derived_test_4),
 		cmocka_unit_test(test_horrible_fuzz_derived_test_3),
 		cmocka_unit_test(test_Device_Member_of_and_Member_of),
 		cmocka_unit_test(test_resource_ace_multi),

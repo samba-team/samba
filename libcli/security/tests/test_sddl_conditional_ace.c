@@ -754,18 +754,29 @@ static void test_a_number_of_invalid_strings(void **state)
 	 * These expressions should fail to parse.
 	 */
 	static const char *sddl[] = {
+		/* '!' is only allowed before parens or @attr */
 		"(!!! !!!  !!! Not_Member_of{SID(AA)}))",
+		/* overflowing numbers can't be sensibly interpreted */
 		("(@Device.bb == 055555624677746777766777767)"),
 		("(@Device.bb == 0x624677746777766777767)"),
 		("(@Device.bb == 624677746777766777767)"),
+		/* insufficient arguments */
 		"(!)",
 		"(x >)",
+		"(> 3)",
+		/* keyword as local attribute name */
 		"( Member_of Contains 3)",
+		/* no parens */
 		" x < 3",
+		/* wants '==' */
 		"( x = SID(BA))",
+		/* invalid SID strings */
 		"( x == SID(ZZ))",
+		"( x == SID(S-1-))",
 		"( x == SID())",
+		/* literal on LHS */
 		"(\"x\" == \"x\")",
+		/* odd number of digits following '#' */
 		"(OctetStringType==#1#2#3##))",
 	};
 	size_t i, length;

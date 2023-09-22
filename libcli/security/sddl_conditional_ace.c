@@ -39,6 +39,7 @@
 #define SDDL_FLAG_EXPECTING_PAREN            64
 #define SDDL_FLAG_EXPECTING_END             128
 #define SDDL_FLAG_EXPECTING_PAREN_LITERAL   256
+#define SDDL_FLAG_NOT_EXPECTING_END_PAREN   512
 
 #define SDDL_FLAG_IS_UNARY_OP               (1 << 20)
 #define SDDL_FLAG_IS_BINARY_OP              (1 << 21)
@@ -2559,6 +2560,8 @@ static bool parse_expression(struct ace_condition_sddl_compiler_context *comp)
 	comp->state = SDDL_FLAGS_EXPR_START;
 	DBG_INFO("%3"PRIu32": (\n", comp->offset);
 
+	comp->state |= SDDL_FLAG_NOT_EXPECTING_END_PAREN;
+
 	while (comp->offset < comp->length) {
 		uint8_t c;
 		ok = eat_whitespace(comp, false);
@@ -2576,6 +2579,13 @@ static bool parse_expression(struct ace_condition_sddl_compiler_context *comp)
 				 */
 				comp_error(comp,
 					   "operator lacks right hand argument");
+				return false;
+			}
+			if (comp->state & SDDL_FLAG_NOT_EXPECTING_END_PAREN) {
+				/*
+				 * You can't have "( )"
+				 */
+				comp_error(comp, "empty expression");
 				return false;
 			}
 			break;
