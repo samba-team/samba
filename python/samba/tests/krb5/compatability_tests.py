@@ -43,7 +43,7 @@ from samba.tests.krb5.rfc4120_constants import (
 global_asn1_print = False
 global_hexdump = False
 
-HIEMDAL_ENC_AS_REP_PART_TYPE_TAG = 0x79
+HEIMDAL_ENC_AS_REP_PART_TYPE_TAG = 0x79
 # MIT uses the EncTGSRepPart tag for the EncASRepPart
 MIT_ENC_AS_REP_PART_TYPE_TAG = 0x7A
 
@@ -65,7 +65,7 @@ class CompatabilityTests(KDCBaseTest):
     def test_heimdal_EncASRepPart_tag(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
-        self.assertEqual(HIEMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
+        self.assertEqual(HEIMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
 
     def test_mit_EncryptedData_kvno(self):
         creds = self.get_user_creds()
@@ -92,7 +92,7 @@ class CompatabilityTests(KDCBaseTest):
     def test_heimdal_and_windows_EncASRepPart_FAST_support(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
-        self.assertEqual(HIEMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
+        self.assertEqual(HEIMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
         as_rep = self.der_decode(enc, asn1Spec=krb5_asn1.EncASRepPart())
         flags = as_rep['flags']
         flags = int(as_rep['flags'], base=2)
