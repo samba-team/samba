@@ -364,11 +364,9 @@ static ssize_t pull_composite(TALLOC_CTX *mem_ctx,
 			break;
 
 		case CONDITIONAL_ACE_TOKEN_COMPOSITE:
-			consumed = pull_composite(mem_ctx,
-						  el_data,
-						  available,
-						  &el->data.composite);
-			break;
+			DBG_ERR("recursive composite tokens in conditional "
+				"ACEs are not currently supported\n");
+			goto error;
 		default:
 			goto error;
 		}
