@@ -586,8 +586,8 @@ static void test_round_trips(void **state)
 		("(@Device.%025cɜ == 3)"),
 		("(17pq == 3||2a==@USER.7)"),
 		("(x==1 && x >= 2 && @User.Title == @User.shoes || "
-		 "Member_of{SID(CD)} && !(Member_of_Any{{ 3 }}) || "
-		 "Device_Member_of{SID(BA), {{7, 1}, 3}} "
+		 "Member_of{SID(CD)} && !(Member_of_Any{ 3 }) || "
+		 "Device_Member_of{SID(BA), 7, 1, 3} "
 		 "|| Exists hooly)"),
 		("(!(!(!(!(!((!(x==1))))))))"),
 		("(Member_of {SID(S-1-33-5), "

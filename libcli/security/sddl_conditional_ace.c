@@ -944,8 +944,7 @@ static bool sddl_write_composite(struct sddl_write_context *ctx,
 			ok = sddl_write_sid(ctx, t);
 			break;
 		case CONDITIONAL_ACE_TOKEN_COMPOSITE:
-			ok = sddl_write_composite(ctx, t);
-			break;
+			return false;
 		default:
 			return false;
 		}
