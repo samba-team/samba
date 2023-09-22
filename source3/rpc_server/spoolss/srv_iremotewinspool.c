@@ -12,6 +12,7 @@
 #include "librpc/gen_ndr/ndr_spoolss_scompat.h"
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/spoolss/iremotewinspool_util.h"
 
 static bool forward_opnum_to_spoolss(uint16_t opnum) {
 	switch (opnum) {
@@ -53,10 +54,16 @@ NTSTATUS iremotewinspool__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 {
 	enum ndr_err_code ndr_err;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
+	uint16_t mapped_opnum;
 
 	dce_call->fault_code = 0;
 
 	if (forward_opnum_to_spoolss(opnum)) {
+		bool ok;
+		ok = iremotewinspool_map_opcode(opnum, &mapped_opnum);
+		if (ok) {
+			dce_call->pkt.u.request.opnum = mapped_opnum;
+		}
 		return spoolss__op_ndr_pull(dce_call, mem_ctx, pull, r);
 	}
 
