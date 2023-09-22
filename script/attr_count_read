@@ -83,7 +83,7 @@ def plot_pair_data(name, data, doc, lim=90):
     # 1. Some people won't have matplotlib, but might want to run the
     #    script.
     # 2. The import takes hundreds of milliseconds, which is a
-    #    nuisance if you don't wat graphs.
+    #    nuisance if you don't want graphs.
     #
     # This plot could be improved!
     import matplotlib.pylab as plt
@@ -165,7 +165,7 @@ def main():
                         help='attempt to draw graphs')
     parser.add_argument('--no-casefold', action="store_false",
                         default=True, dest="casefold",
-                        help='See all the encountered case varients')
+                        help='See all the encountered case variants')
     args = parser.parse_args()
 
     if not os.path.isdir(args.LDB_PRIVATE_DIR):
