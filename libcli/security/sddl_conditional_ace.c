@@ -2372,7 +2372,8 @@ static bool parse_attr2(struct ace_condition_sddl_compiler_context *comp)
 	return ok;
 }
 
-static bool parse_literal(struct ace_condition_sddl_compiler_context *comp)
+static bool parse_literal(struct ace_condition_sddl_compiler_context *comp,
+			  bool in_composite)
 {
 	uint8_t c = comp->sddl[comp->offset];
 	if (!(comp->state & SDDL_FLAG_EXPECTING_LITERAL)) {
@@ -2387,7 +2388,12 @@ static bool parse_literal(struct ace_condition_sddl_compiler_context *comp)
 	case 'S':
 		return parse_sid(comp);
 	case '{':
-		return parse_composite(comp);
+		if (in_composite) {
+			/* nested composites are not supported */
+			return false;
+		} else {
+			return parse_composite(comp);
+		}
 	default:
 		if (strchr("1234567890-+", c) != NULL) {
 			return parse_int(comp);
@@ -2480,7 +2486,7 @@ static bool parse_composite(struct ace_condition_sddl_compiler_context *comp)
 				   *comp->target_len);
 			goto fail;
 		}
-		ok = parse_literal(comp);
+		ok = parse_literal(comp, true);
 		if (!ok) {
 			goto fail;
 		}
@@ -2520,7 +2526,7 @@ static bool parse_paren_literal(struct ace_condition_sddl_compiler_context *comp
 		return false;
 	}
 	comp->offset++;
-	ok = parse_literal(comp);
+	ok = parse_literal(comp, false);
 	if (!ok) {
 		return false;
 	}
@@ -2607,7 +2613,7 @@ static bool parse_expression(struct ace_condition_sddl_compiler_context *comp)
 		} else if (is_attr_char1(c)) {
 			ok = parse_word(comp);
 		} else if (comp->state & SDDL_FLAG_EXPECTING_LITERAL) {
-			ok = parse_literal(comp);
+			ok = parse_literal(comp, false);
 		} else {
 			if (c > 31 && c < 127) {
 				comp_error(comp,
@@ -2934,7 +2940,7 @@ static bool parse_resource_attr_list(
 				   *comp->target_len);
 			goto fail;
 		}
-		ok = parse_literal(comp);
+		ok = parse_literal(comp, true);
 		if (!ok) {
 			goto fail;
 		}
@@ -3090,7 +3096,7 @@ struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sddl_decode_resource_attr (
 	}
 	comp.offset += 5;
 	comp.state = SDDL_FLAG_EXPECTING_LITERAL;
-	ok = parse_literal(&comp);
+	ok = parse_literal(&comp, false);
 	if (!ok ||
 	    comp.program->length != 1) {
 		DBG_WARNING("invalid attr flags: %s\n", str);
@@ -3309,7 +3315,7 @@ struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *parse_sddl_literal_as_claim(
 	}
 
 	comp.state = SDDL_FLAG_EXPECTING_LITERAL;
-	ok = parse_literal(&comp);
+	ok = parse_literal(&comp, false);
 
 	if (!ok) {
 		goto error;
