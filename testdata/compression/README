@@ -1,7 +1,7 @@
 # Test vectors for MS-XCA [de-]compression
 
-There are currently two supported varients of the Xpress Compression
-Algorithm, "Plain LZ77" and "LZ77 + Huffman". For each we two
+There are currently two supported variants of the Xpress Compression
+Algorithm, "Plain LZ77" and "LZ77 + Huffman". For each we have two
 directories of files compressed on Windows, corresponding to the two
 compression levels that Windows offers.
 
