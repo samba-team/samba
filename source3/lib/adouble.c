@@ -328,7 +328,7 @@ static bool ad_entry_check_size(uint32_t eid,
 	}
 	if (ad_checks[eid].fixed_size) {
 		if (ad_checks[eid].expected_len != got_len) {
-			/* Wrong size fo fixed size entry. */
+			/* Wrong size for fixed size entry. */
 			return false;
 		}
 	} else {

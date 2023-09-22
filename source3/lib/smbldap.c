@@ -1759,7 +1759,7 @@ static int smbldap_state_destructor(struct smbldap_state *state)
 
 
 /**********************************************************************
- Intitalise the 'general' ldap structures, on which ldap operations may be conducted
+ Initialise the 'general' ldap structures, on which ldap operations may be conducted
  *********************************************************************/
 
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,

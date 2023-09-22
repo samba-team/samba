@@ -1776,10 +1776,10 @@ static bool tldap_push_filter_substring(struct tldap_context *ld,
 	return asn1_pop_tag(data);
 }
 
-/* NOTE: although openldap libraries allow for spaces in some places, mosly
- * around parenthesis, we do not allow any spaces (except in values of
- * course) as I couldn't fine any place in RFC 4512 or RFC 4515 where
- * leading or trailing spaces where allowed.
+/* NOTE: although openldap libraries allow for spaces in some places, mostly
+ * around parentheses, we do not allow any spaces (except in values of
+ * course) as I couldn't find any place in RFC 4512 or RFC 4515 where
+ * leading or trailing spaces were allowed.
  */
 static bool tldap_push_filter(struct tldap_context *ld,
 			      struct asn1_data *data,
