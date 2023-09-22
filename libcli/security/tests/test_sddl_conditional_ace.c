@@ -778,6 +778,10 @@ static void test_a_number_of_invalid_strings(void **state)
 		"(\"x\" == \"x\")",
 		/* odd number of digits following '#' */
 		"(OctetStringType==#1#2#3##))",
+		/* empty expression */
+		"()",
+		/* relational op with with complex RHS */
+		"(@Device.bb == (@USER.x < 62))",
 	};
 	size_t i, length;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);

@@ -64,7 +64,7 @@
 			      SDDL_FLAG_IS_UNARY_OP)
 
 #define SDDL_FLAGS_RELATIONAL_OP (SDDL_FLAG_EXPECTING_LITERAL | \
-				  SDDL_FLAG_EXPECTING_PAREN |	\
+				  SDDL_FLAG_EXPECTING_PAREN_LITERAL |  \
 				  SDDL_FLAG_EXPECTING_NON_LOCAL_ATTR | \
 				  SDDL_FLAG_IS_BINARY_OP)
 
@@ -2532,10 +2532,10 @@ static bool parse_expression(struct ace_condition_sddl_compiler_context *comp)
 
 	if (comp->state & SDDL_FLAG_EXPECTING_PAREN_LITERAL) {
 		/*
-		 * Syntctically we allow parentheses to wrap a literal
-		 * value after a Member_of op, but we want to remember
-		 * that it just wants a single literal, not a general
-		 * expression.
+		 * Syntactically we allow parentheses to wrap a
+		 * literal value after a Member_of or >= op, but we
+		 * want to remember that it just wants a single
+		 * literal, not a general expression.
 		 */
 		return parse_paren_literal(comp);
 	}
