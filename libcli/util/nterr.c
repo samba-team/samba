@@ -357,7 +357,7 @@ const char *nt_errstr(NTSTATUS nt_code)
 }
 
 /************************************************************************
- Print friendler version fo NT error code
+ Print friendlier version of NT error code
  ***********************************************************************/
 
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code)

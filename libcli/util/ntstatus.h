@@ -99,7 +99,7 @@ typedef uint32_t NTSTATUS;
 const char *nt_errstr(NTSTATUS nt_code);
 
 /************************************************************************
- Print friendler version fo NT error code
+ Print friendlier version of NT error code
  ***********************************************************************/
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code);
 
@@ -139,7 +139,7 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 	}\
 } while (0)
 
-/* This varient is for when you want to free a local
+/* This variant is for when you want to free a local
    temporary memory context in the error path */
 #define NT_STATUS_HAVE_NO_MEMORY_AND_FREE(x, ctx) do {	\
 	if (!(x)) {\
