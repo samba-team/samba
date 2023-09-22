@@ -839,12 +839,24 @@ static bool sddl_write_unicode(struct sddl_write_context *ctx,
 	char *quoted = NULL;
 	bool ok;
 	/*
-	 * Apparently unicode strings have no mechanism for escapes, which is
-	 * nice at this point.
-	 *
 	 * We rely on tok->data.unicode.value being
 	 * nul-terminated.
 	 */
+	if (strchr(tok->data.unicode.value, '"') != NULL) {
+		/*
+		 * There is a double quote in this string, but SDDL
+		 * has no mechanism for escaping these (or anything
+		 * else) in unicode strings.
+		 *
+		 * The only thing to do is fail.
+		 *
+		 * THis cannot happen with an ACE created from SDDL,
+		 * because the same no-escapes rule applies on the way
+		 * in.
+		 */
+		return false;
+	}
+
 	quoted = talloc_asprintf(ctx->mem_ctx, "\"%s\"",
 				 tok->data.unicode.value);
 	if (quoted == NULL) {
