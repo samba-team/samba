@@ -1,2 +1,7 @@
 *.dump binary
 *.SAMBABACKUP binary
+testdata/compression/compressed-huffman/** binary
+testdata/compression/compressed-more-huffman/** binary
+testdata/compression/compressed-more-plain/** binary
+testdata/compression/compressed-plain/** binary
+testdata/compression/decompressed/** binary
