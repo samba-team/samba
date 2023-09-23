@@ -2516,6 +2516,7 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 {
 	uint8_t inbuf_store[40];
 	DATA_BLOB inbuf = data_blob_null;
+	NTSTATUS status;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -2542,15 +2543,15 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 		put_long_date((char *)inbuf.data + 16, write_time);
 	}
 
-	cli->raw_status = cli_smb2_set_info_fnum(
-		cli,
-		fnum,
-		1,		/* in_info_type */
-		SMB_FILE_BASIC_INFORMATION - 1000, /* in_file_info_class */
-		&inbuf,		   /* in_input_buffer */
-		0);		   /* in_additional_info */
-
-	return cli->raw_status;
+	status = cli_smb2_set_info_fnum(cli,
+					fnum,
+					1, /* in_info_type */
+					SMB_FILE_BASIC_INFORMATION -
+						1000, /* in_file_info_class */
+					&inbuf,	      /* in_input_buffer */
+					0);	      /* in_additional_info */
+	cli->raw_status = status;
+	return status;
 }
 
 /***************************************************************
