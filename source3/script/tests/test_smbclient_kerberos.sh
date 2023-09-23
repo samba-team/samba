@@ -28,7 +28,7 @@ fi
 
 samba_kdestroy=kdestroy
 if test -x ${BINDIR}/samba4kdestroy; then
-	samba_kinit=${BINDIR}/samba4kdestroy
+	samba_kdestroy=${BINDIR}/samba4kdestroy
 fi
 
 KRB5CCNAME_PATH="${PREFIX}/ccache_smbclient_kerberos"
