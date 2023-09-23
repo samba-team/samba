@@ -68,9 +68,6 @@ test_smbclient "smbclient.smb3.kerberos.ccache[//${SERVER}/tmp]" \
 	"ls; quit" //${SERVER}/tmp \
 	--use-krb5-ccache=${KRB5CCNAME} -mSMB3 ||
 	failed=$(expr $failed + 1)
-"ls; quit" //${SERVER}/tmp \
-	--use-kerberos=desired -U${USERNAME}%${PASSWORD} -mSMB3 ||
-	failed=$(expr $failed + 1)
 test_smbclient "smbclient.smb3.kerberos.desired[//${SERVER}/tmp]" \
 	"ls; quit" //${SERVER}/tmp \
 	--use-kerberos=desired -U${USERNAME}%${PASSWORD} -mSMB3 ||
