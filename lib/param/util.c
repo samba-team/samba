@@ -332,4 +332,9 @@ void lpcfg_default_kdc_policy(TALLOC_CTX *mem_ctx,
 	if (!ctx || ( val = tdb_fetch_lifetime(ctx, "kdc:renewal_lifetime") ) == -1 )
 		val = lpcfg_parm_long(lp_ctx, NULL, "kdc", "renewal lifetime", 24 * 7);
 	*renewal_lifetime = val * 60 * 60;
+
+	if (ctx != NULL) {
+		tdb_close(ctx);
+		ctx = NULL;
+	}
 }
