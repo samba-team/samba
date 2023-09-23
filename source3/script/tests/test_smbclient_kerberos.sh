@@ -76,3 +76,5 @@ test_smbclient "smbclient.smb3.kerberos.desired[//${SERVER}/tmp]" \
 $samba_kdestroy
 
 rm -rf $KRB5CCNAME_PATH
+
+testok "$0" "$failed"
