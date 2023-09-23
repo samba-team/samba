@@ -152,14 +152,15 @@ NTSTATUS cli_print_queue(struct cli_state *cli,
   cancel a print job
   ****************************************************************************/
 
-int cli_printjob_del(struct cli_state *cli, int job)
+NTSTATUS cli_printjob_del(struct cli_state *cli, int job)
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	unsigned int rdrcnt,rprcnt;
-	int ret = -1;
+	uint8_t *rparam = NULL;
+	uint8_t *rdata = NULL;
+	char *p = NULL;
+	uint32_t rdrcnt, rprcnt;
+	int result_code;
 	char param[1024];
+	NTSTATUS status = NT_STATUS_OK;
 
 	memset(param,'\0',sizeof(param));
 
@@ -173,16 +174,46 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	SSVAL(p,0,job);
 	p += 2;
 
-	if (cli_api(cli,
-		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-		    NULL, 0, CLI_BUFFER_SIZE,            /* data, length, maxlen */
-		    &rparam, &rprcnt,                /* return params, length */
-		    &rdata, &rdrcnt)) {               /* return data, length */
-		ret = SVAL(rparam,0);
+	status = cli_trans(talloc_tos(),
+			   cli,
+			   SMBtrans,	       /* trans_cmd */
+			   "\\PIPE\\LANMAN",   /* name */
+			   0,		       /* fid */
+			   0,		       /* function */
+			   0,		       /* flags */
+			   NULL,	       /* setup */
+			   0,		       /* num_setup */
+			   0,		       /* max_setup */
+			   (uint8_t *)param,   /* param */
+			   PTR_DIFF(p, param), /* num_param */
+			   1024,	       /* max_param */
+			   NULL,	       /* data */
+			   0,		       /* num_data */
+			   CLI_BUFFER_SIZE,    /* max_data */
+			   NULL,	       /* recv_flags2 */
+			   NULL,	       /* rsetup */
+			   0,		       /* min_rsetup */
+			   NULL,	       /* num_rsetup */
+			   &rparam,	       /* rparam */
+			   8,		       /* min_rparam */
+			   &rprcnt,	       /* num_rparam */
+			   &rdata,	       /* rdata */
+			   0,		       /* min_rdata */
+			   &rdrcnt);	       /* num_rdata */
+	if (!NT_STATUS_IS_OK(status)) {
+		cli->raw_status = status;
+		return status;
 	}
 
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	result_code = SVAL(rparam, 0);
 
-	return ret;
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
+
+	if (result_code == ERRnosuchprintjob) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		cli->raw_status = NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return status;
 }

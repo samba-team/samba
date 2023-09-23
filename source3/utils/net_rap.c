@@ -712,7 +712,7 @@ static int rap_printq_info(struct net_context *c, int argc, const char **argv)
 static int rap_printq_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
-	int ret;
+	NTSTATUS status;
 
 	if (argc == 0 || c->display_usage)
                 return net_rap_printq_usage(c, argc, argv);
@@ -720,9 +720,12 @@ static int rap_printq_delete(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
-	ret = cli_printjob_del(cli, atoi(argv[0]));
+	status = cli_printjob_del(cli, atoi(argv[0]));
 	cli_shutdown(cli);
-	return ret;
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return 0;
 }
 
 int net_rap_printq(struct net_context *c, int argc, const char **argv)

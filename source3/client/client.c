@@ -2282,11 +2282,12 @@ static int cmd_mput(void)
 
 static int do_cancel(int job)
 {
-	if (cli_printjob_del(cli, job)) {
+	NTSTATUS status = cli_printjob_del(cli, job);
+
+	if (NT_STATUS_IS_OK(status)) {
 		d_printf("Job %d cancelled\n",job);
 		return 0;
 	} else {
-		NTSTATUS status = cli_nt_error(cli);
 		d_printf("Error cancelling job %d : %s\n",
 			 job, nt_errstr(status));
 		return 1;

@@ -271,9 +271,9 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        int err;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	if (!context || !context->internal->initialized) {
                 errno = EINVAL;
@@ -322,14 +322,12 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
                 return -1;  /* errno set by SMBC_server */
         }
 
-        if ((err = cli_printjob_del(srv->cli, id)) != 0) {
-                if (err < 0)
-                        errno = SMBC_errno(context, srv->cli);
-                else if (err == ERRnosuchprintjob)
-                        errno = EINVAL;
+	status = cli_printjob_del(srv->cli, id);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = cli_status_to_errno(status);
 		TALLOC_FREE(frame);
                 return -1;
-        }
+	}
 
 	TALLOC_FREE(frame);
         return 0;
