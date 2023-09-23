@@ -128,18 +128,6 @@ bool cli_is_error(struct cli_state *cli)
 	return NT_STATUS_IS_ERR(cli->raw_status);
 }
 
-/* Return true if the last error was an NT error */
-
-bool cli_is_nt_error(struct cli_state *cli)
-{
-	/* A socket error is always an NT error. */
-	if (!cli_state_is_connected(cli)) {
-		return true;
-	}
-
-	return cli_is_error(cli) && !NT_STATUS_IS_DOS(cli->raw_status);
-}
-
 /* Return true if the last error was a DOS error */
 
 bool cli_is_dos_error(struct cli_state *cli)
