@@ -898,7 +898,7 @@ cacl_get(SMBCCTX *context,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("cacl_get failed to open %s: %s\n",
 				  targetpath, nt_errstr(status)));
-			errno = 0;
+			errno = cli_status_to_errno(status);
 			return -1;
 		}
 
@@ -907,7 +907,7 @@ cacl_get(SMBCCTX *context,
 			DEBUG(5,("cacl_get Failed to query old descriptor "
 				 "of %s: %s\n",
 				  targetpath, nt_errstr(status)));
-			errno = 0;
+			errno = cli_status_to_errno(status);
 			return -1;
 		}
 
@@ -2176,9 +2176,6 @@ SMBC_getxattr_ctx(SMBCCTX *context,
                                filename,
                                discard_const_p(char, value),
                                size);
-                if (ret < 0 && errno == 0) {
-                        errno = SMBC_errno(context, srv->cli);
-                }
 		TALLOC_FREE(frame);
 		/*
 		 * static function cacl_get returns a value greater than zero
