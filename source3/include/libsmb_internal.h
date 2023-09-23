@@ -431,11 +431,6 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 /* Functions in libsmb_misc.c */
 bool SMBC_dlist_contains(SMBCFILE * list, SMBCFILE *p);
 
-int
-SMBC_errno(SMBCCTX *context,
-           struct cli_state *c);
-
-
 /* Functions in libsmb_path.c */
 int
 SMBC_parse_path(TALLOC_CTX *ctx,

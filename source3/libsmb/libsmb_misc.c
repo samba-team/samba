@@ -44,34 +44,3 @@ bool SMBC_dlist_contains(SMBCFILE * list, SMBCFILE *p)
 	} while (list != NULL);
 	return false;
 }
-
-
-/*
- * Convert an SMB error into a UNIX error ...
- */
-int
-SMBC_errno(SMBCCTX *context,
-           struct cli_state *c)
-{
-	int ret = cli_errno(c);
-
-        if (cli_is_dos_error(c)) {
-                uint8_t eclass;
-                uint32_t ecode;
-
-                cli_dos_error(c, &eclass, &ecode);
-
-                DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n",
-                         (int)eclass, (int)ecode, (int)ecode, ret));
-        } else {
-                NTSTATUS status;
-
-                status = cli_nt_error(c);
-
-                DEBUG(3,("smbc errno %s -> %d\n",
-                         nt_errstr(status), ret));
-        }
-
-	return ret;
-}
-
