@@ -652,6 +652,9 @@ for env in ["nt4_member", "ad_member"]:
 env = "ad_dc_smb1"
 plantestsuite("samba3.blackbox.smbspool", env, [os.path.join(samba3srcdir, "script/tests/test_smbspool.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', env])
 
+env = "ad_member_fips"
+plantestsuite("samba3.blackbox.krbsmbspool", env, [os.path.join(samba3srcdir, "script/tests/test_smbspool_krb.sh"), '$SERVER', 'bob', 'Secret007', '$REALM'])
+
 plantestsuite("samba3.blackbox.printing_var_exp", "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_printing_var_exp.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD'])
 
 for env in ["ad_member:local", "nt4_dc:local"]:
