@@ -257,7 +257,7 @@ testit "vlp verify example.ps" \
 DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print sanitized Device URI in argv0 example.ps" \
-	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps ||
+	$samba_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
@@ -268,7 +268,7 @@ testit "vlp verify example.ps" \
 DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print sanitized Device URI in argv0 example.ps via stdin" \
-	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" <$SRCDIR/testdata/printing/example.ps ||
+	$samba_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" <$SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
