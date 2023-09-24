@@ -3993,6 +3993,7 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 /*
   try a netlogon LogonControl2Ex
 */
+
 static bool test_LogonControl2Ex(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 struct cli_credentials *machine_credentials)
@@ -4066,7 +4067,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
 	r.in.data = &data;
 
-	for (i=1;i<4;i++) {
+	for (i=1;i<=4;i++) {
 		r.in.level = i;
 
 		torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
