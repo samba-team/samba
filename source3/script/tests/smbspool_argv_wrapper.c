@@ -57,7 +57,7 @@ int main(int argc, char *argv[], char *envp[])
 	 * argv[0] 1   2    3     4      5    6
 	 */
 
-	for (a = 2; a < argc-1; a++) {
+	for (a = 2; a < argc; a++) {
 		new_argv[a-2] = argv[a];
 	}
 
