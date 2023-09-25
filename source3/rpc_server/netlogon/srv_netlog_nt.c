@@ -197,7 +197,6 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	struct netr_NETLOGON_INFO_1 *info1;
 	struct netr_NETLOGON_INFO_2 *info2;
 	struct netr_NETLOGON_INFO_3 *info3;
-	struct netr_NETLOGON_INFO_4 *info4;
 	const char *fn;
 	NTSTATUS status;
 	struct netr_DsRGetDCNameInfo *dc_info;
@@ -389,14 +388,10 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		r->out.query->info3 = info3;
 		break;
 	case 4:
-		info4 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_4);
-		W_ERROR_HAVE_NO_MEMORY(info4);
-
-		info4->trusted_dc_name		= dc_name;
-		info4->trusted_domain_name	= r->in.data->domain;
-
-		r->out.query->info4 = info4;
-		break;
+		if (r->in.function_code != NETLOGON_CONTROL_FIND_USER) {
+			return WERR_INVALID_PARAMETER;
+		}
+		return WERR_NOT_SUPPORTED;
 	default:
 		return WERR_INVALID_LEVEL;
 	}
