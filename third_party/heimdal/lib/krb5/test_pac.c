@@ -823,13 +823,6 @@ t_err(krb5_context context,
    krb5_err(context, 1, error, "test %s failed in %s", test, func);
 }
 
-static krb5_boolean
-is_krbtgt(const PrincipalName *p)
-{
-    return (p->name_string.len == 2 &&
-	    strcmp(p->name_string.val[0], KRB5_TGS_NAME) == 0);
-}
-
 static void
 check_ticket_signature(krb5_context context,
 		       const struct test_pac_ticket *tkt)
@@ -875,7 +868,9 @@ check_ticket_signature(krb5_context context,
     if (ret)
 	t_err(context, tkt->name, "_krb5_kdc_pac_ticket_parse", ret);
 
-    heim_assert(!is_krbtgt(&ticket.sname) == !!signedticket, "ticket-signature");
+    heim_assert(!krb5_principalname_is_krbtgt(context,
+					      &ticket.sname) == !!signedticket,
+		"ticket-signature");
 
     ret = krb5_pac_verify(context, pac, et.authtime, client,
 			  tkt->key, tkt->kdc_key);
@@ -932,7 +927,9 @@ check_ticket_signature(krb5_context context,
     if (ret)
 	t_err(context, tkt->name, "_krb5_kdc_pac_ticket_parse 2", ret);
 
-    heim_assert(!is_krbtgt(&ticket.sname) == !!signedticket, "ticket-signature");
+    heim_assert(!krb5_principalname_is_krbtgt(context,
+					      &ticket.sname) == !!signedticket,
+		"ticket-signature");
 
     ret = krb5_pac_verify(context, pac, et.authtime, client, tkt->key,
 			  tkt->kdc_key);

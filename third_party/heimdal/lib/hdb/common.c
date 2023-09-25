@@ -1616,7 +1616,7 @@ fetch_it(krb5_context context,
     if (!db->enable_virtual_hostbased_princs)
         maxdots = mindots = 0;
     if (db->enable_virtual_hostbased_princs && comp1 &&
-        strcmp("krbtgt", comp0) != 0 && strcmp(KRB5_WELLKNOWN_NAME, comp0) != 0) {
+        (comp0 == NULL || (strcmp("krbtgt", comp0) != 0 && strcmp(KRB5_WELLKNOWN_NAME, comp0) != 0))) {
         char *htmp;
 
         if ((host = strdup(comp1)) == NULL)

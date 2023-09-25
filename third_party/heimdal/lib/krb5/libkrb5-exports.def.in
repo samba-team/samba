@@ -539,6 +539,7 @@ EXPORTS
 	krb5_principal_set_comp_string
 	krb5_principal_set_realm
 	krb5_principal_set_type
+	krb5_principalname_is_krbtgt
 	krb5_print_address
 	krb5_program_setup
 	krb5_prompter_posix

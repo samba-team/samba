@@ -333,9 +333,7 @@ kcm_op_retrieve(krb5_context context,
 	return ret;
     }
 
-    if (disallow_getting_krbtgt &&
-	mcreds.server->name.name_string.len == 2 &&
-	strcmp(mcreds.server->name.name_string.val[0], KRB5_TGS_NAME) == 0)
+    if (disallow_getting_krbtgt && krb5_principal_is_krbtgt(context, mcreds.server))
     {
 	free(name);
 	krb5_free_cred_contents(context, &mcreds);

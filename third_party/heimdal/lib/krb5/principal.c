@@ -1245,6 +1245,20 @@ krb5_principal_is_pku2u(krb5_context context, krb5_const_principal principal)
 }
 
 /**
+ * Check if the cname part of the principal name is a krbtgt principal
+ *
+ * @ingroup krb5_principal
+ */
+
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_principalname_is_krbtgt(krb5_context context, const PrincipalName *p)
+{
+    return 1 <= p->name_string.len &&
+	p->name_string.len <= 2 &&
+	strcmp(p->name_string.val[0], KRB5_TGS_NAME) == 0;
+}
+
+/**
  * Check if the cname part of the principal is a krbtgt principal
  *
  * @ingroup krb5_principal
@@ -1253,8 +1267,7 @@ krb5_principal_is_pku2u(krb5_context context, krb5_const_principal principal)
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_principal_is_krbtgt(krb5_context context, krb5_const_principal p)
 {
-    return p->name.name_string.len == 2 &&
-	strcmp(p->name.name_string.val[0], KRB5_TGS_NAME) == 0;
+    return krb5_principalname_is_krbtgt(context, &p->name);
 }
 
 /**
