@@ -59,7 +59,7 @@ test_smbspool_authinforequired_none()
 
 	if [ $ret != 0 ]; then
 		echo "$out"
-		echo "failed to execute $smbspool_krb5"
+		echo "failed to execute $samba_smbspool_krb5"
 		return 1
 	fi
 
@@ -85,7 +85,7 @@ test_smbspool_authinforequired_unknown()
 	*)
 		echo "ret=$ret"
 		echo "$out"
-		echo "failed to test $smbspool_krb5 against unknown value of AUTH_INFO_REQUIRED"
+		echo "failed to test $samba_smbspool_krb5 against unknown value of AUTH_INFO_REQUIRED"
 		return 1
 		;;
 	esac
