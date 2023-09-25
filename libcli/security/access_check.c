@@ -681,8 +681,8 @@ static NTSTATUS check_object_specific_access(const struct security_ace *ace,
 		}
 	}
 
-	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
-
+	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+	    ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT) {
 		/* apply the access rights to this node, and any children */
 		object_tree_modify_access(node, ace->access_mask);
 
@@ -853,6 +853,62 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 				return NT_STATUS_OK;
 			}
 			break;
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK_OBJECT:
+		{
+			/*
+			 * if the callback says ALLOW, we treat this as a
+			 * SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT.
+			 *
+			 * Otherwise we act as if this ACE does not exist.
+			 */
+			enum ace_callback_result allow =
+				check_callback_ace_allow(ace, token, sd);
+			if (allow == ACE_CALLBACK_INVALID) {
+				return NT_STATUS_INVALID_ACE_CONDITION;
+			}
+			if (allow != ACE_CALLBACK_ALLOW) {
+				break;
+			}
+
+			status = check_object_specific_access(ace, tree,
+							      &grant_access);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			if (grant_access) {
+				return NT_STATUS_OK;
+			}
+			break;
+		}
+		case SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK_OBJECT:
+		{
+			/*
+			 * ACCESS_DENIED_OBJECT ACEs can't grant access --
+			 * they either don't match the object and slide
+			 * harmlessly past or they return
+			 * NT_STATUS_ACCESS_DENIED.
+			 *
+			 * ACCESS_DENIED_CALLBACK_OBJECT ACEs add another way
+			 * of not applying, and another way of failing.
+			 */
+			enum ace_callback_result deny =
+				check_callback_ace_deny(ace, token, sd);
+			if (deny == ACE_CALLBACK_INVALID) {
+				return NT_STATUS_INVALID_ACE_CONDITION;
+			}
+			if (deny != ACE_CALLBACK_DENY) {
+				break;
+			}
+			status = check_object_specific_access(ace, tree,
+							      &grant_access);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			break;
+		}
 		default:	/* Other ACE types not handled/supported */
 			break;
 		}
