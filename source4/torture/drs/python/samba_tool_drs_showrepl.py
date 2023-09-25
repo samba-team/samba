@@ -237,7 +237,7 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         # try again.
         #
         # We don't restore them to the non-auto-replication state.
-        samdb1 = self.getSamDB("-H", "ldap://%s" % self.dc1, "-U",
+        samdb1 = self.getSamDB("-H", "ldap://%s" % self.dc1,
                                self.cmdline_creds)
         self._enable_all_repl(self.dc1)
         self._force_all_reps(samdb1, self.dc1, 'inbound')
@@ -310,9 +310,9 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         self.addCleanup(self._enable_all_repl, self.dc1)
         self._disable_all_repl(self.dc1)
 
-        samdb1 = self.getSamDB("-H", "ldap://%s" % self.dc1, "-U",
+        samdb1 = self.getSamDB("-H", "ldap://%s" % self.dc1,
                                self.cmdline_creds)
-        samdb2 = self.getSamDB("-H", "ldap://%s" % self.dc2, "-U",
+        samdb2 = self.getSamDB("-H", "ldap://%s" % self.dc2,
                                self.cmdline_creds)
         domain_dn = samdb1.domain_dn()
 
