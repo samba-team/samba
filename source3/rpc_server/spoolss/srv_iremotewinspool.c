@@ -91,6 +91,25 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 	struct pipes_struct *p = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	bool impersonated = false;
+	bool ok;
+	struct GUID object_uuid;
+
+	ok = dce_call->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID;
+	if (!ok) {
+		dce_call->fault_code = DCERPC_NCA_S_UNSUPPORTED_TYPE;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	status = GUID_from_string(IREMOTEWINSPOOL_OBJECT_GUID, &object_uuid);
+	if (!NT_STATUS_IS_OK(status)) {
+		dce_call->fault_code = DCERPC_NCA_S_UNSUPPORTED_TYPE;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	if (!GUID_equal(&dce_call->pkt.u.request.object.object, &object_uuid)) {
+		dce_call->fault_code = DCERPC_NCA_S_UNSUPPORTED_TYPE;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
 
 	if (forward_opnum_to_spoolss(opnum)) {
 		return spoolss__op_dispatch(dce_call, mem_ctx, r);
