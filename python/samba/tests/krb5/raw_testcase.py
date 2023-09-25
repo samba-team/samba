@@ -5902,8 +5902,11 @@ class RawKerberosTest(TestCase):
         return name in ('kadmin', b'kadmin')
 
     def is_tgs(self, principal):
-        name = principal['name-string'][0]
-        return name in ('krbtgt', b'krbtgt')
+        name_string = principal['name-string']
+        if 1 <= len(name_string) <= 2:
+            return name_string[0] in ('krbtgt', b'krbtgt')
+
+        return False
 
     def is_tgt(self, ticket):
         sname = ticket.ticket['sname']
