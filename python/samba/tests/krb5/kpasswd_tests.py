@@ -704,6 +704,43 @@ class KpasswdTests(KDCBaseTest):
                               expected_msg,
                               mode=self.KpasswdMode.CHANGE)
 
+    # Show that we cannot provide a TGT to kpasswd that was obtained with a
+    # single‐component principal.
+    def test_kpasswd_tgt_single_component_krbtgt(self):
+        # Create an account for testing.
+        creds = self._get_creds()
+
+        # Create a single‐component principal of the form ‘krbtgt@REALM’.
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['krbtgt'])
+
+        # Don’t request canonicalization.
+        kdc_options = 'forwardable,renewable,renewable-ok'
+
+        # Get a TGT.
+        tgt = self.get_tgt(creds, sname=sname, kdc_options=kdc_options)
+
+        # Change the sname of the ticket to match that of kadmin/changepw.
+        tgt.set_sname(self.get_kpasswd_sname())
+
+        expected_code = KPASSWD_AUTHERROR
+        expected_msg = b'A TGT may not be used as a ticket to kpasswd'
+
+        # Set the password.
+        new_password = generate_random_password(32, 32)
+        self.kpasswd_exchange(tgt,
+                              new_password,
+                              expected_code,
+                              expected_msg,
+                              mode=self.KpasswdMode.SET)
+
+        # Change the password.
+        self.kpasswd_exchange(tgt,
+                              new_password,
+                              expected_code,
+                              expected_msg,
+                              mode=self.KpasswdMode.CHANGE)
+
     # Test that kpasswd rejects requests with a service ticket.
     def test_kpasswd_non_initial(self):
         # Create an account for testing, and get a TGT.

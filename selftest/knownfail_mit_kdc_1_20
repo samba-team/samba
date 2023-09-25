@@ -129,3 +129,14 @@
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_certificate_signature_win2k.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_signature_win2k.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_win2k.ad_dc
+#
+# Single‐component krbtgt principal tests
+#
+^samba\.tests\.krb5\.as_req_tests\.samba\.tests\.krb5\.as_req_tests\.AsReqKerberosTests\.test_krbtgt_single_component_krbtgt\(fl2003dc\)$
+^samba\.tests\.krb5\.as_req_tests\.samba\.tests\.krb5\.as_req_tests\.AsReqKerberosTests\.test_krbtgt_single_component_krbtgt\(fl2008r2dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_as_req\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_tgs_req\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_requester_sid_as_req\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_requester_sid_tgs_req\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_service_ticket\(ad_dc\)$
+^samba\.tests\.krb5\.kpasswd_tests\.samba\.tests\.krb5\.kpasswd_tests\.KpasswdTests\.test_kpasswd_tgt_single_component_krbtgt\(ad_dc\)$

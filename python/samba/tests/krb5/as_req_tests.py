@@ -529,6 +529,23 @@ class AsReqKerberosTests(AsReqBaseTest):
                 sname=wrong_krbtgt_princ,
                 expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
+    def test_krbtgt_single_component_krbtgt(self):
+        """Test that we can make a request to the single‐component krbtgt
+        principal."""
+
+        client_creds = self.get_client_creds()
+
+        # Create a krbtgt principal with a single component.
+        single_component_krbtgt_principal = self.PrincipalName_create(
+            name_type=NT_SRV_INST,
+            names=['krbtgt'])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            sname=single_component_krbtgt_principal,
+            # Don’t ask for canonicalization.
+            kdc_options=0)
+
     # Test that we can make a request for a ticket expiring post-2038.
     def test_future_till(self):
         client_creds = self.get_client_creds()

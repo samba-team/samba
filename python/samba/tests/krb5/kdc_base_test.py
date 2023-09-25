@@ -2793,7 +2793,11 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                            unexpected_client_claims=None,
                            expected_device_claims=None,
                            unexpected_device_claims=None,
-                           pac_request=True, expect_pac=True, fresh=False):
+                           pac_request=True, expect_pac=True,
+                           expect_requester_sid=None,
+                           expect_pac_attrs=None,
+                           expect_pac_attrs_pac_request=None,
+                           fresh=False):
         user_name = tgt.cname['name-string'][0]
         ticket_sname = tgt.sname
         if target_name is None:
@@ -2812,7 +2816,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      str(unexpected_client_claims),
                      str(expected_device_claims),
                      str(unexpected_device_claims),
-                     expect_pac)
+                     expect_pac,
+                     expect_requester_sid,
+                     expect_pac_attrs,
+                     expect_pac_attrs_pac_request)
 
         if not fresh:
             ticket = self.tkt_cache.get(cache_key)
@@ -2860,6 +2867,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             kdc_options=kdc_options,
             pac_request=pac_request,
             expect_pac=expect_pac,
+            expect_requester_sid=expect_requester_sid,
+            expect_pac_attrs=expect_pac_attrs,
+            expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             rc4_support=rc4_support,
             to_rodc=to_rodc)
 

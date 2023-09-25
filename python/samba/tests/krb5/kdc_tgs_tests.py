@@ -2113,6 +2113,120 @@ class KdcTgsTests(KdcTgsBaseTests):
                    expected_error=(KDC_ERR_POLICY,
                                    KDC_ERR_S_PRINCIPAL_UNKNOWN))
 
+    def test_single_component_krbtgt_requester_sid_as_req(self):
+        """Test that TGTs issued to a single‐component krbtgt principal always
+        contain a requester SID PAC buffer.
+        """
+
+        creds = self._get_creds()
+
+        # Create a single‐component principal of the form ‘krbtgt@REALM’.
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['krbtgt'])
+
+        # Don’t request canonicalization.
+        kdc_options = 'forwardable,renewable,renewable-ok'
+
+        # Get a TGT and assert that the requester SID PAC buffer is present.
+        self.get_tgt(creds,
+                     sname=sname,
+                     kdc_options=kdc_options,
+                     expect_requester_sid=True)
+
+    def test_single_component_krbtgt_requester_sid_tgs_req(self):
+        """Test that TGTs issued to a single‐component krbtgt principal always
+        contain a requester SID PAC buffer.
+        """
+
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds)
+
+        # Create a single‐component principal of the form ‘krbtgt@REALM’.
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['krbtgt'])
+
+        # Don’t request canonicalization.
+        kdc_options = '0'
+
+        # Get a TGT and assert that the requester SID PAC buffer is present.
+        self.get_service_ticket(tgt,
+                                self.get_krbtgt_creds(),
+                                sname=sname,
+                                kdc_options=kdc_options,
+                                expect_requester_sid=True)
+
+    def test_single_component_krbtgt_no_pac_as_req(self):
+        """Test that TGTs issued to a single‐component krbtgt principal always
+        contain a PAC.
+        """
+
+        creds = self._get_creds()
+
+        # Create a single‐component principal of the form ‘krbtgt@REALM’.
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['krbtgt'])
+
+        # Don’t request canonicalization.
+        kdc_options = 'forwardable,renewable,renewable-ok'
+
+        # Get a TGT and assert that the requester SID PAC buffer is present.
+        self.get_tgt(creds,
+                     sname=sname,
+                     kdc_options=kdc_options,
+                     # Request that no PAC be issued.
+                     pac_request=False,
+                     # Ensure that a PAC is issued nonetheless.
+                     expect_pac=True)
+
+    def test_single_component_krbtgt_no_pac_tgs_req(self):
+        """Test that TGTs issued to a single‐component krbtgt principal always
+        contain a PAC.
+        """
+
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds)
+
+        # Create a single‐component principal of the form ‘krbtgt@REALM’.
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['krbtgt'])
+
+        # Don’t request canonicalization.
+        kdc_options = '0'
+
+        # Get a TGT and assert that the requester SID PAC buffer is present.
+        self.get_service_ticket(tgt,
+                                self.get_krbtgt_creds(),
+                                sname=sname,
+                                kdc_options=kdc_options,
+                                # Request that no PAC be issued.
+                                pac_request=False,
+                                # Ensure that a PAC is issued nonetheless.
+                                expect_pac=True,
+                                expect_pac_attrs=True,
+                                expect_pac_attrs_pac_request=True)
+
+    def test_single_component_krbtgt_service_ticket(self):
+        """Test that TGTs issued to a single‐component krbtgt principal can be
+        used to get service tickets.
+        """
+
+        creds = self._get_creds()
+
+        # Create a single‐component principal of the form ‘krbtgt@REALM’.
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['krbtgt'])
+
+        # Don’t request canonicalization.
+        kdc_options = 'forwardable,renewable,renewable-ok'
+
+        # Get a TGT.
+        tgt = self.get_tgt(creds,
+                     sname=sname,
+                     kdc_options=kdc_options)
+
+        # Ensure that we can use the TGT to get a service ticket.
+        self._run_tgs(tgt, creds, expected_error=0)
+
     def test_pac_attrs_none(self):
         creds = self._get_creds()
         self.get_tgt(creds, pac_request=None,
