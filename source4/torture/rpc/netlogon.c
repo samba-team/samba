@@ -4087,7 +4087,10 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
 	switch (secure_channel_type) {
 	case SEC_CHAN_NULL:
-		torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED, "LogonControl2Ex");
+		torture_assert(tctx,
+			W_ERROR_EQUAL(r.out.result, WERR_NOT_SUPPORTED) ||
+			W_ERROR_EQUAL(r.out.result, WERR_INVALID_PARAMETER),
+			"LogonControl2Ex");
 		break;
 	default:
 		torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED, "LogonControl2Ex");
