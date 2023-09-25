@@ -74,7 +74,16 @@ bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
 					    const char *printer_name,
 					    struct spoolss_UserLevel1 cinfo,
 					    struct policy_handle *handle);
-
+bool test_AsyncOpenPrinter_byprinter_expect(struct torture_context *tctx,
+					    struct test_iremotewinspool_context *ctx,
+					    struct dcerpc_pipe *p,
+					    const char *printer_name,
+					    uint32_t access_mask,
+					    struct spoolss_UserLevel1 cinfo,
+					    NTSTATUS exected_status,
+					    WERROR exected_result,
+					    uint32_t expected_fault_code,
+					    struct policy_handle *handle);
 bool test_get_environment(struct torture_context *tctx,
 				 struct dcerpc_binding_handle *b,
 				 struct policy_handle *handle,

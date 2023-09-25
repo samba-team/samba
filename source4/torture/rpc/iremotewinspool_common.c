@@ -51,21 +51,25 @@ struct spoolss_UserLevel1 test_get_client_info(struct torture_context *tctx,
 	return level1;
 }
 
-bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
+bool test_AsyncOpenPrinter_byprinter_expect(struct torture_context *tctx,
 					    struct test_iremotewinspool_context *ctx,
 					    struct dcerpc_pipe *p,
 					    const char *printer_name,
+					    uint32_t access_mask,
 					    struct spoolss_UserLevel1 cinfo,
+					    NTSTATUS expected_status,
+					    WERROR expected_result,
+					    uint32_t expected_fault_code,
 					    struct policy_handle *handle)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct spoolss_UserLevelCtr client_info_ctr;
-	uint32_t access_mask = SERVER_ALL_ACCESS;
 	struct winspool_AsyncOpenPrinter r;
 	NTSTATUS status;
 	bool ok = true;
 
+	ZERO_STRUCT(r);
 	ZERO_STRUCT(devmode_ctr);
 
 	client_info_ctr.level = 1;
@@ -79,14 +83,32 @@ bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
 	r.out.pHandle		= handle;
 
 	status = dcerpc_winspool_AsyncOpenPrinter_r(b, tctx, &r);
-	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "AsyncOpenPrinter failed");
-
-	torture_assert_werr_ok(tctx, r.out.result,
+	torture_assert_ntstatus_equal(tctx, status, expected_status, "AsyncOpenPrinter failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
 		"AsyncOpenPrinter failed");
-
-done:
+	torture_assert_u32_equal(tctx, p->last_fault_code, expected_fault_code,
+			"unexpected DCERPC fault code");
 
 	return ok;
+}
+
+bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
+				     struct test_iremotewinspool_context *ctx,
+				     struct dcerpc_pipe *p,
+				     const char *printer_name,
+				     struct spoolss_UserLevel1 cinfo,
+				     struct policy_handle *handle)
+{
+	return test_AsyncOpenPrinter_byprinter_expect(tctx,
+						      ctx,
+						      p,
+						      printer_name,
+						      SERVER_ALL_ACCESS,
+						      cinfo,
+						      NT_STATUS_OK,
+						      WERR_OK,
+						      0,
+						      handle);
 }
 
 bool test_get_environment(struct torture_context *tctx,
