@@ -150,9 +150,10 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                                  '--color=no', '-S')
         self.assertCmdSuccess(result, monochrome, err)
         self.assert_colour(monochrome, False)
+        cls = self.__class__
 
         try:
-            self.stringIO = StringIOThinksItIsATTY
+            cls.stringIO = StringIOThinksItIsATTY
             old_no_color = os.environ.pop('NO_COLOR', None)
             # First with no NO_COLOR env var. There should be colour.
             result, out, err = self.runsubcmd("visualize", "ntdsconn",
@@ -204,7 +205,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                 self.assert_colour(out, is_colour, monochrome)
 
         finally:
-            self.stringIO = StringIO
+            cls.stringIO = StringIO
             if old_no_color is None:
                 os.environ.pop('NO_COLOR', None)
             else:

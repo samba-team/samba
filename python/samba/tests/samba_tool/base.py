@@ -62,11 +62,12 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         return SamDB(url=opts.H, session_info=system_session(),
                      credentials=creds, lp=lp)
 
-    def _run(self, *argv):
+    @classmethod
+    def _run(cls, *argv):
         """run a samba-tool command"""
         cmd, args = cmd_sambatool()._resolve('samba-tool', *argv,
-                                             outf=self.stringIO(),
-                                             errf=self.stringIO())
+                                             outf=cls.stringIO(),
+                                             errf=cls.stringIO())
         result = cmd._run(*args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 

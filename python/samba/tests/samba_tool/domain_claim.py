@@ -130,10 +130,11 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         claim_types_dn.add_child("CN=Claim Types,CN=Claims Configuration")
         return claim_types_dn
 
-    def _run(self, *argv):
+    @classmethod
+    def _run(cls, *argv):
         """Override _run, so we don't always have to pass host and creds."""
         args = list(argv)
-        args.extend(["-H", self.host, self.creds])
+        args.extend(["-H", cls.host, cls.creds])
         return super()._run(*args)
 
     runcmd = _run
