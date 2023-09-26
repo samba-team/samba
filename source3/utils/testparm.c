@@ -229,16 +229,21 @@ static bool do_idmap_check(void)
 
 			if ((c->low >= x->low && c->low <= x->high) ||
 			    (c->high >= x->low && c->high <= x->high)) {
-				/* Allow overlapping ranges for idmap_ad */
+				/*
+				 * Allow overlapping ranges for idmap_ad
+				 * and idmap_nss
+				 */
 				ok = strequal(c->backend, x->backend);
 				if (ok) {
-					ok = strequal(c->backend, "ad");
+					ok = strequal(c->backend, "ad") ||
+					     strequal(c->backend, "nss");
 					if (ok) {
 						fprintf(stderr,
-							"NOTE: The idmap_ad "
+							"NOTE: The idmap_%s "
 							"range for the domain "
 							"%s overlaps with the "
 							"range of %s.\n\n",
+							c->backend,
 							c->domain_name,
 							x->domain_name);
 						continue;
