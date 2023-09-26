@@ -388,6 +388,7 @@ reparse_data_buffer_marshall_syml(const struct symlink_reparse_struct *src,
 {
 	uint8_t sbuf[12];
 	struct iovec iov[3];
+	const char *print_name = src->print_name;
 	uint8_t *subst_utf16 = NULL;
 	uint8_t *print_utf16 = NULL;
 	size_t subst_len = 0;
@@ -399,7 +400,7 @@ reparse_data_buffer_marshall_syml(const struct symlink_reparse_struct *src,
 		return -1;
 	}
 	if (src->print_name == NULL) {
-		return -1;
+		print_name = src->substitute_name;
 	}
 
 	iov[0] = (struct iovec){
@@ -428,8 +429,8 @@ reparse_data_buffer_marshall_syml(const struct symlink_reparse_struct *src,
 	ok = convert_string_talloc(talloc_tos(),
 				   CH_UNIX,
 				   CH_UTF16,
-				   src->print_name,
-				   strlen(src->print_name),
+				   print_name,
+				   strlen(print_name),
 				   &print_utf16,
 				   &print_len);
 	if (!ok) {
