@@ -2849,7 +2849,8 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 						    entry,
 						    get_global_sam_sid(),
 						    &rid)) {
-			DEBUG(0, ("Severe DB error, %s can't miss the samba SID"								"attribute\n", LDAP_OBJ_SAMBASAMACCOUNT));
+			DEBUG(0, ("Severe DB error, %s can't miss the samba SID"
+				  "attribute\n", LDAP_OBJ_SAMBASAMACCOUNT));
 			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto done;
 		}
