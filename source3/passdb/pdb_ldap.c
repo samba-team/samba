@@ -81,7 +81,7 @@ LDAP *priv2ld(struct ldapsam_privates *priv)
 }
 
 /**********************************************************************
- Get the attribute name given a user schame version.
+ Get the attribute name given a user schema version.
  **********************************************************************/
 
 static const char* get_userattr_key2string( int schema_ver, int key )
@@ -6563,7 +6563,7 @@ static void free_private_data(void **vp)
 }
 
 /*********************************************************************
- Intitalise the parts of the pdb_methods structure that are common to
+ Initialise the parts of the pdb_methods structure that are common to
  all pdb_ldap modes
 *********************************************************************/
 

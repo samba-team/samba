@@ -185,13 +185,13 @@ static int berEncodeLoginData(
 
 	if (!err) {
 		if (putData) {
-		/* BER Encode the the tag and data */
+		/* BER Encode the tag and data */
 			err = (ber_printf(requestBer, "oio}", utf8TagPtr,
 					  utf8TagSize, putDataLen, putData,
 					  putDataLen) < 0)
 				? LDAP_ENCODING_ERROR : 0;
 		} else {
-		/* BER Encode the the tag */
+		/* BER Encode the tag */
 			err = (ber_printf(requestBer, "o}", utf8TagPtr,
 					  utf8TagSize) < 0)
 				? LDAP_ENCODING_ERROR : 0;
@@ -223,7 +223,7 @@ Cleanup:
 /**********************************************************************
  Takes the reply BER Value and decodes the NMAS server version and
  return code and if a non null retData buffer was supplied, tries to
- decode the the return data and length
+ decode the return data and length
 **********************************************************************/
 
 static int berDecodeLoginData(
@@ -862,7 +862,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 }
 
 /**********************************************************************
- Intitalise the parts of the pdb_methods structuire that are common 
+ Initialise the parts of the pdb_methods structure that are common
  to NDS_ldapsam modes
  *********************************************************************/
 
