@@ -19,6 +19,7 @@
 """Samba Python tests."""
 import os
 import tempfile
+import traceback
 import collections
 import ldb
 import samba
@@ -80,6 +81,59 @@ def DynamicTestCase(cls):
 
 class TestCase(unittest.TestCase):
     """A Samba test case."""
+
+    # Re-implement addClassCleanup to support Python versions older than 3.8.
+    # Can be removed once these older Python versions are no longer needed.
+    if sys.version_info.major == 3 and sys.version_info.minor < 8:
+        _class_cleanups = []
+
+        @classmethod
+        def addClassCleanup(cls, function, *args, **kwargs):
+            cls._class_cleanups.append((function, args, kwargs))
+
+        @classmethod
+        def tearDownClass(cls):
+            teardown_exceptions = []
+
+            while cls._class_cleanups:
+                function, args, kwargs = cls._class_cleanups.pop()
+                try:
+                    function(*args, **kwargs)
+                except Exception:
+                    teardown_exceptions.append(traceback.format_exc())
+
+            # ExceptionGroup would be better but requires Python 3.11
+            if teardown_exceptions:
+                raise ValueError("tearDownClass failed:\n\n" +
+                                 "\n".join(teardown_exceptions))
+
+        @classmethod
+        def setUpClass(cls):
+            """
+            Call setUpTestData, ensure tearDownClass is called on exceptions.
+
+            This is only required on Python versions older than 3.8.
+            """
+            try:
+                cls.setUpTestData()
+            except Exception:
+                cls.tearDownClass()
+                raise
+    else:
+        @classmethod
+        def setUpClass(cls):
+            """
+            setUpClass only needs to call setUpTestData.
+
+            On Python 3.8 and above unittest will always call tearDownClass,
+            even if an exception was raised in setUpClass.
+            """
+            cls.setUpTestData()
+
+    @classmethod
+    def setUpTestData(cls):
+        """Create class level test fixtures here."""
+        pass
 
     @classmethod
     def generate_dynamic_test(cls, fnname, suffix, *args, doc=None):
