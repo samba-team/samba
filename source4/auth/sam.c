@@ -383,6 +383,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *el;
 	static const char * const group_type_attrs[] = { "groupType", NULL };
 
+	if (msg == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
@@ -754,6 +758,14 @@ NTSTATUS authsam_shallow_copy_user_info_dc(TALLOC_CTX *mem_ctx,
 {
 	struct auth_user_info_dc *user_info_dc = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+
+	if (user_info_dc_in == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (user_info_dc_out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	if (user_info_dc == NULL) {
