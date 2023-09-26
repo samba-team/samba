@@ -414,7 +414,7 @@ static void continue_bind_auth(struct composite_context *ctx);
 
 
 /*
-  Stage 2 of auth_schannel: Receive schannel key and intitiate an
+  Stage 2 of auth_schannel: Receive schannel key and initiate an
   authenticated bind using received credentials
  */
 static void continue_schannel_key(struct composite_context *ctx)
@@ -447,7 +447,7 @@ static void continue_schannel_key(struct composite_context *ctx)
 
 
 /*
-  Stage 3 of auth_schannel: Receivce result of authenticated bind
+  Stage 3 of auth_schannel: Receive result of authenticated bind
   and say if we're done ok.
 */
 static void continue_bind_auth(struct composite_context *ctx)
