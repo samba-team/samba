@@ -4806,6 +4806,11 @@ static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
 	return status;
 }
 
+struct user_token {
+	fstring name;
+	struct security_token *token;
+};
+
 static void add_sid_to_token(struct security_token *token, const struct dom_sid *sid)
 {
 	NTSTATUS status = add_sid_to_array_unique(token, sid,
@@ -4817,14 +4822,16 @@ static void add_sid_to_token(struct security_token *token, const struct dom_sid 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 }
 
-static void init_user_token(struct security_token **token, struct dom_sid *user_sid)
+static void init_user_token(struct user_token *token_list,
+			    struct security_token **token,
+			    struct dom_sid *user_sid)
 {
 	/*
 	 * This token is not from the auth stack, only has user SIDs
 	 * and must fail if conditional ACEs are found in the security
 	 * descriptor
 	 */
-	*token = security_token_initialise(NULL, CLAIMS_EVALUATION_INVALID_STATE);
+	*token = security_token_initialise(token_list, CLAIMS_EVALUATION_INVALID_STATE);
 	SMB_ASSERT(*token);
 
 	add_sid_to_token(*token,
@@ -4839,11 +4846,6 @@ static void init_user_token(struct security_token **token, struct dom_sid *user_
 	add_sid_to_token(*token,
 			 &global_sid_Authenticated_Users);
 }
-
-struct user_token {
-	fstring name;
-	struct security_token *token;
-};
 
 static void dump_user_token(struct user_token *token)
 {
@@ -4898,7 +4900,9 @@ static void collect_alias_memberships(struct security_token *token)
 	}
 }
 
-static bool get_user_sids(const char *domain, const char *user, struct security_token **token)
+static bool get_user_sids(const char *domain, const char *user,
+			  struct user_token *token_list,
+			  struct security_token **token)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	enum wbcSidType type;
@@ -4935,7 +4939,7 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 		return false;
 	}
 
-	init_user_token(token, &user_sid);
+	init_user_token(token_list, token, &user_sid);
 
 	/* And now the groups winbind knows about */
 
@@ -5005,10 +5009,10 @@ static bool get_user_tokens(struct net_context *c, int *num_tokens,
 		return false;
 	}
 
-	result = SMB_MALLOC_ARRAY(struct user_token, num_users);
+	result = talloc_zero_array(NULL, struct user_token, num_users);
 
 	if (result == NULL) {
-		DEBUG(1, ("Could not malloc sid array\n"));
+		DBG_ERR("Could not talloc token array\n");
 		wbcFreeMemory(users);
 		return false;
 	}
@@ -5038,7 +5042,7 @@ static bool get_user_tokens(struct net_context *c, int *num_tokens,
 			fstrcpy(user, p);
 		}
 
-		get_user_sids(domain, user, &(result[i].token));
+		get_user_sids(domain, user, result, &(result[i].token));
 	}
 	TALLOC_FREE(frame);
 	wbcFreeMemory(users);
@@ -5088,9 +5092,12 @@ static bool get_user_tokens_from_file(FILE *f,
 		/* And a new user... */
 
 		*num_tokens += 1;
-		*tokens = SMB_REALLOC_ARRAY(*tokens, struct user_token, *num_tokens);
+		*tokens = talloc_realloc(NULL,
+					 *tokens,
+					 struct user_token,
+					 *num_tokens);
 		if (*tokens == NULL) {
-			DEBUG(0, ("Could not realloc tokens\n"));
+			DBG_ERR("Could not talloc_realloc tokens\n");
 			return false;
 		}
 
@@ -5100,7 +5107,7 @@ static bool get_user_tokens_from_file(FILE *f,
 			return false;
 		}
 		token->token
-			= security_token_initialise(NULL,
+			= security_token_initialise(*tokens,
 						    CLAIMS_EVALUATION_INVALID_STATE);
 		if (token->token == NULL) {
 			DBG_ERR("security_token_initialise() failed: "
@@ -5338,10 +5345,7 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 			      num_tokens, tokens);
 	}
  done:
-	for (i=0; i<num_tokens; i++) {
-		TALLOC_FREE(tokens[i].token);
-	}
-	SAFE_FREE(tokens);
+	TALLOC_FREE(tokens);
 	TALLOC_FREE(server_aliases);
 
 	return nt_status;
@@ -5396,10 +5400,9 @@ int net_usersidlist(struct net_context *c, int argc, const char **argv)
 
 	for (i=0; i<num_tokens; i++) {
 		dump_user_token(&tokens[i]);
-		TALLOC_FREE(tokens[i].token);
 	}
 
-	SAFE_FREE(tokens);
+	TALLOC_FREE(tokens);
 	return 0;
 }
 
