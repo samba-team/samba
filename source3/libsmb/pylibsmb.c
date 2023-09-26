@@ -1209,26 +1209,10 @@ static PyObject *py_cli_create_ex(
 		goto nomem;
 	}
 
-	v = PyTuple_New(3);
-	if (v == NULL) {
-		goto nomem;
-	}
-	ret = PyTuple_SetItem(v, 0, Py_BuildValue("I", (unsigned)fnum));
-	if (ret == -1) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
-	}
-	ret = PyTuple_SetItem(v, 1, py_cr);
-	if (ret == -1) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
-	}
-	ret = PyTuple_SetItem(v, 2, py_create_contexts_out);
-	if (ret == -1) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
-	}
-
+	v = Py_BuildValue("(IOO)",
+			  (unsigned)fnum,
+			  py_cr,
+			  py_create_contexts_out);
 	return v;
 nomem:
 	status = NT_STATUS_NO_MEMORY;
