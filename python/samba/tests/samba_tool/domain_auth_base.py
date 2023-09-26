@@ -1,6 +1,6 @@
 # Unix SMB/CIFS implementation.
 #
-# Base class for samba-tool domain auth policy and silo commands
+# Base test class for samba-tool domain auth policy and silo commands.
 #
 # Copyright (C) Catalyst.Net Ltd. 2023
 #
@@ -26,59 +26,36 @@ from ldb import SCOPE_ONELEVEL
 
 from .base import SambaToolCmdTest
 
+HOST = "ldap://{DC_SERVER}".format(**os.environ)
+CREDS = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
+
 
 class BaseAuthCmdTest(SambaToolCmdTest):
-    def setUp(self):
-        super().setUp()
-
-        if self._first_self is None:
-            cls = type(self)
-            cls.host = "ldap://{DC_SERVER}".format(**os.environ)
-            cls.creds = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
-            cls.samdb = self.getSamDB("-H", self.host, self.creds)
-
-            # Generate some test data.
-            self.create_authentication_policy(name="Single Policy")
-            self.create_authentication_policy(name="User Policy")
-            self.create_authentication_policy(name="Service Policy")
-            self.create_authentication_policy(name="Computer Policy")
-
-            self.create_authentication_silo(name="Developers",
-                                            description="Developers, Developers",
-                                            policy="Single Policy")
-            self.create_authentication_silo(name="Managers",
-                                            description="Managers",
-                                            policy="Single Policy")
-            self.create_authentication_silo(name="QA",
-                                            description="Quality Assurance",
-                                            user_policy="User Policy",
-                                            service_policy="Service Policy",
-                                            computer_policy="Computer Policy")
-
-            cls._first_self = self
+    """Base test class for samba-tool domain auth policy and silo commands."""
 
     @classmethod
     def setUpClass(cls):
+        cls.samdb = cls.getSamDB("-H", HOST, CREDS)
         super().setUpClass()
-        cls._first_self = None
-        cls.policies = []
-        cls.silos = []
 
     @classmethod
-    def tearDownClass(cls):
-        """Remove data created by setUp, and kept for the lifetime of the
-        class."""
-        first_self = cls._first_self
-        if first_self is not None:
-            for policy in first_self.policies:
-                first_self.delete_authentication_policy(policy, force=True)
+    def setUpTestData(cls):
+        cls.create_authentication_policy(name="Single Policy")
+        cls.create_authentication_policy(name="User Policy")
+        cls.create_authentication_policy(name="Service Policy")
+        cls.create_authentication_policy(name="Computer Policy")
 
-            for silo in first_self.silos:
-                first_self.delete_authentication_silo(silo, force=True)
-
-            cls._first_self = None
-
-        super().tearDownClass()
+        cls.create_authentication_silo(name="Developers",
+                                       description="Developers, Developers",
+                                       policy="Single Policy")
+        cls.create_authentication_silo(name="Managers",
+                                       description="Managers",
+                                       policy="Single Policy")
+        cls.create_authentication_silo(name="QA",
+                                       description="Quality Assurance",
+                                       user_policy="User Policy",
+                                       service_policy="Service Policy",
+                                       computer_policy="Computer Policy")
 
     def get_services_dn(self):
         """Returns Services DN."""
@@ -125,13 +102,14 @@ class BaseAuthCmdTest(SambaToolCmdTest):
     def _run(cls, *argv):
         """Override _run, so we don't always have to pass host and creds."""
         args = list(argv)
-        args.extend(["-H", cls.host, cls.creds])
+        args.extend(["-H", HOST, CREDS])
         return super()._run(*args)
 
     runcmd = _run
     runsubcmd = _run
 
-    def create_authentication_policy(self, name, description=None, audit=False,
+    @classmethod
+    def create_authentication_policy(cls, name, description=None, audit=False,
                                      protect=False):
         """Create an authentication policy."""
 
@@ -148,13 +126,15 @@ class BaseAuthCmdTest(SambaToolCmdTest):
 
         # Run command and store name in self.silos for tearDownClass to clean
         # up.
-        result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result, msg=err)
-        self.assertTrue(out.startswith("Created authentication policy"))
-        self.policies.append(name)
+        result, out, err = cls.runcmd(*cmd)
+        assert result is None
+        assert out.startswith("Created authentication policy")
+        cls.addClassCleanup(cls.delete_authentication_policy,
+                            name=name, force=True)
         return name
 
-    def delete_authentication_policy(self, name, force=False):
+    @classmethod
+    def delete_authentication_policy(cls, name, force=False):
         """Delete authentication policy by name."""
         cmd = ["domain", "auth", "policy", "delete", "--name", name]
 
@@ -162,11 +142,12 @@ class BaseAuthCmdTest(SambaToolCmdTest):
         if force:
             cmd.append("--force")
 
-        result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result, msg=err)
-        self.assertIn("Deleted authentication policy", out)
+        result, out, err = cls.runcmd(*cmd)
+        assert result is None
+        assert "Deleted authentication policy" in out
 
-    def create_authentication_silo(self, name, description=None, policy=None,
+    @classmethod
+    def create_authentication_silo(cls, name, description=None, policy=None,
                                    user_policy=None, service_policy=None,
                                    computer_policy=None, audit=False,
                                    protect=False):
@@ -194,13 +175,15 @@ class BaseAuthCmdTest(SambaToolCmdTest):
 
         # Run command and store name in self.silos for tearDownClass to clean
         # up.
-        result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result, msg=err)
-        self.assertTrue(out.startswith("Created authentication silo"))
-        self.silos.append(name)
+        result, out, err = cls.runcmd(*cmd)
+        assert result is None
+        assert out.startswith("Created authentication silo")
+        cls.addClassCleanup(cls.delete_authentication_silo,
+                            name=name, force=True)
         return name
 
-    def delete_authentication_silo(self, name, force=False):
+    @classmethod
+    def delete_authentication_silo(cls, name, force=False):
         """Delete authentication silo by name."""
         cmd = ["domain", "auth", "silo", "delete", "--name", name]
 
@@ -208,9 +191,9 @@ class BaseAuthCmdTest(SambaToolCmdTest):
         if force:
             cmd.append("--force")
 
-        result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result, msg=err)
-        self.assertIn("Deleted authentication silo", out)
+        result, out, err = cls.runcmd(*cmd)
+        assert result is None
+        assert "Deleted authentication silo" in out
 
     def get_authentication_silo(self, name):
         """Get authentication silo by name."""

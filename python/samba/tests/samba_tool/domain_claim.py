@@ -63,60 +63,30 @@ VALUE_TYPES = [
     "Yes/No"
 ]
 
+HOST = "ldap://{DC_SERVER}".format(**os.environ)
+CREDS = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
+
 
 class ClaimCmdTestCase(SambaToolCmdTest):
-    def setUp(self):
-        super().setUp()
-        self.this_test_claim_types = set()
-
-        if self._first_self is None:
-            cls = type(self)
-            cls.host = "ldap://{DC_SERVER}".format(**os.environ)
-            cls.creds = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
-            cls.samdb = self.getSamDB("-H", self.host, self.creds)
-
-            # Generate some known claim types used by tests.
-            for attribute in ATTRIBUTES:
-                self.create_claim_type(attribute, classes=["user"], preserve=True)
-
-            # Generate some more with unique names not in the ATTRIBUTES list.
-            self.create_claim_type("accountExpires", name="expires",
-                                   classes=["user"], preserve=True)
-            self.create_claim_type("department", name="dept", classes=["user"],
-                                   protect=True, preserve=True)
-            self.create_claim_type("carLicense", name="plate", classes=["user"],
-                                   disable=True, preserve=True)
-
-            cls._first_self = self
-
-    def tearDown(self):
-        # Remove claim types created by a single test.
-        first_self = self._first_self
-        if first_self is not None:
-            for claim_type in first_self.this_test_claim_types:
-                first_self.delete_claim_type(claim_type, force=True)
-                first_self.claim_types.remove(claim_type)
-
-        super().tearDown()
 
     @classmethod
     def setUpClass(cls):
+        cls.samdb = cls.getSamDB("-H", HOST, CREDS)
         super().setUpClass()
-        cls._first_self = None
-        cls.claim_types = set()
 
     @classmethod
-    def tearDownClass(cls):
-        # Remove claim types created by setUp, and kept for the lifetime of the
-        # class.
-        first_self = cls._first_self
-        if first_self is not None:
-            for claim_type in first_self.claim_types:
-                first_self.delete_claim_type(claim_type, force=True)
+    def setUpTestData(cls):
+        # Generate some known claim types used by tests.
+        for attribute in ATTRIBUTES:
+            cls.create_claim_type(attribute, classes=["user"])
 
-            cls._first_self = None
-
-        super().tearDownClass()
+        # Generate some more with unique names not in the ATTRIBUTES list.
+        cls.create_claim_type("accountExpires", name="expires",
+                              classes=["user"])
+        cls.create_claim_type("department", name="dept", classes=["user"],
+                              protect=True)
+        cls.create_claim_type("carLicense", name="plate", classes=["user"],
+                              disable=True)
 
     def get_services_dn(self):
         """Returns Services DN."""
@@ -134,15 +104,15 @@ class ClaimCmdTestCase(SambaToolCmdTest):
     def _run(cls, *argv):
         """Override _run, so we don't always have to pass host and creds."""
         args = list(argv)
-        args.extend(["-H", cls.host, cls.creds])
+        args.extend(["-H", HOST, CREDS])
         return super()._run(*args)
 
     runcmd = _run
     runsubcmd = _run
 
-    def create_claim_type(self, attribute, name=None, description=None,
-                          classes=None, disable=False, protect=False,
-                          preserve=False):
+    @classmethod
+    def create_claim_type(cls, attribute, name=None, description=None,
+                          classes=None, disable=False, protect=False):
         """Create a claim type using the samba-tool command."""
 
         # if name is specified it will override the attribute name
@@ -166,16 +136,14 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         if protect:
             cmd.append("--protect")
 
-        result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result, msg=err)
-        self.assertTrue(out.startswith("Created claim type"))
-        if preserve:
-            self.claim_types.add(display_name)
-        else:
-            self.this_test_claim_types.add(display_name)
+        result, out, err = cls.runcmd(*cmd)
+        assert result is None
+        assert out.startswith("Created claim type")
+        cls.addClassCleanup(cls.delete_claim_type, name=display_name, force=True)
         return display_name
 
-    def delete_claim_type(self, name, force=False):
+    @classmethod
+    def delete_claim_type(cls, name, force=False):
         """Delete claim type by display name."""
         cmd = ["domain", "claim", "claim-type", "delete", "--name", name]
 
@@ -183,9 +151,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         if force:
             cmd.append("--force")
 
-        result, out, err = self.runcmd(*cmd)
-        self.assertIsNone(result, msg=err)
-        self.assertIn("Deleted claim type", out)
+        result, out, err = cls.runcmd(*cmd)
+        assert result is None
+        assert "Deleted claim type" in out
 
     def get_claim_type(self, name):
         """Get claim type by display name."""
@@ -203,8 +171,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type", "list")
         self.assertIsNone(result, msg=err)
 
-        # check each claim type we created is there
-        for claim_type in self.claim_types:
+        for claim_type in ATTRIBUTES:
             self.assertIn(claim_type, out)
 
     def test_claim_type_list_json(self):
@@ -217,8 +184,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         json_result = json.loads(out)
         claim_types = list(json_result.keys())
 
-        # check each claim type we created is there
-        for claim_type in self.claim_types:
+        for claim_type in ATTRIBUTES:
             self.assertIn(claim_type, claim_types)
 
     def test_claim_type_view(self):

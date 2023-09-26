@@ -32,6 +32,9 @@ from samba.ndr import ndr_unpack
 
 from .base import SambaToolCmdTest
 
+HOST = "ldap://{DC_SERVER}".format(**os.environ)
+CREDS = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
+
 
 class FieldTestMixin:
     """Tests a model field to ensure it behaves correctly in both directions.
@@ -39,11 +42,10 @@ class FieldTestMixin:
     Use a mixin since TestCase can't be marked as abstract.
     """
 
-    def setUp(self):
-        super().setUp()
-        self.host = "ldap://{DC_SERVER}".format(**os.environ)
-        self.creds = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
-        self.samdb = self.getSamDB("-H", self.host, self.creds)
+    @classmethod
+    def setUpClass(cls):
+        cls.samdb = cls.getSamDB("-H", HOST, CREDS)
+        super().setUpClass()
 
     def get_users_dn(self):
         """Returns Users DN."""

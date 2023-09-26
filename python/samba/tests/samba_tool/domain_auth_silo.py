@@ -38,8 +38,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         result, out, err = self.runcmd("domain", "auth", "silo", "list")
         self.assertIsNone(result, msg=err)
 
-        # Check each silo we created is there.
-        for silo in self.silos:
+        expected_silos = ["Developers", "Managers", "QA"]
+
+        for silo in expected_silos:
             self.assertIn(silo, out)
 
     def test_authentication_silo_list_json(self):
@@ -51,8 +52,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         # we should get valid json
         silos = json.loads(out)
 
-        # each silo in self.silos must be present
-        for name in self.silos:
+        expected_silos = ["Developers", "Managers", "QA"]
+
+        for name in expected_silos:
             silo = silos[name]
             self.assertIn("msDS-AuthNPolicySilo", list(silo["objectClass"]))
             self.assertIn("description", silo)

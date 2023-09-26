@@ -39,8 +39,10 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         result, out, err = self.runcmd("domain", "auth", "policy", "list")
         self.assertIsNone(result, msg=err)
 
-        # Check each authentication policy we created is there.
-        for policy in self.policies:
+        expected_policies = [
+            "Single Policy", "User Policy", "Service Policy", "Computer Policy"]
+
+        for policy in expected_policies:
             self.assertIn(policy, out)
 
     def test_authentication_policy_list_json(self):
@@ -52,8 +54,10 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # we should get valid json
         policies = json.loads(out)
 
-        # each policy in self.policies must be present
-        for name in self.policies:
+        expected_policies = [
+            "Single Policy", "User Policy", "Service Policy", "Computer Policy"]
+
+        for name in expected_policies:
             policy = policies[name]
             self.assertIn("name", policy)
             self.assertIn("msDS-AuthNPolicy", list(policy["objectClass"]))
