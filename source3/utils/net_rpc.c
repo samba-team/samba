@@ -4806,45 +4806,43 @@ static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
 	return status;
 }
 
-static void init_user_token(struct security_token *token, struct dom_sid *user_sid)
+static void add_sid_to_token(struct security_token *token, const struct dom_sid *sid)
 {
-	token->num_sids = 4;
-
-	if (!(token->sids = SMB_MALLOC_ARRAY(struct dom_sid, 4))) {
-		d_fprintf(stderr, "malloc %s\n",_("failed"));
-		token->num_sids = 0;
-		return;
-	}
-
-	token->sids[0] = *user_sid;
-	sid_copy(&token->sids[1], &global_sid_World);
-	sid_copy(&token->sids[2], &global_sid_Network);
-	sid_copy(&token->sids[3], &global_sid_Authenticated_Users);
+	NTSTATUS status = add_sid_to_array_unique(token, sid,
+						  &token->sids, &token->num_sids);
+	/*
+	 * This is both very unlikely and mostly harmless in a command
+	 * line tool
+	 */
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
 }
 
-static void free_user_token(struct security_token *token)
+static void init_user_token(struct security_token **token, struct dom_sid *user_sid)
 {
-	SAFE_FREE(token->sids);
-}
+	/*
+	 * This token is not from the auth stack, only has user SIDs
+	 * and must fail if conditional ACEs are found in the security
+	 * descriptor
+	 */
+	*token = security_token_initialise(NULL, CLAIMS_EVALUATION_INVALID_STATE);
+	SMB_ASSERT(*token);
 
-static void add_sid_to_token(struct security_token *token, struct dom_sid *sid)
-{
-	if (security_token_has_sid(token, sid))
-		return;
+	add_sid_to_token(*token,
+			 user_sid);
 
-	token->sids = SMB_REALLOC_ARRAY(token->sids, struct dom_sid, token->num_sids+1);
-	if (!token->sids) {
-		return;
-	}
+	add_sid_to_token(*token,
+			 &global_sid_World);
 
-	sid_copy(&token->sids[token->num_sids], sid);
+	add_sid_to_token(*token,
+			 &global_sid_Network);
 
-	token->num_sids += 1;
+	add_sid_to_token(*token,
+			 &global_sid_Authenticated_Users);
 }
 
 struct user_token {
 	fstring name;
-	struct security_token token;
+	struct security_token *token;
 };
 
 static void dump_user_token(struct user_token *token)
@@ -4853,10 +4851,10 @@ static void dump_user_token(struct user_token *token)
 
 	d_printf("%s\n", token->name);
 
-	for (i=0; i<token->token.num_sids; i++) {
+	for (i=0; i<token->token->num_sids; i++) {
 		struct dom_sid_buf buf;
 		d_printf(" %s\n",
-			 dom_sid_str_buf(&token->token.sids[i], &buf));
+			 dom_sid_str_buf(&token->token->sids[i], &buf));
 	}
 }
 
@@ -4900,7 +4898,7 @@ static void collect_alias_memberships(struct security_token *token)
 	}
 }
 
-static bool get_user_sids(const char *domain, const char *user, struct security_token *token)
+static bool get_user_sids(const char *domain, const char *user, struct security_token **token)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	enum wbcSidType type;
@@ -4971,7 +4969,7 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 			wbcFreeMemory(groups);
 			return false;
 		}
-		add_sid_to_token(token, &sid);
+		add_sid_to_token(*token, &sid);
 	}
 	wbcFreeMemory(groups);
 
@@ -5083,7 +5081,7 @@ static bool get_user_tokens_from_file(FILE *f,
 				return false;
 			}
 
-			add_sid_to_token(&token->token, &sid);
+			add_sid_to_token(token->token, &sid);
 			continue;
 		}
 
@@ -5101,8 +5099,15 @@ static bool get_user_tokens_from_file(FILE *f,
 		if (strlcpy(token->name, line, sizeof(token->name)) >= sizeof(token->name)) {
 			return false;
 		}
-		token->token.num_sids = 0;
-		token->token.sids = NULL;
+		token->token
+			= security_token_initialise(NULL,
+						    CLAIMS_EVALUATION_INVALID_STATE);
+		if (token->token == NULL) {
+			DBG_ERR("security_token_initialise() failed: "
+				"Could not allocate security_token with \n");
+			return false;
+		}
+
 		continue;
 	}
 
@@ -5170,7 +5175,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 		uint32_t acc_granted;
 
 		if (share_sd != NULL) {
-			status = se_access_check(share_sd, &tokens[i].token,
+			status = se_access_check(share_sd, tokens[i].token,
 					     1, &acc_granted);
 
 			if (!NT_STATUS_IS_OK(status)) {
@@ -5186,8 +5191,8 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 			continue;
 		}
 
-		status = se_access_check(root_sd, &tokens[i].token,
-				     1, &acc_granted);
+		status = se_access_check(root_sd, tokens[i].token,
+					 1, &acc_granted);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not check root_sd for user %s\n",
 				  tokens[i].name));
@@ -5272,7 +5277,7 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 	}
 
 	for (i=0; i<num_tokens; i++)
-		collect_alias_memberships(&tokens[i].token);
+		collect_alias_memberships(tokens[i].token);
 
 	ZERO_STRUCT(info_ctr);
 	ZERO_STRUCT(ctr1);
@@ -5334,7 +5339,7 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 	}
  done:
 	for (i=0; i<num_tokens; i++) {
-		free_user_token(&tokens[i].token);
+		TALLOC_FREE(tokens[i].token);
 	}
 	SAFE_FREE(tokens);
 	TALLOC_FREE(server_aliases);
@@ -5391,7 +5396,7 @@ int net_usersidlist(struct net_context *c, int argc, const char **argv)
 
 	for (i=0; i<num_tokens; i++) {
 		dump_user_token(&tokens[i]);
-		free_user_token(&tokens[i].token);
+		TALLOC_FREE(tokens[i].token);
 	}
 
 	SAFE_FREE(tokens);
