@@ -23,6 +23,9 @@
 #ifndef _KRB5_SAMBA_H
 #define _KRB5_SAMBA_H
 
+#include "lib/util/data_blob.h"
+#include "libcli/util/ntstatus.h"
+
 #ifdef HAVE_KRB5
 
 #define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
