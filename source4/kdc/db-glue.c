@@ -2760,7 +2760,6 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 
 static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 					      struct samba_kdc_db_context *kdc_db_ctx,
-					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
 					      unsigned flags,
 					      struct sdb_entry *entry)
@@ -2970,7 +2969,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		return ret;
 	}
 
-	ret = samba_kdc_lookup_realm(context, kdc_db_ctx, mem_ctx,
+	ret = samba_kdc_lookup_realm(context, kdc_db_ctx,
 				     principal, flags, entry);
 	if (ret != 0) {
 		goto done;
