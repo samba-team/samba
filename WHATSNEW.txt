@@ -1,4 +1,80 @@
                    ==============================
+                   Release Notes for Samba 4.18.7
+                         September 27, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.18 release series.
+
+
+Changes since 4.18.6
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15419: Weird filename can cause assert to fail in
+     openat_pathref_fsp_nosymlink().
+   * BUG 15423: use-after-free in aio_del_req_from_fsp during smbd shutdown
+     after failed IPC FSCTL_PIPE_TRANSCEIVE.
+   * BUG 15432: TREE_CONNECT without SETUP causes smbd to use uninitialized
+     pointer.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15401: Avoid infinite loop in initial user sync with Azure AD Connect.
+   * BUG 15407: Samba replication logs show (null) DN.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15463: macOS mdfind returns only 50 results.
+
+o  Remi Collet <rcollet@redhat.com>
+   * BUG 14808: smbc_getxattr() return value is incorrect.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15481: GETREALFILENAME_CACHE can modify incoming new filename with
+     previous cache entry value.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15464: libnss_winbind causes memory corruption since samba-4.18,
+     impacts sendmail, zabbix, potentially more.
+
+o  MikeLiu <mikeliu@qnap.com>
+   * BUG 15453: File doesn't show when user doesn't have permission if
+     aio_pthread is loaded.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15451: ctdb_killtcp fails to work with --enable-pcap and libpcap ≥
+     1.9.1.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15476: The KDC in 4.18 (and older) is not able to accept tickets with
+     empty claims pac blobs (from Samba 4.19 or Windows).
+   * BUG 15477: The heimdal KDC doesn't detect s4u2self correctly when fast is
+     in use.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.18.6
                           August 16, 2023
                    ==============================
@@ -76,8 +152,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.5
                            July 19, 2023
