@@ -556,9 +556,12 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 					   struct ldb_context *samdb,
 					   struct loadparm_context* lp_ctx,
 					   const struct auth_user_info_dc *client_info,
+					   const struct auth_user_info_dc *device_info,
+					   const struct auth_claims auth_claims,
 					   const struct authn_policy *policy,
 					   const struct authn_int64_optional tgt_lifetime_raw,
 					   const enum authn_audit_event restriction_event,
+					   const struct authn_policy_flags authn_policy_flags,
 					   const DATA_BLOB *descriptor_blob,
 					   const char *location,
 					   struct authn_audit_info **audit_info_out)
@@ -591,6 +594,10 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
+	if (authn_policy_flags.force_compounded_authentication) {
+		session_info_flags |= AUTH_SESSION_INFO_FORCE_COMPOUNDED_AUTHENTICATION;
+	}
+
 	descriptor = talloc(tmp_ctx, struct security_descriptor);
 	if (descriptor == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -621,8 +628,8 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 					      lp_ctx,
 					      samdb,
 					      client_info,
-					      NULL /*device_info_dc */,
-					      (struct auth_claims) {},
+					      device_info,
+					      auth_claims,
 					      session_info_flags,
 					      &security_token);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -673,18 +680,24 @@ out:
 	samdb, \
 	lp_ctx, \
 	client_info, \
+	device_info, \
+	auth_claims, \
 	policy, \
 	tgt_lifetime_raw, \
 	restriction_event, \
+	authn_policy_flags, \
 	descriptor_blob, \
 	audit_info_out) \
 	_authn_policy_access_check(mem_ctx, \
 		samdb, \
 		lp_ctx, \
 		client_info, \
+		device_info, \
+		auth_claims, \
 		policy, \
 		tgt_lifetime_raw, \
 		restriction_event, \
+		authn_policy_flags,	\
 		descriptor_blob, \
 		__location__, \
 		audit_info_out)
@@ -847,9 +860,13 @@ NTSTATUS authn_policy_authenticate_from_device(TALLOC_CTX *mem_ctx,
 					   samdb,
 					   lp_ctx,
 					   device_info,
+					   /* The device itself has no device. */
+					   NULL /* device_info */,
+					   (struct auth_claims) {},
 					   &client_policy->policy,
 					   authn_int64_some(client_policy->tgt_lifetime_raw),
 					   AUTHN_AUDIT_EVENT_KERBEROS_DEVICE_RESTRICTION,
+					   (struct authn_policy_flags) {},
 					   restrictions,
 					   client_audit_info_out);
 out:
@@ -1192,9 +1209,12 @@ NTSTATUS authn_policy_authenticate_to_service(TALLOC_CTX *mem_ctx,
 					   samdb,
 					   lp_ctx,
 					   user_info,
+					   NULL /* device_info */,
+					   (struct auth_claims) {},
 					   &server_policy->policy,
 					   authn_int64_none() /* tgt_lifetime_raw */,
 					   event,
+					   (struct authn_policy_flags) {},
 					   restrictions,
 					   server_audit_info_out);
 	return status;

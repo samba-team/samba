@@ -113,6 +113,10 @@ enum authn_policy_auth_type {
 	AUTHN_POLICY_AUTH_TYPE_NTLM,
 };
 
+struct authn_policy_flags {
+	bool force_compounded_authentication : 1;
+};
+
 /*
  * Perform an access check for the client attempting to authenticate to the
  * server. ‘user_info’ must be talloc-allocated so that we can make a reference
