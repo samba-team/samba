@@ -1215,10 +1215,19 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		 */
 		nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 						       skdc_entry,
-						       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+						       SAMBA_ASSERTED_IDENTITY_IGNORE,
 						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+				nt_errstr(nt_status));
+			ret = KRB5KDC_ERR_TGT_REVOKED;
+			goto out;
+		}
+
+		nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+							    user_info_dc);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add asserted identity: %s\n",
 				nt_errstr(nt_status));
 			ret = KRB5KDC_ERR_TGT_REVOKED;
 			goto out;
@@ -2016,10 +2025,19 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_kdc_get_user_info_dc(frame,
 					       device,
-					       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+					       SAMBA_ASSERTED_IDENTITY_IGNORE,
 					       &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+			nt_errstr(nt_status));
+		talloc_free(frame);
+		return KRB5KDC_ERR_TGT_REVOKED;
+	}
+
+	nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+						    device_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
 		talloc_free(frame);
 		return KRB5KDC_ERR_TGT_REVOKED;
@@ -2924,10 +2942,20 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 	} else {
 		nt_status = samba_kdc_get_user_info_dc(frame,
 						       device,
-						       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+						       SAMBA_ASSERTED_IDENTITY_IGNORE,
 						       &device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+				nt_errstr(nt_status));
+
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto out;
+		}
+
+		nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+							    device_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add asserted identity: %s\n",
 				nt_errstr(nt_status));
 
 			code = KRB5KDC_ERR_TGT_REVOKED;

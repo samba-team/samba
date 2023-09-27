@@ -125,9 +125,18 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 	nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 					       skdc_entry,
-					       asserted_identity,
+					       SAMBA_ASSERTED_IDENTITY_IGNORE,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return map_errno_from_nt_status(nt_status);
+	}
+
+	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
+						    user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add asserted identity: %s\n",
+			nt_errstr(nt_status));
 		talloc_free(mem_ctx);
 		return map_errno_from_nt_status(nt_status);
 	}

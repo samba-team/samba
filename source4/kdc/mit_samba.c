@@ -486,7 +486,7 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 
 	nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
 					       skdc_entry,
-					       asserted_identity,
+					       SAMBA_ASSERTED_IDENTITY_IGNORE,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
@@ -494,6 +494,15 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				    NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			return ENOENT;
 		}
+		return EINVAL;
+	}
+
+	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
+						    user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add asserted identity: %s\n",
+			nt_errstr(nt_status));
+		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
 
