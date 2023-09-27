@@ -725,7 +725,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 			if (ret == -1) {
 				DBG_DEBUG("FSETXATTR failed: %s\n",
 					  strerror(errno));
-				return -1;
+				goto done;
 			}
 		}
 	}
