@@ -855,6 +855,50 @@ NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_aut
 }
 
 /*
+ * Return true if this entry has an associated PAC issued or signed by a KDC
+ * that our KDC trusts. We trust the main krbtgt account, but we don’t trust any
+ * RODC krbtgt besides ourselves.
+ */
+bool samba_krb5_pac_is_trusted(const struct samba_kdc_entry_pac pac)
+{
+	if (pac.pac == NULL) {
+		return false;
+	}
+
+#ifdef HAVE_KRB5_PAC_IS_TRUSTED /* Heimdal */
+	return krb5_pac_is_trusted(pac.pac);
+#else /* MIT */
+	return pac.pac_is_trusted;
+#endif /* HAVE_KRB5_PAC_IS_TRUSTED */
+}
+
+#ifdef HAVE_KRB5_PAC_IS_TRUSTED /* Heimdal */
+struct samba_kdc_entry_pac samba_kdc_entry_pac(krb5_const_pac pac,
+					       struct samba_kdc_entry *entry,
+					       bool is_from_trust)
+{
+	return (struct samba_kdc_entry_pac) {
+		.entry = entry,
+		.pac = pac,
+		.is_from_trust = is_from_trust,
+	};
+}
+#else /* MIT */
+struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
+							    struct samba_kdc_entry *entry,
+							    bool is_from_trust,
+							    bool is_trusted)
+{
+	return (struct samba_kdc_entry_pac) {
+		.entry = entry,
+		.pac = pac,
+		.is_from_trust = is_from_trust,
+		.pac_is_trusted = is_trusted,
+	};
+}
+#endif /* HAVE_KRB5_PAC_IS_TRUSTED */
+
+/*
  * Look up the user's info in the database and create a auth_user_info_dc
  * structure. If the resulting structure is not talloc_free()d, it will be
  * reused on future calls to this function.
