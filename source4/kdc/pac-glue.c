@@ -1100,7 +1100,6 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct samba_kdc_entry *skdc_entry,
 				    enum samba_asserted_identity asserted_identity,
 				    enum samba_claims_valid claims_valid,
-				    enum samba_compounded_auth compounded_auth,
 				    struct auth_user_info_dc **user_info_dc_out)
 {
 	NTSTATUS nt_status;
@@ -1135,14 +1134,6 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 					       user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
-			nt_errstr(nt_status));
-		return nt_status;
-	}
-
-	nt_status = samba_kdc_add_compounded_auth(compounded_auth,
-						  user_info_dc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Compounded Authentication: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
@@ -1235,7 +1226,6 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						       skdc_entry,
 						       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
 						       SAMBA_CLAIMS_VALID_EXCLUDE,
-						       SAMBA_COMPOUNDED_AUTH_EXCLUDE,
 						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
@@ -2038,7 +2028,6 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 					       device,
 					       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
 					       SAMBA_CLAIMS_VALID_INCLUDE,
-					       SAMBA_COMPOUNDED_AUTH_EXCLUDE,
 					       &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
@@ -2939,7 +2928,6 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 						       device,
 						       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
 						       SAMBA_CLAIMS_VALID_INCLUDE,
-						       SAMBA_COMPOUNDED_AUTH_EXCLUDE,
 						       &device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
