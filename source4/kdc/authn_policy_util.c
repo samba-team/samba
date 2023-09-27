@@ -621,6 +621,8 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 					      lp_ctx,
 					      samdb,
 					      client_info,
+					      NULL /*device_info_dc */,
+					      (struct auth_claims) {},
 					      session_info_flags,
 					      &security_token);
 	if (!NT_STATUS_IS_OK(status)) {

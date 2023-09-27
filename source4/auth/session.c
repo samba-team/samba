@@ -56,6 +56,8 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 					       struct loadparm_context *lp_ctx, /* Optional, if you don't want privileges */
 					       struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
 					       const struct auth_user_info_dc *user_info_dc,
+					       const struct auth_user_info_dc *device_info_dc,
+					       const struct auth_claims auth_claims,
 					       uint32_t session_info_flags,
 					       struct security_token **_security_token)
 {
@@ -63,8 +65,10 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	uint32_t i;
 	uint32_t num_sids = 0;
+	uint32_t num_device_sids = 0;
 	const char *filter = NULL;
 	struct auth_SidAttr *sids = NULL;
+	const struct auth_SidAttr *device_sids = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -172,13 +176,23 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (device_info_dc != NULL) {
+		device_sids = device_info_dc->sids;
+		num_device_sids = device_info_dc->num_sids;
+	}
+
+	/*
+	 * TODO: if we find out that we need to add default SIDs to the device
+	 * SIDs, as well as to the client SIDs, we’ll do that here.
+	 */
+
 	nt_status = security_token_create(mem_ctx,
 					  lp_ctx,
 					  num_sids,
 					  sids,
-					  0 /* num_device_sids */,
-					  NULL /* device_sids */,
-					  (struct auth_claims) {},
+					  num_device_sids,
+					  device_sids,
+					  auth_claims,
 					  session_info_flags,
 					  &security_token);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -241,6 +255,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 						 lp_ctx,
 						 sam_ctx,
 						 user_info_dc,
+						 NULL /*device_info_dc */,
+						 (struct auth_claims) {},
 						 session_info_flags,
 						 &session_info->security_token);
 	if (!NT_STATUS_IS_OK(nt_status)) {
