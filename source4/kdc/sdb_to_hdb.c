@@ -210,11 +210,13 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 
 	*h = (hdb_entry) {};
 
-	rc = krb5_copy_principal(context,
-				 s->principal,
-				 &h->principal);
-	if (rc != 0) {
-		return rc;
+	if (s->principal != NULL) {
+		rc = krb5_copy_principal(context,
+					 s->principal,
+					 &h->principal);
+		if (rc != 0) {
+			return rc;
+		}
 	}
 
 	h->kvno = s->kvno;
