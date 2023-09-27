@@ -141,6 +141,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     server_id.idl
                     smb_acl.idl
                     xattr.idl
+                    smb3posix.idl
                     ''',
                     options='--header --ndr-parser --python',
                     output_dir='../gen_ndr')

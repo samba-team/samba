@@ -1,0 +1,36 @@
+#include "idl_types.h"
+
+/*
+   IDL for smb311 unix structures
+*/
+
+import "security.idl";
+
+[
+  version(0.0),
+  pointer_default(unique)
+]
+interface smb3posix
+{
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32 nlinks;
+		uint32 reparse_tag;
+		uint32 posix_perms;
+		dom_sid owner;
+		dom_sid group;
+	} smb3_posix_cc_info;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		NTTIME creation_time;
+		NTTIME last_access_time;
+		NTTIME last_write_time;
+		NTTIME change_time;
+		hyper end_of_file;
+		hyper allocation_size;
+		uint32 file_attributes;
+		hyper inode;
+		uint32 device;
+		uint32 reserved;
+		smb3_posix_cc_info cc;
+	} smb3_file_posix_information;
+}

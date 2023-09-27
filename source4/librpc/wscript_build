@@ -470,6 +470,13 @@ bld.SAMBA_PYTHON('python_dcerpc_xattr',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_dcerpc_smb3posix',
+        source='../../librpc/gen_ndr/py_smb3posix.c',
+        deps='%s %s NDR_SMB3POSIX' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/smb3posix.so',
+        cflags_end=gen_cflags
+        )
+
 bld.SAMBA_PYTHON('python_dcerpc_idmap',
         source='../../librpc/gen_ndr/py_idmap.c',
         deps='%s %s NDR_IDMAP' % (pytalloc_util, pyrpc_util),
