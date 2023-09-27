@@ -618,11 +618,11 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 	}
 
 	status = auth_generate_security_token(tmp_ctx,
-					       lp_ctx,
-					       samdb,
-					       client_info,
-					       session_info_flags,
-					       &security_token);
+					      lp_ctx,
+					      samdb,
+					      client_info,
+					      session_info_flags,
+					      &security_token);
 	if (!NT_STATUS_IS_OK(status)) {
 		reason = AUTHN_AUDIT_REASON_SECURITY_TOKEN_FAILURE;
 		goto out;
