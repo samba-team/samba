@@ -1,5 +1,6 @@
 *.dump binary
 *.SAMBABACKUP binary
+libcli/security/tests/data/conditional_aces.txt.json binary
 testdata/compression/compressed-huffman/** binary
 testdata/compression/compressed-more-huffman/** binary
 testdata/compression/compressed-more-plain/** binary
