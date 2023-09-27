@@ -33,6 +33,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/xattr.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/ndr_smb3posix.h"
 #include "libcli/security/security.h"
 #include "trans2.h"
 #include "auth.h"
@@ -1702,8 +1703,15 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	case SMB2_FILE_POSIX_INFORMATION:
 		{
-			uint8_t *buf = NULL;
-			ssize_t plen = 0;
+			struct smb3_file_posix_information info = {};
+			uint8_t buf[sizeof(info)];
+			struct ndr_push ndr = {
+				.data = buf,
+				.alloc_size = sizeof(buf),
+				.fixed_buf_size = true,
+			};
+			enum ndr_err_code ndr_err;
+
 			p+= 4;
 			SIVAL(p,0,reskey); p+= 4;
 
@@ -1713,31 +1721,17 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
-			/* Determine the size of the posix info context */
-			plen = store_smb2_posix_info(conn,
-						     &smb_fname->st,
-						     0,
-						     mode,
-						     NULL,
-						     0);
-			if (plen == -1) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			buf = talloc_zero_size(ctx, plen);
-			if (buf == NULL) {
-				return NT_STATUS_NO_MEMORY;
+			smb3_file_posix_information_init(
+				conn, &smb_fname->st, 0, mode, &info);
+
+			ndr_err = ndr_push_smb3_file_posix_information(
+				&ndr, NDR_SCALARS|NDR_BUFFERS, &info);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return NT_STATUS_INSUFFICIENT_RESOURCES;
 			}
 
-			/* Store the context in buf */
-			store_smb2_posix_info(conn,
-					      &smb_fname->st,
-					      0,
-					      mode,
-					      buf,
-					      plen);
-			memcpy(p, buf, plen);
-			p += plen;
-			TALLOC_FREE(buf);
+			memcpy(p, buf, ndr.offset);
+			p += ndr.offset;
 
 			nameptr = p;
 			p += 4;
