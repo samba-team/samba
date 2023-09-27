@@ -29,6 +29,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "libcli/security/security.h"
+#include "libcli/security/claims-conversions.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "system/time.h"
@@ -165,6 +166,9 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 			       struct loadparm_context *lp_ctx,
 			       uint32_t num_sids,
 			       const struct auth_SidAttr *sids,
+			       uint32_t num_device_sids,
+			       const struct auth_SidAttr *device_sids,
+			       struct auth_claims auth_claims,
 			       uint32_t session_info_flags,
 			       struct security_token **token)
 {
@@ -172,6 +176,9 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 	NTSTATUS status;
 	enum claims_evaluation_control evaluate_claims;
+	bool sids_are_valid = false;
+	bool device_sids_are_valid = false;
+	bool authentication_was_compounded = false;
 
 	/*
 	 * Some special-case callers can't supply the lp_ctx, but do
@@ -222,14 +229,58 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		}
 
 		if (check_sid_idx == ptoken->num_sids) {
+			const struct dom_sid *sid = &sids[i].sid;
+
+			sids_are_valid = sids_are_valid || dom_sid_equal(
+				sid, &global_sid_Claims_Valid);
+			authentication_was_compounded = authentication_was_compounded || dom_sid_equal(
+				sid, &global_sid_Compounded_Authentication);
+
 			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
 			if (ptoken->sids == NULL) {
 				talloc_free(ptoken);
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			ptoken->sids[ptoken->num_sids] = sids[i].sid;
+			ptoken->sids[ptoken->num_sids] = *sid;
 			ptoken->num_sids++;
+		}
+	}
+
+	if (authentication_was_compounded) {
+		ptoken->device_sids = talloc_array(ptoken, struct dom_sid, num_device_sids);
+		if (ptoken->device_sids == NULL) {
+			talloc_free(ptoken);
+			return NT_STATUS_NO_MEMORY;
+		}
+		for (i = 0; i < num_device_sids; i++) {
+			uint32_t check_sid_idx;
+			for (check_sid_idx = 0;
+			     check_sid_idx < ptoken->num_device_sids;
+			     check_sid_idx++) {
+				if (dom_sid_equal(&ptoken->device_sids[check_sid_idx], &device_sids[i].sid)) {
+					break;
+				}
+			}
+
+			if (check_sid_idx == ptoken->num_device_sids) {
+				const struct dom_sid *device_sid = &device_sids[i].sid;
+
+				device_sids_are_valid = device_sids_are_valid || dom_sid_equal(
+					device_sid, &global_sid_Claims_Valid);
+
+				ptoken->device_sids = talloc_realloc(ptoken,
+								     ptoken->device_sids,
+								     struct dom_sid,
+								     ptoken->num_device_sids + 1);
+				if (ptoken->device_sids == NULL) {
+					talloc_free(ptoken);
+					return NT_STATUS_NO_MEMORY;
+				}
+
+				ptoken->device_sids[ptoken->num_device_sids] = *device_sid;
+				ptoken->num_device_sids++;
+			}
 		}
 	}
 
@@ -254,6 +305,33 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(ptoken);
 			DEBUG(1,("Unable to access privileges database\n"));
+			return status;
+		}
+	}
+
+	/*
+	 * TODO: we might want to regard ‘session_info_flags’ for the device
+	 * SIDs as well as for the client SIDs.
+	 */
+
+	if (sids_are_valid) {
+		status = claims_data_security_claims(ptoken,
+						     auth_claims.user_claims,
+						     &ptoken->user_claims,
+						     &ptoken->num_user_claims);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(ptoken);
+			return status;
+		}
+	}
+
+	if (device_sids_are_valid && authentication_was_compounded) {
+		status = claims_data_security_claims(ptoken,
+						     auth_claims.device_claims,
+						     &ptoken->device_claims,
+						     &ptoken->num_device_claims);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(ptoken);
 			return status;
 		}
 	}

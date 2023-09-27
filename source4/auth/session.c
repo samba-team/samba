@@ -176,6 +176,9 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 					  lp_ctx,
 					  num_sids,
 					  sids,
+					  0 /* num_device_sids */,
+					  NULL /* device_sids */,
+					  (struct auth_claims) {},
 					  session_info_flags,
 					  &security_token);
 	if (!NT_STATUS_IS_OK(nt_status)) {

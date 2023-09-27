@@ -45,6 +45,7 @@ enum dsdb_password_checked {
 #include "librpc/gen_ndr/drsuapi.h"
 #include "librpc/gen_ndr/drsblobs.h"
 #include "dsdb/schema/schema.h"
+#include "auth/session.h"
 #include "dsdb/samdb/samdb_proto.h"
 #include "dsdb/common/dsdb_dn.h"
 #include "dsdb/common/util_links.h"
