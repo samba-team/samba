@@ -431,7 +431,8 @@ NTSTATUS authsam_get_session_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = auth_generate_session_info(tmp_ctx, lp_ctx, sam_ctx,
-					       user_info_dc, session_info_flags,
+					       user_info_dc,
+					       session_info_flags,
 					       session_info);
 
 	if (NT_STATUS_IS_OK(nt_status)) {

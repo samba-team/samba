@@ -558,9 +558,12 @@ static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_co
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
-	status = auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
-					    auth_context->sam_ctx, user_info_dc,
-					    session_info_flags, session_info);
+	status = auth_generate_session_info(mem_ctx,
+					    auth_context->lp_ctx,
+					    auth_context->sam_ctx,
+					    user_info_dc,
+					    session_info_flags,
+					    session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

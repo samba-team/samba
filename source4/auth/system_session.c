@@ -92,7 +92,12 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the user_info_dc into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, NULL, user_info_dc, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx,
+					       lp_ctx,
+					       NULL /* sam_ctx */,
+					       user_info_dc,
+					       AUTH_SESSION_INFO_SIMPLE_PRIVILEGES,
+					       &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -369,15 +374,20 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
-	nt_status = auth_domain_admin_user_info_dc(mem_ctx, lpcfg_netbios_name(lp_ctx),
-						  lpcfg_workgroup(lp_ctx), domain_sid,
-						  &user_info_dc);
+	nt_status = auth_domain_admin_user_info_dc(mem_ctx,
+						   lpcfg_netbios_name(lp_ctx),
+						   lpcfg_workgroup(lp_ctx),
+						   domain_sid,
+						   &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
 	}
 
-	nt_status = auth_generate_session_info(mem_ctx, lp_ctx, NULL, user_info_dc,
+	nt_status = auth_generate_session_info(mem_ctx,
+					       lp_ctx,
+					       NULL /* sam_ctx */,
+					       user_info_dc,
 					       AUTH_SESSION_INFO_SIMPLE_PRIVILEGES|AUTH_SESSION_INFO_AUTHENTICATED|AUTH_SESSION_INFO_DEFAULT_GROUPS,
 					       session_info);
 	/* There is already a reference between the session_info and user_info_dc */
@@ -417,15 +427,20 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 	
 	nt_status = auth_anonymous_user_info_dc(mem_ctx,
-					       lpcfg_netbios_name(lp_ctx),
-					       &user_info_dc);
+						lpcfg_netbios_name(lp_ctx),
+						&user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
 	}
 
 	/* references the user_info_dc into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, NULL, user_info_dc, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx,
+					       lp_ctx,
+					       NULL /* sam_ctx */,
+					       user_info_dc,
+					       AUTH_SESSION_INFO_SIMPLE_PRIVILEGES,
+					       &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
