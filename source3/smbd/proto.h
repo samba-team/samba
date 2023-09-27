@@ -1259,23 +1259,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 				       files_struct **result,
 				       DATA_BLOB *new_cookie);
 
-/* The following definitions come from smbd/smb2_posix.c */
-ssize_t smb2_posix_cc_info(
-	connection_struct *conn,
-	uint32_t reparse_tag,
-	const SMB_STRUCT_STAT *psbuf,
-	const struct dom_sid *owner,
-	const struct dom_sid *group,
-	uint8_t *buf,
-	size_t buflen);
-ssize_t store_smb2_posix_info(
-	connection_struct *conn,
-	const SMB_STRUCT_STAT *psbuf,
-	uint32_t reparse_tag,
-	uint32_t dos_attributes,
-	uint8_t *buf,
-	size_t buflen);
-
 struct smb3_file_posix_information;
 void smb3_file_posix_information_init(
 	connection_struct *conn,
