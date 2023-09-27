@@ -178,7 +178,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	enum claims_evaluation_control evaluate_claims;
 	bool sids_are_valid = false;
 	bool device_sids_are_valid = false;
-	bool authentication_was_compounded = false;
+	bool authentication_was_compounded = session_info_flags & AUTH_SESSION_INFO_FORCE_COMPOUNDED_AUTHENTICATION;
 
 	/*
 	 * Some special-case callers can't supply the lp_ctx, but do
