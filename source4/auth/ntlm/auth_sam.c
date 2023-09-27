@@ -822,7 +822,10 @@ static NTSTATUS authsam_check_netlogon_trust(TALLOC_CTX *mem_ctx,
 							      lp_ctx,
 							      AUTHN_POLICY_AUTH_TYPE_NTLM,
 							      user_info_dc,
+							      NULL /* device_info */,
+							      (struct auth_claims) {},
 							      authn_server_policy,
+							      (struct authn_policy_flags) {},
 							      &server_audit_info);
 		if (server_audit_info != NULL) {
 			*server_audit_info_out = talloc_move(mem_ctx, &server_audit_info);

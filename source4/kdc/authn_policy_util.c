@@ -1177,7 +1177,10 @@ NTSTATUS authn_policy_authenticate_to_service(TALLOC_CTX *mem_ctx,
 					      struct loadparm_context* lp_ctx,
 					      const enum authn_policy_auth_type auth_type,
 					      const struct auth_user_info_dc *user_info,
+					      const struct auth_user_info_dc *device_info,
+					      const struct auth_claims auth_claims,
 					      const struct authn_server_policy *server_policy,
+					      const struct authn_policy_flags authn_policy_flags,
 					      struct authn_audit_info **server_audit_info_out)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -1210,12 +1213,12 @@ NTSTATUS authn_policy_authenticate_to_service(TALLOC_CTX *mem_ctx,
 					   samdb,
 					   lp_ctx,
 					   user_info,
-					   NULL /* device_info */,
-					   (struct auth_claims) {},
+					   device_info,
+					   auth_claims,
 					   &server_policy->policy,
 					   authn_int64_none() /* tgt_lifetime_raw */,
 					   event,
-					   (struct authn_policy_flags) {},
+					   authn_policy_flags,
 					   restrictions,
 					   server_audit_info_out);
 	return status;

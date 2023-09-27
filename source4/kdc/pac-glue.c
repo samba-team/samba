@@ -1671,7 +1671,10 @@ krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
 						      lp_ctx,
 						      AUTHN_POLICY_AUTH_TYPE_KERBEROS,
 						      client_info,
+						      NULL /* device_info */,
+						      (struct auth_claims) {},
 						      server_policy,
+						      (struct authn_policy_flags) {},
 						      server_audit_info_out);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (status_out != NULL) {
