@@ -2951,6 +2951,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 							  samdb,
 							  lp_ctx,
 							  device_info,
+							  (struct auth_claims) {},
 							  client_policy,
 							  &client_audit_info);
 	if (client_audit_info != NULL) {

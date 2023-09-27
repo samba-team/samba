@@ -845,6 +845,7 @@ NTSTATUS authn_policy_authenticate_from_device(TALLOC_CTX *mem_ctx,
 					       struct ldb_context *samdb,
 					       struct loadparm_context* lp_ctx,
 					       const struct auth_user_info_dc *device_info,
+					       const struct auth_claims auth_claims,
 					       const struct authn_kerberos_client_policy *client_policy,
 					       struct authn_audit_info **client_audit_info_out)
 {
@@ -862,7 +863,7 @@ NTSTATUS authn_policy_authenticate_from_device(TALLOC_CTX *mem_ctx,
 					   device_info,
 					   /* The device itself has no device. */
 					   NULL /* device_info */,
-					   (struct auth_claims) {},
+					   auth_claims,
 					   &client_policy->policy,
 					   authn_int64_some(client_policy->tgt_lifetime_raw),
 					   AUTHN_AUDIT_EVENT_KERBEROS_DEVICE_RESTRICTION,
