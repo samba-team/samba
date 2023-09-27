@@ -2027,10 +2027,19 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 	nt_status = samba_kdc_get_user_info_dc(frame,
 					       device,
 					       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
-					       SAMBA_CLAIMS_VALID_INCLUDE,
+					       SAMBA_CLAIMS_VALID_EXCLUDE,
 					       &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+			nt_errstr(nt_status));
+		talloc_free(frame);
+		return KRB5KDC_ERR_TGT_REVOKED;
+	}
+
+	nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
+					       device_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
 		talloc_free(frame);
 		return KRB5KDC_ERR_TGT_REVOKED;
@@ -2927,10 +2936,20 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 		nt_status = samba_kdc_get_user_info_dc(frame,
 						       device,
 						       SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
-						       SAMBA_CLAIMS_VALID_INCLUDE,
+						       SAMBA_CLAIMS_VALID_EXCLUDE,
 						       &device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+				nt_errstr(nt_status));
+
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto out;
+		}
+
+		nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
+						       device_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add Claims Valid: %s\n",
 				nt_errstr(nt_status));
 
 			code = KRB5KDC_ERR_TGT_REVOKED;
