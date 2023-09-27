@@ -610,6 +610,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	struct samba_kdc_entry *server_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry = NULL;
+	struct samba_kdc_entry_pac client_pac_entry = {};
 	bool is_in_db = false;
 	bool is_trusted = false;
 	uint32_t flags = 0;
@@ -658,10 +659,6 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 		goto done;
 	}
 
-	if (is_trusted) {
-		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_TRUSTED;
-	}
-
 	if (kdc_flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) {
 		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
 	}
@@ -670,12 +667,16 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 		flags |= SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION;
 	}
 
+	client_pac_entry = samba_kdc_entry_pac_from_trusted(old_pac,
+							    client_skdc_entry,
+							    samba_kdc_entry_is_trust(krbtgt_skdc_entry),
+							    is_trusted);
+
 	code = samba_kdc_verify_pac(tmp_ctx,
 				    context,
 				    flags,
-				    client_skdc_entry,
-				    krbtgt_skdc_entry,
-				    old_pac);
+				    client_pac_entry,
+				    krbtgt_skdc_entry);
 	if (code != 0) {
 		goto done;
 	}
@@ -685,17 +686,12 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    krbtgt_skdc_entry->kdc_db_ctx->samdb,
 				    krbtgt_skdc_entry->kdc_db_ctx->lp_ctx,
 				    flags,
-				    krbtgt_skdc_entry,
-				    client_skdc_entry,
+				    client_pac_entry,
 				    server->princ,
 				    server_skdc_entry,
 				    NULL /* delegated_proxy_principal */,
-				    NULL /* delegated_proxy */,
-				    NULL /* delegated_proxy_pac */,
-				    NULL /* device_krbtgt */,
-				    NULL /* device */,
-				    NULL /* device_pac */,
-				    old_pac,
+				    (struct samba_kdc_entry_pac) {} /* delegated_proxy */,
+				    (struct samba_kdc_entry_pac) {} /* device */,
 				    new_pac,
 				    NULL /* server_audit_info_out */,
 				    NULL /* status_out */);
