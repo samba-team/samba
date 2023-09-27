@@ -1098,7 +1098,6 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct samba_kdc_entry *skdc_entry,
-				    enum samba_asserted_identity asserted_identity,
 				    struct auth_user_info_dc **user_info_dc_out)
 {
 	NTSTATUS nt_status;
@@ -1116,15 +1115,6 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, user_info_dc_from_db, &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
-			nt_errstr(nt_status));
-		return nt_status;
-	}
-
-	/* Here we modify the SIDs to add the Asserted Identity SID. */
-	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
-						    user_info_dc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
 		return nt_status;
 	}
@@ -1215,7 +1205,6 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		 */
 		nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 						       skdc_entry,
-						       SAMBA_ASSERTED_IDENTITY_IGNORE,
 						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
@@ -2025,7 +2014,6 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_kdc_get_user_info_dc(frame,
 					       device,
-					       SAMBA_ASSERTED_IDENTITY_IGNORE,
 					       &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
@@ -2942,7 +2930,6 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 	} else {
 		nt_status = samba_kdc_get_user_info_dc(frame,
 						       device,
-						       SAMBA_ASSERTED_IDENTITY_IGNORE,
 						       &device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
