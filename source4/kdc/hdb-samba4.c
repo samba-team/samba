@@ -1109,7 +1109,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db)
 {
-	struct samba_kdc_db_context *kdc_db_ctx;
+	struct samba_kdc_db_context *kdc_db_ctx = NULL;
 	NTSTATUS nt_status;
 
 	if (hdb_interface_version != HDB_INTERFACE_VERSION) {
