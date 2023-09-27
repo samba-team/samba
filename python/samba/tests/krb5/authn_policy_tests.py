@@ -41,6 +41,7 @@ import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import GroupType
 from samba.tests.krb5.kdc_tgs_tests import KdcTgsBaseTests
 from samba.tests.auth_log_base import AuthLogTestBase, NoMessageException
+from samba.tests.krb5.raw_testcase import RawKerberosTest
 from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_BADOPTION,
@@ -49,8 +50,11 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_POLICY,
     NT_PRINCIPAL,
     NT_SRV_INST,
+    PADATA_FX_FAST,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
+
+SidType = RawKerberosTest.SidType
 
 global_asn1_print = False
 global_hexdump = False
@@ -5067,6 +5071,62 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
         # The client’s policy does not apply for S4U2Self, and thus does not
         # appear in the logs.
         self.check_tgs_log(client_creds, target_creds, policy=None)
+
+    def test_authn_policy_allowed_to_user_allow_s4u2self_inner_fast(self):
+        """Test that the correct Asserted Identity SID is placed into the PAC
+        when an S4U2Self requests contains inner FX‐FAST padata."""
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+        client_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[client_creds.get_username()])
+        client_realm = client_creds.get_realm()
+
+        # Create a target account.
+        target_creds = self.get_service_creds()
+        target_tgt = self.get_tgt(target_creds)
+
+        def generate_s4u2self_padata(_kdc_exchange_dict,
+                                     _callback_dict,
+                                     req_body):
+            s4u2self_padata = self.PA_S4U2Self_create(
+                name=client_cname,
+                realm=client_realm,
+                tgt_session_key=target_tgt.session_key,
+                ctype=None)
+
+            # Add empty FX‐FAST padata to the inner request.
+            fx_fast_padata = self.PA_DATA_create(PADATA_FX_FAST, b'')
+
+            padata = [s4u2self_padata, fx_fast_padata]
+
+            return padata, req_body
+
+        # Check that the PAC contains the correct groups.
+        self._tgs_req(
+            target_tgt, 0, target_creds, target_creds,
+            expected_cname=client_cname,
+            generate_fast_padata_fn=generate_s4u2self_padata,
+            armor_tgt=mach_tgt,
+            expected_groups={
+                (
+                    # Expect to get the Service Asserted Identity SID.
+                    security.SID_SERVICE_ASSERTED_IDENTITY,
+                    SidType.EXTRA_SID,
+                    security.SE_GROUP_DEFAULT_FLAGS,
+                ),
+                ...,
+            },
+            unexpected_groups={
+                # Expect not to get the Authentication Authority Asserted
+                # Identity SID.
+                security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,
+            })
 
     def test_authn_policy_allowed_to_user_allow_constrained_delegation(self):
         samdb = self.get_samdb()
