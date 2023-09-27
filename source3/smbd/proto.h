@@ -1276,4 +1276,12 @@ ssize_t store_smb2_posix_info(
 	uint8_t *buf,
 	size_t buflen);
 
+struct smb3_file_posix_information;
+void smb3_file_posix_information_init(
+	connection_struct *conn,
+	const struct stat_ex *st,
+	uint32_t reparse_tag,
+	uint32_t dos_attributes,
+	struct smb3_file_posix_information *dst);
+
 #endif /* _SMBD_PROTO_H_ */
