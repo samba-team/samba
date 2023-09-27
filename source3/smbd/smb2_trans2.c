@@ -1707,8 +1707,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			p+= 4;
 			SIVAL(p,0,reskey); p+= 4;
 
-			DEBUG(10,("smbd_marshall_dir_entry: "
-				  "SMB2_FILE_POSIX_INFORMATION\n"));
+			DBG_DEBUG("SMB2_FILE_POSIX_INFORMATION\n");
+
 			if (!(conn->sconn->using_smb2)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
