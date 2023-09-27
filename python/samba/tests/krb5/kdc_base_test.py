@@ -22,14 +22,14 @@ import os
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-from datetime import datetime, timezone
-from functools import partial
-import tempfile
 import binascii
 import collections
+from datetime import datetime, timezone
+from enum import Enum
+from functools import partial
 import numbers
 import secrets
-from enum import Enum
+import tempfile
 
 from collections import namedtuple
 import ldb
@@ -44,9 +44,9 @@ from samba import (
 from samba.auth import system_session
 from samba.credentials import (
     Credentials,
-    SPECIFIED,
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
+    SPECIFIED,
 )
 from samba.crypto import des_crypt_blob_16, md4_hash_blob
 from samba.dcerpc import (
@@ -74,18 +74,18 @@ from samba.dsdb import (
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
     GTYPE_SECURITY_UNIVERSAL_GROUP,
-    UF_WORKSTATION_TRUST_ACCOUNT,
-    UF_NO_AUTH_DATA_REQUIRED,
     UF_NORMAL_ACCOUNT,
     UF_NOT_DELEGATED,
+    UF_NO_AUTH_DATA_REQUIRED,
     UF_PARTIAL_SECRETS_ACCOUNT,
     UF_SERVER_TRUST_ACCOUNT,
-    UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
+    UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
+    UF_WORKSTATION_TRUST_ACCOUNT,
 )
 from samba.dcerpc.misc import (
+    SEC_CHAN_BDC,
     SEC_CHAN_NULL,
     SEC_CHAN_WKSTA,
-    SEC_CHAN_BDC,
 )
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
@@ -101,7 +101,7 @@ import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.raw_testcase import (
     KerberosCredentials,
     KerberosTicketCreds,
-    RawKerberosTest
+    RawKerberosTest,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
@@ -112,8 +112,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_REQUIRED,
     KDC_ERR_TGT_REVOKED,
     KRB_AS_REP,
-    KRB_TGS_REP,
     KRB_ERROR,
+    KRB_TGS_REP,
     KU_AS_REP_ENC_PART,
     KU_ENC_CHALLENGE_CLIENT,
     KU_PA_ENC_TIMESTAMP,

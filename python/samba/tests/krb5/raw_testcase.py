@@ -79,9 +79,9 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REP,
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
+    KU_AP_REQ_ENC_PART,
     KU_AS_FRESHNESS,
     KU_AS_REP_ENC_PART,
-    KU_AP_REQ_ENC_PART,
     KU_AS_REQ,
     KU_ENC_CHALLENGE_KDC,
     KU_FAST_ENC,
@@ -117,10 +117,10 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PAC_REQUEST,
     PADATA_PKINIT_KX,
     PADATA_PK_AS_REP,
-    PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
+    PADATA_PK_AS_REQ,
+    PADATA_REQ_ENC_PA_REP,
     PADATA_SUPPORTED_ETYPES,
-    PADATA_REQ_ENC_PA_REP
 )
 import samba.tests.krb5.kcrypto as kcrypto
 
