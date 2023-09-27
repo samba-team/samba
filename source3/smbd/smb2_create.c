@@ -27,6 +27,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/ndr_smb2_lease_struct.h"
+#include "../librpc/gen_ndr/ndr_smb3posix.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "messages.h"
 #include "lib/util_ea.h"
@@ -1658,46 +1659,38 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	}
 
 	if (state->posx != NULL) {
-		struct dom_sid owner = { .sid_rev_num = 0, };
-		struct dom_sid group = { .sid_rev_num = 0, };
 		struct stat_ex *psbuf = &state->result->fsp_name->st;
-		ssize_t cc_len;
+		struct smb3_posix_cc_info cc = {
+			.nlinks = psbuf->st_ex_nlink,
+			.posix_perms = unix_perms_to_wire(psbuf->st_ex_mode &
+							  ~S_IFMT),
+		};
+		uint8_t buf[sizeof(struct smb3_posix_cc_info)];
+		struct ndr_push ndr = {
+			.data = buf,
+			.alloc_size = sizeof(buf),
+			.fixed_buf_size = true,
+		};
+		enum ndr_err_code ndr_err;
 
-		uid_to_sid(&owner, psbuf->st_ex_uid);
-		gid_to_sid(&group, psbuf->st_ex_gid);
-
-		cc_len = smb2_posix_cc_info(
-			conn, 0, psbuf, &owner, &group, NULL, 0);
-
-		if (cc_len == -1) {
+		ndr_err =
+			ndr_push_smb3_posix_cc_info(&ndr,
+						    NDR_SCALARS | NDR_BUFFERS,
+						    &cc);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = NT_STATUS_INSUFFICIENT_RESOURCES;
 			goto fail;
 		}
 
-		{
-			/*
-			 * cc_len is 68 + 2 SIDs, allocate on the stack
-			 */
-			uint8_t buf[cc_len];
-			DATA_BLOB blob = { .data = buf, .length = cc_len, };
-
-			smb2_posix_cc_info(
-				conn,
-				0,
-				psbuf,
-				&owner,
-				&group,
-				buf,
-				sizeof(buf));
-
-			status = smb2_create_blob_add(
-				state->out_context_blobs,
-				state->out_context_blobs,
-				SMB2_CREATE_TAG_POSIX,
-				blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
+		status = smb2_create_blob_add(state->out_context_blobs,
+					      state->out_context_blobs,
+					      SMB2_CREATE_TAG_POSIX,
+					      (DATA_BLOB){
+						      .data = buf,
+						      .length = ndr.offset,
+					      });
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 	}
 
