@@ -126,7 +126,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	nt_status = samba_kdc_get_user_info_dc(mem_ctx,
 					       skdc_entry,
 					       asserted_identity,
-					       SAMBA_CLAIMS_VALID_EXCLUDE,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

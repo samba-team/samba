@@ -487,7 +487,6 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
 					       skdc_entry,
 					       asserted_identity,
-					       SAMBA_CLAIMS_VALID_EXCLUDE,
 					       &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
