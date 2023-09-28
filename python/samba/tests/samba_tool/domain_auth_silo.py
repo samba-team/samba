@@ -231,59 +231,73 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_modify_description(self):
         """Test modify authentication silo changing the description field."""
-        # check original value
-        silo = self.get_authentication_silo("qa")
-        self.assertNotEqual(str(silo["description"]), "Testing Team")
+        # Create a silo to modify for this test.
+        name = "modifyDescription"
+        self.runcmd("domain", "auth", "silo", "create", "--name", name)
+        self.addCleanup(self.delete_authentication_silo,
+                        name=name, force=True)
 
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "qa",
-                                       "--description", "Testing Team")
+                                       "--name", name,
+                                       "--description", "New Description")
         self.assertIsNone(result, msg=err)
 
         # check new value
-        silo = self.get_authentication_silo("qa")
-        self.assertEqual(str(silo["description"]), "Testing Team")
+        silo = self.get_authentication_silo(name)
+        self.assertEqual(str(silo["description"]), "New Description")
 
     def test_authentication_silo_modify_audit_enforce(self):
         """Test modify authentication silo setting --audit and --enforce."""
+        # Create a silo to modify for this test.
+        name = "modifyEnforce"
+        self.runcmd("domain", "auth", "silo", "create", "--name", name)
+        self.addCleanup(self.delete_authentication_silo,
+                        name=name, force=True)
+
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "Developers",
+                                       "--name", name,
                                        "--audit")
         self.assertIsNone(result, msg=err)
 
         # Check silo is set to audit.
-        silo = self.get_authentication_silo("developers")
+        silo = self.get_authentication_silo(name)
         self.assertEqual(str(silo["msDS-AuthNPolicySiloEnforced"]), "FALSE")
 
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "Developers",
+                                       "--name", name,
                                        "--enforce")
         self.assertIsNone(result, msg=err)
 
         # Check is set to enforce.
-        silo = self.get_authentication_silo("developers")
+        silo = self.get_authentication_silo(name)
         self.assertEqual(str(silo["msDS-AuthNPolicySiloEnforced"]), "TRUE")
 
     def test_authentication_silo_modify_protect_unprotect(self):
         """Test modify un-protecting and protecting an authentication silo."""
+        # Create a silo to modify for this test.
+        name = "modifyProtect"
+        self.runcmd("domain", "auth", "silo", "create", "--name", name)
+        self.addCleanup(self.delete_authentication_silo,
+                        name=name, force=True)
+
         utils = SDUtils(self.samdb)
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "managers",
+                                       "--name", name,
                                        "--protect")
         self.assertIsNone(result, msg=err)
 
         # Check that silo was protected.
-        silo = self.get_authentication_silo("managers")
+        silo = self.get_authentication_silo(name)
         desc = utils.get_sd_as_sddl(silo["dn"])
         self.assertIn("(D;;DTSD;;;WD)", desc)
 
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "managers",
+                                       "--name", name,
                                        "--unprotect")
         self.assertIsNone(result, msg=err)
 
         # Check that silo was unprotected.
-        silo = self.get_authentication_silo("managers")
+        silo = self.get_authentication_silo(name)
         desc = utils.get_sd_as_sddl(silo["dn"])
         self.assertNotIn("(D;;DTSD;;;WD)", desc)
 
