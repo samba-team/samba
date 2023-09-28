@@ -455,7 +455,7 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
-	struct lock_struct *locks, *lock;
+	struct lock_struct *locks, *lock = NULL;
 	struct lock_context context;
 	struct db_record *locked;
 	NTSTATUS status;
