@@ -81,6 +81,8 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 
 bool tstream_tls_params_enabled(struct tstream_tls_params *params);
 
+const DATA_BLOB *tstream_tls_channel_bindings(struct tstream_context *tls_tstream);
+
 struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     struct tstream_context *plain_stream,

@@ -70,6 +70,8 @@ struct tstream_tls {
 	enum tls_verify_peer_state verify_peer;
 	const char *peer_name;
 
+	DATA_BLOB channel_bindings;
+
 	struct tevent_context *current_ev;
 
 	struct tevent_immediate *retry_im;
@@ -890,6 +892,63 @@ bool tstream_tls_params_enabled(struct tstream_tls_params *tls_params)
 	return tlsp->tls_enabled;
 }
 
+static NTSTATUS tstream_tls_setup_channel_bindings(struct tstream_tls *tlss)
+{
+	gnutls_datum_t cb = { .size = 0 };
+	int ret;
+
+#ifdef HAVE_GNUTLS_CB_TLS_SERVER_END_POINT
+	ret = gnutls_session_channel_binding(tlss->tls_session,
+					     GNUTLS_CB_TLS_SERVER_END_POINT,
+					     &cb);
+#else /* not HAVE_GNUTLS_CB_TLS_SERVER_END_POINT */
+	ret = legacy_gnutls_server_end_point_cb(tlss->tls_session,
+						tlss->is_server,
+						&cb);
+#endif /* not HAVE_GNUTLS_CB_TLS_SERVER_END_POINT */
+	if (ret != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_ntstatus(ret,
+				NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	if (cb.size != 0) {
+		/*
+		 * Looking at the OpenLDAP implementation
+		 * for LDAP_OPT_X_SASL_CBINDING_TLS_ENDPOINT
+		 * revealed that we need to prefix it with
+		 * 'tls-server-end-point:'
+		 */
+		const char endpoint_prefix[] = "tls-server-end-point:";
+		size_t prefix_size = strlen(endpoint_prefix);
+		size_t size = prefix_size + cb.size;
+
+		tlss->channel_bindings = data_blob_talloc_named(tlss, NULL, size,
+								"tls_channel_bindings");
+		if (tlss->channel_bindings.data == NULL) {
+			gnutls_free(cb.data);
+			return NT_STATUS_NO_MEMORY;
+		}
+		memcpy(tlss->channel_bindings.data, endpoint_prefix, prefix_size);
+		memcpy(tlss->channel_bindings.data + prefix_size, cb.data, cb.size);
+		gnutls_free(cb.data);
+	}
+
+	return NT_STATUS_OK;
+}
+
+const DATA_BLOB *tstream_tls_channel_bindings(struct tstream_context *tls_tstream)
+{
+	struct tstream_tls *tlss =
+		talloc_get_type(_tstream_context_data(tls_tstream),
+		struct tstream_tls);
+
+	if (tlss == NULL) {
+		return NULL;
+	}
+
+	return &tlss->channel_bindings;
+}
+
 NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
@@ -1568,6 +1627,13 @@ static void tstream_tls_retry_handshake(struct tstream_context *stream)
 		tevent_req_error(req, tlss->error);
 		return;
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		tlss->error = EIO;
+		tevent_req_error(req, tlss->error);
+		return;
+	}
+
+	status = tstream_tls_setup_channel_bindings(tlss);
 	if (!NT_STATUS_IS_OK(status)) {
 		tlss->error = EIO;
 		tevent_req_error(req, tlss->error);
