@@ -291,6 +291,7 @@ static void ildb_callback(struct ldap_request *req)
 
 	case LDAP_TAG_SearchRequest:
 		/* loop over all messages */
+		ret = LDB_SUCCESS;
 		for (i = 0; i < req->num_replies; i++) {
 
 			msg = req->replies[i];
