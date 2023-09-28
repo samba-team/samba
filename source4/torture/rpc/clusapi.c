@@ -1232,7 +1232,7 @@ static bool test_ResourceTypeControl(struct torture_context *tctx,
 				     const char *resourcetype_name)
 {
 	struct policy_handle Cluster;
-	bool ret;
+	bool ret = true;
 	uint32_t control_codes[] = {
 		CLUSCTL_RESOURCE_TYPE_GET_CLASS_INFO,
 		CLUSCTL_RESOURCE_TYPE_GET_CHARACTERISTICS,
@@ -2516,7 +2516,7 @@ static bool test_ClusterControl(struct torture_context *tctx,
 	struct torture_clusapi_context *t =
 		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle Cluster;
-	bool ret;
+	bool ret = true;
 	uint32_t control_codes[] = {
 		CLUSCTL_CLUSTER_GET_COMMON_PROPERTIES,
 		CLUSCTL_CLUSTER_GET_RO_COMMON_PROPERTIES,
