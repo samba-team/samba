@@ -32,16 +32,6 @@
 #include "kdc/samba_kdc.h"
 #include "kdc/kdc-server.h"
 
-struct tsocket_address;
-
-kdc_code kpasswdd_process(struct kdc_server *kdc,
-			  TALLOC_CTX *mem_ctx,
-			  DATA_BLOB *input,
-			  DATA_BLOB *reply,
-			  struct tsocket_address *peer_addr,
-			  struct tsocket_address *my_addr,
-			  int datagram_reply);
-
 /* from hdb-samba4.c */
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db);
