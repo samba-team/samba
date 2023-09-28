@@ -586,7 +586,7 @@ struct ace_condition_script *parse_conditional_ace(TALLOC_CTX *mem_ctx,
 		case CONDITIONAL_ACE_TOKEN_INT16:
 		case CONDITIONAL_ACE_TOKEN_INT32:
 		case CONDITIONAL_ACE_TOKEN_INT64:
-			consumed = pull_integer(mem_ctx,
+			consumed = pull_integer(program,
 						tok_data,
 						available,
 						&tok->data.int64);
