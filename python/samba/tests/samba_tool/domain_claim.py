@@ -224,6 +224,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
             # Use a different name, so we don't clash with existing attributes.
             name = "test_create_" + attribute
 
+            self.addCleanup(self.delete_claim_type, name=name, force=True)
+
             result, out, err = self.runcmd("domain", "claim", "claim-type",
                                            "create",
                                            "--attribute", attribute,
@@ -240,6 +242,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_create_boolean(self):
         """Test adding a known boolean attribute and check its type."""
+        self.addCleanup(self.delete_claim_type, name="boolAttr", force=True)
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=msNPAllowDialin",
                                        "--name=boolAttr", "--class=user")
@@ -251,6 +255,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_create_number(self):
         """Test adding a known numeric attribute and check its type."""
+        self.addCleanup(self.delete_claim_type, name="intAttr", force=True)
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=adminCount",
                                        "--name=intAttr", "--class=user")
@@ -262,6 +268,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_create_text(self):
         """Test adding a known text attribute and check its type."""
+        self.addCleanup(self.delete_claim_type, name="textAttr", force=True)
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=givenName",
                                        "--name=textAttr", "--class=user")
@@ -273,6 +281,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_create_disabled(self):
         """Test adding a disabled attribute."""
+        self.addCleanup(self.delete_claim_type, name="home", force=True)
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=msTSHomeDrive",
                                        "--name=home", "--class=user",
@@ -285,6 +295,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_create_protected(self):
         """Test adding a protected attribute."""
+        self.addCleanup(self.delete_claim_type, name="cellphone", force=True)
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=mobile",
                                        "--name=cellphone", "--class=user",
@@ -306,6 +318,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         computer_dn = f"CN=Computer,{schema_dn}"
 
         # --class=user
+        self.addCleanup(self.delete_claim_type, name="streetName", force=True)
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=street",
                                        "--name=streetName", "--class=user")
@@ -318,6 +331,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         self.assertNotIn(computer_dn, applies_to)
 
         # --class=computer
+        self.addCleanup(self.delete_claim_type, name="ext", force=True)
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=extensionName",
                                        "--name=ext", "--class=computer")
@@ -330,6 +344,8 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         self.assertIn(computer_dn, applies_to)
 
         # --class=user --class=computer
+        self.addCleanup(self.delete_claim_type,
+                        name="primaryComputer", force=True)
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=msDS-PrimaryComputer",
                                        "--name=primaryComputer", "--class=user",

@@ -91,6 +91,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_create_single_policy(self):
         """Test creating a new authentication silo with a single policy."""
+        self.addCleanup(self.delete_authentication_silo,
+                        name="singlePolicy", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "singlePolicy",
                                        "--policy", "Single Policy")
@@ -106,6 +109,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_create_multiple_policies(self):
         """Test creating a new authentication silo with multiple policies."""
+        self.addCleanup(self.delete_authentication_silo,
+                        name="multiplePolicies", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "multiplePolicies",
                                        "--user-policy", "User Policy",
@@ -124,6 +130,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
     def test_authentication_silo_create_policy_dn(self):
         """Test creating a new authentication silo when policy is a dn."""
         policy = self.get_authentication_policy("Single Policy")
+
+        self.addCleanup(self.delete_authentication_silo,
+                        name="singlePolicyDN", force=True)
 
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "singlePolicyDN",
@@ -155,6 +164,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_create_audit(self):
         """Test create authentication silo with --audit flag."""
+        self.addCleanup(self.delete_authentication_silo,
+                        name="auditPolicies", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "auditPolicies",
                                        "--policy", "Single Policy",
@@ -167,6 +179,9 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_silo_create_enforce(self):
         """Test create authentication silo with --enforce flag."""
+        self.addCleanup(self.delete_authentication_silo,
+                        name="enforcePolicies", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "enforcePolicies",
                                        "--policy", "Single Policy",

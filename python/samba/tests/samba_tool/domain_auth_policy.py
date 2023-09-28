@@ -93,6 +93,9 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_policy_create(self):
         """Test creating a new authentication policy."""
+        self.addCleanup(self.delete_authentication_policy,
+                        name="createTest", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "createTest")
         self.assertIsNone(result, msg=err)
@@ -104,6 +107,9 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_authentication_policy_create_description(self):
         """Test creating a new authentication policy with description set."""
+        self.addCleanup(self.delete_authentication_policy,
+                        name="descriptionTest", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "descriptionTest",
                                        "--description", "Custom Description")
@@ -119,6 +125,9 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         Also checks the upper and lower bounds are handled.
         """
+        self.addCleanup(self.delete_authentication_policy,
+                        name="userTGTLifetime", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "userTGTLifetime",
                                        "--user-tgt-lifetime", "60")
@@ -152,6 +161,9 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         Also checks the upper and lower bounds are handled.
         """
+        self.addCleanup(self.delete_authentication_policy,
+                        name="serviceTGTLifetime", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "serviceTGTLifetime",
                                        "--service-tgt-lifetime", "60")
@@ -185,6 +197,9 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         Also checks the upper and lower bounds are handled.
         """
+        self.addCleanup(self.delete_authentication_policy,
+                        name="computerTGTLifetime", force=True)
+
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "computerTGTLifetime",
                                        "--computer-tgt-lifetime", "60")
