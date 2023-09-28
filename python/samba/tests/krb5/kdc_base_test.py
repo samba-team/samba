@@ -1447,7 +1447,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             self.assertIsNotNone(domain_sid)
             return f'{domain_sid}-{val}'
 
-        if val in mapping:
+        if mapping is not None and val in mapping:
             # Or if we have a mapping for it, apply that.
             return mapping[val].sid
 
