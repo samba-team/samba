@@ -102,6 +102,9 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 				}
 			}
 			break;
+		default:
+			ret = LDB_ERR_PROTOCOL_ERROR;
+			break;
 		}
 		if (ret != LDB_SUCCESS) {
 			if (errstr == NULL) {
