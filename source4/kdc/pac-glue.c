@@ -2125,21 +2125,6 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (device != NULL) {
-		SMB_ASSERT(*device_pac != NULL);
-
-		/*
-		 * Check the objectSID of the device and pac data are the same.
-		 * Does a parse and SID check, but no crypto.
-		 */
-		code = samba_kdc_validate_pac_blob(context,
-						   device,
-						   *device_pac);
-		if (code != 0) {
-			goto done;
-		}
-	}
-
 	if (!is_trusted) {
 		const struct auth_user_info_dc *user_info_dc = NULL;
 		WERROR werr;
