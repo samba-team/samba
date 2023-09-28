@@ -5554,7 +5554,7 @@ class RawKerberosTest(TestCase):
                         modify_pac_fn=None,
                         exclude_pac=False,
                         allow_empty_authdata=False,
-                        update_pac_checksums=True,
+                        update_pac_checksums=None,
                         checksum_keys=None,
                         include_checksums=None):
         if checksum_keys is None:
@@ -5578,10 +5578,12 @@ class RawKerberosTest(TestCase):
         self.assertLessEqual(checksum_keys.keys(), self.pac_checksum_types)
         self.assertLessEqual(include_checksums.keys(), self.pac_checksum_types)
 
+        if update_pac_checksums is None:
+            update_pac_checksums = not exclude_pac
+
         if exclude_pac:
             self.assertIsNone(modify_pac_fn)
-
-            update_pac_checksums = False
+            self.assertFalse(update_pac_checksums)
 
         if not update_pac_checksums:
             self.assertFalse(checksum_keys)
@@ -5638,8 +5640,13 @@ class RawKerberosTest(TestCase):
         if expect_pac:
             self.assertIsNotNone(auth_data)
         if auth_data is not None:
-            new_pac = None
-            if not exclude_pac:
+            if exclude_pac:
+                need_to_call_replace_pac = True
+                new_pac = None
+            elif not modify_pac_fn and not update_pac_checksums:
+                need_to_call_replace_pac = False
+            else:
+                need_to_call_replace_pac = True
                 # Get a copy of the authdata with an empty PAC, and the
                 # existing PAC (if present).
                 empty_pac = self.get_empty_pac()
@@ -5680,11 +5687,12 @@ class RawKerberosTest(TestCase):
 
             # Replace the PAC in the authorization data and re-add it to the
             # ticket enc-part.
-            auth_data, _ = self.replace_pac(
-                auth_data, new_pac,
-                expect_pac=expect_pac,
-                allow_empty_authdata=allow_empty_authdata)
-            enc_part['authorization-data'] = auth_data
+            if need_to_call_replace_pac:
+                auth_data, _ = self.replace_pac(
+                    auth_data, new_pac,
+                    expect_pac=expect_pac,
+                    allow_empty_authdata=allow_empty_authdata)
+                enc_part['authorization-data'] = auth_data
 
         # Re-encrypt the ticket enc-part with the new key.
         enc_part_new = self.der_encode(enc_part,
