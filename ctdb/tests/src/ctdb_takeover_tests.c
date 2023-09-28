@@ -84,24 +84,27 @@ static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
 	uint32_t *tvals = talloc_zero_array(tmp_ctx, uint32_t, numnodes);
 	char *t = getenv(tunable);
 
-	if (t) {
-		if (strcmp(t, "1") == 0) {
-			for (i=0; i<numnodes; i++) {
-				tvals[i] = 1;
-			}
-		} else {
-			tok = strtok(t, ",");
-			i = 0;
-			while (tok != NULL) {
-				tvals[i] =
-					(uint32_t) strtol(tok, NULL, 0);
-				i++;
-				tok = strtok(NULL, ",");
-			}
-			if (i != numnodes) {
-				fprintf(stderr, "ERROR: Wrong number of values in %s\n", tunable);
-				exit(1);
-			}
+	if (t == NULL) {
+		return tvals;
+	}
+
+	if (strcmp(t, "1") == 0) {
+		for (i = 0; i < numnodes; i++) {
+			tvals[i] = 1;
+		}
+	} else {
+		tok = strtok(t, ",");
+		i = 0;
+		while (tok != NULL) {
+			tvals[i] = (uint32_t)strtol(tok, NULL, 0);
+			i++;
+			tok = strtok(NULL, ",");
+		}
+		if (i != numnodes) {
+			fprintf(stderr,
+				"ERROR: Wrong number of values in %s\n",
+				tunable);
+			exit(1);
 		}
 	}
 
