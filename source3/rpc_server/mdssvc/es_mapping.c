@@ -151,7 +151,7 @@ struct es_attr_map *es_map_sl_attr(TALLOC_CTX *mem_ctx,
 {
 	struct es_attr_map *es_map = NULL;
 	const char *typestr = NULL;
-	enum ssm_type type;
+	enum ssm_type type = ssmt_bool;
 	char *es_attr = NULL;
 	size_t i;
 	int cmp;
