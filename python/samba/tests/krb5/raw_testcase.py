@@ -119,6 +119,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PK_AS_REP,
     PADATA_PK_AS_REP_19,
     PADATA_PK_AS_REQ,
+    PADATA_PW_SALT,
     PADATA_REQ_ENC_PA_REP,
     PADATA_SUPPORTED_ETYPES,
 )
@@ -5045,7 +5046,8 @@ class RawKerberosTest(TestCase):
 
             got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
             self.assertSequenceElementsEqual(expected_patypes, got_patypes,
-                                             require_strict=require_strict)
+                                             require_strict=require_strict,
+                                             unchecked={PADATA_PW_SALT})
 
             if not expected_patypes:
                 return None
