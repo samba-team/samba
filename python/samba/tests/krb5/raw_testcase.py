@@ -5587,7 +5587,7 @@ class RawKerberosTest(TestCase):
             self.assertFalse(checksum_keys)
             self.assertFalse(include_checksums)
 
-        expect_pac = modify_pac_fn is not None
+        expect_pac = bool(modify_pac_fn)
 
         key = ticket.decryption_key
 
@@ -5628,8 +5628,11 @@ class RawKerberosTest(TestCase):
             enc_part, asn1Spec=krb5_asn1.EncTicketPart())
 
         # Modify the ticket here.
-        if modify_fn is not None:
+        if callable(modify_fn):
             enc_part = modify_fn(enc_part)
+        elif modify_fn:
+            for fn in modify_fn:
+                enc_part = fn(enc_part)
 
         auth_data = enc_part.get('authorization-data')
         if expect_pac:
@@ -5649,8 +5652,11 @@ class RawKerberosTest(TestCase):
                     pac = ndr_unpack(krb5pac.PAC_DATA, pac_data)
 
                     # Modify the PAC here.
-                    if modify_pac_fn is not None:
+                    if callable(modify_pac_fn):
                         pac = modify_pac_fn(pac)
+                    elif modify_pac_fn:
+                        for fn in modify_pac_fn:
+                            pac = fn(pac)
 
                     if update_pac_checksums:
                         # Get the enc-part with an empty PAC, which is needed
