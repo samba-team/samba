@@ -27,7 +27,7 @@ from ldb import ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError,\
     Message, MessageElement, SCOPE_BASE, SCOPE_SUBTREE, binary_encode
 from samba.sd_utils import SDUtils
 
-from .exceptions import DeleteError, DoesNotExist, ModelError,\
+from .exceptions import DeleteError, DoesNotExist, FieldError,\
     MultipleObjectsReturned, ProtectError, UnprotectError
 from .fields import DateTimeField, DnField, Field, GUIDField, IntegerField,\
     StringField
@@ -362,7 +362,7 @@ class Model(metaclass=ModelMeta):
                     try:
                         db_value = field.to_db_value(ldb, value, FLAG_MOD_ADD)
                     except ValueError as e:
-                        raise ModelError(e)
+                        raise FieldError(e, field=field)
 
                     # Don't add empty fields.
                     if db_value is not None and len(db_value):
@@ -391,7 +391,7 @@ class Model(metaclass=ModelMeta):
                             db_value = field.to_db_value(ldb, value,
                                                          FLAG_MOD_REPLACE)
                         except ValueError as e:
-                            raise ModelError(e)
+                            raise FieldError(e, field=field)
 
                         # When a field returns None or empty list, delete attr.
                         if db_value in (None, []):
