@@ -1548,10 +1548,13 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      pac,
                      *,
                      new_sids,
-                     domain_sid,
+                     domain_sid=None,
                      user_rid=None,
                      set_user_flags=0,
                      reset_user_flags=0):
+        if domain_sid is None:
+            domain_sid = self.get_samdb().get_domain_sid()
+
         base_sids = []
         extra_sids = []
         resource_sids = []
