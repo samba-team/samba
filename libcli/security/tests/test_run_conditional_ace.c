@@ -77,6 +77,7 @@ static bool fill_token_claims(TALLOC_CTX *mem_ctx,
 						    name,
 						    str);
 		if (claim == NULL) {
+			va_end(args);
 			debug_fail("bad claim: %s\n", str);
 			return false;
 		}
@@ -117,6 +118,7 @@ static bool fill_token_sids(TALLOC_CTX *mem_ctx,
 		sid = sddl_decode_sid(mem_ctx, &str, NULL);
 		if (sid == NULL) {
 			debug_fail("bad SID: %s\n", str);
+			va_end(args);
 			return false;
 		}
 		add_sid_to_array(mem_ctx, sid, list, n);
