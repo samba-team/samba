@@ -1546,6 +1546,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
     # Replace the SIDs in a PAC with 'new_sids'.
     def set_pac_sids(self,
                      pac,
+                     *,
                      new_sids,
                      domain_sid,
                      user_rid,
