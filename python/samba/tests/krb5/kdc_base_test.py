@@ -1549,7 +1549,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      *,
                      new_sids,
                      domain_sid,
-                     user_rid,
+                     user_rid=None,
                      set_user_flags=0,
                      reset_user_flags=0):
         base_sids = []
@@ -1632,7 +1632,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                     logon_info.info3.base.groups.rids = None
 
                 logon_info.info3.base.domain_sid = security.dom_sid(domain_sid)
-                logon_info.info3.base.rid = int(user_rid)
+                if user_rid is not None:
+                    logon_info.info3.base.rid = int(user_rid)
 
                 if primary_gid is not None:
                     logon_info.info3.base.primary_gid = int(primary_gid)
@@ -1660,8 +1661,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
                 upn_dns_info_ex = pac_buffer.info.ex
 
-                upn_dns_info_ex.objectsid = security.dom_sid(
-                    f'{domain_sid}-{user_rid}')
+                if user_rid is not None:
+                    upn_dns_info_ex.objectsid = security.dom_sid(
+                        f'{domain_sid}-{user_rid}')
 
             # But don't replace the user's SID in the Requester SID buffer, or
             # we'll get a SID mismatch.
