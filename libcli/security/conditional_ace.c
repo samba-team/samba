@@ -830,6 +830,15 @@ static bool token_claim_lookup(
 		return false;
 	}
 
+	if (num_claims == 0) {
+		DBG_NOTICE("There are no type %u claims\n", op->type);
+		return false;
+	}
+	if (claims == NULL) {
+		DBG_ERR("Type %u claim list unexpectedly NULL!\n", op->type);
+		result->type = CONDITIONAL_ACE_SAMBA_RESULT_ERROR;
+		return false;
+	}
 	/*
 	 * Loop backwards: a later claim will override an earlier one with the
 	 * same name.
