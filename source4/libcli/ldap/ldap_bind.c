@@ -217,6 +217,17 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	uint32_t old_gensec_features;
 	unsigned int logon_retries = 0;
 	size_t queue_length;
+	const DATA_BLOB *tls_cb = NULL;
+	bool use_channel_bound = lpcfg_parm_bool(lp_ctx,
+						  NULL,
+						  "ldap_testing",
+						  "channel_bound",
+						  true);
+	const char *forced_channel_binding = lpcfg_parm_string(lp_ctx,
+						  NULL,
+						  "ldap_testing",
+						  "forced_channel_binding");
+	DATA_BLOB forced_cb = data_blob_string_const(forced_channel_binding);
 
 	if (conn->sockets.active == NULL) {
 		status = NT_STATUS_CONNECTION_DISCONNECTED;
@@ -248,10 +259,24 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 
 	if (conn->sockets.active == conn->sockets.tls) {
 		/*
+		 * allow this for testing the old code:
+		 * ldap_testing:no_tls_channel_bindings = no
+		 */
+		bool use_tls_cb = lpcfg_parm_bool(lp_ctx,
+						  NULL,
+						  "ldap_testing",
+						  "tls_channel_bindings",
+						  true);
+
+		/*
 		 * require Kerberos SIGN/SEAL only if we don't use SSL
 		 * Windows seem not to like double encryption
 		 */
 		wrap_flags = 0;
+
+		if (use_tls_cb) {
+			tls_cb = tstream_tls_channel_bindings(conn->sockets.tls);
+		}
 	} else if (cli_credentials_is_anonymous(creds)) {
 		/*
 		 * anonymous isn't protected
@@ -259,6 +284,10 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		wrap_flags = 0;
 	} else {
 		wrap_flags = lpcfg_client_ldap_sasl_wrapping(lp_ctx);
+	}
+
+	if (forced_cb.length != 0) {
+	       tls_cb = &forced_cb;
 	}
 
 try_logon_again:
@@ -306,6 +335,10 @@ try_logon_again:
 		gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
 	}
 
+	if (!use_channel_bound) {
+		gensec_want_feature(conn->gensec, GENSEC_FEATURE_CB_OPTIONAL);
+	}
+
 	/*
 	 * This is an indication for the NTLMSSP backend to
 	 * also encrypt when only GENSEC_FEATURE_SIGN is requested
@@ -327,6 +360,26 @@ try_logon_again:
 		DEBUG(1, ("Failed to set GENSEC target service: %s\n", 
 			  nt_errstr(status)));
 		goto failed;
+	}
+
+	if (tls_cb != NULL) {
+		uint32_t initiator_addrtype = 0;
+		const DATA_BLOB *initiator_address = NULL;
+		uint32_t acceptor_addrtype = 0;
+		const DATA_BLOB *acceptor_address = NULL;
+		const DATA_BLOB *application_data = tls_cb;
+
+		status = gensec_set_channel_bindings(conn->gensec,
+						     initiator_addrtype,
+						     initiator_address,
+						     acceptor_addrtype,
+						     acceptor_address,
+						     application_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("Failed to set GENSEC channel bindings: %s\n",
+				    nt_errstr(status));
+			goto failed;
+		}
 	}
 
 	status = gensec_start_mech_by_sasl_name(conn->gensec, sasl_mech);
