@@ -1291,7 +1291,7 @@ bool reopen_logs_internal(void)
 	struct debug_backend *b = NULL;
 	mode_t oldumask;
 	size_t i;
-	bool ok;
+	bool ok = true;
 
 	if (state.reopening_logs) {
 		return true;
