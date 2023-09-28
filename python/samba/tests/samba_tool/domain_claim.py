@@ -28,29 +28,6 @@ from samba.sd_utils import SDUtils
 
 from .base import SambaToolCmdTest
 
-# A small subset of known attributes with various data types to be expected.
-# This isn't a full list of all the possible attributes but is enough to test.
-ATTRIBUTES = [
-    "adminCount",
-    "businessCategory",
-    "catalogs",
-    "company",
-    "extensionName",
-    "givenName",
-    "isDeleted",
-    "isRecycled",
-    "mobile",
-    "msDS-PrimaryComputer",
-    "msDS-SiteName",
-    "msNPAllowDialin",
-    "msTSHomeDrive",
-    "pager",
-    "postalCode",
-    "seeAlso",
-    "street",
-    "wWWHomePage",
-]
-
 # List of claim value types we should expect to see.
 VALUE_TYPES = [
     "Date Time",
@@ -76,11 +53,6 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     @classmethod
     def setUpTestData(cls):
-        # Generate some known claim types used by tests.
-        for attribute in ATTRIBUTES:
-            cls.create_claim_type(attribute, classes=["user"])
-
-        # Generate some more with unique names not in the ATTRIBUTES list.
         cls.create_claim_type("accountExpires", name="expires",
                               classes=["user"])
         cls.create_claim_type("department", name="dept", classes=["user"],
@@ -171,7 +143,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type", "list")
         self.assertIsNone(result, msg=err)
 
-        for claim_type in ATTRIBUTES:
+        expected_claim_types = ["expires", "dept", "plate"]
+
+        for claim_type in expected_claim_types:
             self.assertIn(claim_type, out)
 
     def test_claim_type_list_json(self):
@@ -184,7 +158,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         json_result = json.loads(out)
         claim_types = list(json_result.keys())
 
-        for claim_type in ATTRIBUTES:
+        expected_claim_types = ["expires", "dept", "plate"]
+
+        for claim_type in expected_claim_types:
             self.assertIn(claim_type, claim_types)
 
     def test_claim_type_view(self):
@@ -219,8 +195,19 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         The point is to test it against the various datatypes that could
         be found, but not include every known attribute.
         """
+        # We just need to test a few different data types for attributes,
+        # there is mo need to test every known attribute.
+        claim_types = [
+            "adminCount",
+            "accountExpires",
+            "department",
+            "carLicense",
+            "msDS-PrimaryComputer",
+            "isDeleted",
+        ]
+
         # Each known attribute must be in the schema.
-        for attribute in ATTRIBUTES:
+        for attribute in claim_types:
             # Use a different name, so we don't clash with existing attributes.
             name = "test_create_" + attribute
 
@@ -281,30 +268,30 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_create_disabled(self):
         """Test adding a disabled attribute."""
-        self.addCleanup(self.delete_claim_type, name="home", force=True)
+        self.addCleanup(self.delete_claim_type, name="disabledAttr", force=True)
 
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=msTSHomeDrive",
-                                       "--name=home", "--class=user",
+                                       "--name=disabledAttr", "--class=user",
                                        "--disable")
 
         self.assertIsNone(result, msg=err)
-        claim_type = self.get_claim_type("home")
-        self.assertEqual(str(claim_type["displayName"]), "home")
+        claim_type = self.get_claim_type("disabledAttr")
+        self.assertEqual(str(claim_type["displayName"]), "disabledAttr")
         self.assertEqual(str(claim_type["Enabled"]), "FALSE")
 
     def test_claim_type_create_protected(self):
         """Test adding a protected attribute."""
-        self.addCleanup(self.delete_claim_type, name="cellphone", force=True)
+        self.addCleanup(self.delete_claim_type, name="protectedAttr", force=True)
 
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "create", "--attribute=mobile",
-                                       "--name=cellphone", "--class=user",
+                                       "--name=protectedAttr", "--class=user",
                                        "--protect")
 
         self.assertIsNone(result, msg=err)
-        claim_type = self.get_claim_type("cellphone")
-        self.assertEqual(str(claim_type["displayName"]), "cellphone")
+        claim_type = self.get_claim_type("protectedAttr")
+        self.assertEqual(str(claim_type["displayName"]), "protectedAttr")
 
         # Check if the claim type is protected from accidental deletion.
         utils = SDUtils(self.samdb)
@@ -422,6 +409,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_modify_description(self):
         """Test modifying a claim type description."""
+        self.addCleanup(self.delete_claim_type, name="company", force=True)
+        self.create_claim_type("company", classes=["user"])
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "company",
                                        "--description=NewDescription")
@@ -436,6 +426,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         schema_dn = self.samdb.get_schema_basedn()
         user_dn = f"CN=User,{schema_dn}"
         computer_dn = f"CN=Computer,{schema_dn}"
+
+        self.addCleanup(self.delete_claim_type, name="seeAlso", force=True)
+        self.create_claim_type("seeAlso", classes=["user"])
 
         # First try removing all classes which shouldn't be allowed.
         result, out, err = self.runcmd("domain", "claim", "claim-type",
@@ -476,6 +469,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_modify_enable_disable(self):
         """Test modify disabling and enabling a claim type."""
+        self.addCleanup(self.delete_claim_type, name="catalogs", force=True)
+        self.create_claim_type("catalogs", classes=["user"])
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "catalogs",
                                        "--disable")
@@ -496,6 +492,9 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_modify_protect_unprotect(self):
         """Test modify un-protecting and protecting a claim type."""
+        self.addCleanup(self.delete_claim_type, name="pager", force=True)
+        self.create_claim_type("pager", classes=["user"])
+
         utils = SDUtils(self.samdb)
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "pager",
@@ -519,6 +518,10 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_modify_enable_disable_together(self):
         """Test modify claim type doesn't allow both --enable and --disable."""
+        self.addCleanup(self.delete_claim_type,
+                        name="businessCategory", force=True)
+        self.create_claim_type("businessCategory", classes=["user"])
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "businessCategory",
                                        "--enable", "--disable")
@@ -527,6 +530,10 @@ class ClaimCmdTestCase(SambaToolCmdTest):
 
     def test_claim_type_modify_protect_unprotect_together(self):
         """Test modify claim type using both --protect and --unprotect."""
+        self.addCleanup(self.delete_claim_type,
+                        name="businessCategory", force=True)
+        self.create_claim_type("businessCategory", classes=["user"])
+
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "modify", "--name", "businessCategory",
                                        "--protect", "--unprotect")
