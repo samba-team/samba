@@ -153,8 +153,31 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	gensec_gssapi_state->gssapi_context = GSS_C_NO_CONTEXT;
 
-	/* TODO: Fill in channel bindings */
-	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
+	if (gensec_security->channel_bindings != NULL) {
+		gensec_gssapi_state->_input_chan_bindings.initiator_addrtype =
+			gensec_security->channel_bindings->initiator_addrtype;
+		gensec_gssapi_state->_input_chan_bindings.initiator_address.value =
+			gensec_security->channel_bindings->initiator_address.data;
+		gensec_gssapi_state->_input_chan_bindings.initiator_address.length =
+			gensec_security->channel_bindings->initiator_address.length;
+
+		gensec_gssapi_state->_input_chan_bindings.acceptor_addrtype =
+			gensec_security->channel_bindings->acceptor_addrtype;
+		gensec_gssapi_state->_input_chan_bindings.acceptor_address.value =
+			gensec_security->channel_bindings->acceptor_address.data;
+		gensec_gssapi_state->_input_chan_bindings.acceptor_address.length =
+			gensec_security->channel_bindings->acceptor_address.length;
+
+		gensec_gssapi_state->_input_chan_bindings.application_data.value =
+			gensec_security->channel_bindings->application_data.data;
+		gensec_gssapi_state->_input_chan_bindings.application_data.length =
+			gensec_security->channel_bindings->application_data.length;
+
+		gensec_gssapi_state->input_chan_bindings =
+			&gensec_gssapi_state->_input_chan_bindings;
+	} else {
+		gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
+	}
 
 	gensec_gssapi_state->server_name = GSS_C_NO_NAME;
 	gensec_gssapi_state->client_name = GSS_C_NO_NAME;
@@ -401,6 +424,20 @@ do_start:
 	}
 
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
+
+#ifdef HAVE_CLIENT_GSS_C_CHANNEL_BOUND_FLAG
+	/*
+	 * We can only use GSS_C_CHANNEL_BOUND_FLAG if the kerberos library
+	 * supports that in order to add KERB_AP_OPTIONS_CBT.
+	 *
+	 * See:
+	 * https://github.com/heimdal/heimdal/pull/1234
+	 * https://github.com/krb5/krb5/pull/1329
+	 */
+	if (!(gensec_security->want_features & GENSEC_FEATURE_CB_OPTIONAL)) {
+		gensec_gssapi_state->gss_want_flags |= GSS_C_CHANNEL_BOUND_FLAG;
+	}
+#endif
 
 	if (cli_credentials_get_impersonate_principal(creds)) {
 		gensec_gssapi_state->gss_want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
@@ -653,6 +690,39 @@ init_sec_context_done:
 			if (gss_oid_p) {
 				gensec_gssapi_state->gss_oid = gss_oid_p;
 			}
+#ifdef GSS_C_CHANNEL_BOUND_FLAG
+			if (maj_stat == GSS_S_COMPLETE &&
+			    gensec_security->channel_bindings != NULL &&
+			    !(gensec_security->want_features & GENSEC_FEATURE_CB_OPTIONAL) &&
+			    !(gensec_gssapi_state->gss_got_flags & GSS_C_CHANNEL_BOUND_FLAG))
+			{
+				/*
+				 * If we require valid channel bindings
+				 * we need to check the client provided
+				 * them.
+				 *
+				 * We detect this if
+				 * GSS_C_CHANNEL_BOUND_FLAG is given.
+				 *
+				 * Recent heimdal and MIT releases support this
+				 * with older releases (e.g. MIT > 1.19).
+				 *
+				 * It means client with zero channel bindings
+				 * on a server with non-zero channel bindings
+				 * won't generate GSS_S_BAD_BINDINGS directly
+				 * unless KERB_AP_OPTIONS_CBT was also
+				 * provides by the client.
+				 *
+				 * So we need to convert a missing
+				 * GSS_C_CHANNEL_BOUND_FLAG into
+				 * GSS_S_BAD_BINDINGS by default
+				 * (unless GENSEC_FEATURE_CB_OPTIONAL is given).
+				 */
+				maj_stat = GSS_S_BAD_BINDINGS;
+				min_stat = 0;
+			}
+#endif /* GSS_C_CHANNEL_BOUND_FLAG */
+
 			break;
 		}
 		default:
@@ -699,6 +769,9 @@ init_sec_context_done:
 			gss_release_buffer(&min_stat2, &output_token);
 			
 			return NT_STATUS_MORE_PROCESSING_REQUIRED;
+		} else if (maj_stat == GSS_S_BAD_BINDINGS) {
+			DBG_WARNING("Got GSS_S_BAD_BINDINGS\n");
+			return NT_STATUS_BAD_BINDINGS;
 		} else if (maj_stat == GSS_S_CONTEXT_EXPIRED) {
 			gss_cred_id_t creds = NULL;
 			gss_name_t name;
