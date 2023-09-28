@@ -2457,7 +2457,7 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	uint32_t flags;
 	uint64_t search_message_id;
 	uint64_t search_async_id;
-	uint64_t found_id;
+	uint64_t found_id = 0;
 
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
