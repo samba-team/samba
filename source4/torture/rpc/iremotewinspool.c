@@ -924,6 +924,135 @@ static bool test_object_uuid(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_setup_binding_handle(struct torture_context *tctx,
+				      struct GUID object_uuid,
+				      enum dcerpc_transport_t transport,
+				      const struct ndr_interface_table *table,
+				      struct dcerpc_pipe **p)
+{
+	struct dcerpc_binding *binding;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_binding(tctx, &binding),
+		"failed to retrieve torture binding");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_set_object(binding, object_uuid),
+		"failed to set object_uuid");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_set_transport(binding, transport),
+		"failed to set transport");
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection_with_binding(tctx, binding, p, table),
+		"Error connecting to server");
+
+	return true;
+}
+
+static enum ndr_err_code ndr_push_inout_blob(DATA_BLOB *blob,
+					     TALLOC_CTX *mem_ctx,
+					     int flags,
+					     const void *p,
+					     ndr_push_flags_fn_t fn)
+{
+	struct ndr_push *ndr;
+	ndr = ndr_push_init_ctx(mem_ctx);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
+
+	NDR_CHECK_FREE(fn(ndr, flags, p));
+
+	*blob = ndr_push_blob(ndr);
+	talloc_steal(mem_ctx, blob->data);
+	talloc_free(ndr);
+
+	return NDR_ERR_SUCCESS;
+}
+
+static bool test_compare_spoolss(struct torture_context *tctx,
+				 void *private_data)
+{
+	DATA_BLOB reply_iremotewinspool, reply_spoolss, request_spoolss;
+	struct dcerpc_pipe *iremotewinspool_pipe, *spoolss_pipe;
+	struct GUID object_uuid;
+	uint32_t out_flags;
+	NTSTATUS status;
+	struct spoolss_EnumPrinters r;
+	DATA_BLOB blob;
+
+	/* setup two dcerpc pipes */
+
+	torture_assert_ntstatus_ok(tctx,
+		GUID_from_string(IREMOTEWINSPOOL_OBJECT_GUID, &object_uuid),
+		"failed to parse GUID");
+
+	torture_assert(tctx,
+		test_setup_binding_handle(tctx, object_uuid, NCACN_IP_TCP,
+			&ndr_table_iremotewinspool, &iremotewinspool_pipe),
+		"failed to setup binding handle");
+
+	torture_assert(tctx,
+		test_setup_binding_handle(tctx, GUID_zero(), NCACN_NP,
+			&ndr_table_spoolss, &spoolss_pipe),
+		"failed to setup binding handle");
+
+
+	/* create a spoolss enumprinters request */
+
+	ZERO_STRUCT(r);
+
+	blob = data_blob_talloc_zero(tctx, 0x1000);
+
+	r.in.flags	= PRINTER_ENUM_LOCAL;
+	r.in.server	= talloc_asprintf(tctx, "\\\\%s",
+				dcerpc_server_name(spoolss_pipe));
+	r.in.level	= 1;
+	r.in.buffer	= &blob;
+	r.in.offered	= blob.length;
+
+	torture_assert_ndr_success(tctx,
+		ndr_push_inout_blob(&request_spoolss, tctx, NDR_IN | NDR_SET_VALUES, &r,
+			(ndr_push_flags_fn_t)ndr_push_spoolss_EnumPrinters),
+		"failed to push EnumPrinters request");
+
+	/* send same request to both endpoints */
+
+	status = dcerpc_binding_handle_raw_call(iremotewinspool_pipe->binding_handle,
+						NULL,
+						NDR_WINSPOOL_ASYNCENUMPRINTERS,
+						0, /* in_flags */
+						request_spoolss.data,
+						request_spoolss.length,
+						tctx,
+						&reply_iremotewinspool.data,
+						&reply_iremotewinspool.length,
+						&out_flags);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_binding_handle_raw_call failed");
+
+	status = dcerpc_binding_handle_raw_call(spoolss_pipe->binding_handle,
+						NULL,
+						NDR_SPOOLSS_ENUMPRINTERS,
+						0, /* in_flags */
+						request_spoolss.data,
+						request_spoolss.length,
+						tctx,
+						&reply_spoolss.data,
+						&reply_spoolss.length,
+						&out_flags);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_binding_handle_raw_call failed");
+
+	torture_assert_data_blob_equal(tctx,
+		reply_iremotewinspool,
+		reply_spoolss,
+		"unexpected difference in replies from spoolss and iremotewinspool servers");
+
+	talloc_free(iremotewinspool_pipe);
+	talloc_free(spoolss_pipe);
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool");
@@ -955,6 +1084,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 
 	tcase = torture_suite_add_tcase(suite, "protocol");
 	torture_tcase_add_simple_test(tcase, "object_uuid", test_object_uuid);
+	torture_tcase_add_simple_test(tcase, "compare_spoolss", test_compare_spoolss);
 
 	return suite;
 }
