@@ -48,6 +48,7 @@ struct gensec_gssapi_state {
 	/* gensec_gssapi only */
 	gss_OID gss_oid;
 
+	struct gss_channel_bindings_struct _input_chan_bindings;
 	struct gss_channel_bindings_struct *input_chan_bindings;
 	struct smb_krb5_context *smb_krb5_context;
 	struct gssapi_creds_container *client_cred;
