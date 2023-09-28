@@ -2018,6 +2018,10 @@ planoldpythontestsuite(
     'ad_dc',
     'samba.tests.krb5.pkinit_tests',
     environ=krb5_environ)
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.conditional_ace_tests',
+    environ=krb5_environ)
 
 for env in [
         'vampire_dc',
