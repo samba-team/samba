@@ -1567,7 +1567,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         # location in the PAC.
         for sid, sid_type, attrs in new_sids:
             if sid_type is self.SidType.BASE_SID:
-                domain, rid = sid.rsplit('-', 1)
+                if isinstance(sid, int):
+                    domain, rid = domain_sid, sid
+                else:
+                    domain, rid = sid.rsplit('-', 1)
                 self.assertEqual(domain_sid, domain,
                                  f'base SID {sid} must be in our domain')
 
@@ -1583,7 +1586,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
                 extra_sids.append(extra_sid)
             elif sid_type is self.SidType.RESOURCE_SID:
-                domain, rid = sid.rsplit('-', 1)
+                if isinstance(sid, int):
+                    domain, rid = domain_sid, sid
+                else:
+                    domain, rid = sid.rsplit('-', 1)
                 if resource_domain is None:
                     resource_domain = domain
                 else:
@@ -1602,7 +1608,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                   f'{sid}')
                 self.assertIsNone(attrs, 'cannot specify primary GID attrs')
 
-                domain, primary_gid = sid.rsplit('-', 1)
+                if isinstance(sid, int):
+                    domain, primary_gid = domain_sid, sid
+                else:
+                    domain, primary_gid = sid.rsplit('-', 1)
                 self.assertEqual(domain_sid, domain,
                                  f'primary GID {sid} must be in our domain')
             else:
