@@ -790,6 +790,12 @@ class RawKerberosTest(TestCase):
             expect_nt_status = '1'
         cls.expect_nt_status = bool(int(expect_nt_status))
 
+        crash_windows = samba.tests.env_get_var_value('CRASH_WINDOWS',
+                                                      allow_missing=True)
+        if crash_windows is None:
+            crash_windows = '1'
+        cls.crash_windows = bool(int(crash_windows))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
