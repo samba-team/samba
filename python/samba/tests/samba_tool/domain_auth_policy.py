@@ -24,6 +24,8 @@ import json
 from optparse import OptionValueError
 from unittest.mock import patch
 
+from samba.dcerpc import security
+from samba.ndr import ndr_unpack
 from samba.netcmd import CommandError
 from samba.netcmd.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
@@ -227,6 +229,36 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         self.assertIn("--computer-tgt-lifetime must be between 45 and 2147483647",
                       str(e.exception))
+
+    def test_authentication_policy_create_valid_sddl(self):
+        """Test creating a new authentication policy with valid SDDL in a field."""
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))"
+
+        self.addCleanup(self.delete_authentication_policy,
+                        name="validSDDLPolicy", force=True)
+
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", "validSDDLPolicy",
+                                       "--user-allowed-to-authenticate-from",
+                                       expected)
+        self.assertIsNone(result, msg=err)
+
+        # Check policy fields.
+        policy = self.get_authentication_policy("validSDDLPolicy")
+        self.assertEqual(str(policy["cn"]), "validSDDLPolicy")
+        desc = policy["msDS-UserAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
+    def test_authentication_policy_create_invalid_sddl(self):
+        """Test creating a new authentication policy with invalid SDDL in a field."""
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", "invalidSDDLPolicy",
+                                       "--user-allowed-to-authenticate-from",
+                                       "*INVALID SDDL*")
+        self.assertEqual(result, -1)
+        self.assertIn(
+            "msDS-UserAllowedToAuthenticateFrom: Unable to parse SDDL", err)
 
     def test_authentication_policy_create_already_exists(self):
         """Test creating a new authentication policy that already exists."""
