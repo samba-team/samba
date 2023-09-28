@@ -3156,7 +3156,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 			       bool *more_strings)
 {
 	char *attr;
-	char *expected_range_attrib, *range_attr;
+	char *expected_range_attrib, *range_attr = NULL;
 	BerElement *ptr = NULL;
 	char **strings;
 	char **new_strings;
@@ -3187,7 +3187,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		}
 		ldap_memfree(attr);
 	}
-	if (!attr) {
+	if (!range_attr) {
 		ber_free(ptr, 0);
 		/* nothing here - this field is just empty */
 		*more_strings = False;
