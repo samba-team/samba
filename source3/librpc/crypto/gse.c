@@ -64,6 +64,9 @@ struct gse_context {
 	gss_cred_id_t creds;
 
 	gss_OID ret_mech;
+
+	struct gss_channel_bindings_struct _channel_bindings;
+	struct gss_channel_bindings_struct *channel_bindings;
 };
 
 /* free non talloc dependent contexts */
@@ -171,7 +174,7 @@ static NTSTATUS gse_setup_server_principal(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
+static NTSTATUS gse_context_init(struct gensec_security *gensec_security,
 				 bool do_sign, bool do_seal,
 				 const char *ccache_name,
 				 uint32_t add_gss_c_flags,
@@ -181,7 +184,7 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	krb5_error_code k5ret;
 	NTSTATUS status;
 
-	gse_ctx = talloc_zero(mem_ctx, struct gse_context);
+	gse_ctx = talloc_zero(gensec_security, struct gse_context);
 	if (!gse_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -205,6 +208,32 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	}
 
 	gse_ctx->gss_want_flags |= add_gss_c_flags;
+
+	if (gensec_security->channel_bindings != NULL) {
+		gse_ctx->_channel_bindings.initiator_addrtype =
+			gensec_security->channel_bindings->initiator_addrtype;
+		gse_ctx->_channel_bindings.initiator_address.value =
+			gensec_security->channel_bindings->initiator_address.data;
+		gse_ctx->_channel_bindings.initiator_address.length =
+			gensec_security->channel_bindings->initiator_address.length;
+
+		gse_ctx->_channel_bindings.acceptor_addrtype =
+			gensec_security->channel_bindings->acceptor_addrtype;
+		gse_ctx->_channel_bindings.acceptor_address.value =
+			gensec_security->channel_bindings->acceptor_address.data;
+		gse_ctx->_channel_bindings.acceptor_address.length =
+			gensec_security->channel_bindings->acceptor_address.length;
+
+		gse_ctx->_channel_bindings.application_data.value =
+			gensec_security->channel_bindings->application_data.data;
+		gse_ctx->_channel_bindings.application_data.length =
+			gensec_security->channel_bindings->application_data.length;
+
+		gse_ctx->channel_bindings =
+			&gse_ctx->_channel_bindings;
+	} else {
+		gse_ctx->channel_bindings = GSS_C_NO_CHANNEL_BINDINGS;
+	}
 
 	/* Initialize Kerberos Context */
 	k5ret = smb_krb5_init_context_common(&gse_ctx->k5ctx);
@@ -464,7 +493,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					       &gse_ctx->gss_mech,
 					       gse_ctx->gss_want_flags,
 					       time_req,
-					       GSS_C_NO_CHANNEL_BINDINGS,
+					       gse_ctx->channel_bindings,
 					       &in_data,
 					       NULL,
 					       &out_data,
@@ -520,7 +549,8 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					gse_ctx->server_name,
 					&gse_ctx->gss_mech,
 					gse_ctx->gss_want_flags,
-					time_req, GSS_C_NO_CHANNEL_BINDINGS,
+					time_req,
+					gse_ctx->channel_bindings,
 					&in_data, NULL, &out_data,
 					&gse_ctx->gss_got_flags, &time_rec);
 	goto init_sec_context_done;
@@ -620,7 +650,7 @@ done:
 	return status;
 }
 
-static NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
+static NTSTATUS gse_init_server(struct gensec_security *gensec_security,
 				bool do_sign, bool do_seal,
 				uint32_t add_gss_c_flags,
 				struct gse_context **_gse_ctx)
@@ -630,7 +660,7 @@ static NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret;
 	NTSTATUS status;
 
-	status = gse_context_init(mem_ctx, do_sign, do_seal,
+	status = gse_context_init(gensec_security, do_sign, do_seal,
 				  NULL, add_gss_c_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
@@ -689,13 +719,46 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 					 &gse_ctx->gssapi_context,
 					 gse_ctx->creds,
 					 &in_data,
-					 GSS_C_NO_CHANNEL_BINDINGS,
+					 gse_ctx->channel_bindings,
 					 &gse_ctx->client_name,
 					 &gse_ctx->ret_mech,
 					 &out_data,
 					 &gse_ctx->gss_got_flags,
 					 &time_rec,
 					 &gse_ctx->delegated_cred_handle);
+#ifdef GSS_C_CHANNEL_BOUND_FLAG
+	if (gss_maj == GSS_S_COMPLETE &&
+	    gensec_security->channel_bindings != NULL &&
+	    !(gensec_security->want_features & GENSEC_FEATURE_CB_OPTIONAL) &&
+	    !(gse_ctx->gss_got_flags & GSS_C_CHANNEL_BOUND_FLAG))
+	{
+		/*
+		 * If we require valid channel bindings
+		 * we need to check the client provided
+		 * them.
+		 *
+		 * We detect this if
+		 * GSS_C_CHANNEL_BOUND_FLAG is given.
+		 *
+		 * Recent heimdal and MIT releases support this
+		 * with older releases (e.g. MIT > 1.19).
+		 *
+		 * It means client with zero channel bindings
+		 * on a server with non-zero channel bindings
+		 * won't generate GSS_S_BAD_BINDINGS directly
+		 * unless KERB_AP_OPTIONS_CBT was also
+		 * provides by the client.
+		 *
+		 * So we need to convert a missing
+		 * GSS_C_CHANNEL_BOUND_FLAG into
+		 * GSS_S_BAD_BINDINGS by default
+		 * (unless GENSEC_FEATURE_CB_OPTIONAL is given).
+		 */
+		gss_maj = GSS_S_BAD_BINDINGS;
+		gss_min = 0;
+	}
+#endif /* GSS_C_CHANNEL_BOUND_FLAG */
+
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
@@ -708,6 +771,10 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 		/* we will need a third leg */
 		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		break;
+	case GSS_S_BAD_BINDINGS:
+		DBG_WARNING("Got GSS_S_BAD_BINDINGS\n");
+		status = NT_STATUS_BAD_BINDINGS;
+		goto done;
 	default:
 		DEBUG(1, ("gss_accept_sec_context failed with [%s]\n",
 			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
@@ -835,6 +902,20 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
 		want_flags |= GSS_C_DCE_STYLE;
 	}
+
+#ifdef HAVE_CLIENT_GSS_C_CHANNEL_BOUND_FLAG
+	/*
+	 * We can only use GSS_C_CHANNEL_BOUND_FLAG if the kerberos library
+	 * supports that in order to add KERB_AP_OPTIONS_CBT.
+	 *
+	 * See:
+	 * https://github.com/heimdal/heimdal/pull/1234
+	 * https://github.com/krb5/krb5/pull/1329
+	 */
+	if (!(gensec_security->want_features & GENSEC_FEATURE_CB_OPTIONAL)) {
+		want_flags |= GSS_C_CHANNEL_BOUND_FLAG;
+	}
+#endif
 
 	nt_status = gse_init_client(gensec_security, do_sign, do_seal, NULL,
 				    hostname, service, realm,
