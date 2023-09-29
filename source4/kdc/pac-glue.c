@@ -1519,8 +1519,8 @@ static krb5_error_code samba_kdc_validate_pac_blob(
 	}
 
 	code = samdb_result_dom_sid_buf(client_skdc_entry->msg,
-					      "objectSid",
-					      &client_sid);
+					"objectSid",
+					&client_sid);
 	if (code) {
 		goto out;
 	}
