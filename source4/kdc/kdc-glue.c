@@ -66,3 +66,27 @@ int kdc_check_pac(krb5_context context,
 	return check_pac_checksum(srv_sig, kdc_sig,
 				 context, &keyblock);
 }
+
+struct samba_kdc_entry_pac samba_kdc_get_device_pac(const astgs_request_t r)
+{
+	const hdb_entry *device = kdc_request_get_armor_client(r);
+	struct samba_kdc_entry *device_skdc_entry = NULL;
+	const hdb_entry *device_krbtgt = NULL;
+	const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
+	const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
+
+	if (device != NULL) {
+		device_skdc_entry = talloc_get_type_abort(device->context,
+							  struct samba_kdc_entry);
+
+		device_krbtgt = kdc_request_get_armor_server(r);
+		if (device_krbtgt != NULL) {
+			device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
+									 struct samba_kdc_entry);
+		}
+	}
+
+	return samba_kdc_entry_pac(device_pac,
+				   device_skdc_entry,
+				   samba_kdc_entry_is_trust(device_krbtgt_skdc_entry));
+}

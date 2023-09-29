@@ -56,4 +56,7 @@ int kdc_check_pac(krb5_context krb5_context,
 		  DATA_BLOB server_sig,
 		  struct PAC_SIGNATURE_DATA *kdc_sig,
 		  hdb_entry *ent);
+
+struct samba_kdc_entry_pac samba_kdc_get_device_pac(const astgs_request_t r);
+
 #endif
