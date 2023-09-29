@@ -57,6 +57,8 @@ enum {
 	SAMBA_KDC_FLAG_DELEGATED_PROXY_IS_TRUSTED = 0x00000040,
 };
 
+bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry);
+
 struct samba_kdc_entry_pac {
 	struct samba_kdc_entry *entry;
 	krb5_const_pac pac; /* NULL indicates that no PAC is present. */

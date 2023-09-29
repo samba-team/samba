@@ -854,6 +854,11 @@ NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_aut
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry)
+{
+	return entry != NULL && entry->is_trust;
+}
+
 /*
  * Return true if this entry has an associated PAC issued or signed by a KDC
  * that our KDC trusts. We trust the main krbtgt account, but we don’t trust any
