@@ -5640,9 +5640,9 @@ class RawKerberosTest(TestCase):
         if expect_pac:
             self.assertIsNotNone(auth_data)
         if auth_data is not None:
+            new_pac = None
             if exclude_pac:
                 need_to_call_replace_pac = True
-                new_pac = None
             elif not modify_pac_fn and not update_pac_checksums:
                 need_to_call_replace_pac = False
             else:
