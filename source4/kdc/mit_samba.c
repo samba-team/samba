@@ -675,8 +675,6 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 				    flags,
 				    client_skdc_entry,
 				    krbtgt_skdc_entry,
-				    NULL /* device */,
-				    NULL /* device_pac */,
 				    old_pac);
 	if (code != 0) {
 		goto done;

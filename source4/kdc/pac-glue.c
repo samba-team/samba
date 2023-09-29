@@ -2081,12 +2081,6 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 
  * @param krbtgt    The krbtgt samba kdc entry.
  *
- * @param device    The computer's samba kdc entry; used for compound
- *                  authentication.
-
- * @param device_pac        The PAC from the computer's TGT; used
- *                          for compound authentication.
-
  * @param pac                       The PAC
 
  * @return A Kerberos error code.
@@ -2096,8 +2090,6 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
 				     const struct samba_kdc_entry *krbtgt,
-				     const struct samba_kdc_entry *device,
-				     const krb5_const_pac *device_pac,
 				     const krb5_const_pac pac)
 {
 	TALLOC_CTX *tmp_ctx = NULL;

@@ -100,8 +100,6 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     uint32_t flags,
 				     struct samba_kdc_entry *client,
 				     const struct samba_kdc_entry *krbtgt,
-				     const struct samba_kdc_entry *device,
-				     const krb5_const_pac *device_pac,
 				     krb5_const_pac pac);
 
 struct authn_audit_info;

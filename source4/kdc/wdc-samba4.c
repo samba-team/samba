@@ -271,13 +271,10 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 					     const hdb_entry *krbtgt,
 					     const krb5_pac pac,
 					     krb5_cksumtype ctype,
-					     const hdb_entry *device,
-					     krb5_const_pac *device_pac,
 					     krb5_boolean *is_trusted_out)
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	struct samba_kdc_entry *client_skdc_entry = NULL;
-	struct samba_kdc_entry *device_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->context, struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = NULL;
@@ -294,11 +291,6 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 
 	if (client != NULL) {
 		client_skdc_entry = talloc_get_type_abort(client->context,
-							  struct samba_kdc_entry);
-	}
-
-	if (device != NULL) {
-		device_skdc_entry = talloc_get_type_abort(device->context,
 							  struct samba_kdc_entry);
 	}
 
@@ -376,8 +368,6 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 				   flags,
 				   client_skdc_entry,
 				   krbtgt_skdc_entry,
-				   device_skdc_entry,
-				   device_pac,
 				   pac);
 	if (ret != 0) {
 		goto out;
@@ -540,10 +530,6 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 	krb5_error_code ret;
 	krb5_cksumtype ctype = CKSUMTYPE_NONE;
 	hdb_entry signing_krbtgt_hdb;
-	const hdb_entry *explicit_armor_client =
-		kdc_request_get_explicit_armor_client(r);
-	krb5_const_pac explicit_armor_pac =
-		kdc_request_get_explicit_armor_pac(r);
 
 	if (delegated_proxy) {
 		uint16_t pac_kdc_signature_rodc_id;
@@ -666,8 +652,6 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 				    krbtgt,
 				    pac,
 				    ctype,
-				    explicit_armor_client,
-				    &explicit_armor_pac,
 				    is_trusted);
 
 	if (krbtgt == &signing_krbtgt_hdb) {
