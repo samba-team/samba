@@ -1350,7 +1350,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                 ('{a}', claims.CLAIM_TYPE_BOOLEAN, [2]),
                 ('{b}', claims.CLAIM_TYPE_BOOLEAN, [3]),
             ]),
-        ], '{a} == {b}', CRASHES_WINDOWS),
+        ], '{a} == {b}', (None, CRASHES_WINDOWS)),
         ([
             (claims.CLAIMS_SOURCE_TYPE_AD, [
                 ('{a}', claims.CLAIM_TYPE_BOOLEAN, [1]),
@@ -1469,7 +1469,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             (claims.CLAIMS_SOURCE_TYPE_AD, [
                 ('{larger_claim}', claims.CLAIM_TYPE_STRING, ['z' * 100000]),
             ]),
-        ], '{larger_claim} > "z"', CRASHES_WINDOWS),
+        ], '{larger_claim} > "z"', (True, CRASHES_WINDOWS)),
         # Test a great number of claims. Windows does not appear to like
         # receiving this many claims.
         ([
@@ -1477,7 +1477,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                 ('{many_claims}', claims.CLAIM_TYPE_UINT64,
                  list(range(0, 100000))),
             ]),
-        ], '{many_claims} Any_of "99999"', CRASHES_WINDOWS),
+        ], '{many_claims} Any_of "99999"', (True, CRASHES_WINDOWS)),
         # Test a claim with a very long name. Much larger than this, and
         # conditional_ace_encode_binary() will refuse to encode the conditions.
         ([
@@ -1565,18 +1565,18 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             (claims.CLAIMS_SOURCE_TYPE_AD, [
                 ('{invalid_sid}', 5, []),
             ]),
-        ], '{invalid_sid} == {invalid_sid}', CRASHES_WINDOWS),
+        ], '{invalid_sid} == {invalid_sid}', (None, CRASHES_WINDOWS)),
         ([
             (claims.CLAIMS_SOURCE_TYPE_AD, [
                 ('{invalid_octet_string}', 16, []),
             ]),
-        ], '{invalid_octet_string} == {invalid_octet_string}', CRASHES_WINDOWS),
+        ], '{invalid_octet_string} == {invalid_octet_string}', (None, CRASHES_WINDOWS)),
         # Sending an empty string will crash Windows.
         ([
             (claims.CLAIMS_SOURCE_TYPE_AD, [
                 ('{empty_string}', claims.CLAIM_TYPE_STRING, ['']),
             ]),
-        ], '{empty_string}', CRASHES_WINDOWS),
+        ], '{empty_string}', (None, CRASHES_WINDOWS)),
         # But sending empty arrays is OK.
         ([
             (claims.CLAIMS_SOURCE_TYPE_AD, [
@@ -1595,8 +1595,13 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                                       outcome):
         self.assertIsInstance(expression, str)
 
-        if outcome is CRASHES_WINDOWS and not self.crash_windows:
-            self.skipTest('test crashes Windows servers')
+        try:
+            outcome, crashes_windows = outcome
+            self.assertIs(crashes_windows, CRASHES_WINDOWS)
+            if not self.crash_windows:
+                self.skipTest('test crashes Windows servers')
+        except TypeError:
+            self.assertIsNot(outcome, CRASHES_WINDOWS)
 
         if claim_map is None:
             claim_map = {}
@@ -2145,7 +2150,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
     def test_rbcd_device_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
                    device_from_rodc=True,
-                   code=CRASHES_WINDOWS)
+                   code=(0, CRASHES_WINDOWS))
 
     def test_rbcd_service_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
@@ -2156,7 +2161,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._rbcd('Member_of SID({service_sid})',
                    service_from_rodc=True,
                    device_from_rodc=True,
-                   code=CRASHES_WINDOWS)
+                   code=(0, CRASHES_WINDOWS))
 
     def test_rbcd_client_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
@@ -2167,7 +2172,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._rbcd('Member_of SID({service_sid})',
                    client_from_rodc=True,
                    device_from_rodc=True,
-                   code=CRASHES_WINDOWS)
+                   code=(0, CRASHES_WINDOWS))
 
     def test_rbcd_client_and_service_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
@@ -2180,7 +2185,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                    client_from_rodc=True,
                    service_from_rodc=True,
                    device_from_rodc=True,
-                   code=CRASHES_WINDOWS)
+                   code=(0, CRASHES_WINDOWS))
 
     def _rbcd(self,
               rbcd_expression=None,
@@ -2203,8 +2208,13 @@ class ConditionalAceTests(ConditionalAceBaseTests):
               expected_groups=None,
               expected_device_groups=None,
               expected_claims=None):
-        if code is CRASHES_WINDOWS and not self.crash_windows:
-            self.skipTest('test crashes Windows servers')
+        try:
+            code, crashes_windows = code
+            self.assertIs(crashes_windows, CRASHES_WINDOWS)
+            if not self.crash_windows:
+                self.skipTest('test crashes Windows servers')
+        except TypeError:
+            self.assertIsNot(code, CRASHES_WINDOWS)
 
         samdb = self.get_samdb()
         functional_level = self.get_domain_functional_level(samdb)
@@ -2419,7 +2429,11 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
+                  edata=self.expect_padata_outer)
 
     def test_tgs_without_aa_asserted_identity_both_from_rodc(self):
         client_sids = {
@@ -2432,7 +2446,11 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
+                  edata=self.expect_padata_outer)
 
     def test_tgs_with_aa_asserted_identity(self):
         client_sids = {
@@ -2468,7 +2486,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(0, CRASHES_WINDOWS))
 
     def test_tgs_with_aa_asserted_identity_both_from_rodc(self):
         client_sids = {
@@ -2482,7 +2500,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(0, CRASHES_WINDOWS))
 
     def test_tgs_without_service_asserted_identity(self):
         client_sids = {
@@ -2525,7 +2543,11 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
+                  edata=self.expect_padata_outer)
 
     def test_tgs_without_service_asserted_identity_both_from_rodc(self):
         client_sids = {
@@ -2538,7 +2560,11 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
+                  edata=self.expect_padata_outer)
 
     def test_tgs_with_service_asserted_identity(self):
         client_sids = {
@@ -2574,7 +2600,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(0, CRASHES_WINDOWS))
 
     def test_tgs_with_service_asserted_identity_both_from_rodc(self):
         client_sids = {
@@ -2588,7 +2614,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(0, CRASHES_WINDOWS))
 
     def test_tgs_without_claims_valid(self):
         client_sids = {
@@ -2631,7 +2657,11 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
+                  edata=self.expect_padata_outer)
 
     def test_tgs_without_claims_valid_both_from_rodc(self):
         client_sids = {
@@ -2644,7 +2674,11 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
+                  edata=self.expect_padata_outer)
 
     def test_tgs_with_claims_valid(self):
         client_sids = {
@@ -2680,7 +2714,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(0, CRASHES_WINDOWS))
 
     def test_tgs_with_claims_valid_both_from_rodc(self):
         client_sids = {
@@ -2694,7 +2728,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   device_from_rodc=True,
                   client_sids=client_sids,
                   expected_groups=client_sids,
-                  code=CRASHES_WINDOWS)
+                  code=(0, CRASHES_WINDOWS))
 
     def _tgs(self,
              target_policy=None,
@@ -2713,8 +2747,13 @@ class ConditionalAceTests(ConditionalAceBaseTests):
              expected_groups=None,
              expected_device_groups=None,
              expected_claims=None):
-        if code is CRASHES_WINDOWS and not self.crash_windows:
-            self.skipTest('test crashes Windows servers')
+        try:
+            code, crashes_windows = code
+            self.assertIs(crashes_windows, CRASHES_WINDOWS)
+            if not self.crash_windows:
+                self.skipTest('test crashes Windows servers')
+        except TypeError:
+            self.assertIsNot(code, CRASHES_WINDOWS)
 
         samdb = self.get_samdb()
         functional_level = self.get_domain_functional_level(samdb)
