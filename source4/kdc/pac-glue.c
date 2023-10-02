@@ -908,38 +908,6 @@ static bool samba_kdc_entry_pac_issued_by_trust(const struct samba_kdc_entry_pac
 	return entry.pac != NULL && entry.is_from_trust;
 }
 
-/*
- * Look up the user's info in the database and create a auth_user_info_dc
- * structure. If the resulting structure is not talloc_free()d, it will be
- * reused on future calls to this function.
- */
-NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *entry,
-                                         const struct ldb_message *msg,
-                                         const struct auth_user_info_dc **info_out)
-{
-	if (entry->user_info_dc == NULL) {
-		NTSTATUS nt_status;
-		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
-
-		nt_status = authsam_make_user_info_dc(entry,
-						      entry->kdc_db_ctx->samdb,
-						      lpcfg_netbios_name(lp_ctx),
-						      lpcfg_sam_name(lp_ctx),
-						      lpcfg_sam_dnsname(lp_ctx),
-						      entry->realm_dn,
-						      msg,
-						      data_blob_null,
-						      data_blob_null,
-						      &entry->user_info_dc);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-	}
-
-	*info_out = entry->user_info_dc;
-	return NT_STATUS_OK;
-}
-
 NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *user_info_dc,
 				       const enum auth_group_inclusion group_inclusion,
@@ -1156,18 +1124,30 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct auth_user_info_dc **info_out)
 {
 	NTSTATUS nt_status;
-	const struct auth_user_info_dc *user_info_dc_from_db = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
 
-	nt_status = samba_kdc_get_user_info_from_db(entry, msg, &user_info_dc_from_db);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Getting user info for PAC failed: %s\n",
-			nt_errstr(nt_status));
-		return nt_status;
+	if (entry->user_info_dc == NULL) {
+		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
+
+		nt_status = authsam_make_user_info_dc(entry,
+						      entry->kdc_db_ctx->samdb,
+						      lpcfg_netbios_name(lp_ctx),
+						      lpcfg_sam_name(lp_ctx),
+						      lpcfg_sam_dnsname(lp_ctx),
+						      entry->realm_dn,
+						      msg,
+						      data_blob_null,
+						      data_blob_null,
+						      &entry->user_info_dc);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Getting user info for PAC failed: %s\n",
+				nt_errstr(nt_status));
+			return nt_status;
+		}
 	}
 
 	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, user_info_dc_from_db, &user_info_dc);
+	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, entry->user_info_dc, &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
 			nt_errstr(nt_status));
