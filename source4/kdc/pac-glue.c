@@ -1126,7 +1126,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc = NULL;
 
-	if (entry->user_info_dc == NULL) {
+	if (entry->info_from_db == NULL) {
 		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
 
 		nt_status = authsam_make_user_info_dc(entry,
@@ -1138,7 +1138,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 						      msg,
 						      data_blob_null,
 						      data_blob_null,
-						      &entry->user_info_dc);
+						      &entry->info_from_db);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Getting user info for PAC failed: %s\n",
 				nt_errstr(nt_status));
@@ -1147,7 +1147,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, entry->user_info_dc, &user_info_dc);
+	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, entry->info_from_db, &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
 			nt_errstr(nt_status));
