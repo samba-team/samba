@@ -91,8 +91,8 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         res = local_samdb.search(base=str(nc_name),
                                  expression="(&(objectclass=user)(cn=administrator))",
                                  attrs=[], scope=ldb.SCOPE_SUBTREE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         admin_obj = res[0]
 
-        self.assertEquals(admin_obj.dn, ldb.Dn(samdb, f"cn=administrator,{not_critical_dn}"))
+        self.assertEqual(admin_obj.dn, ldb.Dn(samdb, f"cn=administrator,{not_critical_dn}"))
