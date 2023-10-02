@@ -1292,6 +1292,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
 runner = SubunitTestRunner()
 rc = 0
-if not runner.run(unittest.makeSuite(UserAccountControlTests)).wasSuccessful():
+if not runner.run(unittest.TestLoader().loadTestsFromTestCase(
+        UserAccountControlTests)).wasSuccessful():
     rc = 1
 sys.exit(rc)

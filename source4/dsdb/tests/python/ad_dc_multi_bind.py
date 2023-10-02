@@ -80,7 +80,8 @@ if "://" not in host:
 
 if ANCIENT_SAMBA:
     runner = SubunitTestRunner()
-    if not runner.run(unittest.makeSuite(UserTests)).wasSuccessful():
+    if not runner.run(unittest.TestLoader().loadTestsFromTestCase(
+            UserTests)).wasSuccessful():
         sys.exit(1)
     sys.exit(0)
 else:

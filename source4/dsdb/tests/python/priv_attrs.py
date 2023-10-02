@@ -386,6 +386,7 @@ class PrivAttrsTests(samba.tests.TestCase):
 
 runner = SubunitTestRunner()
 rc = 0
-if not runner.run(unittest.makeSuite(PrivAttrsTests)).wasSuccessful():
+if not runner.run(unittest.TestLoader().loadTestsFromTestCase(
+        PrivAttrsTests)).wasSuccessful():
     rc = 1
 sys.exit(rc)
