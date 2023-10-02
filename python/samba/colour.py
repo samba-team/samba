@@ -111,7 +111,7 @@ def is_colour_wanted(*streams, hint='auto'):
         return True
 
     if hint not in ('auto', 'tty', 'if-tty', None, ''):
-        raise ValueError("unexpected colour hint: {hint}; "
+        raise ValueError(f"unexpected colour hint: {hint}; "
                          "try always|never|auto")
 
     from os import environ
