@@ -128,8 +128,8 @@ class cmd_delegation_show(Command):
 
             if not ignore:
                 if first:
-                    self.outf.write(f'  Principals that may delegate to this '
-                                    f'account:\n')
+                    self.outf.write('  Principals that may delegate to this '
+                                    'account:\n')
                     first = False
 
                 self.outf.write(f'msDS-AllowedToActOnBehalfOfOtherIdentity: '

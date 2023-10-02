@@ -71,7 +71,7 @@ def dc_level_from_lp(lp):
     if smb_conf_dc_functional_level is None:
         # This shouldn't be possible, except if the default option
         # value is not in the loadparm enum table
-        raise RuntimeError(f"'ad dc functional level' in smb.conf unrecognised!")
+        raise RuntimeError("'ad dc functional level' in smb.conf unrecognised!")
 
     try:
         return string_to_level(smb_conf_dc_functional_level)
