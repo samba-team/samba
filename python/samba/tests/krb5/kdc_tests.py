@@ -164,7 +164,7 @@ class KdcTests(RawKerberosTest):
         self.check_as_reply(rep)
 
         etype = rep['enc-part']['etype']
-        self.assertEquals(AES256_CTS_HMAC_SHA1_96, etype)
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, etype)
 
     def test_arc4_hmac_md5(self):
         creds = self.get_user_creds()
@@ -178,7 +178,7 @@ class KdcTests(RawKerberosTest):
         self.check_as_reply(rep)
 
         etype = rep['enc-part']['etype']
-        self.assertEquals(ARCFOUR_HMAC_MD5, etype)
+        self.assertEqual(ARCFOUR_HMAC_MD5, etype)
 
     def test_aes_rc4(self):
         creds = self.get_user_creds()
@@ -192,7 +192,7 @@ class KdcTests(RawKerberosTest):
         self.check_as_reply(rep)
 
         etype = rep['enc-part']['etype']
-        self.assertEquals(AES256_CTS_HMAC_SHA1_96, etype)
+        self.assertEqual(AES256_CTS_HMAC_SHA1_96, etype)
 
     def test_clock_skew(self):
         creds = self.get_user_creds()
