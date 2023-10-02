@@ -364,7 +364,7 @@ class TestCaseInTempDir(TestCase):
             # os.path.join will happily step out of the tempdir,
             # so let's just check.
             if os.path.dirname(path) != self.tempdir:
-                raise ValueError("{path} might be outside {self.tempdir}")
+                raise ValueError(f"{path} might be outside {self.tempdir}")
 
             try:
                 _rm(path)
