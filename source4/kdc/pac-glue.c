@@ -1266,12 +1266,12 @@ out:
 	return ret;
 }
 
-static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
-						     krb5_context context,
-						     struct ldb_context *samdb,
-						     const struct samba_kdc_entry_pac entry,
-						     const struct auth_user_info_dc **info_out,
-						     const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
+static krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
+						  krb5_context context,
+						  struct ldb_context *samdb,
+						  const struct samba_kdc_entry_pac entry,
+						  const struct auth_user_info_dc **info_out,
+						  const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
 	const struct auth_user_info_dc *info = NULL;
 	struct auth_user_info_dc *info_shallow_copy = NULL;
@@ -2585,15 +2585,15 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	 * be put into the PAC. Instead, we take the resource groups directly
 	 * from the original PAC and copy them unmodified into the new one.
 	 */
-	code = samba_kdc_obtain_user_info_dc(tmp_ctx,
-					     context,
-					     samdb,
-					     client,
-					     &user_info_dc_const,
-					     is_tgs ? &_resource_groups : NULL);
+	code = samba_kdc_get_user_info_dc(tmp_ctx,
+					  context,
+					  samdb,
+					  client,
+					  &user_info_dc_const,
+					  is_tgs ? &_resource_groups : NULL);
 	if (code != 0) {
 		const char *err_str = krb5_get_error_message(context, code);
-		DBG_ERR("samba_kdc_obtain_user_info_dc failed: %s\n",
+		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
 			err_str != NULL ? err_str : "<unknown>");
 		krb5_free_error_message(context, err_str);
 
@@ -2611,12 +2611,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		if (delegated_proxy.entry != NULL) {
 			auth_entry = delegated_proxy.entry;
 
-			code = samba_kdc_obtain_user_info_dc(tmp_ctx,
-							     context,
-							     samdb,
-							     delegated_proxy,
-							     &auth_user_info_dc,
-							     NULL /* resource_groups_out */);
+			code = samba_kdc_get_user_info_dc(tmp_ctx,
+							  context,
+							  samdb,
+							  delegated_proxy,
+							  &auth_user_info_dc,
+							  NULL /* resource_groups_out */);
 			if (code) {
 				goto done;
 			}
