@@ -4576,9 +4576,9 @@ class RawKerberosTest(TestCase):
                     continue
 
                 if expected_claims:
-                    empty_msg = ', and {claims_type} were expected'
+                    empty_msg = f', and {claims_type} were expected'
                 else:
-                    empty_msg = ' for {claims_type} (should be missing)'
+                    empty_msg = f' for {claims_type} (should be missing)'
 
                 claims_metadata_ndr = ndr_unpack(claims.CLAIMS_SET_METADATA_NDR,
                                                  remaining)
