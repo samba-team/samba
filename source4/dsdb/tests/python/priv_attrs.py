@@ -230,9 +230,7 @@ class PrivAttrsTests(samba.tests.TestCase):
 
     def add_computer_ldap(self, computername, others=None, samdb=None):
         dn = "CN=%s,%s" % (computername, self.test_ou)
-        domainname = ldb.Dn(samdb, samdb.domain_dn()).canonical_str().replace("/", "")
         samaccountname = "%s$" % computername
-        dnshostname = "%s.%s" % (computername, domainname)
         msg_dict = {
             "dn": dn,
             "objectclass": "computer"}
@@ -252,7 +250,6 @@ class PrivAttrsTests(samba.tests.TestCase):
 
     def add_user_ldap(self, username, others=None, samdb=None):
         dn = "CN=%s,%s" % (username, self.test_ou)
-        domainname = ldb.Dn(samdb, samdb.domain_dn()).canonical_str().replace("/", "")
         samaccountname = "%s$" % username
         msg_dict = {
             "dn": dn,

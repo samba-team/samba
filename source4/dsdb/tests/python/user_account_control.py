@@ -199,9 +199,7 @@ class UserAccountControlTests(samba.tests.TestCase):
         if samdb is None:
             samdb = self.samdb
         dn = "CN=%s,%s" % (computername, self.OU)
-        domainname = ldb.Dn(self.samdb, self.samdb.domain_dn()).canonical_str().replace("/", "")
         samaccountname = "%s$" % computername
-        dnshostname = "%s.%s" % (computername, domainname)
         msg_dict = {
             "dn": dn,
             "objectclass": "computer"}
@@ -311,7 +309,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = f"(OA;CI;WDCC;{dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
 
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
@@ -391,8 +388,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
-
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
@@ -449,7 +444,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = f"(OA;CI;CC;{dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
 
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
@@ -554,8 +548,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         # non-ACL userAccountControl rules
         mod = f"(OA;CI;WP;;;{user_sid})(OA;;CC;;;{user_sid})"
 
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
-
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
         # We want to start with UF_NORMAL_ACCOUNT, so we make a user
@@ -619,8 +611,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         # attributes (this is not a test of ACLs, this is a test of
         # non-ACL userAccountControl rules
         mod = f"(OA;CI;WP;;;{user_sid})(OA;;CC;;;{user_sid})"
-
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
@@ -821,8 +811,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
-
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
         invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT])
@@ -888,7 +876,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         ace_cc = f"(OA;;CC;{dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
         ace_wp_dnshostname = f"(OA;CI;WP;{dsdb.DS_GUID_SCHEMA_ATTR_DNS_HOST_NAME};;{user_sid})"
         ace_wp_primarygroupid = f"(OA;CI;WP;{dsdb.DS_GUID_SCHEMA_ATTR_PRIMARY_GROUP_ID};;{user_sid})"
-        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
         mod = ace_cc + ace_wp_dnshostname + ace_wp_primarygroupid
 
         self.sd_utils.dacl_add_ace(self.OU, mod)
