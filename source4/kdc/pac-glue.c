@@ -1118,10 +1118,10 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
-				    struct samba_kdc_entry *entry,
-				    const struct ldb_message *msg,
-				    struct auth_user_info_dc **info_out)
+NTSTATUS samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
+					 struct samba_kdc_entry *entry,
+					 const struct ldb_message *msg,
+					 struct auth_user_info_dc **info_out)
 {
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc = NULL;
@@ -1236,12 +1236,12 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		 * SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY
 		 * here.
 		 */
-		nt_status = samba_kdc_get_user_info_dc(mem_ctx,
-						       entry.entry,
-						       entry.entry->msg,
-						       &user_info_dc);
+		nt_status = samba_kdc_get_user_info_from_db(mem_ctx,
+							    entry.entry,
+							    entry.entry->msg,
+							    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+			DBG_ERR("samba_kdc_get_user_info_from_db failed: %s\n",
 				nt_errstr(nt_status));
 			ret = KRB5KDC_ERR_TGT_REVOKED;
 			goto out;
@@ -2045,12 +2045,12 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 
 	frame = talloc_stackframe();
 
-	nt_status = samba_kdc_get_user_info_dc(frame,
-					       device,
-					       device->msg,
-					       &device_info_dc);
+	nt_status = samba_kdc_get_user_info_from_db(frame,
+						    device,
+						    device->msg,
+						    &device_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+		DBG_ERR("samba_kdc_get_user_info_from_db failed: %s\n",
 			nt_errstr(nt_status));
 		talloc_free(frame);
 		return KRB5KDC_ERR_TGT_REVOKED;
@@ -2157,10 +2157,10 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
-						       client.entry,
-						       client.entry->msg,
-						       &user_info_dc);
+		nt_status = samba_kdc_get_user_info_from_db(tmp_ctx,
+							    client.entry,
+							    client.entry->msg,
+							    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Getting user info for PAC failed: %s\n",
 				nt_errstr(nt_status));
@@ -2909,12 +2909,12 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 	} else {
-		nt_status = samba_kdc_get_user_info_dc(frame,
-						       device.entry,
-						       device.entry->msg,
-						       &device_info);
+		nt_status = samba_kdc_get_user_info_from_db(frame,
+							    device.entry,
+							    device.entry->msg,
+							    &device_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+			DBG_ERR("samba_kdc_get_user_info_from_db failed: %s\n",
 				nt_errstr(nt_status));
 
 			code = KRB5KDC_ERR_TGT_REVOKED;

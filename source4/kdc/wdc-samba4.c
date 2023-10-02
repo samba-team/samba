@@ -123,10 +123,10 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	nt_status = samba_kdc_get_user_info_dc(mem_ctx,
-					       skdc_entry,
-					       skdc_entry->msg,
-					       &user_info_dc);
+	nt_status = samba_kdc_get_user_info_from_db(mem_ctx,
+						    skdc_entry,
+						    skdc_entry->msg,
+						    &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return map_errno_from_nt_status(nt_status);

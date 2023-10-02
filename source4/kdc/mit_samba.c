@@ -484,10 +484,10 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
-					       skdc_entry,
-					       skdc_entry->msg,
-					       &user_info_dc);
+	nt_status = samba_kdc_get_user_info_from_db(tmp_ctx,
+						    skdc_entry,
+						    skdc_entry->msg,
+						    &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		if (NT_STATUS_EQUAL(nt_status,
@@ -917,12 +917,12 @@ krb5_error_code mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	status = samba_kdc_get_user_info_dc(tmp_ctx,
-					    p,
-					    p->msg,
-					    &user_info_dc);
+	status = samba_kdc_get_user_info_from_db(tmp_ctx,
+						 p,
+						 p->msg,
+						 &user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("samba_kdc_get_user_info_dc failed: %s\n",
+		DBG_WARNING("samba_kdc_get_user_info_from_db failed: %s\n",
 			    nt_errstr(status));
 		code = EINVAL;
 		goto out;
