@@ -72,7 +72,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from samba.samba3 import param as s3param
 
 def dummy_certificate():
@@ -81,7 +81,7 @@ def dummy_certificate():
                            os.environ.get('SERVER'))
     ])
     cons = x509.BasicConstraints(ca=True, path_length=0)
-    now = datetime.utcnow()
+    now = datetime.now(tz=timezone.utc)
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048,
                                    backend=default_backend())
