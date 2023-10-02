@@ -483,7 +483,7 @@ class PerfFilterOps(unittest.TestResult):
     def get_time(self):
         if self.suite_has_time:
             return self.latest_time
-        return datetime.datetime.utcnow()
+        return datetime.datetime.now(tz=datetime.timezone.utc)
 
     def startTest(self, test):
         self.seen_output = True
