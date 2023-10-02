@@ -475,11 +475,13 @@ class BlackboxTestCase(TestCaseInTempDir):
 
         return line
 
-    def check_run(self, line, msg=None):
-        self.check_exit_code(line, 0, msg=msg)
+    @classmethod
+    def check_run(cls, line, msg=None):
+        cls.check_exit_code(line, 0, msg=msg)
 
-    def check_exit_code(self, line, expected, msg=None):
-        line = self._make_cmdline(line)
+    @classmethod
+    def check_exit_code(cls, line, expected, msg=None):
+        line = cls._make_cmdline(line)
         use_shell = not isinstance(line, list)
         p = subprocess.Popen(line,
                              stdout=subprocess.PIPE,
@@ -497,9 +499,10 @@ class BlackboxTestCase(TestCaseInTempDir):
                                        msg)
         return stdoutdata
 
-    def check_output(self, line):
+    @classmethod
+    def check_output(cls, line):
         use_shell = not isinstance(line, list)
-        line = self._make_cmdline(line)
+        line = cls._make_cmdline(line)
         p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              shell=use_shell, close_fds=True)
         stdoutdata, stderrdata = p.communicate()
