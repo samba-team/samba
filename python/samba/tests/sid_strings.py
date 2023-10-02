@@ -560,7 +560,7 @@ class SidStringsAsDnInSearchFilter(SidStringBase):
         try:
             self.ldb.search(base=basedn,
                             scope=ldb.SCOPE_ONELEVEL,
-                            expression="(distinguishedName=<SID={code}>)")
+                            expression=f"(distinguishedName=<SID={code}>)")
         except ldb.LdbError as e:
             self.fail(f"expected no failure, got {e}")
 
