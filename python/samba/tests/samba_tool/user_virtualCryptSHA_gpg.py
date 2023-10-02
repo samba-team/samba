@@ -219,8 +219,8 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         out = self._get_password("virtualCryptSHA256;rounds=2561," +
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
-        self.assertEquals(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEquals(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
 
         # The returned hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))

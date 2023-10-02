@@ -1805,8 +1805,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
             self.assertIn('UserPolicy         : False', out,
                           'The test cse should not have User policy enabled')
             cse_ext = re.findall(r'^UniqueGUID\s+:\s+(.*)', out)
-            self.assertEquals(len(cse_ext), 1,
-                              'The test cse GUID was not found')
+            self.assertEqual(len(cse_ext), 1,
+                             'The test cse GUID was not found')
             cse_ext = cse_ext[0]
             self.assertTrue(check_guid(cse_ext),
                             'The test cse GUID was not formatted correctly')

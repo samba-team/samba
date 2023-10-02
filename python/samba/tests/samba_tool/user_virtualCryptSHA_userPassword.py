@@ -92,8 +92,8 @@ class UserCmdCryptShaTestCaseUserPassword(UserCmdCryptShaTestCase):
         sha512 = _get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512")
-        self.assertEquals(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEquals(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
 
     # gpg decryption not enabled.
     # both virtual attributes specified, rounds specified
@@ -115,8 +115,8 @@ class UserCmdCryptShaTestCaseUserPassword(UserCmdCryptShaTestCase):
         sha512 = _get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512")
-        self.assertEquals(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEquals(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
 
     # gpg decryption not enabled.
     # both virtual attributes specified, rounds specified
@@ -142,8 +142,8 @@ class UserCmdCryptShaTestCaseUserPassword(UserCmdCryptShaTestCase):
 
         out = self._get_password("virtualCryptSHA256;rounds=2561," +
                                  "virtualCryptSHA512;rounds=5129")
-        self.assertEquals(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEquals(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
 
         # Number of rounds should match that specified
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))
@@ -174,12 +174,12 @@ class UserCmdCryptShaTestCaseUserPassword(UserCmdCryptShaTestCase):
 
         out = self._get_password("virtualCryptSHA256;rounds=4000," +
                                  "virtualCryptSHA512;rounds=5000")
-        self.assertEquals(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEquals(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
 
         # As the number of rounds did not match, should have returned the
         # first hash of the corresponding scheme
         out = self._get_password("virtualCryptSHA256," +
                                  "virtualCryptSHA512")
-        self.assertEquals(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEquals(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
