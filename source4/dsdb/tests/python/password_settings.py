@@ -604,7 +604,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
                                operation=FLAG_MOD_REPLACE)
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.fail("Failed to change user into a workstation: {msg}")
+            self.fail(f"Failed to change user into a workstation: {msg}")
         self.assertIsNone(user.get_resultant_PSO())
 
         try:
@@ -614,7 +614,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
                                operation=FLAG_MOD_REPLACE)
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.fail("Failed to change user back into a user: {msg}")
+            self.fail(f"Failed to change user back into a user: {msg}")
         self.assertTrue(user.get_resultant_PSO() == dummy_pso.dn)
 
         # no PSO should be returned if RID is equal to DOMAIN_USER_RID_KRBTGT

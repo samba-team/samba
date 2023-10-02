@@ -479,9 +479,8 @@ class UserAccountControlTests(samba.tests.TestCase):
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
         self.assertRaisesLdbError([ldb.ERR_OBJECT_CLASS_VIOLATION,
                                    ldb.ERR_UNWILLING_TO_PERFORM],
-                                  f"Unexpectedly able to set userAccountControl to be an Normal "
-                                  "account without |UF_PASSWD_NOTREQD Unexpectedly able to "
-                                  "set userAccountControl to be a workstation on {m.dn}",
+                                  "Unexpectedly able to set userAccountControl to be a Normal "
+                                  "account without |UF_PASSWD_NOTREQD",
                                   self.samdb.modify, m)
 
 
@@ -505,9 +504,9 @@ class UserAccountControlTests(samba.tests.TestCase):
                                                          UF_TRUSTED_FOR_DELEGATION),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
         self.assertRaisesLdbError(ldb.ERR_OTHER,
-                                  f"Unexpectedly able to set userAccountControl to "
+                                  "Unexpectedly able to set userAccountControl to "
                                   "UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT|"
-                                  "UF_TRUSTED_FOR_DELEGATION on {m.dn}",
+                                  f"UF_TRUSTED_FOR_DELEGATION on {m.dn}",
                                   self.admin_samdb.modify, m)
 
         m = ldb.Message()
@@ -1267,7 +1266,7 @@ class UserAccountControlTests(samba.tests.TestCase):
             self.admin_samdb.add(msg_dict)
             if (objectclass == "user"
                 and account_type != UF_NORMAL_ACCOUNT):
-                self.fail("Able to create {account_type_str} on {objectclass}")
+                self.fail(f"Able to create {account_type_str} on {objectclass}")
         except LdbError as e:
             (enum, estr) = e.args
             self.assertEqual(enum, ldb.ERR_OBJECT_CLASS_VIOLATION)
@@ -1288,7 +1287,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         self.assertRaisesLdbError([ldb.ERR_OBJECT_CLASS_VIOLATION,
                                    ldb.ERR_UNWILLING_TO_PERFORM],
-                                  "Should have been unable Able to change objectclass of a {objectclass}",
+                                  f"Should have been unable to change objectclass of a {objectclass}",
                                   self.admin_samdb.modify, m)
 
 runner = SubunitTestRunner()
