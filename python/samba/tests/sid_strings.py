@@ -545,7 +545,7 @@ class SidStringsAsDnSearchWithDnObject(SidStringBase):
 
 @DynamicTestCase
 class SidStringsAsDnInSearchFilter(SidStringBase):
-    """How does a bad <SID=x> dn work is a search filter?
+    """How does a bad <SID=x> dn work in a search filter?
 
     Answer: on Windows it always works.
     """
