@@ -436,7 +436,7 @@ class AutoTimingTestResultDecorator(HookedTestResultDecorator):
         time = self._time
         if time is not None:
             return
-        time = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        time = datetime.datetime.now(tz=datetime.timezone.utc)
         self.decorated.time(time)
 
     @property
