@@ -59,7 +59,8 @@ BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
 
 HEXDUMP_FILTER = bytearray([x if ((len(repr(chr(x))) == 3) and (x < 127)) else ord('.') for x in range(256)])
 
-LDB_ERR_LUT = {v: k for k,v in vars(ldb).items() if k.startswith('ERR_')}
+LDB_ERR_LUT = {v: k for k, v in vars(ldb).items() if k.startswith('ERR_')}
+
 
 def ldb_err(v):
     if isinstance(v, ldb.LdbError):
@@ -78,6 +79,7 @@ def ldb_err(v):
 def DynamicTestCase(cls):
     cls.setUpDynamicTestCases()
     return cls
+
 
 class TestCase(unittest.TestCase):
     """A Samba test case."""
@@ -458,10 +460,10 @@ class BlackboxTestCase(TestCaseInTempDir):
         exe = os.path.join(BINDIR, cmd)
 
         python_cmds = ["samba-tool",
-            "samba_dnsupdate",
-            "samba_upgradedns",
-            "script/traffic_replay",
-            "script/traffic_learner"]
+                       "samba_dnsupdate",
+                       "samba_upgradedns",
+                       "script/traffic_replay",
+                       "script/traffic_learner"]
 
         if os.path.exists(exe):
             parts[0] = exe
@@ -531,8 +533,8 @@ class BlackboxTestCase(TestCaseInTempDir):
         password += SystemRandom().choice(string.digits)
         password += SystemRandom().choice(string.ascii_lowercase)
         password += ''.join(SystemRandom().choice(string.ascii_uppercase +
-                    string.ascii_lowercase +
-                    string.digits) for x in range(count - 3))
+                            string.ascii_lowercase +
+                            string.digits) for x in range(count - 3))
         return password
 
 
@@ -693,7 +695,7 @@ def parse_help_consistency(out,
         prev = ' '
         for c in line:
             if state == OptState.NOOPT:
-                if c == '-' and  prev.isspace():
+                if c == '-' and prev.isspace():
                     state = OptState.HYPHEN1
                 prev = c
                 continue
@@ -708,7 +710,7 @@ def parse_help_consistency(out,
                 if c.isalnum():
                     name = '--' + c
                     state = OptState.NAME
-                else: # WTF, perhaps '--' ending option list.
+                else:  # WTF, perhaps '--' ending option list.
                     state = OptState.NOOPT
                     prev = c
                 continue
