@@ -2166,7 +2166,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!samba_krb5_pac_is_trusted(client)) {
-		const struct auth_user_info_dc *user_info_dc = NULL;
+		struct auth_user_info_dc *user_info_dc = NULL;
 		WERROR werr;
 
 		struct dom_sid *object_sids = NULL;
@@ -2177,9 +2177,10 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_user_info_from_db(client.entry,
-							    client.entry->msg,
-							    &user_info_dc);
+		nt_status = samba_kdc_get_user_info_dc(tmp_ctx,
+						       client.entry,
+						       client.entry->msg,
+						       &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Getting user info for PAC failed: %s\n",
 				nt_errstr(nt_status));

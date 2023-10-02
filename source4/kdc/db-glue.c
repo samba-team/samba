@@ -1471,7 +1471,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
 		int result;
-		const struct auth_user_info_dc *user_info_dc = NULL;
+		struct auth_user_info_dc *user_info_dc = NULL;
 		/*
 		 * These protections only apply to clients, so servers in the
 		 * Protected Users group may still have service tickets to them
@@ -1484,7 +1484,10 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * and computers should never be members of Protected Users, or
 		 * they may fail to authenticate.
 		 */
-		status = samba_kdc_get_user_info_from_db(p, msg, &user_info_dc);
+		status = samba_kdc_get_user_info_dc(tmp_ctx,
+						    p,
+						    msg,
+						    &user_info_dc);
 		if (!NT_STATUS_IS_OK(status)) {
 			ret = EINVAL;
 			goto out;
