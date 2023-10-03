@@ -2030,6 +2030,7 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 }
 
 static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
+						      krb5_context context,
 						      struct samba_kdc_entry *device,
 						      DATA_BLOB **device_info_blob)
 {
@@ -2441,6 +2442,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 			/* Also regenerate device info. */
 			code = samba_kdc_get_device_info_blob(tmp_ctx,
+							      context,
 							      device.entry,
 							      &device_info_blob);
 			if (code != 0) {
