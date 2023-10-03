@@ -1151,14 +1151,14 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
-				    struct samba_kdc_entry *skdc_entry,
+				    struct samba_kdc_entry *entry,
 				    struct auth_user_info_dc **user_info_dc_out)
 {
 	NTSTATUS nt_status;
 	const struct auth_user_info_dc *user_info_dc_from_db = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
 
-	nt_status = samba_kdc_get_user_info_from_db(skdc_entry, skdc_entry->msg, &user_info_dc_from_db);
+	nt_status = samba_kdc_get_user_info_from_db(entry, entry->msg, &user_info_dc_from_db);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Getting user info for PAC failed: %s\n",
 			nt_errstr(nt_status));

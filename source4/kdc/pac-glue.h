@@ -112,7 +112,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *entry,
 					 const struct auth_user_info_dc **info_out);
 
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
-				    struct samba_kdc_entry *skdc_entry,
+				    struct samba_kdc_entry *entry,
 				    struct auth_user_info_dc **user_info_dc_out);
 
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status);
