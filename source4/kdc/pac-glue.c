@@ -1287,10 +1287,12 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	if (resource_groups_out != NULL) {
 		*resource_groups_out = resource_groups;
+		resource_groups = NULL;
 	}
 
 out:
 	TALLOC_FREE(user_info_dc);
+	TALLOC_FREE(resource_groups);
 
 	return ret;
 }
