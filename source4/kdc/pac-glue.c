@@ -1152,7 +1152,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 				    struct samba_kdc_entry *entry,
-				    struct auth_user_info_dc **user_info_dc_out)
+				    struct auth_user_info_dc **info_out)
 {
 	NTSTATUS nt_status;
 	const struct auth_user_info_dc *user_info_dc_from_db = NULL;
@@ -1173,7 +1173,7 @@ NTSTATUS samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	*user_info_dc_out = user_info_dc;
+	*info_out = user_info_dc;
 
 	return NT_STATUS_OK;
 }
