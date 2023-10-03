@@ -63,11 +63,11 @@ struct samba_kdc_entry {
 	struct auth_user_info_dc *info_from_db;
 	const struct authn_kerberos_client_policy *client_policy;
 	const struct authn_server_policy *server_policy;
-	bool is_krbtgt;
-	bool is_rodc;
-	bool is_trust;
 	uint32_t supported_enctypes;
 	NTSTATUS reject_status;
+	bool is_krbtgt : 1;
+	bool is_rodc : 1;
+	bool is_trust : 1;
 };
 
 extern struct hdb_method hdb_samba4_interface;
