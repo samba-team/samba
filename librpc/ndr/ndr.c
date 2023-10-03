@@ -1347,13 +1347,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLO
 }
 
 /*
-  pull a struct from a blob using NDR - failing if all bytes are not consumed
-
-  This only works for structures with NO allocated memory, like
-  objectSID and GUID.  This helps because we parse these a lot.
-*/
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blob,
-							    void *p, ndr_pull_flags_fn_t fn)
+ * pull a struct from a blob using NDR
+ *
+ * This only works for structures with NO allocated memory, like
+ * objectSID and GUID.  This helps because we parse these a lot.
+ */
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_noalloc(const uint8_t *buf,
+							size_t buflen,
+							void *p,
+							ndr_pull_flags_fn_t fn,
+							size_t *consumed)
 {
 	/*
 	 * We init this structure on the stack here, to avoid a
@@ -1364,24 +1367,47 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blo
 	 * code without the talloc() overhead.
 	 */
 	struct ndr_pull ndr = {
-		.data = blob->data,
-		.data_size = blob->length,
-		.current_mem_ctx = (void *)-1
+		.data = discard_const_p(uint8_t, buf),
+		.data_size = buflen,
+		.current_mem_ctx = (void *)-1,
 	};
-	uint32_t highest_ofs;
+
 	NDR_CHECK(fn(&ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	highest_ofs = MAX(ndr.offset, ndr.relative_highest_offset);
-	if (highest_ofs < ndr.data_size) {
-		enum ndr_err_code ret;
-		ret = ndr_pull_error(
-			&ndr,
-			NDR_ERR_UNREAD_BYTES,
-			"not all bytes consumed ofs[%"PRIu32"] "
-			"size[%"PRIu32"]",
-			highest_ofs,
-			ndr.data_size);
-		return ret;
+	*consumed = MAX(ndr.offset, ndr.relative_highest_offset);
+
+	return NDR_ERR_SUCCESS;
+}
+
+/*
+  pull a struct from a blob using NDR - failing if all bytes are not consumed
+
+  This only works for structures with NO allocated memory, like
+  objectSID and GUID.  This helps because we parse these a lot.
+*/
+_PUBLIC_ enum ndr_err_code
+ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blob,
+				 void *p,
+				 ndr_pull_flags_fn_t fn)
+{
+	size_t consumed;
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob_noalloc(blob->data,
+					       blob->length,
+					       p,
+					       fn,
+					       &consumed);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_err;
 	}
+
+	if (consumed < blob->length) {
+		D_WARNING("not all bytes consumed ofs[%zu] size[%zu]",
+			  consumed,
+			  blob->length);
+		return NDR_ERR_UNREAD_BYTES;
+	}
+
 	return NDR_ERR_SUCCESS;
 }
 
