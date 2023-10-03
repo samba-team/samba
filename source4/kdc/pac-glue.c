@@ -915,7 +915,7 @@ static bool samba_kdc_entry_pac_issued_by_trust(const struct samba_kdc_entry_pac
  */
 NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *entry,
                                          const struct ldb_message *msg,
-                                         const struct auth_user_info_dc **user_info_dc)
+                                         const struct auth_user_info_dc **info_out)
 {
 	if (entry->user_info_dc == NULL) {
 		NTSTATUS nt_status;
@@ -936,7 +936,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *entry,
 		}
 	}
 
-	*user_info_dc = entry->user_info_dc;
+	*info_out = entry->user_info_dc;
 	return NT_STATUS_OK;
 }
 
