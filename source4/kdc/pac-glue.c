@@ -1283,8 +1283,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (entry.entry == NULL) {
-		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-		goto out;
+		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	}
 
 	/*
@@ -1308,8 +1307,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 			krb5err != NULL ? krb5err : "?");
 		krb5_free_error_message(context, krb5err);
 
-		ret = KRB5KDC_ERR_TGT_REVOKED;
-		goto out;
+		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
 	nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
@@ -1317,17 +1315,13 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
-		ret = KRB5KDC_ERR_TGT_REVOKED;
-		goto out;
+		TALLOC_FREE(info);
+		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
 	*info_out = info;
-	info = NULL;
 
-out:
-	TALLOC_FREE(info);
-
-	return ret;
+	return 0;
 }
 
 static NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
