@@ -1184,7 +1184,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						     struct ldb_context *samdb,
 						     const enum auth_group_inclusion group_inclusion,
 						     const struct samba_kdc_entry_pac entry,
-						     struct auth_user_info_dc **user_info_dc_out,
+						     struct auth_user_info_dc **info_out,
 						     struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
 	struct auth_user_info_dc *user_info_dc = NULL;
@@ -1192,7 +1192,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
 
-	*user_info_dc_out = NULL;
+	*info_out = NULL;
 	if (resource_groups_out != NULL) {
 		*resource_groups_out = NULL;
 	}
@@ -1282,7 +1282,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*user_info_dc_out = user_info_dc;
+	*info_out = user_info_dc;
 	user_info_dc = NULL;
 
 	if (resource_groups_out != NULL) {
