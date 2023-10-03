@@ -1119,6 +1119,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 }
 
 krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
+						struct ldb_context *samdb,
 						struct samba_kdc_entry *entry,
 						const struct ldb_message *msg,
 						struct auth_user_info_dc **info_out)
@@ -1130,7 +1131,7 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
 
 		nt_status = authsam_make_user_info_dc(entry,
-						      entry->kdc_db_ctx->samdb,
+						      samdb,
 						      lpcfg_netbios_name(lp_ctx),
 						      lpcfg_sam_name(lp_ctx),
 						      lpcfg_sam_dnsname(lp_ctx),
@@ -1238,6 +1239,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		 * here.
 		 */
 		ret = samba_kdc_get_user_info_from_db(mem_ctx,
+						      samdb,
 						      entry.entry,
 						      entry.entry->msg,
 						      &user_info_dc);
@@ -2052,6 +2054,7 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 	frame = talloc_stackframe();
 
 	code = samba_kdc_get_user_info_from_db(frame,
+					       samdb,
 					       device,
 					       device->msg,
 					       &device_info_dc);
@@ -2169,6 +2172,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		code = samba_kdc_get_user_info_from_db(tmp_ctx,
+						       samdb,
 						       client.entry,
 						       client.entry->msg,
 						       &user_info_dc);
@@ -2926,6 +2930,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		code = samba_kdc_get_user_info_from_db(frame,
+						       samdb,
 						       device.entry,
 						       device.entry->msg,
 						       &device_info);

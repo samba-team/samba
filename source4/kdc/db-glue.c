@@ -1485,6 +1485,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * they may fail to authenticate.
 		 */
 		ret = samba_kdc_get_user_info_from_db(tmp_ctx,
+						      kdc_db_ctx->samdb,
 						      p,
 						      msg,
 						      &user_info_dc);

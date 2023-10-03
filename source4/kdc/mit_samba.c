@@ -485,6 +485,7 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	}
 
 	code = samba_kdc_get_user_info_from_db(tmp_ctx,
+					       server_entry->kdc_db_ctx->samdb,
 					       skdc_entry,
 					       skdc_entry->msg,
 					       &user_info_dc);
@@ -915,6 +916,7 @@ krb5_error_code mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	}
 
 	code = samba_kdc_get_user_info_from_db(tmp_ctx,
+					       ctx->db_ctx->samdb,
 					       p,
 					       p->msg,
 					       &user_info_dc);

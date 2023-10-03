@@ -124,6 +124,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	ret = samba_kdc_get_user_info_from_db(mem_ctx,
+					      server_entry->kdc_db_ctx->samdb,
 					      skdc_entry,
 					      skdc_entry->msg,
 					      &user_info_dc);
