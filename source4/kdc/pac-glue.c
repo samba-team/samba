@@ -1127,6 +1127,22 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *info = NULL;
 
+	if (samdb == NULL) {
+		return EINVAL;
+	}
+
+	if (msg == NULL) {
+		return EINVAL;
+	}
+
+	if (info_out == NULL) {
+		return EINVAL;
+	}
+
+	if (entry == NULL) {
+		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	}
+
 	if (entry->info_from_db == NULL) {
 		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
 
