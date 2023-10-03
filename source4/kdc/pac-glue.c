@@ -1187,7 +1187,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						     struct auth_user_info_dc **info_out,
 						     struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
-	struct auth_user_info_dc *user_info_dc = NULL;
+	struct auth_user_info_dc *info = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups = NULL;
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
@@ -1213,7 +1213,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		ret = kerberos_pac_to_user_info_dc(mem_ctx,
 						   entry.pac,
 						   context,
-						   &user_info_dc,
+						   &info,
 						   AUTH_EXCLUDE_RESOURCE_GROUPS,
 						   NULL,
 						   NULL,
@@ -1233,7 +1233,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		 */
 		nt_status = authsam_update_user_info_dc(mem_ctx,
 							samdb,
-							user_info_dc);
+							info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("authsam_update_user_info_dc failed: %s\n",
 				nt_errstr(nt_status));
@@ -1261,7 +1261,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						      samdb,
 						      entry.entry,
 						      entry.entry->msg,
-						      &user_info_dc);
+						      &info);
 		if (ret) {
 			const char *krb5err = krb5_get_error_message(context, ret);
 			DBG_ERR("samba_kdc_get_user_info_from_db: %s\n",
@@ -1273,7 +1273,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
-							    user_info_dc);
+							    info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Failed to add asserted identity: %s\n",
 				nt_errstr(nt_status));
@@ -1282,8 +1282,8 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*info_out = user_info_dc;
-	user_info_dc = NULL;
+	*info_out = info;
+	info = NULL;
 
 	if (resource_groups_out != NULL) {
 		*resource_groups_out = resource_groups;
@@ -1291,7 +1291,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 	}
 
 out:
-	TALLOC_FREE(user_info_dc);
+	TALLOC_FREE(info);
 	TALLOC_FREE(resource_groups);
 
 	return ret;
