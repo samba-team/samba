@@ -1125,7 +1125,7 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 						struct auth_user_info_dc **info_out)
 {
 	NTSTATUS nt_status;
-	struct auth_user_info_dc *user_info_dc = NULL;
+	struct auth_user_info_dc *info = NULL;
 
 	if (entry->info_from_db == NULL) {
 		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
@@ -1149,14 +1149,14 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, entry->info_from_db, &user_info_dc);
+	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx, entry->info_from_db, &info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
 			nt_errstr(nt_status));
 		return map_errno_from_nt_status(nt_status);
 	}
 
-	*info_out = user_info_dc;
+	*info_out = info;
 
 	return 0;
 }
