@@ -2117,6 +2117,8 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
  *
  * @param context   A krb5 context
  *
+ * @param samdb     An open samdb connection.
+ *
  * @param flags     Bitwise OR'ed flags
  *
  * @param client    The client samba kdc PAC entry.
@@ -2127,6 +2129,7 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
  */
 krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
+				     struct ldb_context *samdb,
 				     uint32_t flags,
 				     const struct samba_kdc_entry_pac client,
 				     const struct samba_kdc_entry *krbtgt)

@@ -372,6 +372,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 
 	ret = samba_kdc_verify_pac(mem_ctx,
 				   context,
+				   krbtgt_skdc_entry->kdc_db_ctx->samdb,
 				   flags,
 				   client_pac_entry,
 				   krbtgt_skdc_entry);

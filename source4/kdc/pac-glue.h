@@ -121,6 +121,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 
 krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
+				     struct ldb_context *samdb,
 				     uint32_t flags,
 				     const struct samba_kdc_entry_pac client,
 				     const struct samba_kdc_entry *krbtgt);

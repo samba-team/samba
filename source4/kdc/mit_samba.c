@@ -671,6 +671,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 
 	code = samba_kdc_verify_pac(tmp_ctx,
 				    context,
+				    krbtgt_skdc_entry->kdc_db_ctx->samdb,
 				    flags,
 				    client_pac_entry,
 				    krbtgt_skdc_entry);
