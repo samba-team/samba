@@ -913,30 +913,30 @@ static bool samba_kdc_entry_pac_issued_by_trust(const struct samba_kdc_entry_pac
  * structure. If the resulting structure is not talloc_free()d, it will be
  * reused on future calls to this function.
  */
-NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
+NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *entry,
                                          const struct ldb_message *msg,
                                          const struct auth_user_info_dc **user_info_dc)
 {
-	if (skdc_entry->user_info_dc == NULL) {
+	if (entry->user_info_dc == NULL) {
 		NTSTATUS nt_status;
-		struct loadparm_context *lp_ctx = skdc_entry->kdc_db_ctx->lp_ctx;
+		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
 
-		nt_status = authsam_make_user_info_dc(skdc_entry,
-						      skdc_entry->kdc_db_ctx->samdb,
+		nt_status = authsam_make_user_info_dc(entry,
+						      entry->kdc_db_ctx->samdb,
 						      lpcfg_netbios_name(lp_ctx),
 						      lpcfg_sam_name(lp_ctx),
 						      lpcfg_sam_dnsname(lp_ctx),
-						      skdc_entry->realm_dn,
+						      entry->realm_dn,
 						      msg,
 						      data_blob_null,
 						      data_blob_null,
-						      &skdc_entry->user_info_dc);
+						      &entry->user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
 	}
 
-	*user_info_dc = skdc_entry->user_info_dc;
+	*user_info_dc = entry->user_info_dc;
 	return NT_STATUS_OK;
 }
 

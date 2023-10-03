@@ -107,7 +107,7 @@ krb5_error_code samba_krbtgt_is_in_db(const struct samba_kdc_entry *skdc_entry,
 				      bool *is_in_db,
 				      bool *is_trusted);
 
-NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
+NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *entry,
 					 const struct ldb_message *msg,
 					 const struct auth_user_info_dc **user_info_dc);
 
