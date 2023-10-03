@@ -1143,6 +1143,8 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	}
 
+	*info_out = NULL;
+
 	if (entry->info_from_db == NULL) {
 		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
 
