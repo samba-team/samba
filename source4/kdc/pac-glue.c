@@ -1185,7 +1185,7 @@ static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 							const enum auth_group_inclusion group_inclusion,
 							const struct samba_kdc_entry_pac entry,
 							struct auth_user_info_dc **info_out,
-							struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
+							const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
 	TALLOC_CTX *frame = NULL;
 	struct auth_user_info_dc *info = NULL;
@@ -1275,7 +1275,7 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						     const enum auth_group_inclusion group_inclusion,
 						     const struct samba_kdc_entry_pac entry,
 						     struct auth_user_info_dc **info_out,
-						     struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
+						     const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
 	struct auth_user_info_dc *info = NULL;
 	krb5_error_code ret = 0;
@@ -2411,7 +2411,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	bool is_tgs = false;
 	struct pac_blobs *pac_blobs = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
-	struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
+	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
 	enum samba_compounded_auth compounded_auth;
 	size_t i = 0;
