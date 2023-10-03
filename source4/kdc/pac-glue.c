@@ -2557,13 +2557,18 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	/*
+	 * If we are creating a TGT, resource groups from our domain are not to
+	 * be put into the PAC. Instead, we take the resource groups directly
+	 * from the original PAC and copy them unmodified into the new one.
+	 */
 	code = samba_kdc_obtain_user_info_dc(tmp_ctx,
 					     context,
 					     samdb,
-					     group_inclusion,
+					     AUTH_EXCLUDE_RESOURCE_GROUPS,
 					     client,
 					     &user_info_dc,
-					     &_resource_groups);
+					     is_tgs ? &_resource_groups : NULL);
 	if (code != 0) {
 		const char *err_str = krb5_get_error_message(context, code);
 		DBG_ERR("samba_kdc_obtain_user_info_dc failed: %s\n",
