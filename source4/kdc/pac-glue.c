@@ -1194,6 +1194,21 @@ static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
 
+	if (samdb == NULL) {
+		ret = EINVAL;
+		goto out;
+	}
+
+	if (!samba_krb5_pac_is_trusted(entry)) {
+		ret = EINVAL;
+		goto out;
+	}
+
+	if (info_out == NULL) {
+		ret = EINVAL;
+		goto out;
+	}
+
 	*info_out = NULL;
 	if (resource_groups_out != NULL) {
 		*resource_groups_out = NULL;
