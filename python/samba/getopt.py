@@ -60,7 +60,7 @@ class SambaOptions(optparse.OptionGroup):
                 sys.stderr.flush()
 
         from samba.param import LoadParm
-        optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
+        super().__init__(parser, "Samba Common Options")
         self.add_option("-s", "--configfile", action="callback",
                         type=str, metavar="FILE", help="Configuration file",
                         callback=self._load_configfile)
@@ -125,7 +125,7 @@ class Samba3Options(SambaOptions):
     """General Samba-related command line options with an s3 param."""
 
     def __init__(self, parser):
-        SambaOptions.__init__(self, parser)
+        super().__init__(parser)
         from samba.samba3 import param as s3param
         self._lp = s3param.get_context()
 
@@ -133,7 +133,7 @@ class Samba3Options(SambaOptions):
 class VersionOptions(optparse.OptionGroup):
     """Command line option for printing Samba version."""
     def __init__(self, parser):
-        optparse.OptionGroup.__init__(self, parser, "Version Options")
+        super().__init__(parser, "Version Options")
         self.add_option("-V", "--version", action="callback",
                         callback=self._display_version,
                         help="Display version number")
@@ -181,7 +181,7 @@ class CredentialsOptions(optparse.OptionGroup):
         self.ask_for_password = True
         self.ipaddress = None
         self.machine_pass = False
-        optparse.OptionGroup.__init__(self, parser, self.section)
+        super().__init__(parser, self.section)
         self._add_option("--simple-bind-dn", metavar="DN", action="callback",
                          callback=self._set_simple_bind_dn, type=str,
                          help="DN to use for a simple bind")
@@ -301,7 +301,7 @@ class CredentialsOptionsDouble(CredentialsOptions):
     """Command line options for specifying credentials of two servers."""
 
     def __init__(self, parser):
-        CredentialsOptions.__init__(self, parser)
+        super().__init__(parser)
         self.no_pass2 = True
         self.add_option("--simple-bind-dn2", metavar="DN2", action="callback",
                         callback=self._set_simple_bind_dn2, type=str,
