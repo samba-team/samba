@@ -1280,7 +1280,7 @@ static struct rpc_work_process *rpc_host_find_idle_worker(
 	 */
 	if (num_workers >= UINT16_MAX) {
 		/*
-		 * The worker index would not fix into 16-bits
+		 * The worker index would not fit into 16-bits
 		 */
 		return NULL;
 	}
