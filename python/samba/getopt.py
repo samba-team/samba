@@ -365,11 +365,12 @@ class CredentialsOptionsDouble(CredentialsOptions):
         return self.creds2
 
 
-# Custom option type to allow the input of sizes using byte, kb, mb ...
-# units, e.g. 2Gb, 4KiB ...
-#    e.g. Option("--size", type="bytes", metavar="SIZE")
-#
 def check_bytes(option, opt, value):
+    """Custom option type to allow the input of sizes using byte, kb, mb ...
+
+    units, e.g. 2Gb, 4KiB ...
+       e.g. Option("--size", type="bytes", metavar="SIZE")
+    """
 
     multipliers = {"B": 1,
                    "KB": 1024,
