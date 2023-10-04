@@ -35,6 +35,51 @@ from samba._glue import get_burnt_commandline
 OptionError = optparse.OptionValueError
 
 
+def check_bytes(option, opt, value):
+    """Custom option type to allow the input of sizes using byte, kb, mb ...
+
+    units, e.g. 2Gb, 4KiB ...
+       e.g. Option("--size", type="bytes", metavar="SIZE")
+    """
+
+    multipliers = {"B": 1,
+                   "KB": 1024,
+                   "MB": 1024 * 1024,
+                   "GB": 1024 * 1024 * 1024}
+
+    # strip out any spaces
+    v = value.replace(" ", "")
+
+    # extract the numeric prefix
+    digits = ""
+    while v and v[0:1].isdigit() or v[0:1] == '.':
+        digits += v[0]
+        v = v[1:]
+
+    try:
+        m = float(digits)
+    except ValueError:
+        msg = ("{0} option requires a numeric value, "
+               "with an optional unit suffix").format(opt)
+        raise optparse.OptionValueError(msg)
+
+    # strip out the 'i' and convert to upper case so
+    # kib Kib kb KB are all equivalent
+    suffix = v.upper().replace("I", "")
+    try:
+        return m * multipliers[suffix]
+    except KeyError as k:
+        msg = ("{0} invalid suffix '{1}', "
+               "should be B, Kb, Mb or Gb").format(opt, v)
+        raise optparse.OptionValueError(msg)
+
+
+class SambaOption(optparse.Option):
+    TYPES = optparse.Option.TYPES + ("bytes",)
+    TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
+    TYPE_CHECKER["bytes"] = check_bytes
+
+
 class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
 
@@ -364,48 +409,3 @@ class CredentialsOptionsDouble(CredentialsOptions):
         if self.no_pass2:
             self.creds2.set_cmdline_callbacks()
         return self.creds2
-
-
-def check_bytes(option, opt, value):
-    """Custom option type to allow the input of sizes using byte, kb, mb ...
-
-    units, e.g. 2Gb, 4KiB ...
-       e.g. Option("--size", type="bytes", metavar="SIZE")
-    """
-
-    multipliers = {"B": 1,
-                   "KB": 1024,
-                   "MB": 1024 * 1024,
-                   "GB": 1024 * 1024 * 1024}
-
-    # strip out any spaces
-    v = value.replace(" ", "")
-
-    # extract the numeric prefix
-    digits = ""
-    while v and v[0:1].isdigit() or v[0:1] == '.':
-        digits += v[0]
-        v = v[1:]
-
-    try:
-        m = float(digits)
-    except ValueError:
-        msg = ("{0} option requires a numeric value, "
-               "with an optional unit suffix").format(opt)
-        raise optparse.OptionValueError(msg)
-
-    # strip out the 'i' and convert to upper case so
-    # kib Kib kb KB are all equivalent
-    suffix = v.upper().replace("I", "")
-    try:
-        return m * multipliers[suffix]
-    except KeyError as k:
-        msg = ("{0} invalid suffix '{1}', "
-               "should be B, Kb, Mb or Gb").format(opt, v)
-        raise optparse.OptionValueError(msg)
-
-
-class SambaOption(optparse.Option):
-    TYPES = optparse.Option.TYPES + ("bytes",)
-    TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
-    TYPE_CHECKER["bytes"] = check_bytes
