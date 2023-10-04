@@ -1182,7 +1182,6 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 							krb5_context context,
 							struct ldb_context *samdb,
-							const enum auth_group_inclusion group_inclusion,
 							const struct samba_kdc_entry_pac entry,
 							struct auth_user_info_dc **info_out,
 							const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
@@ -1216,7 +1215,7 @@ static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 
 	frame = talloc_stackframe();
 
-	if (resource_groups_out != NULL && group_inclusion == AUTH_EXCLUDE_RESOURCE_GROUPS) {
+	if (resource_groups_out != NULL) {
 		/*
 		 * Since we are creating a TGT, resource groups from our domain
 		 * are not to be put into the PAC. Instead, we take the resource
@@ -1272,7 +1271,6 @@ out:
 static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 						     krb5_context context,
 						     struct ldb_context *samdb,
-						     const enum auth_group_inclusion group_inclusion,
 						     const struct samba_kdc_entry_pac entry,
 						     struct auth_user_info_dc **info_out,
 						     const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
@@ -1290,7 +1288,6 @@ static krb5_error_code samba_kdc_obtain_user_info_dc(TALLOC_CTX *mem_ctx,
 		return samba_kdc_get_user_info_from_pac(mem_ctx,
 							context,
 							samdb,
-							group_inclusion,
 							entry,
 							info_out,
 							resource_groups_out);
@@ -2565,7 +2562,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	code = samba_kdc_obtain_user_info_dc(tmp_ctx,
 					     context,
 					     samdb,
-					     AUTH_EXCLUDE_RESOURCE_GROUPS,
 					     client,
 					     &user_info_dc,
 					     is_tgs ? &_resource_groups : NULL);
@@ -2592,7 +2588,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = samba_kdc_obtain_user_info_dc(tmp_ctx,
 							     context,
 							     samdb,
-							     AUTH_EXCLUDE_RESOURCE_GROUPS,
 							     delegated_proxy,
 							     &auth_user_info_dc,
 							     NULL);
