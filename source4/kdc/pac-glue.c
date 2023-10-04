@@ -2592,7 +2592,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = samba_kdc_obtain_user_info_dc(tmp_ctx,
 							     context,
 							     samdb,
-							     AUTH_INCLUDE_RESOURCE_GROUPS,
+							     AUTH_EXCLUDE_RESOURCE_GROUPS,
 							     delegated_proxy,
 							     &auth_user_info_dc,
 							     NULL);
