@@ -20,15 +20,16 @@
 __docformat__ = "restructuredText"
 
 import optparse
-from copy import copy
 import os
+import sys
+from copy import copy
+
 from samba.credentials import (
     Credentials,
     AUTO_USE_KERBEROS,
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
 )
-import sys
 from samba._glue import get_burnt_commandline
 
 OptionError = optparse.OptionValueError
