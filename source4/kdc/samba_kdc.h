@@ -60,6 +60,8 @@ struct samba_kdc_entry {
 	const void *kdc_entry; /* this is a reference to hdb_entry/krb5_db_entry */
 	struct ldb_message *msg;
 	struct ldb_dn *realm_dn;
+	struct auth_user_info_dc *info_from_pac;
+	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_from_pac;
 	struct auth_user_info_dc *info_from_db;
 	const struct authn_kerberos_client_policy *client_policy;
 	const struct authn_server_policy *server_policy;
