@@ -1189,7 +1189,6 @@ static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *frame = NULL;
 	struct auth_user_info_dc *info = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups = NULL;
-	struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_ptr = NULL;
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
 
@@ -1215,16 +1214,6 @@ static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 
 	frame = talloc_stackframe();
 
-	if (resource_groups_out != NULL) {
-		/*
-		 * Since we are creating a TGT, resource groups from our domain
-		 * are not to be put into the PAC. Instead, we take the resource
-		 * groups directly from the original PAC and copy them
-		 * unmodified into the new one.
-		 */
-		resource_groups_ptr = &resource_groups;
-	}
-
 	ret = kerberos_pac_to_user_info_dc(frame,
 					   entry.pac,
 					   context,
@@ -1232,7 +1221,7 @@ static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 					   AUTH_EXCLUDE_RESOURCE_GROUPS,
 					   NULL,
 					   NULL,
-					   resource_groups_ptr);
+					   &resource_groups);
 	if (ret) {
 		const char *krb5err = krb5_get_error_message(context, ret);
 		DBG_ERR("kerberos_pac_to_user_info_dc failed: %s\n",
