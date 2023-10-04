@@ -8576,7 +8576,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	}
 
 	if (devmode == NULL) {
-		info2_mask = ~SPOOLSS_PRINTER_INFO_DEVMODE;
+		info2_mask &= ~SPOOLSS_PRINTER_INFO_DEVMODE;
 	}
 
 	err = update_dsspooler(p->mem_ctx,
