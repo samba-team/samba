@@ -42,6 +42,7 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "ntioctl.h"
 #include "librpc/gen_ndr/ndr_quota.h"
+#include "librpc/gen_ndr/ndr_smb3posix.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/util/idtree.h"
 
@@ -1174,29 +1175,6 @@ NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-static ssize_t sid_parse_wire(TALLOC_CTX *mem_ctx, const uint8_t *data,
-			      struct dom_sid *sid, size_t num_rdata)
-{
-	size_t sid_size;
-	enum ndr_err_code ndr_err;
-	DATA_BLOB in = data_blob_const(data, num_rdata);
-
-	ndr_err = ndr_pull_struct_blob(&in,
-				       mem_ctx,
-				       sid,
-				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return 0;
-	}
-
-	sid_size = ndr_size_dom_sid(sid, 0);
-	if (sid_size > num_rdata) {
-		return 0;
-	}
-
-	return sid_size;
-}
-
 /***************************************************************
  Utility function to parse a SMB2_FIND_POSIX_INFORMATION reply.
 ***************************************************************/
@@ -1206,8 +1184,10 @@ static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
 				       struct file_info *finfo,
 				       uint32_t *next_offset)
 {
+	struct smb3_file_posix_information info = {};
+	size_t consumed;
+	enum ndr_err_code ndr_err;
 	size_t namelen = 0;
-	size_t slen = 0, slen2 = 0;
 	size_t ret = 0;
 	uint32_t _next_offset = 0;
 
@@ -1226,43 +1206,64 @@ static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
 		dir_data_length = _next_offset;
 	}
 
-	if (dir_data_length < 92) {
+	/*
+	 * Skip NextEntryOffset and FileIndex
+	 */
+	if (dir_data_length < 8) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	dir_data += 8;
+	dir_data_length -= 8;
+
+	ndr_err = ndr_pull_struct_blob_noalloc(
+		dir_data,
+		dir_data_length,
+		&info,
+		(ndr_pull_flags_fn_t)ndr_pull_smb3_file_posix_information,
+		&consumed);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+	if (consumed > dir_data_length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	dir_data += consumed;
+	dir_data_length -= consumed;
+
+	finfo->btime_ts = interpret_long_date(info.creation_time);
+	finfo->atime_ts = interpret_long_date(info.last_access_time);
+	finfo->mtime_ts = interpret_long_date(info.last_write_time);
+	finfo->ctime_ts = interpret_long_date(info.change_time);
+	finfo->allocated_size = info.allocation_size;
+	finfo->size = info.end_of_file;
+	finfo->mode = info.file_attributes;
+	finfo->ino = info.inode;
+	finfo->st_ex_dev = info.device;
+	finfo->st_ex_nlink = info.cc.nlinks;
+	finfo->reparse_tag = info.cc.reparse_tag;
+	finfo->st_ex_mode = wire_perms_to_unix(info.cc.posix_perms);
+	sid_copy(&finfo->owner_sid, &info.cc.owner);
+	sid_copy(&finfo->group_sid, &info.cc.group);
+
+	if (dir_data_length < 4) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	namelen = PULL_LE_U32(dir_data, 0);
+
+	dir_data += 4;
+	dir_data_length -= 4;
+
+	if (namelen > dir_data_length) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	finfo->btime_ts = interpret_long_date(BVAL(dir_data, 8));
-	finfo->atime_ts = interpret_long_date(BVAL(dir_data, 16));
-	finfo->mtime_ts = interpret_long_date(BVAL(dir_data, 24));
-	finfo->ctime_ts = interpret_long_date(BVAL(dir_data, 32));
-	finfo->allocated_size = PULL_LE_U64(dir_data, 40);
-	finfo->size = PULL_LE_U64(dir_data, 48);
-	finfo->mode = PULL_LE_U32(dir_data, 56);
-	finfo->ino = PULL_LE_U64(dir_data, 60);
-	finfo->st_ex_dev = PULL_LE_U32(dir_data, 68);
-	finfo->st_ex_nlink = PULL_LE_U32(dir_data, 76);
-	finfo->reparse_tag = PULL_LE_U32(dir_data, 80);
-	finfo->st_ex_mode = wire_perms_to_unix(PULL_LE_U32(dir_data, 84));
-
-	slen = sid_parse_wire(finfo, dir_data+88, &finfo->owner_sid,
-			      dir_data_length-88);
-	if (slen == 0) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-	slen2 = sid_parse_wire(finfo, dir_data+88+slen, &finfo->group_sid,
-			       dir_data_length-88-slen);
-	if (slen2 == 0) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-	slen += slen2;
-
-	namelen = PULL_LE_U32(dir_data, 88+slen);
 	ret = pull_string_talloc(finfo,
-				dir_data,
-				FLAGS2_UNICODE_STRINGS,
-				&finfo->name,
-				dir_data+92+slen,
-				namelen,
-				STR_UNICODE);
+				 dir_data,
+				 FLAGS2_UNICODE_STRINGS,
+				 &finfo->name,
+				 dir_data,
+				 namelen,
+				 STR_UNICODE);
 	if (ret == (size_t)-1) {
 		/* Bad conversion. */
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
