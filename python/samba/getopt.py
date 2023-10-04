@@ -364,17 +364,17 @@ class CredentialsOptionsDouble(CredentialsOptions):
             self.creds2.set_cmdline_callbacks()
         return self.creds2
 
+
 # Custom option type to allow the input of sizes using byte, kb, mb ...
 # units, e.g. 2Gb, 4KiB ...
 #    e.g. Option("--size", type="bytes", metavar="SIZE")
 #
 def check_bytes(option, opt, value):
 
-    multipliers = {
-            "B"  : 1,
-            "KB" : 1024,
-            "MB" : 1024 * 1024,
-            "GB" : 1024 * 1024 * 1024}
+    multipliers = {"B": 1,
+                   "KB": 1024,
+                   "MB": 1024 * 1024,
+                   "GB": 1024 * 1024 * 1024}
 
     # strip out any spaces
     v = value.replace(" ", "")
@@ -392,7 +392,6 @@ def check_bytes(option, opt, value):
                "with an optional unit suffix").format(opt)
         raise optparse.OptionValueError(msg)
 
-
     # strip out the 'i' and convert to upper case so
     # kib Kib kb KB are all equivalent
     suffix = v.upper().replace("I", "")
@@ -402,6 +401,7 @@ def check_bytes(option, opt, value):
         msg = ("{0} invalid suffix '{1}', "
                "should be B, Kb, Mb or Gb").format(opt, v)
         raise optparse.OptionValueError(msg)
+
 
 class SambaOption(optparse.Option):
     TYPES = optparse.Option.TYPES + ("bytes",)
