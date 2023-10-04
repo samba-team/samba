@@ -2605,11 +2605,11 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	 * if one is present.
 	 */
 	if (!is_tgs && authn_policy_restrictions_present(server->server_policy)) {
-		const struct samba_kdc_entry *auth_entry = NULL;
+		struct samba_kdc_entry_pac auth_entry;
 		const struct auth_user_info_dc *auth_user_info_dc = NULL;
 
 		if (delegated_proxy.entry != NULL) {
-			auth_entry = delegated_proxy.entry;
+			auth_entry = delegated_proxy;
 
 			code = samba_kdc_get_user_info_dc(tmp_ctx,
 							  context,
@@ -2621,14 +2621,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		} else {
-			auth_entry = client.entry;
+			auth_entry = client;
 			auth_user_info_dc = user_info_dc_const;
 		}
 
 		code = samba_kdc_allowed_to_authenticate_to(mem_ctx,
 							    samdb,
 							    lp_ctx,
-							    auth_entry,
+							    auth_entry.entry,
 							    auth_user_info_dc,
 							    server,
 							    server_audit_info_out,
