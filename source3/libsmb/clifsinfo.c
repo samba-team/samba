@@ -393,7 +393,7 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli,
 
 	if (pdate) {
 		struct timespec ts;
-		ts = interpret_long_date((char *)rdata);
+		ts = interpret_long_date(BVAL(rdata, 0));
 		*pdate = ts.tv_sec;
 	}
 	if (pserial_number) {

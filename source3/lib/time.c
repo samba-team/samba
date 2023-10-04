@@ -254,10 +254,8 @@ time_t srv_make_unix_date3(const void *date_ptr)
  will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
 ****************************************************************************/
 
-struct timespec interpret_long_date(const char *p)
+struct timespec interpret_long_date(NTTIME nt)
 {
-	NTTIME nt;
-	nt = BVAL(p, 0);
 	if (nt == (uint64_t)-1) {
 		struct timespec ret;
 		ret.tv_sec = (time_t)-1;

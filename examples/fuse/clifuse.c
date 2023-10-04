@@ -327,10 +327,10 @@ static void cli_get_unixattr_gotinfo(struct tevent_req *subreq)
 		return;
 	}
 
-	state->create_time = interpret_long_date((char *)outbuf.data + 0x0);
-	state->access_time = interpret_long_date((char *)outbuf.data + 0x8);
-	state->write_time  = interpret_long_date((char *)outbuf.data + 0x10);
-	state->change_time = interpret_long_date((char *)outbuf.data + 0x18);
+	state->create_time = interpret_long_date(BVAL(outbuf.data, 0));
+	state->access_time = interpret_long_date(BVAL(outbuf.data, 0x8));
+	state->write_time  = interpret_long_date(BVAL(outbuf.data, 0x10));
+	state->change_time = interpret_long_date(BVAL(outbuf.data, 0x18));
 	state->mode        = IVAL(outbuf.data, 0x20);
 	state->size        = BVAL(outbuf.data, 0x30);
 	state->ino         = BVAL(outbuf.data, 0x40);
@@ -502,10 +502,10 @@ static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	finfo->btime_ts = interpret_long_date((const char *)dir_data + 8);
-	finfo->atime_ts = interpret_long_date((const char *)dir_data + 16);
-	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
-	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
+	finfo->btime_ts = interpret_long_date(BVAL(dir_data, 8));
+	finfo->atime_ts = interpret_long_date(BVAL(dir_data, 16));
+	finfo->mtime_ts = interpret_long_date(BVAL(dir_data, 24));
+	finfo->ctime_ts = interpret_long_date(BVAL(dir_data, 32));
 	finfo->size = IVAL2_TO_SMB_BIG_UINT(dir_data + 40, 0);
 	finfo->attr = IVAL(dir_data + 56, 0);
 	namelen = IVAL(dir_data + 60,0);

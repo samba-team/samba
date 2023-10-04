@@ -840,10 +840,10 @@ static void cli_qpathinfo2_done2(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	state->create_time = interpret_long_date((const char *)rdata + 0x0);
-	state->access_time = interpret_long_date((const char *)rdata + 0x8);
-	state->write_time = interpret_long_date((const char *)rdata + 0x10);
-	state->change_time = interpret_long_date((const char *)rdata + 0x18);
+	state->create_time = interpret_long_date(BVAL(rdata, 0x0));
+	state->access_time = interpret_long_date(BVAL(rdata, 0x8));
+	state->write_time = interpret_long_date(BVAL(rdata, 0x10));
+	state->change_time = interpret_long_date(BVAL(rdata, 0x18));
 	state->attr = PULL_LE_U32(rdata, 0x20);
 	state->size = PULL_LE_U64(rdata, 0x30);
 	state->ino = PULL_LE_U64(rdata, 0x40);
@@ -867,10 +867,10 @@ static void cli_qpathinfo2_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->create_time = interpret_long_date((char *)data + 0);
-	state->access_time = interpret_long_date((char *)data + 8);
-	state->write_time = interpret_long_date((char *)data + 16);
-	state->change_time = interpret_long_date((char *)data + 24);
+	state->create_time = interpret_long_date(BVAL(data, 0));
+	state->access_time = interpret_long_date(BVAL(data, 8));
+	state->write_time = interpret_long_date(BVAL(data, 16));
+	state->change_time = interpret_long_date(BVAL(data, 24));
 	state->attr = PULL_LE_U32(data, 32);
 	state->size = PULL_LE_U64(data, 48);
 
@@ -1293,10 +1293,10 @@ static void cli_qfileinfo_basic_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->create_time = interpret_long_date((char *)rdata+0);
-	state->access_time = interpret_long_date((char *)rdata+8);
-	state->write_time = interpret_long_date((char *)rdata+16);
-	state->change_time = interpret_long_date((char *)rdata+24);
+	state->create_time = interpret_long_date(BVAL(rdata, 0));
+	state->access_time = interpret_long_date(BVAL(rdata, 8));
+	state->write_time = interpret_long_date(BVAL(rdata, 16));
+	state->change_time = interpret_long_date(BVAL(rdata, 24));
 	state->attr = PULL_LE_U32(rdata, 32);
 	state->size = PULL_LE_U64(rdata,48);
 	state->ino = PULL_LE_U32(rdata, 64);
@@ -1348,14 +1348,10 @@ static void cli_qfileinfo_basic_done2(struct tevent_req *subreq)
 		return;
 	}
 
-	state->create_time = interpret_long_date(
-		(const char *)outbuf.data + 0x0);
-	state->access_time = interpret_long_date(
-		(const char *)outbuf.data + 0x8);
-	state->write_time = interpret_long_date(
-		(const char *)outbuf.data + 0x10);
-	state->change_time = interpret_long_date(
-		(const char *)outbuf.data + 0x18);
+	state->create_time = interpret_long_date(BVAL(outbuf.data, 0x0));
+	state->access_time = interpret_long_date(BVAL(outbuf.data, 0x8));
+	state->write_time = interpret_long_date(BVAL(outbuf.data, 0x10));
+	state->change_time = interpret_long_date(BVAL(outbuf.data, 0x18));
 	state->attr = IVAL(outbuf.data, 0x20);
 	state->size = BVAL(outbuf.data, 0x30);
 	state->ino = BVAL(outbuf.data, 0x40);
@@ -1527,10 +1523,10 @@ NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
 		return status;
 	}
 
-	sbuf->st_ex_btime = interpret_long_date((char *)state->data);
-	sbuf->st_ex_atime = interpret_long_date((char *)state->data+8);
-	sbuf->st_ex_mtime = interpret_long_date((char *)state->data+16);
-	sbuf->st_ex_ctime = interpret_long_date((char *)state->data+24);
+	sbuf->st_ex_btime = interpret_long_date(BVAL(state->data, 0));
+	sbuf->st_ex_atime = interpret_long_date(BVAL(state->data, 8));
+	sbuf->st_ex_mtime = interpret_long_date(BVAL(state->data, 16));
+	sbuf->st_ex_ctime = interpret_long_date(BVAL(state->data, 24));
 	*attributes = IVAL(state->data, 32);
 	return NT_STATUS_OK;
 }

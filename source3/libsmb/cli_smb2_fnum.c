@@ -1230,10 +1230,10 @@ static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	finfo->btime_ts = interpret_long_date((const char *)dir_data + 8);
-	finfo->atime_ts = interpret_long_date((const char *)dir_data + 16);
-	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
-	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
+	finfo->btime_ts = interpret_long_date(BVAL(dir_data, 8));
+	finfo->atime_ts = interpret_long_date(BVAL(dir_data, 16));
+	finfo->mtime_ts = interpret_long_date(BVAL(dir_data, 24));
+	finfo->ctime_ts = interpret_long_date(BVAL(dir_data, 32));
 	finfo->allocated_size = PULL_LE_U64(dir_data, 40);
 	finfo->size = PULL_LE_U64(dir_data, 48);
 	finfo->mode = PULL_LE_U32(dir_data, 56);
@@ -1309,10 +1309,10 @@ static NTSTATUS parse_finfo_id_both_directory_info(const uint8_t *dir_data,
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	finfo->btime_ts = interpret_long_date((const char *)dir_data + 8);
-	finfo->atime_ts = interpret_long_date((const char *)dir_data + 16);
-	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
-	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
+	finfo->btime_ts = interpret_long_date(BVAL(dir_data, 8));
+	finfo->atime_ts = interpret_long_date(BVAL(dir_data, 16));
+	finfo->mtime_ts = interpret_long_date(BVAL(dir_data, 24));
+	finfo->ctime_ts = interpret_long_date(BVAL(dir_data, 32));
 	finfo->size = IVAL2_TO_SMB_BIG_UINT(dir_data + 40, 0);
 	finfo->allocated_size = IVAL2_TO_SMB_BIG_UINT(dir_data + 48, 0);
 	finfo->attr = IVAL(dir_data + 56, 0);
@@ -2887,7 +2887,7 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 
 	if (pdate) {
 		struct timespec ts;
-		ts = interpret_long_date((char *)outbuf.data);
+		ts = interpret_long_date(BVAL(outbuf.data, 0));
 		*pdate = ts.tv_sec;
 	}
 	if (pserial_number) {

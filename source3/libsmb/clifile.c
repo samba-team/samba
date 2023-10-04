@@ -852,13 +852,13 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	sbuf->st_ex_blocks /= 512;
 #endif
 	/* time of last change */
-	sbuf->st_ex_ctime = interpret_long_date((char *)(data + 16));
+	sbuf->st_ex_ctime = interpret_long_date(BVAL(data, 16));
 
 	/* time of last access */
-	sbuf->st_ex_atime = interpret_long_date((char *)(data + 24));
+	sbuf->st_ex_atime = interpret_long_date(BVAL(data, 24));
 
 	/* time of last modification */
-	sbuf->st_ex_mtime = interpret_long_date((char *)(data + 32));
+	sbuf->st_ex_mtime = interpret_long_date(BVAL(data, 32));
 
 	sbuf->st_ex_uid = (uid_t) IVAL(data, 40); /* user ID of owner */
 	sbuf->st_ex_gid = (gid_t) IVAL(data, 48); /* group ID of owner */

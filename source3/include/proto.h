@@ -257,7 +257,7 @@ time_t make_unix_date3(const void *date_ptr, int zone_offset);
 time_t srv_make_unix_date(const void *date_ptr);
 time_t srv_make_unix_date2(const void *date_ptr);
 time_t srv_make_unix_date3(const void *date_ptr);
-struct timespec interpret_long_date(const char *p);
+struct timespec interpret_long_date(NTTIME nt);
 void TimeInit(void);
 void get_process_uptime(struct timeval *ret_time);
 void get_startup_time(struct timeval *ret_time);

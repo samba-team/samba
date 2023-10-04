@@ -248,11 +248,11 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 
 			/* Offset zero is "create time", not "change time". */
 			p += 8;
-			finfo->atime_ts = interpret_long_date(p);
+			finfo->atime_ts = interpret_long_date(BVAL(p, 0));
 			p += 8;
-			finfo->mtime_ts = interpret_long_date(p);
+			finfo->mtime_ts = interpret_long_date(BVAL(p, 0));
 			p += 8;
-			finfo->ctime_ts = interpret_long_date(p);
+			finfo->ctime_ts = interpret_long_date(BVAL(p, 0));
 			p += 8;
 			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
 			p += 8;
