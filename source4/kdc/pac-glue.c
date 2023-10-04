@@ -2590,7 +2590,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 							     samdb,
 							     delegated_proxy,
 							     &auth_user_info_dc,
-							     NULL);
+							     NULL /* resource_groups_out */);
 			if (code) {
 				goto done;
 			}
