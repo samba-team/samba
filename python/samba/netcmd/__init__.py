@@ -215,7 +215,9 @@ class Command(object):
             usage=self.synopsis,
             description=self.full_description,
             formatter=PlainHelpFormatter(),
-            prog=prog, epilog=epilog)
+            prog=prog,
+            epilog=epilog,
+            option_class=Option)
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name in sorted(self.takes_optiongroups.keys()):
