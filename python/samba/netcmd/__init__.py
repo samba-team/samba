@@ -63,10 +63,9 @@ class Option(SambaOption):
         return value
 
 
-# This help formatter does text wrapping and preserves newlines
-
-
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
+    """This help formatter does text wrapping and preserves newlines."""
+
     def format_description(self, description=""):
         desc_width = self.width - self.current_indent
         indent = " " * self.current_indent
