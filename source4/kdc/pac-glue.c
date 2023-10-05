@@ -2633,6 +2633,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			auth_user_info_dc = user_info_dc_const;
 		}
 
+		/*
+		 * Allocate the audit info and output status on to the parent
+		 * mem_ctx, not the temporary context.
+		 */
 		code = samba_kdc_allowed_to_authenticate_to(mem_ctx,
 							    samdb,
 							    lp_ctx,
