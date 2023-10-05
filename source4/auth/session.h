@@ -136,7 +136,8 @@ NTSTATUS claims_data_from_claims_set(TALLOC_CTX *claims_data_ctx,
  * From a ‘claims_data’ structure, return an encoded claims blob that can be put
  * into a PAC.
  */
-NTSTATUS claims_data_encoded_claims_set(struct claims_data *claims_data,
+NTSTATUS claims_data_encoded_claims_set(TALLOC_CTX *mem_ctx,
+					struct claims_data *claims_data,
 					DATA_BLOB *encoded_claims_set_out);
 
 /*
