@@ -2436,7 +2436,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *deleg_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
 	const DATA_BLOB *client_claims_blob = NULL;
-	const DATA_BLOB *device_claims_blob = NULL;
+	DATA_BLOB device_claims_blob = {};
+	const DATA_BLOB *device_claims_blob_ptr = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
 	struct pac_blobs *pac_blobs = NULL;
@@ -2487,53 +2488,30 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (device.entry != NULL && !is_tgs) {
-		SMB_ASSERT(device.pac != NULL);
+		struct claims_data *device_claims = NULL;
+
+		code = samba_kdc_get_claims_data(tmp_ctx,
+						 context,
+						 samdb,
+						 device,
+						 &device_claims);
+		if (code) {
+			goto done;
+		}
+
+		nt_status = claims_data_encoded_claims_set(tmp_ctx,
+							   device_claims,
+							   &device_claims_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("claims_data_encoded_claims_set failed: %s\n",
+				nt_errstr(nt_status));
+			code = map_errno_from_nt_status(nt_status);
+			goto done;
+		}
+
+		device_claims_blob_ptr = &device_claims_blob;
 
 		if (samba_krb5_pac_is_trusted(device)) {
-			krb5_data device_claims_data;
-
-			/*
-			 * [MS-KILE] 3.3.5.7.4 Compound Identity: the client
-			 * claims from the device PAC become the device claims
-			 * in the new PAC.
-			 */
-			code = krb5_pac_get_buffer(context, device.pac,
-						   PAC_TYPE_CLIENT_CLAIMS_INFO,
-						   &device_claims_data);
-			if (code == ENOENT) {
-				/* no-op */
-			} else if (code != 0) {
-				goto done;
-			} else if (samba_kdc_entry_pac_issued_by_trust(device)) {
-				/*
-				 * TODO: we need claim translation over trusts,
-				 * for now we just clear them...
-				 */
-				device_claims_blob = &data_blob_null;
-			} else {
-				DATA_BLOB *device_claims = NULL;
-
-				device_claims = talloc_zero(tmp_ctx, DATA_BLOB);
-				if (device_claims == NULL) {
-					smb_krb5_free_data_contents(context, &device_claims_data);
-					code = ENOMEM;
-					goto done;
-				}
-
-				*device_claims = data_blob_talloc(tmp_ctx,
-								  device_claims_data.data,
-								  device_claims_data.length);
-				if (device_claims->data == NULL && device_claims_data.length != 0) {
-					smb_krb5_free_data_contents(context, &device_claims_data);
-					code = ENOMEM;
-					goto done;
-				}
-
-				smb_krb5_free_data_contents(context, &device_claims_data);
-
-				device_claims_blob = device_claims;
-			}
-
 			code = samba_kdc_create_device_info_blob(tmp_ctx,
 								 context,
 								 samdb,
@@ -2543,18 +2521,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		} else {
-			/* Don't trust RODC-issued claims. Regenerate them. */
-			nt_status = samba_kdc_get_claims_blob(tmp_ctx,
-							      device.entry,
-							      &device_claims_blob);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
-					nt_errstr(nt_status));
-				code = map_errno_from_nt_status(nt_status);
-				goto done;
-			}
-
-			/* Also regenerate device info. */
+			/* Don't trust an RODC‐issued PAC; regenerate the device info. */
 			code = samba_kdc_get_device_info_blob(tmp_ctx,
 							      context,
 							      samdb,
@@ -2817,7 +2784,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_DEVICE_CLAIMS_INFO,
-				  device_claims_blob);
+				  device_claims_blob_ptr);
 	if (code != 0) {
 		goto done;
 	}
