@@ -2719,14 +2719,16 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
-							     user_info_dc_shallow_copy,
-							     &requester_sid_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_kdc_get_requester_sid_blob failed: %s\n",
-				nt_errstr(nt_status));
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			goto done;
+		if (is_tgs) {
+			nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
+								     user_info_dc_shallow_copy,
+								     &requester_sid_blob);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DBG_ERR("samba_kdc_get_requester_sid_blob failed: %s\n",
+					nt_errstr(nt_status));
+				code = KRB5KDC_ERR_TGT_REVOKED;
+				goto done;
+			}
 		}
 
 		/* Don't trust RODC-issued claims. Regenerate them. */
@@ -2824,13 +2826,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	if (!is_tgs) {
 		pac_blobs_remove_blob(pac_blobs,
 				      PAC_TYPE_REQUESTER_SID);
-	} else {
-		code = pac_blobs_add_blob(pac_blobs,
-					  PAC_TYPE_REQUESTER_SID,
-					  requester_sid_blob);
-		if (code != 0) {
-			goto done;
-		}
+	}
+
+	code = pac_blobs_add_blob(pac_blobs,
+				  PAC_TYPE_REQUESTER_SID,
+				  requester_sid_blob);
+	if (code != 0) {
+		goto done;
 	}
 
 	/*
