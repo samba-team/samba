@@ -26,15 +26,12 @@ import samba
 from ldb import ERR_INVALID_CREDENTIALS, LdbError
 from samba import colour
 from samba.auth import system_session
-from samba.getopt import SambaOption, OptionError
+from samba.getopt import OptionError
+from samba.getopt import SambaOption as Option
 from samba.logger import get_samba_logger
 from samba.samdb import SamDB
 
 from .encoders import JSONEncoder
-
-
-class Option(SambaOption):
-    pass
 
 
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
