@@ -33,9 +33,4 @@ int get_claims_set_for_principal(struct ldb_context *ldb,
 				 const struct ldb_message *principal,
 				 struct CLAIMS_SET **claims_set_out);
 
-int get_claims_blob_for_principal(struct ldb_context *ldb,
-				  TALLOC_CTX *mem_ctx,
-				  const struct ldb_message *principal,
-				  DATA_BLOB *claims_blob_out);
-
 #endif

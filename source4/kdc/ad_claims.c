@@ -1227,36 +1227,3 @@ int get_claims_set_for_principal(struct ldb_context *ldb,
 			      principal_class->governsID_id,
 			      claims_set_out);
 }
-
-int get_claims_blob_for_principal(struct ldb_context *ldb,
-			     TALLOC_CTX *mem_ctx,
-			     const struct ldb_message *principal,
-			     DATA_BLOB *claims_blob_out)
-{
-	struct CLAIMS_SET *claims_set = NULL;
-	int ret;
-	NTSTATUS status;
-
-	*claims_blob_out = data_blob_null;
-
-	ret = get_claims_set_for_principal(ldb,
-					   mem_ctx,
-					   principal,
-					   &claims_set);
-	if (ret) {
-		return ret;
-	}
-
-	if (claims_set == NULL) {
-		return LDB_SUCCESS;
-	}
-
-	/* Encode the claims ready to go into a PAC buffer. */
-	status = encode_claims_set(mem_ctx, claims_set, claims_blob_out);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		talloc_free(claims_set);
-	}
-
-	return ret;
-}
