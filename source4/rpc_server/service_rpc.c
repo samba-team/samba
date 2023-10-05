@@ -160,7 +160,12 @@ static NTSTATUS dcesrv_task_init(struct task_server *task)
 
 	/* Make sure the directory for NCALRPC exists */
 	if (!directory_exist(lpcfg_ncalrpc_dir(task->lp_ctx))) {
-		mkdir(lpcfg_ncalrpc_dir(task->lp_ctx), 0755);
+		int ret;
+
+		ret = mkdir(lpcfg_ncalrpc_dir(task->lp_ctx), 0755);
+		if (ret == -1 && errno != EEXIST) {
+			return map_nt_error_from_unix_common(errno);
+		}
 	}
 	status = dcesrv_init_endpoints(task, dce_ctx, false);
 	if (!NT_STATUS_IS_OK(status)) {
