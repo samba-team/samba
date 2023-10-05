@@ -26,7 +26,7 @@ import samba
 from ldb import ERR_INVALID_CREDENTIALS, LdbError
 from samba import colour
 from samba.auth import system_session
-from samba.getopt import Option, OptionError
+from samba.getopt import Option
 from samba.logger import get_samba_logger
 from samba.samdb import SamDB
 
@@ -144,7 +144,7 @@ class Command(object):
             message = "uncaught exception"
             force_traceback = True
 
-        if isinstance(e, OptionError):
+        if isinstance(e, optparse.OptParseError):
             print(evalue, file=self.errf)
             self.usage()
             force_traceback = False
