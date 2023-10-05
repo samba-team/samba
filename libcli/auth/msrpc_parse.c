@@ -262,6 +262,8 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 					goto cleanup;
 				}
 			} else {
+				size_t pull_len;
+
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					ret = false;
@@ -278,20 +280,11 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 					goto cleanup;
 				}
 
-				if (0 < len1) {
-					size_t pull_len;
-					if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-								   blob->data + ptr, len1, 
-								   ps, &pull_len)) {
-						ret = false;
-						goto cleanup;
-					}
-				} else {
-					*ps = talloc_strdup(mem_ctx, "");
-					if (*ps == NULL) {
-						ret = false;
-						goto cleanup;
-					}
+				if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
+							   blob->data + ptr, len1,
+							   ps, &pull_len)) {
+					ret = false;
+					goto cleanup;
 				}
 			}
 			break;
