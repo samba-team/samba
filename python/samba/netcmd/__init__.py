@@ -31,7 +31,6 @@ from samba.logger import get_samba_logger
 from samba.samdb import SamDB
 
 from .encoders import JSONEncoder
-from .validators import ValidationError
 
 
 class Option(SambaOption):
@@ -39,18 +38,10 @@ class Option(SambaOption):
     SUPPRESS_HELP = optparse.SUPPRESS_HELP
 
     def run_validators(self, opt, value):
-        """Runs the list of validators on the current option.
-
-        If the validator raises ValidationError, turn that into CommandError
-        which gives nicer output.
-        """
+        """Runs the list of validators on the current option."""
         validators = getattr(self, "validators") or []
-
         for validator in validators:
-            try:
-                validator(opt, value)
-            except ValidationError as e:
-                raise CommandError(e)
+            validator(opt, value)
 
     def convert_value(self, opt, value):
         """Override convert_value to run validators just after.
@@ -242,7 +233,14 @@ class Command(object):
 
     def _run(self, *argv):
         parser, optiongroups = self._create_parser(self.command_name)
-        opts, args = parser.parse_args(list(argv))
+
+        # Handle possible validation errors raised by parser
+        try:
+            opts, args = parser.parse_args(list(argv))
+        except Exception as e:
+            self.show_command_error(e)
+            return -1
+
         # Filter out options from option groups
         kwargs = dict(opts.__dict__)
         for option_group in parser.option_groups:
