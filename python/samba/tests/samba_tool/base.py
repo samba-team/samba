@@ -30,6 +30,7 @@ from optparse import OptionParser
 import samba.getopt as options
 import samba.tests
 from samba.auth import system_session
+from samba.netcmd import Option
 from samba.netcmd.main import cmd_sambatool
 from samba.samdb import SamDB
 
@@ -49,7 +50,7 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
     def getSamDB(*argv):
         """a convenience function to get a samdb instance so that we can query it"""
 
-        parser = OptionParser()
+        parser = OptionParser(option_class=Option)
         sambaopts = options.SambaOptions(parser)
         credopts = options.CredentialsOptions(parser)
         parser.add_option("-H", "--URL",
