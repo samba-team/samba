@@ -76,10 +76,18 @@ def check_bytes(option, opt, value):
 
 
 class ValidationError(Exception):
+    """ValidationError is the exception raised by validators.
+
+    Should be raised from the __call__ method of the Validator subclass.
+    """
     pass
 
 
 class Validator(metaclass=ABCMeta):
+    """Base class for Validators used by SambaOption.
+
+    Subclass this to make custom validators and implement __call__.
+    """
 
     @abstractmethod
     def __call__(self, field, value):
