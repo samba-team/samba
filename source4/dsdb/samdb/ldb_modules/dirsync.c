@@ -1116,8 +1116,6 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 			return ret;
 		}
 		talloc_free(acl_res);
-	} else if (ret != LDB_SUCCESS) {
-		return ret;
 	}
 
 	dsc->functional_level = dsdb_functional_level(ldb);
