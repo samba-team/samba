@@ -33,8 +33,6 @@ from samba.credentials import (
 )
 from samba._glue import get_burnt_commandline
 
-OptionError = optparse.OptionValueError
-
 
 def check_bytes(option, opt, value):
     """Custom option type to allow the input of sizes using byte, kb, mb ...
@@ -172,14 +170,16 @@ class SambaOptions(optparse.OptionGroup):
         try:
             self._lp.set('debug level', arg)
         except RuntimeError:
-            raise OptionError(f"invalid -d/--debug value: '{arg}'")
+            raise optparse.OptionValueError(
+                f"invalid -d/--debug value: '{arg}'")
         parser.values.debuglevel = arg
 
     def _set_realm(self, option, opt_str, arg, parser):
         try:
             self._lp.set('realm', arg)
         except RuntimeError:
-            raise OptionError(f"invalid --realm value: '{arg}'")
+            raise optparse.OptionValueError(
+                f"invalid --realm value: '{arg}'")
         self.realm = arg
 
     def _set_option(self, option, opt_str, arg, parser):
