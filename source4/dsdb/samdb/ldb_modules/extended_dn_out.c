@@ -295,7 +295,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 * Shortcut for repl_meta_data.  We asked for the data
 	 * 'as-is', so stop processing here!
 	 */
-	if (have_reveal_control && p->normalise == false && ac->inject == true) {
+	if (have_reveal_control && (p == NULL || !p->normalise) && ac->inject) {
 		return ldb_module_send_entry(ac->req, msg, ares->controls);
 	}
 	
@@ -405,7 +405,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 				talloc_free(hex_string);
 			}
 
-			if (p->normalise) {
+			if (p != NULL && p->normalise) {
 				ret = dsdb_fix_dn_rdncase(ldb, dn);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(dsdb_dn);
