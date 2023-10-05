@@ -5447,13 +5447,6 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		}
 	}
 
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		tevent_req_nterror(req,
-				   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
-		return;
-	}
-
 	/* This resets the hash state */
 	gnutls_hash_output(hash_hnd, conn->smb2.preauth_sha512);
 	TALLOC_FREE(subreq);
