@@ -787,7 +787,7 @@ type *talloc_get_type(const void *ptr, #type);
  *
  * This macro is used together with talloc(mem_ctx, struct foo). If you had to
  * assign the talloc chunk pointer to some void pointer variable,
- * talloc_get_type_abort() is the recommended way to get the convert the void
+ * talloc_get_type_abort() is the recommended way to convert the void
  * pointer back to a typed pointer.
  *
  * @param[in]  ptr      The void pointer to convert.
