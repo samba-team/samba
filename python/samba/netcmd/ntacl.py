@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import optparse
 import os
 
 import samba.getopt as options
@@ -75,7 +76,7 @@ class cmd_ntacl_set(Command):
 
     takes_options = [
         # --quiet is not used at all...
-        Option("-q", "--quiet", help=Option.SUPPRESS_HELP, action="store_true"),
+        Option("-q", "--quiet", help=optparse.SUPPRESS_HELP, action="store_true"),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
                choices=["native", "tdb"]),

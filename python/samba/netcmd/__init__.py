@@ -34,7 +34,7 @@ from .encoders import JSONEncoder
 
 
 class Option(SambaOption):
-    SUPPRESS_HELP = optparse.SUPPRESS_HELP
+    pass
 
 
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
