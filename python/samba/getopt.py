@@ -94,7 +94,7 @@ class Validator(metaclass=ABCMeta):
         pass
 
 
-class SambaOption(optparse.Option):
+class Option(optparse.Option):
     ATTRS = optparse.Option.ATTRS + ["validators"]
     TYPES = optparse.Option.TYPES + ("bytes",)
     TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
