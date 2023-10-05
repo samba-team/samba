@@ -16,25 +16,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.credentials import DONT_USE_KERBEROS
-import samba.getopt as options
-from samba.dcerpc import security, idmap
-from samba.ntacls import setntacl, getntacl, getdosinfo
-from samba.ndr import ndr_print
-from samba.samdb import SamDB
-from samba.samba3 import param as s3param, passdb
-from samba import provision
-from samba.auth_util import system_session_unix
 import os
 
+import samba.getopt as options
+from samba import provision
 from samba.auth import system_session
+from samba.auth_util import system_session_unix
+from samba.credentials import DONT_USE_KERBEROS
+from samba.dcerpc import security, idmap
+from samba.ndr import ndr_print
+from samba.ntacls import setntacl, getntacl, getdosinfo
+from samba.samba3 import param as s3param, passdb
+from samba.samdb import SamDB
 
-from samba.netcmd import (
-    Command,
-    CommandError,
-    SuperCommand,
-    Option,
-)
+from . import Command, CommandError, SuperCommand, Option
+
 
 def get_local_domain_sid(lp):
     is_ad_dc = False
