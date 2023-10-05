@@ -428,7 +428,7 @@ static int partition_copy_all_callback_action(
 	 * lead to an error
 	 */
 	search_ret = dsdb_module_search_dn(module, ac, &res, dn, NULL, DSDB_FLAG_NEXT_MODULE, req);
-	if (search_ret != LDB_SUCCESS) {
+	if (search_ret != LDB_SUCCESS && search_ret != LDB_ERR_NO_SUCH_OBJECT) {
 		return search_ret;
 	}
 
