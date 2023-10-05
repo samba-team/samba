@@ -2,6 +2,8 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
+setup_ctdb_base "$CTDB_TEST_TMP_DIR" "ctdb-etc"
+
 define_test "3 nodes, 2 healthy"
 
 required_result <<EOF
