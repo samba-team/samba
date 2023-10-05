@@ -173,9 +173,7 @@ static void pvfs_pending_lock_continue(void *private_data, enum pvfs_wait_notice
 	/* we've now got the pending lock. try and get the rest, which might
 	   lead to more pending locks */
 	for (i=pending->pending_lock+1;i<lck->lockx.in.lock_cnt;i++) {		
-		if (pending) {
-			pending->pending_lock = i;
-		}
+		pending->pending_lock = i;
 
 		status = brlock_lock(pvfs->brl_context,
 				  f->brl_handle,
