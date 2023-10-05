@@ -1100,6 +1100,10 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				self_guid,
 				target->syntax->ldap_oid);
 		}
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 		ret = dsdb_check_single_valued_link(target, el2);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
