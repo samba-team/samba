@@ -182,24 +182,19 @@ static void pvfs_pending_lock_continue(void *private_data, enum pvfs_wait_notice
 				  locks[i].count,
 				  rw, pending);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (pending) {
-				/* a timed lock failed - setup a wait message to handle
-				   the pending lock notification or a timeout */
-				pending->wait_handle = pvfs_wait_message(pvfs, req, MSG_BRL_RETRY, 
-									 pending->end_time,
-									 pvfs_pending_lock_continue,
-									 pending);
-				if (pending->wait_handle == NULL) {
-					pvfs_lock_async_failed(pvfs, req, f, locks, i, NT_STATUS_NO_MEMORY);
-					talloc_free(pending);
-				} else {
-					talloc_steal(pending, pending->wait_handle);
-					DLIST_ADD(f->pending_list, pending);
-				}
-				return;
+			/* a timed lock failed - setup a wait message to handle
+			   the pending lock notification or a timeout */
+			pending->wait_handle = pvfs_wait_message(pvfs, req, MSG_BRL_RETRY,
+								 pending->end_time,
+								 pvfs_pending_lock_continue,
+								 pending);
+			if (pending->wait_handle == NULL) {
+				pvfs_lock_async_failed(pvfs, req, f, locks, i, NT_STATUS_NO_MEMORY);
+				talloc_free(pending);
+			} else {
+				talloc_steal(pending, pending->wait_handle);
+				DLIST_ADD(f->pending_list, pending);
 			}
-			pvfs_lock_async_failed(pvfs, req, f, locks, i, status);
-			talloc_free(pending);
 			return;
 		}
 
