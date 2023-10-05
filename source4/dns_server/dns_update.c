@@ -751,20 +751,12 @@ static WERROR handle_updates(struct dns_server *dns,
 		W_ERROR_NOT_OK_GOTO(werror, failed);
 	}
 
-	ldb_transaction_commit(dns->samdb);
-	TALLOC_FREE(tmp_ctx);
-
-	if (tkey != NULL) {
-		ldb_set_opaque(
-			dns->samdb,
-			DSDB_SESSION_INFO,
-			system_session(dns->task->lp_ctx));
-	}
-
-	return WERR_OK;
-
 failed:
-	ldb_transaction_cancel(dns->samdb);
+	if (W_ERROR_IS_OK(werror)) {
+		ldb_transaction_commit(dns->samdb);
+	} else {
+		ldb_transaction_cancel(dns->samdb);
+	}
 
 	if (tkey != NULL) {
 		ldb_set_opaque(
