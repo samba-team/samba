@@ -210,15 +210,6 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		}
 
 		*converted_size = retval;
-
-		if (!dlen) {
-			/* Even if we fast path we should note if we ran out of room. */
-			if (((slen != (size_t)-1) && slen) ||
-					((slen == (size_t)-1) && lastp)) {
-				errno = E2BIG;
-				return false;
-			}
-		}
 		return true;
 
 	slow_path:
