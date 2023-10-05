@@ -333,6 +333,7 @@ done:
 		ret = smb_krb5_context_set_event_ctx(smb_krb5_context, event_ctx, &previous_ev);
 		if (ret) {
 			talloc_free(mem_ctx);
+			krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
 			return ret;
 		}
 #endif
@@ -361,6 +362,7 @@ done:
 		} else if (impersonate_principal) {
 			talloc_free(mem_ctx);
 			(*error_string) = "INTERNAL error: Cannot impersonate principal with just a keyblock.  A password must be specified in the credentials";
+			krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
 			return EINVAL;
 		} else {
 			/* No password available, try to use a keyblock instead */
