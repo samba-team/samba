@@ -339,7 +339,7 @@ class SuperCommand(Command):
                 sub = self.subcommands[a]
                 return sub._resolve(sub_path, *sub_args, outf=outf, errf=errf)
 
-            elif a in [ '--help', 'help', None, '-h', '-V', '--version' ]:
+            elif a in ['--help', 'help', None, '-h', '-V', '--version']:
                 # we pass these to the leaf node.
                 if a == 'help':
                     a = '--help'
