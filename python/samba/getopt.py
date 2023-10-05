@@ -73,6 +73,26 @@ def check_bytes(option, opt, value):
         raise optparse.OptionValueError(msg)
 
 
+class OptionMissingError(optparse.OptionValueError):
+    """One or more Options with required=True is missing."""
+
+    def __init__(self, options):
+        """Raised when required Options are missing from the command line.
+
+        :param options: list of 1 or more option
+        """
+        self.options = options
+
+    def __str__(self):
+        if len(self.options) == 1:
+            missing = self.options[0]
+            return f"Argument {missing} is required."
+        else:
+            options = sorted([str(option) for option in self.options])
+            missing = ", ".join(options)
+            return f"The arguments {missing} are required."
+
+
 class ValidationError(Exception):
     """ValidationError is the exception raised by validators.
 
@@ -93,7 +113,7 @@ class Validator(metaclass=ABCMeta):
 
 
 class Option(optparse.Option):
-    ATTRS = optparse.Option.ATTRS + ["validators"]
+    ATTRS = optparse.Option.ATTRS + ["required", "validators"]
     TYPES = optparse.Option.TYPES + ("bytes",)
     TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
     TYPE_CHECKER["bytes"] = check_bytes
@@ -135,6 +155,20 @@ class OptionParser(optparse.OptionParser):
         super().__init__(usage, option_list, option_class, version,
                          conflict_handler, description, formatter,
                          add_help_option, prog, epilog)
+
+    def check_values(self, values, args):
+        """Loop through required options if value is missing raise exception."""
+        missing = []
+        for option in self._get_all_options():
+            if option.required:
+                value = getattr(values, option.dest)
+                if value is None:
+                    missing.append(option)
+
+        if missing:
+            raise OptionMissingError(missing)
+
+        return super().check_values(values, args)
 
 
 class SambaOptions(optparse.OptionGroup):
