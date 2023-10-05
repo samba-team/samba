@@ -1085,10 +1085,11 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
-				   const struct samba_kdc_entry *p,
+				   struct samba_kdc_entry *p,
 				   const DATA_BLOB **_claims_blob)
 {
 	DATA_BLOB *claims_blob = NULL;
+	struct claims_data *claims_data = NULL;
 	NTSTATUS nt_status;
 	int ret;
 
@@ -1101,14 +1102,21 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = get_claims_blob_for_principal(p->kdc_db_ctx->samdb,
-					    claims_blob,
-					    p->msg,
-					    claims_blob);
+	ret = samba_kdc_get_claims_data_from_db(p->kdc_db_ctx->samdb,
+						p,
+						&claims_data);
 	if (ret != LDB_SUCCESS) {
 		nt_status = dsdb_ldb_err_to_ntstatus(ret);
 		DBG_ERR("Building claims failed: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(claims_blob);
+		return nt_status;
+	}
+
+	nt_status = claims_data_encoded_claims_set(claims_blob,
+						   claims_data,
+						   claims_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(claims_blob);
 		return nt_status;
 	}

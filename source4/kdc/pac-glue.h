@@ -161,7 +161,7 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 					  const struct auth_user_info_dc *user_info_dc,
 					  DATA_BLOB **_requester_sid_blob);
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
-				   const struct samba_kdc_entry *p,
+				   struct samba_kdc_entry *p,
 				   const DATA_BLOB **_claims_blob);
 
 krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
