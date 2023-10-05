@@ -3809,10 +3809,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 				return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 			}
 		}
-		if (rc < 0) {
-			gnutls_hash_deinit(hash_hnd, NULL);
-			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		}
 		gnutls_hash_output(hash_hnd, req->preauth->sha512_value);
 
 		rc = gnutls_hash(hash_hnd,
