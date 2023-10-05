@@ -60,6 +60,8 @@ struct samba_kdc_entry {
 	const void *kdc_entry; /* this is a reference to hdb_entry/krb5_db_entry */
 	struct ldb_message *msg;
 	struct ldb_dn *realm_dn;
+	struct claims_data *claims_from_pac;
+	struct claims_data *claims_from_db;
 	struct auth_user_info_dc *info_from_pac;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_from_pac;
 	struct auth_user_info_dc *info_from_db;
@@ -70,6 +72,8 @@ struct samba_kdc_entry {
 	bool is_krbtgt : 1;
 	bool is_rodc : 1;
 	bool is_trust : 1;
+	bool claims_from_pac_are_initialized : 1;
+	bool claims_from_db_are_initialized : 1;
 };
 
 extern struct hdb_method hdb_samba4_interface;

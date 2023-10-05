@@ -2921,6 +2921,183 @@ done:
 	return code;
 }
 
+krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
+					  krb5_context context,
+					  struct ldb_context *samdb,
+					  struct samba_kdc_entry_pac entry,
+					  struct claims_data **claims_data_out)
+{
+	if (samba_kdc_entry_pac_issued_by_trust(entry)) {
+		NTSTATUS status;
+
+		/*
+		 * TODO: we need claim translation over trusts; for now we just
+		 * clear them…
+		 */
+		status = claims_data_from_encoded_claims_set(mem_ctx,
+							     NULL,
+							     claims_data_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			return map_errno_from_nt_status(status);
+		}
+
+		return 0;
+	}
+
+	if (samba_krb5_pac_is_trusted(entry)) {
+		return samba_kdc_get_claims_data_from_pac(mem_ctx,
+							  context,
+							  entry,
+							  claims_data_out);
+	}
+
+	return samba_kdc_get_claims_data_from_db(samdb,
+						 entry.entry,
+						 claims_data_out);
+}
+
+krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
+						   krb5_context context,
+						   struct samba_kdc_entry_pac entry,
+						   struct claims_data **claims_data_out)
+{
+	TALLOC_CTX *frame = NULL;
+	krb5_data claims_info = {};
+	struct claims_data *claims_data = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	krb5_error_code code;
+
+	if (!samba_krb5_pac_is_trusted(entry)) {
+		code = EINVAL;
+		goto out;
+	}
+
+	if (samba_kdc_entry_pac_issued_by_trust(entry)) {
+		code = EINVAL;
+		goto out;
+	}
+
+	if (claims_data_out == NULL) {
+		code = EINVAL;
+		goto out;
+	}
+
+	*claims_data_out = NULL;
+
+	if (entry.entry != NULL && entry.entry->claims_from_pac_are_initialized) {
+		/* Note: the caller does not own this! */
+		*claims_data_out = entry.entry->claims_from_pac;
+		return 0;
+	}
+
+	frame = talloc_stackframe();
+
+	/* Fetch the claims from the PAC. */
+	code = krb5_pac_get_buffer(context, entry.pac,
+				   PAC_TYPE_CLIENT_CLAIMS_INFO,
+				   &claims_info);
+	if (code == ENOENT) {
+		/* OK. */
+	} else if (code != 0) {
+		DBG_ERR("Error getting CLIENT_CLAIMS_INFO from PAC\n");
+		goto out;
+	} else if (claims_info.length) {
+		DATA_BLOB claims_blob = data_blob_const(claims_info.data,
+							claims_info.length);
+
+		status = claims_data_from_encoded_claims_set(frame,
+							     &claims_blob,
+							     &claims_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			code = map_errno_from_nt_status(status);
+			goto out;
+		}
+	}
+
+	if (entry.entry != NULL) {
+		/* Note: the caller does not own this! */
+		entry.entry->claims_from_pac = talloc_steal(entry.entry,
+							    claims_data);
+		entry.entry->claims_from_pac_are_initialized = true;
+	} else {
+		talloc_steal(mem_ctx, claims_data);
+	}
+
+	*claims_data_out = claims_data;
+
+out:
+	smb_krb5_free_data_contents(context, &claims_info);
+	talloc_free(frame);
+	return code;
+}
+
+krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
+						  struct samba_kdc_entry *entry,
+						  struct claims_data **claims_data_out)
+{
+	TALLOC_CTX *frame = NULL;
+
+	struct claims_data *claims_data = NULL;
+	struct CLAIMS_SET *claims_set = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	krb5_error_code code;
+
+	if (samdb == NULL) {
+		code = EINVAL;
+		goto out;
+	}
+
+	if (claims_data_out == NULL) {
+		code = EINVAL;
+		goto out;
+	}
+
+	if (entry == NULL) {
+		code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+		goto out;
+	}
+
+	*claims_data_out = NULL;
+
+	if (entry->claims_from_db_are_initialized) {
+		/* Note: the caller does not own this! */
+		*claims_data_out = entry->claims_from_db;
+		return 0;
+	}
+
+	frame = talloc_stackframe();
+
+	code = get_claims_set_for_principal(samdb,
+					    frame,
+					    entry->msg,
+					    &claims_set);
+	if (code) {
+		DBG_ERR("Failed to fetch claims\n");
+		goto out;
+	}
+
+	if (claims_set != NULL) {
+		status = claims_data_from_claims_set(claims_data,
+						     claims_set,
+						     &claims_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			code = map_errno_from_nt_status(status);
+			goto out;
+		}
+	}
+
+	entry->claims_from_db = talloc_steal(entry,
+					     claims_data);
+	entry->claims_from_db_are_initialized = true;
+
+	/* Note: the caller does not own this! */
+	*claims_data_out = entry->claims_from_db;
+
+out:
+	talloc_free(frame);
+	return code;
+}
+
 krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 				       krb5_context context,
 				       struct ldb_context *samdb,

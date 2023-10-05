@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/auth.h"
 #include "kdc/samba_kdc.h"
 #include "lib/krb5_wrap/krb5_samba.h"
+#include "auth/session.h"
 
 enum samba_asserted_identity {
 	SAMBA_ASSERTED_IDENTITY_IGNORE = 0,
@@ -180,6 +181,21 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 				       const struct authn_kerberos_client_policy *client_policy,
 				       struct authn_audit_info **client_audit_info_out,
 				       NTSTATUS *status_out);
+
+krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
+					  krb5_context context,
+					  struct ldb_context *samdb,
+					  struct samba_kdc_entry_pac entry,
+					  struct claims_data **claims_data_out);
+
+krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
+						   krb5_context context,
+						   struct samba_kdc_entry_pac entry,
+						   struct claims_data **claims_data_out);
+
+krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
+						  struct samba_kdc_entry *entry,
+						  struct claims_data **claims_data_out);
 
 NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 					 struct auth_user_info_dc *user_info_dc);
