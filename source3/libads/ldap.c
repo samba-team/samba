@@ -3176,10 +3176,6 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	for (attr = ldap_first_attribute(ads->ldap.ld, (LDAPMessage *)msg, &ptr);
 	     attr;
 	     attr = ldap_next_attribute(ads->ldap.ld, (LDAPMessage *)msg, ptr)) {
-		if (attr == NULL) {
-			break;
-		}
-
 		/* we ignore the fact that this is utf8, as all attributes are ascii... */
 		if (strnequal(attr, expected_range_attrib, strlen(expected_range_attrib))) {
 			range_attr = attr;
