@@ -267,11 +267,11 @@ parse_ace(struct cli_state *ipc_cli,
         unsigned int amask;
 	struct dom_sid sid;
 	uint32_t mask;
-	const struct perm_value *v;
         struct perm_value {
                 const char perm[7];
                 uint32_t mask;
         };
+	size_t i;
 	TALLOC_CTX *frame = talloc_stackframe();
 
         /* These values discovered by inspection */
@@ -282,14 +282,12 @@ parse_ace(struct cli_state *ipc_cli,
                 { "D", 0x00010000 },
                 { "P", 0x00040000 },
                 { "O", 0x00080000 },
-                { "", 0 },
         };
 
         static const struct perm_value standard_values[] = {
                 { "READ",   0x001200a9 },
                 { "CHANGE", 0x001301bf },
                 { "FULL",   0x001f01ff },
-                { "", 0 },
         };
 
 	ZERO_STRUCTP(ace);
@@ -350,7 +348,8 @@ parse_ace(struct cli_state *ipc_cli,
 		goto done;
 	}
 
-	for (v = standard_values; v != NULL; v++) {
+	for (i = 0; i < ARRAY_SIZE(standard_values); i++) {
+		const struct perm_value *v = &standard_values[i];
 		if (strcmp(tok, v->perm) == 0) {
 			amask = v->mask;
 			goto done;
@@ -362,7 +361,8 @@ parse_ace(struct cli_state *ipc_cli,
 	while(*p) {
 		bool found = False;
 
-		for (v = special_values; v != NULL; v++) {
+		for (i = 0; i < ARRAY_SIZE(special_values); i++) {
+			const struct perm_value *v = &special_values[i];
 			if (v->perm[0] == *p) {
 				amask |= v->mask;
 				found = True;
