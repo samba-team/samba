@@ -22,6 +22,7 @@ __docformat__ = "restructuredText"
 import optparse
 import os
 import sys
+from abc import ABCMeta, abstractmethod
 from copy import copy
 
 from samba.credentials import (
@@ -72,6 +73,17 @@ def check_bytes(option, opt, value):
         msg = ("{0} invalid suffix '{1}', "
                "should be B, Kb, Mb or Gb").format(opt, v)
         raise optparse.OptionValueError(msg)
+
+
+class ValidationError(Exception):
+    pass
+
+
+class Validator(metaclass=ABCMeta):
+
+    @abstractmethod
+    def __call__(self, field, value):
+        pass
 
 
 class SambaOption(optparse.Option):
