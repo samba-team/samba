@@ -24,13 +24,14 @@
 import os
 import random
 import string
-from samba.auth import system_session
-from samba.samdb import SamDB
 from io import StringIO
-from samba.netcmd.main import cmd_sambatool
 from optparse import OptionParser
+
 import samba.getopt as options
 import samba.tests
+from samba.auth import system_session
+from samba.netcmd.main import cmd_sambatool
+from samba.samdb import SamDB
 
 
 def truncate_string(s, cutoff=100):
