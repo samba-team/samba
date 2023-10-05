@@ -34,24 +34,7 @@ from .encoders import JSONEncoder
 
 
 class Option(SambaOption):
-    ATTRS = SambaOption.ATTRS + ["validators"]
     SUPPRESS_HELP = optparse.SUPPRESS_HELP
-
-    def run_validators(self, opt, value):
-        """Runs the list of validators on the current option."""
-        validators = getattr(self, "validators") or []
-        for validator in validators:
-            validator(opt, value)
-
-    def convert_value(self, opt, value):
-        """Override convert_value to run validators just after.
-
-        This can also be done in process() but there we would have to
-        replace the entire method.
-        """
-        value = super().convert_value(opt, value)
-        self.run_validators(opt, value)
-        return value
 
 
 class PlainHelpFormatter(optparse.IndentedHelpFormatter):
