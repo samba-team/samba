@@ -30,7 +30,7 @@
     For this share
     Z:\
 
-    the ShadowCopies are in this directories
+    the ShadowCopies are in these directories
 
     Z:\@GMT-2003.08.05-12.00.00\
     Z:\@GMT-2003.08.05-12.01.00\
