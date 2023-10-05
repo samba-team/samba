@@ -349,9 +349,6 @@ size_t imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, 
 */
 int imessaging_cleanup(struct imessaging_context *msg)
 {
-	if (!msg) {
-		return 0;
-	}
 	return 0;
 }
 
