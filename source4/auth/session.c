@@ -492,30 +492,36 @@ NTSTATUS encode_claims_set(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	metadata_ndr = talloc_zero(tmp_ctx, struct CLAIMS_SET_METADATA_NDR);
+	metadata_ndr = talloc(tmp_ctx, struct CLAIMS_SET_METADATA_NDR);
 	if (metadata_ndr == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	metadata = talloc_zero(metadata_ndr, struct CLAIMS_SET_METADATA);
+	metadata = talloc(metadata_ndr, struct CLAIMS_SET_METADATA);
 	if (metadata == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	claims_set_info = talloc_zero(metadata, struct CLAIMS_SET_NDR);
+	claims_set_info = talloc(metadata, struct CLAIMS_SET_NDR);
 	if (claims_set_info == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	metadata_ndr->claims.metadata = metadata;
+	*metadata_ndr = (struct CLAIMS_SET_METADATA_NDR) {
+		.claims.metadata = metadata,
+	};
 
-	metadata->claims_set = claims_set_info;
-	metadata->compression_format = CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF;
+	*metadata = (struct CLAIMS_SET_METADATA) {
+		.claims_set = claims_set_info,
+		.compression_format = CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
+	};
 
-	claims_set_info->claims.claims = claims_set;
+	*claims_set_info = (struct CLAIMS_SET_NDR) {
+		.claims.claims = claims_set,
+	};
 
 	ndr_err = ndr_push_struct_blob(claims_blob, mem_ctx, metadata_ndr,
 				       (ndr_push_flags_fn_t)ndr_push_CLAIMS_SET_METADATA_NDR);
