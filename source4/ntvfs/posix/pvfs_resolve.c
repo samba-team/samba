@@ -67,7 +67,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
 	char *p, *partial_name;
 	size_t i;
 
-	/* break up the full name info pathname components */
+	/* break up the full name into pathname components */
 	num_components=2;
 	p = name->full_name + strlen(pvfs->base_directory) + 1;
 
@@ -708,7 +708,7 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 		status = odb_get_path(lck, &name);
 		if (NT_STATUS_IS_OK(status)) {
 			/*
-			 * This relies an the fact that
+			 * This relies on the fact that
 			 * renames of open files are only
 			 * allowed by setpathinfo() and setfileinfo()
 			 * and there're only renames within the same
