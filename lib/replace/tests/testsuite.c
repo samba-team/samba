@@ -854,14 +854,14 @@ static int test_socketpair(void)
 		return false;
 	}
 
-	if (write(sock[1], "automatisch", 12) == -1) {
+	if (write(sock[1], "automatisch", 12) != 12) {
 		printf("failure: socketpair [\n"
 			   "write() failed: %s\n"
 			   "]\n", strerror(errno));
 		return false;
 	}
 
-	if (read(sock[0], buf, 12) == -1) {
+	if (read(sock[0], buf, 12) != 12) {
 		printf("failure: socketpair [\n"
 			   "read() failed: %s\n"
 			   "]\n", strerror(errno));
