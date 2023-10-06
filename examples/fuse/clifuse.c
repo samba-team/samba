@@ -370,7 +370,7 @@ static NTSTATUS cli_get_unixattr_recv(struct tevent_req *req,
 		return status;
 	}
 
-	if (IS_DOS_DIR(state->mode)) {
+	if (state->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		st->st_mode = (S_IFDIR | 0555);
 		st->st_nlink = 2;
 	} else {
