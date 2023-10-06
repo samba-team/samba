@@ -513,7 +513,13 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 
 	errno = 0;
 	if (read(tdb->fd, &header, sizeof(header)) != sizeof(header)
-	    || strcmp(header.magic_food, TDB_MAGIC_FOOD) != 0) {
+	    /*
+	     * Call strncmp() rather than strcmp() in case header.magic_food is
+	     * not zero‐terminated. We’re still checking the full string for
+	     * equality, as tdb_header::magic_food is larger than
+	     * TDB_MAGIC_FOOD.
+	     */
+	    || strncmp(header.magic_food, TDB_MAGIC_FOOD, sizeof(header.magic_food)) != 0) {
 		if (!(open_flags & O_CREAT) ||
 		    tdb_new_database(tdb, &header, hash_size) == -1) {
 			if (errno == 0) {
