@@ -269,6 +269,22 @@ class Samba3Options(SambaOptions):
         self._lp = s3param.get_context()
 
 
+class HostOptions(optparse.OptionGroup):
+    """Command line options for connecting to target host or database."""
+
+    def __init__(self, parser):
+        super().__init__(parser, "Host Options")
+
+        self.H = None
+        self.add_option("-H", "--URL",
+                        help="LDB URL for database or target server",
+                        type=str, metavar="URL", action="callback",
+                        callback=self._set_H, dest="H")
+
+    def _set_H(self, option, opt_str, arg, parser):
+        parser.values.H = self.H = arg
+
+
 class VersionOptions(optparse.OptionGroup):
     """Command line option for printing Samba version."""
     def __init__(self, parser):

@@ -52,15 +52,13 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         parser = OptionParser()
         sambaopts = options.SambaOptions(parser)
         credopts = options.CredentialsOptions(parser)
-        parser.add_option("-H", "--URL",
-                          help="LDB URL for database or target server",
-                          type=str, metavar="URL", dest="H")
-        opts, args = parser.parse_args(list(argv))
+        hostopts = options.HostOptions(parser)
+        parser.parse_args(list(argv))
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
-        return SamDB(url=opts.H, session_info=system_session(),
+        return SamDB(url=hostopts.H, session_info=system_session(),
                      credentials=creds, lp=lp)
 
     @classmethod
