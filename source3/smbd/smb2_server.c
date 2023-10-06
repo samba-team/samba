@@ -516,11 +516,11 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 
 			status = smb2srv_session_lookup_conn(xconn, uid, now,
 							     &s);
-			if (s == NULL) {
+			if (!NT_STATUS_IS_OK(status)) {
 				status = smb2srv_session_lookup_global(xconn->client,
 								       uid, req, &s);
 			}
-			if (s == NULL) {
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("invalid session[%llu] in "
 					  "SMB2_TRANSFORM header\n",
 					   (unsigned long long)uid));
