@@ -1214,6 +1214,10 @@ int net_rap_service(struct net_context *c, int argc, const char **argv)
 			d_printf(_("Service name          Comment\n"
 		                   "-----------------------------\n"));
 			ret = cli_RNetServiceEnum(cli, long_group_fn, NULL);
+			if (ret) {
+				cli_shutdown(cli);
+				return ret;
+			}
 		}
 		ret = cli_RNetServiceEnum(cli, service_fn, NULL);
 		cli_shutdown(cli);
