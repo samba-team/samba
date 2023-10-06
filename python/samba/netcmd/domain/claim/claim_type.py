@@ -44,9 +44,9 @@ class cmd_domain_claim_claim_type_create(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--attribute", help="Attribute of claim type to create (required).",
-               dest="attribute_name", action="store", type=str),
+               dest="attribute_name", action="store", type=str, required=True),
         Option("--class", help="Object classes to set claim type to.",
-               dest="class_names", action="append", type=str),
+               dest="class_names", action="append", type=str, required=True),
         Option("--name", help="Optional display name or use attribute name.",
                dest="name", action="store", type=str),
         Option("--description",
@@ -67,12 +67,6 @@ class cmd_domain_claim_claim_type_create(Command):
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
             attribute_name=None, class_names=None, description=None,
             disable=None, enable=None, protect=None, unprotect=None):
-
-        # required attributes
-        if not attribute_name:
-            raise CommandError("Argument --attribute is required.")
-        if not class_names:
-            raise CommandError("Argument --class is required.")
 
         # mutually exclusive attributes
         if enable and disable:
@@ -165,7 +159,7 @@ class cmd_domain_claim_claim_type_modify(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to modify (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--class", help="Object classes to set claim type to.",
                dest="class_names", action="append", type=str),
         Option("--description", help="Set the claim type description.",
@@ -188,8 +182,6 @@ class cmd_domain_claim_claim_type_modify(Command):
             class_names=None, description=None, enable=None, disable=None,
             protect=None, unprotect=None):
 
-        if not name:
-            raise CommandError("Argument --name is required.")
         if enable and disable:
             raise CommandError("--enable and --disable cannot be used together.")
         if protect and unprotect:
@@ -255,16 +247,13 @@ class cmd_domain_claim_claim_type_delete(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to delete (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--force", help="Force claim type delete even if it is protected.",
                dest="force", action="store_true")
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None,
             name=None, force=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
@@ -345,13 +334,10 @@ class cmd_domain_claim_claim_type_view(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to view (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 

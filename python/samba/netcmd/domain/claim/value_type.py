@@ -78,13 +78,10 @@ class cmd_domain_claim_value_type_view(Command):
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name",
                help="Display name of claim value type to view (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 

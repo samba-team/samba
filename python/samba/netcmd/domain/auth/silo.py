@@ -80,13 +80,10 @@ class cmd_domain_auth_silo_view(Command):
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name",
                help="Name of authentication silo to view (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
@@ -117,7 +114,7 @@ class cmd_domain_auth_silo_create(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication silo (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--description",
                help="Optional description for authentication silo.",
                dest="description", action="store", type=str),
@@ -164,8 +161,6 @@ class cmd_domain_auth_silo_create(Command):
             service_policy=None, computer_policy=None, protect=None,
             unprotect=None, audit=None, enforce=None):
 
-        if not name:
-            raise CommandError("Argument --name is required.")
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
         if audit and enforce:
@@ -238,7 +233,7 @@ class cmd_domain_auth_silo_modify(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication silo (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--description",
                help="Optional description for authentication silo.",
                dest="description", action="store", type=str),
@@ -285,8 +280,6 @@ class cmd_domain_auth_silo_modify(Command):
             service_policy=None, computer_policy=None, protect=None,
             unprotect=None, audit=None, enforce=None):
 
-        if not name:
-            raise CommandError("Argument --name is required.")
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
         if protect and unprotect:
@@ -367,16 +360,13 @@ class cmd_domain_auth_silo_delete(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication silo (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--force", help="Force delete protected authentication silo.",
                dest="force", action="store_true")
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
             force=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 

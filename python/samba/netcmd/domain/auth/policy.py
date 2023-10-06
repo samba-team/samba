@@ -81,13 +81,10 @@ class cmd_domain_auth_policy_view(Command):
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name",
                help="Name of authentication policy to view (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
@@ -118,7 +115,7 @@ class cmd_domain_auth_policy_create(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication policy (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--description",
                help="Optional description for authentication policy.",
                dest="description", action="store", type=str),
@@ -187,8 +184,6 @@ class cmd_domain_auth_policy_create(Command):
             service_allowed_to_authenticate_to=None, computer_tgt_lifetime=None,
             computer_allowed_to_authenticate_to=None):
 
-        if not name:
-            raise CommandError("Argument --name is required.")
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
         if audit and enforce:
@@ -256,7 +251,7 @@ class cmd_domain_auth_policy_modify(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication policy (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--description",
                help="Optional description for authentication policy.",
                dest="description", action="store", type=str),
@@ -324,8 +319,6 @@ class cmd_domain_auth_policy_modify(Command):
             service_allowed_to_authenticate_to=None, computer_tgt_lifetime=None,
             computer_allowed_to_authenticate_to=None):
 
-        if not name:
-            raise CommandError("Argument --name is required.")
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
         if audit and enforce:
@@ -423,16 +416,13 @@ class cmd_domain_auth_policy_delete(Command):
         Option("-H", "--URL", help="LDB URL for database or target server.",
                type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication policy (required).",
-               dest="name", action="store", type=str),
+               dest="name", action="store", type=str, required=True),
         Option("--force", help="Force delete protected authentication policy.",
                dest="force", action="store_true")
     ]
 
     def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
             force=None):
-
-        if not name:
-            raise CommandError("Argument --name is required.")
 
         ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
 
