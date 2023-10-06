@@ -260,7 +260,7 @@ static int wipedbs_traverse_open(struct db_record *db_rec,
 
 		nttime_to_timeval(&disconnect_time, open->disconnect_time);
 		tdiff = usec_time_diff(&state->now, &disconnect_time);
-		reached = (tdiff >= 1000*open->durable_timeout_msec);
+		reached = (tdiff >= INT64_C(1000)*open->durable_timeout_msec);
 
 		if (state->verbose) {
 			TALLOC_CTX *mem_ctx = talloc_new(talloc_tos());
