@@ -333,8 +333,11 @@ static int samba_dsdb_init(struct ldb_module *module)
 			}
 			features_msg->dn = samba_dsdb_dn;
 
-			ldb_msg_add_empty(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
-					  LDB_FLAG_MOD_DELETE, &features_el);
+			ret = ldb_msg_add_empty(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
+						LDB_FLAG_MOD_DELETE, &features_el);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 
 			if (samba_options_supported == 1) {
 				for (i = 0;
