@@ -2723,12 +2723,7 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 	}
 
 	for (i = 0; i < old_blob.current.count; i++) {
-		struct AuthenticationInformation *o =
-			&old_blob.current.array[i];
-		struct AuthenticationInformation *p =
-			&new_blob.previous.array[i];
-
-		*p = *o;
+		new_blob.previous.array[i] = old_blob.current.array[i];
 		new_blob.previous.count++;
 	}
 	for (; i < new_blob.count; i++) {
