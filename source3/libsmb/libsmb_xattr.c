@@ -629,11 +629,11 @@ dos_attr_parse(SMBCCTX *context,
 		if (strncasecmp_m(tok, "MODE:", 5) == 0) {
                         long request = strtol(tok+5, NULL, 16);
                         if (request == 0) {
-                                dad->mode = (request |
-                                             (IS_DOS_DIR(dad->mode)
-                                              ? FILE_ATTRIBUTE_DIRECTORY
-                                              : FILE_ATTRIBUTE_NORMAL));
-                        } else {
+				dad->mode =
+					(dad->mode & FILE_ATTRIBUTE_DIRECTORY)
+						? FILE_ATTRIBUTE_DIRECTORY
+						: FILE_ATTRIBUTE_NORMAL;
+			} else {
                                 dad->mode = request;
                         }
 			continue;
