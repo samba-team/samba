@@ -2202,7 +2202,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			goto done;
 		}
 
-		/* We use trustAuthIncoming.data to incidate that auth_struct.incoming is valid */
+		/* We use trustAuthIncoming.data to indicate that auth_struct.incoming is valid */
 		nt_status = update_trust_user(mem_ctx,
 					      p_state->sam_ldb,
 					      p_state->domain_dn,
