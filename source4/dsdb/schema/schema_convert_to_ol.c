@@ -49,7 +49,8 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		return NULL;
 	}
 
-	do {
+	/* We have been asked to skip some attributes/objectClasses */
+	if (attrs_skip == NULL || !str_list_check_ci(attrs_skip, objectclass->lDAPDisplayName)) {
 		TALLOC_CTX *mem_ctx = talloc_new(append_to_string);
 		const char *name = objectclass->lDAPDisplayName;
 		const char *oid = objectclass->governsID_oid;
@@ -70,11 +71,6 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		if (!mem_ctx) {
 			DEBUG(0, ("Failed to create new talloc context\n"));
 			return NULL;
-		}
-
-		/* We have been asked to skip some attributes/objectClasses */
-		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
-			continue;
 		}
 
 		/* We might have been asked to remap this oid, due to a conflict */
@@ -154,7 +150,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 			return NULL;
 		}
 		talloc_free(mem_ctx);
-	} while (0);
+	}
 
 
 	for (objectclass=schema->classes; objectclass; objectclass = objectclass->next) {
