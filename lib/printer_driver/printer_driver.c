@@ -387,6 +387,9 @@ static NTSTATUS enum_devices_in_toc(struct gp_inifile_context *ctx,
 			status = gp_inifile_enum_section(ctx, decorated_models_section_name,
 							 &num_devices, &devices,
 							 &device_values);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			for (d = 0; d < num_devices; d++) {
 
 				DEBUG(11,("processing device: %s\n",
