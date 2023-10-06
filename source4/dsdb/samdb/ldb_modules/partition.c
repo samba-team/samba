@@ -1607,7 +1607,7 @@ int partition_read_unlock(struct ldb_module *module)
 					   LDB_DEBUG_FATAL,
 					   "Failed to lock db: %s / %s for %s",
 					   ldb_errstring(ldb),
-					   ldb_strerror(ret),
+					   ldb_strerror(ret2),
 					   ldb_dn_get_linearized(p->ctrl->dn));
 
 				/*
