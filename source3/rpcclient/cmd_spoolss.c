@@ -2129,7 +2129,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 	const char *environment = SPOOLSS_ARCHITECTURE_NT_X86;
 	DATA_BLOB buffer;
 	uint32_t offered;
-	union spoolss_PrintProcessorDirectoryInfo info;
+	union spoolss_PrintProcessorDirectoryInfo info = {};
 	uint32_t needed;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -2173,7 +2173,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 		}
 	}
 
-	if (W_ERROR_IS_OK(result)) {
+	if (W_ERROR_IS_OK(result) && info.info1.directory_name != NULL) {
 		printf("%s\n", info.info1.directory_name);
 	}
 
