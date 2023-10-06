@@ -986,7 +986,7 @@ int file_set_dosmode(connection_struct *conn,
 
 	/* if we previously had any w bits set then leave them alone
 		whilst adding in the new w bits, if the new mode is not rdonly */
-	if (!IS_DOS_READONLY(dosmode)) {
+	if (!(dosmode & FILE_ATTRIBUTE_READONLY)) {
 		unixmode |= (smb_fname->st.st_ex_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 

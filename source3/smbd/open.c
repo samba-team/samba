@@ -464,7 +464,7 @@ static NTSTATUS check_base_file_access(struct files_struct *fsp,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		dosattrs = fdos_mode(fsp);
-		if (IS_DOS_READONLY(dosattrs)) {
+		if (dosattrs & FILE_ATTRIBUTE_READONLY) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -3512,7 +3512,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 	}
 
 	dosattrs = fdos_mode(fsp);
-	if (IS_DOS_READONLY(dosattrs) || !CAN_WRITE(fsp->conn)) {
+	if ((dosattrs & FILE_ATTRIBUTE_READONLY) || !CAN_WRITE(fsp->conn)) {
 		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
 	}
 
@@ -4088,7 +4088,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if (((flags & O_ACCMODE) != O_RDONLY) && file_existed &&
-	    (!CAN_WRITE(conn) || IS_DOS_READONLY(existing_dos_attributes))) {
+	    (!CAN_WRITE(conn) ||
+	     (existing_dos_attributes & FILE_ATTRIBUTE_READONLY))) {
 		DEBUG(5,("open_file_ntcreate: write access requested for "
 			 "file %s on read only %s\n",
 			 smb_fname_str_dbg(smb_fname),
