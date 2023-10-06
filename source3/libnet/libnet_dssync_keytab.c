@@ -502,7 +502,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if ((kvno < 0) && (kvno < pwd_history_len)) {
+	if (kvno < pwd_history_len) {
 		return status;
 	}
 
