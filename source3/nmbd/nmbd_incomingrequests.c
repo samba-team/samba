@@ -369,8 +369,6 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 				set_nb_flags( &buf[16],namerec->data.nb_flags );
 				buf[16] |= NB_ACTIVE; /* all our names are active */
 
-				buf += 18;
-
 				names_added++;
 			}
 		}
