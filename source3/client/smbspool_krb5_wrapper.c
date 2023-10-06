@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 
 	CUPS_SMB_DEBUG("Adding group 'lp' (%u)", g->gr_gid);
 	groups[0] = g->gr_gid;
-	rc = setgroups(sizeof(groups), groups);
+	rc = setgroups(ARRAY_SIZE(groups), groups);
 	if (rc != 0) {
 		CUPS_SMB_ERROR("Failed to set groups for 'lp' - %s",
 			       strerror(errno));
