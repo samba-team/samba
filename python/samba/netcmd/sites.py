@@ -37,19 +37,18 @@ class cmd_sites_list(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--json", help="Output results in JSON format.",
                dest="output_format", action="store_const", const="json"),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None, output_format=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         # sites by cn.
         try:
@@ -77,17 +76,13 @@ class cmd_sites_view(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="ldap_url"),
-    ]
-
-    def run(self, sitename, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, sitename, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             site = Site.get(ldb, cn=sitename)
@@ -113,16 +108,12 @@ class cmd_sites_create(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="H"),
-    ]
-
-    def run(self, sitename, H=None, sambaopts=None, credopts=None,
+    def run(self, sitename, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None):
-        samdb = self.ldb_connect(H, sambaopts, credopts)
+        samdb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -147,16 +138,12 @@ class cmd_sites_delete(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="H"),
-    ]
-
-    def run(self, sitename, H=None, sambaopts=None, credopts=None,
+    def run(self, sitename, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None):
-        samdb = self.ldb_connect(H, sambaopts, credopts)
+        samdb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -181,19 +168,18 @@ class cmd_sites_subnet_list(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--json", help="Output results in JSON format.",
                dest="output_format", action="store_const", const="json"),
     ]
 
-    def run(self, sitename, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, sitename, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None, output_format=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             site = Site.get(ldb, cn=sitename)
@@ -231,17 +217,13 @@ class cmd_sites_subnet_view(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="ldap_url"),
-    ]
-
-    def run(self, subnetname, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, subnetname, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             subnet = Subnet.get(ldb, cn=subnetname)
@@ -265,16 +247,12 @@ class cmd_sites_subnet_create(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="H"),
-    ]
-
-    def run(self, subnetname, site_of_subnet, H=None, sambaopts=None,
+    def run(self, subnetname, site_of_subnet, hostopts=None, sambaopts=None,
             credopts=None, versionopts=None):
-        samdb = self.ldb_connect(H, sambaopts, credopts)
+        samdb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -300,16 +278,12 @@ class cmd_sites_subnet_delete(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="H"),
-    ]
-
-    def run(self, subnetname, H=None, sambaopts=None, credopts=None,
+    def run(self, subnetname, hostopts=None, sambaopts=None, credopts=None,
             versionopts=None):
-        samdb = self.ldb_connect(H, sambaopts, credopts)
+        samdb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         samdb.transaction_start()
         try:
@@ -332,16 +306,12 @@ class cmd_sites_subnet_set_site(Command):
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
-    takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server",
-               type=str, metavar="URL", dest="H"),
-    ]
-
-    def run(self, subnetname, site_of_subnet, H=None, sambaopts=None,
+    def run(self, subnetname, site_of_subnet, hostopts=None, sambaopts=None,
             credopts=None, versionopts=None):
-        samdb = self.ldb_connect(H, sambaopts, credopts)
+        samdb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         samdb.transaction_start()
         try:

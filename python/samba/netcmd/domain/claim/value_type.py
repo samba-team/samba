@@ -34,19 +34,18 @@ class cmd_domain_claim_value_type_list(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--json", help="Output results in JSON format.",
                dest="output_format", action="store_const", const="json"),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         # Value types grouped by display name.
         try:
@@ -71,19 +70,18 @@ class cmd_domain_claim_value_type_view(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name",
                help="Display name of claim value type to view (required).",
                dest="name", action="store", type=str, required=True),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             value_type = ValueType.get(ldb, display_name=name)

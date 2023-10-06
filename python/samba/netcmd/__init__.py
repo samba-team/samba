@@ -115,11 +115,11 @@ class Command(object):
         else:
             print(f"{err}{klass}: {msg} - {evalue}", file=self.errf)
 
-    def ldb_connect(self, ldap_url, sambaopts, credopts):
+    def ldb_connect(self, hostopts, sambaopts, credopts):
         """Helper to connect to Ldb database using command line opts."""
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        return SamDB(ldap_url, credentials=creds,
+        return SamDB(hostopts.H, credentials=creds,
                      session_info=system_session(lp), lp=lp)
 
     def print_json(self, data):

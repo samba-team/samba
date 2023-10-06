@@ -36,19 +36,18 @@ class cmd_domain_auth_silo_list(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--json", help="Output results in JSON format.",
                dest="output_format", action="store_const", const="json"),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         # Authentication silos grouped by cn.
         try:
@@ -73,19 +72,18 @@ class cmd_domain_auth_silo_view(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name",
                help="Name of authentication silo to view (required).",
                dest="name", action="store", type=str, required=True),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             silo = AuthenticationSilo.get(ldb, cn=name)
@@ -108,11 +106,10 @@ class cmd_domain_auth_silo_create(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication silo (required).",
                dest="name", action="store", type=str, required=True),
         Option("--description",
@@ -156,7 +153,7 @@ class cmd_domain_auth_silo_create(Command):
         except (LookupError, ValueError) as e:
             raise CommandError(e)
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
             description=None, policy=None, user_policy=None,
             service_policy=None, computer_policy=None, protect=None,
             unprotect=None, audit=None, enforce=None):
@@ -173,7 +170,7 @@ class cmd_domain_auth_silo_create(Command):
             service_policy = service_policy or policy
             computer_policy = computer_policy or policy
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             silo = AuthenticationSilo.get(ldb, cn=name)
@@ -227,11 +224,10 @@ class cmd_domain_auth_silo_modify(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication silo (required).",
                dest="name", action="store", type=str, required=True),
         Option("--description",
@@ -275,7 +271,7 @@ class cmd_domain_auth_silo_modify(Command):
         except (LookupError, ModelError, ValueError) as e:
             raise CommandError(e)
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
             description=None, policy=None, user_policy=None,
             service_policy=None, computer_policy=None, protect=None,
             unprotect=None, audit=None, enforce=None):
@@ -292,7 +288,7 @@ class cmd_domain_auth_silo_modify(Command):
             service_policy = service_policy or policy
             computer_policy = computer_policy or policy
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             silo = AuthenticationSilo.get(ldb, cn=name)
@@ -354,21 +350,20 @@ class cmd_domain_auth_silo_delete(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Name of authentication silo (required).",
                dest="name", action="store", type=str, required=True),
         Option("--force", help="Force delete protected authentication silo.",
                dest="force", action="store_true")
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
             force=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             silo = AuthenticationSilo.get(ldb, cn=name)

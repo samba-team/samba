@@ -38,11 +38,10 @@ class cmd_domain_claim_claim_type_create(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--attribute", help="Attribute of claim type to create (required).",
                dest="attribute_name", action="store", type=str, required=True),
         Option("--class", help="Object classes to set claim type to.",
@@ -64,7 +63,7 @@ class cmd_domain_claim_claim_type_create(Command):
                dest="unprotect", action="store_true")
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
             attribute_name=None, class_names=None, description=None,
             disable=None, enable=None, protect=None, unprotect=None):
 
@@ -74,7 +73,7 @@ class cmd_domain_claim_claim_type_create(Command):
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         display_name = name or attribute_name
         try:
@@ -153,11 +152,10 @@ class cmd_domain_claim_claim_type_modify(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to modify (required).",
                dest="name", action="store", type=str, required=True),
         Option("--class", help="Object classes to set claim type to.",
@@ -178,7 +176,7 @@ class cmd_domain_claim_claim_type_modify(Command):
                dest="unprotect", action="store_true")
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
             class_names=None, description=None, enable=None, disable=None,
             protect=None, unprotect=None):
 
@@ -187,7 +185,7 @@ class cmd_domain_claim_claim_type_modify(Command):
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             claim_type = ClaimType.get(ldb, display_name=name)
@@ -241,21 +239,20 @@ class cmd_domain_claim_claim_type_delete(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to delete (required).",
                dest="name", action="store", type=str, required=True),
         Option("--force", help="Force claim type delete even if it is protected.",
                dest="force", action="store_true")
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
             name=None, force=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             claim_type = ClaimType.get(ldb, display_name=name)
@@ -291,19 +288,18 @@ class cmd_domain_claim_claim_type_list(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--json", help="Output results in JSON format.",
                dest="output_format", action="store_const", const="json"),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None,
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
             output_format=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         # Claim types grouped by displayName.
         try:
@@ -328,18 +324,17 @@ class cmd_domain_claim_claim_type_view(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server.",
-               type=str, metavar="URL", dest="ldap_url"),
         Option("--name", help="Display name of claim type to view (required).",
                dest="name", action="store", type=str, required=True),
     ]
 
-    def run(self, ldap_url=None, sambaopts=None, credopts=None, name=None):
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None):
 
-        ldb = self.ldb_connect(ldap_url, sambaopts, credopts)
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
         try:
             claim_type = ClaimType.get(ldb, display_name=name)
