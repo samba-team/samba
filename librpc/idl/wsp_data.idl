@@ -16,6 +16,14 @@ interface constants
 	 * see MS-WSP 2.2.3.11
 	 */
 	const uint32_t MAX_ROW_BUFF_SIZE = 0x0004000;
+	typedef enum {
+		BACKEND_NULL = 0,
+		BACKEND_STRING = 1,
+		BACKEND_INTEGER = 2,
+		BACKEND_BOOLEAN = 3,
+		BACKEND_DOUBLE = 4,
+		BACKEND_DEFERRED = 5
+	} backend_type;
 
 	/* values for guidPropertySet */
 	const char* DBPROPSET_FSCIFRMWRK_EXT = "A9BD1526-6A80-11D0-8C9D-0020AF1D740E";
