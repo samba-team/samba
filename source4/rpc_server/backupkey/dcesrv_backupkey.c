@@ -431,11 +431,18 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 			return WERR_INVALID_DATA;
 		}
 
-		gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA1);
-		gnutls_hash(dig_ctx,
-			    blob_us.data,
-			    blob_us.length - hash_size);
+		rc = gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA1);
+		if (rc != GNUTLS_E_SUCCESS) {
+			return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+		}
+		rc = gnutls_hash(dig_ctx,
+				 blob_us.data,
+				 blob_us.length - hash_size);
 		gnutls_hash_deinit(dig_ctx, hash);
+		if (rc != GNUTLS_E_SUCCESS) {
+			return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+		}
+
 		/*
 		 * We free it after the sha1 calculation because blob.data
 		 * point to the same area
@@ -465,11 +472,17 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 			return WERR_INVALID_DATA;
 		}
 
-		gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA512);
-		gnutls_hash(dig_ctx,
-			    blob_us.data,
-			    blob_us.length - hash_size);
+		rc = gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA512);
+		if (rc != GNUTLS_E_SUCCESS) {
+			return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+		}
+		rc = gnutls_hash(dig_ctx,
+				 blob_us.data,
+				 blob_us.length - hash_size);
 		gnutls_hash_deinit(dig_ctx, hash);
+		if (rc != GNUTLS_E_SUCCESS) {
+			return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+		}
 
 		/*
 		 * We free it after the sha1 calculation because blob.data
