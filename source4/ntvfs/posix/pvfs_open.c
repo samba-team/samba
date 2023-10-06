@@ -1280,7 +1280,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* Open the file with sync, if they asked for it, but
 	   'strict sync = no' turns this client request into a no-op */
-	if (create_options & (NTCREATEX_OPTIONS_WRITE_THROUGH) && !(pvfs->flags | PVFS_FLAG_STRICT_SYNC)) {
+	if (create_options & (NTCREATEX_OPTIONS_WRITE_THROUGH) && pvfs->flags & PVFS_FLAG_STRICT_SYNC) {
 		flags |= O_SYNC;
 	}
 
@@ -1368,7 +1368,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	case NTCREATEX_DISP_SUPERSEDE:
 	case NTCREATEX_DISP_OVERWRITE_IF:
 		if (name->stream_name == NULL) {
-			flags = O_TRUNC;
+			flags |= O_TRUNC;
 		} else {
 			stream_truncate = true;
 		}
@@ -1379,7 +1379,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (!name->stream_exists) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
-		flags = 0;
 		break;
 
 	case NTCREATEX_DISP_OVERWRITE:
@@ -1387,7 +1386,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		if (name->stream_name == NULL) {
-			flags = O_TRUNC;
+			flags |= O_TRUNC;
 		} else {
 			stream_truncate = true;
 		}
@@ -1398,11 +1397,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (name->stream_exists) {
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
-		flags = 0;
 		break;
 
 	case NTCREATEX_DISP_OPEN_IF:
-		flags = 0;
 		break;
 
 	default:
