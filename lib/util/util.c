@@ -498,7 +498,7 @@ static void dump_data_block16(const char *prefix, size_t idx,
 	char tmp[16];
 	size_t i;
 
-	SMB_ASSERT(len >= 0 && len <= 16);
+	SMB_ASSERT(len <= 16);
 
 	snprintf(tmp, sizeof(tmp), "%s[%04zX]", prefix, idx);
 	cb(tmp, private_data);
