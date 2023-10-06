@@ -694,29 +694,49 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
-	if (r->in.secure_channel_type == SEC_CHAN_WKSTA) {
+	switch (r->in.secure_channel_type) {
+	case SEC_CHAN_WKSTA:
 		if (!(user_account_control & UF_WORKSTATION_TRUST_ACCOUNT)) {
-			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", user_account_control));
+			DBG_WARNING("Client asked for a workstation "
+				    "secure channel, but is not a workstation "
+				    "(member server) acb flags: 0x%x\n",
+				    user_account_control);
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
-	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN ||
-		   r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
-		if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
-			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", user_account_control));
+		break;
 
+	case SEC_CHAN_DOMAIN:
+		FALL_THROUGH;
+	case SEC_CHAN_DNS_DOMAIN:
+		if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
+			DBG_WARNING("Client asked for a trusted domain "
+				    "secure channel, but is not a trusted "
+				    "domain: acb flags: 0x%x\n",
+				    user_account_control);
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
-	} else if (r->in.secure_channel_type == SEC_CHAN_BDC) {
+		break;
+
+	case SEC_CHAN_BDC:
 		if (!(user_account_control & UF_SERVER_TRUST_ACCOUNT)) {
-			DEBUG(1, ("Client asked for a server secure channel, but is not a server (domain controller): acb flags: 0x%x\n", user_account_control));
+			DBG_WARNING("Client asked for a server "
+				    "secure channel, but is not a server "
+				    "(domain controller): acb flags: 0x%x\n",
+				    user_account_control);
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
-	} else if (r->in.secure_channel_type == SEC_CHAN_RODC) {
+		break;
+
+	case SEC_CHAN_RODC:
 		if (!(user_account_control & UF_PARTIAL_SECRETS_ACCOUNT)) {
-			DEBUG(1, ("Client asked for a RODC secure channel, but is not a RODC: acb flags: 0x%x\n", user_account_control));
+			DBG_WARNING("Client asked for a RODC secure channel, "
+				    "but is not a RODC: acb flags: 0x%x\n",
+				    user_account_control);
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
-	} else {
+		break;
+
+	default:
 		/* we should never reach this */
 		return NT_STATUS_INTERNAL_ERROR;
 	}
