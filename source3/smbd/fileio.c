@@ -246,7 +246,7 @@ void mark_file_modified(files_struct *fsp)
 	}
 
 	dosmode = fdos_mode(fsp);
-	if (IS_DOS_ARCHIVE(dosmode)) {
+	if (dosmode & FILE_ATTRIBUTE_ARCHIVE) {
 		return;
 	}
 	file_set_dosmode(fsp->conn, fsp->fsp_name,
