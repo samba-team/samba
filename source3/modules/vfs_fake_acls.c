@@ -575,7 +575,8 @@ static int fake_acl_process_chmod(SMB_ACL_T *pp_the_acl,
 
 	if (!got_mask) {
 		SMB_ACL_ENTRY_T mask_entry;
-		SMB_ACL_PERMSET_T mask_permset;
+		uint32_t mask_perm = 0;
+		SMB_ACL_PERMSET_T mask_permset = &mask_perm;
 		ret = sys_acl_create_entry(&the_acl, &mask_entry);
 		if (ret == -1) {
 			return -1;
