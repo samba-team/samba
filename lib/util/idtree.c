@@ -150,7 +150,7 @@ restart:
 			sh = IDR_BITS*l;
 			id = ((id >> sh) ^ n ^ m) << sh;
 		}
-		if ((id >= MAX_ID_BIT) || (id < 0))
+		if (id >= MAX_ID_BIT)
 			return -1;
 		if (l == 0)
 			break;
