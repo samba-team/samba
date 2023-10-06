@@ -2746,15 +2746,15 @@ NTSTATUS dsdb_trust_get_incoming_passwords(struct ldb_message *msg,
 	}
 
 	if (_current != NULL) {
-		*_current = talloc(mem_ctx, struct samr_Password);
+		*_current = talloc_memdup(mem_ctx, current, sizeof(*current));
 		if (*_current == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
-		**_current = *current;
 	}
 	if (_previous != NULL) {
-		*_previous = talloc(mem_ctx, struct samr_Password);
+		*_previous =
+			talloc_memdup(mem_ctx, previous, sizeof(*previous));
 		if (*_previous == NULL) {
 			if (_current != NULL) {
 				TALLOC_FREE(*_current);
@@ -2762,7 +2762,6 @@ NTSTATUS dsdb_trust_get_incoming_passwords(struct ldb_message *msg,
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
-		**_previous = *previous;
 	}
 	ZERO_STRUCTP(current);
 	ZERO_STRUCTP(previous);
