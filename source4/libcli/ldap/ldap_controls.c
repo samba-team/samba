@@ -499,9 +499,14 @@ static bool encode_verify_name_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	}
 
 	if (lvnc->gc_len) {
-		convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16,
-						lvnc->gc, lvnc->gc_len,
-						&gc_utf16.data, &gc_utf16.length);
+		bool ok;
+
+		ok = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16,
+					   lvnc->gc, lvnc->gc_len,
+					   &gc_utf16.data, &gc_utf16.length);
+		if (!ok) {
+			return false;
+		}
 		if (!asn1_write_OctetString(data, gc_utf16.data, gc_utf16.length)) {
 			return false;
 		}
