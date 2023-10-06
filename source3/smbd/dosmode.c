@@ -112,7 +112,8 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 	mode_t dir_mode = 0; /* Mode of the inherit_from directory if
 			      * inheriting. */
 
-	if (!lp_store_dos_attributes(SNUM(conn)) && IS_DOS_READONLY(dosmode)) {
+	if ((dosmode & FILE_ATTRIBUTE_READONLY) &&
+	    !lp_store_dos_attributes(SNUM(conn))) {
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
@@ -140,7 +141,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		result = 0;
 	}
 
-	if (IS_DOS_DIR(dosmode)) {
+	if (dosmode & FILE_ATTRIBUTE_DIRECTORY) {
 		/* We never make directories read only for the owner as under DOS a user
 		can always create a file in a read-only directory. */
 		result |= (S_IFDIR | S_IWUSR);
@@ -158,14 +159,20 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			result |= lp_force_directory_mode(SNUM(conn));
 		}
 	} else {
-		if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
+		if ((dosmode & FILE_ATTRIBUTE_ARCHIVE) &&
+		    lp_map_archive(SNUM(conn))) {
 			result |= S_IXUSR;
+		}
 
-		if (lp_map_system(SNUM(conn)) && IS_DOS_SYSTEM(dosmode))
+		if ((dosmode & FILE_ATTRIBUTE_SYSTEM) &&
+		    lp_map_system(SNUM(conn))) {
 			result |= S_IXGRP;
+		}
 
-		if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
+		if ((dosmode & FILE_ATTRIBUTE_HIDDEN) &&
+		    lp_map_hidden(SNUM(conn))) {
 			result |= S_IXOTH;
+		}
 
 		if (dir_mode) {
 			/* Inherit 666 component of parent directory mode */
