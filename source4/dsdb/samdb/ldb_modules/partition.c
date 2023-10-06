@@ -1643,7 +1643,7 @@ int partition_read_unlock(struct ldb_module *module)
 		}
 	}
 
-	ret = partition_metadata_read_unlock(module);
+	ret2 = partition_metadata_read_unlock(module);
 
 	/*
 	 * Don't overwrite the original failure code
