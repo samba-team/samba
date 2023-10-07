@@ -242,6 +242,27 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         # Without the bugfix for 15481 we get 'file' not 'File'
         self.assertEqual(directory[0]['name'], 'File')
 
+    def test_stream_close_with_full_information(self):
+        c = libsmb.Conn(self.server_ip, "streams_xattr", self.lp, self.creds)
+
+        try:
+            c.deltree("teststreams")
+        except:
+            pass
+
+        c.mkdir("teststreams")
+        fh = c.create("teststreams\\stream_full_close_info.txt:Stream",
+                      DesiredAccess=security.SEC_STD_DELETE,
+                      CreateDisposition=libsmb.FILE_CREATE)
+        c.delete_on_close(fh, 1)
+
+        try:
+            c.close(fh, libsmb.SMB2_CLOSE_FLAGS_FULL_INFORMATION)
+        except:
+            self.fail()
+
+        c.deltree("teststreams")
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
