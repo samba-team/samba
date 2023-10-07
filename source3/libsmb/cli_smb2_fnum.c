@@ -463,7 +463,8 @@ static void cli_smb2_close_fnum_done(struct tevent_req *subreq);
 struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct cli_state *cli,
-					    uint16_t fnum)
+					    uint16_t fnum,
+					    uint16_t flags)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_smb2_close_fnum_state *state;
@@ -482,9 +483,14 @@ struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = smb2cli_close_send(state, ev, cli->conn, cli->timeout,
-				    cli->smb2.session, cli->smb2.tcon,
-				    0, state->ph->fid_persistent,
+	subreq = smb2cli_close_send(state,
+				    ev,
+				    cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tcon,
+				    flags,
+				    state->ph->fid_persistent,
 				    state->ph->fid_volatile);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -546,7 +552,7 @@ NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum)
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_smb2_close_fnum_send(frame, ev, cli, fnum);
+	req = cli_smb2_close_fnum_send(frame, ev, cli, fnum, 0);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -843,7 +849,8 @@ static void cli_smb2_mkdir_opened(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_smb2_close_fnum_send(state, state->ev, state->cli, fnum);
+	subreq =
+		cli_smb2_close_fnum_send(state, state->ev, state->cli, fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1004,8 +1011,11 @@ static void cli_smb2_rmdir_disp_set(struct tevent_req *subreq)
 	 * Close the fd even if the set_disp failed
 	 */
 
-	subreq = cli_smb2_close_fnum_send(
-		state, state->ev, state->cli, state->fnum);
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum,
+					  0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1134,7 +1144,8 @@ static void cli_smb2_unlink_opened1(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_smb2_close_fnum_send(state, state->ev, state->cli, fnum);
+	subreq =
+		cli_smb2_close_fnum_send(state, state->ev, state->cli, fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1157,7 +1168,8 @@ static void cli_smb2_unlink_opened2(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_smb2_close_fnum_send(state, state->ev, state->cli, fnum);
+	subreq =
+		cli_smb2_close_fnum_send(state, state->ev, state->cli, fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1541,8 +1553,11 @@ static void cli_smb2_list_done(struct tevent_req *subreq)
 
 	TALLOC_FREE(response);
 
-	subreq = cli_smb2_close_fnum_send(
-		state, state->ev, state->cli, state->fnum);
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum,
+					  0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2345,7 +2360,8 @@ static void cli_smb2_qpathinfo_done(struct tevent_req *subreq)
 	subreq = cli_smb2_close_fnum_send(state,
 					  state->ev,
 					  state->cli,
-					  state->fnum);
+					  state->fnum,
+					  0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -3027,8 +3043,11 @@ static void cli_smb2_mxac_opened(struct tevent_req *subreq)
 	state->mxac = IVAL(mxac_blob->data.data, 4);
 
 close:
-	subreq = cli_smb2_close_fnum_send(
-		state, state->ev, state->cli, state->fnum);
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum,
+					  0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -3333,8 +3352,11 @@ static void cli_smb2_rename_renamed(struct tevent_req *subreq)
 	state->rename_status = cli_smb2_rename_fnum_recv(subreq);
 	TALLOC_FREE(subreq);
 
-	subreq = cli_smb2_close_fnum_send(
-		state, state->ev, state->cli, state->fnum);
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum,
+					  0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

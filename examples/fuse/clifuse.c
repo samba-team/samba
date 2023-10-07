@@ -952,7 +952,7 @@ static void cli_ll_release(fuse_req_t freq, fuse_ino_t ino,
 
 	fnum = fi->fh;
 
-	req = cli_smb2_close_fnum_send(state, mstate->ev, mstate->cli, fnum);
+	req = cli_smb2_close_fnum_send(state, mstate->ev, mstate->cli, fnum, 0);
 	if (req == NULL) {
 		TALLOC_FREE(state);
 		fuse_reply_err(freq, ENOMEM);

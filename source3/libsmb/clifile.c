@@ -2048,8 +2048,11 @@ static void cli_smb2_hardlink_info_set(struct tevent_req *subreq)
 
 	/* ignore error here, we need to close the file */
 
-	subreq = cli_smb2_close_fnum_send(
-		state, state->ev, state->cli, state->fnum_src);
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum_src,
+					  0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -3648,10 +3651,7 @@ struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = cli_smb2_close_fnum_send(state,
-						ev,
-						cli,
-						fnum);
+		subreq = cli_smb2_close_fnum_send(state, ev, cli, fnum, 0);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
