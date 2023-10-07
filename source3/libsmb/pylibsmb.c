@@ -1242,13 +1242,14 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 {
 	struct tevent_req *req;
 	int fnum;
+	int flags = 0;
 	NTSTATUS status;
 
-	if (!PyArg_ParseTuple(args, "i", &fnum)) {
+	if (!PyArg_ParseTuple(args, "i|i", &fnum, &flags)) {
 		return NULL;
 	}
 
-	req = cli_close_send(NULL, self->ev, self->cli, fnum);
+	req = cli_close_send(NULL, self->ev, self->cli, fnum, flags);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
@@ -1370,7 +1371,7 @@ static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args)
 	PyErr_NTSTATUS_NOT_OK_RAISE(status);
 
 	/* close the file handle */
-	req = cli_close_send(NULL, self->ev, self->cli, fnum);
+	req = cli_close_send(NULL, self->ev, self->cli, fnum, 0);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return NULL;
 	}
@@ -1492,7 +1493,7 @@ static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args)
 	}
 
 	/* close the file handle */
-	req = cli_close_send(NULL, self->ev, self->cli, fnum);
+	req = cli_close_send(NULL, self->ev, self->cli, fnum, 0);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		Py_XDECREF(result);
 		return NULL;

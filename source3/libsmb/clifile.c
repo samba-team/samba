@@ -3637,9 +3637,10 @@ struct cli_close_state {
 static void cli_close_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum)
+				  struct tevent_context *ev,
+				  struct cli_state *cli,
+				  uint16_t fnum,
+				  uint16_t flags)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_close_state *state;
@@ -3651,7 +3652,7 @@ struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = cli_smb2_close_fnum_send(state, ev, cli, fnum, 0);
+		subreq = cli_smb2_close_fnum_send(state, ev, cli, fnum, flags);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -3714,7 +3715,7 @@ NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 		goto fail;
 	}
 
-	req = cli_close_send(frame, ev, cli, fnum);
+	req = cli_close_send(frame, ev, cli, fnum, 0);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -5117,7 +5118,7 @@ static void cli_chkpath_opened(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_close_send(state, state->ev, state->cli, fnum);
+	subreq = cli_close_send(state, state->ev, state->cli, fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

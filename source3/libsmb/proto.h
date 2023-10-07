@@ -435,7 +435,9 @@ struct tevent_req *cli_smb1_close_create(TALLOC_CTX *mem_ctx,
 				    struct tevent_req **psubreq);
 struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
-				  struct cli_state *cli, uint16_t fnum);
+				  struct cli_state *cli,
+				  uint16_t fnum,
+				  uint16_t flags);
 NTSTATUS cli_close_recv(struct tevent_req *req);
 NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum);
 struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,

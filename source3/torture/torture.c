@@ -3177,7 +3177,7 @@ static void deferred_close_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_close_send(state, state->ev, state->cli, state->fnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -5945,7 +5945,7 @@ static struct tevent_req *delete_stream_send(
 	}
 	tevent_req_set_callback(subreq, delete_stream_unlinked, req);
 
-	subreq = cli_close_send(state, ev, cli, stream_fnum);
+	subreq = cli_close_send(state, ev, cli, stream_fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -10698,7 +10698,7 @@ static void torture_createdel_created(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_close_send(state, state->ev, state->cli, fnum);
+	subreq = cli_close_send(state, state->ev, state->cli, fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

@@ -125,8 +125,11 @@ static void cli_create_reparse_point_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_IS_OK(state->set_reparse_status)) {
-		subreq = cli_close_send(state, state->ev, state->cli,
-					state->fnum);
+		subreq = cli_close_send(state,
+					state->ev,
+					state->cli,
+					state->fnum,
+					0);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -159,7 +162,7 @@ static void cli_create_reparse_point_doc_done(struct tevent_req *subreq)
 	(void)cli_nt_delete_on_close_recv(subreq);
 	TALLOC_FREE(subreq);
 
-	subreq = cli_close_send(state, state->ev, state->cli, state->fnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -390,7 +393,7 @@ static void cli_get_reparse_data_done(struct tevent_req *subreq)
 		state->datalen = out.length;
 	}
 
-	subreq = cli_close_send(state, state->ev, state->cli, state->fnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

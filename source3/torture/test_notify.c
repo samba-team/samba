@@ -137,7 +137,7 @@ static void wait_for_one_notify_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	subreq = cli_close_send(state, state->ev, state->cli, state->dnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->dnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -501,8 +501,11 @@ static void notify_bench3_before_close_subdir(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(ret));
 		return;
 	}
-	subreq = cli_close_send(state, state->ev, state->cli,
-				state->subdir_dnum);
+	subreq = cli_close_send(state,
+				state->ev,
+				state->cli,
+				state->subdir_dnum,
+				0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -586,7 +589,7 @@ static void notify_bench3_del_on_close_set(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_close_send(state, state->ev, state->cli, state->dnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->dnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

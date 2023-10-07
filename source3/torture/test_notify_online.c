@@ -160,8 +160,7 @@ static void notify_online_sent_read(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	subreq = cli_close_send(
-		state, state->ev, state->cli, state->fnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->fnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -198,8 +197,7 @@ static void notify_online_waited(struct tevent_req *subreq)
 
 	tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
-	subreq = cli_close_send(
-		state, state->ev, state->cli, state->dnum);
+	subreq = cli_close_send(state, state->ev, state->cli, state->dnum, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
