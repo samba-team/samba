@@ -3943,7 +3943,7 @@ static bool test_raw_oplock_doc(struct torture_context *tctx,
 	union smb_open io;
 	uint16_t fnum=0;
 
-	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to set up test directory: " BASEDIR);
 
 	/* cleanup */
 	smbcli_unlink(cli->tree, fname);
@@ -4617,7 +4617,7 @@ bool torture_hold_oplock(struct torture_context *torture,
 
 	printf("Setting up open files with oplocks in %s\n", BASEDIR);
 
-	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to set up test directory: " BASEDIR);
 
 	smbcli_oplock_handler(cli->transport, oplock_handler_hold, cli->tree);
 

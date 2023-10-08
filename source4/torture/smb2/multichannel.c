@@ -2541,7 +2541,7 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 			    "talloc_zero_array");
 
 	/*
-	 * First we open additional the tcp connections
+	 * First we open the additional tcp connections
 	 */
 
 	for (i = 0; i < state->num_conns; i++) {
@@ -2613,7 +2613,7 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 	}
 
 	/*
-	 * No we check that the connections are still usable
+	 * Now we check that the connections are still usable
 	 */
 	for (i = 0; i < state->num_conns; i++) {
 		struct test_multichannel_bug_15346_conn *conn = &state->conns[i];
@@ -2630,7 +2630,7 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 					"smb2_util_roothandle failed");
 
 	/*
-	 * No we check that the connections are still usable
+	 * Now we check that the connections are still usable
 	 */
 	for (i = 0; i < state->num_conns; i++) {
 		struct test_multichannel_bug_15346_conn *conn = &state->conns[i];

@@ -109,7 +109,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
         self.assertIn(self.mod_becomes,
                       self.sd_utils_dc2.get_sd_as_sddl(self.ou))
 
-        # Confirm inherited ACLs are identical and were inheritied
+        # Confirm inherited ACLs are identical and were inherited
 
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(dn))
@@ -334,7 +334,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                           self.sd_utils_dc2.get_sd_as_sddl(sub3_ou_dn_final))
 
         # Confirm inherited ACLs (from l3 to l4) are identical
-        # and where inherited
+        # and were inherited
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final))
         self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final),

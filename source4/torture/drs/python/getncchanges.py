@@ -1297,7 +1297,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
             self.nc_change()
 
         if mid_change:
-            # create even moire objects
+            # create even more objects
             objs = self.create_object_range(301, 450, prefix="obj2")
 
         base_msg = self.default_conn.ldb_dc.search(base=self.base_dn,
