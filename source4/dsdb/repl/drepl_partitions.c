@@ -476,7 +476,7 @@ WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 		    || strequal(p->nc.dn, nc_dn_str)
 		    || (valid_sid && dom_sid_equal(&p->nc.sid, nc_sid)))
 		{
-			/* fill in he right guid and sid if possible */
+			/* fill in the right guid and sid if possible */
 			if (nc_guid && !valid_guid) {
 				dsdb_get_extended_dn_guid(p->dn, nc_guid, "GUID");
 			}

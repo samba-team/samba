@@ -488,7 +488,7 @@ static int partition_copy_all_callback_action(
 		if (req->operation == LDB_MODIFY) {
 			const struct ldb_message *req_msg = req->op.mod.message;
 			/*
-			 * mark elements to be removed, if there were
+			 * mark elements to be removed, if these were
 			 * deleted entirely above we need to delete
 			 * them here too
 			 */

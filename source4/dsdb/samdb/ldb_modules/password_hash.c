@@ -4384,7 +4384,7 @@ done:
 }
 
 /*
- * Builds and returns a search request to lookup up the PSO that applies to
+ * Builds and returns a search request to look up the PSO that applies to
  * the user in question. Returns NULL if no PSO applies, or could not be found
  */
 static struct ldb_request * build_pso_data_request(struct ph_context *ac)
