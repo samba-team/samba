@@ -842,13 +842,15 @@ static int linked_attributes_fix_forward_link(struct ldb_module *module,
 	}
 
 	if (exact == NULL) {
-		ldb_asprintf_errstring(
-			ldb,
-			"parsed_dn_find could not find %s link for %s",
-			el->name,
-			ldb_dn_get_linearized(msg->dn));
+		/*
+		 * Our only caller doesn’t want to know about errors finding a
+		 * forward link for which we have a backlink — in particular,
+		 * during the tombstoning of an object, the forward links have
+		 * already been removed when this routine is called by
+		 * dsdb_module_rename() inside replmd_delete_internals().
+		 */
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return LDB_SUCCESS;
 	}
 
 	is_plain_dn = strcmp(syntax_oid, LDB_SYNTAX_DN) == 0;
