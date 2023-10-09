@@ -2440,6 +2440,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	const DATA_BLOB *device_claims_blob_ptr = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
+	bool server_restrictions_present = false;
 	struct pac_blobs *pac_blobs = NULL;
 	const struct auth_user_info_dc *user_info_dc_const = NULL;
 	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
@@ -2471,6 +2472,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		is_tgs = result;
 	}
+
+	server_restrictions_present = !is_tgs && authn_policy_restrictions_present(server->server_policy);
 
 	/* Only include resource groups in a service ticket. */
 	if (is_tgs) {
@@ -2579,7 +2582,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	 * Enforce the AllowedToAuthenticateTo part of an authentication policy,
 	 * if one is present.
 	 */
-	if (!is_tgs && authn_policy_restrictions_present(server->server_policy)) {
+	if (server_restrictions_present) {
 		struct samba_kdc_entry_pac auth_entry;
 		const struct auth_user_info_dc *auth_user_info_dc = NULL;
 
