@@ -156,8 +156,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		return map_errno_from_nt_status(nt_status);
 	}
 
-	nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
-					       user_info_dc_shallow_copy);
+	nt_status = samba_kdc_add_claims_valid(user_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));

@@ -518,8 +518,7 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		return EINVAL;
 	}
 
-	nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
-					       user_info_dc_shallow_copy);
+	nt_status = samba_kdc_add_claims_valid(user_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));

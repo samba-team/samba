@@ -814,24 +814,14 @@ NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 		&user_info_dc->num_sids);
 }
 
-NTSTATUS samba_kdc_add_claims_valid(enum samba_claims_valid claims_valid,
-				    struct auth_user_info_dc *user_info_dc)
+NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc)
 {
-	switch (claims_valid) {
-	case SAMBA_CLAIMS_VALID_EXCLUDE:
-		return NT_STATUS_OK;
-	case SAMBA_CLAIMS_VALID_INCLUDE:
-	{
-		return add_sid_to_array_attrs_unique(
-			user_info_dc,
-			&global_sid_Claims_Valid,
-			SE_GROUP_DEFAULT_FLAGS,
-			&user_info_dc->sids,
-			&user_info_dc->num_sids);
-	}
-	}
-
-	return NT_STATUS_INVALID_PARAMETER;
+	return add_sid_to_array_attrs_unique(
+		user_info_dc,
+		&global_sid_Claims_Valid,
+		SE_GROUP_DEFAULT_FLAGS,
+		&user_info_dc->sids,
+		&user_info_dc->num_sids);
 }
 
 NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_auth,
@@ -2173,8 +2163,7 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
-	nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
-					       device_info_dc_shallow_copy);
+	nt_status = samba_kdc_add_claims_valid(device_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
@@ -3159,8 +3148,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
-						       device_info_shallow_copy);
+		nt_status = samba_kdc_add_claims_valid(device_info_shallow_copy);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Failed to add Claims Valid: %s\n",
 				nt_errstr(nt_status));

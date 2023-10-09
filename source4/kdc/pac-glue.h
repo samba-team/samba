@@ -40,11 +40,6 @@ enum samba_asserted_identity {
 	SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
 };
 
-enum samba_claims_valid {
-	SAMBA_CLAIMS_VALID_EXCLUDE = 0,
-	SAMBA_CLAIMS_VALID_INCLUDE,
-};
-
 enum samba_compounded_auth {
 	SAMBA_COMPOUNDED_AUTH_EXCLUDE = 0,
 	SAMBA_COMPOUNDED_AUTH_INCLUDE,
@@ -200,8 +195,7 @@ krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
 NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 					 struct auth_user_info_dc *user_info_dc);
 
-NTSTATUS samba_kdc_add_claims_valid(enum samba_claims_valid claims_valid,
-				    struct auth_user_info_dc *user_info_dc);
+NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc);
 
 NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_auth,
 				       struct auth_user_info_dc *user_info_dc);
