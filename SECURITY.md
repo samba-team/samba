@@ -9,7 +9,7 @@ matrix showing the currently supported versions of Samba.
 
 Please report all security issues or defects to security@samba.org and **never** on IRC, public mailing lists or in Bugzilla!
 
-Once reported and if warrented by the specific issue, the Samba Team
+Once reported and if warranted by the specific issue, the Samba Team
 will follow the process outlined in
 https://wiki.samba.org/index.php/Samba_Security_Process to produce a
 security release.
