@@ -2417,6 +2417,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	const DATA_BLOB *client_claims_blob = NULL;
 	DATA_BLOB device_claims_blob = {};
 	const DATA_BLOB *device_claims_blob_ptr = NULL;
+	struct claims_data *device_claims = NULL;
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
 	bool server_restrictions_present = false;
@@ -2466,9 +2467,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	compounded_auth = device.entry != NULL && !is_tgs
 		&& server->supported_enctypes & KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
 
-	if (compounded_auth) {
-		struct claims_data *device_claims = NULL;
-
+	if (compounded_auth || (server_restrictions_present && device.entry != NULL)) {
 		code = samba_kdc_get_claims_data(tmp_ctx,
 						 context,
 						 samdb,
@@ -2478,36 +2477,38 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = claims_data_encoded_claims_set(tmp_ctx,
-							   device_claims,
-							   &device_claims_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("claims_data_encoded_claims_set failed: %s\n",
-				nt_errstr(nt_status));
-			code = map_errno_from_nt_status(nt_status);
-			goto done;
-		}
-
-		device_claims_blob_ptr = &device_claims_blob;
-
-		if (samba_krb5_pac_is_trusted(device)) {
-			code = samba_kdc_create_device_info_blob(tmp_ctx,
-								 context,
-								 samdb,
-								 device.pac,
-								 &device_info_blob);
-			if (code != 0) {
+		if (compounded_auth) {
+			nt_status = claims_data_encoded_claims_set(tmp_ctx,
+								   device_claims,
+								   &device_claims_blob);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DBG_ERR("claims_data_encoded_claims_set failed: %s\n",
+					nt_errstr(nt_status));
+				code = map_errno_from_nt_status(nt_status);
 				goto done;
 			}
-		} else {
-			/* Don't trust an RODC‐issued PAC; regenerate the device info. */
-			code = samba_kdc_get_device_info_blob(tmp_ctx,
-							      context,
-							      samdb,
-							      device.entry,
-							      &device_info_blob);
-			if (code != 0) {
-				goto done;
+
+			device_claims_blob_ptr = &device_claims_blob;
+
+			if (samba_krb5_pac_is_trusted(device)) {
+				code = samba_kdc_create_device_info_blob(tmp_ctx,
+									 context,
+									 samdb,
+									 device.pac,
+									 &device_info_blob);
+				if (code != 0) {
+					goto done;
+				}
+			} else {
+				/* Don't trust an RODC‐issued PAC; regenerate the device info. */
+				code = samba_kdc_get_device_info_blob(tmp_ctx,
+								      context,
+								      samdb,
+								      device.entry,
+								      &device_info_blob);
+				if (code != 0) {
+					goto done;
+				}
 			}
 		}
 	}
