@@ -191,5 +191,3 @@ NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 					 struct auth_user_info_dc *user_info_dc);
 
 NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc);
-
-NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc);

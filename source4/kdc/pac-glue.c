@@ -824,7 +824,7 @@ NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc)
 		&user_info_dc->num_sids);
 }
 
-NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc)
+static NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc)
 {
 	return add_sid_to_array_attrs_unique(
 		user_info_dc,
