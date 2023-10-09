@@ -3109,6 +3109,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 	const struct auth_user_info_dc *device_info_const = NULL;
 	struct auth_user_info_dc *device_info_shallow_copy = NULL;
 	struct authn_audit_info *client_audit_info = NULL;
+	struct auth_claims auth_claims = {};
 
 	if (status_out != NULL) {
 		*status_out = NT_STATUS_OK;
@@ -3183,11 +3184,24 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 		device_info_const = device_info_shallow_copy;
 	}
 
+	/*
+	 * The device claims become the *user* claims for the purpose of
+	 * evaluating a conditional ACE expression.
+	 */
+	code = samba_kdc_get_claims_data(frame,
+					 context,
+					 samdb,
+					 device,
+					 &auth_claims.user_claims);
+	if (code) {
+		goto out;
+	}
+
 	nt_status = authn_policy_authenticate_from_device(frame,
 							  samdb,
 							  lp_ctx,
 							  device_info_const,
-							  (struct auth_claims) {},
+							  auth_claims,
 							  client_policy,
 							  &client_audit_info);
 	if (client_audit_info != NULL) {
