@@ -1254,12 +1254,12 @@ out:
 	return ret;
 }
 
-static krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
-						  krb5_context context,
-						  struct ldb_context *samdb,
-						  const struct samba_kdc_entry_pac entry,
-						  const struct auth_user_info_dc **info_out,
-						  const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
+krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
+					   krb5_context context,
+					   struct ldb_context *samdb,
+					   const struct samba_kdc_entry_pac entry,
+					   const struct auth_user_info_dc **info_out,
+					   const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out)
 {
 	const struct auth_user_info_dc *info = NULL;
 	struct auth_user_info_dc *info_shallow_copy = NULL;
