@@ -84,7 +84,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
-	const DATA_BLOB *client_claims_blob = NULL;
+	DATA_BLOB client_claims_blob = {};
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
@@ -105,6 +105,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 	const struct auth_user_info_dc *user_info_dc_const = NULL;
 	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
+	struct claims_data *client_claims = NULL;
 
 	/* Only include resource groups in a service ticket. */
 	if (is_krbtgt) {
@@ -160,6 +161,22 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
+		talloc_free(mem_ctx);
+		return map_errno_from_nt_status(nt_status);
+	}
+
+	ret = samba_kdc_get_claims_data_from_db(server_entry->kdc_db_ctx->samdb,
+						skdc_entry,
+						&client_claims);
+	if (ret) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	nt_status = claims_data_encoded_claims_set(mem_ctx,
+						   client_claims,
+						   &client_claims_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return map_errno_from_nt_status(nt_status);
 	}
@@ -245,14 +262,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		}
 	}
 
-	nt_status = samba_kdc_get_claims_blob(mem_ctx,
-					      skdc_entry,
-					      &client_claims_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
 	if (pk_reply_key != NULL && cred_ndr != NULL) {
 		ret = samba_kdc_encrypt_pac_credentials(context,
 							pk_reply_key,
@@ -275,7 +284,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
 				  upn_blob, pac_attrs_blob,
 				  requester_sid_blob, NULL,
-				  client_claims_blob, NULL, NULL,
+				  &client_claims_blob, NULL, NULL,
 				  *pac);
 
 	talloc_free(mem_ctx);
