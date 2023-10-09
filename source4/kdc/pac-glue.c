@@ -824,24 +824,14 @@ NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc)
 		&user_info_dc->num_sids);
 }
 
-NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_auth,
-				       struct auth_user_info_dc *user_info_dc)
+NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc)
 {
-	switch (compounded_auth) {
-	case SAMBA_COMPOUNDED_AUTH_EXCLUDE:
-		return NT_STATUS_OK;
-	case SAMBA_COMPOUNDED_AUTH_INCLUDE:
-	{
-		return add_sid_to_array_attrs_unique(
-			user_info_dc,
-			&global_sid_Compounded_Authentication,
-			SE_GROUP_DEFAULT_FLAGS,
-			&user_info_dc->sids,
-			&user_info_dc->num_sids);
-	}
-	}
-
-	return NT_STATUS_INVALID_PARAMETER;
+	return add_sid_to_array_attrs_unique(
+		user_info_dc,
+		&global_sid_Compounded_Authentication,
+		SE_GROUP_DEFAULT_FLAGS,
+		&user_info_dc->sids,
+		&user_info_dc->num_sids);
 }
 
 bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry)
@@ -2620,8 +2610,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		nt_status = samba_kdc_add_compounded_auth(SAMBA_COMPOUNDED_AUTH_INCLUDE,
-							  user_info_dc_shallow_copy);
+		nt_status = samba_kdc_add_compounded_auth(user_info_dc_shallow_copy);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Failed to add Compounded Authentication: %s\n",
 				nt_errstr(nt_status));

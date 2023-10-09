@@ -40,11 +40,6 @@ enum samba_asserted_identity {
 	SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
 };
 
-enum samba_compounded_auth {
-	SAMBA_COMPOUNDED_AUTH_EXCLUDE = 0,
-	SAMBA_COMPOUNDED_AUTH_INCLUDE,
-};
-
 enum {
 	SAMBA_KDC_FLAG_PROTOCOL_TRANSITION    = 0x00000001,
 	SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION = 0x00000002,
@@ -197,5 +192,4 @@ NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 
 NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc);
 
-NTSTATUS samba_kdc_add_compounded_auth(enum samba_compounded_auth compounded_auth,
-				       struct auth_user_info_dc *user_info_dc);
+NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc);
