@@ -2463,7 +2463,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
 	}
 
-	compounded_auth = device.entry != NULL && !is_tgs;
+	compounded_auth = device.entry != NULL && !is_tgs
+		&& server->supported_enctypes & KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
 
 	if (compounded_auth) {
 		struct claims_data *device_claims = NULL;
