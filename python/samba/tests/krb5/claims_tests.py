@@ -1722,7 +1722,7 @@ class ClaimsTests(KDCBaseTest):
         if tgs_to_krbtgt:
             requester_sid = user_sid
 
-        if tgs_to_krbtgt:
+        if not tgs_compound_id:
             expected_claims = None
             unexpected_claims = None
 
@@ -1758,9 +1758,9 @@ class ClaimsTests(KDCBaseTest):
             unexpected_groups=None,
             expect_client_claims=True,
             expected_client_claims=None,
-            expect_device_info=not tgs_to_krbtgt,
+            expect_device_info=bool(tgs_compound_id),
             expected_device_groups=tgs_device_expected_mapped,
-            expect_device_claims=not tgs_to_krbtgt,
+            expect_device_claims=bool(tgs_compound_id),
             expected_device_claims=expected_claims,
             unexpected_device_claims=unexpected_claims)
 
@@ -1841,7 +1841,7 @@ class ClaimsTests(KDCBaseTest):
         },
         {
             # Make a TGS request containing claims to a service that lacks
-            # support for compound identity. The claims are still propagated to
+            # support for compound identity. The claims are not propagated to
             # the final ticket.
             'test': 'device to service no compound id',
             'groups': {
@@ -1880,19 +1880,9 @@ class ClaimsTests(KDCBaseTest):
             'tgs:expected': {
                 (security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY, SidType.EXTRA_SID, default_attrs),
                 (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
-                (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, default_attrs),
+                # The Compounded Authentication SID should not be present.
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
-            },
-            'tgs:device:expected': {
-                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
-                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
-                frozenset([
-                    ('foo', SidType.RESOURCE_SID, resource_attrs),
-                    ('bar', SidType.RESOURCE_SID, resource_attrs),
-                ]),
-                (asserted_identity, SidType.EXTRA_SID, default_attrs),
-                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
             },
         },
         {

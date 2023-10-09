@@ -268,3 +268,8 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_claims_present\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_groups_present\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_simple_as_req_client_policy_only\(ad_dc\)
+#
+# Tests for services without support for Compound Identity
+#
+^samba\.tests\.krb5\.claims_tests\.samba\.tests\.krb5\.claims_tests\.ClaimsTests\.test_device_claims_device_to_service_no_compound_id\(ad_dc\)$
+^samba\.tests\.krb5\.device_tests\.samba\.tests\.krb5\.device_tests\.DeviceTests\.test_device_info_device_to_service_no_compound_id\(ad_dc\)$
