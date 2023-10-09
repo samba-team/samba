@@ -180,6 +180,9 @@ _kdc_pk_free_client_param(krb5_context context, pk_client_params *cp)
 	hx509_peer_info_free(cp->peer);
     if (cp->client_anchors)
 	hx509_certs_free(&cp->client_anchors);
+    if (cp->freshness_token)
+	der_free_octet_string(cp->freshness_token);
+    free(cp->freshness_token);
     memset(cp, 0, sizeof(*cp));
     free(cp);
 }
@@ -776,7 +779,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 	 * Copy the freshness token into the out parameters if it is present.
 	 */
 	if (ap.pkAuthenticator.freshnessToken != NULL) {
-	    cp->freshness_token = calloc(1, sizeof (cp->freshness_token));
+	    cp->freshness_token = calloc(1, sizeof (*cp->freshness_token));
 	    if (cp->freshness_token == NULL) {
 		ret = ENOMEM;
 		free_AuthPack(&ap);
