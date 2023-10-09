@@ -1755,7 +1755,7 @@ krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
 						      device_info,
 						      auth_claims,
 						      server_policy,
-						      (struct authn_policy_flags) {},
+						      (struct authn_policy_flags) { .force_compounded_authentication = true },
 						      server_audit_info_out);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (status_out != NULL) {
