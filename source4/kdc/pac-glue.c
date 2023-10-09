@@ -2419,7 +2419,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	const DATA_BLOB *client_claims_blob = NULL;
 	DATA_BLOB device_claims_blob = {};
 	const DATA_BLOB *device_claims_blob_ptr = NULL;
-	struct claims_data *device_claims = NULL;
+	struct auth_claims auth_claims = {};
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
 	bool server_restrictions_present = false;
@@ -2470,18 +2470,22 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		&& server->supported_enctypes & KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
 
 	if (compounded_auth || (server_restrictions_present && device.entry != NULL)) {
+		/*
+		 * [MS-KILE] 3.3.5.7.4 Compound Identity: the client claims from
+		 * the device PAC become the device claims in the new PAC.
+		 */
 		code = samba_kdc_get_claims_data(tmp_ctx,
 						 context,
 						 samdb,
 						 device,
-						 &device_claims);
+						 &auth_claims.device_claims);
 		if (code) {
 			goto done;
 		}
 
 		if (compounded_auth) {
 			nt_status = claims_data_encoded_claims_set(tmp_ctx,
-								   device_claims,
+								   auth_claims.device_claims,
 								   &device_claims_blob);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DBG_ERR("claims_data_encoded_claims_set failed: %s\n",
@@ -2564,6 +2568,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	if (server_restrictions_present) {
 		struct samba_kdc_entry_pac auth_entry;
 		const struct auth_user_info_dc *auth_user_info_dc = NULL;
+		const struct auth_user_info_dc *device_info = NULL;
 
 		if (delegated_proxy.entry != NULL) {
 			auth_entry = delegated_proxy;
@@ -2582,6 +2587,28 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			auth_user_info_dc = user_info_dc_const;
 		}
 
+		/* Fetch the user’s claims. */
+		code = samba_kdc_get_claims_data(tmp_ctx,
+						 context,
+						 samdb,
+						 auth_entry,
+						 &auth_claims.user_claims);
+		if (code) {
+			goto done;
+		}
+
+		if (device.entry != NULL) {
+			code = samba_kdc_get_user_info_dc(tmp_ctx,
+							  context,
+							  samdb,
+							  device,
+							  &device_info,
+							  NULL /* resource_groups_out */);
+			if (code) {
+				goto done;
+			}
+		}
+
 		/*
 		 * Allocate the audit info and output status on to the parent
 		 * mem_ctx, not the temporary context.
@@ -2591,8 +2618,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 							    lp_ctx,
 							    auth_entry.entry,
 							    auth_user_info_dc,
-							    NULL /* device_info */,
-							    (struct auth_claims) {},
+							    device_info,
+							    auth_claims,
 							    server,
 							    server_audit_info_out,
 							    status_out);

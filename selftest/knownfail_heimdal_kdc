@@ -88,7 +88,6 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_allowed_from_enforced_silo_not_equals_deny\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_allowed_from_unenforced_silo_equals_deny\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_allowed_from_unenforced_silo_not_equals\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_allowed_to_client_equals\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_allowed_to_device_equals\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_cmp_42_equals_literal__42_\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_cmp_A_is_less_than__\(ad_dc\)
@@ -248,7 +247,6 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_without_service_asserted_identity_both_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_without_service_asserted_identity_client_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_without_service_asserted_identity_device_from_rodc\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_claims_present\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_claims_invalid_no_attrs\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_claims_present\(ad_dc\)
 #
