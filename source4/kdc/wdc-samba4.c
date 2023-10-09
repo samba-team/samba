@@ -105,7 +105,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 	const struct auth_user_info_dc *user_info_dc_const = NULL;
 	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
-	struct claims_data *client_claims = NULL;
+	struct auth_claims auth_claims = {};
 
 	/* Only include resource groups in a service ticket. */
 	if (is_krbtgt) {
@@ -167,14 +167,14 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 	ret = samba_kdc_get_claims_data_from_db(server_entry->kdc_db_ctx->samdb,
 						skdc_entry,
-						&client_claims);
+						&auth_claims.user_claims);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
 	nt_status = claims_data_encoded_claims_set(mem_ctx,
-						   client_claims,
+						   auth_claims.user_claims,
 						   &client_claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -185,13 +185,58 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	 * For an S4U2Self request, the authentication policy is not enforced.
 	 */
 	if (!is_s4u2self && authn_policy_restrictions_present(server_entry->server_policy)) {
+		const hdb_entry *device = kdc_request_get_armor_client(r);
+		const struct auth_user_info_dc *device_info = NULL;
+
+		if (device != NULL) {
+			const hdb_entry *device_krbtgt = NULL;
+			struct samba_kdc_entry *device_skdc_entry = NULL;
+			const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
+			const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
+			struct samba_kdc_entry_pac device_pac_entry = {};
+
+			device_skdc_entry = talloc_get_type_abort(device->context,
+								  struct samba_kdc_entry);
+
+			device_krbtgt = kdc_request_get_armor_server(r);
+			if (device_krbtgt != NULL) {
+				device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
+										 struct samba_kdc_entry);
+			}
+
+			device_pac_entry = samba_kdc_entry_pac(device_pac,
+							       device_skdc_entry,
+							       samba_kdc_entry_is_trust(device_krbtgt_skdc_entry));
+
+			ret = samba_kdc_get_user_info_dc(mem_ctx,
+							 context,
+							 server_entry->kdc_db_ctx->samdb,
+							 device_pac_entry,
+							 &device_info,
+							 NULL /* resource_groups_out */);
+			if (ret) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+
+			ret = samba_kdc_get_claims_data(mem_ctx,
+							context,
+							server_entry->kdc_db_ctx->samdb,
+							device_pac_entry,
+							&auth_claims.device_claims);
+			if (ret) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
+
 		ret = samba_kdc_allowed_to_authenticate_to(mem_ctx,
 							   server_entry->kdc_db_ctx->samdb,
 							   server_entry->kdc_db_ctx->lp_ctx,
 							   skdc_entry,
 							   user_info_dc_shallow_copy,
-							   NULL /* device_info */,
-							   (struct auth_claims) {},
+							   device_info,
+							   auth_claims,
 							   server_entry,
 							   &server_audit_info,
 							   &reply_status);
