@@ -173,6 +173,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 							   server_entry->kdc_db_ctx->lp_ctx,
 							   skdc_entry,
 							   user_info_dc_shallow_copy,
+							   NULL /* device_info */,
+							   (struct auth_claims) {},
 							   server_entry,
 							   &server_audit_info,
 							   &reply_status);

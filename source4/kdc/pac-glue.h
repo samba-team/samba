@@ -159,6 +159,8 @@ krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
 						     struct loadparm_context *lp_ctx,
 						     const struct samba_kdc_entry *client,
 						     const struct auth_user_info_dc *client_info,
+						     const struct auth_user_info_dc *device_info,
+						     const struct auth_claims auth_claims,
 						     const struct samba_kdc_entry *server,
 						     struct authn_audit_info **server_audit_info_out,
 						     NTSTATUS *status_out);
