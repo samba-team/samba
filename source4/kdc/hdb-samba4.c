@@ -335,6 +335,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 	const struct auth_user_info_dc *client_info = NULL;
 	const struct auth_user_info_dc *device_info = NULL;
 	struct samba_kdc_entry_pac client_pac_entry = {};
+	struct auth_claims auth_claims = {};
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_error_code code;
 
@@ -366,6 +367,15 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 		goto out;
 	}
 
+	code = samba_kdc_get_claims_data(mem_ctx,
+					 context,
+					 kdc_db_ctx->samdb,
+					 client_pac_entry,
+					 &auth_claims.user_claims);
+	if (code) {
+		goto out;
+	}
+
 	if (device != NULL) {
 		struct samba_kdc_entry *device_skdc_entry = NULL;
 		const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
@@ -392,6 +402,15 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 		if (code) {
 			goto out;
 		}
+
+		code = samba_kdc_get_claims_data(mem_ctx,
+						 context,
+						 kdc_db_ctx->samdb,
+						 device_pac_entry,
+						 &auth_claims.device_claims);
+		if (code) {
+			goto out;
+		}
 	}
 
 	code = samba_kdc_check_s4u2proxy_rbcd(context,
@@ -400,7 +419,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 					      server_principal,
 					      client_info,
 					      device_info,
-					      (struct auth_claims) {},
+					      auth_claims,
 					      proxy_skdc_entry);
 out:
 	talloc_free(mem_ctx);
