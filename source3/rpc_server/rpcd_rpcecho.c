@@ -19,6 +19,8 @@
 #include "rpc_worker.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "librpc/gen_ndr/ndr_echo_scompat.h"
+#include "param/loadparm.h"
+#include "libds/common/roles.h"
 
 static size_t rpcecho_interfaces(
 	const struct ndr_interface_table ***pifaces,
@@ -27,8 +29,22 @@ static size_t rpcecho_interfaces(
 	static const struct ndr_interface_table *ifaces[] = {
 		&ndr_table_rpcecho,
 	};
+	size_t num_ifaces = ARRAY_SIZE(ifaces);
+
+	switch(lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/*
+		 * On the AD DC rpcecho is provided by the 'samba'
+		 * binary from source4/
+		 */
+		num_ifaces = 0;
+		break;
+	default:
+		break;
+	}
+
 	*pifaces = ifaces;
-	return ARRAY_SIZE(ifaces);
+	return num_ifaces;
 }
 
 static size_t rpcecho_servers(
@@ -37,11 +53,24 @@ static size_t rpcecho_servers(
 	void *private_data)
 {
 	static const struct dcesrv_endpoint_server *ep_servers[1] = { NULL };
+	size_t num_servers = ARRAY_SIZE(ep_servers);
 
 	ep_servers[0] = rpcecho_get_ep_server();
 
+	switch(lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/*
+		 * On the AD DC rpcecho is provided by the 'samba'
+		 * binary from source4/
+		 */
+		num_servers = 0;
+		break;
+	default:
+		break;
+	}
+
 	*_ep_servers = ep_servers;
-	return ARRAY_SIZE(ep_servers);
+	return num_servers;
 }
 
 int main(int argc, const char *argv[])

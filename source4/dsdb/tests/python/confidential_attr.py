@@ -30,13 +30,15 @@ import time
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
-from samba.dsdb import SEARCH_FLAG_CONFIDENTIAL, SEARCH_FLAG_PRESERVEONDELETE
+from samba.dsdb import SEARCH_FLAG_CONFIDENTIAL, SEARCH_FLAG_RODC_ATTRIBUTE, SEARCH_FLAG_PRESERVEONDELETE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD
 from samba.auth import system_session
 from samba import gensec, sd_utils
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
+from samba.dcerpc import security
+
 import samba.tests
 import samba.dsdb
 
@@ -98,7 +100,9 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         userou = "OU=conf-attr-test"
         self.ou = "{0},{1}".format(userou, self.base_dn)
+        samba.tests.delete_force(self.ldb_admin, self.ou, controls=['tree_delete:1'])
         self.ldb_admin.create_ou(self.ou)
+        self.addCleanup(samba.tests.delete_force, self.ldb_admin, self.ou, controls=['tree_delete:1'])
 
         # use a common username prefix, so we can use sAMAccountName=CATC-* as
         # a search filter to only return the users we're interested in
@@ -134,14 +138,12 @@ class ConfidentialAttrCommon(samba.tests.TestCase):
 
         # sanity-check the flag is not already set (this'll cause problems if
         # previous test run didn't clean up properly)
-        search_flags = self.get_attr_search_flags(self.attr_dn)
-        self.assertEqual(0, int(search_flags) & SEARCH_FLAG_CONFIDENTIAL,
-                         "{0} searchFlags already {1}".format(self.conf_attr,
-                                                              search_flags))
-
-    def tearDown(self):
-        super(ConfidentialAttrCommon, self).tearDown()
-        self.ldb_admin.delete(self.ou, ["tree_delete:1"])
+        search_flags = int(self.get_attr_search_flags(self.attr_dn))
+        if search_flags & SEARCH_FLAG_CONFIDENTIAL|SEARCH_FLAG_RODC_ATTRIBUTE:
+            self.set_attr_search_flags(self.attr_dn, str(search_flags &~ (SEARCH_FLAG_CONFIDENTIAL|SEARCH_FLAG_RODC_ATTRIBUTE)))
+        search_flags = int(self.get_attr_search_flags(self.attr_dn))
+        self.assertEqual(0, search_flags & (SEARCH_FLAG_CONFIDENTIAL|SEARCH_FLAG_RODC_ATTRIBUTE),
+                         f"{self.conf_attr} searchFlags did not reset to omit SEARCH_FLAG_CONFIDENTIAL and SEARCH_FLAG_RODC_ATTRIBUTE ({search_flags})")
 
     def add_attr(self, dn, attr, value):
         m = Message()
@@ -722,7 +724,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
 
         self.attr_filters = [None, ["*"], ["name"]]
 
-        # Note dirsync behaviour is slighty different for the attribute under
+        # Note dirsync behaviour is slightly different for the attribute under
         # test - when you have full access rights, it only returns the objects
         # that actually have this attribute (i.e. it doesn't return an empty
         # message with just the DN). So we add the 'name' attribute into the
@@ -742,7 +744,13 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         #   want to weed out results from any previous test runs
         search = "(&{0}{1})".format(expr, self.extra_filter)
 
-        for attr in self.attr_filters:
+        # If we expect to return multiple results, only check the first
+        if expected_num > 0:
+            attr_filters = [self.attr_filters[0]]
+        else:
+            attr_filters = self.attr_filters
+
+        for attr in attr_filters:
             res = samdb.search(base_dn, expression=search, scope=SCOPE_SUBTREE,
                                attrs=attr, controls=self.dirsync)
             self.assertEqual(len(res), expected_num,
@@ -1091,6 +1099,39 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         # cases must be indistinguishable.
         user_matching, user_non_matching = time_searches(self.ldb_user)
         assertRangesOverlap(user_matching, user_non_matching)
+
+# Check that using the dirsync controls doesn't reveal confidential
+# "RODC filtered attribute" values to users with only
+# GUID_DRS_GET_CHANGES.  The tests is so similar to the Confidential
+# attribute test we base it on that.
+class RodcFilteredAttrDirsync(ConfidentialAttrTestDirsync):
+
+    def setUp(self):
+        super().setUp()
+        self.dirsync = ["dirsync:1:0:1000"]
+
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user))
+        mod = "(OA;;CR;%s;;%s)" % (security.GUID_DRS_GET_CHANGES,
+                                   str(user_sid))
+        self.sd_utils.dacl_add_ace(self.base_dn, mod)
+
+        self.ldb_user = self.get_ldb_connection(self.user, self.user_pass)
+
+        self.addCleanup(self.sd_utils.dacl_delete_aces, self.base_dn, mod)
+
+    def make_attr_confidential(self):
+        """Marks the attribute under test as being confidential AND RODC
+           filtered (which should mean it is not visible with only
+           GUID_DRS_GET_CHANGES)
+        """
+
+        # work out the original 'searchFlags' value before we overwrite it
+        old_value = self.get_attr_search_flags(self.attr_dn)
+
+        self.set_attr_search_flags(self.attr_dn, str(SEARCH_FLAG_RODC_ATTRIBUTE|SEARCH_FLAG_CONFIDENTIAL))
+
+        # reset the value after the test completes
+        self.addCleanup(self.set_attr_search_flags, self.attr_dn, old_value)
 
 
 TestProgram(module=__name__, opts=subunitopts)
