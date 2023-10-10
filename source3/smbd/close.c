@@ -1463,9 +1463,9 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 }
 
 /****************************************************************************
- Close a directory opened by an NT SMB call. 
+ Close a directory opened by an NT SMB call.
 ****************************************************************************/
-  
+
 static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				enum file_close_type close_type)
 {
@@ -1611,7 +1611,7 @@ done:
 /****************************************************************************
  Rundown all SMB-related dependencies of a files struct
 ****************************************************************************/
-  
+
 NTSTATUS close_file_smb(struct smb_request *req,
 			struct files_struct *fsp,
 			enum file_close_type close_type)
