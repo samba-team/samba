@@ -370,6 +370,8 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 					      client->principal,
 					      server_principal,
 					      client_info,
+					      NULL /* device_info_dc */,
+					      (struct auth_claims) {},
 					      proxy_skdc_entry);
 out:
 	talloc_free(mem_ctx);

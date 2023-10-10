@@ -3375,6 +3375,8 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		krb5_const_principal client_principal,
 		krb5_const_principal server_principal,
 		const struct auth_user_info_dc *user_info_dc,
+		const struct auth_user_info_dc *device_info_dc,
+		const struct auth_claims auth_claims,
 		struct samba_kdc_entry *proxy_skdc_entry)
 {
 	krb5_error_code code;
@@ -3460,8 +3462,8 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 						 kdc_db_ctx->lp_ctx,
 						 kdc_db_ctx->samdb,
 						 user_info_dc,
-						 NULL /*device_info_dc */,
-						 (struct auth_claims) {},
+						 device_info_dc,
+						 auth_claims,
 						 session_info_flags,
 						 &security_token);
 	if (!NT_STATUS_IS_OK(nt_status)) {

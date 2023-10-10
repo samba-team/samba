@@ -863,6 +863,8 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 					      client_principal,
 					      server_principal,
 					      user_info_dc,
+					      NULL /* device_info_dc */,
+					      (struct auth_claims) {},
 					      proxy_skdc_entry);
 out:
 	talloc_free(mem_ctx);
