@@ -284,7 +284,7 @@ MonitorInterval=20
 	      networks.
 	    </para>
 	    <para>
-	      You can override automatic the "home" node allocation by
+	      You can override the automatic "home" node allocation by
 	      creating a file "home_nodes" next to the
 	      "public_addresses" file. As an example the following
 	      "home_nodes" file assigns the address 192.168.1.1 to

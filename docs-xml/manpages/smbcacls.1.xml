@@ -75,7 +75,7 @@
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>The <command>smbcacls</command> program manipulates NT Access Control
-	Lists (ACLs) on SMB file shares. An ACL is comprised zero or more Access
+	Lists (ACLs) on SMB file shares. An ACL comprises zero or more Access
 	Control Entries (ACEs), which define access restrictions for a specific
 	user or group.</para>
 </refsect1>

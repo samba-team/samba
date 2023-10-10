@@ -710,7 +710,7 @@ Comma Separated list of Files
 	<para><command>rpcclient</command> is designed as a developer testing tool
 	and may not be robust in certain areas (such as command line parsing).
 	It has been known to  generate a core dump upon failures when invalid
-	parameters where passed to the interpreter. </para>
+	parameters were passed to the interpreter. </para>
 
 	<para>From Luke Leighton's original rpcclient man page:</para>
 

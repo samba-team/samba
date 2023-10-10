@@ -23,7 +23,7 @@
 	tools like rsync that copy data blobs from xattrs that represent ACLs
 	created by the acl_xattr VFS module will result in copies of the ACL
 	that are identical to the source. Without this option, the copied ACLs
-	would all loose the DI flag if set on the source.</para>
+	would all lose the DI flag if set on the source.</para>
 </description>
 
 <value type="default">yes</value>
