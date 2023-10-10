@@ -171,6 +171,29 @@ class OptionParser(optparse.OptionParser):
         return super().check_values(values, args)
 
 
+class OptionGroup(optparse.OptionGroup):
+    """Samba OptionGroup base class.
+
+    Provides a generic set_option method to be used as Option callback,
+    so that one doesn't need to be created for every available Option.
+
+    Also overrides the add_option method, so it correctly initialises
+    the defaults on the OptionGroup.
+    """
+
+    def add_option(self, *args, **kwargs):
+        """Override add_option so it applies defaults during constructor."""
+        opt = super().add_option(*args, **kwargs)
+        default = None if opt.default == optparse.NO_DEFAULT else opt.default
+        self.set_option(opt, opt.get_opt_string(), default, self.parser)
+        return opt
+
+    def set_option(self, option, opt_str, arg, parser):
+        """Callback to set the attribute based on the Option dest name."""
+        dest = option.dest or option._long_opts[0][2:].replace("-", "_")
+        setattr(self, dest, arg)
+
+
 class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
 

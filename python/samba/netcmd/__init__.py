@@ -224,7 +224,7 @@ class Command(object):
         kwargs = dict(opts.__dict__)
         for option_group in parser.option_groups:
             for option in option_group.option_list:
-                if option.dest is not None:
+                if option.dest is not None and option.dest in kwargs:
                     del kwargs[option.dest]
         kwargs.update(optiongroups)
 

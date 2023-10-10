@@ -29,6 +29,75 @@ from samba.netcmd.domain.models.exceptions import ModelError
 from samba.netcmd.validators import Range
 
 
+class UserOptions(options.OptionGroup):
+    """User options used by policy create and policy modify commands."""
+
+    def __init__(self, parser):
+        super().__init__(parser, "User Options")
+
+        self.add_option("--user-tgt-lifetime",
+                        help="Ticket-Granting-Ticket lifetime for user accounts.",
+                        dest="tgt_lifetime", type=int, action="callback",
+                        callback=self.set_option,
+                        validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)])
+        self.add_option("--user-allow-ntlm-auth",
+                        help="Allow NTLM network authentication when user "
+                             "is restricted to selected devices.",
+                        dest="allow_ntlm_auth", default=False,
+                        action="callback", callback=self.set_option)
+        self.add_option("--user-allowed-to-authenticate-from",
+                        help="Conditions user is allowed to authenticate from.",
+                        type=str, dest="allowed_to_authenticate_from",
+                        action="callback", callback=self.set_option)
+        self.add_option("--user-allowed-to-authenticate-to",
+                        help="Conditions user is allowed to authenticate to.",
+                        type=str, dest="allowed_to_authenticate_to",
+                        action="callback", callback=self.set_option)
+
+
+class ServiceOptions(options.OptionGroup):
+    """Service options used by policy create and policy modify commands."""
+
+    def __init__(self, parser):
+        super().__init__(parser, "Service Options")
+
+        self.add_option("--service-tgt-lifetime",
+                        help="Ticket-Granting-Ticket lifetime for service accounts.",
+                        dest="tgt_lifetime", type=int, action="callback",
+                        callback=self.set_option,
+                        validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)])
+        self.add_option("--service-allow-ntlm-auth",
+                        help="Allow NTLM network authentication when service "
+                             "is restricted to selected devices.",
+                        dest="allow_ntlm_auth", default=False,
+                        action="callback", callback=self.set_option)
+        self.add_option("--service-allowed-to-authenticate-from",
+                        help="Conditions service is allowed to authenticate from.",
+                        type=str, dest="allowed_to_authenticate_from",
+                        action="callback", callback=self.set_option)
+        self.add_option("--service-allowed-to-authenticate-to",
+                        help="Conditions service is allowed to authenticate to.",
+                        type=str, dest="allowed_to_authenticate_to",
+                        action="callback", callback=self.set_option)
+
+
+class ComputerOptions(options.OptionGroup):
+    """Computer options used by policy create and policy modify commands."""
+
+    def __init__(self, parser):
+        super().__init__(parser, "Computer Options")
+
+        self.add_option("--computer-tgt-lifetime",
+                        help="Ticket-Granting-Ticket lifetime for computer accounts.",
+                        dest="tgt_lifetime", type=int, action="callback",
+                        callback=self.set_option,
+                        validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)])
+        self.add_option("--computer-allowed-to-authenticate-to",
+                        help="Conditions computer is allowed to authenticate to.",
+                        type=str, dest="allowed_to_authenticate_to",
+                        action="callback", callback=self.set_option)
+
+
 class cmd_domain_auth_policy_list(Command):
     """List authentication policies on the domain."""
 
@@ -108,6 +177,9 @@ class cmd_domain_auth_policy_create(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "hostopts": options.HostOptions,
+        "useropts": UserOptions,
+        "serviceopts": ServiceOptions,
+        "computeropts": ComputerOptions,
     }
 
     takes_options = [
@@ -133,53 +205,12 @@ class cmd_domain_auth_policy_create(Command):
                dest="strong_ntlm_policy", type="choice", action="store",
                choices=StrongNTLMPolicy.get_choices(),
                default="Disabled"),
-        Option("--user-tgt-lifetime",
-               help="Ticket-Granting-Ticket lifetime for user accounts.",
-               dest="user_tgt_lifetime", type=int, action="store",
-               validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)]),
-        Option("--user-allow-ntlm-auth",
-               help="Allow NTLM network authentication when user "
-                    "is restricted to selected devices.",
-               dest="user_allow_ntlm_auth", action="store_true",
-               default=False),
-        Option("--user-allowed-to-authenticate-from",
-               help="Conditions user is allowed to authenticate from.",
-               dest="user_allowed_to_authenticate_from", type=str, action="store"),
-        Option("--user-allowed-to-authenticate-to",
-               help="Conditions user is allowed to authenticate to.",
-               dest="user_allowed_to_authenticate_to", type=str, action="store"),
-        Option("--service-tgt-lifetime",
-               help="Ticket-Granting-Ticket lifetime for service accounts.",
-               dest="service_tgt_lifetime", type=int, action="store",
-               validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)]),
-        Option("--service-allow-ntlm-auth",
-               help="Allow NTLM network authentication when service "
-                    "is restricted to selected devices.",
-               dest="service_allow_ntlm_auth", action="store_true",
-               default=False),
-        Option("--service-allowed-to-authenticate-from",
-               help="Conditions service is allowed to authenticate from.",
-               dest="service_allowed_to_authenticate_from", type=str, action="store"),
-        Option("--service-allowed-to-authenticate-to",
-               help="Conditions service is allowed to authenticate to.",
-               dest="service_allowed_to_authenticate_to", type=str, action="store"),
-        Option("--computer-tgt-lifetime",
-               help="Ticket-Granting-Ticket lifetime for computer accounts.",
-               dest="computer_tgt_lifetime", type=int, action="store",
-               validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)]),
-        Option("--computer-allowed-to-authenticate-to",
-               help="Conditions computer is allowed to authenticate to.",
-               dest="computer_allowed_to_authenticate_to", type=str, action="store"),
     ]
 
-    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
-            description=None, protect=None, unprotect=None, audit=None,
-            enforce=None, strong_ntlm_policy=None, user_tgt_lifetime=None,
-            user_allow_ntlm_auth=None, user_allowed_to_authenticate_from=None,
-            user_allowed_to_authenticate_to=None, service_tgt_lifetime=None,
-            service_allow_ntlm_auth=None, service_allowed_to_authenticate_from=None,
-            service_allowed_to_authenticate_to=None, computer_tgt_lifetime=None,
-            computer_allowed_to_authenticate_to=None):
+    def run(self, hostopts=None, sambaopts=None, credopts=None, useropts=None,
+            serviceopts=None, computeropts=None, name=None, description=None,
+            protect=None, unprotect=None, audit=None, enforce=None,
+            strong_ntlm_policy=None):
 
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
@@ -202,16 +233,16 @@ class cmd_domain_auth_policy_create(Command):
             cn=name,
             description=description,
             strong_ntlm_policy=StrongNTLMPolicy[strong_ntlm_policy.upper()],
-            user_allow_ntlm_auth=user_allow_ntlm_auth,
-            user_tgt_lifetime=user_tgt_lifetime,
-            user_allowed_to_authenticate_from=user_allowed_to_authenticate_from,
-            user_allowed_to_authenticate_to=user_allowed_to_authenticate_to,
-            service_allow_ntlm_auth=service_allow_ntlm_auth,
-            service_tgt_lifetime=service_tgt_lifetime,
-            service_allowed_to_authenticate_from=service_allowed_to_authenticate_from,
-            service_allowed_to_authenticate_to=service_allowed_to_authenticate_to,
-            computer_tgt_lifetime=computer_tgt_lifetime,
-            computer_allowed_to_authenticate_to=computer_allowed_to_authenticate_to,
+            user_allow_ntlm_auth=useropts.allow_ntlm_auth,
+            user_tgt_lifetime=useropts.tgt_lifetime,
+            user_allowed_to_authenticate_from=useropts.allowed_to_authenticate_from,
+            user_allowed_to_authenticate_to=useropts.allowed_to_authenticate_to,
+            service_allow_ntlm_auth=serviceopts.allow_ntlm_auth,
+            service_tgt_lifetime=serviceopts.tgt_lifetime,
+            service_allowed_to_authenticate_from=serviceopts.allowed_to_authenticate_from,
+            service_allowed_to_authenticate_to=serviceopts.allowed_to_authenticate_to,
+            computer_tgt_lifetime=computeropts.tgt_lifetime,
+            computer_allowed_to_authenticate_to=computeropts.allowed_to_authenticate_to,
         )
 
         # Either --enforce will be set or --audit but never both.
@@ -243,6 +274,9 @@ class cmd_domain_auth_policy_modify(Command):
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "hostopts": options.HostOptions,
+        "useropts": UserOptions,
+        "serviceopts": ServiceOptions,
+        "computeropts": ComputerOptions,
     }
 
     takes_options = [
@@ -267,53 +301,12 @@ class cmd_domain_auth_policy_modify(Command):
                help=f"Strong NTLM Policy ({StrongNTLMPolicy.choices_str()}).",
                dest="strong_ntlm_policy", type="choice", action="store",
                choices=StrongNTLMPolicy.get_choices()),
-        Option("--user-tgt-lifetime",
-               help="Ticket-Granting-Ticket lifetime for user accounts.",
-               dest="user_tgt_lifetime", type=int, action="store",
-               validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)]),
-        Option("--user-allow-ntlm-auth",
-               help="Allow NTLM network authentication when user "
-                    "is restricted to selected devices.",
-               dest="user_allow_ntlm_auth", action="store_true",
-               default=False),
-        Option("--user-allowed-to-authenticate-from",
-               help="Conditions user is allowed to authenticate from.",
-               dest="user_allowed_to_authenticate_from", type=str, action="store"),
-        Option("--user-allowed-to-authenticate-to",
-               help="Conditions user is allowed to authenticate to.",
-               dest="user_allowed_to_authenticate_to", type=str, action="store"),
-        Option("--service-tgt-lifetime",
-               help="Ticket-Granting-Ticket lifetime for service accounts.",
-               dest="service_tgt_lifetime", type=int, action="store",
-               validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)]),
-        Option("--service-allow-ntlm-auth",
-               help="Allow NTLM network authentication when service "
-                    "is restricted to selected devices.",
-               dest="service_allow_ntlm_auth", action="store_true",
-               default=False),
-        Option("--service-allowed-to-authenticate-from",
-               help="Conditions service is allowed to authenticate from.",
-               dest="service_allowed_to_authenticate_from", type=str, action="store"),
-        Option("--service-allowed-to-authenticate-to",
-               help="Conditions service is allowed to authenticate to.",
-               dest="service_allowed_to_authenticate_to", type=str, action="store"),
-        Option("--computer-tgt-lifetime",
-               help="Ticket-Granting-Ticket lifetime for computer accounts.",
-               dest="computer_tgt_lifetime", type=int, action="store",
-               validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)]),
-        Option("--computer-allowed-to-authenticate-to",
-               help="Conditions computer is allowed to authenticate to.",
-               dest="computer_allowed_to_authenticate_to", type=str, action="store"),
     ]
 
-    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
-            description=None, protect=None, unprotect=None, audit=None,
-            enforce=None, strong_ntlm_policy=None, user_tgt_lifetime=None,
-            user_allow_ntlm_auth=None, user_allowed_to_authenticate_from=None,
-            user_allowed_to_authenticate_to=None, service_tgt_lifetime=None,
-            service_allow_ntlm_auth=None, service_allowed_to_authenticate_from=None,
-            service_allowed_to_authenticate_to=None, computer_tgt_lifetime=None,
-            computer_allowed_to_authenticate_to=None):
+    def run(self, hostopts=None, sambaopts=None, credopts=None, useropts=None,
+            serviceopts=None, computeropts=None, name=None, description=None,
+            protect=None, unprotect=None, audit=None, enforce=None,
+            strong_ntlm_policy=None):
 
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
@@ -348,40 +341,40 @@ class cmd_domain_auth_policy_modify(Command):
             policy.strong_ntlm_policy = \
                 StrongNTLMPolicy[strong_ntlm_policy.upper()]
 
-        if user_tgt_lifetime is not None:
-            policy.user_tgt_lifetime = user_tgt_lifetime
+        if useropts.tgt_lifetime is not None:
+            policy.user_tgt_lifetime = useropts.tgt_lifetime
 
-        if user_allowed_to_authenticate_from is not None:
+        if useropts.allowed_to_authenticate_from is not None:
             policy.user_allowed_to_authenticate_from = \
-                user_allowed_to_authenticate_from
+                useropts.allowed_to_authenticate_from
 
-        if user_allowed_to_authenticate_to is not None:
+        if useropts.allowed_to_authenticate_to is not None:
             policy.user_allowed_to_authenticate_to = \
-                user_allowed_to_authenticate_to
+                useropts.allowed_to_authenticate_to
 
         # Service sign on
         ##################
 
-        if service_tgt_lifetime is not None:
-            policy.service_tgt_lifetime = service_tgt_lifetime
+        if serviceopts.tgt_lifetime is not None:
+            policy.service_tgt_lifetime = serviceopts.tgt_lifetime
 
-        if service_allowed_to_authenticate_from is not None:
+        if serviceopts.allowed_to_authenticate_from is not None:
             policy.service_allowed_to_authenticate_from = \
-                service_allowed_to_authenticate_from
+                serviceopts.allowed_to_authenticate_from
 
-        if service_allowed_to_authenticate_to is not None:
+        if serviceopts.allowed_to_authenticate_to is not None:
             policy.service_allowed_to_authenticate_to = \
-                service_allowed_to_authenticate_to
+                serviceopts.allowed_to_authenticate_to
 
         # Computer
         ###########
 
-        if computer_tgt_lifetime is not None:
-            policy.computer_tgt_lifetime = computer_tgt_lifetime
+        if computeropts.tgt_lifetime is not None:
+            policy.computer_tgt_lifetime = computeropts.tgt_lifetime
 
-        if computer_allowed_to_authenticate_to is not None:
+        if computeropts.allowed_to_authenticate_to is not None:
             policy.computer_allowed_to_authenticate_to = \
-                computer_allowed_to_authenticate_to
+                computeropts.allowed_to_authenticate_to
 
         # Update policy.
         try:
