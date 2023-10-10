@@ -332,7 +332,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	const struct samba_kdc_entry *client_krbtgt_skdc_entry = NULL;
 	struct samba_kdc_entry *proxy_skdc_entry = NULL;
-	const struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *client_info = NULL;
 	struct samba_kdc_entry_pac client_pac_entry = {};
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_error_code code;
@@ -359,7 +359,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 					  context,
 					  kdc_db_ctx->samdb,
 					  client_pac_entry,
-					  &user_info_dc,
+					  &client_info,
 					  NULL /* resource_groups_out */);
 	if (code != 0) {
 		goto out;
@@ -369,7 +369,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 					      kdc_db_ctx,
 					      client->principal,
 					      server_principal,
-					      user_info_dc,
+					      client_info,
 					      proxy_skdc_entry);
 out:
 	talloc_free(mem_ctx);
