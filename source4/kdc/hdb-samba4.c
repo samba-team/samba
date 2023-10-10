@@ -318,9 +318,13 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 
 static krb5_error_code
 hdb_samba4_check_rbcd(krb5_context context, HDB *db,
-		      krb5_const_principal client_principal,
+		      const hdb_entry *client_krbtgt,
+		      const hdb_entry *client,
+		      const hdb_entry *device_krbtgt,
+		      const hdb_entry *device,
 		      krb5_const_principal server_principal,
 		      krb5_const_pac header_pac,
+		      krb5_const_pac device_pac,
 		      const hdb_entry *proxy)
 {
 	struct samba_kdc_db_context *kdc_db_ctx = NULL;
@@ -333,7 +337,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 	return samba_kdc_check_s4u2proxy_rbcd(context,
 					      kdc_db_ctx,
-					      client_principal,
+					      client->principal,
 					      server_principal,
 					      header_pac,
 					      proxy_skdc_entry);

@@ -341,8 +341,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 					     const hdb_entry *client,
 					     const hdb_entry *krbtgt,
 					     const krb5_pac pac,
-					     krb5_cksumtype ctype,
-					     krb5_boolean *is_trusted_out)
+					     krb5_cksumtype ctype)
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	struct samba_kdc_entry *client_skdc_entry = NULL;
@@ -448,10 +447,6 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 				   krbtgt_skdc_entry);
 	if (ret != 0) {
 		goto out;
-	}
-
-	if (is_trusted_out != NULL) {
-		*is_trusted_out = is_trusted;
 	}
 
 out:
@@ -587,8 +582,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 					    hdb_entry *_server,
 					    hdb_entry *krbtgt,
 					    EncTicketPart *ticket,
-					    krb5_pac pac,
-					    krb5_boolean *is_trusted)
+					    krb5_pac pac)
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
@@ -719,8 +713,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 				    client,
 				    krbtgt,
 				    pac,
-				    ctype,
-				    is_trusted);
+				    ctype);
 
 	if (krbtgt == &signing_krbtgt_hdb) {
 		hdb_free_entry(context, config->db[0], &signing_krbtgt_hdb);
