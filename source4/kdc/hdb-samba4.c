@@ -329,18 +329,41 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 {
 	struct samba_kdc_db_context *kdc_db_ctx = NULL;
 	struct samba_kdc_entry *proxy_skdc_entry = NULL;
+	struct auth_user_info_dc *user_info_dc = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	krb5_error_code code;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 	proxy_skdc_entry = talloc_get_type_abort(proxy->context,
 						 struct samba_kdc_entry);
 
-	return samba_kdc_check_s4u2proxy_rbcd(context,
+	mem_ctx = talloc_new(kdc_db_ctx);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	code = kerberos_pac_to_user_info_dc(mem_ctx,
+					    header_pac,
+					    context,
+					    &user_info_dc,
+					    AUTH_INCLUDE_RESOURCE_GROUPS,
+					    NULL,
+					    NULL,
+					    NULL);
+	if (code != 0) {
+		goto out;
+	}
+
+	code = samba_kdc_check_s4u2proxy_rbcd(context,
 					      kdc_db_ctx,
 					      client->principal,
 					      server_principal,
-					      header_pac,
+					      user_info_dc,
 					      proxy_skdc_entry);
+out:
+	talloc_free(mem_ctx);
+	return code;
 }
 
 static krb5_error_code

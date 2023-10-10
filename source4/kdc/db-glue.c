@@ -3374,7 +3374,7 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		struct samba_kdc_db_context *kdc_db_ctx,
 		krb5_const_principal client_principal,
 		krb5_const_principal server_principal,
-		krb5_const_pac header_pac,
+		const struct auth_user_info_dc *user_info_dc,
 		struct samba_kdc_entry *proxy_skdc_entry)
 {
 	krb5_error_code code;
@@ -3384,7 +3384,6 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	const char *proxy_dn = NULL;
 	const DATA_BLOB *data = NULL;
 	struct security_descriptor *rbcd_security_descriptor = NULL;
-	struct auth_user_info_dc *user_info_dc = NULL;
 	struct security_token *security_token = NULL;
 	uint32_t session_info_flags =
 		AUTH_SESSION_INFO_DEFAULT_GROUPS |
@@ -3452,18 +3451,6 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		 client_name,
 		 server_name,
 		 proxy_dn);
-
-	code = kerberos_pac_to_user_info_dc(mem_ctx,
-					    header_pac,
-					    context,
-					    &user_info_dc,
-					    AUTH_INCLUDE_RESOURCE_GROUPS,
-					    NULL,
-					    NULL,
-					    NULL);
-	if (code != 0) {
-		goto out;
-	}
 
 	if (!(user_info_dc->info->user_flags & NETLOGON_GUEST)) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
