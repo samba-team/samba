@@ -35,5 +35,12 @@ struct files_struct *fcb_or_dos_open(
 	uint32_t private_flags);
 bool send_keepalive(int client);
 ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags);
+NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
+					   connection_struct *conn,
+					   char *name_in,
+					   uint32_t ucf_flags,
+					   struct files_struct **_dirfsp,
+					   struct smb_filename **_smb_fname_out,
+					   char **_mask_out);
 
 #endif

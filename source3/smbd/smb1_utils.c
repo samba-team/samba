@@ -176,3 +176,86 @@ ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags)
 
 	return result;
 }
+
+/*
+ * Deal with the SMB1 semantics of sending a pathname with a
+ * wildcard as the terminal component for a SMB1search or
+ * trans2 findfirst.
+ */
+
+NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
+					   connection_struct *conn,
+					   char *name_in,
+					   uint32_t ucf_flags,
+					   struct files_struct **_dirfsp,
+					   struct smb_filename **_smb_fname_out,
+					   char **_mask_out)
+{
+	NTSTATUS status;
+	char *p = NULL;
+	char *mask = NULL;
+	struct smb_filename *smb_fname = NULL;
+	NTTIME twrp = 0;
+
+	*_smb_fname_out = NULL;
+	*_dirfsp = NULL;
+	*_mask_out = NULL;
+
+	DBG_DEBUG("name_in: %s\n", name_in);
+
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(name_in, &twrp);
+		ucf_flags &= ~UCF_GMT_PATHNAME;
+	}
+
+	/* Get the original lcomp. */
+	mask = get_original_lcomp(ctx, conn, name_in, ucf_flags);
+	if (mask == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (mask[0] == '\0') {
+		/* Windows and OS/2 systems treat search on the root as * */
+		TALLOC_FREE(mask);
+		mask = talloc_strdup(ctx, "*");
+		if (mask == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	DBG_DEBUG("mask = %s\n", mask);
+
+	/*
+	 * Remove the terminal component so
+	 * filename_convert_dirfsp never sees the mask.
+	 */
+	p = strrchr_m(name_in, '/');
+	if (p == NULL) {
+		/* filename_convert_dirfsp handles a '\0' name. */
+		name_in[0] = '\0';
+	} else {
+		*p = '\0';
+	}
+
+	DBG_DEBUG("For filename_convert_dirfsp: name_in = %s\n", name_in);
+
+	/* Convert the parent directory path. */
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 name_in,
+					 ucf_flags,
+					 twrp,
+					 _dirfsp,
+					 &smb_fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("filename_convert error for %s: %s\n",
+			  name_in,
+			  nt_errstr(status));
+	}
+
+	*_smb_fname_out = talloc_move(ctx, &smb_fname);
+	*_mask_out = talloc_move(ctx, &mask);
+
+	return status;
+}
