@@ -15764,6 +15764,10 @@ static struct {
 		.fn    = run_oplock_cancel,
 	},
 	{
+		.name  = "SMB2-INVALID-PIPENAME",
+		.fn    = run_smb2_invalid_pipename,
+	},
+	{
 		.name  = "SMB1-TRUNCATED-SESSSETUP",
 		.fn    = run_smb1_truncated_sesssetup,
 	},

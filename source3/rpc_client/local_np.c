@@ -542,6 +542,19 @@ struct tevent_req *local_np_connect_send(
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * Ensure we cannot process a path that exits
+	 * the socket_dir.
+	 */
+	if (ISDOTDOT(lower_case_pipename) ||
+	    (strchr(lower_case_pipename, '/')!=NULL))
+	{
+		DBG_DEBUG("attempt to connect to invalid pipe pathname %s\n",
+			lower_case_pipename);
+		tevent_req_error(req, ENOENT);
+		return tevent_req_post(req, ev);
+	}
+
 	state->socketpath = talloc_asprintf(
 		state, "%s/np/%s", socket_dir, lower_case_pipename);
 	if (tevent_req_nomem(state->socketpath, req)) {
