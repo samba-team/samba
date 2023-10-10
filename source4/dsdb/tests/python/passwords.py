@@ -1365,12 +1365,12 @@ userPassword: thatsAcomplPASS4
     def test_zero_length(self):
         # Get the old "minPwdLength"
         minPwdLength = self.ldb.get_minPwdLength()
-        # Set it temporarely to "0"
+        # Set it temporarily to "0"
         self.ldb.set_minPwdLength("0")
 
         # Get the old "pwdProperties"
         pwdProperties = self.ldb.get_pwdProperties()
-        # Set them temporarely to "0" (to deactivate eventually the complexity)
+        # Set them temporarily to "0" (to deactivate eventually the complexity)
         self.ldb.set_pwdProperties("0")
 
         self.ldb.setpassword("(sAMAccountName=testuser)", "")

@@ -852,7 +852,7 @@ class UserAccountControlTests(samba.tests.TestCase):
             self.add_computer_ldap(computername, others={"userAccountControl": [str(bit_add)]})
             delete_force(self.admin_samdb, "CN=%s,%s" % (computername, self.OU))
             if bit in priv_bits:
-                self.fail("Unexpectdly able to set userAccountControl bit 0x%08X (%s) on %s"
+                self.fail("Unexpectedly able to set userAccountControl bit 0x%08X (%s) on %s"
                           % (bit, bit_str, computername))
 
         except LdbError as e4:

@@ -38,6 +38,7 @@ bld.SAMBA3_BINARY('rpcd_rpcecho',
                   RPC_WORKER
                   RPC_RPCECHO
                   ''',
+                  for_selftest=True,
                   install_path='${SAMBA_LIBEXECDIR}')
 
 bld.SAMBA3_BINARY('rpcd_classic',

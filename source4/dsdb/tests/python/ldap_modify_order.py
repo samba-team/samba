@@ -101,7 +101,7 @@ class ModifyOrderTests(samba.tests.TestCase):
 
         clusters = {}
         for i, attrs in enumerate(permutations(mod_attrs)):
-            # for each permuation we construct a string describing the
+            # for each permutation we construct a string describing the
             # requested operations, and a string describing the result
             # (which may be an exception). The we cluster the
             # attribute strings by their results.
@@ -249,7 +249,7 @@ class ModifyOrderTests(samba.tests.TestCase):
         self._test_modify_order(start_attrs, mod_attrs)
 
     def test_modify_order_inapplicable(self):
-        #attrbutes that don't go on a user
+        #attributes that don't go on a user
         start_attrs = [("objectclass", "user"),
                        ("givenName", "a")]
 

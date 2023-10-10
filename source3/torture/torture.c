@@ -15764,6 +15764,10 @@ static struct {
 		.fn    = run_smb2_dfs_filename_leading_backslash,
 	},
 	{
+		.name  = "SMB2-INVALID-PIPENAME",
+		.fn    = run_smb2_invalid_pipename,
+	},
+	{
 		.name  = "SMB2-PIPE-READ-ASYNC-DISCONNECT",
 		.fn    = run_smb2_pipe_read_async_disconnect,
 	},

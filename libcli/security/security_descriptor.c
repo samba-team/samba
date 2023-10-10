@@ -268,9 +268,11 @@ NTSTATUS security_descriptor_for_client(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 					    bool add_to_sacl,
-					    const struct security_ace *ace)
+					    const struct security_ace *ace,
+					    ssize_t _idx)
 {
 	struct security_acl *acl = NULL;
+	ssize_t idx;
 
 	if (add_to_sacl) {
 		acl = sd->sacl;
@@ -289,15 +291,28 @@ static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 		acl->aces     = NULL;
 	}
 
+	if (_idx < 0) {
+		idx = (acl->num_aces + 1) + _idx;
+	} else {
+		idx = _idx;
+	}
+
+	if (idx < 0) {
+		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
+	} else if (idx > acl->num_aces) {
+		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
+	}
+
 	acl->aces = talloc_realloc(acl, acl->aces,
 				   struct security_ace, acl->num_aces+1);
 	if (acl->aces == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	acl->aces[acl->num_aces] = *ace;
+	ARRAY_INSERT_ELEMENT(acl->aces, acl->num_aces, *ace, idx);
+	acl->num_aces++;
 
-	switch (acl->aces[acl->num_aces].type) {
+	switch (acl->aces[idx].type) {
 	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
 	case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 	case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
@@ -307,8 +322,6 @@ static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 	default:
 		break;
 	}
-
-	acl->num_aces++;
 
 	if (add_to_sacl) {
 		sd->sacl = acl;
@@ -328,7 +341,21 @@ static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 NTSTATUS security_descriptor_sacl_add(struct security_descriptor *sd,
 				      const struct security_ace *ace)
 {
-	return security_descriptor_acl_add(sd, true, ace);
+	return security_descriptor_acl_add(sd, true, ace, -1);
+}
+
+/*
+  insert an ACE at a given index to the SACL of a security_descriptor
+
+  idx can be negative, which means it's related to the new size from the
+  end, so -1 means the ace is appended at the end.
+*/
+
+NTSTATUS security_descriptor_sacl_insert(struct security_descriptor *sd,
+					 const struct security_ace *ace,
+					 ssize_t idx)
+{
+	return security_descriptor_acl_add(sd, true, ace, idx);
 }
 
 /*
@@ -338,7 +365,21 @@ NTSTATUS security_descriptor_sacl_add(struct security_descriptor *sd,
 NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 				      const struct security_ace *ace)
 {
-	return security_descriptor_acl_add(sd, false, ace);
+	return security_descriptor_acl_add(sd, false, ace, -1);
+}
+
+/*
+  insert an ACE at a given index to the DACL of a security_descriptor
+
+  idx can be negative, which means it's related to the new size from the
+  end, so -1 means the ace is appended at the end.
+*/
+
+NTSTATUS security_descriptor_dacl_insert(struct security_descriptor *sd,
+					 const struct security_ace *ace,
+					 ssize_t idx)
+{
+	return security_descriptor_acl_add(sd, false, ace, idx);
 }
 
 /*
