@@ -247,7 +247,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (authentication_was_compounded) {
+	if (authentication_was_compounded && num_device_sids) {
 		ptoken->device_sids = talloc_array(ptoken, struct dom_sid, num_device_sids);
 		if (ptoken->device_sids == NULL) {
 			talloc_free(ptoken);
