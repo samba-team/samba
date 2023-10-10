@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
+#include "kdc/pac-glue.h"
 #include "auth/auth_sam.h"
 #include "auth/common_auth.h"
 #include "auth/authn_policy.h"
@@ -328,13 +329,20 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 		      const hdb_entry *proxy)
 {
 	struct samba_kdc_db_context *kdc_db_ctx = NULL;
+	struct samba_kdc_entry *client_skdc_entry = NULL;
+	const struct samba_kdc_entry *client_krbtgt_skdc_entry = NULL;
 	struct samba_kdc_entry *proxy_skdc_entry = NULL;
-	struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *user_info_dc = NULL;
+	struct samba_kdc_entry_pac client_pac_entry = {};
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_error_code code;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
+	client_skdc_entry = talloc_get_type_abort(client->context,
+						  struct samba_kdc_entry);
+	client_krbtgt_skdc_entry = talloc_get_type_abort(client_krbtgt->context,
+							 struct samba_kdc_entry);
 	proxy_skdc_entry = talloc_get_type_abort(proxy->context,
 						 struct samba_kdc_entry);
 
@@ -343,14 +351,16 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 		return ENOMEM;
 	}
 
-	code = kerberos_pac_to_user_info_dc(mem_ctx,
-					    header_pac,
-					    context,
-					    &user_info_dc,
-					    AUTH_INCLUDE_RESOURCE_GROUPS,
-					    NULL,
-					    NULL,
-					    NULL);
+	client_pac_entry = samba_kdc_entry_pac(header_pac,
+					       client_skdc_entry,
+					       samba_kdc_entry_is_trust(client_krbtgt_skdc_entry));
+
+	code = samba_kdc_get_user_info_dc(mem_ctx,
+					  context,
+					  kdc_db_ctx->samdb,
+					  client_pac_entry,
+					  &user_info_dc,
+					  NULL /* resource_groups_out */);
 	if (code != 0) {
 		goto out;
 	}
