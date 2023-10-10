@@ -322,7 +322,7 @@ static ssize_t pull_composite(TALLOC_CTX *mem_ctx,
 		uint8_t *el_data = NULL;
 		size_t available;
 		bool ok;
-		el->type = data[i];
+		*el = (struct ace_condition_token) { .type = data[i] };
 		i++;
 
 		el_data = data + i;
