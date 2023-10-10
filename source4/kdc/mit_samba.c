@@ -840,6 +840,12 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 		return ENOMEM;
 	}
 
+	/*
+	 * FIXME: If ever we support RODCs, we must check that the PAC has not
+	 * been issued by an RODC (other than ourselves) — otherwise the PAC
+	 * cannot be trusted. Because the plugin interface does not give us the
+	 * client entry, we cannot look up its groups in the database.
+	 */
 	code = kerberos_pac_to_user_info_dc(mem_ctx,
 					    header_pac,
 					    ctx->context,
