@@ -2435,7 +2435,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
 	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
-	enum samba_compounded_auth compounded_auth;
+	bool compounded_auth;
 	size_t i = 0;
 
 	if (server_audit_info_out != NULL) {
@@ -2473,13 +2473,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
 	}
 
-	if (device.entry != NULL && !is_tgs) {
-		compounded_auth = SAMBA_COMPOUNDED_AUTH_INCLUDE;
-	} else {
-		compounded_auth = SAMBA_COMPOUNDED_AUTH_EXCLUDE;
-	}
+	compounded_auth = device.entry != NULL && !is_tgs;
 
-	if (device.entry != NULL && !is_tgs) {
+	if (compounded_auth) {
 		struct claims_data *device_claims = NULL;
 
 		code = samba_kdc_get_claims_data(tmp_ctx,
@@ -2609,28 +2605,33 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(tmp_ctx,
-						      user_info_dc_const,
-						      &user_info_dc_shallow_copy);
-	user_info_dc_const = NULL;
+	if (compounded_auth) {
+		/* Make a shallow copy of the user_info_dc structure. */
+		nt_status = authsam_shallow_copy_user_info_dc(tmp_ctx,
+							      user_info_dc_const,
+							      &user_info_dc_shallow_copy);
+		user_info_dc_const = NULL;
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to copy user_info_dc: %s\n",
-			nt_errstr(nt_status));
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to copy user_info_dc: %s\n",
+				nt_errstr(nt_status));
 
-		code = KRB5KDC_ERR_TGT_REVOKED;
-		goto done;
-	}
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
 
-	nt_status = samba_kdc_add_compounded_auth(compounded_auth,
-						  user_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Compounded Authentication: %s\n",
-			nt_errstr(nt_status));
+		nt_status = samba_kdc_add_compounded_auth(SAMBA_COMPOUNDED_AUTH_INCLUDE,
+							  user_info_dc_shallow_copy);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add Compounded Authentication: %s\n",
+				nt_errstr(nt_status));
 
-		code = KRB5KDC_ERR_TGT_REVOKED;
-		goto done;
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+
+		/* We can now set back to the const, it will not be modified */
+		user_info_dc_const = user_info_dc_shallow_copy;
 	}
 
 	if (samba_krb5_pac_is_trusted(client)) {
@@ -2641,7 +2642,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_get_logon_info_pac_blob(tmp_ctx,
-							  user_info_dc_shallow_copy,
+							  user_info_dc_const,
 							  _resource_groups,
 							  group_inclusion,
 							  pac_blob);
@@ -2662,7 +2663,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
-							  user_info_dc_shallow_copy,
+							  user_info_dc_const,
 							  group_inclusion,
 							  &pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2673,7 +2674,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		nt_status = samba_kdc_get_upn_info_blob(tmp_ctx,
-							user_info_dc_shallow_copy,
+							user_info_dc_const,
 							&upn_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_upn_info_blob failed: %s\n",
@@ -2684,7 +2685,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		if (is_tgs) {
 			nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
-								     user_info_dc_shallow_copy,
+								     user_info_dc_const,
 								     &requester_sid_blob);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DBG_ERR("samba_kdc_get_requester_sid_blob failed: %s\n",
