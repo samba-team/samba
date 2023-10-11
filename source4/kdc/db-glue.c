@@ -626,6 +626,24 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 	}
 
+	if (flags & SDB_F_USER2USER_PRINCIPAL) {
+		/*
+		 * User2User uses the session key
+		 * from the additional ticket,
+		 * so we just provide random keys
+		 * here in order to make sure
+		 * we never expose the user password
+		 * keys.
+		 */
+		ret = samba_kdc_set_random_keys(context,
+						supported_enctypes,
+						&entry->keys);
+
+		*supported_enctypes_out = supported_enctypes & ENC_ALL_TYPES;
+
+		goto out;
+	}
+
 	if ((ent_type == SAMBA_KDC_ENT_TYPE_CLIENT)
 	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
 		ret = samba_kdc_set_random_keys(context,
@@ -1099,6 +1117,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	const struct authn_kerberos_client_policy *authn_client_policy = NULL;
 	const struct authn_server_policy *authn_server_policy = NULL;
 	int64_t enforced_tgt_lifetime_raw;
+	const bool user2user = (flags & SDB_F_USER2USER_PRINCIPAL);
 
 	*entry = (struct sdb_entry) {};
 
@@ -1185,12 +1204,17 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 */
 	entry->flags.force_canonicalize = true;
 
-	/* Windows 2008 seems to enforce this (very sensible) rule by
+	/*
+	 * Windows 2008 seems to enforce this (very sensible) rule by
 	 * default - don't allow offline attacks on a user's password
 	 * by asking for a ticket to them as a service (encrypted with
-	 * their probably pathetically insecure password) */
+	 * their probably pathetically insecure password)
+	 *
+	 * But user2user avoids using the keys bases on the password,
+	 * so we can allow it.
+	 */
 
-	if (entry->flags.server
+	if (entry->flags.server && !user2user
 	    && lpcfg_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
 		if (!is_computer && !ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL)) {
 			entry->flags.server = 0;
