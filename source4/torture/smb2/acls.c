@@ -3076,7 +3076,7 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	ZERO_STRUCT(handle);
 
 	for (i = 0; i < ARRAY_SIZE(tcases); i++) {
-		torture_comment(tctx, "Verify open with %s dispostion\n",
+		torture_comment(tctx, "Verify open with %s disposition\n",
 				tcases[i].disposition_string);
 
 		c = (struct smb2_create) {
