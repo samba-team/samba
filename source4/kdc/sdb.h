@@ -140,7 +140,6 @@ struct sdb_entry {
 void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
 void sdb_entry_free(struct sdb_entry *e);
-struct SDBFlags int2SDBFlags(unsigned n);
 krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s);
 krb5_error_code sdb_entry_set_session_etypes(struct sdb_entry *s,
 					     bool add_aes256,

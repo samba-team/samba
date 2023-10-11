@@ -102,34 +102,6 @@ void sdb_entry_free(struct sdb_entry *s)
 	ZERO_STRUCTP(s);
 }
 
-struct SDBFlags int2SDBFlags(unsigned n)
-{
-	struct SDBFlags flags;
-
-	memset(&flags, 0, sizeof(flags));
-
-	flags.initial = (n >> 0) & 1;
-	flags.forwardable = (n >> 1) & 1;
-	flags.proxiable = (n >> 2) & 1;
-	flags.renewable = (n >> 3) & 1;
-	flags.postdate = (n >> 4) & 1;
-	flags.server = (n >> 5) & 1;
-	flags.client = (n >> 6) & 1;
-	flags.invalid = (n >> 7) & 1;
-	flags.require_preauth = (n >> 8) & 1;
-	flags.change_pw = (n >> 9) & 1;
-	flags.require_hwauth = (n >> 10) & 1;
-	flags.ok_as_delegate = (n >> 11) & 1;
-	flags.user_to_user = (n >> 12) & 1;
-	flags.immutable = (n >> 13) & 1;
-	flags.trusted_for_delegation = (n >> 14) & 1;
-	flags.allow_kerberos4 = (n >> 15) & 1;
-	flags.allow_digest = (n >> 16) & 1;
-	flags.locked_out = (n >> 17) & 1;
-	flags.do_not_store = (n >> 31) & 1;
-	return flags;
-}
-
 /* Set the etypes of an sdb_entry based on its available current keys. */
 krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s)
 {
