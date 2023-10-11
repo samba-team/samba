@@ -1076,6 +1076,29 @@ class KdcTgsTests(KdcTgsBaseTests):
         tgt = self._get_tgt(creds)
         self._user2user(tgt, creds, expected_error=0)
 
+    def test_user2user_user_self_req(self):
+        creds = self._get_user_creds()
+        tgt = self._get_tgt(creds)
+        username = creds.get_username()
+        sname = self.PrincipalName_create(
+                        name_type=NT_PRINCIPAL,
+                        names=[username])
+        self._user2user(tgt, creds, sname=sname, user_tgt=tgt, user_creds=creds, expected_error=0)
+
+    def test_user2user_computer_self_princ1_req(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+        username = creds.get_username()
+        sname = self.PrincipalName_create(
+                        name_type=NT_PRINCIPAL,
+                        names=[username])
+        self._user2user(tgt, creds, sname=sname, user_tgt=tgt, user_creds=creds, expected_error=0)
+
+    def test_user2user_computer_self_princ2_req(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+        self._user2user(tgt, creds, user_tgt=tgt, user_creds=creds, expected_error=0)
+
     def test_fast_req(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
@@ -3112,6 +3135,19 @@ class KdcTgsTests(KdcTgsBaseTests):
                 'denied_replication_mock': False,
                 'revealed_to_mock_rodc': True,
                 'id': 2
+            })
+
+    def _get_user_creds(self,
+                   replication_allowed=False,
+                   replication_denied=False,
+                   revealed_to_rodc=False):
+        return self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={
+                'allowed_replication_mock': replication_allowed,
+                'denied_replication_mock': replication_denied,
+                'revealed_to_mock_rodc': revealed_to_rodc,
+                'id': 3
             })
 
     def _get_non_existent_rid(self):
