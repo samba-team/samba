@@ -421,7 +421,8 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				  krb5_pac *pac)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *user_info_dc = NULL;
+	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
 	DATA_BLOB *logon_info_blob = NULL;
 	DATA_BLOB *upn_dns_info_blob = NULL;
 	DATA_BLOB *cred_ndr = NULL;
@@ -494,8 +495,22 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		return code;
 	}
 
+	/* Make a shallow copy of the user_info_dc structure. */
+	nt_status = authsam_shallow_copy_user_info_dc(tmp_ctx,
+						      user_info_dc,
+						      &user_info_dc_shallow_copy);
+	user_info_dc = NULL;
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to allocate shallow copy of user_info_dc: %s\n",
+			nt_errstr(nt_status));
+		talloc_free(tmp_ctx);
+		return map_errno_from_nt_status(nt_status);
+	}
+
+
 	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
-						    user_info_dc);
+						    user_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
@@ -504,13 +519,16 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	}
 
 	nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
-					       user_info_dc);
+					       user_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
 		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
+
+	/* We no longer need to modify this, so assign to const variable */
+	user_info_dc = user_info_dc_shallow_copy;
 
 	nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
 						  user_info_dc,
@@ -901,7 +919,7 @@ krb5_error_code mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo;
 	const char *error_string = NULL;
-	struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *user_info_dc = NULL;
 	struct samba_kdc_entry *p =
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	krb5_error_code code = 0;

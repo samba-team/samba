@@ -111,7 +111,7 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 						struct ldb_context *samdb,
 						struct samba_kdc_entry *entry,
 						const struct ldb_message *msg,
-						struct auth_user_info_dc **info_out);
+						const struct auth_user_info_dc **info_out);
 
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status);
 

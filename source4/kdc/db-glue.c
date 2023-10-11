@@ -1471,7 +1471,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
 		int result;
-		struct auth_user_info_dc *user_info_dc = NULL;
+		const struct auth_user_info_dc *user_info_dc = NULL;
 		/*
 		 * These protections only apply to clients, so servers in the
 		 * Protected Users group may still have service tickets to them

@@ -103,7 +103,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	struct authn_audit_info *server_audit_info = NULL;
 	NTSTATUS reply_status = NT_STATUS_OK;
 
-	struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *user_info_dc_const = NULL;
+	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
 
 	/* Only include resource groups in a service ticket. */
 	if (is_krbtgt) {
@@ -127,14 +128,27 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 					      server_entry->kdc_db_ctx->samdb,
 					      skdc_entry,
 					      skdc_entry->msg,
-					      &user_info_dc);
+					      &user_info_dc_const);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
+	/* Make a shallow copy of the user_info_dc structure. */
+	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx,
+						      user_info_dc_const,
+						      &user_info_dc_shallow_copy);
+	user_info_dc_const = NULL;
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
+			nt_errstr(nt_status));
+		talloc_free(mem_ctx);
+		return map_errno_from_nt_status(nt_status);
+	}
+
 	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
-						    user_info_dc);
+						    user_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add asserted identity: %s\n",
 			nt_errstr(nt_status));
@@ -143,7 +157,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	nt_status = samba_kdc_add_claims_valid(SAMBA_CLAIMS_VALID_INCLUDE,
-					       user_info_dc);
+					       user_info_dc_shallow_copy);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("Failed to add Claims Valid: %s\n",
 			nt_errstr(nt_status));
@@ -159,7 +173,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 							   server_entry->kdc_db_ctx->samdb,
 							   server_entry->kdc_db_ctx->lp_ctx,
 							   skdc_entry,
-							   user_info_dc,
+							   user_info_dc_shallow_copy,
 							   server_entry,
 							   &server_audit_info,
 							   &reply_status);
@@ -186,7 +200,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
-						  user_info_dc,
+						  user_info_dc_shallow_copy,
 						  group_inclusion,
 						  &logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -205,7 +219,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
-						user_info_dc,
+						user_info_dc_shallow_copy,
 						&upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -222,7 +236,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		}
 
 		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
-							     user_info_dc,
+							     user_info_dc_shallow_copy,
 							     &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
