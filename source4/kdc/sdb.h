@@ -120,6 +120,7 @@ struct sdb_entry {
 #define SDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
 #define SDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
 #define SDB_F_ARMOR_PRINCIPAL 262144	/* fetch is for the client of an armor ticket */
+#define SDB_F_USER2USER_PRINCIPAL 524288/* fetch is for the server of a user2user tgs-req */
 
 #define SDB_F_HDB_MASK		(SDB_F_DECRYPT | \
 				 SDB_F_GET_CLIENT| \
@@ -130,7 +131,8 @@ struct sdb_entry {
 				 SDB_F_KVNO_SPECIFIED | \
 				 SDB_F_FOR_AS_REQ | \
 				 SDB_F_FOR_TGS_REQ | \
-				 SDB_F_ARMOR_PRINCIPAL)
+				 SDB_F_ARMOR_PRINCIPAL| \
+				 SDB_F_USER2USER_PRINCIPAL)
 
 /* This is not supported by HDB */
 #define SDB_F_FORCE_CANON	16384	/* force canonicalization */
