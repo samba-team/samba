@@ -148,7 +148,7 @@ static time_t ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const cha
 
 static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountControl, enum samba_kdc_ent_type ent_type)
 {
-	struct SDBFlags flags = int2SDBFlags(0);
+	struct SDBFlags flags = {};
 
 	/* we don't allow kadmin deletes */
 	flags.immutable = 1;
@@ -2172,7 +2172,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		entry->keys.len++;
 	}
 
-	entry->flags = int2SDBFlags(0);
+	entry->flags = (struct SDBFlags) {};
 	entry->flags.immutable = 1;
 	entry->flags.invalid = 0;
 	entry->flags.server = 1;
