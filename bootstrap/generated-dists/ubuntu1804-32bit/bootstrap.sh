@@ -21,6 +21,7 @@ apt-get -y install \
     build-essential \
     ccache \
     chrpath \
+    codespell \
     curl \
     debhelper \
     dnsutils \
@@ -100,6 +101,7 @@ apt-get -y install \
     rng-tools \
     rsync \
     sed \
+    shellcheck \
     sudo \
     tar \
     tree \

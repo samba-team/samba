@@ -10,6 +10,7 @@ packages:
   - build-essential
   - ccache
   - chrpath
+  - codespell
   - curl
   - debhelper
   - dnsutils
@@ -89,6 +90,8 @@ packages:
   - rng-tools
   - rsync
   - sed
+  - shellcheck
+  - shfmt
   - sudo
   - tar
   - tree
