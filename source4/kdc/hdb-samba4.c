@@ -711,7 +711,7 @@ static krb5_error_code hdb_samba4_set_edata_from_ntstatus(hdb_request_t r, const
 		return ret;
 	}
 
-	ret = kdc_set_e_data((astgs_request_t)r, e_data);
+	ret = kdc_request_set_e_data((astgs_request_t)r, e_data);
 	if (ret) {
 		krb5_data_free(&e_data);
 	}
