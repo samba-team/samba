@@ -391,8 +391,6 @@ samba-fips:
 samba-codecheck:
   extends: .shared_template
   needs:
-  variables:
-    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora38}
   stage: build_first
 
 .private_test_only:
