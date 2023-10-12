@@ -22,6 +22,8 @@
 
 from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE, LdbError, Message, MessageElement
 
+from samba.sd_utils import escaped_claim_id
+
 from .exceptions import AddMemberError, RemoveMemberError
 from .fields import DnField, BooleanField, StringField
 from .model import Model
@@ -96,3 +98,7 @@ class AuthenticationSilo(Model):
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])
+
+    def get_authentication_sddl(self):
+        return ("O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/"
+                f"AuthenticationSilo/{escaped_claim_id(self.name)}))")

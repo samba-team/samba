@@ -153,6 +153,28 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
+    def test_create__user_allowed_to_authenticate_from_silo(self):
+        """Tests the --user-allowed-to-authenticate-from-silo shortcut."""
+        name = self.unique_name()
+
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-from-silo",
+                                       "Developers")
+        self.assertIsNone(result, msg=err)
+
+        # Check policy fields.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+
+        # Check generated SDDL.
+        desc = policy["msDS-UserAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(
+            sddl,
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Developers))")
+
     def test_create__service_tgt_lifetime_mins(self):
         """Test create a new authentication policy with --service-tgt-lifetime-mins.
 
@@ -186,6 +208,28 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         self.assertEqual(result, -1)
         self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
+
+    def test_create__service_allowed_to_authenticate_from_silo(self):
+        """Tests the --service-allowed-to-authenticate-from-silo shortcut."""
+        name = self.unique_name()
+
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-from-silo",
+                                       "Managers")
+        self.assertIsNone(result, msg=err)
+
+        # Check policy fields.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
+
+        # Check generated SDDL.
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(
+            sddl,
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Managers))")
 
     def test_create__computer_tgt_lifetime_mins(self):
         """Test create a new authentication policy with --computer-tgt-lifetime-mins.
@@ -315,6 +359,44 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         self.assertEqual(result, -1)
         self.assertIn("--protect and --unprotect cannot be used together.", err)
+
+    def test_create__user_allowed_to_authenticate_from_repeated(self):
+        """Test repeating similar arguments doesn't make sense to use together.
+
+        --user-allowed-to-authenticate-from
+        --user-allowed-to-authenticate-from-silo
+        """
+        sddl = "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Developers))"
+        name = self.unique_name()
+
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-from",
+                                       sddl,
+                                       "--user-allowed-to-authenticate-from-silo",
+                                       "Managers")
+
+        self.assertEqual(result, -1)
+        self.assertIn("--user-allowed-to-authenticate-from argument repeated 2 times.", err)
+
+    def test_create__service_allowed_to_authenticate_from_repeated(self):
+        """Test repeating similar arguments doesn't make sense to use together.
+
+        --service-allowed-to-authenticate-from
+        --service-allowed-to-authenticate-from-silo
+        """
+        sddl = "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Managers))"
+        name = self.unique_name()
+
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-from",
+                                       sddl,
+                                       "--service-allowed-to-authenticate-from-silo",
+                                       "QA")
+
+        self.assertEqual(result, -1)
+        self.assertIn("--service-allowed-to-authenticate-from argument repeated 2 times.", err)
 
     def test_create__fails(self):
         """Test creating an authentication policy, but it fails."""
@@ -504,6 +586,29 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
 
+    def test_modify__user_allowed_to_authenticate_from_silo(self):
+        """Test the --user-allowed-to-authenticate-from-silo shortcut."""
+        name = self.unique_name()
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify user allowed to authenticate from silo field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-from-silo",
+                                       "QA")
+        self.assertIsNone(result, msg=err)
+
+        # Check generated SDDL.
+        policy = self.get_authentication_policy(name)
+        desc = policy["msDS-UserAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(
+            sddl,
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/QA))")
+
     def test_modify__user_allowed_to_authenticate_to(self):
         """Modify authentication policy user allowed to authenticate to."""
         name = self.unique_name()
@@ -549,6 +654,29 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
+
+    def test_modify__service_allowed_to_authenticate_from_silo(self):
+        """Test the --service-allowed-to-authenticate-from-silo shortcut."""
+        name = self.unique_name()
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify user allowed to authenticate from silo field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-from-silo",
+                                       "Developers")
+        self.assertIsNone(result, msg=err)
+
+        # Check generated SDDL.
+        policy = self.get_authentication_policy(name)
+        desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(
+            sddl,
+            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Developers))")
 
     def test_modify__service_allowed_to_authenticate_to(self):
         """Modify authentication policy service allowed to authenticate to."""

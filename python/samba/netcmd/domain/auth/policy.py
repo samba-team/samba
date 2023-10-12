@@ -22,11 +22,22 @@
 
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option, SuperCommand
-from samba.netcmd.domain.models import AuthenticationPolicy
+from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 from samba.netcmd.domain.models.auth_policy import MIN_TGT_LIFETIME,\
     MAX_TGT_LIFETIME, StrongNTLMPolicy
 from samba.netcmd.domain.models.exceptions import ModelError
 from samba.netcmd.validators import Range
+
+
+def check_similar_args(option, args):
+    """Helper method for checking similar mutually exclusive args.
+
+    Example: --user-allowed-to-authenticate-from and
+             --user-allowed-to-authenticate-from-silo
+    """
+    num = sum(arg is not None for arg in args)
+    if num > 1:
+        raise CommandError(f"{option} argument repeated {num} times.")
 
 
 class UserOptions(options.OptionGroup):
@@ -48,6 +59,10 @@ class UserOptions(options.OptionGroup):
         self.add_option("--user-allowed-to-authenticate-from",
                         help="Conditions user is allowed to authenticate from.",
                         type=str, dest="allowed_to_authenticate_from",
+                        action="callback", callback=self.set_option)
+        self.add_option("--user-allowed-to-authenticate-from-silo",
+                        help="User is allowed to authenticate from silo.",
+                        type=str, dest="allowed_to_authenticate_from_silo",
                         action="callback", callback=self.set_option)
         self.add_option("--user-allowed-to-authenticate-to",
                         help="Conditions user is allowed to authenticate to.",
@@ -74,6 +89,10 @@ class ServiceOptions(options.OptionGroup):
         self.add_option("--service-allowed-to-authenticate-from",
                         help="Conditions service is allowed to authenticate from.",
                         type=str, dest="allowed_to_authenticate_from",
+                        action="callback", callback=self.set_option)
+        self.add_option("--service-allowed-to-authenticate-from-silo",
+                        help="Service is allowed to authenticate from silo.",
+                        type=str, dest="allowed_to_authenticate_from_silo",
                         action="callback", callback=self.set_option)
         self.add_option("--service-allowed-to-authenticate-to",
                         help="Conditions service is allowed to authenticate to.",
@@ -217,7 +236,27 @@ class cmd_domain_auth_policy_create(Command):
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
 
+        # Check for repeated, similar arguments.
+        check_similar_args("--user-allowed-to-authenticate-from",
+                           [useropts.allowed_to_authenticate_from,
+                            useropts.allowed_to_authenticate_from_silo])
+        check_similar_args("--service-allowed-to-authenticate-from",
+                           [serviceopts.allowed_to_authenticate_from,
+                            serviceopts.allowed_to_authenticate_from_silo])
+
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
+
+        # Generate SDDL for authenticating users from a silo
+        if useropts.allowed_to_authenticate_from_silo:
+            silo = AuthenticationSilo.get(
+                ldb, cn=useropts.allowed_to_authenticate_from_silo)
+            useropts.allowed_to_authenticate_from = silo.get_authentication_sddl()
+
+        # Generate SDDL for authenticating service accounts from a silo
+        if serviceopts.allowed_to_authenticate_from_silo:
+            silo = AuthenticationSilo.get(
+                ldb, cn=serviceopts.allowed_to_authenticate_from_silo)
+            serviceopts.allowed_to_authenticate_from = silo.get_authentication_sddl()
 
         try:
             policy = AuthenticationPolicy.get(ldb, cn=name)
@@ -313,7 +352,27 @@ class cmd_domain_auth_policy_modify(Command):
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
 
+        # Check for repeated, similar arguments.
+        check_similar_args("--user-allowed-to-authenticate-from",
+                           [useropts.allowed_to_authenticate_from,
+                            useropts.allowed_to_authenticate_from_silo])
+        check_similar_args("--service-allowed-to-authenticate-from",
+                           [serviceopts.allowed_to_authenticate_from,
+                            serviceopts.allowed_to_authenticate_from_silo])
+
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
+
+        # Generate SDDL for authenticating users from a silo
+        if useropts.allowed_to_authenticate_from_silo:
+            silo = AuthenticationSilo.get(
+                ldb, cn=useropts.allowed_to_authenticate_from_silo)
+            useropts.allowed_to_authenticate_from = silo.get_authentication_sddl()
+
+        # Generate SDDL for authenticating service accounts from a silo
+        if serviceopts.allowed_to_authenticate_from_silo:
+            silo = AuthenticationSilo.get(
+                ldb, cn=serviceopts.allowed_to_authenticate_from_silo)
+            serviceopts.allowed_to_authenticate_from = silo.get_authentication_sddl()
 
         try:
             policy = AuthenticationPolicy.get(ldb, cn=name)
