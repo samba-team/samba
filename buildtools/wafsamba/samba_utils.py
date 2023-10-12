@@ -710,8 +710,9 @@ def samba_before_apply_obj_vars(self):
     """before apply_obj_vars for uselib, this removes the standard paths"""
 
     def is_standard_libpath(env, path):
+        normalized_path = os.path.normpath(path)
         for _path in env.STANDARD_LIBPATH:
-            if _path == os.path.normpath(path):
+            if _path == normalized_path:
                 return True
         return False
 
