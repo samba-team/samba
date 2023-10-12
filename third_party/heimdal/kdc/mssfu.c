@@ -106,8 +106,12 @@ check_rbcd(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   HDB *clientdb,
 	   krb5_const_principal s4u_principal,
-	   krb5_const_principal client_principal,
+	   const hdb_entry *client_krbtgt,
+	   const hdb_entry *client,
+	   const hdb_entry *device_krbtgt,
+	   const hdb_entry *device,
 	   krb5_const_pac client_pac,
+	   krb5_const_pac device_pac,
 	   const hdb_entry *target)
 {
     krb5_error_code ret = KRB5KDC_ERR_BADOPTION;
@@ -115,9 +119,13 @@ check_rbcd(krb5_context context,
     if (clientdb->hdb_check_rbcd) {
 	ret = clientdb->hdb_check_rbcd(context,
 				       clientdb,
+				       client_krbtgt,
+				       client,
+				       device_krbtgt,
+				       device,
 				       s4u_principal,
-				       client_principal,
 				       client_pac,
+				       device_pac,
 				       target);
 	if (ret == 0)
 	    return 0;
@@ -520,7 +528,11 @@ _kdc_validate_constrained_delegation(astgs_request_t r)
 
     if (rbcd_support) {
 	ret = check_rbcd(r->context, r->config, r->clientdb,
-			 s4u_client_name, r->client_princ, r->pac, r->server);
+			 s4u_client_name,
+			 r->krbtgt, r->client,
+			 r->armor_server, r->armor_client,
+			 r->pac, r->armor_pac,
+			 r->server);
     } else {
 	ret = KRB5KDC_ERR_BADOPTION;
     }

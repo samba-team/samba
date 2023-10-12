@@ -147,7 +147,6 @@ struct verify_uc {
     hdb_entry *krbtgt;
     EncTicketPart *ticket;
     krb5_pac pac;
-    krb5_boolean *is_trusted;
 };
 
 static krb5_error_code KRB5_LIB_CALL
@@ -165,8 +164,7 @@ verify(krb5_context context, const void *plug, void *plugctx, void *userctx)
 			 uc->client_principal,
 			 uc->delegated_proxy,
 			 uc->client, uc->server, uc->krbtgt,
-			 uc->ticket, uc->pac,
-			 uc->is_trusted);
+			 uc->ticket, uc->pac);
     return ret;
 }
 
@@ -178,8 +176,7 @@ _kdc_pac_verify(astgs_request_t r,
 		hdb_entry *server,
 		hdb_entry *krbtgt,
 		EncTicketPart *ticket,
-		krb5_pac pac,
-		krb5_boolean *is_trusted)
+		krb5_pac pac)
 {
     struct verify_uc uc;
 
@@ -194,7 +191,6 @@ _kdc_pac_verify(astgs_request_t r,
     uc.krbtgt = krbtgt;
     uc.ticket = ticket,
     uc.pac = pac;
-    uc.is_trusted = is_trusted;
 
     return _krb5_plugin_run_f(r->context, &kdc_plugin_data,
 			     0, &uc, verify);

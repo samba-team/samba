@@ -96,7 +96,6 @@ _kdc_check_pac(astgs_request_t r,
     krb5_pac pac = NULL;
     krb5_error_code ret;
     krb5_boolean signedticket;
-    krb5_boolean is_trusted = FALSE;
 
     *kdc_issued = FALSE;
     *ppac = NULL;
@@ -126,12 +125,8 @@ _kdc_check_pac(astgs_request_t r,
     /* Verify the KDC signatures. */
     ret = _kdc_pac_verify(r,
 			  client_principal, delegated_proxy,
-			  client, server, krbtgt, tkt, pac, &is_trusted);
+			  client, server, krbtgt, tkt, pac);
     if (ret == 0) {
-	if (is_trusted) {
-	    krb5_pac_set_trusted(pac, TRUE);
-	}
-
 	if (pac_canon_name) {
 	    ret = _krb5_pac_get_canon_principal(context, pac, pac_canon_name);
 	    if (ret && ret != ENOENT) {

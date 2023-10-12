@@ -57,9 +57,7 @@ typedef krb5_error_code
 
 /*
  * Verify the PAC KDC signatures by fetching the appropriate TGS key
- * and calling krb5_pac_verify() with that key. The possibly-NULL
- * is_trusted may be set by the plugin to indicate that the PAC was
- * issued by a trusted server, and not, for example, by an RODC.
+ * and calling krb5_pac_verify() with that key.
  */
 
 typedef krb5_error_code
@@ -71,8 +69,7 @@ typedef krb5_error_code
 					   hdb_entry *,/* server */
 					   hdb_entry *,/* krbtgt */
 					   EncTicketPart *, /* ticket */
-					   krb5_pac, /* pac */
-					   krb5_boolean *); /* is_trusted */
+					   krb5_pac); /* pac */
 
 /*
  * Update the KDC PAC buffers. This function may be used after verifying the PAC

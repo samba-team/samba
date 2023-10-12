@@ -289,7 +289,7 @@ typedef struct HDB {
     /**
      * Check if resource-based constrained delegation (RBCD) is allowed.
      */
-    krb5_error_code (*hdb_check_rbcd)(krb5_context, struct HDB *, krb5_const_principal, krb5_const_principal, krb5_const_pac, const hdb_entry *);
+    krb5_error_code (*hdb_check_rbcd)(krb5_context, struct HDB *, const hdb_entry *, const hdb_entry *, const hdb_entry *, const hdb_entry *, krb5_const_principal, krb5_const_pac, krb5_const_pac, const hdb_entry *);
 
     /**
      * Check if this name is an alias for the supplied client for PKINIT userPrinicpalName logins

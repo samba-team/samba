@@ -1249,7 +1249,7 @@ krb5_pac_verify(krb5_context context,
     /*
      * If we are in the KDC, we expect back a full signature in the PAC
      *
-     * This is set up as a seperate variable to make it easier if a
+     * This is set up as a separate variable to make it easier if a
      * subsequent patch is added to make this configurable in the
      * krb5.conf (or forced into the krb5_context via Samba)
      */
@@ -1257,8 +1257,8 @@ krb5_pac_verify(krb5_context context,
 
     /*
      * If we are on the KDC, then we trust we are not in a realm with
-     * buggy Windows 2008 or similar era DCs that give our HMAC-MD5
-     * sigatures over AES keys.  DES is also already gone.
+     * buggy Windows 2008 or similar era DCs that give out HMAC-MD5
+     * signatures over AES keys.  DES is also already gone.
      */
     krb5_boolean strict_cksumtype_match = expect_full_sig;
 
