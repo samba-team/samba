@@ -600,10 +600,7 @@ static void dcesrv_lsa_LookupSids_base_done(struct tevent_req *subreq)
 	state->r.out.result = status;
 	dcesrv_lsa_LookupSids_base_map(state);
 
-	status = dcesrv_reply(dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
-	}
+	dcesrv_async_reply(dce_call);
 }
 
 /*
@@ -1284,10 +1281,7 @@ static void dcesrv_lsa_LookupNames_base_done(struct tevent_req *subreq)
 	state->r.out.result = status;
 	dcesrv_lsa_LookupNames_base_map(state);
 
-	status = dcesrv_reply(dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
-	}
+	dcesrv_async_reply(dce_call);
 }
 
 /*
