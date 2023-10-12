@@ -80,6 +80,8 @@ static int dcesrv_assoc_group_destructor(struct dcesrv_assoc_group *assoc_group)
 		DEBUG(0,(__location__ ": Failed to remove assoc_group 0x%08x\n",
 			 assoc_group->id));
 	}
+	SMB_ASSERT(assoc_group->dce_ctx->assoc_groups_num > 0);
+	assoc_group->dce_ctx->assoc_groups_num -= 1;
 	return 0;
 }
 
@@ -113,6 +115,9 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(struct dcesrv_connectio
 	assoc_group->dce_ctx = dce_ctx;
 
 	talloc_set_destructor(assoc_group, dcesrv_assoc_group_destructor);
+
+	SMB_ASSERT(dce_ctx->assoc_groups_num < UINT16_MAX);
+	dce_ctx->assoc_groups_num += 1;
 
 	return assoc_group;
 }

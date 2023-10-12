@@ -450,6 +450,7 @@ struct dcesrv_context {
 	struct loadparm_context *lp_ctx;
 
 	struct idr_context *assoc_groups_idr;
+	uint32_t assoc_groups_num;
 
 	struct dcesrv_connection *broken_connections;
 
