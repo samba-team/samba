@@ -1162,11 +1162,10 @@ fail:
 static struct rpc_work_process *rpc_host_find_worker(struct rpc_server *server)
 {
 	struct rpc_work_process *worker = NULL;
-	size_t i;
+	struct rpc_work_process *perfect_worker = NULL;
+	struct rpc_work_process *best_worker = NULL;
 	size_t empty_slot = SIZE_MAX;
-
-	uint32_t min_clients = UINT32_MAX;
-	size_t min_worker = server->max_workers;
+	size_t i;
 
 	for (i=0; i<server->max_workers; i++) {
 		worker = &server->workers[i];
@@ -1178,14 +1177,31 @@ static struct rpc_work_process *rpc_host_find_worker(struct rpc_server *server)
 		if (!worker->available) {
 			continue;
 		}
-		if (worker->num_clients < min_clients) {
-			min_clients = worker->num_clients;
-			min_worker = i;
+		if (worker->num_clients == 0) {
+			/*
+			 * We have an idle worker...
+			 */
+			perfect_worker = worker;
+			break;
+		}
+		if (best_worker == NULL) {
+			/*
+			 * It's busy, but the best so far...
+			 */
+			best_worker = worker;
+			continue;
+		}
+		if (worker->num_clients < best_worker->num_clients) {
+			/*
+			 * It's also busy, but has less clients
+			 */
+			best_worker = worker;
+			continue;
 		}
 	}
 
-	if (min_clients == 0) {
-		return &server->workers[min_worker];
+	if (perfect_worker != NULL) {
+		return perfect_worker;
 	}
 
 	if (empty_slot < SIZE_MAX) {
@@ -1197,8 +1213,8 @@ static struct rpc_work_process *rpc_host_find_worker(struct rpc_server *server)
 		return NULL;
 	}
 
-	if (min_worker < server->max_workers) {
-		return &server->workers[min_worker];
+	if (best_worker != NULL) {
+		return best_worker;
 	}
 
 	return NULL;
