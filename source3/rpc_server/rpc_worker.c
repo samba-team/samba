@@ -95,10 +95,12 @@ static void rpc_worker_print_interface(
 
 static NTSTATUS rpc_worker_report_status(struct rpc_worker *worker)
 {
-	uint8_t buf[12];
+	uint8_t buf[16];
 	DATA_BLOB blob = { .data = buf, .length = sizeof(buf), };
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
+
+	worker->status.num_association_groups = worker->dce_ctx->assoc_groups_num;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(rpc_worker_status, &worker->status);
@@ -129,7 +131,19 @@ static void rpc_worker_connection_terminated(
 	NTSTATUS status;
 	bool found = false;
 
-	SMB_ASSERT(worker->status.num_clients > 0);
+	/*
+	 * We need to drop the association group reference
+	 * explicitly here in order to avoid the order given
+	 * by the destructors. rpc_worker_report_status() below,
+	 * expects worker->dce_ctx->assoc_groups_num to be updated
+	 * already.
+	 */
+	if (conn->assoc_group != NULL) {
+		talloc_unlink(conn, conn->assoc_group);
+		conn->assoc_group = NULL;
+	}
+
+	SMB_ASSERT(worker->status.num_connections > 0);
 
 	for (w = worker->conns; w != NULL; w = w->next) {
 		if (w == ncacn_conn) {
@@ -141,7 +155,7 @@ static void rpc_worker_connection_terminated(
 
 	DLIST_REMOVE(worker->conns, ncacn_conn);
 
-	worker->status.num_clients -= 1;
+	worker->status.num_connections -= 1;
 
 	status = rpc_worker_report_status(worker);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -467,7 +481,7 @@ static void rpc_worker_new_client(
 	TALLOC_FREE(client);
 
 	DLIST_ADD(worker->conns, ncacn_conn);
-	worker->status.num_clients += 1;
+	worker->status.num_connections += 1;
 
 	dcesrv_loop_next_packet(dcesrv_conn, pkt, buffer);
 

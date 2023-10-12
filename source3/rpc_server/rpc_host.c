@@ -170,7 +170,8 @@ struct rpc_work_process {
 	 * MSG_RPC_HOST_WORKER_STATUS sent by workers whenever a
 	 * client exits.
 	 */
-	uint32_t num_clients;
+	uint32_t num_associations;
+	uint32_t num_connections;
 
 	/*
 	 * Send SHUTDOWN to an idle child after a while
@@ -1177,7 +1178,7 @@ static struct rpc_work_process *rpc_host_find_worker(struct rpc_server *server)
 		if (!worker->available) {
 			continue;
 		}
-		if (worker->num_clients == 0) {
+		if (worker->num_associations == 0) {
 			/*
 			 * We have an idle worker...
 			 */
@@ -1191,10 +1192,25 @@ static struct rpc_work_process *rpc_host_find_worker(struct rpc_server *server)
 			best_worker = worker;
 			continue;
 		}
-		if (worker->num_clients < best_worker->num_clients) {
+		if (worker->num_associations < best_worker->num_associations) {
 			/*
-			 * It's also busy, but has less clients
+			 * It's also busy, but has less association groups
+			 * (logical clients)
 			 */
+			best_worker = worker;
+			continue;
+		}
+		if (worker->num_associations > best_worker->num_associations) {
+			/*
+			 * It's not better
+			 */
+			continue;
+		}
+		/*
+		 * Ok, with the same number of association groups
+		 * we pick the one with the lowest number of connections
+		 */
+		if (worker->num_connections < best_worker->num_connections) {
 			best_worker = worker;
 			continue;
 		}
@@ -1242,7 +1258,7 @@ static struct rpc_work_process *rpc_host_find_idle_worker(
 		if (!worker->available) {
 			continue;
 		}
-		if (worker->num_clients == 0) {
+		if (worker->num_associations == 0) {
 			return &server->workers[i];
 		}
 	}
@@ -1374,11 +1390,13 @@ again:
 		goto done;
 	}
 
-	DBG_INFO("Sending %s client %s to %d with %"PRIu32" clients\n",
+	DBG_INFO("Sending %s client %s to %d with "
+		 "%"PRIu32" associations and %"PRIu32" connections\n",
 		 client_type,
 		 server->rpc_server_exe,
 		 worker->pid,
-		 worker->num_clients);
+		 worker->num_associations,
+		 worker->num_connections);
 
 	iov = (struct iovec) {
 		.iov_base = blob.data, .iov_len = blob.length,
@@ -1404,7 +1422,10 @@ again:
 			  nt_errstr(status));
 		goto done;
 	}
-	worker->num_clients += 1;
+	if (assoc_group_id == 0) {
+		worker->num_associations += 1;
+	}
+	worker->num_connections += 1;
 	TALLOC_FREE(worker->exit_timer);
 
 	TALLOC_FREE(server->host->np_helper_shutdown);
@@ -1850,7 +1871,7 @@ static void rpc_host_exit_worker(
 		}
 		w->exit_timer = NULL;
 
-		SMB_ASSERT(w->num_clients == 0);
+		SMB_ASSERT(w->num_associations == 0);
 
 		status = messaging_send(
 			server->host->msg_ctx,
@@ -1930,9 +1951,10 @@ static void rpc_host_child_status_recv(
 	}
 
 	worker->available = true;
-	worker->num_clients = status_message.num_clients;
+	worker->num_associations = status_message.num_association_groups;
+	worker->num_connections = status_message.num_connections;
 
-	if (worker->num_clients != 0) {
+	if (worker->num_associations != 0) {
 		TALLOC_FREE(worker->exit_timer);
 	} else {
 		worker->exit_timer = tevent_add_timer(
@@ -2333,10 +2355,11 @@ static bool rpc_host_dump_status_filter(
 			}
 
 			fprintf(f,
-				" worker[%zu]: pid=%d, num_clients=%"PRIu32"\n",
+				" worker[%zu]: pid=%d, num_associations=%"PRIu32", num_connections=%"PRIu32"\n",
 				j,
 				(int)w->pid,
-				w->num_clients);
+				w->num_associations,
+				w->num_connections);
 		}
 	}
 
