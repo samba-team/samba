@@ -61,7 +61,7 @@ interface rpc_host_msg
 		 * in its arrays to find the rpcd that sent this
 		 * message.
 		 */
-		uint8 server_index;
+		uint32 server_index;
 
 		/**
 		 * @brief Which of the processes of a helper prog is this from

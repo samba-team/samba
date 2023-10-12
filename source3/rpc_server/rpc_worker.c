@@ -95,7 +95,7 @@ static void rpc_worker_print_interface(
 
 static NTSTATUS rpc_worker_report_status(struct rpc_worker *worker)
 {
-	uint8_t buf[9];
+	uint8_t buf[12];
 	DATA_BLOB blob = { .data = buf, .length = sizeof(buf), };
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
