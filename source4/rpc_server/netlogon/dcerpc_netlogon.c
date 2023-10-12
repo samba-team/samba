@@ -1604,11 +1604,7 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 		_r->out.result = r->out.result;
 	}
 
-	status = dcesrv_reply(state->dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("dcesrv_reply() failed - %s\n",
-			nt_errstr(status));
-	}
+	dcesrv_async_reply(state->dce_call);
 }
 
 static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -2183,10 +2179,7 @@ static void dcesrv_netr_LogonControl_base_done(struct tevent_req *subreq)
 		r->out.result = state->r.out.result;
 	}
 
-	status = dcesrv_reply(state->dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
-	}
+	dcesrv_async_reply(state->dce_call);
 }
 
 /*
@@ -3672,11 +3665,7 @@ finished:
 	}
 
 	TALLOC_FREE(state);
-	status = dcesrv_reply(dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n",
-			 nt_errstr(status)));
-	}
+	dcesrv_async_reply(dce_call);
 }
 
 /*
@@ -4333,10 +4322,7 @@ static void dcesrv_netr_DsRGetForestTrustInformation_done(struct tevent_req *sub
 			 nt_errstr(status)));
 	}
 
-	status = dcesrv_reply(state->dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
-	}
+	dcesrv_async_reply(state->dce_call);
 }
 
 /*
@@ -4606,10 +4592,7 @@ static void netr_dnsupdate_RODC_callback(struct tevent_req *subreq)
 
 	st->r->out.dns_names = talloc_steal(st->dce_call, st->r2->out.dns_names);
 
-	status = dcesrv_reply(st->dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
-	}
+	dcesrv_async_reply(st->dce_call);
 }
 
 /*
