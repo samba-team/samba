@@ -984,8 +984,36 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 struct smbd_release_ip_state {
 	struct smbXsrv_connection *xconn;
 	struct tevent_immediate *im;
+	struct sockaddr_storage srv;
+	struct sockaddr_storage clnt;
 	char addr[INET6_ADDRSTRLEN];
 };
+
+static int release_ip(struct tevent_context *ev,
+		      uint32_t src_vnn,
+		      uint32_t dst_vnn,
+		      uint64_t dst_srvid,
+		      const uint8_t *msg,
+		      size_t msglen,
+		      void *private_data);
+
+static int smbd_release_ip_state_destructor(struct smbd_release_ip_state *s)
+{
+	struct ctdbd_connection *cconn = messaging_ctdb_connection();
+	struct smbXsrv_connection *xconn = s->xconn;
+
+	if (cconn == NULL) {
+		return 0;
+	}
+
+	if (NT_STATUS_EQUAL(xconn->transport.status, NT_STATUS_CONNECTION_IN_USE)) {
+		ctdbd_passed_ips(cconn, &s->srv, &s->clnt, release_ip, s);
+	} else {
+		ctdbd_unregister_ips(cconn, &s->srv, &s->clnt, release_ip, s);
+	}
+
+	return 0;
+}
 
 static void smbd_release_ip_immediate(struct tevent_context *ctx,
 				      struct tevent_immediate *im,
@@ -1129,6 +1157,8 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 	if (state->im == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	state->srv = *srv;
+	state->clnt = *clnt;
 	if (print_sockaddr(state->addr, sizeof(state->addr), srv) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1152,6 +1182,9 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
+
+	talloc_set_destructor(state, smbd_release_ip_state_destructor);
+
 	return NT_STATUS_OK;
 }
 
