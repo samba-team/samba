@@ -116,6 +116,16 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 				  const uint8_t *msg, size_t msglen,
 				  void *private_data),
 			void *private_data);
+void deregister_from_ctdbd(struct ctdbd_connection *conn,
+			   uint64_t srvid,
+			   int (*cb)(struct tevent_context *ev,
+				     uint32_t src_vnn,
+				     uint32_t dst_vnn,
+				     uint64_t dst_srvid,
+				     const uint8_t *msg,
+				     size_t msglen,
+				     void *private_data),
+			   void *private_data);
 int ctdbd_probe(const char *sockname, int timeout);
 
 struct ctdb_req_header;

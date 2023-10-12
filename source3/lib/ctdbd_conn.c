@@ -172,6 +172,73 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	return 0;
 }
 
+void deregister_from_ctdbd(struct ctdbd_connection *conn,
+			   uint64_t srvid,
+			   int (*cb)(struct tevent_context *ev,
+				     uint32_t src_vnn,
+				     uint32_t dst_vnn,
+				     uint64_t dst_srvid,
+				     const uint8_t *msg,
+				     size_t msglen,
+				     void *private_data),
+			   void *private_data)
+{
+	struct ctdbd_srvid_cb *cbs = conn->callbacks;
+	size_t i, num_callbacks = talloc_array_length(cbs);
+	bool need_deregister = false;
+	bool keep_registration = false;
+
+	if (num_callbacks == 0) {
+		return;
+	}
+
+	for (i = 0; i < num_callbacks;) {
+		struct ctdbd_srvid_cb *c = &cbs[i];
+
+		if (c->srvid != srvid) {
+			i++;
+			continue;
+		}
+
+		if ((c->cb == cb) && (c->private_data == private_data)) {
+			need_deregister = true;
+			ARRAY_DEL_ELEMENT(cbs, i, num_callbacks);
+			num_callbacks--;
+			continue;
+		}
+
+		keep_registration = true;
+		i++;
+	}
+
+	conn->callbacks = talloc_realloc(conn,
+					 cbs,
+					 struct ctdbd_srvid_cb,
+					 num_callbacks);
+
+	if (keep_registration) {
+		need_deregister = false;
+	}
+
+	if (need_deregister) {
+		int ret;
+		int32_t cstatus;
+
+		ret = ctdbd_control_local(conn, CTDB_CONTROL_DEREGISTER_SRVID,
+					  srvid, 0, tdb_null, NULL, NULL,
+					  &cstatus);
+		if (ret != 0) {
+			/*
+			 * If CTDB_CONTROL_DEREGISTER_SRVID fails we may still
+			 * get messages later, but we don't have a callback
+			 * anymore, we just ignore these.
+			 */
+		}
+	}
+
+	return;
+}
+
 static int ctdbd_msg_call_back(struct tevent_context *ev,
 			       struct ctdbd_connection *conn,
 			       struct ctdb_req_message_old *msg)
