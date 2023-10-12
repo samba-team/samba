@@ -481,6 +481,121 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         self.assertIn("--computer-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
+    def test_modify__user_allowed_to_authenticate_from(self):
+        """Modify authentication policy user allowed to authenticate from."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))"
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify user allowed to authenticate from field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-from",
+                                       expected)
+        self.assertIsNone(result, msg=err)
+
+        # Check user allowed to authenticate from field was modified.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-UserAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
+    def test_modify__user_allowed_to_authenticate_to(self):
+        """Modify authentication policy user allowed to authenticate to."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))"
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify user allowed to authenticate to field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-to",
+                                       expected)
+        self.assertIsNone(result, msg=err)
+
+        # Check user allowed to authenticate to field was modified.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-UserAllowedToAuthenticateTo"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
+    def test_modify__service_allowed_to_authenticate_from(self):
+        """Modify authentication policy service allowed to authenticate from."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))"
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify service allowed to authenticate from field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-from",
+                                       expected)
+        self.assertIsNone(result, msg=err)
+
+        # Check service allowed to authenticate from field was modified.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
+    def test_modify__service_allowed_to_authenticate_to(self):
+        """Modify authentication policy service allowed to authenticate to."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))"
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify service allowed to authenticate to field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-to",
+                                       expected)
+        self.assertIsNone(result, msg=err)
+
+        # Check service allowed to authenticate to field was modified.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-ServiceAllowedToAuthenticateTo"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
+    def test_modify__computer_allowed_to_authenticate_to(self):
+        """Modify authentication policy computer allowed to authenticate to."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))"
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify computer allowed to authenticate to field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--computer-allowed-to-authenticate-to",
+                                       expected)
+        self.assertIsNone(result, msg=err)
+
+        # Check computer allowed to authenticate to field was modified.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-ComputerAllowedToAuthenticateTo"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
     def test_modify__name_missing(self):
         """Test modify authentication but the --name argument is missing."""
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
