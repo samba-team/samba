@@ -374,11 +374,7 @@ static void remote_op_dispatch_done(struct tevent_req *subreq)
 	}
 
 reply:
-	status = dcesrv_reply(dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("dcesrv_remote: call[%s]: dcesrv_reply() failed - %s\n",
-			name, nt_errstr(status)));
-	}
+	_dcesrv_async_reply(dce_call, __func__, name);
 }
 
 static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
