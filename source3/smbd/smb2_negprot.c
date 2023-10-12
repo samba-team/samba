@@ -880,7 +880,14 @@ static void smbd_smb2_request_process_negprot_mc_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MESSAGE_RETRIEVED)) {
 		/*
 		 * The connection was passed to another process
+		 *
+		 * We mark the error as NT_STATUS_CONNECTION_IN_USE,
+		 * in order to indicate to low level code if
+		 * ctdbd_unregister_ips() or ctdbd_passed_ips()
+		 * is more useful.
 		 */
+		smbXsrv_connection_disconnect_transport(xconn,
+						NT_STATUS_CONNECTION_IN_USE);
 		smbd_server_connection_terminate(xconn,
 						 "passed connection");
 		/*

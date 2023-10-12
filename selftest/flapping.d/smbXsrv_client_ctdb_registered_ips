@@ -1,4 +1,0 @@
-^samba3.blackbox.smbXsrv_client_ctdb_registered_ips.step5:.ctdb_gettickles.NUM
-^samba3.blackbox.smbXsrv_client_ctdb_registered_ips.step5:.ctdb_gettickles.DST
-^samba3.blackbox.smbXsrv_client_ctdb_registered_ips.step6:.ctdb_gettickles.NUM
-^samba3.blackbox.smbXsrv_client_ctdb_registered_ips.step6:.ctdb_gettickles.DST
