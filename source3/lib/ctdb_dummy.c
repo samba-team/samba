@@ -49,6 +49,19 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	return ENOSYS;
 }
 
+void deregister_from_ctdbd(struct ctdbd_connection *conn,
+			   uint64_t srvid,
+			   int (*cb)(struct tevent_context *ev,
+				     uint32_t src_vnn,
+				     uint32_t dst_vnn,
+				     uint64_t dst_srvid,
+				     const uint8_t *msg,
+				     size_t msglen,
+				     void *private_data),
+			   void *private_data)
+{
+}
+
 int ctdbd_register_ips(struct ctdbd_connection *conn,
 		       const struct sockaddr_storage *_server,
 		       const struct sockaddr_storage *_client,
