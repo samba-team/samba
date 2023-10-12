@@ -1298,6 +1298,7 @@ static void rpc_host_distribute_clients(struct rpc_server *server)
 	struct iovec iov;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
+	const char *client_type = NULL;
 
 again:
 	pending_client = server->pending_clients;
@@ -1311,6 +1312,8 @@ again:
 	if (assoc_group_id != 0) {
 		size_t num_workers = talloc_array_length(server->workers);
 		uint16_t worker_index = assoc_group_id >> 16;
+
+		client_type = "associated";
 
 		if (worker_index >= num_workers) {
 			DBG_DEBUG("Invalid assoc group id %"PRIu32"\n",
@@ -1328,6 +1331,7 @@ again:
 			/*
 			 * Pick a random one for a proper bind nack
 			 */
+			client_type = "associated+lost";
 			worker = rpc_host_find_worker(server);
 		}
 	} else {
@@ -1336,20 +1340,24 @@ again:
 		uint32_t flags = 0;
 		bool found;
 
+		client_type = "new";
+
 		found = security_token_find_npa_flags(
 			session_info->session_info->security_token,
 			&flags);
 
 		/* fresh assoc group requested */
 		if (found & (flags & SAMBA_NPA_FLAGS_NEED_IDLE)) {
+			client_type = "new+exclusive";
 			worker = rpc_host_find_idle_worker(server);
 		} else {
+			client_type = "new";
 			worker = rpc_host_find_worker(server);
 		}
 	}
 
 	if (worker == NULL) {
-		DBG_DEBUG("No worker found\n");
+		DBG_DEBUG("No worker found for %s client\n", client_type);
 		return;
 	}
 
@@ -1366,7 +1374,8 @@ again:
 		goto done;
 	}
 
-	DBG_INFO("Sending new client %s to %d with %"PRIu32" clients\n",
+	DBG_INFO("Sending %s client %s to %d with %"PRIu32" clients\n",
+		 client_type,
 		 server->rpc_server_exe,
 		 worker->pid,
 		 worker->num_clients);
