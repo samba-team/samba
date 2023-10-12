@@ -1133,6 +1133,7 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	*info_out = NULL;
 
 	if (entry->info_from_db == NULL) {
+		struct auth_user_info_dc *info_from_db = NULL;
 		struct loadparm_context *lp_ctx = entry->kdc_db_ctx->lp_ctx;
 
 		nt_status = authsam_make_user_info_dc(entry,
@@ -1144,13 +1145,15 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 						      msg,
 						      data_blob_null,
 						      data_blob_null,
-						      &entry->info_from_db);
+						      &info_from_db);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("Getting user info for PAC failed: %s\n",
 				nt_errstr(nt_status));
 			/* NT_STATUS_OBJECT_NAME_NOT_FOUND is mapped to ENOENT. */
 			return map_errno_from_nt_status(nt_status);
 		}
+
+		entry->info_from_db = info_from_db;
 	}
 
 	*info_out = entry->info_from_db;

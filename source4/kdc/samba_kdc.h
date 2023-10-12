@@ -62,9 +62,9 @@ struct samba_kdc_entry {
 	struct ldb_dn *realm_dn;
 	struct claims_data *claims_from_pac;
 	struct claims_data *claims_from_db;
-	struct auth_user_info_dc *info_from_pac;
-	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_from_pac;
-	struct auth_user_info_dc *info_from_db;
+	const struct auth_user_info_dc *info_from_pac;
+	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups_from_pac;
+	const struct auth_user_info_dc *info_from_db;
 	const struct authn_kerberos_client_policy *client_policy;
 	const struct authn_server_policy *server_policy;
 	uint32_t supported_enctypes;
