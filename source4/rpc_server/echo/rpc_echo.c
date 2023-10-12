@@ -169,15 +169,10 @@ static void echo_TestSleep_handler(struct tevent_context *ev, struct tevent_time
 	struct echo_TestSleep_private *p = talloc_get_type(private_data,
 							   struct echo_TestSleep_private);
 	struct echo_TestSleep *r = p->r;
-	NTSTATUS status;
 
 	r->out.result = r->in.seconds;
 
-	status = dcesrv_reply(p->dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("echo_TestSleep_handler: dcesrv_reply() failed - %s\n",
-			nt_errstr(status)));
-	}
+	dcesrv_async_reply(p->dce_call);
 }
 
 static long dcesrv_echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
