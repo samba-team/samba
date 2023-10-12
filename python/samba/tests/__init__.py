@@ -61,6 +61,8 @@ HEXDUMP_FILTER = bytearray([x if ((len(repr(chr(x))) == 3) and (x < 127)) else o
 
 LDB_ERR_LUT = {v: k for k, v in vars(ldb).items() if k.startswith('ERR_')}
 
+RE_CAMELCASE = re.compile(r"([_\-])+")
+
 
 def ldb_err(v):
     if isinstance(v, ldb.LdbError):
@@ -164,6 +166,23 @@ class TestCase(unittest.TestCase):
         """
         msg = "%s needs setUpDynamicTestCases() if @DynamicTestCase is used!" % (cls)
         raise Exception(msg)
+
+    def unique_name(self):
+        """Generate a unique name from within a test for creating objects.
+
+        Used to ensure each test generates uniquely named objects that don't
+        interfere with other tests.
+        """
+        # name of calling function
+        name = self.id().rsplit(".", 1)[1]
+
+        # remove test_ prefix
+        if name.startswith("test_"):
+            name = name[5:]
+
+        # finally, convert to camelcase
+        name = RE_CAMELCASE.sub(" ", name).title().replace(" ", "")
+        return "".join([name[0].lower(), name[1:]])
 
     def setUp(self):
         super(TestCase, self).setUp()
