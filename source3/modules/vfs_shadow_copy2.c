@@ -1580,9 +1580,12 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 						   &stripped,
 						   &is_converted);
 	if (!ok) {
+		TALLOC_FREE(smb_fname);
 		return -1;
 	}
 	if (timestamp == 0) {
+		TALLOC_FREE(stripped);
+		TALLOC_FREE(smb_fname);
 		if (is_converted) {
 			/*
 			 * Just pave over the user requested mode and use
@@ -2386,6 +2389,7 @@ static int shadow_copy2_mkdirat(vfs_handle_struct *handle,
 					full_fname,
 					&timestamp,
 					NULL)) {
+		TALLOC_FREE(full_fname);
 		return -1;
 	}
 	TALLOC_FREE(full_fname);
