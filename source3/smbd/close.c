@@ -241,8 +241,7 @@ static bool has_other_nonposix_opens_fn(
 	if (e->name_hash != fsp->name_hash) {
 		return false;
 	}
-	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
-	    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
+	if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
 		return false;
 	}
 	if (e->share_file_id == fh_get_gen_id(fsp->fh)) {
