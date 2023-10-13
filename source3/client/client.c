@@ -3164,7 +3164,7 @@ static int cmd_posix(void)
 	char *caps;
 	NTSTATUS status;
 
-	if (!(SERVER_HAS_UNIX_CIFS(cli) || cli->smb2.server_smb311_posix)) {
+	if (!smbXcli_conn_have_posix(cli->conn)) {
 		d_printf("Server doesn't support UNIX CIFS extensions.\n");
 		return 1;
 	}

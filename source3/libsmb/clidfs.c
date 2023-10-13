@@ -245,12 +245,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
 	}
 
-	if ((protocol >= PROTOCOL_SMB3_11) && (out_contexts != NULL)) {
-		c->smb2.server_smb311_posix = smb2_negotiate_context_find(
-			out_contexts,
-			SMB2_POSIX_EXTENSIONS_AVAILABLE);
-	}
-
 	status = cli_session_setup_creds(c, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
