@@ -192,6 +192,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
+	struct ndr_syntax_id abstract_syntax;
 	struct ndr_syntax_id ndr_syntax;
 	NTSTATUS status;
 
@@ -219,6 +220,11 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 
 	floors = r->in.map_tower->tower.floors;
 
+	status = dcerpc_floor_get_uuid_full(&floors[0], &abstract_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
 	status = dcerpc_floor_get_uuid_full(&floors[1], &ndr_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
@@ -240,15 +246,22 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	for (i=0;i<count;i++) {
-		int cmp;
+		struct ndr_syntax_id ep_abstract_syntax;
+		int match;
 
 		if (transport != dcerpc_transport_by_tower(&eps[i].ep)) {
 			continue;
 		}
 
-		cmp = data_blob_cmp(&r->in.map_tower->tower.floors[0].lhs.lhs_data,
-				    &eps[i].ep.floors[0].lhs.lhs_data);
-		if (cmp != 0) {
+		status = dcerpc_floor_get_uuid_full(&eps[i].ep.floors[0],
+						    &ep_abstract_syntax);
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
+
+		match = ndr_syntax_id_equal(&ep_abstract_syntax,
+					    &abstract_syntax);
+		if (!match) {
 			continue;
 		}
 
