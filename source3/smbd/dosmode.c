@@ -688,7 +688,7 @@ uint32_t fdos_mode(struct files_struct *fsp)
 
 	if (fsp == NULL) {
 		/*
-		 * The pathological case where a callers does
+		 * The pathological case where a caller does
 		 * fdos_mode(smb_fname->fsp) passing a pathref fsp. But as
 		 * smb_fname points at a symlink in POSIX context smb_fname->fsp
 		 * is NULL.
