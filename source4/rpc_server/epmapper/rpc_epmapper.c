@@ -193,6 +193,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
 	struct ndr_syntax_id ndr_syntax;
+	NTSTATUS status;
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
@@ -218,10 +219,12 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 
 	floors = r->in.map_tower->tower.floors;
 
-	dcerpc_floor_get_uuid_full(&r->in.map_tower->tower.floors[1], &ndr_syntax);
+	status = dcerpc_floor_get_uuid_full(&floors[1], &ndr_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
 
-	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-	    !ndr_syntax_id_equal(&ndr_syntax, &ndr_transfer_syntax_ndr)) {
+	if (!ndr_syntax_id_equal(&ndr_syntax, &ndr_transfer_syntax_ndr)) {
 		goto failed;
 	}
 
