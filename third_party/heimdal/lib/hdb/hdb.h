@@ -78,6 +78,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_SYNTHETIC_OK	0x10000	/* synthetic principal for PKINIT or GSS preauth OK */
 #define HDB_F_GET_FAST_COOKIE	0x20000	/* fetch the FX-COOKIE key (not a normal principal) */
 #define HDB_F_ARMOR_PRINCIPAL	0x40000	/* fetch is for the client of an armor ticket */
+#define HDB_F_USER2USER_PRINCIPAL	0x80000	/* fetch is for the server of a user2user tgs-req */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
