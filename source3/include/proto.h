@@ -208,8 +208,11 @@ char *sys_realpath(const char *path);
 int sys_get_number_of_cores(void);
 #endif
 
+struct sys_proc_fd_path_buf {
+	char buf[35]; /* "/proc/self/fd/" + strlen(2^64) + 0-terminator */
+};
 bool sys_have_proc_fds(void);
-const char *sys_proc_fd_path(int fd, char *buf, size_t bufsize);
+char *sys_proc_fd_path(int fd, struct sys_proc_fd_path_buf *buf);
 
 struct stat;
 void init_stat_ex_from_stat (struct stat_ex *dst,

@@ -466,8 +466,7 @@ static NTSTATUS btrfs_fget_compression(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       uint16_t *_compression_fmt)
 {
-	char buf[PATH_MAX];
-	const char *p = NULL;
+	struct sys_proc_fd_path_buf buf;
 	int ret;
 	long flags = 0;
 	int fsp_fd = fsp_get_pathref_fd(fsp);
@@ -493,14 +492,11 @@ static NTSTATUS btrfs_fget_compression(struct vfs_handle_struct *handle,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	p = sys_proc_fd_path(fsp_fd, buf, sizeof(buf));
-	if (p == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	fd = open(p, O_RDONLY);
+	fd = open(sys_proc_fd_path(fsp_fd, &buf), O_RDONLY);
 	if (fd == -1) {
-		DBG_DEBUG("/proc open of %s failed: %s\n", p, strerror(errno));
+		DBG_DEBUG("/proc open of %s failed: %s\n",
+			  buf.buf,
+			  strerror(errno));
 		return map_nt_error_from_unix(errno);
 	}
 

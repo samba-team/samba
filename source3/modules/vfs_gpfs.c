@@ -1446,7 +1446,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 {
 	struct gpfs_config_data *config;
 	int fd = fsp_get_pathref_fd(fsp);
-	char buf[PATH_MAX];
+	struct sys_proc_fd_path_buf buf;
 	const char *p = NULL;
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask = 0;
@@ -1463,10 +1463,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 
 	if (fsp->fsp_flags.is_pathref && !config->pathref_ok.gpfs_fstat_x) {
 		if (fsp->fsp_flags.have_proc_fds) {
-			p = sys_proc_fd_path(fd, buf, sizeof(buf));
-			if (p == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
+			p = sys_proc_fd_path(fd, &buf);
 		} else {
 			p = fsp->fsp_name->base_name;
 		}
@@ -1560,20 +1557,17 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		int fd = fsp_get_pathref_fd(fsp);
-		const char *p = NULL;
-		char buf[PATH_MAX];
+		struct sys_proc_fd_path_buf buf;
 
-		p = sys_proc_fd_path(fd, buf, sizeof(buf));
-		if (p == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		ret = gpfswrap_set_winattrs_path(p,
+		ret = gpfswrap_set_winattrs_path(sys_proc_fd_path(fd, &buf),
 						 GPFS_WINATTR_SET_ATTRS,
 						 &attrs);
 		if (ret == -1) {
-			DBG_WARNING("Setting winattrs failed for [%s][%s]: %s\n",
-				    p, fsp_str_dbg(fsp), strerror(errno));
+			DBG_WARNING("Setting winattrs failed for "
+				    "[%s][%s]: %s\n",
+				    buf.buf,
+				    fsp_str_dbg(fsp),
+				    strerror(errno));
 			return map_nt_error_from_unix(errno);
 		}
 		return NT_STATUS_OK;
@@ -1728,18 +1722,16 @@ static int smbd_gpfs_set_times(struct files_struct *fsp,
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		int fd = fsp_get_pathref_fd(fsp);
-		const char *p = NULL;
-		char buf[PATH_MAX];
+		struct sys_proc_fd_path_buf buf;
 
-		p = sys_proc_fd_path(fd, buf, sizeof(buf));
-		if (p == NULL) {
-			return -1;
-		}
-
-		rc = gpfswrap_set_times_path(buf, flags, gpfs_times);
+		rc = gpfswrap_set_times_path(sys_proc_fd_path(fd, &buf),
+					     flags,
+					     gpfs_times);
 		if (rc != 0) {
 			DBG_WARNING("gpfs_set_times_path(%s,%s) failed: %s\n",
-				    fsp_str_dbg(fsp), p, strerror(errno));
+				    fsp_str_dbg(fsp),
+				    buf.buf,
+				    strerror(errno));
 		}
 		return rc;
 	}
@@ -1816,17 +1808,12 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		int fd = fsp_get_pathref_fd(fsp);
-		const char *p = NULL;
-		char buf[PATH_MAX];
+		struct sys_proc_fd_path_buf buf;
 
-		p = sys_proc_fd_path(fd, buf, sizeof(buf));
-		if (p == NULL) {
-			return -1;
-		}
-
-		ret = gpfswrap_set_winattrs_path(p,
-						 GPFS_WINATTR_SET_CREATION_TIME,
-						 &attrs);
+		ret = gpfswrap_set_winattrs_path(
+			sys_proc_fd_path(fd, &buf),
+			GPFS_WINATTR_SET_CREATION_TIME,
+			&attrs);
 		if (ret == -1 && errno != ENOSYS) {
 			DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
 			return -1;

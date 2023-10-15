@@ -1016,22 +1016,10 @@ int sys_get_number_of_cores(void)
 }
 #endif
 
-static struct proc_fd_pattern {
-	const char *pattern;
-	const char *test_path;
-} proc_fd_patterns[] = {
-	/* Linux */
-	{ "/proc/self/fd/%d", "/proc/self/fd/0" },
-	{ NULL, NULL },
-};
-
-static const char *proc_fd_pattern;
-
 bool sys_have_proc_fds(void)
 {
-	static bool checked;
-	static bool have_proc_fds;
-	struct proc_fd_pattern *p = NULL;
+	static bool checked = false;
+	static bool have_proc_fds = false;
 	struct stat sb;
 	int ret;
 
@@ -1039,42 +1027,19 @@ bool sys_have_proc_fds(void)
 		return have_proc_fds;
 	}
 
-	for (p = &proc_fd_patterns[0]; p->test_path != NULL; p++) {
-		ret = stat(p->test_path, &sb);
-		if (ret != 0) {
-			continue;
-		}
-		have_proc_fds = true;
-		proc_fd_pattern = p->pattern;
-		break;
-	}
-
+	ret = stat("/proc/self/fd/0", &sb);
+	have_proc_fds = (ret == 0);
 	checked = true;
+
 	return have_proc_fds;
 }
 
-const char *sys_proc_fd_path(int fd, char *buf, size_t bufsize)
+char *sys_proc_fd_path(int fd, struct sys_proc_fd_path_buf *buf)
 {
-	int written;
+	int written =
+		snprintf(buf->buf, sizeof(buf->buf), "/proc/self/fd/%d", fd);
 
-	if (!sys_have_proc_fds()) {
-		return NULL;
-	}
+	SMB_ASSERT(sys_have_proc_fds() && (written >= 0));
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-	written = snprintf(buf,
-			   bufsize,
-			   proc_fd_pattern,
-			   fd);
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-	if (written >= bufsize) {
-		return NULL;
-	}
-
-	return buf;
+	return buf->buf;
 }

@@ -1217,8 +1217,7 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 				   const struct vfs_open_how *how)
 {
 	struct smb_filename proc_fname;
-	const char *p = NULL;
-	char buf[PATH_MAX];
+	struct sys_proc_fd_path_buf buf;
 	int old_fd;
 	int new_fd;
 	NTSTATUS status;
@@ -1241,13 +1240,8 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	p = sys_proc_fd_path(old_fd, buf, sizeof(buf));
-	if (p == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	proc_fname = (struct smb_filename) {
-		.base_name = discard_const_p(char, p),
+	proc_fname = (struct smb_filename){
+		.base_name = sys_proc_fd_path(old_fd, &buf),
 	};
 
 	fsp->fsp_flags.is_pathref = false;
