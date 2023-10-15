@@ -1375,6 +1375,7 @@ tgs_build_reply(astgs_request_t priv,
 
     Key *tkey_sign;
     int flags = HDB_F_FOR_TGS_REQ;
+    int server_flags;
 
     int result;
 
@@ -1395,6 +1396,10 @@ tgs_build_reply(astgs_request_t priv,
      */
     if (b->kdc_options.canonicalize)
 	flags |= HDB_F_CANON;
+
+    server_flags = HDB_F_GET_SERVER | HDB_F_DELAY_NEW_KEYS | flags;
+    if (b->kdc_options.enc_tkt_in_skey)
+	server_flags |= HDB_F_USER2USER_PRINCIPAL;
 
     if (s == NULL) {
 	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
@@ -1433,7 +1438,7 @@ server_lookup:
         _kdc_free_ent(context, serverdb, priv->server);
     priv->server = NULL;
     ret = _kdc_db_fetch(context, config, priv->server_princ,
-                        HDB_F_GET_SERVER | HDB_F_DELAY_NEW_KEYS | flags,
+                        server_flags,
 			NULL, &serverdb, &priv->server);
     priv->serverdb = serverdb;
     if (ret == HDB_ERR_NOT_FOUND_HERE) {
