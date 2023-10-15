@@ -1229,9 +1229,17 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 		struct smb_filename proc_fname = (struct smb_filename){
 			.base_name = sys_proc_fd_path(old_fd, &buf),
 		};
+		mode_t mode = fsp->fsp_name->st.st_ex_mode;
 		int new_fd;
 
 		SMB_ASSERT(fsp->fsp_flags.is_pathref);
+
+		if (S_ISLNK(mode)) {
+			return NT_STATUS_STOPPED_ON_SYMLINK;
+		}
+		if (!(S_ISREG(mode) || S_ISDIR(mode))) {
+			return NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED;
+		}
 
 		fsp->fsp_flags.is_pathref = false;
 
