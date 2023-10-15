@@ -1272,12 +1272,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 				const struct vfs_open_how *how,
 				bool *p_file_created)
 {
-	bool __unused_file_created = false;
 	NTSTATUS status;
-
-	if (p_file_created == NULL) {
-		p_file_created = &__unused_file_created;
-	}
 
 	/*
 	 * TODO: should we move this to the VFS layer?
@@ -4918,12 +4913,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 		struct vfs_open_how how = {
 			.flags = O_RDONLY | O_DIRECTORY,
 		};
+		bool file_created;
 
 		status = reopen_from_fsp(fsp->conn->cwd_fsp,
 					 fsp->fsp_name,
 					 fsp,
 					 &how,
-					 NULL);
+					 &file_created);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_INFO("Could not open fd for [%s]: %s\n",
 				 smb_fname_str_dbg(smb_dname),
