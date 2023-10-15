@@ -1213,59 +1213,6 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 	return status;
 }
 
-static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
-				   const struct vfs_open_how *how)
-{
-	struct smb_filename proc_fname;
-	struct sys_proc_fd_path_buf buf;
-	int old_fd;
-	int new_fd;
-	NTSTATUS status;
-
-	if (!fsp->fsp_flags.have_proc_fds) {
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
-
-	old_fd = fsp_get_pathref_fd(fsp);
-	if (old_fd == -1) {
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
-
-	if (!fsp->fsp_flags.is_pathref) {
-		DBG_ERR("[%s] is not a pathref\n",
-			fsp_str_dbg(fsp));
-#ifdef DEVELOPER
-		smb_panic("Not a pathref");
-#endif
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	proc_fname = (struct smb_filename){
-		.base_name = sys_proc_fd_path(old_fd, &buf),
-	};
-
-	fsp->fsp_flags.is_pathref = false;
-
-	new_fd = SMB_VFS_OPENAT(fsp->conn,
-				fsp->conn->cwd_fsp,
-				&proc_fname,
-				fsp,
-				how);
-	if (new_fd == -1) {
-		status = map_nt_error_from_unix(errno);
-		fd_close(fsp);
-		return status;
-	}
-
-	status = fd_close(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	fsp_set_fd(fsp, new_fd);
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
 				struct files_struct *fsp,
@@ -1273,15 +1220,39 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 				bool *p_file_created)
 {
 	NTSTATUS status;
+	int old_fd;
 
-	/*
-	 * TODO: should we move this to the VFS layer?
-	 *       SMB_VFS_REOPEN_FSP()?
-	 */
+	if (fsp->fsp_flags.have_proc_fds &&
+	    ((old_fd = fsp_get_pathref_fd(fsp)) != -1)) {
 
-	status = reopen_from_procfd(fsp, how);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		return status;
+		struct sys_proc_fd_path_buf buf;
+		struct smb_filename proc_fname = (struct smb_filename){
+			.base_name = sys_proc_fd_path(old_fd, &buf),
+		};
+		int new_fd;
+
+		SMB_ASSERT(fsp->fsp_flags.is_pathref);
+
+		fsp->fsp_flags.is_pathref = false;
+
+		new_fd = SMB_VFS_OPENAT(fsp->conn,
+					fsp->conn->cwd_fsp,
+					&proc_fname,
+					fsp,
+					how);
+		if (new_fd == -1) {
+			status = map_nt_error_from_unix(errno);
+			fd_close(fsp);
+			return status;
+		}
+
+		status = fd_close(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		fsp_set_fd(fsp, new_fd);
+		return NT_STATUS_OK;
 	}
 
 	/*
