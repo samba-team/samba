@@ -276,11 +276,13 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 
 	sid = get_user_sid(tctx, tmp_ctx, user);
 	if (sid == NULL) {
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
 	blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (blob == NULL) {
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
@@ -298,6 +300,8 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 		ndr_err = ndr_push_struct_blob(blob, blob, &access_struct,
 				(ndr_push_flags_fn_t)ndr_push_bkrp_access_check_v2);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(blob);
+			talloc_free(tmp_ctx);
 			return NULL;
 		}
 
@@ -334,6 +338,8 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 		ndr_err = ndr_push_struct_blob(blob, blob, &access_struct,
 				(ndr_push_flags_fn_t)ndr_push_bkrp_access_check_v3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(blob);
+			talloc_free(tmp_ctx);
 			return NULL;
 		}
 
