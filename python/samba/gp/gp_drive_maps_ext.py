@@ -19,8 +19,7 @@ import json
 from samba.gp.gpclass import gp_xml_ext, gp_misc_applier, drop_privileges, \
     expand_pref_variables
 from subprocess import Popen, PIPE
-from samba.gp.gp_scripts_ext import fetch_crontab, install_crontab, \
-    install_user_crontab
+from samba.gp.gp_scripts_ext import fetch_crontab, install_user_crontab
 from samba.gp.util.logging import log
 from samba.gp import gp_scripts_ext
 gp_scripts_ext.intro = '''
