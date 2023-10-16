@@ -88,3 +88,4 @@ compile_commands.json
 .clangd/
 .cache/
 .ropeproject/
+.tmplock
