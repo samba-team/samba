@@ -1,4 +1,66 @@
                    ==============================
+                   Release Notes for Samba 4.19.2
+                          October 16, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.1
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15423: Use-after-free in aio_del_req_from_fsp during smbd shutdown
+     after failed IPC FSCTL_PIPE_TRANSCEIVE.
+   * BUG 15426: clidfs.c do_connect() missing a "return" after a cli_shutdown()
+     call.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15463: macOS mdfind returns only 50 results.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15481: GETREALFILENAME_CACHE can modify incoming new filename with
+     previous cache entry value.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15464: libnss_winbind causes memory corruption since samba-4.18,
+     impacts sendmail, zabbix, potentially more.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15479: ctdbd: setproctitle not initialized messages flooding logs.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15491: CVE-2023-5568 Heap buffer overflow with freshness tokens in the
+     Heimdal KDC in Samba 4.19
+   * BUG 15477: The heimdal KDC doesn't detect s4u2self correctly when fast is
+     in use.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.1
                           October 10, 2023
                    ==============================
@@ -68,8 +130,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.0
                          September 04, 2023
