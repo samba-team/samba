@@ -276,7 +276,7 @@ fetch_referral_principal:
 		 *
 		 *     ADDOM.SAMBA.EXAMPLE.COM
 		 *
-		 * We look up if we have and entry in the database and get an
+		 * We look up if we have an entry in the database and get an
 		 * entry with the principal:
 		 *
 		 *     cifs/dc7.SAMBA2008R2.EXAMPLE.COM@SAMBA2008R2.EXAMPLE.COM

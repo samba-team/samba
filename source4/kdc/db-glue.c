@@ -1210,7 +1210,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * by asking for a ticket to them as a service (encrypted with
 	 * their probably pathetically insecure password)
 	 *
-	 * But user2user avoids using the keys bases on the password,
+	 * But user2user avoids using the keys based on the password,
 	 * so we can allow it.
 	 */
 
