@@ -77,16 +77,6 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 
 	DEBUG(4,("Opening pipe %s => %s.\n", pipe_name, fname));
 
-#if 0
-	/*
-	 * Hack for NT printers... JRA.
-	 */
-	if(should_fail_next_srvsvc_open(fname)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-#endif
-
 	status = open_np_file(req, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
