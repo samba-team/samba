@@ -196,7 +196,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         be found, but not include every known attribute.
         """
         # We just need to test a few different data types for attributes,
-        # there is mo need to test every known attribute.
+        # there is no need to test every known attribute.
         claim_types = [
             "adminCount",
             "accountExpires",
