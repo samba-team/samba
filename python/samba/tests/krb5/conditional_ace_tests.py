@@ -758,7 +758,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                       expected_error=0)
 
     def test_allowed_from_claim_equals_claim(self):
-        # Create a couple of claims.
+        # Create a couple of claim types.
 
         claim0_id = self.get_new_username()
         self.create_claim(claim0_id,
