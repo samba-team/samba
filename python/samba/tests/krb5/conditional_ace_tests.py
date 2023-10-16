@@ -3294,6 +3294,34 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                            event=event,
                            reason=reason)
 
+    def test_conditional_ace_allowed_from_user_allow(self):
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER)
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create an authentication policy that explicitly allows the machine
+        # account for a user.
+        allowed = (f'O:SYD:(XA;;CR;;;{mach_creds.get_sid()};'
+                   f'(Member_of SID({mach_creds.get_sid()})))')
+        denied = 'O:SYD:(D;;CR;;;WD)'
+        policy = self.create_authn_policy(enforced=True,
+                                          user_allowed_from=allowed,
+                                          service_allowed_from=denied)
+
+        # Create a user account with the assigned policy.
+        client_creds = self._get_creds(account_type=self.AccountType.USER,
+                                       assigned_policy=policy)
+
+        # Show that authentication succeeds.
+        self._get_tgt(client_creds, armor_tgt=mach_tgt,
+                      expected_error=0)
+
+        self.check_as_log(
+            client_creds,
+            armor_creds=mach_creds,
+            client_policy=policy)
+
     def test_conditional_ace_allowed_from_user_deny(self):
         # Create a machine account with which to perform FAST.
         mach_creds = self.get_cached_creds(
