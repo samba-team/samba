@@ -1074,8 +1074,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         (('foo', 'bar'), 'Contains', '{{1, 2, 3}}', None),
     ]
 
-    ##########################################################################################
-
     def _test_cmp_with_args(self, lhs, op, rhs, outcome, rhs_is_literal=False):
         # Construct a conditional ACE expression that evaluates to True if the
         # two claim values are equal.
