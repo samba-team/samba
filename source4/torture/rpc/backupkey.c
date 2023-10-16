@@ -264,12 +264,23 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 				      bool broken,
 				      uint32_t version)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	DATA_BLOB *blob = talloc_zero(mem_ctx, DATA_BLOB);
+	TALLOC_CTX *tmp_ctx = NULL;
+	DATA_BLOB *blob = NULL;
 	enum ndr_err_code ndr_err;
-	const struct dom_sid *sid = get_user_sid(tctx, tmp_ctx, user);
+	const struct dom_sid *sid = NULL;
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NULL;
+	}
+
+	sid = get_user_sid(tctx, tmp_ctx, user);
 	if (sid == NULL) {
+		return NULL;
+	}
+
+	blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (blob == NULL) {
 		return NULL;
 	}
 
