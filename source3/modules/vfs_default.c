@@ -738,7 +738,9 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 			mode);
 
 	if (became_root) {
+		int err = errno;
 		unbecome_root();
+		errno = err;
 	}
 
 done:
