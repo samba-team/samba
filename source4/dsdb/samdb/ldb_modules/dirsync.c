@@ -202,9 +202,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 			guidfound = true;
 		}
 		/*
-		 * We expect to find the GUID in the object,
-		 * if it turns out not to be the case sometimes
-		 * we will uncomment the code below
+		 * We expect to find the GUID in the object
 		 */
 		SMB_ASSERT(guidfound == true);
 		return ldb_module_send_entry(dsc->req, msg, controls);
