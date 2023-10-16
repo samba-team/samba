@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    NT QUOTA support
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -53,7 +53,7 @@ static uint64_t limit_unix2nt(uint64_t in, uint64_t bsize)
 	uint64_t ret = (uint64_t)0;
 
 	ret = (uint64_t)(in*bsize);
-	
+
 	return ret;
 }
 
@@ -108,7 +108,7 @@ NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
 	if (ret!=0) {
 		return map_nt_error_from_unix(errno);
 	}
-		
+
 	qt->usedspace = (uint64_t)D.curblocks*D.bsize;
 	qt->softlim = limit_unix2nt(D.softlimit, D.bsize);
 	qt->hardlim = limit_unix2nt(D.hardlimit, D.bsize);
@@ -142,20 +142,20 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid
 	}
 
 	ret = SMB_VFS_SET_QUOTA(fsp->conn, qtype, id, &D);
-	
+
 	return ret;
 }
 
 static bool already_in_quota_list(SMB_NTQUOTA_LIST *qt_list, uid_t uid)
 {
 	SMB_NTQUOTA_LIST *tmp_list = NULL;
-	
+
 	if (!qt_list)
 		return False;
 
 	for (tmp_list=qt_list;tmp_list!=NULL;tmp_list=tmp_list->next) {
 		if (tmp_list->uid == uid) {
-			return True;	
+			return True;
 		}
 	}
 
@@ -231,7 +231,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		tmp_list_ent->mem_ctx = mem_ctx;
 
 		DLIST_ADD((*qt_list),tmp_list_ent);
-		
+
 	}
 	endpwent();
 
