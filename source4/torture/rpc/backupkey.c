@@ -290,6 +290,7 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 		struct bkrp_access_check_v2 access_struct;
 		gnutls_hash_hd_t dig_ctx;
 		uint8_t nonce[32];
+		int rc;
 
 		ZERO_STRUCT(access_struct);
 		generate_random_buffer(nonce, sizeof(nonce));
@@ -311,12 +312,22 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 		 * so we reduce the size of what has to be calculated
 		 */
 
-		gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA1);
-		gnutls_hash(dig_ctx,
-			    blob->data,
-			    blob->length - sizeof(access_struct.hash));
+		rc = gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA1);
+		if (rc != GNUTLS_E_SUCCESS) {
+			talloc_free(blob);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+		rc = gnutls_hash(dig_ctx,
+				 blob->data,
+				 blob->length - sizeof(access_struct.hash));
 		gnutls_hash_deinit(dig_ctx,
 				   blob->data + blob->length - sizeof(access_struct.hash));
+		if (rc != GNUTLS_E_SUCCESS) {
+			talloc_free(blob);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 
 		/* Altering the SHA */
 		if (broken) {
@@ -328,6 +339,7 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 		struct bkrp_access_check_v3 access_struct;
 		gnutls_hash_hd_t dig_ctx;
 		uint8_t nonce[32];
+		int rc;
 
 		ZERO_STRUCT(access_struct);
 		generate_random_buffer(nonce, sizeof(nonce));
@@ -348,12 +360,22 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 		* so we reduce the size of what has to be calculated
 		*/
 
-		gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA512);
-		gnutls_hash(dig_ctx,
-			    blob->data,
-			    blob->length - sizeof(access_struct.hash));
+		rc = gnutls_hash_init(&dig_ctx, GNUTLS_DIG_SHA512);
+		if (rc != GNUTLS_E_SUCCESS) {
+			talloc_free(blob);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+		rc = gnutls_hash(dig_ctx,
+				 blob->data,
+				 blob->length - sizeof(access_struct.hash));
 		gnutls_hash_deinit(dig_ctx,
 				   blob->data + blob->length - sizeof(access_struct.hash));
+		if (rc != GNUTLS_E_SUCCESS) {
+			talloc_free(blob);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 
 		/* Altering the SHA */
 		if (broken) {
