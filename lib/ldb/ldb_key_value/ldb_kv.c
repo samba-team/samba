@@ -1582,7 +1582,7 @@ static int ldb_kv_start_trans(struct ldb_module *module)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_kv->module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);
@@ -1625,7 +1625,7 @@ static int ldb_kv_prepare_commit(struct ldb_module *module)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);

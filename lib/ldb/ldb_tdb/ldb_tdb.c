@@ -69,7 +69,7 @@ static int ltdb_lock_read(struct ldb_module *module)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);
@@ -109,7 +109,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);
@@ -175,7 +175,7 @@ static int ltdb_transaction_start(struct ldb_kv_private *ldb_kv)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_kv->module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);
@@ -192,7 +192,7 @@ static int ltdb_transaction_cancel(struct ldb_kv_private *ldb_kv)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_kv->module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);
@@ -209,7 +209,7 @@ static int ltdb_transaction_prepare_commit(struct ldb_kv_private *ldb_kv)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_kv->module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);
@@ -226,7 +226,7 @@ static int ltdb_transaction_commit(struct ldb_kv_private *ldb_kv)
 	if (ldb_kv->pid != pid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_kv->module),
 				       __location__
-				       ": Reusing ldb opend by pid %d in "
+				       ": Reusing ldb opened by pid %d in "
 				       "process %d\n",
 				       ldb_kv->pid,
 				       pid);

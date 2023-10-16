@@ -799,7 +799,7 @@ int ldb_module_send_entry(struct ldb_request *req,
 	return req->callback(req, ares);
 }
 
-/* calls the request callback to send an referrals
+/* calls the request callback to send a referral
  *
  * params:
  *      req: the original request passed to your module
@@ -923,7 +923,7 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version);
   ldb_register_module() and ldb_register_backend() to register a
   module or backend, but it may also be used to register command line
   handling functions, ldif handlers or any other local
-  modififications.
+  modifications.
 
   The ldb_init_module() function does not get a ldb_context passed in,
   as modules will be used for multiple ldb context handles. The call

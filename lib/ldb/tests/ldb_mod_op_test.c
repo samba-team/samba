@@ -3280,7 +3280,7 @@ static void test_read_only(void **state)
 
 	/*
 	 * Open the database in read only and read write mode,
-	 * ensure it's opend in read only mode first
+	 * ensure it's opened in read only mode first
 	 */
 	ro_ldb = ldb_init(test_ctx, test_ctx->ev);
 	ret = ldb_connect(ro_ldb, test_ctx->dbpath, LDB_FLG_RDONLY, NULL);

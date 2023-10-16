@@ -1089,7 +1089,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 
 	/*
 	 * We do not base 64 encode a DN in a key, it has already been
-	 * casefold and lineraized, that is good enough.  That already
+	 * casefolded and linearized, that is good enough.  That already
 	 * avoids embedded NUL etc.
 	 */
 	if (ldb_kv->cache->GUID_index_attribute != NULL) {
