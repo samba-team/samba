@@ -134,8 +134,9 @@ struct sdb_entry {
 				 SDB_F_ARMOR_PRINCIPAL| \
 				 SDB_F_USER2USER_PRINCIPAL)
 
-/* This is not supported by HDB */
+/* These are not supported by HDB */
 #define SDB_F_FORCE_CANON	16384	/* force canonicalization */
+#define SDB_F_RODC_NUMBER_SPECIFIED	32768	/* we want a particular RODC number */
 
 void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
