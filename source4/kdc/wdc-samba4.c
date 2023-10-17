@@ -643,14 +643,6 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 				struct sdb_entry signing_krbtgt_sdb;
 
 				/*
-				 * If we didn't sign the ticket, then return an
-				 * error.
-				 */
-				if (pac_kdc_signature_rodc_id != 0) {
-					return KRB5KRB_AP_ERR_MODIFIED;
-				}
-
-				/*
 				 * Fetch our key from the database. To support
 				 * key rollover, we're going to need to try
 				 * multiple keys by trial and error. For now,
@@ -659,8 +651,8 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 				ret = samba_kdc_fetch(context,
 						      krbtgt_skdc_entry->kdc_db_ctx,
 						      krbtgt->principal,
-						      SDB_F_GET_KRBTGT | SDB_F_CANON,
-						      0,
+						      SDB_F_GET_KRBTGT | SDB_F_RODC_NUMBER_SPECIFIED | SDB_F_CANON,
+						      ((uint32_t)pac_kdc_signature_rodc_id) << 16,
 						      &signing_krbtgt_sdb);
 				if (ret != 0) {
 					return ret;

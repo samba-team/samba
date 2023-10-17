@@ -125,8 +125,6 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_and_one_uint_2_0_1___zero_and_one_uint_\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_int_1_0___zero_int_\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_uint_2_0___zero_uint_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_rbcd_client_and_device_from_rodc\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_rbcd_client_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_with_claims_valid_both_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_with_claims_valid_client_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_with_service_asserted_identity_both_from_rodc\(ad_dc\)
