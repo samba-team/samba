@@ -21,7 +21,6 @@
 #
 
 import json
-from collections import defaultdict
 from unittest.mock import patch
 
 from samba.netcmd.domain.models.exceptions import ModelError
@@ -470,28 +469,17 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
 
     def setUp(self):
         super().setUp()
-        self.members = defaultdict(list)
 
         # Create an organisational unit to test in.
         self.ou = self.samdb.get_default_basedn()
         self.ou.add_child("OU=Domain Auth Tests")
         self.samdb.create_ou(self.ou)
+        self.addCleanup(self.samdb.delete, self.ou, ["tree_delete:1"])
 
         # Assign members to silos
         self.add_silo_member("Developers", "bob")
         self.add_silo_member("Developers", "jane")
         self.add_silo_member("Managers", "alice")
-
-    def tearDown(self):
-        # Remove organisational unit.
-        self.samdb.delete(self.ou, ["tree_delete:1"])
-
-        # Remove members from silos.
-        for silo, members in self.members.items():
-            for member in members:
-                self.remove_silo_member(silo, member)
-
-        super().tearDown()
 
     def create_computer(self, name):
         """Create a Computer and return the dn."""
@@ -507,9 +495,7 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
 
         self.assertIsNone(result, msg=err)
         self.assertIn(f"User '{member}' added to the {silo} silo.", out)
-
-        # Ensure that tearDown cleans up the silo members.
-        self.members[silo].append(member)
+        self.addCleanup(self.remove_silo_member, silo, member)
 
     def remove_silo_member(self, silo, member):
         """Remove a member to an authentication silo."""
