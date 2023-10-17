@@ -44,17 +44,20 @@ class BaseAuthCmdTest(SambaToolCmdTest):
         cls.create_authentication_policy(name="Service Policy")
         cls.create_authentication_policy(name="Computer Policy")
 
-        cls.create_authentication_silo(name="Developers",
-                                       description="Developers, Developers",
-                                       user_policy="User Policy")
-        cls.create_authentication_silo(name="Managers",
-                                       description="Managers",
-                                       user_policy="User Policy")
-        cls.create_authentication_silo(name="QA",
-                                       description="Quality Assurance",
-                                       user_policy="User Policy",
-                                       service_policy="Service Policy",
-                                       computer_policy="Computer Policy")
+        cls.create_authentication_silo(
+            name="Developers",
+            description="Developers, Developers",
+            user_authentication_policy="User Policy")
+        cls.create_authentication_silo(
+            name="Managers",
+            description="Managers",
+            user_authentication_policy="User Policy")
+        cls.create_authentication_silo(
+            name="QA",
+            description="Quality Assurance",
+            user_authentication_policy="User Policy",
+            service_authentication_policy="Service Policy",
+            computer_authentication_policy="Computer Policy")
 
     def get_services_dn(self):
         """Returns Services DN."""
@@ -147,21 +150,25 @@ class BaseAuthCmdTest(SambaToolCmdTest):
 
     @classmethod
     def create_authentication_silo(cls, name, description=None,
-                                   user_policy=None, service_policy=None,
-                                   computer_policy=None, audit=False,
-                                   protect=False):
+                                   user_authentication_policy=None,
+                                   service_authentication_policy=None,
+                                   computer_authentication_policy=None,
+                                   audit=False, protect=False):
         """Create an authentication silo using the samba-tool command."""
 
         # Base command for create authentication policy.
         cmd = ["domain", "auth", "silo", "create", "--name", name]
 
         # Authentication policies.
-        if user_policy:
-            cmd += ["--user-policy", user_policy]
-        if service_policy:
-            cmd += ["--service-policy", service_policy]
-        if computer_policy:
-            cmd += ["--computer-policy", computer_policy]
+        if user_authentication_policy:
+            cmd += ["--user-authentication-policy",
+                    user_authentication_policy]
+        if service_authentication_policy:
+            cmd += ["--service-authentication-policy",
+                    service_authentication_policy]
+        if computer_authentication_policy:
+            cmd += ["--computer-authentication-policy",
+                    computer_authentication_policy]
 
         # Other optional attributes.
         if description is not None:

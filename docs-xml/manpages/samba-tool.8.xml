@@ -1101,21 +1101,21 @@
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--user-policy</term>
+			<term>--user-authentication-policy</term>
 			<listitem><para>
-				User account policy.
+				User account authentication policy.
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--service-policy</term>
+			<term>--service-authentication-policy</term>
 			<listitem><para>
-				Managed Service Account policy.
+				Managed service account authentication policy.
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--computer-policy</term>
+			<term>--computer-authentication-policy</term>
 			<listitem><para>
-				Computer Account policy.
+				Computer authentication policy.
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
@@ -1188,21 +1188,21 @@
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--user-policy</term>
+			<term>--user-authentication-policy</term>
 			<listitem><para>
-				User account policy.
+				User account authentication policy.
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--service-policy</term>
+			<term>--service-authentication-policy</term>
 			<listitem><para>
-				Managed Service Account policy.
+				Managed service account authentication policy.
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--computer-policy</term>
+			<term>--computer-authentication-policy</term>
 			<listitem><para>
-				Computer Account policy.
+				Computer authentication policy.
 			</para></listitem>
 		</varlistentry>
 		<varlistentry>

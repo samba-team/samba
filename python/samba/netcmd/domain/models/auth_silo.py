@@ -30,9 +30,9 @@ from .model import Model
 class AuthenticationSilo(Model):
     description = StringField("description")
     enforced = BooleanField("msDS-AuthNPolicySiloEnforced")
-    user_policy = DnField("msDS-UserAuthNPolicy")
-    service_policy = DnField("msDS-ServiceAuthNPolicy")
-    computer_policy = DnField("msDS-ComputerAuthNPolicy")
+    user_authentication_policy = DnField("msDS-UserAuthNPolicy")
+    service_authentication_policy = DnField("msDS-ServiceAuthNPolicy")
+    computer_authentication_policy = DnField("msDS-ComputerAuthNPolicy")
     members = DnField("msDS-AuthNPolicySiloMembers", many=True)
 
     @staticmethod

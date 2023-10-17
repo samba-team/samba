@@ -94,7 +94,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "singlePolicy",
-                                       "--user-policy", "User Policy")
+                                       "--user-authentication-policy", "User Policy")
         self.assertIsNone(result, msg=err)
 
         # Check silo that was created
@@ -110,9 +110,12 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "multiplePolicies",
-                                       "--user-policy", "User Policy",
-                                       "--service-policy", "Service Policy",
-                                       "--computer-policy", "Computer Policy")
+                                       "--user-authentication-policy",
+                                       "User Policy",
+                                       "--service-authentication-policy",
+                                       "Service Policy",
+                                       "--computer-authentication-policy",
+                                       "Computer Policy")
         self.assertIsNone(result, msg=err)
 
         # Check silo that was created.
@@ -132,7 +135,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "singlePolicyDN",
-                                       "--user-policy", policy["dn"])
+                                       "--user-authentication-policy", policy["dn"])
         self.assertIsNone(result, msg=err)
 
         # Check silo that was created
@@ -145,14 +148,14 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         """Test creating a new authentication silo that already exists."""
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "Developers",
-                                       "--user-policy", "User Policy")
+                                       "--user-authentication-policy", "User Policy")
         self.assertEqual(result, -1)
         self.assertIn("Authentication silo Developers already exists.", err)
 
     def test_authentication_silo_create_name_missing(self):
         """Test create authentication silo without --name argument."""
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
-                                       "--user-policy", "User Policy")
+                                       "--user-authentication-policy", "User Policy")
         self.assertEqual(result, -1)
         self.assertIn("Argument --name is required.", err)
 
@@ -163,7 +166,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "auditPolicies",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--audit")
         self.assertIsNone(result, msg=err)
 
@@ -178,7 +181,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "enforcePolicies",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--enforce")
         self.assertIsNone(result, msg=err)
 
@@ -190,7 +193,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         """Test create authentication silo using both --audit and --enforce."""
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "enforceTogether",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--audit", "--enforce")
         self.assertEqual(result, -1)
         self.assertIn("--audit and --enforce cannot be used together.", err)
@@ -199,7 +202,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         """Test create authentication silo using --protect and --unprotect."""
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "create", "--name", "protectTogether",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--protect", "--unprotect")
         self.assertEqual(result, -1)
         self.assertIn("--protect and --unprotect cannot be used together.", err)
@@ -208,7 +211,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         """Test create authentication silo with a policy that doesn't exist."""
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name", "policyNotFound",
-                                       "--user-policy", "Invalid Policy")
+                                       "--user-authentication-policy", "Invalid Policy")
         self.assertEqual(result, -1)
         self.assertIn("Authentication policy Invalid Policy not found.", err)
 
@@ -219,7 +222,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
             add_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                            "--name", "createFails",
-                                           "--user-policy", "User Policy")
+                                           "--user-authentication-policy", "User Policy")
             self.assertEqual(result, -1)
             self.assertIn("Custom error message", err)
 
@@ -341,7 +344,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         # Create non-protected authentication silo.
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=deleteTest",
-                                       "--user-policy", "User Policy")
+                                       "--user-authentication-policy", "User Policy")
         self.assertIsNone(result, msg=err)
         silo = self.get_authentication_silo("deleteTest")
         self.assertIsNotNone(silo)
@@ -360,7 +363,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         # Create protected authentication silo.
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=deleteProtected",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--protect")
         self.assertIsNone(result, msg=err)
         silo = self.get_authentication_silo("deleteProtected")
@@ -402,7 +405,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         # Create protected authentication silo.
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=deleteForceFail",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--protect")
         self.assertIsNone(result, msg=err)
         silo = self.get_authentication_silo("deleteForceFail")
@@ -423,7 +426,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         # Create regular authentication silo.
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=regularSilo",
-                                       "--user-policy", "User Policy")
+                                       "--user-authentication-policy", "User Policy")
         self.assertIsNone(result, msg=err)
         silo = self.get_authentication_silo("regularSilo")
         self.assertIsNotNone(silo)
@@ -444,7 +447,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         # Create protected authentication silo.
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=protectedSilo",
-                                       "--user-policy", "User Policy",
+                                       "--user-authentication-policy", "User Policy",
                                        "--protect")
         self.assertIsNone(result, msg=err)
         silo = self.get_authentication_silo("protectedSilo")
