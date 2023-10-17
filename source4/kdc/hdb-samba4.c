@@ -215,7 +215,7 @@ static krb5_error_code hdb_samba4_kpasswd_fetch_kvno(krb5_context context, HDB *
 	flags &= ~HDB_F_KVNO_SPECIFIED;
 
 	/* Don't bother looking up a client or krbtgt. */
-	flags &= ~(SDB_F_GET_CLIENT|SDB_F_GET_KRBTGT);
+	flags &= ~(HDB_F_GET_CLIENT|HDB_F_GET_KRBTGT);
 
 	ret = hdb_samba4_fetch_kvno(context, db,
 				    kpasswd_principal,
