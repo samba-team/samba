@@ -2150,7 +2150,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
     def test_rbcd_service_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
                    service_from_rodc=True,
-                   code=KDC_ERR_BADOPTION,
                    edata=self.expect_padata_outer)
 
     def test_rbcd_device_and_service_from_rodc(self):
@@ -2162,7 +2161,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
     def test_rbcd_client_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
                    client_from_rodc=True,
-                   code=KDC_ERR_MODIFIED,
                    edata=self.expect_padata_outer)
 
     def test_rbcd_client_and_device_from_rodc(self):
@@ -2175,7 +2173,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._rbcd('Member_of SID({service_sid})',
                    client_from_rodc=True,
                    service_from_rodc=True,
-                   code=KDC_ERR_BADOPTION,
                    edata=self.expect_padata_outer)
 
     def test_rbcd_all_from_rodc(self):
@@ -2455,9 +2452,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._tgs(f'Member_of SID({self.aa_asserted_identity})',
                   client_from_rodc=True,
                   client_sids=client_sids,
-                  expected_groups=client_sids,
-                  code=KDC_ERR_POLICY,
-                  edata=self.expect_padata_outer)
+                  expected_groups=client_sids)
 
     def test_tgs_with_aa_asserted_identity_device_from_rodc(self):
         client_sids = {
@@ -2560,9 +2555,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._tgs(f'Member_of SID({self.service_asserted_identity})',
                   client_from_rodc=True,
                   client_sids=client_sids,
-                  expected_groups=client_sids,
-                  code=KDC_ERR_POLICY,
-                  edata=self.expect_padata_outer)
+                  expected_groups=client_sids)
 
     def test_tgs_with_service_asserted_identity_device_from_rodc(self):
         client_sids = {
@@ -2665,9 +2658,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._tgs(f'Member_of SID({security.SID_CLAIMS_VALID})',
                   client_from_rodc=True,
                   client_sids=client_sids,
-                  expected_groups=client_sids,
-                  code=KDC_ERR_POLICY,
-                  edata=self.expect_padata_outer)
+                  expected_groups=client_sids)
 
     def test_tgs_with_claims_valid_device_from_rodc(self):
         client_sids = {
