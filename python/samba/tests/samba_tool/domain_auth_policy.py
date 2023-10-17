@@ -40,8 +40,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         result, out, err = self.runcmd("domain", "auth", "policy", "list")
         self.assertIsNone(result, msg=err)
 
-        expected_policies = [
-            "Single Policy", "User Policy", "Service Policy", "Computer Policy"]
+        expected_policies = ["User Policy", "Service Policy", "Computer Policy"]
 
         for policy in expected_policies:
             self.assertIn(policy, out)
@@ -55,8 +54,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # we should get valid json
         policies = json.loads(out)
 
-        expected_policies = [
-            "Single Policy", "User Policy", "Service Policy", "Computer Policy"]
+        expected_policies = ["User Policy", "Service Policy", "Computer Policy"]
 
         for name in expected_policies:
             policy = policies[name]
@@ -69,14 +67,14 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_authentication_policy_view(self):
         """Test viewing a single authentication policy."""
         result, out, err = self.runcmd("domain", "auth", "policy", "view",
-                                       "--name", "Single Policy")
+                                       "--name", "User Policy")
         self.assertIsNone(result, msg=err)
 
         # we should get valid json
         policy = json.loads(out)
 
         # check a few fields only
-        self.assertEqual(policy["cn"], "Single Policy")
+        self.assertEqual(policy["cn"], "User Policy")
         self.assertEqual(policy["msDS-AuthNPolicyEnforced"], True)
 
     def test_authentication_policy_view_notfound(self):
@@ -256,9 +254,9 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_authentication_policy_create_already_exists(self):
         """Test creating a new authentication policy that already exists."""
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
-                                       "--name", "Single Policy")
+                                       "--name", "User Policy")
         self.assertEqual(result, -1)
-        self.assertIn("Authentication policy Single Policy already exists", err)
+        self.assertIn("Authentication policy User Policy already exists", err)
 
     def test_authentication_policy_create_name_missing(self):
         """Test create authentication policy without --name argument."""
@@ -541,7 +539,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_authentication_policy_modify_audit_enforce_together(self):
         """Test modify auth policy using both --audit and --enforce."""
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
-                                       "--name", "Single Policy",
+                                       "--name", "User Policy",
                                        "--audit", "--enforce")
         self.assertEqual(result, -1)
         self.assertIn("--audit and --enforce cannot be used together.", err)
@@ -549,7 +547,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_authentication_policy_modify_protect_unprotect_together(self):
         """Test modify authentication policy using --protect and --unprotect."""
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
-                                       "--name", "Single Policy",
+                                       "--name", "User Policy",
                                        "--protect", "--unprotect")
         self.assertEqual(result, -1)
         self.assertIn("--protect and --unprotect cannot be used together.", err)
@@ -560,7 +558,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         with patch.object(SamDB, "modify") as modify_mock:
             modify_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "policy", "modify",
-                                           "--name", "Single Policy",
+                                           "--name", "User Policy",
                                            "--description", "New description")
             self.assertEqual(result, -1)
             self.assertIn("Custom error message", err)

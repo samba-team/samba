@@ -115,9 +115,6 @@ class cmd_domain_auth_silo_create(Command):
         Option("--description",
                help="Optional description for authentication silo.",
                dest="description", action="store", type=str),
-        Option("--policy",
-               help="Use single policy for all principals in this silo.",
-               dest="policy", action="store", type=str),
         Option("--user-policy",
                help="User account policy.",
                dest="user_policy", action="store", type=str),
@@ -154,21 +151,14 @@ class cmd_domain_auth_silo_create(Command):
             raise CommandError(e)
 
     def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
-            description=None, policy=None, user_policy=None,
-            service_policy=None, computer_policy=None, protect=None,
-            unprotect=None, audit=None, enforce=None):
+            description=None, user_policy=None, service_policy=None,
+            computer_policy=None, protect=None, unprotect=None, audit=None,
+            enforce=None):
 
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
-
-        # If --policy is present start with that as the base. Then optionally
-        # --user-policy, --service-policy, --computer-policy can override this.
-        if policy is not None:
-            user_policy = user_policy or policy
-            service_policy = service_policy or policy
-            computer_policy = computer_policy or policy
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
@@ -233,9 +223,6 @@ class cmd_domain_auth_silo_modify(Command):
         Option("--description",
                help="Optional description for authentication silo.",
                dest="description", action="store", type=str),
-        Option("--policy",
-               help="Set single policy for all principals in this silo.",
-               dest="policy", action="store", type=str),
         Option("--user-policy",
                help="Set User account policy.",
                dest="user_policy", action="store", type=str),
@@ -272,21 +259,14 @@ class cmd_domain_auth_silo_modify(Command):
             raise CommandError(e)
 
     def run(self, hostopts=None, sambaopts=None, credopts=None, name=None,
-            description=None, policy=None, user_policy=None,
-            service_policy=None, computer_policy=None, protect=None,
-            unprotect=None, audit=None, enforce=None):
+            description=None, user_policy=None, service_policy=None,
+            computer_policy=None, protect=None, unprotect=None, audit=None,
+            enforce=None):
 
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
         if protect and unprotect:
             raise CommandError("--protect and --unprotect cannot be used together.")
-
-        # If --policy is set then start with that for all policies.
-        # They can be individually overridden as well after that.
-        if policy is not None:
-            user_policy = user_policy or policy
-            service_policy = service_policy or policy
-            computer_policy = computer_policy or policy
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 

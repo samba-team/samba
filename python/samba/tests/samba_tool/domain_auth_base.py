@@ -40,17 +40,16 @@ class BaseAuthCmdTest(SambaToolCmdTest):
 
     @classmethod
     def setUpTestData(cls):
-        cls.create_authentication_policy(name="Single Policy")
         cls.create_authentication_policy(name="User Policy")
         cls.create_authentication_policy(name="Service Policy")
         cls.create_authentication_policy(name="Computer Policy")
 
         cls.create_authentication_silo(name="Developers",
                                        description="Developers, Developers",
-                                       policy="Single Policy")
+                                       user_policy="User Policy")
         cls.create_authentication_silo(name="Managers",
                                        description="Managers",
-                                       policy="Single Policy")
+                                       user_policy="User Policy")
         cls.create_authentication_silo(name="QA",
                                        description="Quality Assurance",
                                        user_policy="User Policy",
@@ -147,7 +146,7 @@ class BaseAuthCmdTest(SambaToolCmdTest):
         assert "Deleted authentication policy" in out
 
     @classmethod
-    def create_authentication_silo(cls, name, description=None, policy=None,
+    def create_authentication_silo(cls, name, description=None,
                                    user_policy=None, service_policy=None,
                                    computer_policy=None, audit=False,
                                    protect=False):
@@ -156,14 +155,13 @@ class BaseAuthCmdTest(SambaToolCmdTest):
         # Base command for create authentication policy.
         cmd = ["domain", "auth", "silo", "create", "--name", name]
 
-        # If --policy is present, use a singular authentication policy.
-        # otherwise use --user-policy, --service-policy, --computer-policy
-        if policy is not None:
-            cmd += ["--policy", policy]
-        else:
-            cmd += ["--user-policy", user_policy,
-                    "--service-policy", service_policy,
-                    "--computer-policy", computer_policy]
+        # Authentication policies.
+        if user_policy:
+            cmd += ["--user-policy", user_policy]
+        if service_policy:
+            cmd += ["--service-policy", service_policy]
+        if computer_policy:
+            cmd += ["--computer-policy", computer_policy]
 
         # Other optional attributes.
         if description is not None:
