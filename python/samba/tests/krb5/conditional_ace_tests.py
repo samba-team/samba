@@ -2404,6 +2404,9 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   client_sids=client_sids,
                   expected_groups=client_sids,
                   code=KDC_ERR_POLICY,
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
                   edata=self.expect_padata_outer)
 
     def test_tgs_without_aa_asserted_identity_device_from_rodc(self):
@@ -2507,6 +2510,9 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   client_sids=client_sids,
                   expected_groups=client_sids,
                   code=KDC_ERR_POLICY,
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
                   edata=self.expect_padata_outer)
 
     def test_tgs_without_service_asserted_identity_device_from_rodc(self):
@@ -2610,6 +2616,9 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                   client_sids=client_sids,
                   expected_groups=client_sids,
                   code=KDC_ERR_POLICY,
+                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
+                  reason=AuditReason.ACCESS_DENIED,
                   edata=self.expect_padata_outer)
 
     def test_tgs_without_claims_valid_device_from_rodc(self):
