@@ -2109,7 +2109,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._rbcd(target_policy=f'Device_Member_of SID({security.SID_CLAIMS_VALID})',
                    device_sids=device_sids)
 
-    def test_rbcd_device_without_compounded_auth(self):
+    def test_rbcd_device_without_compounded_authentication(self):
         device_sids = {
             (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
             (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
@@ -2129,7 +2129,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                    reason=AuditReason.ACCESS_DENIED,
                    edata=self.expect_padata_outer)
 
-    def test_rbcd_device_with_compounded_auth(self):
+    def test_rbcd_device_with_compounded_authentication(self):
         device_sids = {
             (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
             (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
