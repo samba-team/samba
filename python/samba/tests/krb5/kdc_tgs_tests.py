@@ -48,6 +48,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_REQUIRED,
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
+    KDC_ERR_SERVER_NOMATCH,
     KDC_ERR_TKT_EXPIRED,
     KDC_ERR_TGT_REVOKED,
     KRB_ERR_TKT_NYV,
@@ -1954,7 +1955,7 @@ class KdcTgsTests(KdcTgsBaseTests):
         tgt = self._get_tgt(creds)
 
         realm = creds.get_realm().encode('utf-8')
-        tgt = self._modify_tgt(tgt, realm)
+        tgt = self._modify_tgt(tgt, crealm=realm)
 
         self._user2user(tgt, creds,
                         expected_error=0)
@@ -1963,10 +1964,16 @@ class KdcTgsTests(KdcTgsBaseTests):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
 
-        tgt = self._modify_tgt(tgt, b'OTHER.REALM')
+        tgt = self._modify_tgt(tgt, crealm=b'OTHER.REALM')
 
         self._user2user(tgt, creds,
-                        expected_error=0)
+                        expected_error=(
+                            KDC_ERR_POLICY,  # Windows
+                            KDC_ERR_C_PRINCIPAL_UNKNOWN,  # Heimdal
+                            KDC_ERR_SERVER_NOMATCH,  # MIT
+                        ),
+                        expect_edata=True,
+                        expected_status=ntstatus.NT_STATUS_NO_MATCH)
 
     def test_user2user_tgt_correct_cname(self):
         creds = self._get_creds()
