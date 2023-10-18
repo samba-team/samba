@@ -2724,6 +2724,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
              reason=AuditReason.NONE,
              status=None,
              edata=False,
+             use_fast=True,
              client_from_rodc=None,
              device_from_rodc=None,
              client_sids=None,
@@ -2740,6 +2741,12 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                 self.skipTest('test crashes Windows servers')
         except TypeError:
             self.assertIsNot(code, CRASHES_WINDOWS)
+
+        if not use_fast:
+            self.assertIsNone(device_from_rodc)
+            self.assertIsNone(device_sids)
+            self.assertIsNone(device_claims)
+            self.assertIsNone(expected_device_groups)
 
         if client_from_rodc is None:
             client_from_rodc = False
@@ -2788,26 +2795,29 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             new_ticket_key=rodc_krbtgt_key if client_from_rodc else None,
             checksum_keys=rodc_checksum_key if client_from_rodc else checksum_key)
 
-        # Create a machine account with which to perform FAST.
-        mach_creds = self.get_cached_creds(
-            account_type=self.AccountType.COMPUTER,
-            opts={
-                'allowed_replication_mock': device_from_rodc,
-                'revealed_to_mock_rodc': device_from_rodc,
-            })
-        mach_tgt = self.get_tgt(mach_creds)
-        device_modify_pac_fn = []
-        if device_sids is not None:
-            device_modify_pac_fn.append(partial(self.set_pac_sids,
-                                                new_sids=device_sids))
-        if device_claims is not None:
-            device_modify_pac_fn.append(partial(self.set_pac_claims,
-                                                client_claims=device_claims))
-        mach_tgt = self.modified_ticket(
-            mach_tgt,
-            modify_pac_fn=device_modify_pac_fn,
-            new_ticket_key=rodc_krbtgt_key if device_from_rodc else None,
-            checksum_keys=rodc_checksum_key if device_from_rodc else checksum_key)
+        if use_fast:
+            # Create a machine account with which to perform FAST.
+            mach_creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts={
+                    'allowed_replication_mock': device_from_rodc,
+                    'revealed_to_mock_rodc': device_from_rodc,
+                })
+            mach_tgt = self.get_tgt(mach_creds)
+            device_modify_pac_fn = []
+            if device_sids is not None:
+                device_modify_pac_fn.append(partial(self.set_pac_sids,
+                                                    new_sids=device_sids))
+            if device_claims is not None:
+                device_modify_pac_fn.append(partial(self.set_pac_claims,
+                                                    client_claims=device_claims))
+            mach_tgt = self.modified_ticket(
+                mach_tgt,
+                modify_pac_fn=device_modify_pac_fn,
+                new_ticket_key=rodc_krbtgt_key if device_from_rodc else None,
+                checksum_keys=rodc_checksum_key if device_from_rodc else checksum_key)
+        else:
+            mach_tgt = None
 
         if target_policy is None:
             policy = None
