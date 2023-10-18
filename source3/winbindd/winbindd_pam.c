@@ -1667,6 +1667,10 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 		retry = false;
 
+		D_DEBUG("Creating a DCERPC netlogon connection for SAM logon. "
+			"netlogon attempt: %d, samlogon attempt: %d.\n",
+			netr_attempts,
+			attempts);
 		result = cm_connect_netlogon_secure(domain, &netlogon_pipe,
 						    &netlogon_creds_ctx);
 
