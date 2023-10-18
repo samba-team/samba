@@ -93,6 +93,8 @@ class ProtectedUsersTests(KDCBaseTest):
 
         if members:
             opts['member_of'] = members
+        if supported_enctypes is not None:
+            opts['supported_enctypes'] = supported_enctypes
 
         return self.get_cached_creds(account_type=account_type,
                                      opts=opts,
