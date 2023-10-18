@@ -836,9 +836,6 @@ class RawKerberosTest(TestCase):
         except socket.error:
             self.s.close()
             raise
-        except IOError:
-            self.s.close()
-            raise
 
     def connect(self, host, port=None):
         self.assertNotConnected()
@@ -1142,9 +1139,6 @@ class RawKerberosTest(TestCase):
         except socket.error as e:
             self._disconnect("send_msg: %s" % e)
             raise
-        except IOError as e:
-            self._disconnect("send_msg: %s" % e)
-            raise
 
     def recv_raw(self, num_recv=0xffff, hexdump=None, timeout=None):
         rep_pdu = None
@@ -1161,9 +1155,6 @@ class RawKerberosTest(TestCase):
             self.s.settimeout(10)
             sys.stderr.write("recv_raw: TIMEOUT\n")
         except socket.error as e:
-            self._disconnect("recv_raw: %s" % e)
-            raise
-        except IOError as e:
             self._disconnect("recv_raw: %s" % e)
             raise
         return rep_pdu
