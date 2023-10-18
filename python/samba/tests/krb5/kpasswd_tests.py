@@ -26,7 +26,7 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 from functools import partial
 
 from samba import generate_random_password
-from samba.dcerpc import krb5pac, security
+from samba.dcerpc import krb5pac
 from samba.sd_utils import SDUtils
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
