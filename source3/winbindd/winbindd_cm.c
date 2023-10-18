@@ -1105,6 +1105,9 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 	char addr[INET6_ADDRSTRLEN];
 
 	print_sockaddr(addr, sizeof(addr), &sa->u.ss);
+	D_DEBUG("Trying to figure out the DC name for domain '%s' at IP '%s'.\n",
+		domain->name,
+		addr);
 
 	ads = ads_init(tmp_ctx,
 		       domain->alt_name,
@@ -1163,6 +1166,10 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 		saf_store(domain->alt_name, name);
 	}
 
+	D_DEBUG("DC name for domain '%s' at IP '%s' is '%s'\n",
+		domain->name,
+		addr,
+		name);
 	*namep = talloc_move(mem_ctx, &name);
 
 out:
@@ -1526,6 +1533,9 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 
 	*fd = -1;
 
+	D_NOTICE("First try to connect to the closest DC (using server "
+		 "affinity cache). If this fails, try to lookup the DC using "
+		 "DNS afterwards.\n");
 	ok = connect_preferred_dc(mem_ctx, domain, request_flags, fd);
 	if (ok) {
 		return true;
@@ -1536,9 +1546,11 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	}
 
  again:
+	D_DEBUG("Retrieving a list of IP addresses for DCs.\n");
 	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs, request_flags) || (num_dcs == 0))
 		return False;
 
+	D_DEBUG("Retrieved IP addresses for %d DCs.\n", num_dcs);
 	for (i=0; i<num_dcs; i++) {
 
 		if (!add_string_to_array(mem_ctx, dcs[i].name,
@@ -1557,6 +1569,9 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	if ((addrs == NULL) || (dcnames == NULL))
 		return False;
 
+	D_DEBUG("Trying to establish a connection to one of the %d DCs "
+		"(timeout of 10 sec for each DC).\n",
+		num_dcs);
 	status = smbsock_any_connect(addrs, dcnames, NULL, NULL, NULL,
 				     num_addrs, 0, 10, fd, &fd_index, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1571,6 +1586,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		}
 		return False;
 	}
+	D_NOTICE("Successfully connected to DC '%s'.\n", dcs[fd_index].name);
 
 	domain->dcaddr = addrs[fd_index];
 
@@ -1614,6 +1630,11 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		*fd = -1;
 	}
 
+	/*
+	 * This should not be an infinite loop, since get_dcs() will not return
+	 * the DC added to the negative connection cache in the above
+	 * winbind_add_failed_connection_entry() call.
+	 */
 	goto again;
 }
 
@@ -1743,11 +1764,17 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	D_NOTICE("Creating connection to domain controller. This is a start of "
+		 "a new connection or a DC failover. The failover only happens "
+		 "if the domain has more than one DC. We will try to connect 3 "
+		 "times at most.\n");
 	for (retries = 0; retries < 3; retries++) {
 		bool found_dc;
 
-		DEBUG(10, ("cm_open_connection: dcname is '%s' for domain %s\n",
-			   domain->dcname ? domain->dcname : "", domain->name));
+		D_DEBUG("Attempt %d/3: DC '%s' of domain '%s'.\n",
+			retries,
+			domain->dcname ? domain->dcname : "",
+			domain->name);
 
 		found_dc = find_dc(mem_ctx, domain, request_flags, &fd);
 		if (!found_dc) {
