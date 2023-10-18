@@ -5961,6 +5961,31 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
+	if (!(create_options & FILE_OPEN_REPARSE_POINT) &&
+	    (smb_fname->fsp != NULL) && /* new files don't have an fsp */
+	    VALID_STAT(smb_fname->fsp->fsp_name->st))
+	{
+		mode_t type = (smb_fname->fsp->fsp_name->st.st_ex_mode &
+			       S_IFMT);
+
+		switch (type) {
+		case S_IFREG:
+			FALL_THROUGH;
+		case S_IFDIR:
+			break;
+		case S_IFLNK:
+			/*
+			 * We should never get this far with a symlink
+			 * "as such". Report as not existing.
+			 */
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			goto fail;
+		default:
+			status = NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED;
+			goto fail;
+		}
+	}
+
 	if (req == NULL) {
 		oplock_request |= INTERNAL_OPEN_ONLY;
 	}

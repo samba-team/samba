@@ -194,13 +194,13 @@ test_symlink_traversal_SMB1_posix_onename()
 	# ls commands.
 	#
 	smbclient_expect_error "ls" "$name" "" "NT_STATUS_OK" || return 1
-	smbclient_expect_error "ls" "$name/noexist" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
-	smbclient_expect_error "ls" "$name/*" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "ls" "$name/noexist" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "$name/*" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "ls" "$name/*/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	# Now in subdirectory emptydir
 	smbclient_expect_error "ls" "emptydir/$name" "" "NT_STATUS_OK" || return 1
-	smbclient_expect_error "ls" "emptydir/$name/noexist" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
-	smbclient_expect_error "ls" "emptydir/$name/*" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "ls" "emptydir/$name/noexist" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "emptydir/$name/*" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "ls" "emptydir/$name/*/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	#
 	# SMB1+POSIX stat commands. All symlinks can be stat'ed.
@@ -211,9 +211,9 @@ test_symlink_traversal_SMB1_posix_onename()
 	# del commands. Under SMB1+POSIX we can legitimately delete symlinks, so don't
 	# try and delete symlink targets, we need them for the later tests.
 	#
-	smbclient_expect_error "del" "$name/noexist" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "del" "$name/noexist" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	# Now in subdirectory emptydir
-	smbclient_expect_error "del" "emptydir/$name/noexist" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "del" "emptydir/$name/noexist" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 
 	if [ "$do_rename" = "do rename" ]; then
 		#

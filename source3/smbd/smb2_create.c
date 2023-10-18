@@ -1136,6 +1136,21 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				     &state->info,
 				     &in_context_blobs,
 				     state->out_context_blobs);
+	if (NT_STATUS_IS_OK(status) &&
+	    !(state->in_create_options & FILE_OPEN_REPARSE_POINT))
+	{
+
+		mode_t mode = state->result->fsp_name->st.st_ex_mode;
+
+		if (!(S_ISREG(mode) || S_ISDIR(mode))) {
+			/*
+			 * Only open files and dirs without
+			 * FILE_OPEN_REPARSE_POINT
+			 */
+			close_file_free(smb1req, &state->result, ERROR_CLOSE);
+			status = NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED;
+		}
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(smb1req->xconn, smb1req->mid)) {
 			SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);

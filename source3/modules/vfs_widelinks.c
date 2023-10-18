@@ -389,7 +389,7 @@ static int widelinks_openat(vfs_handle_struct *handle,
 			fsp->fsp_name->st = full_fname->st;
 		}
 		TALLOC_FREE(full_fname);
-		errno = ENOENT;
+		errno = ELOOP;
 	}
 	return ret;
 }
