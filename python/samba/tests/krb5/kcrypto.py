@@ -283,7 +283,7 @@ class _DES3CBC(_SimplifiedEnctype):
             lastbyte = parity(sum((seed[i] & 1) << i + 1 for i in range(7)))
             keybytes = firstbytes + bytes([lastbyte])
             if _is_weak_des_key(keybytes):
-                keybytes[7] = bytes([keybytes[7] ^ 0xF0])
+                keybytes = firstbytes + bytes([lastbyte ^ 0xF0])
             return keybytes
 
         if len(seed) != 21:
