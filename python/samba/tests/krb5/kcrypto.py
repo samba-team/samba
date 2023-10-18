@@ -279,9 +279,9 @@ class _DES3CBC(_SimplifiedEnctype):
                 b &= ~1
                 return b if bin(b & ~1).count('1') % 2 else b | 1
             assert len(seed) == 7
-            firstbytes = [parity(b & ~1) for b in seed]
+            firstbytes = bytes(parity(b & ~1) for b in seed)
             lastbyte = parity(sum((seed[i] & 1) << i + 1 for i in range(7)))
-            keybytes = bytes([b for b in firstbytes + [lastbyte]])
+            keybytes = firstbytes + bytes([lastbyte])
             if _is_weak_des_key(keybytes):
                 keybytes[7] = bytes([keybytes[7] ^ 0xF0])
             return keybytes
