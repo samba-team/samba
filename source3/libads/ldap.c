@@ -478,6 +478,12 @@ again:
 		num_requests += 1;
 	}
 
+	DBG_DEBUG("Try to create %zu netlogon connections for domain '%s' "
+		  "(provided count of addresses was %zu).\n",
+		  num_requests,
+		  domain,
+		  count);
+
 	if (num_requests == 0) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
 		DBG_WARNING("domain[%s] num_requests[%zu] for count[%zu] - %s\n",
@@ -855,6 +861,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		bool ok = false;
 		struct sockaddr_storage ss;
 
+		DBG_DEBUG("Resolving name of LDAP server '%s'.\n",
+			  ads->server.ldap_server);
 		ok = resolve_name(ads->server.ldap_server, &ss, 0x20, true);
 		if (!ok) {
 			DEBUG(5,("ads_connect: unable to resolve name %s\n",
@@ -900,6 +908,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		 * Keep trying to find a server and fall through
 		 * into ads_find_dc() again.
 		 */
+		DBG_DEBUG("Failed to connect to DC via LDAP server IP address, "
+			  "trying to find another DC.\n");
 	}
 
 	ntstatus = ads_find_dc(ads);
