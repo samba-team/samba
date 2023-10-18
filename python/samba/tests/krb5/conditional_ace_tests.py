@@ -2742,11 +2742,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             self.assertIsNot(code, CRASHES_WINDOWS)
 
         samdb = self.get_samdb()
-        functional_level = self.get_domain_functional_level(samdb)
-
-        if functional_level < dsdb.DS_DOMAIN_FUNCTION_2008:
-            self.skipTest('RBCD requires FL2008')
-
         domain_sid_str = samdb.get_domain_sid()
 
         client_creds = self.get_cached_creds(
