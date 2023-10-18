@@ -36,6 +36,11 @@
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
 {
 	unsigned int old_timeout = cli->timeout;
+	DBG_DEBUG("Changing connection timeout for server '%s' from %d (ms) to "
+		  "%d (ms).\n",
+		  smbXcli_conn_remote_name(cli->conn),
+		  cli->timeout,
+		  timeout);
 	cli->timeout = timeout;
 	return old_timeout;
 }
