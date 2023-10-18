@@ -2741,9 +2741,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         except TypeError:
             self.assertIsNot(code, CRASHES_WINDOWS)
 
-        samdb = self.get_samdb()
-        domain_sid_str = samdb.get_domain_sid()
-
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
             opts={
@@ -2823,6 +2820,9 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
         target_etypes = target_creds.tgs_supported_enctypes
+
+        samdb = self.get_samdb()
+        domain_sid_str = samdb.get_domain_sid()
 
         expected_groups = self.map_sids(expected_groups, None, domain_sid_str)
         expected_device_groups = self.map_sids(expected_device_groups, None, domain_sid_str)
