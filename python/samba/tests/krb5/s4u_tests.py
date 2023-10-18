@@ -1778,7 +1778,7 @@ class S4UKerberosTests(KDCBaseTest):
                                     checksum_keys=checksum_keys,
                                     include_checksums=include_checksums)
 
-    def add_delegation_info(self, ticket, services=None):
+    def add_delegation_info(self, ticket, *, services):
         def modify_pac_fn(pac):
             pac_buffers = pac.buffers
             self.assertNotIn(krb5pac.PAC_TYPE_CONSTRAINED_DELEGATION,
