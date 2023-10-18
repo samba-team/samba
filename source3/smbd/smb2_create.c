@@ -1673,6 +1673,9 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		};
 		enum ndr_err_code ndr_err;
 
+		uid_to_sid(&cc.owner, psbuf->st_ex_uid);
+		gid_to_sid(&cc.group, psbuf->st_ex_gid);
+
 		ndr_err =
 			ndr_push_smb3_posix_cc_info(&ndr,
 						    NDR_SCALARS | NDR_BUFFERS,
