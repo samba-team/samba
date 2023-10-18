@@ -91,7 +91,7 @@ class SmbMinDomainUid(KDCBaseTest):
 
         conn = libsmb.Conn(self.mach_name, self.share, lp=s3_lp, creds=creds)
         # Disconnect
-        conn = None
+        del conn
 
         with open(self.global_inject, 'w') as f:
             f.truncate()
