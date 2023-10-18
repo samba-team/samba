@@ -2724,8 +2724,8 @@ class ConditionalAceTests(ConditionalAceBaseTests):
              reason=AuditReason.NONE,
              status=None,
              edata=False,
-             client_from_rodc=False,
-             device_from_rodc=False,
+             client_from_rodc=None,
+             device_from_rodc=None,
              client_sids=None,
              client_claims=None,
              device_sids=None,
@@ -2740,6 +2740,12 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                 self.skipTest('test crashes Windows servers')
         except TypeError:
             self.assertIsNot(code, CRASHES_WINDOWS)
+
+        if client_from_rodc is None:
+            client_from_rodc = False
+
+        if device_from_rodc is None:
+            device_from_rodc = False
 
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
