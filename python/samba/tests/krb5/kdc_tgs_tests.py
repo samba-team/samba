@@ -3235,6 +3235,7 @@ class KdcTgsTests(KdcTgsBaseTests):
     def _user2user(self, tgt, tgt_creds, expected_error, *,
                    sname=None,
                    srealm=None, user_tgt=None, user_creds=None,
+                   expect_edata=False,
                    expect_pac=True, expected_status=None):
         if user_tgt is None:
             user_creds = self._get_mach_creds()
@@ -3250,6 +3251,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                              additional_ticket=tgt,
                              sname=sname,
                              srealm=srealm,
+                             expect_edata=expect_edata,
                              expect_pac=expect_pac,
                              expected_status=expected_status)
 
