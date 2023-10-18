@@ -2152,8 +2152,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
 
     def test_rbcd_service_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
-                   service_from_rodc=True,
-                   edata=self.expect_padata_outer)
+                   service_from_rodc=True)
 
     def test_rbcd_device_and_service_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
@@ -2163,8 +2162,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
 
     def test_rbcd_client_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
-                   client_from_rodc=True,
-                   edata=self.expect_padata_outer)
+                   client_from_rodc=True)
 
     def test_rbcd_client_and_device_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
@@ -2175,8 +2173,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
     def test_rbcd_client_and_service_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
                    client_from_rodc=True,
-                   service_from_rodc=True,
-                   edata=self.expect_padata_outer)
+                   service_from_rodc=True)
 
     def test_rbcd_all_from_rodc(self):
         self._rbcd('Member_of SID({service_sid})',
