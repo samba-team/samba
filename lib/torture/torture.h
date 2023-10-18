@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture UI functions
 
    Copyright (C) Jelmer Vernooij 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,8 +31,8 @@ struct torture_results;
  * Arranged in precedence order. TORTURE_ERROR has the highest priority;
  * TORTURE_OK the lowest.
  */
-enum torture_result { 
-	TORTURE_OK=0, 
+enum torture_result {
+	TORTURE_OK=0,
 	TORTURE_SKIP=1,
 	TORTURE_FAIL=2,
 	TORTURE_ERROR=3
@@ -45,8 +45,8 @@ enum torture_progress_whence {
 	TORTURE_PROGRESS_PUSH,
 };
 
-/* 
- * These callbacks should be implemented by any backend that wishes 
+/*
+ * These callbacks should be implemented by any backend that wishes
  * to listen to reports from the torture tests.
  */
 struct torture_ui_ops
@@ -56,12 +56,12 @@ struct torture_ui_ops
 	void (*warning) (struct torture_context *, const char *);
 	void (*suite_start) (struct torture_context *, struct torture_suite *);
 	void (*suite_finish) (struct torture_context *, struct torture_suite *);
-	void (*tcase_start) (struct torture_context *, struct torture_tcase *); 
+	void (*tcase_start) (struct torture_context *, struct torture_tcase *);
 	void (*tcase_finish) (struct torture_context *, struct torture_tcase *);
-	void (*test_start) (struct torture_context *, 
+	void (*test_start) (struct torture_context *,
 						struct torture_tcase *,
 						struct torture_test *);
-	void (*test_result) (struct torture_context *, 
+	void (*test_result) (struct torture_context *,
 						 enum torture_result, const char *reason);
 	void (*progress) (struct torture_context *, int offset, enum torture_progress_whence whence);
 	void (*report_time) (struct torture_context *);
@@ -78,12 +78,12 @@ void torture_ui_test_result(struct torture_context *context,
 void torture_ui_report_time(struct torture_context *context);
 
 /*
- * Holds information about a specific run of the testsuite. 
- * The data in this structure should be considered private to 
- * the torture tests and should only be used directly by the torture 
+ * Holds information about a specific run of the testsuite.
+ * The data in this structure should be considered private to
+ * the torture tests and should only be used directly by the torture
  * code and the ui backends.
  *
- * Torture tests should instead call the torture_*() macros and functions 
+ * Torture tests should instead call the torture_*() macros and functions
  * specified below.
  */
 
@@ -127,7 +127,7 @@ struct torture_results
 	bool returncode;
 };
 
-/* 
+/*
  * Describes a particular torture test
  */
 struct torture_test {
@@ -137,18 +137,18 @@ struct torture_test {
 	/** Long description for the test. */
 	const char *description;
 
-	/** Whether this is a dangerous test 
+	/** Whether this is a dangerous test
 	 * (can corrupt the remote servers data or bring it down). */
 	bool dangerous;
 
 	/** Function to call to run this test */
-	bool (*run) (struct torture_context *torture_ctx, 
+	bool (*run) (struct torture_context *torture_ctx,
 				 struct torture_tcase *tcase,
 				 struct torture_test *test);
 
 	struct torture_test *prev, *next;
 
-	/** Pointer to the actual test function. This is run by the 
+	/** Pointer to the actual test function. This is run by the
 	  * run() function above. */
 	void *fn;
 
@@ -158,14 +158,14 @@ struct torture_test {
 	struct torture_tcase *tcase;
 };
 
-/* 
+/*
  * Describes a particular test case.
  */
 struct torture_tcase {
     const char *name;
 	const char *description;
 	bool (*setup) (struct torture_context *tcase, void **data);
-	bool (*teardown) (struct torture_context *tcase, void *data); 
+	bool (*teardown) (struct torture_context *tcase, void *data);
 	bool fixture_persistent;
 	void *data;
 	struct torture_test *tests;
@@ -243,16 +243,16 @@ void torture_subunit_prefix_reset(struct torture_context *ctx,
 bool torture_run_suite(struct torture_context *context,
 					   struct torture_suite *suite);
 
-/* Run the specified testsuite recursively, but only the specified 
+/* Run the specified testsuite recursively, but only the specified
  * tests */
-bool torture_run_suite_restricted(struct torture_context *context, 
+bool torture_run_suite_restricted(struct torture_context *context,
 		       struct torture_suite *suite, const char **restricted);
 
 /* Run the specified testcase */
 bool torture_run_tcase(struct torture_context *context,
 					   struct torture_tcase *tcase);
 
-bool torture_run_tcase_restricted(struct torture_context *context, 
+bool torture_run_tcase_restricted(struct torture_context *context,
 		       struct torture_tcase *tcase, const char **restricted);
 
 /* Run the specified test */
@@ -825,30 +825,30 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 
 /* Getting settings */
 const char *torture_setting_string(struct torture_context *test, \
-								   const char *name, 
+								   const char *name,
 								   const char *default_value);
 
-int torture_setting_int(struct torture_context *test, 
-						const char *name, 
+int torture_setting_int(struct torture_context *test,
+						const char *name,
 						int default_value);
 
-double torture_setting_double(struct torture_context *test, 
-						const char *name, 
+double torture_setting_double(struct torture_context *test,
+						const char *name,
 						double default_value);
 
-bool torture_setting_bool(struct torture_context *test, 
-						  const char *name, 
+bool torture_setting_bool(struct torture_context *test,
+						  const char *name,
 						  bool default_value);
 
-struct torture_suite *torture_find_suite(struct torture_suite *parent, 
+struct torture_suite *torture_find_suite(struct torture_suite *parent,
 										 const char *name);
 
 unsigned long torture_setting_ulong(struct torture_context *test,
 				    const char *name,
 				    unsigned long default_value);
 
-NTSTATUS torture_temp_dir(struct torture_context *tctx, 
-				   const char *prefix, 
+NTSTATUS torture_temp_dir(struct torture_context *tctx,
+				   const char *prefix,
 				   char **tempdir);
 NTSTATUS torture_deltree_outputdir(struct torture_context *tctx);
 
@@ -857,8 +857,8 @@ struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 		bool (*run) (struct torture_context *test, void *tcase_data));
 
 
-bool torture_suite_init_tcase(struct torture_suite *suite, 
-			      struct torture_tcase *tcase, 
+bool torture_suite_init_tcase(struct torture_suite *suite,
+			      struct torture_tcase *tcase,
 			      const char *name);
 int torture_suite_children_count(const struct torture_suite *suite);
 
