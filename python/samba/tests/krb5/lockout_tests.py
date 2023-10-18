@@ -812,8 +812,8 @@ class LockoutTests(KDCBaseTest):
                 # modification, so that the account is also added to the
                 # auxiliary bad password database.
 
-                old_utf16pw = f'"Secret007"'.encode('utf-16le')  # invalid pwd
-                new_utf16pw = f'"Secret008"'.encode('utf-16le')
+                old_utf16pw = '"Secret007"'.encode('utf-16le')  # invalid pwd
+                new_utf16pw = '"Secret008"'.encode('utf-16le')
 
                 msg = ldb.Message(user_dn)
                 msg['0'] = ldb.MessageElement(old_utf16pw,
