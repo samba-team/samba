@@ -2936,6 +2936,7 @@ class KdcTgsTests(KdcTgsBaseTests):
 
     def _modify_tgt(self,
                     tgt,
+                    *,
                     renewable=False,
                     invalid=False,
                     from_rodc=False,
