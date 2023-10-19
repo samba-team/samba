@@ -574,6 +574,7 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 	struct security_token *security_token = NULL;
 	uint32_t session_info_flags =
 		AUTH_SESSION_INFO_DEFAULT_GROUPS |
+		AUTH_SESSION_INFO_DEVICE_DEFAULT_GROUPS |
 		AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
 	const uint32_t access_desired = SEC_ADS_CONTROL_ACCESS;
 	uint32_t access_granted;
