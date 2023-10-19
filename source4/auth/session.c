@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Authentication utility functions
    Copyright (C) Andrew Tridgell 1992-1998
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -40,7 +40,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-_PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 					    struct loadparm_context *lp_ctx)
 {
 	NTSTATUS nt_status;
@@ -506,12 +506,12 @@ NTSTATUS authsam_get_session_info_principal(TALLOC_CTX *mem_ctx,
 /**
  * prints a struct auth_session_info security token to debug output.
  */
-void auth_session_info_debug(int dbg_lev, 
+void auth_session_info_debug(int dbg_lev,
 			     const struct auth_session_info *session_info)
 {
 	if (!session_info) {
 		DEBUG(dbg_lev, ("Session Info: (NULL)\n"));
-		return;	
+		return;
 	}
 
 	security_token_debug(DBGC_AUTH, dbg_lev,

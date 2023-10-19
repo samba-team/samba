@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett         2001-2002
    Copyright (C) Stefan Metzmacher       2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -47,7 +47,7 @@ static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_co
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-_PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
+_PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by)
 {
 	auth_ctx->challenge.set_by = talloc_strdup(auth_ctx, set_by);
 	NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.set_by);
@@ -66,7 +66,7 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t cha
 {
 
 	if (auth_ctx->challenge.data.length == 8) {
-		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n", 
+		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n",
 			  auth_ctx->challenge.set_by));
 		memcpy(chal, auth_ctx->challenge.data.data, 8);
 		return NT_STATUS_OK;
@@ -94,13 +94,13 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t cha
  * interesting details in the user_info_dc struct.
  *
  * The return value takes precedence over the contents of the user_info_dc
- * struct.  When the return is other than NT_STATUS_OK the contents 
+ * struct.  When the return is other than NT_STATUS_OK the contents
  * of that structure is undefined.
  *
- * @param auth_ctx Supplies the challenges and some other data. 
- *                  Must be created with auth_context_create(), and the challenges should be 
- *                  filled in, either at creation or by calling the challenge generation 
- *                  function auth_get_challenge().  
+ * @param auth_ctx Supplies the challenges and some other data.
+ *                  Must be created with auth_context_create(), and the challenges should be
+ *                  filled in, either at creation or by calling the challenge generation
+ *                  function auth_get_challenge().
  *
  * @param user_info Contains the user supplied components, including the passwords.
  *
@@ -115,7 +115,7 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t cha
 
 _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
-			     const struct auth_usersupplied_info *user_info, 
+			     const struct auth_usersupplied_info *user_info,
 			     struct auth_user_info_dc **user_info_dc,
 			     uint8_t *pauthoritative)
 {
@@ -173,7 +173,7 @@ static void auth_check_password_next(struct tevent_req *req);
  * interesting details in the user_info_dc struct.
  *
  * The return value takes precedence over the contents of the user_info_dc
- * struct.  When the return is other than NT_STATUS_OK the contents 
+ * struct.  When the return is other than NT_STATUS_OK the contents
  * of that structure is undefined.
  *
  * @param mem_ctx The memory context the request should operate on
@@ -365,7 +365,7 @@ static void auth_check_password_done(struct tevent_req *subreq)
  * async receive function
  *
  * The return value takes precedence over the contents of the user_info_dc
- * struct.  When the return is other than NT_STATUS_OK the contents 
+ * struct.  When the return is other than NT_STATUS_OK the contents
  * of that structure is undefined.
  *
  *
@@ -620,7 +620,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
-	status = auth_generate_session_info_wrapper(auth_ctx, mem_ctx, 
+	status = auth_generate_session_info_wrapper(auth_ctx, mem_ctx,
 						    user_info_dc,
 						    user_info_dc->info->account_name,
 						    session_info_flags, session_info);
@@ -632,7 +632,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
  Make a auth_info struct for the auth subsystem
  - Allow the caller to specify the methods to use, including optionally the SAM to use
 ***************************************************************************/
-_PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * const *methods, 
+_PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * const *methods,
 					      struct tevent_context *ev,
 					      struct imessaging_context *msg,
 					      struct loadparm_context *lp_ctx,
@@ -777,7 +777,7 @@ static struct auth_backend {
 static int num_backends;
 
 /*
-  register a AUTH backend. 
+  register a AUTH backend.
 
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
@@ -786,10 +786,10 @@ _PUBLIC_ NTSTATUS auth_register(TALLOC_CTX *mem_ctx,
 			const struct auth_operations *ops)
 {
 	struct auth_operations *new_ops;
-	
+
 	if (auth_backend_byname(ops->name) != NULL) {
 		/* its already registered! */
-		DEBUG(0,("AUTH backend '%s' already registered\n", 
+		DEBUG(0,("AUTH backend '%s' already registered\n",
 			 ops->name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
@@ -807,7 +807,7 @@ _PUBLIC_ NTSTATUS auth_register(TALLOC_CTX *mem_ctx,
 
 	num_backends++;
 
-	DEBUG(3,("AUTH backend '%s' registered\n", 
+	DEBUG(3,("AUTH backend '%s' registered\n",
 		 ops->name));
 
 	return NT_STATUS_OK;
@@ -854,11 +854,11 @@ _PUBLIC_ NTSTATUS auth4_init(void)
 #define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 	STATIC_auth4_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_auth4_MODULES };
-	
+
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
-	
+
 	run_init_functions(NULL, static_init);
-	
-	return NT_STATUS_OK;	
+
+	return NT_STATUS_OK;
 }
