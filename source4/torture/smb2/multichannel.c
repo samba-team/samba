@@ -2378,6 +2378,11 @@ static void test_multichannel_bug_15346_ndone(struct tevent_req *subreq)
 		tevent_req_callback_data_void(subreq);
 	struct test_multichannel_bug_15346_state *state = conn->state;
 	struct torture_context *tctx = state->tctx;
+	struct timeval current_time;
+	struct tm tm_buf;
+	struct tm *current_tm = NULL;
+	char time_str[sizeof "10000-01-01T00:00:00"];
+	size_t time_str_len;
 	NTSTATUS status;
 	bool ok = false;
 
@@ -2389,7 +2394,20 @@ static void test_multichannel_bug_15346_ndone(struct tevent_req *subreq)
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, asserted,
 					"smbXcli_negprot_recv failed");
 
-	torture_comment(tctx, "conn[%zu]: negprot done\n", conn->idx);
+	current_time = tevent_timeval_current();
+	current_tm = gmtime_r(&current_time.tv_sec, &tm_buf);
+	torture_assert_not_null_goto(tctx, current_tm, ok, asserted,
+				     "gmtime_r failed");
+
+	time_str_len = strftime(time_str, sizeof time_str, "%FT%T", current_tm);
+	torture_assert_size_not_equal_goto(tctx, time_str_len, 0, ok, asserted,
+					   "strftime failed");
+
+	torture_comment(tctx,
+			"%s.%ldZ: conn[%zu]: negprot done\n",
+			time_str,
+			(long)current_time.tv_usec,
+			conn->idx);
 
 	conn->ereq = smb2cli_echo_send(conn->smbXcli,
 				       tctx->ev,
@@ -2417,18 +2435,44 @@ static void test_multichannel_bug_15346_edone(struct tevent_req *subreq)
 		tevent_req_callback_data_void(subreq);
 	struct test_multichannel_bug_15346_state *state = conn->state;
 	struct torture_context *tctx = state->tctx;
+	struct timeval current_time;
+	struct tm tm_buf;
+	struct tm *current_tm = NULL;
+	char time_str[sizeof "10000-01-01T00:00:00"];
+	size_t time_str_len;
+	const char *outcome = NULL;
 	NTSTATUS status;
 	bool ok = false;
 
 	SMB_ASSERT(conn->ereq == subreq);
 	conn->ereq = NULL;
 
+	current_time = tevent_timeval_current();
+	current_tm = gmtime_r(&current_time.tv_sec, &tm_buf);
+	torture_assert_not_null_goto(tctx, current_tm, ok, asserted,
+				     "gmtime_r failed");
+
+	time_str_len = strftime(time_str, sizeof time_str, "%FT%T", current_tm);
+	torture_assert_size_not_equal_goto(tctx, time_str_len, 0, ok, asserted,
+					   "strftime failed");
+
 	status = smb2cli_echo_recv(subreq);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		outcome = "timed out";
+	} else if (!NT_STATUS_IS_OK(status)) {
+		outcome = "failed";
+	} else {
+		outcome = "done";
+	}
+	torture_comment(tctx,
+			"%s.%ldZ: conn[%zu]: echo %s\n",
+			time_str,
+			(long)current_time.tv_usec,
+			conn->idx,
+			outcome);
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, asserted,
 					"smb2cli_echo_recv failed");
-
-	torture_comment(tctx, "conn[%zu]: echo done\n", conn->idx);
 
 	state->num_ready += 1;
 	if (state->num_ready < state->num_conns) {
