@@ -2978,10 +2978,16 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
+        # FIXME: we need to pass this parameter only because Samba doesn’t
+        # handle ‘krbtgt@REALM’ principals correctly (see
+        # https://bugzilla.samba.org/show_bug.cgi?id=15482).
+        krbtgt_sname = self.get_krbtgt_sname()
+
         # Show that authentication succeeds.
         self._armored_as_req(client_creds,
                              self.get_krbtgt_creds(),
-                             mach_tgt)
+                             mach_tgt,
+                             target_sname=krbtgt_sname)
 
         self.check_as_log(client_creds,
                           armor_creds=mach_creds,
@@ -3360,10 +3366,16 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
+        # FIXME: we need to pass this parameter only because Samba doesn’t
+        # handle ‘krbtgt@REALM’ principals correctly (see
+        # https://bugzilla.samba.org/show_bug.cgi?id=15482).
+        krbtgt_sname = self.get_krbtgt_sname()
+
         # Show that authentication succeeds.
         self._armored_as_req(client_creds,
                              self.get_krbtgt_creds(),
-                             mach_tgt)
+                             mach_tgt,
+                             target_sname=krbtgt_sname)
 
         self.check_as_log(client_creds,
                           armor_creds=mach_creds,
@@ -4357,10 +4369,16 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
         }
 
+        # FIXME: we need to pass this parameter only because Samba doesn’t
+        # handle ‘krbtgt@REALM’ principals correctly (see
+        # https://bugzilla.samba.org/show_bug.cgi?id=15482).
+        krbtgt_sname = self.get_krbtgt_sname()
+
         # Show that obtaining a service ticket with an AS‐REQ is allowed.
         self._armored_as_req(client_creds,
                           self.get_krbtgt_creds(),
                           mach_tgt,
+                          target_sname=krbtgt_sname,
                           expected_groups=expected_groups)
 
         self.check_as_log(client_creds,

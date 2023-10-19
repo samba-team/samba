@@ -176,6 +176,7 @@ class KdcTgsBaseTests(KDCBaseTest):
                         target_creds,
                         armor_tgt,
                         *,
+                        target_sname=None,
                         expected_error=0,
                         expected_sname=None,
                         expect_edata=None,
@@ -191,9 +192,10 @@ class KdcTgsBaseTests(KDCBaseTest):
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                  names=[client_username])
 
-        target_name = target_creds.get_username()
-        target_sname = self.PrincipalName_create(
-            name_type=NT_PRINCIPAL, names=[target_name])
+        if target_sname is None:
+            target_name = target_creds.get_username()
+            target_sname = self.PrincipalName_create(
+                name_type=NT_PRINCIPAL, names=[target_name])
         target_realm = target_creds.get_realm()
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)

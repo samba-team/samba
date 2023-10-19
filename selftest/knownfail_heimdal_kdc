@@ -131,9 +131,3 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_with_service_asserted_identity_client_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_without_aa_asserted_identity_both_from_rodc\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_without_aa_asserted_identity_client_from_rodc\(ad_dc\)
-#
-# Conditional ACE device restrictions
-#
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_claims_present\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_groups_present\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_simple_as_req_client_policy_only\(ad_dc\)
