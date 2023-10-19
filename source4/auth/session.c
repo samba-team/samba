@@ -190,10 +190,29 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/*
-		 * TODO: if we find out that we need to add default SIDs to the device
-		 * SIDs, as well as to the client SIDs, we’ll do that here.
-		 */
+		for (i = 0; i < num_device_sids; i++) {
+			device_sids[i] = device_info_dc->sids[i];
+		}
+
+		if (session_info_flags & AUTH_SESSION_INFO_DEVICE_DEFAULT_GROUPS) {
+			device_sids = talloc_realloc(tmp_ctx,
+						     device_sids,
+						     struct auth_SidAttr,
+						     num_device_sids + 2);
+			if (device_sids == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			device_sids[num_device_sids++] = (struct auth_SidAttr) {
+				.sid = global_sid_World,
+				.attrs = SE_GROUP_DEFAULT_FLAGS,
+			};
+			device_sids[num_device_sids++] = (struct auth_SidAttr) {
+				.sid = global_sid_Network,
+				.attrs = SE_GROUP_DEFAULT_FLAGS,
+			};
+		}
 	}
 
 	nt_status = security_token_create(mem_ctx,

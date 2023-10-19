@@ -41,6 +41,7 @@ enum auth_password_state {
 #define AUTH_SESSION_INFO_UNIX_TOKEN         0x08 /* The returned token must have the unix_token and unix_info elements provided */
 #define AUTH_SESSION_INFO_NTLM               0x10 /* The returned token must have authenticated-with-NTLM flag set */
 #define AUTH_SESSION_INFO_FORCE_COMPOUNDED_AUTHENTICATION  0x20 /* The user authenticated with a device. */
+#define AUTH_SESSION_INFO_DEVICE_DEFAULT_GROUPS     0x40 /* Add the device to the default world and network groups */
 
 struct auth_usersupplied_info
 {
