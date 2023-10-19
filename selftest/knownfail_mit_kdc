@@ -4064,6 +4064,9 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 # Conditional ACE device restrictions
 #
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_authenticated_users\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_network_group\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_world_group\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_claims_invalid\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_claims_not_present\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_device_info\(ad_dc\)
@@ -4072,4 +4075,7 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_resource_groups_present_to_service_no_sid_compression\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_resource_groups_present_to_service_sid_compression\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_pac_well_known_groups_not_present\(ad_dc\)
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_device_in_authenticated_users\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_device_in_network_group\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_device_in_world_group\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_simple_as_req_client_and_target_policy\(ad_dc\)
