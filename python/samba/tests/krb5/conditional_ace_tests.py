@@ -2924,11 +2924,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication fails.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt,
                              expected_error=KDC_ERR_POLICY)
 
@@ -2980,11 +2978,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication succeeds.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt)
 
         self.check_as_log(client_creds,
@@ -3031,11 +3027,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication fails.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt,
                              expected_error=KDC_ERR_POLICY)
 
@@ -3216,11 +3210,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication fails.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt,
                              expected_error=KDC_ERR_POLICY)
 
@@ -3315,11 +3307,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication fails.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt,
                              expected_error=KDC_ERR_POLICY)
 
@@ -3370,11 +3360,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication succeeds.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt)
 
         self.check_as_log(client_creds,
@@ -3426,11 +3414,9 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=client_policy)
 
-        target_creds = self.get_krbtgt_creds()
-
         # Show that authentication fails.
         self._armored_as_req(client_creds,
-                             target_creds,
+                             self.get_krbtgt_creds(),
                              mach_tgt,
                              expected_error=KDC_ERR_POLICY)
 
