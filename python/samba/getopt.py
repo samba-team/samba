@@ -115,6 +115,28 @@ class Option(optparse.Option):
         return value
 
 
+class OptionParser(optparse.OptionParser):
+    """Samba OptionParser, adding support for required=True on Options."""
+
+    def __init__(self,
+                 usage=None,
+                 option_list=None,
+                 option_class=Option,
+                 version=None,
+                 conflict_handler="error",
+                 description=None,
+                 formatter=None,
+                 add_help_option=True,
+                 prog=None,
+                 epilog=None):
+        """
+        Ensure that option_class defaults to the Samba one.
+        """
+        super().__init__(usage, option_list, option_class, version,
+                         conflict_handler, description, formatter,
+                         add_help_option, prog, epilog)
+
+
 class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
 
