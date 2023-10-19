@@ -180,14 +180,14 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """Test view claim type without --name is handled."""
         result, out, err = self.runcmd("domain", "claim", "claim-type", "view")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Argument --name is required.", err)
+        self.assertIn("Argument --name is required.", err)
 
     def test_claim_type_view_notfound(self):
         """Test viewing claim type that doesn't exist is handled."""
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "view", "--name", "doesNotExist")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Claim type doesNotExist not found.", err)
+        self.assertIn("Claim type doesNotExist not found.", err)
 
     def test_claim_type_create(self):
         """Test creating several known attributes as claim types.
@@ -350,7 +350,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "create", "--attribute=wWWHomePage",
                                        "--name=homepage")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Argument --class is required.", err)
+        self.assertIn("Argument --class is required.", err)
 
     def test_claim_type_delete(self):
         """Test deleting a claim type that is not protected."""
@@ -405,7 +405,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         result, out, err = self.runcmd("domain", "claim", "claim-type",
                                        "delete", "--name", "doesNotExist")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Claim type doesNotExist not found.", err)
+        self.assertIn("Claim type doesNotExist not found.", err)
 
     def test_claim_type_modify_description(self):
         """Test modifying a claim type description."""
@@ -435,7 +435,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "modify", "--name", "seeAlso",
                                        "--class=")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Class name is required.", err)
+        self.assertIn("Class name is required.", err)
 
         # Try changing it to just --class=computer first.
         result, out, err = self.runcmd("domain", "claim", "claim-type",
@@ -546,7 +546,7 @@ class ClaimCmdTestCase(SambaToolCmdTest):
                                        "modify", "--name", "doesNotExist",
                                        "--description=NewDescription")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Claim type doesNotExist not found.", err)
+        self.assertIn("Claim type doesNotExist not found.", err)
 
     def test_value_type_list(self):
         """Test listing claim value types in list format."""
@@ -589,11 +589,11 @@ class ClaimCmdTestCase(SambaToolCmdTest):
         """Test viewing a claim value type with missing --name is handled."""
         result, out, err = self.runcmd("domain", "claim", "value-type", "view")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Argument --name is required.", err)
+        self.assertIn("Argument --name is required.", err)
 
     def test_value_type_view_notfound(self):
         """Test viewing a claim value type that doesn't exist is handled."""
         result, out, err = self.runcmd("domain", "claim", "value-type",
                                        "view", "--name", "doesNotExist")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Value type doesNotExist not found.", err)
+        self.assertIn("Value type doesNotExist not found.", err)

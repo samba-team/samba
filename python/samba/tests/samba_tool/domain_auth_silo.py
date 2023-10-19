@@ -81,7 +81,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         result, out, err = self.runcmd("domain", "auth", "silo", "view",
                                        "--name", "doesNotExist")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Authentication silo doesNotExist not found.", err)
+        self.assertIn("Authentication silo doesNotExist not found.", err)
 
     def test_authentication_silo_view_name_required(self):
         """Test view authentication silo without --name argument."""
@@ -227,7 +227,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                            "--name", "createFails",
                                            "--policy", "Single Policy")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
     def test_authentication_silo_modify_description(self):
         """Test modify authentication silo changing the description field."""
@@ -323,7 +323,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                        "--name", "doesNotExist",
                                        "--description=NewDescription")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Authentication silo doesNotExist not found.", err)
+        self.assertIn("Authentication silo doesNotExist not found.", err)
 
     def test_authentication_silo_modify_name_missing(self):
         """Test modify authentication silo without --name argument."""
@@ -340,7 +340,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                            "--name", "developers",
                                            "--description", "Devs")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
     def test_authentication_silo_delete(self):
         """Test deleting an authentication silo that is not protected."""
@@ -422,7 +422,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                            "--name", "deleteForceFail",
                                            "--force")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
     def test_authentication_silo_delete_fails(self):
         """Test deleting an authentication silo, but it fails."""
@@ -440,7 +440,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
             result, out, err = self.runcmd("domain", "auth", "silo", "delete",
                                            "--name", "regularSilo")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
             # When not using --force we get a hint.
             self.assertIn("Try --force", err)
@@ -463,7 +463,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                            "--name", "protectedSilo",
                                            "--force")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
             # When using --force we don't get the hint.
             self.assertNotIn("Try --force", err)

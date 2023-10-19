@@ -312,7 +312,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
             result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                            "--name", "createFails")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
     def test_authentication_policy_modify_description(self):
         """Test modifying an authentication policy description."""
@@ -480,8 +480,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                        "--name", "doesNotExist",
                                        "--description", "NewDescription")
         self.assertEqual(result, -1)
-        self.assertIn("ERROR: Authentication policy doesNotExist not found.",
-                      err)
+        self.assertIn("Authentication policy doesNotExist not found.", err)
 
     def test_authentication_policy_modify_audit_enforce(self):
         """Test modify authentication policy using --audit and --enforce."""
@@ -564,7 +563,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                            "--name", "Single Policy",
                                            "--description", "New description")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
     def test_authentication_policy_delete(self):
         """Test deleting an authentication policy that is not protected."""
@@ -643,7 +642,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                            "--name", "deleteForceFail",
                                            "--force")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
     def test_authentication_policy_delete_fails(self):
         """Test deleting an authentication policy, but it fails."""
@@ -660,7 +659,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
             result, out, err = self.runcmd("domain", "auth", "policy", "delete",
                                            "--name", "regularPolicy")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
             # When not using --force we get a hint.
             self.assertIn("Try --force", err)
@@ -682,7 +681,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                            "--name", "protectedPolicy",
                                            "--force")
             self.assertEqual(result, -1)
-            self.assertIn("ERROR: Custom error message", err)
+            self.assertIn("Custom error message", err)
 
             # When using --force we don't get the hint.
             self.assertNotIn("Try --force", err)
