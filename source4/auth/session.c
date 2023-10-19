@@ -68,7 +68,7 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 	uint32_t num_device_sids = 0;
 	const char *filter = NULL;
 	struct auth_SidAttr *sids = NULL;
-	const struct auth_SidAttr *device_sids = NULL;
+	struct auth_SidAttr *device_sids = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -177,14 +177,24 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 	}
 
 	if (device_info_dc != NULL) {
-		device_sids = device_info_dc->sids;
+		/*
+		 * Make a copy of the device SIDs in case we need to add extra SIDs on
+		 * the end. One can never have too much copying.
+		 */
 		num_device_sids = device_info_dc->num_sids;
-	}
+		device_sids = talloc_array(tmp_ctx,
+				    struct auth_SidAttr,
+				    num_device_sids);
+		if (device_sids == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
-	/*
-	 * TODO: if we find out that we need to add default SIDs to the device
-	 * SIDs, as well as to the client SIDs, we’ll do that here.
-	 */
+		/*
+		 * TODO: if we find out that we need to add default SIDs to the device
+		 * SIDs, as well as to the client SIDs, we’ll do that here.
+		 */
+	}
 
 	nt_status = security_token_create(mem_ctx,
 					  lp_ctx,
