@@ -184,7 +184,6 @@ static bool check_client_uid(struct winbindd_cli_state *state, uid_t uid)
 bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	fstring f_name_namespace, f_name_domain, f_name_user;
 	char *name_namespace = NULL;
 	char *name_domain = NULL;
 	char *name_user = NULL;
@@ -253,32 +252,15 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 	TALLOC_FREE(name_domain);
 	TALLOC_FREE(name_user);
 	/* Parse domain and username */
-	ok = parse_domain_user_fstr(state->request->data.ccache_ntlm_auth.user,
-			       f_name_namespace,
-			       f_name_domain,
-			       f_name_user);
+	ok = parse_domain_user(state,
+			       state->request->data.ccache_ntlm_auth.user,
+			       &name_namespace,
+			       &name_domain,
+			       &name_user);
 	if (!ok) {
 		DEBUG(10,("winbindd_dual_ccache_ntlm_auth: cannot parse "
 			"domain and user from name [%s]\n",
 			state->request->data.ccache_ntlm_auth.user));
-		goto process_result;
-	}
-
-	name_namespace = talloc_strdup(state, f_name_namespace);
-	if (name_namespace == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto process_result;
-	}
-
-	name_domain = talloc_strdup(state, f_name_domain);
-	if (name_domain == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto process_result;
-	}
-
-	name_user = talloc_strdup(state, f_name_user);
-	if (name_user == NULL) {
-		result = NT_STATUS_NO_MEMORY;
 		goto process_result;
 	}
 
@@ -337,6 +319,9 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 	data_blob_free(&auth);
 
   process_result:
+	TALLOC_FREE(name_namespace);
+	TALLOC_FREE(name_domain);
+	TALLOC_FREE(name_user);
 	return NT_STATUS_IS_OK(result);
 }
 
