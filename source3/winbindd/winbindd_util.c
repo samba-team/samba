@@ -1547,6 +1547,91 @@ static bool assume_domain(const char *domain)
 }
 
 /* Parse a DOMAIN\user or UPN string into a domain, namespace and a user */
+bool parse_domain_user(TALLOC_CTX *ctx,
+		       const char *domuser,
+		       char **pnamespace,
+		       char **pdomain,
+		       char **puser)
+{
+	char *p = NULL;
+	char *namespace = NULL;
+	char *domain = NULL;
+	char *user = NULL;
+
+	if (strlen(domuser) == 0) {
+		return false;
+	}
+
+	p = strchr(domuser, *lp_winbind_separator());
+	if (p != NULL) {
+		user = talloc_strdup(ctx, p + 1);
+		if (user == NULL) {
+			goto fail;
+		}
+		domain = talloc_strdup(ctx,
+				domuser);
+		if (domain == NULL) {
+			goto fail;
+		}
+		domain[PTR_DIFF(p, domuser)] = '\0';
+		namespace = talloc_strdup(ctx, domain);
+		if (namespace == NULL) {
+			goto fail;
+		}
+	} else {
+		user = talloc_strdup(ctx, domuser);
+		if (user == NULL) {
+			goto fail;
+		}
+		p = strchr(domuser, '@');
+		if (p != NULL) {
+			/* upn */
+			namespace = talloc_strdup(ctx, p + 1);
+			if (namespace == NULL) {
+				goto fail;
+			}
+			domain = talloc_strdup(ctx, "");
+			if (domain == NULL) {
+				goto fail;
+			}
+
+		} else if (assume_domain(lp_workgroup())) {
+			domain = talloc_strdup(ctx, lp_workgroup());
+			if (domain == NULL) {
+				goto fail;
+			}
+			namespace = talloc_strdup(ctx, domain);
+			if (namespace == NULL) {
+				goto fail;
+			}
+		} else {
+			namespace = talloc_strdup(ctx, lp_netbios_name());
+			if (namespace == NULL) {
+				goto fail;
+			}
+			domain = talloc_strdup(ctx, "");
+			if (domain == NULL) {
+				goto fail;
+			}
+		}
+	}
+
+	if (!strupper_m(domain)) {
+		goto fail;
+	}
+
+	*pnamespace = namespace;
+	*pdomain = domain;
+	*puser = user;
+	return true;
+fail:
+	TALLOC_FREE(user);
+	TALLOC_FREE(domain);
+	TALLOC_FREE(namespace);
+	return false;
+}
+
+/* Parse a DOMAIN\user or UPN string into a domain, namespace and a user */
 bool parse_domain_user_fstr(const char *domuser,
 		       fstring namespace,
 		       fstring domain,

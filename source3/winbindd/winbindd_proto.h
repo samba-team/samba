@@ -516,6 +516,21 @@ struct winbindd_domain *find_our_domain(void);
 struct winbindd_domain *find_default_route_domain(void);
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
+/**
+ * Parse a DOMAIN\user or UPN string into a domain, namespace and a user
+ *
+ * @param[in] ctx talloc context
+ * @param[in] domuser  a DOMAIN\user or UPN string
+ * @param[out] namespace
+ * @param[out] domain
+ * @param[out] user
+ * @return bool indicating success or failure
+ */
+bool parse_domain_user(TALLOC_CTX *ctx,
+		       const char *domuser,
+		       char **namespace,
+		       char **domain,
+		       char **user);
 bool parse_domain_user_fstr(const char *domuser,
 		       fstring namespace,
 		       fstring domain,
