@@ -3246,6 +3246,7 @@ sub provision($$)
 	fruit:resource = file
 	fruit:metadata = stream
 	fruit:zero_file_id=yes
+	fruit:validate_afpinfo = no
 
 [fruit_resource_stream]
 	path = $fruit_resource_stream_shrdir

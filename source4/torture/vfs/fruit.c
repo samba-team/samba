@@ -8768,3 +8768,72 @@ struct torture_suite *torture_vfs_fruit_unfruit(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+/*
+ * Write an invalid AFP_AfpInfo stream header
+ */
+bool test_fruit_validate_afpinfo(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	bool expect_invalid_param = torture_setting_bool(tctx, "validate_afpinfo", true);
+	const char *fname = "test_fruit_validate_afpinfo";
+	const char *sname = "test_fruit_validate_afpinfo" AFPINFO_STREAM_NAME;
+	struct smb2_handle handle;
+	AfpInfo *afpinfo = NULL;
+	char *afpinfo_buf = NULL;
+	uint8_t valbuf[8];
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_comment(tctx, "Checking create of AfpInfo stream\n");
+
+	smb2_util_unlink(tree, fname);
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed");
+
+	afpinfo = torture_afpinfo_new(tctx);
+	torture_assert_not_null_goto(tctx, afpinfo, ret, done,
+				     "torture_afpinfo_new failed\n");
+
+	memcpy(afpinfo->afpi_FinderInfo, "FOO BAR ", 8);
+
+	ret = torture_write_afpinfo(tree, tctx, tctx, fname, afpinfo);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_write_afpinfo failed\n");
+
+	afpinfo_buf = talloc_zero_size(tctx, 60);
+	torture_assert_goto(tctx, afpinfo_buf != NULL, ret, done,
+			    "torture_afpinfo_new failed");
+	memcpy(afpinfo_buf + 16, "FOO ", 4);
+
+	status = torture_smb2_testfile_access(
+		tree, sname, &handle, SEC_FILE_ALL);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	status = smb2_util_write(tree, handle, afpinfo_buf, 0, AFP_INFO_SIZE);
+	if (expect_invalid_param) {
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, NT_STATUS_INVALID_PARAMETER, ret, done,
+			"write didn't fail as expected\n");
+	} else {
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_write failed");
+	}
+
+	smb2_util_close(tree, handle);
+
+	/*
+	 * Verify the server fixed the header
+	 */
+	PUSH_BE_U32(valbuf, 0, AFP_Signature);
+	PUSH_BE_U32(valbuf + 4, 0, AFP_Version);
+	ret = check_stream(tree, __location__, tctx, tctx, fname,
+			   AFPINFO_STREAM, 0, 60, 0, 8, (char *)valbuf);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}

@@ -1836,6 +1836,13 @@ plantestsuite("samba3.blackbox.force-user-unlink",
               [os.path.join(samba3srcdir,
                             "script/tests/test_force_user_unlink.sh")])
 
+plansmbtorture4testsuite(
+    "vfs.fruit_validate_afpinfo", "fileserver",
+    '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:validate_afpinfo=yes')
+plansmbtorture4testsuite(
+    "vfs.fruit_validate_afpinfo", "fileserver",
+    '//$SERVER_IP/vfs_fruit_zero_fileid -U$USERNAME%$PASSWORD --option=torture:validate_afpinfo=no')
+
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''
 
