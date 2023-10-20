@@ -24,7 +24,9 @@
 
 struct winbindd_getgrnam_state {
 	struct tevent_context *ev;
-	fstring name_namespace, name_domain, name_group;
+	char *name_namespace;
+	char *name_domain;
+	char *name_group;
 	struct dom_sid sid;
 	const char *domname;
 	const char *name;
@@ -73,10 +75,10 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 
 	/* Parse domain and groupname */
 
-	ok = parse_domain_user_fstr(tmp,
-			       state->name_namespace,
-			       state->name_domain,
-			       state->name_group);
+	ok = parse_domain_user(state, tmp,
+			       &state->name_namespace,
+			       &state->name_domain,
+			       &state->name_group);
 	if (!ok) {
 		DBG_INFO("Could not parse domain user: %s\n", tmp);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -88,7 +90,12 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 
 	if ( !*(state->name_domain) || strequal(state->name_domain,
 						get_global_sam_name()) ) {
-		fstrcpy(state->name_domain, get_global_sam_name());
+		TALLOC_FREE(state->name_domain);
+		state->name_domain = talloc_strdup(state,
+						get_global_sam_name());
+		if (tevent_req_nomem(state->name_domain, req)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	subreq = wb_lookupname_send(state, ev,
