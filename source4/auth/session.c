@@ -213,6 +213,22 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 				.attrs = SE_GROUP_DEFAULT_FLAGS,
 			};
 		}
+
+		if (session_info_flags & AUTH_SESSION_INFO_DEVICE_AUTHENTICATED) {
+			device_sids = talloc_realloc(tmp_ctx,
+						     device_sids,
+						     struct auth_SidAttr,
+						     num_device_sids + 1);
+			if (device_sids == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			device_sids[num_device_sids++] = (struct auth_SidAttr) {
+				.sid = global_sid_Authenticated_Users,
+				.attrs = SE_GROUP_DEFAULT_FLAGS,
+			};
+		}
 	}
 
 	nt_status = security_token_create(mem_ctx,
