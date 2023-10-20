@@ -24,9 +24,9 @@
 
 struct winbindd_getpwnam_state {
 	struct tevent_context *ev;
-	fstring namespace;
-	fstring domname;
-	fstring username;
+	char *namespace;
+	char *domname;
+	char *username;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	struct winbindd_pw pw;
@@ -72,10 +72,11 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 		domuser = mapped_user;
 	}
 
-	ok = parse_domain_user_fstr(domuser,
-			       state->namespace,
-			       state->domname,
-			       state->username);
+	ok = parse_domain_user(state,
+			       domuser,
+			       &state->namespace,
+			       &state->domname,
+			       &state->username);
 	if (!ok) {
 		D_WARNING("Could not parse domain user: %s\n", domuser);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
