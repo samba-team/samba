@@ -595,6 +595,10 @@ static NTSTATUS _authn_policy_access_check(TALLOC_CTX *mem_ctx,
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
+	if (device_info != NULL && !(device_info->info->user_flags & NETLOGON_GUEST)) {
+		session_info_flags |= AUTH_SESSION_INFO_DEVICE_AUTHENTICATED;
+	}
+
 	if (authn_policy_flags.force_compounded_authentication) {
 		session_info_flags |= AUTH_SESSION_INFO_FORCE_COMPOUNDED_AUTHENTICATION;
 	}
