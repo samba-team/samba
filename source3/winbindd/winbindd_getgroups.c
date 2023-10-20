@@ -24,9 +24,9 @@
 
 struct winbindd_getgroups_state {
 	struct tevent_context *ev;
-	fstring namespace;
-	fstring domname;
-	fstring username;
+	char *namespace;
+	char *domname;
+	char *username;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	uint32_t num_sids;
@@ -76,10 +76,10 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 		domuser = mapped_user;
 	}
 
-	ok = parse_domain_user_fstr(domuser,
-			       state->namespace,
-			       state->domname,
-			       state->username);
+	ok = parse_domain_user(state, domuser,
+			       &state->namespace,
+			       &state->domname,
+			       &state->username);
 	if (!ok) {
 		D_WARNING("Could not parse domain user: %s\n", domuser);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
