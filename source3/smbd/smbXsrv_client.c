@@ -247,7 +247,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 	}
 
 	if (global_blob.version != SMBXSRV_VERSION_0) {
-		DBG_ERR("key '%s' use unsupported version %u\n",
+		DBG_ERR("key '%s' uses unsupported version %u\n",
 			tdb_data_dbg(key),
 			global_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
