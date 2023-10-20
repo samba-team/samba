@@ -1299,7 +1299,8 @@ static void comp_error(struct ace_condition_sddl_compiler_context *comp,
 	}
 	return;
 fail:
-	comp->message = "failed to set error message";
+	comp->message = talloc_strdup(comp->mem_ctx,
+				      "failed to set error message");
 }
 
 
@@ -2736,8 +2737,7 @@ struct ace_condition_script * ace_conditions_compile_sddl(
 	bool ok;
 	struct ace_condition_sddl_compiler_context comp = {};
 
-	/* just in case, a message for the next few tallocs */
-	*message = "allocation error";
+	*message = NULL;
 	*message_offset = 0;
 
 	ok = init_compiler_context(mem_ctx,
