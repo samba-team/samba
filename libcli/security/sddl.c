@@ -208,7 +208,7 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 	size_t i;
 
 	/* see if its in the numeric format */
-	if (strncmp(sddl, "S-", 2) == 0) {
+	if (strncasecmp(sddl, "S-", 2) == 0) {
 		struct dom_sid *sid = NULL;
 		char *sid_str = NULL;
 		const char *end = NULL;
@@ -229,6 +229,13 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 		sid_str = talloc_strndup(mem_ctx, sddl, len);
 		if (sid_str == NULL) {
 			return NULL;
+		}
+		if (sid_str[0] == 's') {
+			/*
+			 * In SDDL, but not in the dom_sid parsers, a
+			 * lowercase "s-1-1-0" is accepted.
+			 */
+			sid_str[0] = 'S';
 		}
 		sid = talloc(mem_ctx, struct dom_sid);
 		if (sid == NULL) {
