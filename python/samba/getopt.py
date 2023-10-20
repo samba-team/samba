@@ -194,7 +194,7 @@ class OptionGroup(optparse.OptionGroup):
         setattr(self, dest, arg)
 
 
-class SambaOptions(optparse.OptionGroup):
+class SambaOptions(OptionGroup):
     """General Samba-related command line options."""
 
     def __init__(self, parser):
@@ -292,23 +292,19 @@ class Samba3Options(SambaOptions):
         self._lp = s3param.get_context()
 
 
-class HostOptions(optparse.OptionGroup):
+class HostOptions(OptionGroup):
     """Command line options for connecting to target host or database."""
 
     def __init__(self, parser):
         super().__init__(parser, "Host Options")
 
-        self.H = None
         self.add_option("-H", "--URL",
                         help="LDB URL for database or target server",
                         type=str, metavar="URL", action="callback",
-                        callback=self._set_H, dest="H")
-
-    def _set_H(self, option, opt_str, arg, parser):
-        parser.values.H = self.H = arg
+                        callback=self.set_option, dest="H")
 
 
-class VersionOptions(optparse.OptionGroup):
+class VersionOptions(OptionGroup):
     """Command line option for printing Samba version."""
     def __init__(self, parser):
         super().__init__(parser, "Version Options")
@@ -346,7 +342,7 @@ def parse_kerberos_arg(arg, opt_str):
                                         (opt_str, arg))
 
 
-class CredentialsOptions(optparse.OptionGroup):
+class CredentialsOptions(OptionGroup):
     """Command line options for specifying credentials."""
 
     def __init__(self, parser, special_name=None):
