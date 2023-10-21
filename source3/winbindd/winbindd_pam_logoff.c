@@ -63,7 +63,7 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	ok = canonicalize_username(request->data.logoff.user,
+	ok = canonicalize_username_fstr(request->data.logoff.user,
 				   name_namespace,
 				   name_domain,
 				   user);

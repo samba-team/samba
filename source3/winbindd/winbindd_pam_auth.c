@@ -118,7 +118,7 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		fstrcpy(request->data.auth.user, mapped);
 	}
 
-	ok = canonicalize_username(request->data.auth.user,
+	ok = canonicalize_username_fstr(request->data.auth.user,
 				   state->name_namespace,
 				   state->name_domain,
 				   state->name_user);

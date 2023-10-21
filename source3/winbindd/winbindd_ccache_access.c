@@ -199,7 +199,8 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	ok = canonicalize_username(state->request->data.ccache_ntlm_auth.user,
+	ok = canonicalize_username_fstr(
+				   state->request->data.ccache_ntlm_auth.user,
 				   name_namespace,
 				   name_domain,
 				   name_user);
@@ -328,7 +329,7 @@ bool winbindd_ccache_save(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	ok = canonicalize_username(state->request->data.ccache_save.user,
+	ok = canonicalize_username_fstr(state->request->data.ccache_save.user,
 				   name_namespace,
 				   name_domain,
 				   name_user);

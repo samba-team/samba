@@ -520,7 +520,7 @@ bool parse_domain_user(const char *domuser,
 		       fstring namespace,
 		       fstring domain,
 		       fstring user);
-bool canonicalize_username(fstring username_inout,
+bool canonicalize_username_fstr(fstring username_inout,
 			   fstring namespace,
 			   fstring domain,
 			   fstring user);

@@ -79,7 +79,7 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 		fstrcpy(request->data.chauthtok.user, mapped_user);
 	}
 
-	ok = canonicalize_username(request->data.chauthtok.user,
+	ok = canonicalize_username_fstr(request->data.chauthtok.user,
 				   namespace,
 				   domain,
 				   user);
