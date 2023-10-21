@@ -22,6 +22,7 @@
 #include "winbindd.h"
 #include "lib/global_contexts.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/util/string_wrappers.h"
 
 struct winbindd_pam_logoff_state {
 	struct wbint_PamLogOff r;
@@ -37,7 +38,11 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_logoff_state *state;
 	struct winbindd_domain *domain;
-	fstring name_namespace, name_domain, user;
+	char *name_namespace = NULL;
+	char *name_domain = NULL;
+	char *user = NULL;
+	char *logoff_user = NULL;
+
 	uid_t caller_uid;
 	gid_t caller_gid;
 	int res;
@@ -63,13 +68,18 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	ok = canonicalize_username_fstr(request->data.logoff.user,
-				   name_namespace,
-				   name_domain,
-				   user);
+	logoff_user = request->data.logoff.user;
+
+	ok = canonicalize_username(req,
+				   &logoff_user,
+				   &name_namespace,
+				   &name_domain,
+				   &user);
 	if (!ok) {
 		goto failed;
 	}
+
+	fstrcpy(request->data.logoff.user, logoff_user);
 
 	domain = find_auth_domain(request->flags, name_namespace);
 	if (domain == NULL) {
