@@ -70,9 +70,9 @@ static NTSTATUS fake_password_policy(struct winbindd_response *r,
 
 struct winbindd_pam_auth_state {
 	struct wbint_PamAuth *r;
-	fstring name_namespace;
-	fstring name_domain;
-	fstring name_user;
+	char *name_namespace;
+	char *name_domain;
+	char *name_user;
 };
 
 static void winbindd_pam_auth_done(struct tevent_req *subreq);
@@ -86,6 +86,7 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	struct winbindd_pam_auth_state *state;
 	struct winbindd_domain *domain;
 	char *mapped = NULL;
+	char *auth_user = NULL;
 	NTSTATUS status;
 	bool ok;
 
@@ -118,14 +119,18 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		fstrcpy(request->data.auth.user, mapped);
 	}
 
-	ok = canonicalize_username_fstr(request->data.auth.user,
-				   state->name_namespace,
-				   state->name_domain,
-				   state->name_user);
+	auth_user = request->data.auth.user;
+	ok = canonicalize_username(state,
+				   &auth_user,
+				   &state->name_namespace,
+				   &state->name_domain,
+				   &state->name_user);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
+
+	fstrcpy(request->data.auth.user, auth_user);
 
 	domain = find_auth_domain(request->flags, state->name_namespace);
 	if (domain == NULL) {
