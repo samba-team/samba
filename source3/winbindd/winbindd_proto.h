@@ -547,10 +547,6 @@ bool canonicalize_username(TALLOC_CTX *mem_ctx,
 			   char **namespace,
 			   char **domain,
 			   char **user);
-bool canonicalize_username_fstr(fstring username_inout,
-			   fstring namespace,
-			   fstring domain,
-			   fstring user);
 char *fill_domain_username_talloc(TALLOC_CTX *ctx,
 				  const char *domain,
 				  const char *user,
