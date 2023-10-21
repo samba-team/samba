@@ -141,7 +141,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     '''define a Samba library'''
 
     # We support:
-    # - LIBRARY: this can be use to link via -llibname
+    # - LIBRARY: this can be used to link via -llibname
     # - MODULE:  this is module from SAMBA_MODULE()
     # - PLUGIN:  this is plugin for external consumers to be
     #            loaded via dlopen()
