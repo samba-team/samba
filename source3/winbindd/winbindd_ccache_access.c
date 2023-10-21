@@ -253,7 +253,7 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 	TALLOC_FREE(name_domain);
 	TALLOC_FREE(name_user);
 	/* Parse domain and username */
-	ok = parse_domain_user(state->request->data.ccache_ntlm_auth.user,
+	ok = parse_domain_user_fstr(state->request->data.ccache_ntlm_auth.user,
 			       f_name_namespace,
 			       f_name_domain,
 			       f_name_user);

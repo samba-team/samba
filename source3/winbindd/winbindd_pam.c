@@ -790,7 +790,10 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	/* 3rd step:
 	 * do kerberos auth and setup ccache as the user */
 
-	ok = parse_domain_user(user, name_namespace, name_domain, name_user);
+	ok = parse_domain_user_fstr(user,
+			name_namespace,
+			name_domain,
+			name_user);
 	if (!ok) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1142,7 +1145,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	ok = parse_domain_user(user, name_namespace, name_domain, name_user);
+	ok = parse_domain_user_fstr(user,
+			name_namespace,
+			name_domain,
+			name_user);
 	if (!ok) {
 		DBG_DEBUG("parse_domain_user failed\n");
 		result = NT_STATUS_NO_SUCH_USER;
@@ -1452,7 +1458,7 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	ok = parse_domain_user(user,
+	ok = parse_domain_user_fstr(user,
 			       name_namespace,
 			       name_domain,
 			       name_user);
@@ -2040,7 +2046,10 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 
 	/* Parse domain and username */
 
-	ok = parse_domain_user(user, name_namespace, name_domain, name_user);
+	ok = parse_domain_user_fstr(user,
+			name_namespace,
+			name_domain,
+			name_user);
 	if (!ok) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -2277,7 +2286,7 @@ NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
 		mapped_user = discard_const(r->in.info->username);
 	}
 
-	ok = parse_domain_user(mapped_user,
+	ok = parse_domain_user_fstr(mapped_user,
 			       name_namespace,
 			       name_domain,
 			       name_user);
@@ -2956,7 +2965,7 @@ NTSTATUS _wbint_PamAuthChangePassword(struct pipes_struct *p,
 	DBG_NOTICE("[%"PRIu32"]: dual pam chauthtok %s\n",
 		   client_pid, r->in.user);
 
-	ok = parse_domain_user(r->in.user,
+	ok = parse_domain_user_fstr(r->in.user,
 			       namespace,
 			       domain,
 			       user);
@@ -3260,7 +3269,7 @@ NTSTATUS _wbint_PamAuthCrapChangePassword(struct pipes_struct *p,
 	} else {
 		bool ok;
 
-		ok = parse_domain_user(r->in.user,
+		ok = parse_domain_user_fstr(r->in.user,
 				       namespace,
 				       domain,
 				       user);

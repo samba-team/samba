@@ -72,7 +72,7 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 		domuser = mapped_user;
 	}
 
-	ok = parse_domain_user(domuser,
+	ok = parse_domain_user_fstr(domuser,
 			       state->namespace,
 			       state->domname,
 			       state->username);

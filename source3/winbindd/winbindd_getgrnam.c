@@ -73,7 +73,7 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 
 	/* Parse domain and groupname */
 
-	ok = parse_domain_user(tmp,
+	ok = parse_domain_user_fstr(tmp,
 			       state->name_namespace,
 			       state->name_domain,
 			       state->name_group);

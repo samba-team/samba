@@ -1547,7 +1547,7 @@ static bool assume_domain(const char *domain)
 }
 
 /* Parse a DOMAIN\user or UPN string into a domain, namespace and a user */
-bool parse_domain_user(const char *domuser,
+bool parse_domain_user_fstr(const char *domuser,
 		       fstring namespace,
 		       fstring domain,
 		       fstring user)
@@ -1611,7 +1611,7 @@ bool canonicalize_username(TALLOC_CTX *mem_ctx,
 	fstrcpy(f_domain, *pdomain);
 	fstrcpy(f_user, *puser);
 
-	ok = parse_domain_user(f_username_inout,
+	ok = parse_domain_user_fstr(f_username_inout,
 			f_namespace, f_domain, f_user);
 	if (!ok) {
 		return False;

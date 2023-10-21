@@ -516,7 +516,7 @@ struct winbindd_domain *find_our_domain(void);
 struct winbindd_domain *find_default_route_domain(void);
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
-bool parse_domain_user(const char *domuser,
+bool parse_domain_user_fstr(const char *domuser,
 		       fstring namespace,
 		       fstring domain,
 		       fstring user);
