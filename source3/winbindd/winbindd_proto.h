@@ -520,6 +520,33 @@ bool parse_domain_user(const char *domuser,
 		       fstring namespace,
 		       fstring domain,
 		       fstring user);
+/**
+ * Ensure an incoming username from NSS is fully qualified. Replace the
+ * incoming username with DOMAIN <separator> user. Additionally returns
+ * the same values as parse_domain_user() as out params.
+ * Used to ensure all names are fully qualified within winbindd.
+ * Used by the NSS protocols of auth, chauthtok, logoff and ccache_ntlm_auth.
+ * The protocol definitions of auth_crap, chng_pswd_auth_crap
+ * really should be changed to use this instead of doing things
+ * by hand. JRA.
+ *
+ * @param[in] mem_ctx talloc context
+ * @param[in,out] username_inout populated with fully qualified name
+		  with format 'DOMAIN <separator> user' where DOMAIN and
+		  user are determined by the output of parse_domain_user()
+ * @param[out] namespace populated with namespace returned from
+               parse_domain_user()
+ * @param[out] domain populated with domain returned from
+               parse_domain_user()
+ * @param[out] populated with user returned from
+               parse_domain_user()
+ * @return bool indicating success or failure
+ */
+bool canonicalize_username(TALLOC_CTX *mem_ctx,
+			   char **username_inout,
+			   char **namespace,
+			   char **domain,
+			   char **user);
 bool canonicalize_username_fstr(fstring username_inout,
 			   fstring namespace,
 			   fstring domain,

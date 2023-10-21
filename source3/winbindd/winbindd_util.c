@@ -1590,6 +1590,67 @@ bool parse_domain_user(const char *domuser,
 	return strupper_m(domain);
 }
 
+bool canonicalize_username(TALLOC_CTX *mem_ctx,
+			   char **pusername_inout,
+			   char **pnamespace,
+			   char **pdomain,
+			   char **puser)
+{
+	bool ok;
+	char *namespace = NULL;
+	char *domain = NULL;
+	char *user = NULL;
+	char *username_inout = NULL;
+	fstring f_username_inout;
+	fstring f_namespace;
+	fstring f_domain;
+	fstring f_user;
+
+	fstrcpy(f_username_inout, *pusername_inout);
+	fstrcpy(f_namespace, *pnamespace);
+	fstrcpy(f_domain, *pdomain);
+	fstrcpy(f_user, *puser);
+
+	ok = parse_domain_user(f_username_inout,
+			f_namespace, f_domain, f_user);
+	if (!ok) {
+		return False;
+	}
+
+	username_inout = talloc_asprintf(mem_ctx, "%s%c%s",
+		 f_domain, *lp_winbind_separator(),
+		 f_user);
+
+	if (username_inout == NULL) {
+		goto fail;
+	}
+
+	user = talloc_strdup(mem_ctx, f_user);
+	if (user == NULL) {
+		goto fail;
+	}
+	domain = talloc_strdup(mem_ctx, f_domain);
+	if (domain == NULL) {
+		goto fail;
+	}
+	namespace = talloc_strdup(mem_ctx, f_namespace);
+	if (namespace == NULL) {
+		goto fail;
+	}
+	*pnamespace = namespace;
+	*puser = user;
+	*pdomain = domain;
+	*pusername_inout = username_inout;
+	return True;
+fail:
+	TALLOC_FREE(username_inout);
+	TALLOC_FREE(namespace);
+	TALLOC_FREE(domain);
+	TALLOC_FREE(user);
+	return false;
+}
+
+
 /* Ensure an incoming username from NSS is fully qualified. Replace the
    incoming fstring with DOMAIN <separator> user. Returns the same
    values as parse_domain_user() but also replaces the incoming username.
