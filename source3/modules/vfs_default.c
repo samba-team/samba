@@ -744,7 +744,16 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 	}
 
 done:
-	fsp->fsp_flags.have_proc_fds = fsp->conn->have_proc_fds;
+	if (result >= 0) {
+		fsp->fsp_flags.have_proc_fds = fsp->conn->have_proc_fds;
+	} else {
+		/*
+		 * "/proc/self/fd/-1" never exists. Indicate to upper
+		 * layers that for this fsp a possible name-based
+		 * fallback is the only way to go.
+		 */
+		fsp->fsp_flags.have_proc_fds = false;
+	}
 
 out:
 	END_PROFILE(syscall_openat);
