@@ -1560,6 +1560,12 @@ bool parse_domain_user(const char *domuser,
 
 	p = strchr(domuser, *lp_winbind_separator());
 	if (p != NULL) {
+		if (PTR_DIFF(p, domuser) >= sizeof(fstring)) {
+			DBG_ERR("index %td exceeds len of dest string %zu\n",
+				PTR_DIFF(p, domuser),
+				(sizeof(fstring) - 1));
+			return false;
+		}
 		fstrcpy(user, p + 1);
 		fstrcpy(domain, domuser);
 		domain[PTR_DIFF(p, domuser)] = '\0';
