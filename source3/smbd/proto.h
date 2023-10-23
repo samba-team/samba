@@ -431,6 +431,11 @@ struct open_symlink_err {
 	struct symlink_reparse_struct *reparse;
 };
 
+NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
+				 files_struct *dirfsp,
+				 struct smb_filename *smb_relname,
+				 struct open_symlink_err **_err);
+
 NTSTATUS openat_pathref_fsp_nosymlink(TALLOC_CTX *mem_ctx,
 				      struct connection_struct *conn,
 				      struct files_struct *dirfsp,

@@ -808,10 +808,10 @@ static bool full_path_extend(char **dir, const char *atname)
 	return (*dir) != NULL;
 }
 
-static NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
-					files_struct *dirfsp,
-					struct smb_filename *smb_relname,
-					struct open_symlink_err **_err)
+NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
+				 files_struct *dirfsp,
+				 struct smb_filename *smb_relname,
+				 struct open_symlink_err **_err)
 {
 	struct open_symlink_err *err = NULL;
 	NTSTATUS status;
