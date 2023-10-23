@@ -1176,8 +1176,6 @@ nfs_callout()
 
 update_tickles()
 {
-	_port="$1"
-
 	tickledir="${CTDB_SCRIPT_VARDIR}/tickles"
 	mkdir -p "$tickledir"
 
@@ -1186,17 +1184,16 @@ update_tickles()
 		return
 	fi
 
-	# IPs and port as ss filters
+	# IPs ss filter
 	_ip_filter=""
 	while read -r _ip; do
 		_ip_filter="${_ip_filter}${_ip_filter:+ || }src [${_ip}]"
 	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
-	_port_filter="sport == :${_port}"
 
 	# Record our current tickles in a temporary file
-	_my_tickles="${tickledir}/${_port}.tickles.$$"
+	_my_tickles="${tickledir}/all.tickles.$$"
 	while read -r _i; do
-		$CTDB -X gettickles "$_i" "$_port" |
+		$CTDB -X gettickles "$_i" |
 			awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
 	done <"$CTDB_MY_PUBLIC_IPS_CACHE" |
 		sort >"$_my_tickles"
@@ -1205,12 +1202,10 @@ update_tickles()
 	# This temporary file is in CTDB's private state directory and
 	# $$ is used to avoid a very rare race involving CTDB's script
 	# debugging.  No security issue, nothing to see here...
-	_my_connections="${tickledir}/${_port}.connections.$$"
-	# Parentheses are needed around the filters for precedence but
+	_my_connections="${tickledir}/all.connections.$$"
+	# Parentheses are needed around the IP filter for precedence but
 	# the parentheses can't be empty!
-	ss -tnH state established \
-		"${_ip_filter:+( ${_ip_filter} )}" \
-		"${_port_filter:+( ${_port_filter} )}" |
+	ss -tnH state established "${_ip_filter:+( ${_ip_filter} )}" |
 		awk '{print $4, $3}' |
 		sort >"$_my_connections"
 
