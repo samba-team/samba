@@ -193,6 +193,47 @@ NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
 				      result);
 }
 
+NTSTATUS dcerpc_lsa_open_policy_fallback(struct dcerpc_binding_handle *h,
+					 TALLOC_CTX *mem_ctx,
+					 const char *srv_name_slash,
+					 bool sec_qos,
+					 uint32_t desired_access,
+					 uint32_t *out_version,
+					 union lsa_revision_info *out_revision_info,
+					 struct policy_handle *pol,
+					 NTSTATUS *result)
+{
+	NTSTATUS status;
+
+	status = dcerpc_lsa_open_policy3(h,
+					 mem_ctx,
+					 srv_name_slash,
+					 sec_qos,
+					 desired_access,
+					 out_version,
+					 out_revision_info,
+					 pol,
+					 result);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		*out_version = 1;
+		*out_revision_info = (union lsa_revision_info) {
+			.info1 = {
+				.revision = 1,
+			}
+		};
+
+		status = dcerpc_lsa_open_policy2(h,
+						 mem_ctx,
+						 srv_name_slash,
+						 sec_qos,
+						 desired_access,
+						 pol,
+						 result);
+	}
+
+	return status;
+}
+
 /* Lookup a list of sids
  *
  * internal version withOUT memory allocation of the target arrays.

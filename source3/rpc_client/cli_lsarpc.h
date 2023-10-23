@@ -118,6 +118,41 @@ NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
 				 NTSTATUS *result);
 
 /**
+ * @brief Open a LSA policy with fallback to previous version
+ *
+ * This first calls lsa_open_policy3 and falls back to lsa_open_policy2 in case
+ * it isn't implemented.
+ *
+ * @param[in]  h        The dcerpc binding handle to use.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  sec_qos  Enable security quality of services.
+ *
+ * @param[in]  des_access The desired access rights to be granted.
+ *
+ * @param[out]  out_version A pointer to an uin32_t to store the version of the
+ *                          following data structure.
+ *
+ * @param[out]  out_revision info A pointer to store the out_revision_info.
+ *
+ * @param[out]  pol     A pointer to a rpc policy handle.
+ *
+ * @param[out]  result  A pointer for the NDR NTSTATUS error code.
+ *
+ * @return              A corresponding NTSTATUS error code for the connection.
+ */
+NTSTATUS dcerpc_lsa_open_policy_fallback(struct dcerpc_binding_handle *h,
+					 TALLOC_CTX *mem_ctx,
+					 const char *srv_name_slash,
+					 bool sec_qos,
+					 uint32_t desired_access,
+					 uint32_t *out_version,
+					 union lsa_revision_info *out_revision_info,
+					 struct policy_handle *pol,
+					 NTSTATUS *result);
+
+/**
  * @brief Look up the names that correspond to an array of sids.
  *
  * @param[in]  h        The initialized binding handle for a dcerpc connection.
