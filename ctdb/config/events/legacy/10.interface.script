@@ -243,6 +243,8 @@ ipreallocated)
 
 monitor)
 	monitor_interfaces || exit 1
+
+	update_tickles 2049
 	;;
 esac
 

@@ -352,7 +352,6 @@ monitor)
 			exit $?
 	fi
 
-	update_tickles 2049
 	nfs_update_lock_info
 
 	nfs_check_services
