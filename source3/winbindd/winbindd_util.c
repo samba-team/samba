@@ -1631,50 +1631,6 @@ fail:
 	return false;
 }
 
-/* Parse a DOMAIN\user or UPN string into a domain, namespace and a user */
-bool parse_domain_user_fstr(const char *domuser,
-		       fstring namespace,
-		       fstring domain,
-		       fstring user)
-{
-	char *p = NULL;
-
-	if (strlen(domuser) == 0) {
-		return false;
-	}
-
-	p = strchr(domuser, *lp_winbind_separator());
-	if (p != NULL) {
-		if (PTR_DIFF(p, domuser) >= sizeof(fstring)) {
-			DBG_ERR("index %td exceeds len of dest string %zu\n",
-				PTR_DIFF(p, domuser),
-				(sizeof(fstring) - 1));
-			return false;
-		}
-		fstrcpy(user, p + 1);
-		fstrcpy(domain, domuser);
-		domain[PTR_DIFF(p, domuser)] = '\0';
-		fstrcpy(namespace, domain);
-	} else {
-		fstrcpy(user, domuser);
-
-		domain[0] = '\0';
-		namespace[0] = '\0';
-		p = strchr(domuser, '@');
-		if (p != NULL) {
-			/* upn */
-			fstrcpy(namespace, p + 1);
-		} else if (assume_domain(lp_workgroup())) {
-			fstrcpy(domain, lp_workgroup());
-			fstrcpy(namespace, domain);
-		} else {
-			fstrcpy(namespace, lp_netbios_name());
-		}
-	}
-
-	return strupper_m(domain);
-}
-
 bool canonicalize_username(TALLOC_CTX *mem_ctx,
 			   char **pusername_inout,
 			   char **pnamespace,

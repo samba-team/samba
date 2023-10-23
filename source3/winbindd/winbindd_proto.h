@@ -531,10 +531,6 @@ bool parse_domain_user(TALLOC_CTX *ctx,
 		       char **namespace,
 		       char **domain,
 		       char **user);
-bool parse_domain_user_fstr(const char *domuser,
-		       fstring namespace,
-		       fstring domain,
-		       fstring user);
 /**
  * Ensure an incoming username from NSS is fully qualified. Replace the
  * incoming username with DOMAIN <separator> user. Additionally returns
