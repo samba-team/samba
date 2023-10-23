@@ -1686,42 +1686,23 @@ bool canonicalize_username(TALLOC_CTX *mem_ctx,
 	char *domain = NULL;
 	char *user = NULL;
 	char *username_inout = NULL;
-	fstring f_username_inout;
-	fstring f_namespace;
-	fstring f_domain;
-	fstring f_user;
 
-	fstrcpy(f_username_inout, *pusername_inout);
-	fstrcpy(f_namespace, *pnamespace);
-	fstrcpy(f_domain, *pdomain);
-	fstrcpy(f_user, *puser);
+	ok = parse_domain_user(mem_ctx,
+			*pusername_inout,
+			&namespace, &domain, &user);
 
-	ok = parse_domain_user_fstr(f_username_inout,
-			f_namespace, f_domain, f_user);
 	if (!ok) {
 		return False;
 	}
 
 	username_inout = talloc_asprintf(mem_ctx, "%s%c%s",
-		 f_domain, *lp_winbind_separator(),
-		 f_user);
+		 domain, *lp_winbind_separator(),
+		 user);
 
 	if (username_inout == NULL) {
 		goto fail;
 	}
 
-	user = talloc_strdup(mem_ctx, f_user);
-	if (user == NULL) {
-		goto fail;
-	}
-	domain = talloc_strdup(mem_ctx, f_domain);
-	if (domain == NULL) {
-		goto fail;
-	}
-	namespace = talloc_strdup(mem_ctx, f_namespace);
-	if (namespace == NULL) {
-		goto fail;
-	}
 	*pnamespace = namespace;
 	*puser = user;
 	*pdomain = domain;
