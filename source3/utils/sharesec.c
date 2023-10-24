@@ -605,6 +605,7 @@ int main(int argc, const char *argv[])
 	}
 
 done:
+	gfree_all();
 	poptFreeContext(pc);
 	talloc_destroy(ctx);
 
