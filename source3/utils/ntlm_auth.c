@@ -2849,7 +2849,7 @@ enum {
 	}
 
 	/* Exit code */
-
+	gfree_all();
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return 0;
