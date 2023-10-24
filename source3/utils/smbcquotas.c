@@ -825,6 +825,7 @@ int main(int argc, char *argv[])
 			break;
 	}
 
+	gfree_all();
 	talloc_free(frame);
 
 	return result;
