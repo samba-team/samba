@@ -37,8 +37,8 @@ from samba.tests.krb5.raw_testcase import (
     ZeroedChecksumKey
 )
 from samba.tests.krb5.rfc4120_constants import (
-    AES256_CTS_HMAC_SHA1_96,
     AD_IF_RELEVANT,
+    AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
     KDC_ERR_BADMATCH,
     KDC_ERR_BADOPTION,
@@ -48,8 +48,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_MODIFIED,
     KDC_ERR_SUMTYPE_NOSUPP,
     KDC_ERR_TGT_REVOKED,
-    KU_PA_ENC_TIMESTAMP,
     KU_AS_REP_ENC_PART,
+    KU_PA_ENC_TIMESTAMP,
     KU_TGS_REP_ENC_PART_SUB_KEY,
     KU_TGS_REQ_AUTH_DAT_SESSION,
     KU_TGS_REQ_AUTH_DAT_SUBKEY,
