@@ -49,7 +49,7 @@ void smb3_file_posix_information_init(
 		uid_to_sid(&dst->cc.owner, st->st_ex_uid);
 	}
 	if (st->st_ex_gid != (uid_t)-1) {
-		uid_to_sid(&dst->cc.owner, st->st_ex_gid);
+		gid_to_sid(&dst->cc.group, st->st_ex_gid);
 	}
 
 	switch (st->st_ex_mode & S_IFMT) {
