@@ -45,96 +45,6 @@ struct dom_usr {
 	time_t login_time;
 };
 
-#ifdef HAVE_GETUTXENT
-
-#include <utmpx.h>
-
-struct usrinfo {
-	char *name;
-	struct timeval login_time;
-};
-
-static int usr_info_cmp(const struct usrinfo *usr1, const struct usrinfo *usr2)
-{
-	/* Called from qsort to compare two users in a usrinfo_t array for
-	 * sorting by login time. Return >0 if usr1 login time was later than
-	 * usr2 login time, <0 if it was earlier */
-	return timeval_compare(&usr1->login_time, &usr2->login_time);
-}
-
-/*******************************************************************
- Get a list of the names of all users logged into this machine
- ********************************************************************/
-
-static int get_logged_on_userlist(TALLOC_CTX *mem_ctx, char ***pusers)
-{
-	char **users;
-	int i, num_users = 0;
-	struct usrinfo *usr_infos = NULL;
-	struct utmpx *u;
-
-	while ((u = getutxent()) != NULL) {
-		struct usrinfo *tmp;
-		if (u->ut_type != USER_PROCESS) {
-			continue;
-		}
-		for (i = 0; i < num_users; i++) {
-			/* getutxent can return multiple user entries for the
-			 * same user, so ignore any dups */
-			int cmp = strncmp(u->ut_user, usr_infos[i].name, sizeof(u->ut_user));
-			if (cmp == 0) {
-				break;
-			}
-		}
-		if (i < num_users) {
-			continue;
-		}
-
-		tmp = talloc_realloc(mem_ctx, usr_infos, struct usrinfo,
-				     num_users+1);
-		if (tmp == NULL) {
-			TALLOC_FREE(tmp);
-			endutxent();
-			return ENOMEM;
-		}
-		usr_infos = tmp;
-		usr_infos[num_users].name = talloc_strdup(usr_infos,
-							  u->ut_user);
-		if (usr_infos[num_users].name == NULL) {
-			TALLOC_FREE(usr_infos);
-			endutxent();
-			return ENOMEM;
-		}
-		usr_infos[num_users].login_time.tv_sec = u->ut_tv.tv_sec;
-		usr_infos[num_users].login_time.tv_usec = u->ut_tv.tv_usec;
-		num_users += 1;
-	}
-
-	/* Sort the user list by time, oldest first */
-	TYPESAFE_QSORT(usr_infos, num_users, usr_info_cmp);
-
-	users = (char**)talloc_array(mem_ctx, char*, num_users);
-	if (users) {
-		for (i = 0; i < num_users; i++) {
-			users[i] = talloc_move(users, &usr_infos[i].name);
-		}
-	}
-	TALLOC_FREE(usr_infos);
-	endutxent();
-	*pusers = users;
-	return 0;
-}
-
-#else
-
-static int get_logged_on_userlist(TALLOC_CTX *mem_ctx, char ***pusers)
-{
-	*pusers = NULL;
-	return 0;
-}
-
-#endif
-
 static int dom_user_cmp(const struct dom_usr *usr1, const struct dom_usr *usr2)
 {
 	/* Called from qsort to compare two domain users in a dom_usr_t array
@@ -324,8 +234,6 @@ static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
 static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 {
 	struct wkssvc_NetWkstaInfo102 *info102;
-	char **users;
-	int ret;
 
 	info102 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo102);
 	if (info102 == NULL) {
@@ -341,16 +249,7 @@ static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 	info102->domain_name = talloc_asprintf_strupper_m(
 		info102, "%s", lp_workgroup());
 	info102->lan_root = "";
-
-	ret = get_logged_on_userlist(talloc_tos(), &users);
-	if (ret != 0) {
-		TALLOC_FREE(info102);
-		errno = ret;
-		return NULL;
-	}
-	info102->logged_on_users = talloc_array_length(users);
-
-	TALLOC_FREE(users);
+	info102->logged_on_users = 0;
 
 	return info102;
 }
@@ -445,38 +344,19 @@ static struct wkssvc_NetWkstaEnumUsersCtr0 *create_enum_users0(
 	TALLOC_CTX *mem_ctx)
 {
 	struct wkssvc_NetWkstaEnumUsersCtr0 *ctr0;
-	char **users;
-	int i, num_users, ret;
 
 	ctr0 = talloc(mem_ctx, struct wkssvc_NetWkstaEnumUsersCtr0);
 	if (ctr0 == NULL) {
 		return NULL;
 	}
 
-	ret = get_logged_on_userlist(talloc_tos(), &users);
-	if (ret != 0) {
-		DBG_WARNING("get_logged_on_userlist error %d: %s\n",
-			    ret,
-			    strerror(ret));
-		TALLOC_FREE(ctr0);
-		errno = ret;
-		return NULL;
-	}
-
-	num_users = talloc_array_length(users);
-	ctr0->entries_read = num_users;
-	ctr0->user0 = talloc_array(ctr0, struct wkssvc_NetrWkstaUserInfo0,
-				   num_users);
+	ctr0->entries_read = 0;
+	ctr0->user0 = talloc_array(ctr0, struct wkssvc_NetrWkstaUserInfo0, 0);
 	if (ctr0->user0 == NULL) {
 		TALLOC_FREE(ctr0);
-		TALLOC_FREE(users);
 		return NULL;
 	}
 
-	for (i=0; i<num_users; i++) {
-		ctr0->user0[i].user_name = talloc_move(ctr0->user0, &users[i]);
-	}
-	TALLOC_FREE(users);
 	return ctr0;
 }
 
@@ -494,42 +374,28 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 	TALLOC_CTX *mem_ctx)
 {
 	struct wkssvc_NetWkstaEnumUsersCtr1 *ctr1;
-	char **users;
 	struct dom_usr *dom_users;
 	const char *pwd_server;
 	char *pwd_tmp;
-	int i, j, num_users, num_dom_users, ret;
+	int i, num_dom_users, ret;
 
 	ctr1 = talloc(mem_ctx, struct wkssvc_NetWkstaEnumUsersCtr1);
 	if (ctr1 == NULL) {
 		return NULL;
 	}
 
-	ret = get_logged_on_userlist(talloc_tos(), &users);
-	if (ret != 0) {
-		DBG_WARNING("get_logged_on_userlist error %d: %s\n",
-			    ret,
-			    strerror(ret));
-		TALLOC_FREE(ctr1);
-		errno = ret;
-		return NULL;
-	}
-	num_users = talloc_array_length(users);
-
 	ret = get_domain_userlist(talloc_tos(), &dom_users);
 	if (ret != 0) {
 		TALLOC_FREE(ctr1);
-		TALLOC_FREE(users);
 		errno = ret;
 		return NULL;
 	}
 	num_dom_users = talloc_array_length(dom_users);
 
 	ctr1->user1 = talloc_array(ctr1, struct wkssvc_NetrWkstaUserInfo1,
-				   num_users+num_dom_users);
+				   num_dom_users);
 	if (ctr1->user1 == NULL) {
 		TALLOC_FREE(ctr1);
-		TALLOC_FREE(users);
 		TALLOC_FREE(dom_users);
 		errno = ENOMEM;
 		return NULL;
@@ -553,24 +419,12 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		pwd_server = pwd_tmp;
 	}
 
-	/* Put in local users first */
-	for (i=0; i<num_users; i++) {
-		ctr1->user1[i].user_name = talloc_move(ctr1->user1, &users[i]);
-
-		/* For a local user the domain name and logon server are
-		 * both returned as the local machine's NetBIOS name */
-		ctr1->user1[i].logon_domain = ctr1->user1[i].logon_server =
-			talloc_asprintf_strupper_m(ctr1->user1, "%s", lp_netbios_name());
-
-		ctr1->user1[i].other_domains = NULL;	/* Maybe in future? */
-	}
-
 	/* Now domain users */
-	for (j=0; j<num_dom_users; j++) {
+	for (i=0; i<num_dom_users; i++) {
 		ctr1->user1[i].user_name =
-				talloc_strdup(ctr1->user1, dom_users[j].name);
+				talloc_strdup(ctr1->user1, dom_users[i].name);
 		ctr1->user1[i].logon_domain =
-				talloc_strdup(ctr1->user1, dom_users[j].domain);
+				talloc_strdup(ctr1->user1, dom_users[i].domain);
 		ctr1->user1[i].logon_server = pwd_server;
 
 		ctr1->user1[i++].other_domains = NULL;	/* Maybe in future? */
@@ -578,7 +432,6 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 
 	ctr1->entries_read = i;
 
-	TALLOC_FREE(users);
 	TALLOC_FREE(dom_users);
 	return ctr1;
 }

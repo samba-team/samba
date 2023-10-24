@@ -804,7 +804,7 @@ msg.msg_accrightslen = sizeof(fd);
     if Options.options.with_utmp:
         conf.env.with_utmp = True
         if not conf.CHECK_HEADERS('utmp.h'): conf.env.with_utmp = False
-        conf.CHECK_FUNCS('pututline pututxline updwtmp updwtmpx getutmpx getutxent')
+        conf.CHECK_FUNCS('pututline pututxline updwtmp updwtmpx getutmpx')
         conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_name', headers='utmp.h',
                                     define='HAVE_UT_UT_NAME')
         conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_user', headers='utmp.h',
