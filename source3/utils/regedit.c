@@ -827,6 +827,8 @@ int main(int argc, char **argv)
 
 	display_window(frame, ctx);
 
+	gfree_all();
+
 	TALLOC_FREE(frame);
 
 	return 0;
