@@ -77,7 +77,11 @@ class GPPolParser(GPParser):
 
             if misc.REG_MULTI_SZ == entry_type:
                 values = [x.text for x in e.findall('Value')]
-                entry.data = (u'\x00'.join(values) + u'\x00\x00').encode('utf-16le')
+                if values == [None]:
+                    data = u'\x00'
+                else:
+                    data = u'\x00'.join(values) + u'\x00\x00'
+                entry.data = data.encode('utf-16le')
             elif (misc.REG_NONE == entry_type):
                 pass
             elif (misc.REG_SZ == entry_type or
