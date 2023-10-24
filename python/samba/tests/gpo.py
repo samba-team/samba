@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, grp, pwd
+import os, grp, pwd, re
 import errno
 from samba import gpo, tests
 from samba.gp.gpclass import register_gp_extension, list_gp_extensions, \
@@ -5015,6 +5015,18 @@ drive_maps_xml = b"""<?xml version="1.0" encoding="utf-8"?>
 </Drives>
 """
 
+empty_multi_sz_reg_pol = \
+br"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="1" signature="PReg" version="1">
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>KeyName</Key>
+        <ValueName>ValueName</ValueName>
+        <Value/>
+    </Entry>
+</PolFile>
+"""
+
 def days2rel_nttime(val):
     seconds = 60
     minutes = 60
@@ -8015,3 +8027,22 @@ class GPOTests(tests.TestCase):
                 pass
             else:
                 self.fail('Undefined variable %s caused no error' % undef_var)
+
+    def test_parser_roundtrip_empty_multi_sz(self):
+        with TemporaryDirectory() as dname:
+            reg_pol_xml = os.path.join(dname, 'REGISTRY.POL.XML')
+
+            parser = GPPolParser()
+            try:
+                parser.load_xml(etree.fromstring(empty_multi_sz_reg_pol.strip()))
+            except Exception as e:
+                self.fail(str(e))
+            parser.write_xml(reg_pol_xml)
+
+            with open(reg_pol_xml, 'r') as f:
+                pol_xml_data = f.read()
+
+            # Strip whitespace characters due to indentation differences
+            expected_xml_data = re.sub(r"\s+", "", empty_multi_sz_reg_pol.decode(), flags=re.UNICODE)
+            actual_xml_data = re.sub(r"\s+", "", pol_xml_data, flags=re.UNICODE)
+            self.assertEqual(expected_xml_data, actual_xml_data, 'XML data mismatch')
