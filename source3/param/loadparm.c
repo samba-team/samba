@@ -504,7 +504,8 @@ static bool apply_lp_set_cmdline(void)
  Initialise the global parameter structure.
 ***************************************************************************/
 
-static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
+void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
+			      bool reinit_globals)
 {
 	static bool done_init = false;
 	char *s = NULL;
@@ -3987,7 +3988,7 @@ static bool lp_load_ex(const char *pszFname,
 
 	lp_ctx = setup_lp_context(talloc_tos());
 
-	init_globals(lp_ctx, reinit_globals);
+	loadparm_s3_init_globals(lp_ctx, reinit_globals);
 
 	free_file_list();
 
@@ -4041,7 +4042,7 @@ static bool lp_load_ex(const char *pszFname,
 			/* start over */
 			DEBUG(1, ("lp_load_ex: changing to config backend "
 				  "registry\n"));
-			init_globals(lp_ctx, true);
+			loadparm_s3_init_globals(lp_ctx, true);
 
 			TALLOC_FREE(lp_ctx);
 

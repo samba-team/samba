@@ -30,8 +30,12 @@ typedef struct stat_ex SMB_STRUCT_STAT;
 typedef struct files_struct files_struct;
 struct smbd_server_connection;
 struct security_descriptor;
+struct loadparm_context;
 
 /* The following definitions come from param/loadparm.c  */
+
+void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
+			      bool reinit_globals);
 
 const struct loadparm_substitution *loadparm_s3_global_substitution(void);
 
