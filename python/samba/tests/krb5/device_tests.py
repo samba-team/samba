@@ -2093,8 +2093,6 @@ class DeviceTests(KDCBaseTest):
             expected_supported_etypes=target_supported_etypes,
             expect_resource_groups_flag=expect_resource_groups_flag,
             expected_groups=tgs_expected_mapped,
-            unexpected_groups=None,
-            expect_device_claims=None,
             expect_device_info=bool(tgs_compound_id),
             expected_device_groups=tgs_device_expected_mapped)
 
