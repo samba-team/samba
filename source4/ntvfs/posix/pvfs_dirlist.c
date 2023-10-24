@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2004
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -61,7 +61,7 @@ struct pvfs_dir {
   a special directory listing case where the pattern has no wildcard. We can just do a single stat()
   thus avoiding the more expensive directory scan
 */
-static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filename *name, 
+static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filename *name,
 				      const char *pattern, struct pvfs_dir *dir)
 {
 	if (!name->exists) {
@@ -98,11 +98,11 @@ static int pvfs_dirlist_destructor(struct pvfs_dir *dir)
 }
 
 /*
-  start to read a directory 
+  start to read a directory
 
   if the pattern matches no files then we return NT_STATUS_OK, with dir->count = 0
 */
-NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name, 
+NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 			 TALLOC_CTX *mem_ctx, struct pvfs_dir **dirp)
 {
 	char *pattern;
@@ -112,13 +112,13 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	if (*dirp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	dir = *dirp;
 
 	/* split the unix path into a directory + pattern */
 	pattern = strrchr(name->full_name, '/');
 	if (!pattern) {
-		/* this should not happen, as pvfs_unix_path is supposed to 
+		/* this should not happen, as pvfs_unix_path is supposed to
 		   return an absolute path */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -138,18 +138,18 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	if (dir->pattern == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	dir->dir = opendir(name->full_name);
-	if (!dir->dir) { 
-		return pvfs_map_errno(pvfs, errno); 
+	if (!dir->dir) {
+		return pvfs_map_errno(pvfs, errno);
 	}
 
 	dir->pvfs = pvfs;
 	dir->no_wildcard = false;
 	dir->end_of_search = false;
 	dir->offset = DIR_OFFSET_DOT;
-	dir->name_cache = talloc_zero_array(dir, 
-					    struct name_cache_entry, 
+	dir->name_cache = talloc_zero_array(dir,
+					    struct name_cache_entry,
 					    NAME_CACHE_SIZE);
 	if (dir->name_cache == NULL) {
 		talloc_free(dir);
@@ -177,7 +177,7 @@ static void dcache_add(struct pvfs_dir *dir, const char *name)
 	e->offset = dir->offset;
 }
 
-/* 
+/*
    return the next entry
 */
 const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
@@ -222,7 +222,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 		seekdir(dir->dir, (*ofs) - DIR_OFFSET_BASE);
 	}
 	dir->offset = *ofs;
-	
+
 	while ((de = readdir(dir->dir))) {
 		const char *dname = de->d_name;
 
