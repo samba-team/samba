@@ -1,18 +1,18 @@
 /*
- * Unix SMB/CIFS implementation. 
+ * Unix SMB/CIFS implementation.
  * Copyright (C) Jeremy Allison 1995-1998
  * Copyright (C) Tim Potter     2001
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation; either version 3 of the License, or (at your
  * option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, see <http://www.gnu.org/licenses/>.  */
 
@@ -202,7 +202,7 @@ static int process_options(int argc, char **argv, int local_flags,
 	}
 
 	if (!lp_load_global(configfile)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
 			configfile);
 		exit(1);
 	}
@@ -292,8 +292,8 @@ static NTSTATUS password_change(const char *remote_mach,
  Store the LDAP admin password in secrets.tdb
  ******************************************************************/
 static bool store_ldap_admin_pw (char* pw)
-{	
-	if (!pw) 
+{
+	if (!pw)
 		return False;
 
 	if (!secrets_init())
@@ -348,9 +348,9 @@ static int process_root(int local_flags)
 	 * Ensure both add/delete user are not set
 	 * Ensure add/delete user and either remote machine or join domain are
 	 * not both set.
-	 */	
-	if(((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) || 
-	   ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && 
+	 */
+	if(((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) ||
+	   ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) &&
 		(remote_machine != NULL))) {
 		usage();
 	}
@@ -364,7 +364,7 @@ static int process_root(int local_flags)
 	if (!user_name[0] && (pwd = getpwuid_alloc(talloc_tos(), geteuid()))) {
 		fstrcpy(user_name, pwd->pw_name);
 		TALLOC_FREE(pwd);
-	} 
+	}
 
 	if (!user_name[0]) {
 		fprintf(stderr,"You must specify a username\n");
@@ -480,7 +480,7 @@ static int process_root(int local_flags)
 					     local_flags))) {
 		result = 1;
 		goto done;
-	} 
+	}
 
 	if(remote_machine) {
 		printf("Password changed for user %s on %s.\n", user_name, remote_machine );
@@ -560,7 +560,7 @@ static int process_nonroot(int local_flags)
 	 * A non-root user is always setting a password
 	 * via a remote machine (even if that machine is
 	 * localhost).
-	 */	
+	 */
 
 	load_interfaces(); /* Delayed from main() */
 
@@ -617,7 +617,7 @@ static int process_nonroot(int local_flags)
  Start here.
 **********************************************************/
 int main(int argc, char **argv)
-{	
+{
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx = NULL;
 	int local_flags = 0;
