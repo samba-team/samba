@@ -1378,6 +1378,9 @@ static struct functable net_func[] = {
 	poptFreeContext(pc);
 
 	cmdline_messaging_context_free();
+
+	gfree_all();
+
 	TALLOC_FREE(frame);
 	return rc;
 }
