@@ -350,6 +350,7 @@ int main(int argc, char *argv[])
 	}
 
 	start_filter(desthost);
+	gfree_all();
 	TALLOC_FREE(frame);
 	return 0;
 }
