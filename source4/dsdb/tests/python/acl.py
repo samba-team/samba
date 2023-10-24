@@ -2735,7 +2735,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
                                sd=descriptor)
 
         # Try to modify the owner to someone other than ourselves.
-        new_sddl = f'O:BA'
+        new_sddl = 'O:BA'
         new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
 
         owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
@@ -2797,7 +2797,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         })
 
         # Try to modify the owner to someone other than ourselves.
-        new_sddl = f'O:BA'
+        new_sddl = 'O:BA'
         new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
 
         owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
@@ -2855,7 +2855,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
                                sd=descriptor)
 
         # Try to modify the owner to someone other than ourselves.
-        new_sddl = f'O:BA'
+        new_sddl = 'O:BA'
         new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
 
         owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
@@ -2909,7 +2909,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         })
 
         # Try to modify the owner to someone other than ourselves.
-        new_sddl = f'O:BA'
+        new_sddl = 'O:BA'
         new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
 
         owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
@@ -2959,7 +2959,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
                                sd=descriptor)
 
         # Try to modify the owner to Domain Admins.
-        new_sddl = f'O:DA'
+        new_sddl = 'O:DA'
         new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
 
         owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
@@ -3013,7 +3013,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         })
 
         # Try to modify the owner to Domain Admins.
-        new_sddl = f'O:DA'
+        new_sddl = 'O:DA'
         new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
 
         owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
