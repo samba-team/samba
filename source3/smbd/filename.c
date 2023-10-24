@@ -879,26 +879,27 @@ lookup:
 
 static const char *previous_slash(const char *name_in, const char *slash)
 {
-	const char *prev = name_in;
+	const char *prev = NULL;
 
-	while (true) {
-		const char *next = strchr_m(prev, '/');
+	SMB_ASSERT((name_in <= slash) && (slash[0] == '/'));
 
-		SMB_ASSERT(next != NULL); /* we have at least one slash */
+	prev = strchr_m(name_in, '/');
 
-		if (next == slash) {
-			break;
-		}
-
-		prev = next+1;
-	};
-
-	if (prev == name_in) {
-		/* no previous slash */
+	if (prev == slash) {
+		/* No previous slash */
 		return NULL;
 	}
 
-	return prev;
+	while (true) {
+		const char *next = strchr_m(prev + 1, '/');
+
+		if (next == slash) {
+			return prev;
+		}
+		prev = next;
+	}
+
+	return NULL; /* unreachable */
 }
 
 static char *symlink_target_path(
@@ -928,17 +929,16 @@ static char *symlink_target_path(
 	}
 
 	if (parent == NULL) {
-		/* no previous slash */
-		parent = name_in;
+		ret = talloc_asprintf(mem_ctx, "%s%s", substitute, p_unparsed);
+	} else {
+		ret = talloc_asprintf(mem_ctx,
+				      "%.*s/%s%s",
+				      (int)(parent - name_in),
+				      name_in,
+				      substitute,
+				      p_unparsed);
 	}
 
-	ret = talloc_asprintf(
-		mem_ctx,
-		"%.*s%s%s",
-		(int)(parent - name_in),
-		name_in,
-		substitute,
-		p_unparsed);
 	return ret;
 }
 
