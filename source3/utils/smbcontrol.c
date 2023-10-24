@@ -1863,6 +1863,7 @@ int main(int argc, const char **argv)
 	ret = !do_command(evt_ctx, msg_ctx, argc, argv);
 
 	cmdline_messaging_context_free();
+	gfree_all();
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return ret;
