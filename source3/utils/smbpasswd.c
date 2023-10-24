@@ -661,6 +661,9 @@ int main(int argc, char **argv)
 	} else {
 		ret = process_nonroot(local_flags);
 	}
+
+	gfree_all();
+
 	TALLOC_FREE(frame);
 	return ret;
 }
