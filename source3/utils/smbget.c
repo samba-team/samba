@@ -1028,6 +1028,7 @@ int main(int argc, char **argv)
 	}
 
 done:
+	gfree_all();
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	if (ok) {
