@@ -2180,10 +2180,11 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 {
 	NTSTATUS status, result;
+	NTSTATUS close_status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr;
 	TALLOC_CTX              *mem_ctx = NULL;
 	struct rpc_pipe_client  *cli = NULL;
-	struct policy_handle pol;
+	struct policy_handle pol = { .handle_type = 0 };
 	union dssetup_DsRoleInfo info;
 	union lsa_PolicyInformation *lsa_info = NULL;
 	union lsa_revision_info out_revision_info = {
@@ -2454,6 +2455,12 @@ no_dssetup:
 		}
 	}
 done:
+	if (is_valid_policy_hnd(&pol)) {
+		dcerpc_lsa_Close(cli->binding_handle,
+				 mem_ctx,
+				 &pol,
+				 &close_status);
+	}
 
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s is %sin native mode.\n",
 		  domain->name, domain->native_mode ? "" : "NOT "));
