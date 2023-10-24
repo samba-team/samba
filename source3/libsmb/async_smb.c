@@ -201,6 +201,11 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 			is_expected = true;
 		}
 
+		if ((state->smb_command == SMBntcreateX) &&
+		    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			min_wct = 0;
+		}
+
 		map_dos_errors = state->cli->map_dos_errors;
 		state->cli->raw_status = status;
 		talloc_free(state->ptr);
