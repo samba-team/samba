@@ -133,7 +133,7 @@ class TestDnsPacketBase(TestCase):
         # unresponsive.
         if r != [s]:
             ok = self._known_good_query()
-            self.assertTrue(ok, f"the server is unresponsive")
+            self.assertTrue(ok, "the server is unresponsive")
 
     def _known_good_query(self):
         if self.server[1] == 53:
@@ -167,7 +167,7 @@ class TestDnsPacketBase(TestCase):
         # but it is not reasonable to render the server
         # unresponsive.
         ok = self._known_good_query()
-        self.assertTrue(ok, f"the server is unresponsive")
+        self.assertTrue(ok, "the server is unresponsive")
 
 
 class TestDnsPackets(TestDnsPacketBase):

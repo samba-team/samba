@@ -5033,7 +5033,7 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
 
         # Create an authentication policy that applies to a user and explicitly
         # denies authentication with any device.
-        denied = f'O:SYD:(D;;CR;;;WD)'
+        denied = 'O:SYD:(D;;CR;;;WD)'
         policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied)
 
@@ -5319,7 +5319,7 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
 
         # Create an authentication policy that applies to a user and explicitly
         # denies authentication with any device.
-        denied = f'O:SYD:(D;;CR;;;WD)'
+        denied = 'O:SYD:(D;;CR;;;WD)'
         policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied)
 
@@ -5411,7 +5411,7 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
 
         # Create an authentication policy that applies to a user and explicitly
         # denies authentication with any device.
-        denied = f'O:SYD:(D;;CR;;;WD)'
+        denied = 'O:SYD:(D;;CR;;;WD)'
         policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied)
 

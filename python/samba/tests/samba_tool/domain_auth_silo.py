@@ -216,7 +216,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                        "--name", "policyNotFound",
                                        "--policy", "Invalid Policy")
         self.assertEqual(result, -1)
-        self.assertIn(f"Authentication policy Invalid Policy not found.", err)
+        self.assertIn("Authentication policy Invalid Policy not found.", err)
 
     def test_authentication_silo_create_fails(self):
         """Test creating an authentication silo, but it fails."""
