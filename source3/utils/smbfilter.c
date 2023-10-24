@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB filter/socket plugin
    Copyright (C) Andrew Tridgell 1999
@@ -243,7 +243,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 			if (!send_smb(s, packet)) {
 				d_printf("server is dead\n");
 				exit(1);
-			}			
+			}
 		}
 
 		/*
@@ -265,7 +265,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 			if (!send_smb(c, packet)) {
 				d_printf("client is dead\n");
 				exit(1);
-			}			
+			}
 		}
 	}
 	d_printf("Connection closed\n");
