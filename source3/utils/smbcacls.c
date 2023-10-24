@@ -1833,6 +1833,7 @@ int main(int argc, char *argv[])
 		result = cacl_dump(targetcli, targetfile, numeric);
 	}
 
+	gfree_all();
 	TALLOC_FREE(frame);
 
 	return result;
