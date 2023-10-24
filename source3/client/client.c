@@ -6799,6 +6799,8 @@ int main(int argc,char *argv[])
 		rc = 1;
 	}
 
+	gfree_all();
+
 	TALLOC_FREE(frame);
 	return rc;
 }
