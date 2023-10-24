@@ -903,7 +903,8 @@ static NTSTATUS safe_symlink_target_path(
 		connectpath, strlen(connectpath), abs_target_canon, &relative);
 	if (!in_share) {
 		DBG_DEBUG("wide link to %s\n", abs_target_canon);
-		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		status = (unparsed != 0) ? NT_STATUS_OBJECT_PATH_NOT_FOUND
+					 : NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto fail;
 	}
 
