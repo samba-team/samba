@@ -444,7 +444,7 @@ main(int argc,			/* I - Number of command-line arguments */
          */
 
 done:
-
+	gfree_all();
 	TALLOC_FREE(frame);
 	return (status);
 }
