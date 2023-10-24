@@ -1407,6 +1407,7 @@ int main(int argc, const char **argv)
 	}
 	poptPrintHelp(pc, stderr, 0);
 
+	gfree_all();
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return 1;
