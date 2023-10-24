@@ -1,6 +1,0 @@
-# Suppress the
-# "left shift of x by y places cannot be represented in type 'int'"
-# in the heimdal code for now.
-shift-base:../../third_party/heimdal/lib/hcrypto/des.c
-shift-base:../../third_party/heimdal/lib/krb5/crypto.c
-
