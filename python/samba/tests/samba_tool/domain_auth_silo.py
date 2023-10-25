@@ -71,7 +71,8 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
         # check a few fields only
         self.assertEqual(silo["cn"], "Developers")
-        self.assertEqual(silo["description"], "Developers, Developers")
+        self.assertEqual(silo["description"],
+                         "Developers, Developers, Developers!")
 
     def test_view__notfound(self):
         """Test viewing an authentication silo that doesn't exist."""
@@ -412,10 +413,12 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                        "--user-authentication-policy", "User Policy",
                                        "--protect")
         self.assertIsNone(result, msg=err)
+
+        # Silo exists
         silo = self.get_authentication_silo("deleteForceFail")
         self.assertIsNotNone(silo)
 
-        # Try delete with --force.
+        # Try doing delete with --force.
         # Patch SDUtils.dacl_delete_aces with a Mock that raises ModelError.
         with patch.object(SDUtils, "dacl_delete_aces") as delete_mock:
             delete_mock.side_effect = ModelError("Custom error message")
@@ -434,6 +437,8 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                        "--name=regularSilo",
                                        "--user-authentication-policy", "User Policy")
         self.assertIsNone(result, msg=err)
+
+        # Silo exists
         silo = self.get_authentication_silo("regularSilo")
         self.assertIsNotNone(silo)
 
@@ -458,6 +463,8 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
                                        "--user-authentication-policy", "User Policy",
                                        "--protect")
         self.assertIsNone(result, msg=err)
+
+        # Silo exists
         silo = self.get_authentication_silo("protectedSilo")
         self.assertIsNotNone(silo)
 

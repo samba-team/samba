@@ -46,7 +46,7 @@ class BaseAuthCmdTest(SambaToolCmdTest):
 
         cls.create_authentication_silo(
             name="Developers",
-            description="Developers, Developers",
+            description="Developers, Developers, Developers!",
             user_authentication_policy="User Policy")
         cls.create_authentication_silo(
             name="Managers",

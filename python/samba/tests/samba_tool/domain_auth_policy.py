@@ -636,10 +636,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                        "--name=deleteForceFail",
                                        "--protect")
         self.assertIsNone(result, msg=err)
+
+        # Policy exists
         policy = self.get_authentication_policy("deleteForceFail")
         self.assertIsNotNone(policy)
 
-        # Try delete with --force.
+        # Try doing delete with --force.
         # Patch SDUtils.dacl_delete_aces with a Mock that raises ModelError.
         with patch.object(SDUtils, "dacl_delete_aces") as delete_mock:
             delete_mock.side_effect = ModelError("Custom error message")
@@ -657,6 +659,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name=regularPolicy")
         self.assertIsNone(result, msg=err)
+
+        # Policy exists
         policy = self.get_authentication_policy("regularPolicy")
         self.assertIsNotNone(policy)
 
@@ -680,6 +684,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                        "--name=protectedPolicy",
                                        "--protect")
         self.assertIsNone(result, msg=err)
+
+        # Policy exists
         policy = self.get_authentication_policy("protectedPolicy")
         self.assertIsNotNone(policy)
 
