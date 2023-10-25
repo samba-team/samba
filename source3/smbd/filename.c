@@ -1369,7 +1369,11 @@ next:
 	}
 
 	if (!lp_follow_symlinks(SNUM(conn))) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		status = (symlink_err->unparsed == 0)
+				 ? NT_STATUS_OBJECT_NAME_NOT_FOUND
+				 : NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		TALLOC_FREE(symlink_err);
+		return status;
 	}
 
 	/*
