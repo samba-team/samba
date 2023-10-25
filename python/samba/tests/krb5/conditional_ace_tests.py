@@ -3450,6 +3450,19 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
     def test_device_in_authenticated_users(self):
         self._check_device_in_group(security.SID_NT_AUTHENTICATED_USERS)
 
+    def test_device_in_aa_asserted_identity(self):
+        self._check_device_in_group(
+            security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+
+    def test_device_in_service_asserted_identity(self):
+        self._check_device_not_in_group(security.SID_SERVICE_ASSERTED_IDENTITY)
+
+    def test_device_in_compounded_authentication(self):
+        self._check_device_not_in_group(security.SID_COMPOUNDED_AUTHENTICATION)
+
+    def test_device_in_claims_valid(self):
+        self._check_device_in_group(security.SID_CLAIMS_VALID)
+
     def _check_device_in_group(self, group):
         self._check_device_membership(group, expect_in_group=True)
 
@@ -4443,6 +4456,19 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
 
     def test_device_in_authenticated_users(self):
         self._check_device_in_group(security.SID_NT_AUTHENTICATED_USERS)
+
+    def test_device_in_aa_asserted_identity(self):
+        self._check_device_in_group(
+            security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+
+    def test_device_in_service_asserted_identity(self):
+        self._check_device_not_in_group(security.SID_SERVICE_ASSERTED_IDENTITY)
+
+    def test_device_in_compounded_authentication(self):
+        self._check_device_not_in_group(security.SID_COMPOUNDED_AUTHENTICATION)
+
+    def test_device_in_claims_valid(self):
+        self._check_device_in_group(security.SID_CLAIMS_VALID)
 
     def _check_device_in_group(self, group):
         self._check_device_membership(group, expect_in_group=True)
