@@ -662,6 +662,100 @@ static bool ipreallocated_recv(struct tevent_req *req, int *perr)
 
 /**********************************************************************/
 
+struct start_ipreallocate_state {
+	uint32_t *pnns;
+	int count;
+	uint32_t *ban_credits;
+};
+
+static void start_ipreallocate_done(struct tevent_req *subreq);
+
+static struct tevent_req *start_ipreallocate_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct ctdb_client_context *client,
+	uint32_t *pnns,
+	int count,
+	struct timeval timeout,
+	uint32_t *ban_credits)
+{
+	struct tevent_req *req, *subreq;
+	struct start_ipreallocate_state *state;
+	struct ctdb_req_control request;
+
+	req = tevent_req_create(mem_ctx, &state, struct start_ipreallocate_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->pnns = pnns;
+	state->count = count;
+	state->ban_credits = ban_credits;
+
+	ctdb_req_control_start_ipreallocate(&request);
+	subreq = ctdb_client_control_multi_send(state, ev, client,
+						pnns, count,
+						timeout, /* cumulative */
+						&request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, start_ipreallocate_done, req);
+
+	return req;
+}
+
+static void start_ipreallocate_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct start_ipreallocate_state *state = tevent_req_data(
+		req, struct start_ipreallocate_state);
+	int *err_list = NULL;
+	int ret, i;
+	bool status, found_errors;
+
+	status = ctdb_client_control_multi_recv(subreq, &ret, state,
+						&err_list, NULL);
+	TALLOC_FREE(subreq);
+
+	if (status) {
+		D_INFO("START_IPREALLOCATE succeeded on %d nodes\n", state->count);
+		tevent_req_done(req);
+		return;
+	}
+
+	/* Get some clear error messages out of err_list and count
+	 * banning credits
+	 */
+	found_errors = false;
+	for (i = 0; i < state->count; i++) {
+		int err = err_list[i];
+		if (err != 0) {
+			uint32_t pnn = state->pnns[i];
+
+			D_ERR("START_IPREALLOCATE failed on node %u, ret=%d\n",
+			      pnn, err);
+
+			state->ban_credits[pnn]++;
+			found_errors = true;
+		}
+	}
+
+	if (! found_errors) {
+		D_ERR("STARTREALLOCATE internal error, ret=%d\n", ret);
+	}
+
+	tevent_req_error(req, ret);
+}
+
+static bool start_ipreallocate_recv(struct tevent_req *req, int *perr)
+{
+	return generic_recv(req, perr);
+}
+
+/**********************************************************************/
+
 /*
  * Recalculate the allocation of public IPs to nodes and have the
  * nodes host their allocated addresses.
@@ -681,6 +775,7 @@ static bool ipreallocated_recv(struct tevent_req *req, int *perr)
  *   addresses for allocation
  * - If cluster can't host IP addresses then jump to IPREALLOCATED
  * - Run IP allocation algorithm
+ * - Send START_IPREALLOCATE to all nodes
  * - Send RELEASE_IP to all nodes for IPs they should not host
  * - Send TAKE_IP to all nodes for IPs they should host
  * - Send IPREALLOCATED to all nodes
@@ -708,6 +803,7 @@ static void takeover_tunables_done(struct tevent_req *subreq);
 static void takeover_nodemap_done(struct tevent_req *subreq);
 static void takeover_known_ips_done(struct tevent_req *subreq);
 static void takeover_avail_ips_done(struct tevent_req *subreq);
+static void takeover_start_ipreallocate_done(struct tevent_req *subreq);
 static void takeover_release_ip_done(struct tevent_req *subreq);
 static void takeover_take_ip_done(struct tevent_req *subreq);
 static void takeover_ipreallocated(struct tevent_req *req);
@@ -958,12 +1054,15 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* Each of the following stages (RELEASE_IP, TAKEOVER_IP,
+	/* Each of the following stages (START_IPREALLOCATE, RELEASE_IP, TAKEOVER_IP,
 	 * IPREALLOCATED) notionally has a timeout of TakeoverTimeout
 	 * seconds.  However, RELEASE_IP can take longer due to TCP
 	 * connection killing, so sometimes needs more time.
 	 * Therefore, use a cumulative timeout of TakeoverTimeout * 3
-	 * seconds across all 3 stages.  No explicit expiry checks are
+	 * seconds across all 4 stages. Using a longer cumulative timeout (e.g.*4)
+	 * would take the takeover run timeout over 30s, which combined with database
+	 * recovery time takes the timeout too close to acceptable SMB limits.
+	 * No explicit expiry checks are
 	 * needed before each stage because tevent is smart enough to
 	 * fire the timeouts even if they are in the past.  Initialise
 	 * this here so it explicitly covers the stages we're
@@ -972,9 +1071,43 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 	 */
 	state->timeout = timeval_current_ofs(3 * takeover_timeout, 0);
 
-	subreq = release_ip_send(state, state->ev, state->client,
-				 state->pnns_connected, state->num_connected,
-				 state->timeout, state->all_ips,
+	subreq = start_ipreallocate_send(state,
+					state->ev,
+					state->client,
+					state->pnns_connected,
+					state->num_connected,
+					state->timeout,
+					state->ban_credits);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, takeover_start_ipreallocate_done, req);
+}
+
+static void takeover_start_ipreallocate_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct takeover_state *state = tevent_req_data(
+		req, struct takeover_state);
+	int ret;
+	bool status;
+
+	status = start_ipreallocate_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+
+	if (! status) {
+		takeover_failed(req, ret);
+		return;
+	}
+
+	subreq = release_ip_send(state,
+				 state->ev,
+				 state->client,
+				 state->pnns_connected,
+				 state->num_connected,
+				 state->timeout,
+				 state->all_ips,
 				 state->ban_credits);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

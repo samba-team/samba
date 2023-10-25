@@ -33,6 +33,7 @@ Fetched public IPs from node 2
  10.0.0.33 -> 2 [+0]
  10.0.0.31 -> 0 [+14884]
  10.0.0.32 -> 2 [+16129]
+START_IPREALLOCATE succeeded on 3 nodes
 RELEASE_IP 10.0.0.34 succeeded on 1 nodes
 RELEASE_IP 10.0.0.33 succeeded on 1 nodes
 RELEASE_IP 10.0.0.32 succeeded on 1 nodes
