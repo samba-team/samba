@@ -3619,7 +3619,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	files_struct *fsp = NULL;
 	uint16_t flags = 0;
 	int info = 0;
-	int create_options = 0;
+	int create_options = FILE_OPEN_REPARSE_POINT;
 	struct smb2_create_blobs *posx = NULL;
 
 	if (!CAN_WRITE(conn)) {
