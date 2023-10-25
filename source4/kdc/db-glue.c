@@ -3484,6 +3484,10 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
+	if (device_info_dc != NULL && !(device_info_dc->info->user_flags & NETLOGON_GUEST)) {
+		session_info_flags |= AUTH_SESSION_INFO_DEVICE_AUTHENTICATED;
+	}
+
 	nt_status = auth_generate_security_token(mem_ctx,
 						 kdc_db_ctx->lp_ctx,
 						 kdc_db_ctx->samdb,
