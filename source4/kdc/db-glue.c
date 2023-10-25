@@ -3413,6 +3413,7 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	struct security_token *security_token = NULL;
 	uint32_t session_info_flags =
 		AUTH_SESSION_INFO_DEFAULT_GROUPS |
+		AUTH_SESSION_INFO_DEVICE_DEFAULT_GROUPS |
 		AUTH_SESSION_INFO_SIMPLE_PRIVILEGES |
 		AUTH_SESSION_INFO_FORCE_COMPOUNDED_AUTHENTICATION;
 	/*
