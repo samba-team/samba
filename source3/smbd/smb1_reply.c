@@ -6283,7 +6283,8 @@ void reply_rmdir(struct smb_request *req)
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
 			FILE_SHARE_DELETE),
 		FILE_OPEN,                              /* create_disposition*/
-		FILE_DIRECTORY_FILE,                    /* create_options */
+		FILE_DIRECTORY_FILE |
+			FILE_OPEN_REPARSE_POINT,	/* create_options */
 		FILE_ATTRIBUTE_DIRECTORY,               /* file_attributes */
 		0,                                      /* oplock_request */
 		NULL,					/* lease */
