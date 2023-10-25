@@ -1854,7 +1854,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			uint32_t access_mask)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	int create_options = 0;
+	int create_options = FILE_OPEN_REPARSE_POINT;
 	struct smb2_create_blobs *posx = NULL;
 	struct files_struct *fsp = NULL;
 	bool posix_pathname = (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH);
