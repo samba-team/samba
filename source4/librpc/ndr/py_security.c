@@ -22,6 +22,11 @@
 #include "libcli/security/sddl.h"
 #include "libcli/security/security.h"
 
+
+/* Set up in py_mod_security_patch() */
+static PyObject *PyExc_SDDLValueError = NULL;
+
+
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 {
 	PyObject *dict;
@@ -575,6 +580,21 @@ static bool py_mod_security_patch(PyObject *m)
 		if (ret != 0) {
 			return false;
 		}
+	}
+	/*
+	 * I wanted to make this a subclass of ValueError, but it
+	 * seems there isn't an easy way to do that using the API.
+	 * (c.f. SimpleExtendsException in cpython:Objects/exceptions.c)
+	 */
+	PyExc_SDDLValueError = PyErr_NewException("security.SDDLValueError",
+						  NULL, NULL);
+
+	if (PyExc_SDDLValueError == NULL) {
+		return false;
+	}
+	ret = PyModule_AddObject(m, "SDDLValueError", PyExc_SDDLValueError);
+	if (ret != 0) {
+		return false;
 	}
 	return true;
 }
