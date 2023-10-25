@@ -418,6 +418,9 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_TCP_CLIENT_PASSED:
 		len = ctdb_connection_len(cd->data.conn);
 		break;
+
+	case CTDB_CONTROL_START_IPREALLOCATE:
+		break;
 	}
 
 	return len;
@@ -1414,6 +1417,9 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_TCP_CLIENT_PASSED:
 		break;
+
+	case CTDB_CONTROL_START_IPREALLOCATE:
+	    break;
 	}
 
 	return len;

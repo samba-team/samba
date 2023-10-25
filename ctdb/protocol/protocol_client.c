@@ -2350,3 +2350,22 @@ int ctdb_reply_control_enable_node(struct ctdb_reply_control *reply)
 {
 	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_NODE);
 }
+
+/* CTDB_CONTROL_START_IPREALLOCATE */
+
+void ctdb_req_control_start_ipreallocate(struct ctdb_req_control *request)
+{
+	request->opcode = CTDB_CONTROL_START_IPREALLOCATE;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_START_IPREALLOCATE;
+}
+
+int ctdb_reply_control_start_ipreallocate(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_START_IPREALLOCATE);
+}

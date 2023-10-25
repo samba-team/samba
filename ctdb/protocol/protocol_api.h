@@ -603,6 +603,9 @@ int ctdb_reply_control_disable_node(struct ctdb_reply_control *reply);
 void ctdb_req_control_enable_node(struct ctdb_req_control *request);
 int ctdb_reply_control_enable_node(struct ctdb_reply_control *reply);
 
+void ctdb_req_control_start_ipreallocate(struct ctdb_req_control *request);
+int ctdb_reply_control_start_ipreallocate(struct ctdb_reply_control *reply);
+
 /* From protocol/protocol_debug.c */
 
 void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp);
