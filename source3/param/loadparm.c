@@ -608,7 +608,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
  	 */
 	Globals.nmbd_bind_explicit_broadcast = true;
 
-	s = talloc_asprintf(talloc_tos(), "Samba %s", samba_version_string());
+	s = talloc_asprintf(Globals.ctx, "Samba %s", samba_version_string());
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
