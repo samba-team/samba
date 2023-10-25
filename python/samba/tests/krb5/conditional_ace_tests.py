@@ -2602,6 +2602,204 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                            event=event,
                            reason=reason)
 
+    def test_tgs_claims_valid_missing(self):
+        """Test that the Claims Valid SID is not added to the PAC when
+        performing a TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_claims_valid_missing_from_rodc(self):
+        """Test that the Claims Valid SID *is* added to the PAC when
+        performing a TGS‐REQ with an RODC‐issued TGT."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        expected_groups = client_sids | {
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_from_rodc=True,
+                  client_sids=client_sids,
+                  expected_groups=expected_groups)
+
+    def test_tgs_aa_asserted_identity(self):
+        """Test performing a TGS‐REQ with the Authentication Identity Asserted
+        Identity SID present."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_aa_asserted_identity_no_attrs(self):
+        """Test performing a TGS‐REQ with the Authentication Identity Asserted
+        Identity SID present, albeit without any attributes."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            # Put the Asserted Identity SID in the PAC without any flags set.
+            (self.aa_asserted_identity, SidType.EXTRA_SID, 0),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_aa_asserted_identity_from_rodc(self):
+        """Test that the Authentication Identity Asserted Identity SID in an
+        RODC‐issued PAC is preserved when performing a TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_from_rodc=True,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_aa_asserted_identity_from_rodc_no_attrs_from_rodc(self):
+        """Test that the Authentication Identity Asserted Identity SID without
+        attributes in an RODC‐issued PAC is preserved when performing a
+        TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            # Put the Asserted Identity SID in the PAC without any flags set.
+            (self.aa_asserted_identity, SidType.EXTRA_SID, 0),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        expected_groups = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            # The SID in the resulting PAC has the default attributes.
+            (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_from_rodc=True,
+                  client_sids=client_sids,
+                  expected_groups=expected_groups)
+
+    def test_tgs_compound_authentication(self):
+        """Test performing a TGS‐REQ with the Compounded Authentication SID
+        present."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_compound_authentication_from_rodc(self):
+        """Test that the Compounded Authentication SID in an
+        RODC‐issued PAC is not preserved when performing a TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        expected_groups = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_from_rodc=True,
+                  client_sids=client_sids,
+                  expected_groups=expected_groups)
+
+    def test_tgs_asserted_identity_missing(self):
+        """Test that the Authentication Identity Asserted Identity SID is not
+        added to the PAC when performing a TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_asserted_identity_missing_from_rodc(self):
+        """Test that the Authentication Identity Asserted Identity SID is not
+        added to an RODC‐issued PAC when performing a TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_from_rodc=True,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_service_asserted_identity(self):
+        """Test performing a TGS‐REQ with the Service Asserted Identity SID
+        present."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (self.service_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_sids=client_sids,
+                  expected_groups=client_sids)
+
+    def test_tgs_service_asserted_identity_from_rodc(self):
+        """Test that the Service Asserted Identity SID in an
+        RODC‐issued PAC is not preserved when performing a TGS‐REQ."""
+        client_sids = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            (self.service_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        expected_groups = {
+            (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+            (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+            # Don’t expect the Service Asserted Identity SID.
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
+        self._tgs(use_fast=False,
+                  client_from_rodc=True,
+                  client_sids=client_sids,
+                  expected_groups=expected_groups)
+
     def test_tgs_without_aa_asserted_identity(self):
         client_sids = {
             (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),

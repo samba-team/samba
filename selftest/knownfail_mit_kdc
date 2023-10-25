@@ -4078,6 +4078,12 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_network_group_rbcd\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_service_asserted_identity_rbcd\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_world_group_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_aa_asserted_identity_from_rodc_no_attrs_from_rodc\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_aa_asserted_identity_from_rodc\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_asserted_identity_missing_from_rodc\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_claims_valid_missing_from_rodc\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_compound_authentication_from_rodc\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_tgs_service_asserted_identity_from_rodc\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_aa_asserted_identity\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_authenticated_users\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_claims_valid\(ad_dc\)$
