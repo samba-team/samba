@@ -3017,6 +3017,7 @@ static PyObject *py_ldb_search_iterator_result(PyLdbSearchIteratorObject *self,
 
 	if (self->state.exception != NULL) {
 		PyErr_SetObject(PyExc_LdbError, self->state.exception);
+		Py_DECREF(self->state.exception);
 		self->state.exception = NULL;
 		return NULL;
 	}
