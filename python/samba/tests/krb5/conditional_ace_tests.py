@@ -2182,6 +2182,232 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                    device_from_rodc=True,
                    code=(0, CRASHES_WINDOWS))
 
+    def test_delegating_proxy_in_world_group_rbcd(self):
+        self._check_delegating_proxy_in_group_rbcd(security.SID_WORLD)
+
+    def test_delegating_proxy_in_network_group_rbcd(self):
+        self._check_delegating_proxy_not_in_group_rbcd(security.SID_NT_NETWORK)
+
+    def test_delegating_proxy_in_authenticated_users_rbcd(self):
+        self._check_delegating_proxy_in_group_rbcd(
+            security.SID_NT_AUTHENTICATED_USERS)
+
+    def test_delegating_proxy_in_aa_asserted_identity_rbcd(self):
+        self._check_delegating_proxy_in_group_rbcd(
+            security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+
+    def test_delegating_proxy_in_service_asserted_identity_rbcd(self):
+        self._check_delegating_proxy_not_in_group_rbcd(
+            security.SID_SERVICE_ASSERTED_IDENTITY)
+
+    def test_delegating_proxy_in_compounded_authentication_rbcd(self):
+        self._check_delegating_proxy_not_in_group_rbcd(
+            security.SID_COMPOUNDED_AUTHENTICATION)
+
+    def test_delegating_proxy_in_claims_valid_rbcd(self):
+        self._check_delegating_proxy_in_group_rbcd(security.SID_CLAIMS_VALID)
+
+    def test_device_in_world_group_rbcd(self):
+        self._check_device_in_group_rbcd(security.SID_WORLD)
+
+    def test_device_in_network_group_rbcd(self):
+        self._check_device_not_in_group_rbcd(security.SID_NT_NETWORK)
+
+    def test_device_in_authenticated_users_rbcd(self):
+        self._check_device_in_group_rbcd(security.SID_NT_AUTHENTICATED_USERS)
+
+    def test_device_in_aa_asserted_identity_rbcd(self):
+        self._check_device_in_group_rbcd(
+            security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+
+    def test_device_in_service_asserted_identity_rbcd(self):
+        self._check_device_not_in_group_rbcd(
+            security.SID_SERVICE_ASSERTED_IDENTITY)
+
+    def test_device_in_compounded_authentication_rbcd(self):
+        self._check_device_not_in_group_rbcd(
+            security.SID_COMPOUNDED_AUTHENTICATION)
+
+    def test_device_in_claims_valid_rbcd(self):
+        self._check_device_in_group_rbcd(security.SID_CLAIMS_VALID)
+
+    def _check_delegating_proxy_in_group_rbcd(self, group):
+        self._check_membership_rbcd(group, expect_in_group=True)
+
+    def _check_delegating_proxy_not_in_group_rbcd(self, group):
+        self._check_membership_rbcd(group, expect_in_group=False)
+
+    def _check_device_in_group_rbcd(self, group):
+        self._check_membership_rbcd(group, expect_in_group=True, device=True)
+
+    def _check_device_not_in_group_rbcd(self, group):
+        self._check_membership_rbcd(group, expect_in_group=False, device=True)
+
+    def _check_membership_rbcd(self,
+                               group,
+                               *,
+                               expect_in_group,
+                               device=False):
+        """Test that authentication succeeds or fails when the delegating proxy
+        is required to belong to a certain group.
+        """
+
+        sddl_op = 'Device_Member_of' if device else 'Member_of'
+
+        samdb = self.get_samdb()
+        functional_level = self.get_domain_functional_level(samdb)
+
+        if functional_level < dsdb.DS_DOMAIN_FUNCTION_2008:
+            self.skipTest('RBCD requires FL2008')
+
+        # Create a machine account with which to perform FAST.
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'device'})
+        mach_tgt = self.get_tgt(mach_creds)
+
+        # Create a user account.
+        client_creds = self._get_creds(account_type=self.AccountType.USER)
+
+        client_tkt_options = 'forwardable'
+        expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
+        client_tgt = self.get_tgt(client_creds,
+                                  kdc_options=client_tkt_options,
+                                  expected_flags=expected_flags)
+
+        client_sid = client_creds.get_sid()
+
+        client_username = client_creds.get_username()
+        client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                 names=[client_username])
+
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'id': 'service'})
+        service_tgt = self.get_tgt(service_creds)
+
+        client_service_tkt = self.get_service_ticket(
+            client_tgt,
+            service_creds,
+            kdc_options=client_tkt_options,
+            expected_flags=expected_flags)
+
+        domain_sid_str = samdb.get_domain_sid()
+        domain_sid = security.dom_sid(domain_sid_str)
+
+        # Require the principal to belong to a certain group.
+        in_group_sddl = self.allow_if(f'{sddl_op} {{SID({group})}}')
+        in_group_descriptor = security.descriptor.from_sddl(in_group_sddl,
+                                                            domain_sid)
+
+        # Create a target account that allows RBCD if the principal belongs to
+        # the group.
+        in_group_target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'additional_details': (
+                    ('msDS-AllowedToActOnBehalfOfOtherIdentity',
+                     ndr_pack(in_group_descriptor)),
+                ),
+            })
+
+        kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
+
+        in_group_target_key = self.TicketDecryptionKey_from_creds(
+            in_group_target_creds)
+        in_group_target_etypes = in_group_target_creds.tgs_supported_enctypes
+
+        service_name = service_creds.get_username()
+        if service_name[-1] == '$':
+            service_name = service_name[:-1]
+        expected_transited_services = [
+            f'host/{service_name}@{service_creds.get_realm()}'
+        ]
+
+        pac_options = '1001'  # supports claims, RBCD
+
+        success_result = 0, None, None
+        failure_result = (
+            KDC_ERR_BADOPTION,
+            ntstatus.NT_STATUS_UNSUCCESSFUL,
+            self.expect_padata_outer,
+        )
+
+        code, status, expect_edata = (success_result if expect_in_group
+                                      else failure_result)
+
+        # Test whether obtaining a service ticket with RBCD is allowed.
+        self._tgs_req(service_tgt,
+                      code,
+                      service_creds,
+                      in_group_target_creds,
+                      armor_tgt=mach_tgt,
+                      kdc_options=kdc_options,
+                      pac_options=pac_options,
+                      expected_cname=client_cname,
+                      expected_account_name=client_username,
+                      additional_ticket=client_service_tkt,
+                      decryption_key=in_group_target_key,
+                      expected_sid=client_sid,
+                      expected_supported_etypes=in_group_target_etypes,
+                      expected_proxy_target=in_group_target_creds.get_spn(),
+                      expected_transited_services=expected_transited_services,
+                      expected_status=status,
+                      expect_edata=expect_edata)
+
+        effective_client_creds = service_creds if code else client_creds
+        self.check_tgs_log(effective_client_creds, in_group_target_creds,
+                           checked_creds=service_creds,
+                           status=status)
+
+        # Require the principal not to belong to a certain group.
+        not_in_group_sddl = self.allow_if(f'Not_{sddl_op} {{SID({group})}}')
+        not_in_group_descriptor = security.descriptor.from_sddl(
+            not_in_group_sddl, domain_sid)
+
+        # Create a target account that allows RBCD if the principal does not
+        # belong to the group.
+        not_in_group_target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'additional_details': (
+                    ('msDS-AllowedToActOnBehalfOfOtherIdentity',
+                     ndr_pack(not_in_group_descriptor)),
+                ),
+            })
+
+        not_in_group_target_key = self.TicketDecryptionKey_from_creds(
+            not_in_group_target_creds)
+        not_in_group_target_etypes = (
+            not_in_group_target_creds.tgs_supported_enctypes)
+
+        code, status, expect_edata = (failure_result if expect_in_group
+                                      else success_result)
+
+        # Test whether obtaining a service ticket with RBCD is allowed.
+        self._tgs_req(service_tgt,
+                      code,
+                      service_creds,
+                      not_in_group_target_creds,
+                      armor_tgt=mach_tgt,
+                      kdc_options=kdc_options,
+                      pac_options=pac_options,
+                      expected_cname=client_cname,
+                      expected_account_name=client_username,
+                      additional_ticket=client_service_tkt,
+                      decryption_key=not_in_group_target_key,
+                      expected_sid=client_sid,
+                      expected_supported_etypes=not_in_group_target_etypes,
+                      expected_proxy_target=not_in_group_target_creds.get_spn(),
+                      expected_transited_services=expected_transited_services,
+                      expected_status=status,
+                      expect_edata=expect_edata)
+
+        effective_client_creds = service_creds if code else client_creds
+        self.check_tgs_log(effective_client_creds, not_in_group_target_creds,
+                           checked_creds=service_creds,
+                           status=status)
+
     def _rbcd(self,
               rbcd_expression=None,
               *,

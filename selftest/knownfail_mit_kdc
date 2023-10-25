@@ -4064,6 +4064,20 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 # Conditional ACE device restrictions
 #
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_aa_asserted_identity_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_authenticated_users_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_claims_valid_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_compounded_authentication_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_network_group_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_service_asserted_identity_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_delegating_proxy_in_world_group_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_aa_asserted_identity_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_authenticated_users_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_claims_valid_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_compounded_authentication_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_network_group_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_service_asserted_identity_rbcd\(ad_dc\)$
+^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_device_in_world_group_rbcd\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_aa_asserted_identity\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_authenticated_users\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.DeviceRestrictionTests.test_device_in_claims_valid\(ad_dc\)$
