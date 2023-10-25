@@ -303,7 +303,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
     def test_modify__audit_enforce_together(self):
         """Test modify silo doesn't allow both --audit and --enforce."""
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "qa",
+                                       "--name", "QA",
                                        "--audit", "--enforce")
         self.assertEqual(result, -1)
         self.assertIn("--audit and --enforce cannot be used together.", err)
@@ -311,7 +311,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
     def test_modify__protect_unprotect_together(self):
         """Test modify silo using both --protect and --unprotect."""
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                       "--name", "developers",
+                                       "--name", "Developers",
                                        "--protect", "--unprotect")
         self.assertEqual(result, -1)
         self.assertIn("--protect and --unprotect cannot be used together.", err)
@@ -336,7 +336,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
         with patch.object(SamDB, "modify") as add_mock:
             add_mock.side_effect = ModelError("Custom error message")
             result, out, err = self.runcmd("domain", "auth", "silo", "modify",
-                                           "--name", "developers",
+                                           "--name", "Developers",
                                            "--description", "Devs")
             self.assertEqual(result, -1)
             self.assertIn("Custom error message", err)
