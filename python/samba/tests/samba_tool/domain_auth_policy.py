@@ -94,7 +94,6 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         """Test creating a new authentication policy."""
         self.addCleanup(self.delete_authentication_policy,
                         name="createTest", force=True)
-
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "createTest")
         self.assertIsNone(result, msg=err)
@@ -108,7 +107,6 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         """Test creating a new authentication policy with description set."""
         self.addCleanup(self.delete_authentication_policy,
                         name="descriptionTest", force=True)
-
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "descriptionTest",
                                        "--description", "Custom Description")
@@ -126,7 +124,6 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         """
         self.addCleanup(self.delete_authentication_policy,
                         name="userTGTLifetime", force=True)
-
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "userTGTLifetime",
                                        "--user-tgt-lifetime-mins", "60")
@@ -160,7 +157,6 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         """
         self.addCleanup(self.delete_authentication_policy,
                         name="serviceTGTLifetime", force=True)
-
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "serviceTGTLifetime",
                                        "--service-tgt-lifetime-mins", "60")
@@ -194,7 +190,6 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         """
         self.addCleanup(self.delete_authentication_policy,
                         name="computerTGTLifetime", force=True)
-
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "computerTGTLifetime",
                                        "--computer-tgt-lifetime-mins", "60")
@@ -227,7 +222,6 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         self.addCleanup(self.delete_authentication_policy,
                         name="validSDDLPolicy", force=True)
-
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "validSDDLPolicy",
                                        "--user-allowed-to-authenticate-from",
@@ -266,6 +260,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_create__audit(self):
         """Test create authentication policy with --audit flag."""
+        self.addCleanup(self.delete_authentication_policy,
+                        name="auditPolicy", force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "auditPolicy",
                                        "--audit")
@@ -277,6 +273,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_create__enforce(self):
         """Test create authentication policy with --enforce flag."""
+        self.addCleanup(self.delete_authentication_policy,
+                        name="enforcePolicy", force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "enforcePolicy",
                                        "--enforce")
@@ -314,11 +312,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__description(self):
         """Test modifying an authentication policy description."""
-        # Create a policy to modify for this test.
         name = "modifyDescription"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         # Change the policy description.
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
@@ -332,11 +331,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__strong_ntlm_policy(self):
         """Test modify strong ntlm policy on the authentication policy."""
-        # Create a policy to modify for this test.
         name = "modifyStrongNTLMPolicy"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
@@ -362,11 +362,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         This includes checking the upper and lower bounds.
         """
-        # Create a policy to modify for this test.
         name = "modifyUserTGTLifetime"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
@@ -398,11 +399,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         This includes checking the upper and lower bounds.
         """
-        # Create a policy to modify for this test.
         name = "modifyServiceTGTLifetime"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
@@ -434,11 +436,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         This includes checking the upper and lower bounds.
         """
-        # Create a policy to modify for this test.
         name = "modifyComputerTGTLifetime"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
@@ -482,11 +485,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__audit_enforce(self):
         """Test modify authentication policy using --audit and --enforce."""
-        # Create a policy to modify for this test.
         name = "modifyEnforce"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         # Change to audit, the default is --enforce.
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
@@ -509,11 +513,12 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__protect_unprotect(self):
         """Test modify authentication policy using --protect and --unprotect."""
-        # Create a policy to modify for this test.
         name = "modifyProtect"
-        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Create a policy to modify for this test.
         self.addCleanup(self.delete_authentication_policy,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         utils = SDUtils(self.samdb)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
@@ -625,6 +630,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_delete__force_fails(self):
         """Test deleting an authentication policy with --force, but it fails."""
         # Create protected authentication policy.
+        self.addCleanup(self.delete_authentication_policy,
+                        name="deleteForceFail", force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name=deleteForceFail",
                                        "--protect")
@@ -645,6 +652,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_delete__fails(self):
         """Test deleting an authentication policy, but it fails."""
         # Create regular authentication policy.
+        self.addCleanup(self.delete_authentication_policy,
+                        name="regularPolicy", force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name=regularPolicy")
         self.assertIsNone(result, msg=err)
@@ -665,6 +674,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
     def test_delete__protected_fails(self):
         """Test deleting an authentication policy, but it fails."""
         # Create protected authentication policy.
+        self.addCleanup(self.delete_authentication_policy,
+                        name="protectedPolicy", force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name=protectedPolicy",
                                        "--protect")

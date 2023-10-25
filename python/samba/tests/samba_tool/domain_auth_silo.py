@@ -227,11 +227,12 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__description(self):
         """Test modify authentication silo changing the description field."""
-        # Create a silo to modify for this test.
         name = "modifyDescription"
-        self.runcmd("domain", "auth", "silo", "create", "--name", name)
+
+        # Create a silo to modify for this test.
         self.addCleanup(self.delete_authentication_silo,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "silo", "create", "--name", name)
 
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
                                        "--name", name,
@@ -244,11 +245,12 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__audit_enforce(self):
         """Test modify authentication silo setting --audit and --enforce."""
-        # Create a silo to modify for this test.
         name = "modifyEnforce"
-        self.runcmd("domain", "auth", "silo", "create", "--name", name)
+
+        # Create a silo to modify for this test.
         self.addCleanup(self.delete_authentication_silo,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "silo", "create", "--name", name)
 
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
                                        "--name", name,
@@ -270,11 +272,12 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
 
     def test_modify__protect_unprotect(self):
         """Test modify un-protecting and protecting an authentication silo."""
-        # Create a silo to modify for this test.
         name = "modifyProtect"
-        self.runcmd("domain", "auth", "silo", "create", "--name", name)
+
+        # Create a silo to modify for this test.
         self.addCleanup(self.delete_authentication_silo,
                         name=name, force=True)
+        self.runcmd("domain", "auth", "silo", "create", "--name", name)
 
         utils = SDUtils(self.samdb)
         result, out, err = self.runcmd("domain", "auth", "silo", "modify",
@@ -402,6 +405,8 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
     def test_delete__force_fails(self):
         """Test deleting an authentication silo with --force, but it fails."""
         # Create protected authentication silo.
+        self.addCleanup(self.delete_authentication_silo,
+                        name="deleteForceFail", force=True)
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=deleteForceFail",
                                        "--user-authentication-policy", "User Policy",
@@ -423,6 +428,8 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
     def test_delete__fails(self):
         """Test deleting an authentication silo, but it fails."""
         # Create regular authentication silo.
+        self.addCleanup(self.delete_authentication_silo,
+                        name="regularSilo", force=True)
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=regularSilo",
                                        "--user-authentication-policy", "User Policy")
@@ -444,6 +451,8 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
     def test_delete__protected_fails(self):
         """Test deleting an authentication silo, but it fails."""
         # Create protected authentication silo.
+        self.addCleanup(self.delete_authentication_silo,
+                        name="protectedSilo", force=True)
         result, out, err = self.runcmd("domain", "auth", "silo", "create",
                                        "--name=protectedSilo",
                                        "--user-authentication-policy", "User Policy",
