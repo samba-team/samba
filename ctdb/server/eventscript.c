@@ -714,6 +714,7 @@ static bool check_options(enum ctdb_event call, const char *options)
 	case CTDB_EVENT_MONITOR:
 	case CTDB_EVENT_SHUTDOWN:
 	case CTDB_EVENT_IPREALLOCATED:
+	case CTDB_EVENT_START_IPREALLOCATE:
 		return count_words(options) == 0;
 
 	case CTDB_EVENT_TAKE_IP: /* interface, IP address, netmask bits. */
@@ -739,6 +740,7 @@ static bool event_allowed_during_recovery(enum ctdb_event event)
 		CTDB_EVENT_SHUTDOWN,
 		CTDB_EVENT_RELEASE_IP,
 		CTDB_EVENT_IPREALLOCATED,
+		CTDB_EVENT_START_IPREALLOCATE,
 	};
 	size_t i;
 

@@ -137,6 +137,16 @@ takeip <interface> <ip-address> <netmask-bits>
 	that public IP addresses have changed so that service
 	reconfiguration will occur in the "ipreallocated" event.
 
+startipreallocate
+
+	This event is triggered on all nodes before ip address is
+	released on node. This can be used to perform action needed
+	to complete before ip is given away to other node.
+
+	Example: 60.nfs would use this event to put nfs-ganesha server
+	on all nodes in grace period so that locks can be reclaimed
+	safely in lock reclaim phase.
+
 releaseip <interface> <ip-address> <netmask-bits>
 
 	This event is triggered for each public IP address released by
