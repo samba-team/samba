@@ -2745,7 +2745,7 @@ void reply_unlink(struct smb_request *req)
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 name,
-					 ucf_flags,
+					 ucf_flags | UCF_LCOMP_LNK_OK,
 					 twrp,
 					 &dirfsp,
 					 &smb_fname);
