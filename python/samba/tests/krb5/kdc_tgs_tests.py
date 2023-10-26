@@ -3024,6 +3024,63 @@ class KdcTgsTests(KdcTgsBaseTests):
             target_creds=target_creds,
             till='99990913024805Z')
 
+    def test_tgs_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds)
+        self._run_tgs(tgt, creds, expected_error=0)
+
+    def test_renew_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds, renewable=True)
+        self._renew_tgt(tgt, creds, expected_error=0,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=True,
+                        expect_requester_sid=True)
+
+    def test_validate_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds, invalid=True)
+        self._validate_tgt(tgt, creds, expected_error=0,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True,
+                           expect_requester_sid=True)
+
+    def test_s4u2self_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds)
+        self._s4u2self(tgt, creds,
+                       expected_error=0,
+                       expect_edata=False)
+
+    def test_user2user_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds)
+        self._user2user(tgt, creds, expected_error=0)
+
+    def test_fast_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds)
+        self._fast(tgt, creds, expected_error=0)
+
+    def test_fast_as_req_unicode(self):
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'name_prefix': '🔐'})
+        tgt = self._get_tgt(creds)
+        self._fast_as_req(tgt, creds, expected_error=0)
+
     def _modify_renewable(self, enc_part):
         # Set the renewable flag.
         enc_part = self.modify_ticket_flag(enc_part, 'renewable', value=True)

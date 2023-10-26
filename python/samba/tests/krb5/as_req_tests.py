@@ -591,6 +591,12 @@ class AsReqKerberosTests(AsReqBaseTest):
             expected_pa_error=KDC_ERR_CLIENT_REVOKED,
             expect_pa_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS)
 
+    def test_as_req_unicode(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'name_prefix': '🔐'})
+        self._run_as_req_enc_timestamp(client_creds)
+
 
 if __name__ == "__main__":
     global_asn1_print = False

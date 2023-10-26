@@ -255,6 +255,13 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 ^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_tgs_req_from_rodc_extra_pac_buffers\(ad_dc\)$
 #
+# Unicode tests
+#
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_fast_as_req_unicode\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_fast_unicode\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_renew_unicode\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_validate_unicode\(ad_dc\)$
+#
 # MIT currently fails the following MS-KILE tests.
 #
 ^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_1_3
