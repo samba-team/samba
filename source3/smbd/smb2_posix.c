@@ -34,6 +34,7 @@ void smb3_file_posix_information_init(
 	*dst = (struct smb3_file_posix_information) {
 		.end_of_file = get_file_size_stat(st),
 		.allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,NULL,st),
+		.inode = SMB_VFS_FS_FILE_ID(conn, st),
 		.device = st->st_ex_dev,
 		.creation_time = unix_timespec_to_nt_time(st->st_ex_btime),
 		.last_access_time = unix_timespec_to_nt_time(st->st_ex_atime),
