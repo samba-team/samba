@@ -2110,34 +2110,6 @@ int ctdb_ctrl_reload_public_ips(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_ipreallocated(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_ipreallocated(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control IPREALLOCATED failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_ipreallocated(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control IPREALLOCATED failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_get_runstate(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			   struct ctdb_client_context *client,
 			   int destnode, struct timeval timeout,

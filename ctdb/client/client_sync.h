@@ -386,10 +386,6 @@ int ctdb_ctrl_reload_public_ips(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct ctdb_client_context *client,
 				int destnode, struct timeval timeout);
 
-int ctdb_ctrl_ipreallocated(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout);
-
 int ctdb_ctrl_get_runstate(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			   struct ctdb_client_context *client,
 			   int destnode, struct timeval timeout,
