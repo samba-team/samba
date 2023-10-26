@@ -360,9 +360,13 @@ bool pdb_getsampwnam(struct samu *sam_acct, const char *username)
 
 	user_sid = pdb_get_user_sid(for_cache);
 
-	memcache_add_talloc(NULL, PDB_GETPWSID_CACHE,
-			    data_blob_const(user_sid, sizeof(*user_sid)),
-			    &for_cache);
+	ok = memcache_add_talloc(NULL,
+				 PDB_GETPWSID_CACHE,
+				 data_blob_const(user_sid, sizeof(*user_sid)),
+				 &for_cache);
+	if (!ok) {
+		TALLOC_FREE(for_cache);
+	}
 
 	return True;
 }
