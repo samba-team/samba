@@ -120,7 +120,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         self.assertEqual(str(policy["description"]), "Custom Description")
 
     def test_authentication_policy_create_user_tgt_lifetime(self):
-        """Test create a new authentication policy with --user-tgt-lifetime.
+        """Test create a new authentication policy with --user-tgt-lifetime-mins.
 
         Also checks the upper and lower bounds are handled.
         """
@@ -129,7 +129,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "userTGTLifetime",
-                                       "--user-tgt-lifetime", "60")
+                                       "--user-tgt-lifetime-mins", "60")
         self.assertIsNone(result, msg=err)
 
         # Check policy fields.
@@ -140,21 +140,21 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "userTGTLifetimeLower",
-                                       "--user-tgt-lifetime", "44")
+                                       "--user-tgt-lifetime-mins", "44")
         self.assertEqual(result, -1)
-        self.assertIn("--user-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
         # check upper bounds (2147483647)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "userTGTLifetimeUpper",
-                                       "--user-tgt-lifetime", "2147483648")
+                                       "--user-tgt-lifetime-mins", "2147483648")
         self.assertEqual(result, -1)
-        self.assertIn("--user-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
     def test_authentication_policy_create_service_tgt_lifetime(self):
-        """Test create a new authentication policy with --service-tgt-lifetime.
+        """Test create a new authentication policy with --service-tgt-lifetime-mins.
 
         Also checks the upper and lower bounds are handled.
         """
@@ -163,7 +163,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "serviceTGTLifetime",
-                                       "--service-tgt-lifetime", "60")
+                                       "--service-tgt-lifetime-mins", "60")
         self.assertIsNone(result, msg=err)
 
         # Check policy fields.
@@ -174,21 +174,21 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "serviceTGTLifetimeLower",
-                                       "--service-tgt-lifetime", "44")
+                                       "--service-tgt-lifetime-mins", "44")
         self.assertEqual(result, -1)
-        self.assertIn("--service-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
         # check upper bounds (2147483647)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "serviceTGTLifetimeUpper",
-                                       "--service-tgt-lifetime", "2147483648")
+                                       "--service-tgt-lifetime-mins", "2147483648")
         self.assertEqual(result, -1)
-        self.assertIn("--service-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
     def test_authentication_policy_create_computer_tgt_lifetime(self):
-        """Test create a new authentication policy with --computer-tgt-lifetime.
+        """Test create a new authentication policy with --computer-tgt-lifetime-mins.
 
         Also checks the upper and lower bounds are handled.
         """
@@ -197,7 +197,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "computerTGTLifetime",
-                                       "--computer-tgt-lifetime", "60")
+                                       "--computer-tgt-lifetime-mins", "60")
         self.assertIsNone(result, msg=err)
 
         # Check policy fields.
@@ -208,17 +208,17 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "computerTGTLifetimeLower",
-                                       "--computer-tgt-lifetime", "44")
+                                       "--computer-tgt-lifetime-mins", "44")
         self.assertEqual(result, -1)
-        self.assertIn("--computer-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--computer-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
         # check upper bounds (2147483647)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", "computerTGTLifetimeUpper",
-                                       "--computer-tgt-lifetime", "2147483648")
+                                       "--computer-tgt-lifetime-mins", "2147483648")
         self.assertEqual(result, -1)
-        self.assertIn("--computer-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--computer-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
     def test_authentication_policy_create_valid_sddl(self):
@@ -358,7 +358,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # followed by raising SystemExit(2).
 
     def test_authentication_policy_modify_user_tgt_lifetime(self):
-        """Test modifying an authentication policy --user-tgt-lifetime.
+        """Test modifying an authentication policy --user-tgt-lifetime-mins.
 
         This includes checking the upper and lower bounds.
         """
@@ -370,7 +370,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--user-tgt-lifetime", "120")
+                                       "--user-tgt-lifetime-mins", "120")
         self.assertIsNone(result, msg=err)
 
         # Verify field was changed.
@@ -380,21 +380,21 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--user-tgt-lifetime", "44")
+                                       "--user-tgt-lifetime-mins", "44")
         self.assertEqual(result, -1)
-        self.assertIn("--user-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
         # check upper bounds (2147483647)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--user-tgt-lifetime", "2147483648")
+                                       "--user-tgt-lifetime-mins", "2147483648")
         self.assertEqual(result, -1)
-        self.assertIn("-user-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
     def test_authentication_policy_modify_service_tgt_lifetime(self):
-        """Test modifying an authentication policy --service-tgt-lifetime.
+        """Test modifying an authentication policy --service-tgt-lifetime-mins.
 
         This includes checking the upper and lower bounds.
         """
@@ -406,7 +406,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--service-tgt-lifetime", "120")
+                                       "--service-tgt-lifetime-mins", "120")
         self.assertIsNone(result, msg=err)
 
         # Verify field was changed.
@@ -416,21 +416,21 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--service-tgt-lifetime", "44")
+                                       "--service-tgt-lifetime-mins", "44")
         self.assertEqual(result, -1)
-        self.assertIn("--service-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
         # check upper bounds (2147483647)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--service-tgt-lifetime", "2147483648")
+                                       "--service-tgt-lifetime-mins", "2147483648")
         self.assertEqual(result, -1)
-        self.assertIn("--service-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
     def test_authentication_policy_modify_computer_tgt_lifetime(self):
-        """Test modifying an authentication policy --computer-tgt-lifetime.
+        """Test modifying an authentication policy --computer-tgt-lifetime-mins.
 
         This includes checking the upper and lower bounds.
         """
@@ -442,7 +442,7 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
 
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--computer-tgt-lifetime", "120")
+                                       "--computer-tgt-lifetime-mins", "120")
         self.assertIsNone(result, msg=err)
 
         # Verify field was changed.
@@ -452,17 +452,17 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--computer-tgt-lifetime", "44")
+                                       "--computer-tgt-lifetime-mins", "44")
         self.assertEqual(result, -1)
-        self.assertIn("--computer-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--computer-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
         # check upper bounds (2147483647)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--computer-tgt-lifetime", "2147483648")
+                                       "--computer-tgt-lifetime-mins", "2147483648")
         self.assertEqual(result, -1)
-        self.assertIn("--computer-tgt-lifetime must be between 45 and 2147483647",
+        self.assertIn("--computer-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
     def test_authentication_policy_modify_name_missing(self):

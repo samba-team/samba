@@ -35,7 +35,7 @@ class UserOptions(options.OptionGroup):
     def __init__(self, parser):
         super().__init__(parser, "User Options")
 
-        self.add_option("--user-tgt-lifetime",
+        self.add_option("--user-tgt-lifetime-mins",
                         help="Ticket-Granting-Ticket lifetime for user accounts.",
                         dest="tgt_lifetime", type=int, action="callback",
                         callback=self.set_option,
@@ -61,7 +61,7 @@ class ServiceOptions(options.OptionGroup):
     def __init__(self, parser):
         super().__init__(parser, "Service Options")
 
-        self.add_option("--service-tgt-lifetime",
+        self.add_option("--service-tgt-lifetime-mins",
                         help="Ticket-Granting-Ticket lifetime for service accounts.",
                         dest="tgt_lifetime", type=int, action="callback",
                         callback=self.set_option,
@@ -87,7 +87,7 @@ class ComputerOptions(options.OptionGroup):
     def __init__(self, parser):
         super().__init__(parser, "Computer Options")
 
-        self.add_option("--computer-tgt-lifetime",
+        self.add_option("--computer-tgt-lifetime-mins",
                         help="Ticket-Granting-Ticket lifetime for computer accounts.",
                         dest="tgt_lifetime", type=int, action="callback",
                         callback=self.set_option,

@@ -712,7 +712,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--user-tgt-lifetime</term>
+			<term>--user-tgt-lifetime-mins</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for user accounts.
@@ -757,7 +757,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--service-tgt-lifetime</term>
+			<term>--service-tgt-lifetime-mins</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for service accounts.
@@ -802,7 +802,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--computer-tgt-lifetime</term>
+			<term>--computer-tgt-lifetime-mins</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for computer accounts.
@@ -901,7 +901,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--user-tgt-lifetime</term>
+			<term>--user-tgt-lifetime-mins</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for user accounts.
@@ -946,7 +946,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--service-tgt-lifetime</term>
+			<term>--service-tgt-lifetime-mins</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for service accounts.
@@ -991,7 +991,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--computer-tgt-lifetime</term>
+			<term>--computer-tgt-lifetime-mins</term>
 			<listitem>
 				<para>
 					Ticket-Granting-Ticket lifetime for computer accounts.
