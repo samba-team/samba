@@ -3450,6 +3450,21 @@ done:
 	client_send_control(req, header, &reply);
 }
 
+static void control_start_ipreallocate(TALLOC_CTX *mem_ctx,
+				       struct tevent_req *req,
+				       struct ctdb_req_header *header,
+				       struct ctdb_req_control *request)
+{
+	struct ctdb_reply_control reply;
+
+	/* Always succeed */
+	reply.rdata.opcode = request->opcode;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+}
+
 static void control_ipreallocated(TALLOC_CTX *mem_ctx,
 				  struct tevent_req *req,
 				  struct ctdb_req_header *header,
@@ -4362,6 +4377,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_ENABLE_NODE:
 		control_enable_node(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_START_IPREALLOCATE:
+		control_start_ipreallocate(mem_ctx, req, &header, &request);
 		break;
 
 	default:

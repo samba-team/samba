@@ -887,6 +887,9 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 				 struct ctdb_req_control_old *c,
 				 bool *async_reply);
+int32_t ctdb_control_start_ipreallocate(struct ctdb_context *ctdb,
+					struct ctdb_req_control_old *c,
+					bool *async_reply);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 

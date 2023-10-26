@@ -2449,6 +2449,72 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 }
 
 
+struct start_ipreallocate_callback_state {
+	struct ctdb_req_control_old *c;
+};
+
+static void ctdb_start_ipreallocate_callback(struct ctdb_context *ctdb,
+					     int status, void *p)
+{
+	struct start_ipreallocate_callback_state *state = talloc_get_type_abort(
+		p, struct start_ipreallocate_callback_state);
+
+	if (status != 0) {
+		D_ERR("\"startipreallocate\" event failed (status %d)\n",
+		      status);
+		if (status == -ETIMEDOUT) {
+			ctdb_ban_self(ctdb);
+		}
+	}
+
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	talloc_free(state);
+}
+
+/* A control to run the startipreallocate event */
+int32_t ctdb_control_start_ipreallocate(struct ctdb_context *ctdb,
+					struct ctdb_req_control_old *c,
+					bool *async_reply)
+{
+	int ret;
+	struct start_ipreallocate_callback_state *state;
+
+	/* Nodes that are not RUNNING can not host IPs */
+	if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
+		DBG_INFO("Skipping \"startipreallocate\" event, not RUNNING\n");
+		return 0;
+	}
+
+	state = talloc(ctdb, struct start_ipreallocate_callback_state);
+	if (state == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
+
+	DBG_INFO("Running \"startipreallocate\" event\n");
+
+	ret = ctdb_event_script_callback(ctdb,
+					 state,
+					 ctdb_start_ipreallocate_callback,
+					 state,
+					 CTDB_EVENT_START_IPREALLOCATE,
+					 "%s",
+					 "");
+
+	if (ret != 0) {
+		D_ERR("Failed to run \"startipreallocate\" event \n");
+		talloc_free(state);
+		return -1;
+	}
+
+	/* tell the control that we will be reply asynchronously */
+	state->c    = talloc_steal(state, c);
+	*async_reply = true;
+
+	return 0;
+}
+
+
 struct ctdb_reloadips_handle {
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control_old *c;
