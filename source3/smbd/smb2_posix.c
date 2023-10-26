@@ -39,6 +39,7 @@ void smb3_file_posix_information_init(
 		.last_access_time = unix_timespec_to_nt_time(st->st_ex_atime),
 		.last_write_time = unix_timespec_to_nt_time(st->st_ex_mtime),
 		.change_time = unix_timespec_to_nt_time(st->st_ex_ctime),
+		.cc.nlinks = st->st_ex_nlink,
 		.cc.reparse_tag = reparse_tag,
 		.cc.posix_perms = unix_perms_to_wire(st->st_ex_mode & ~S_IFMT),
 		.cc.owner = global_sid_NULL,
