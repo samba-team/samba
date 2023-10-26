@@ -28,6 +28,14 @@ from samba.ntstatus import (
 )
 
 
+def escaped_claim_id(claim_id):
+    escapes = '\x00\t\n\x0b\x0c\r !"%&()<=>|'
+    return ''.join(c
+                   if c not in escapes
+                   else f'%{ord(c):04x}'
+                   for c in claim_id)
+
+
 class SDUtils(object):
     """Some utilities for manipulation of security descriptors on objects."""
 

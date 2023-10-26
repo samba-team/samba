@@ -33,6 +33,7 @@ import ldb
 from samba import dsdb, ntstatus
 from samba.dcerpc import claims, krb5pac, security
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.sd_utils import escaped_claim_id
 
 from samba.tests import DynamicTestCase, env_get_var_value
 from samba.tests.krb5.authn_policy_tests import (
@@ -200,14 +201,6 @@ class ConditionalAceBaseTests(AuthnPolicyBaseTests):
 
     def allow_if(self, condition):
         return f'O:SYD:(XA;;CR;;;WD;({condition}))'
-
-    @staticmethod
-    def escaped_claim_id(claim_id):
-        escapes = '\x00\t\n\x0b\x0c\r !"%&()<=>|'
-        return ''.join(c
-                       if c not in escapes
-                       else f'%{ord(c):04x}'
-                       for c in claim_id)
 
 
 @DynamicTestCase
@@ -1637,7 +1630,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                                     'a field name should be specified')
 
                     claim_id = get_claim_id(field_name)
-                    claim_id = self.escaped_claim_id(claim_id)
+                    claim_id = escaped_claim_id(claim_id)
                     result.append(f'@User.{claim_id}')
 
             return ''.join(result)
@@ -3531,7 +3524,7 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         client_policy_sddl = self.allow_if(
-            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@User.{escaped_claim_id(claim_id)} == "{claim_value}"')
         client_policy = self.create_authn_policy(
             enforced=True, user_allowed_from=client_policy_sddl)
 
@@ -3584,7 +3577,7 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         client_policy_sddl = self.allow_if(
-            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@User.{escaped_claim_id(claim_id)} == "{claim_value}"')
         client_policy = self.create_authn_policy(
             enforced=True, user_allowed_from=client_policy_sddl)
 
@@ -3644,7 +3637,7 @@ class DeviceRestrictionTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         client_policy_sddl = self.allow_if(
-            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@User.{escaped_claim_id(claim_id)} == "{claim_value}"')
         client_policy = self.create_authn_policy(
             enforced=True, user_allowed_from=client_policy_sddl)
 
@@ -4271,7 +4264,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         target_policy_sddl = self.allow_if(
-            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@User.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
@@ -4323,7 +4316,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the user to have a
         # certain claim.
         target_policy_sddl = self.allow_if(
-            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@User.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
@@ -4377,7 +4370,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         target_policy_sddl = self.allow_if(
-            f'@User.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@User.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
@@ -4431,7 +4424,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain device claim.
         target_policy_sddl = self.allow_if(
-            f'@Device.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@Device.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
@@ -4489,7 +4482,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain device claim.
         target_policy_sddl = self.allow_if(
-            f'@Device.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@Device.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
@@ -4544,7 +4537,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         target_policy_sddl = self.allow_if(
-            f'@Device.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@Device.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
@@ -4612,7 +4605,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Create an authentication policy that requires the device to have a
         # certain claim.
         target_policy_sddl = self.allow_if(
-            f'@Device.{self.escaped_claim_id(claim_id)} == "{claim_value}"')
+            f'@Device.{escaped_claim_id(claim_id)} == "{claim_value}"')
         target_policy = self.create_authn_policy(
             enforced=True, computer_allowed_to=target_policy_sddl)
 
