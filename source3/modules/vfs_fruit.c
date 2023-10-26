@@ -2110,7 +2110,7 @@ static int fruit_unlink_rsrc_adouble(vfs_handle_struct *handle,
 			adp_smb_fname,
 			0);
 	TALLOC_FREE(adp_smb_fname);
-	if ((rc != 0) && (errno == ENOENT) && force_unlink) {
+	if ((rc != 0) && (errno == ENOENT || errno == ENAMETOOLONG) && force_unlink) {
 		rc = 0;
 	}
 
