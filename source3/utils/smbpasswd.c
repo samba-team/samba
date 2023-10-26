@@ -27,6 +27,7 @@
 #include "passwd_proto.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/param/param.h"
+#include "lib/util/memcache.h"
 
 /*
  * Next two lines needed for SunOS and don't
@@ -620,8 +621,16 @@ int main(int argc, char **argv)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx = NULL;
+	struct memcache *mcache = NULL;
 	int local_flags = 0;
 	int ret;
+
+	mcache = memcache_init(NULL, 0);
+	if (mcache == NULL) {
+		fprintf(stderr, "%s: memcache_init failed\n", __location__);
+		return 1;
+	}
+	memcache_set_global(mcache);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);
