@@ -68,7 +68,7 @@ void memcache_set_global(struct memcache *cache);
  * Add a data blob to the cache
  */
 
-void memcache_add(struct memcache *cache, enum memcache_number n,
+bool memcache_add(struct memcache *cache, enum memcache_number n,
 		  DATA_BLOB key, DATA_BLOB value);
 
 /*

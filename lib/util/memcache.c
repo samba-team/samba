@@ -265,7 +265,7 @@ void memcache_delete(struct memcache *cache, enum memcache_number n,
 	memcache_delete_element(cache, e);
 }
 
-void memcache_add(struct memcache *cache, enum memcache_number n,
+bool memcache_add(struct memcache *cache, enum memcache_number n,
 		  DATA_BLOB key, DATA_BLOB value)
 {
 	struct memcache_element *e;
@@ -278,11 +278,11 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 		cache = global_cache;
 	}
 	if (cache == NULL) {
-		return;
+		return false;
 	}
 
 	if (key.length == 0) {
-		return;
+		return false;
 	}
 
 	e = memcache_find(cache, n, key);
@@ -312,7 +312,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 				memcpy(&mtv, cache_value.data, sizeof(mtv));
 				cache->size += mtv.len;
 			}
-			return;
+			return true;
 		}
 
 		memcache_delete_element(cache, e);
@@ -323,7 +323,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 	e = talloc_size(cache, element_size);
 	if (e == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return;
+		return false;
 	}
 	talloc_set_type(e, struct memcache_element);
 
@@ -363,6 +363,8 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 		cache->size += mtv.len;
 	}
 	memcache_trim(cache, e);
+
+	return true;
 }
 
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
