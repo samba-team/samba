@@ -29,6 +29,14 @@ from samba.ntstatus import (
 
 
 def escaped_claim_id(claim_id):
+    """Encode claim attribute names according to [MS-DTYP] 2.5.1 ("attr-char2")
+
+    Some characters must be encoded as %hhhh, while others must not be.
+    Of the optional ones, we encode some control characters.
+
+    The \x00 byte is also encoded, which is useful for tests, but it
+    is forbidden in either form.
+    """
     escapes = '\x00\t\n\x0b\x0c\r !"%&()<=>|'
     return ''.join(c
                    if c not in escapes
