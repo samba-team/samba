@@ -810,10 +810,14 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 }
 
 /*
-  decode a security descriptor in SDDL format
-*/
-struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
-					const struct dom_sid *domain_sid)
+ * Decode a security descriptor in SDDL format, catching compilation
+ * error messages, if any.
+ *
+ * The message will be a direct talloc child of mem_ctx or NULL.
+ */
+struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char *sddl,
+						const struct dom_sid *domain_sid,
+						const char **msg, size_t *msg_offset)
 {
 	struct sddl_transition_state state = {
 		/*
@@ -875,6 +879,26 @@ failed:
 	DEBUG(2,("Badly formatted SDDL '%s'\n", sddl));
 	talloc_free(sd);
 	return NULL;
+}
+
+
+/*
+  decode a security descriptor in SDDL format
+*/
+struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
+					const struct dom_sid *domain_sid)
+{
+	const char *msg = NULL;
+	size_t msg_offset = 0;
+	struct security_descriptor *sd = sddl_decode_err_msg(mem_ctx, sddl, domain_sid,
+							     &msg, &msg_offset);
+	DBG_NOTICE("could not decode '%s'\n", sddl);
+	if (msg != NULL) {
+		DBG_NOTICE("                  %*c\n", (int)msg_offset, '^');
+		DBG_NOTICE("error '%s'\n", msg);
+		talloc_free(discard_const(msg));
+	}
+	return sd;
 }
 
 /*

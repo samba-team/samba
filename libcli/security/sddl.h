@@ -25,6 +25,9 @@
 
 struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 					const struct dom_sid *domain_sid);
+struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char *sddl,
+						const struct dom_sid *domain_sid,
+						const char **msg, size_t *msg_offset);
 char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 		  const struct dom_sid *domain_sid);
 char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
