@@ -82,9 +82,20 @@ class SddlDecodeEncodeBase(TestCase):
             self.assertEqual(sddl, canonical)
 
     def _test_sddl_should_fail_with_args(self, s, canonical):
-        with self.assertRaises(security.SDDLValueError):
+        try:
             sd = security.descriptor.from_sddl(s, self.domain_sid)
-            print(sd.as_sddl(self.domain_sid))
+        except security.SDDLValueError as e:
+            generic_msg, specific_msg, position, sddl = e.args
+            self.assertEqual(generic_msg, "Unable to parse SDDL")
+            self.assertIsInstance(specific_msg, str)
+            self.assertIsInstance(position, int)
+            self.assertLessEqual(position, len(s))
+            self.assertGreaterEqual(position, 0)
+            self.assertEqual(s, sddl)
+
+            print(f"{s}\n{' ' * position}^\n {specific_msg}")
+        else:
+            self.fail(f"{sd.as_sddl(self.domain_sid)} should fail to parse")
 
     @classmethod
     def write_sddl_strings_for_fuzz_seeds(cls, dir):
