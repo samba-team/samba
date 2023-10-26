@@ -488,16 +488,16 @@ static bool sddl_decode_guid(const char *str, struct GUID *guid)
 
 static DATA_BLOB sddl_decode_conditions(TALLOC_CTX *mem_ctx,
 					const char *conditions,
-					const char **message,
-					size_t *length)
+					size_t *length,
+					const char **msg,
+					size_t *msg_offset)
 {
 	DATA_BLOB blob = {0};
 	struct ace_condition_script *script = NULL;
-	size_t message_offset;
 	script = ace_conditions_compile_sddl(mem_ctx,
 					     conditions,
-					     message,
-					     &message_offset,
+					     msg,
+					     msg_offset,
 					     length);
 	if (script != NULL) {
 		bool ok = conditional_ace_encode_binary(mem_ctx,
@@ -523,7 +523,8 @@ static DATA_BLOB sddl_decode_conditions(TALLOC_CTX *mem_ctx,
 static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 			    struct security_ace *ace,
 			    char **sddl_copy,
-			    struct sddl_transition_state *state)
+			    struct sddl_transition_state *state,
+			    const char **msg, size_t *msg_offset)
 {
 	const char *tok[7];
 	const char *s;
@@ -671,13 +672,14 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		 * conditional ACE compiler.
 		 */
 		size_t length;
-		const char *message = NULL;
 		DATA_BLOB conditions = {0};
 		s = tok[6];
 
-		conditions = sddl_decode_conditions(mem_ctx, s, &message, &length);
+		conditions = sddl_decode_conditions(mem_ctx, s, &length, msg, msg_offset);
 		if (conditions.data == NULL) {
-			DBG_WARNING("Conditional ACE compilation failure: %s\n", message);
+			DBG_WARNING("Conditional ACE compilation failure at %zu: %s\n",
+				    *msg_offset, *msg);
+			*msg_offset += s - *sddl_copy;
 			return false;
 		}
 		ace->coda.conditions = conditions;
@@ -736,7 +738,8 @@ static const struct flag_map acl_flags[] = {
 */
 static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 					    const char **sddlp, uint32_t *flags,
-					    struct sddl_transition_state *state)
+					    struct sddl_transition_state *state,
+					    const char **msg, size_t *msg_offset)
 {
 	const char *sddl = *sddlp;
 	char *sddl_copy = NULL;
@@ -796,8 +799,10 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 			return NULL;
 		}
 		ok = sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces],
-				     &sddl_copy, state);
+				     &sddl_copy, state, msg, msg_offset);
 		if (!ok) {
+			*msg_offset += sddl_copy - aces_start;
+			talloc_steal(sd, *msg);
 			talloc_free(acl);
 			return NULL;
 		}
@@ -829,6 +834,7 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 		.domain_sid = domain_sid,
 		.forest_sid = domain_sid,
 	};
+	const char *start = sddl;
 	struct security_descriptor *sd;
 	sd = talloc_zero(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
@@ -846,13 +852,13 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 		switch (c) {
 		case 'D':
 			if (sd->dacl != NULL) goto failed;
-			sd->dacl = sddl_decode_acl(sd, &sddl, &flags, &state);
+			sd->dacl = sddl_decode_acl(sd, &sddl, &flags, &state, msg, msg_offset);
 			if (sd->dacl == NULL) goto failed;
 			sd->type |= flags | SEC_DESC_DACL_PRESENT;
 			break;
 		case 'S':
 			if (sd->sacl != NULL) goto failed;
-			sd->sacl = sddl_decode_acl(sd, &sddl, &flags, &state);
+			sd->sacl = sddl_decode_acl(sd, &sddl, &flags, &state, msg, msg_offset);
 			if (sd->sacl == NULL) goto failed;
 			/* this relies on the SEC_DESC_SACL_* flags being
 			   1 bit shifted from the SEC_DESC_DACL_* flags */
@@ -872,10 +878,18 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 			goto failed;
 		}
 	}
-
 	return sd;
-
 failed:
+	if (msg != NULL) {
+		if (*msg != NULL) {
+			*msg = talloc_steal(mem_ctx, *msg);
+		}
+		/*
+		 * The actual message (*msg) might still be NULL, but the
+		 * offset at least provides a clue.
+		 */
+		*msg_offset += sddl - start;
+	}
 	DEBUG(2,("Badly formatted SDDL '%s'\n", sddl));
 	talloc_free(sd);
 	return NULL;
