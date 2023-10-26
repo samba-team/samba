@@ -276,6 +276,8 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	char *sddl;
 	PyObject *py_sid;
 	struct dom_sid *sid;
+	const char *err_msg = NULL;
+	size_t err_msg_offset = 0;
 
 	if (!PyArg_ParseTuple(args, "sO!", &sddl, &dom_sid_Type, &py_sid))
 		return NULL;
@@ -289,9 +291,35 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 
 	sid = pytalloc_get_ptr(py_sid);
 
-	secdesc = sddl_decode(NULL, sddl, sid);
+	secdesc = sddl_decode_err_msg(NULL, sddl, sid,
+				      &err_msg, &err_msg_offset);
 	if (secdesc == NULL) {
-		PyErr_SetString(PyExc_ValueError, "Unable to parse SDDL");
+		PyObject *exc = NULL;
+		if (err_msg == NULL) {
+			err_msg = "unknown error";
+		}
+		/*
+		 * Some notes about this exception value:
+		 *
+		 * We don't want to add the offset first, so as not to
+		 * confuse those who are used to the integer error
+		 * code coming first.
+		 *
+		 * The errant sddl is added so that the exception can
+		 * be caught some distance away from the call and we
+		 * still know what the messages refer to.
+		 */
+		exc = Py_BuildValue("(s, s, i, s)",
+				    "Unable to parse SDDL",
+				    err_msg,
+				    err_msg_offset,
+				    sddl);
+		if (exc == NULL) {
+			/* an exception was set by Py_BuildValue() */
+			return NULL;
+		}
+		PyErr_SetObject(PyExc_SDDLValueError, exc);
+		Py_DECREF(exc);
 		return NULL;
 	}
 

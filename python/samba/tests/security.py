@@ -67,7 +67,7 @@ class SecurityDescriptorTests(samba.tests.TestCase):
         self.assertEqual(desc.type, 0x8004)
 
     def test_from_sddl_invalidsddl(self):
-        self.assertRaises(ValueError, security.descriptor.from_sddl, "foo",
+        self.assertRaises(security.SDDLValueError, security.descriptor.from_sddl, "foo",
                           security.dom_sid("S-1-2-3"))
 
     def test_from_sddl_invalidtype1(self):

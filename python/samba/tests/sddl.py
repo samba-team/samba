@@ -82,7 +82,7 @@ class SddlDecodeEncodeBase(TestCase):
             self.assertEqual(sddl, canonical)
 
     def _test_sddl_should_fail_with_args(self, s, canonical):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(security.SDDLValueError):
             sd = security.descriptor.from_sddl(s, self.domain_sid)
             print(sd.as_sddl(self.domain_sid))
 
