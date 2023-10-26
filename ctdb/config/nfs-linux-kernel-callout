@@ -431,7 +431,7 @@ monitor-post)
 register)
 	nfs_register
 	;;
-monitor-pre | releaseip | takeip | releaseip-pre | takeip-pre)
+monitor-pre | releaseip | takeip | releaseip-pre | takeip-pre | startipreallocate)
 	# Not required/implemented
 	:
 	;;

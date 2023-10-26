@@ -269,6 +269,10 @@ takeip)
 	ctdb_service_set_reconfigure
 	;;
 
+startipreallocate)
+	nfs_callout "$@" || exit $?
+	;;
+
 releaseip)
 	nfs_callout "$@" || exit $?
 	ctdb_service_set_reconfigure

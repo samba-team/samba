@@ -343,7 +343,7 @@ releaseip)           nfs_releaseip "$@"      ;;
 takeip)              nfs_takeip "$@"         ;;
 monitor-list-shares) nfs_monitor_list_shares ;;
 register)            nfs_register            ;;
-monitor-pre|monitor-post|releaseip-pre|takeip-pre)
+monitor-pre|monitor-post|releaseip-pre|takeip-pre|startipreallocate)
 	# Not required/implemented
 	:
 	;;
