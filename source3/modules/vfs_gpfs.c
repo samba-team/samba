@@ -1597,6 +1597,11 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 	struct smb_filename *dir_name = NULL;
 	struct smb_filename *rel_name = NULL;
 	int ret = -1;
+#ifdef O_PATH
+	int open_flags = O_PATH;
+#else
+	int open_flags = O_RDONLY;
+#endif
 
 	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
 					 talloc_tos(),
@@ -1608,7 +1613,7 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	fd = open(dir_name->base_name, O_RDONLY, 0);
+	fd = open(dir_name->base_name, open_flags, 0);
 	if (fd == -1) {
 		TALLOC_FREE(dir_name);
 		return -1;
