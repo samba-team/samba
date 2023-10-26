@@ -367,7 +367,7 @@ bool memcache_add(struct memcache *cache, enum memcache_number n,
 	return true;
 }
 
-void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
+bool memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 			 DATA_BLOB key, void *pptr)
 {
 	struct memcache_talloc_value mtv;
@@ -377,12 +377,13 @@ void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 		cache = global_cache;
 	}
 	if (cache == NULL) {
-		return;
+		return false;
 	}
 
 	mtv.len = talloc_total_size(*ptr);
 	mtv.ptr = talloc_move(cache, ptr);
-	memcache_add(cache, n, key, data_blob_const(&mtv, sizeof(mtv)));
+
+	return memcache_add(cache, n, key, data_blob_const(&mtv, sizeof(mtv)));
 }
 
 void memcache_flush(struct memcache *cache, enum memcache_number n)

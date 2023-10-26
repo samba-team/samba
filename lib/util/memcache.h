@@ -82,7 +82,7 @@ bool memcache_add(struct memcache *cache, enum memcache_number n,
  * talloc objects in the cache types.
  */
 
-void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
+bool memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 			 DATA_BLOB key, void *ptr);
 
 /*
