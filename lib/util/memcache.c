@@ -460,3 +460,8 @@ void memcache_flush(struct memcache *cache, enum memcache_number n)
 		node = next;
 	}
 }
+
+void gfree_memcache(void)
+{
+	TALLOC_FREE(global_cache);
+}

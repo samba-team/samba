@@ -114,4 +114,6 @@ void *memcache_lookup_talloc(struct memcache *cache, enum memcache_number n,
 
 void memcache_flush(struct memcache *cache, enum memcache_number n);
 
+void gfree_memcache(void);
+
 #endif
