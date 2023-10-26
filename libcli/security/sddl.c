@@ -506,10 +506,6 @@ static DATA_BLOB sddl_decode_conditions(TALLOC_CTX *mem_ctx,
 		if (! ok) {
 			DBG_ERR("could not blobify '%s'\n", conditions);
 		}
-		if (*message) {
-			DBG_ERR("                  %*c", (int)message_offset, '^');
-			DBG_ERR("error '%s'\n", *message);
-		}
 	}
 	return blob;
 }
