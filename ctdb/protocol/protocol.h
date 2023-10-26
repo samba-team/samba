@@ -764,6 +764,7 @@ enum ctdb_event {
 	CTDB_EVENT_RELOAD,		/* Deprecated, do not use */
 	CTDB_EVENT_UPDATE_IP,		/* IP updating: old interface, new interface, IP address, netmask bits. */
 	CTDB_EVENT_IPREALLOCATED,	/* when a takeover_run() completes */
+	CTDB_EVENT_START_IPREALLOCATE,  /* When a takeover_run() starts */
 	CTDB_EVENT_MAX
 };
 

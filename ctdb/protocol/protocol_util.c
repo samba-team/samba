@@ -85,6 +85,7 @@ static struct {
 	{ CTDB_EVENT_SHUTDOWN, "shutdown" },
 	{ CTDB_EVENT_UPDATE_IP, "updateip" },
 	{ CTDB_EVENT_IPREALLOCATED, "ipreallocated" },
+	{ CTDB_EVENT_START_IPREALLOCATE, "startipreallocate" },
 	{ CTDB_EVENT_MAX, "all" },
 	{ -1, NULL },
 };
