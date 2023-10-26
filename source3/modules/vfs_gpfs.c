@@ -1708,6 +1708,31 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gpfs_fstatat(struct vfs_handle_struct *handle,
+			    const struct files_struct *dirfsp,
+			    const struct smb_filename *smb_fname,
+			    SMB_STRUCT_STAT *sbuf,
+			    int flags)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, smb_fname, sbuf, flags);
+	if (ret == -1 && errno == EACCES) {
+		bool fake_dctime =
+			lp_fake_directory_create_times(SNUM(handle->conn));
+
+		DBG_DEBUG("fstatat for %s failed with EACCES. Trying with "
+			  "CAP_DAC_OVERRIDE.\n", dirfsp->fsp_name->base_name);
+		ret = fstatat_with_cap_dac_override(fsp_get_pathref_fd(dirfsp),
+						    smb_fname->base_name,
+						    sbuf,
+						    flags,
+						    fake_dctime);
+	}
+
+	return ret;
+}
+
 static int timespec_to_gpfs_time(
 	struct timespec ts, gpfs_timestruc_t *gt, int idx, int *flags)
 {
@@ -2639,6 +2664,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.stat_fn = vfs_gpfs_stat,
 	.fstat_fn = vfs_gpfs_fstat,
 	.lstat_fn = vfs_gpfs_lstat,
+	.fstatat_fn = vfs_gpfs_fstatat,
 	.fntimes_fn = vfs_gpfs_fntimes,
 	.aio_force_fn = vfs_gpfs_aio_force,
 	.sendfile_fn = vfs_gpfs_sendfile,
