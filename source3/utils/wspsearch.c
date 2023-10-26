@@ -256,7 +256,7 @@ static NTSTATUS print_rowsreturned(
 				uint32_t *rows_processed)
 {
 	NTSTATUS status;
-	int row;
+	uint32_t row = 0;
 	TALLOC_CTX *local_ctx = NULL;
 	struct wsp_cbasestoragevariant **rowsarray = NULL;
 	enum ndr_err_code err;
