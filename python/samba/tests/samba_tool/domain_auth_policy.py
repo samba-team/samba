@@ -297,6 +297,48 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         self.assertIn("Unable to parse SDDL", err)
         self.assertIn(" *INVALID SDDL*\n ^\n unknown error", err)
 
+    def test_create__invalid_sddl_conditional_ace(self):
+        """Test creating a new authentication policy with invalid SDDL in a field."""
+        sddl = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {secret club}))"
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", "invalidSDDLPolicy2",
+                                       "--user-allowed-to-authenticate-from",
+                                       sddl)
+        self.assertEqual(result, -1)
+        self.assertIn("Unable to parse SDDL", err)
+        self.assertIn(sddl, err)
+        self.assertIn(f"\n{'^':>41}", err)
+        self.assertIn("unexpected byte 0x73 's' parsing literal", err)
+        self.assertNotIn("  File ", err)
+
+    def test_create__invalid_sddl_conditional_ace_non_ascii(self):
+        """Test creating a new authentication policy with invalid SDDL in a field."""
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@User.āāēē == "łē¶ŧ¹⅓þōīŋ“đ¢ð»" && Member_of {secret club}))'
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", "invalidSDDLPolicy2",
+                                       "--user-allowed-to-authenticate-from",
+                                       sddl)
+        self.assertEqual(result, -1)
+        self.assertIn("Unable to parse SDDL", err)
+        self.assertIn(sddl, err)
+        self.assertIn(f"\n{'^':>76}\n", err)
+        self.assertIn(" unexpected byte 0x73 's' parsing literal", err)
+        self.assertNotIn("  File ", err)
+
+    def test_create__invalid_sddl_normal_ace(self):
+        """Test creating a new authentication policy with invalid SDDL in a field."""
+        sddl = "O:SYG:SYD:(A;;;;ZZ)(XA;OICI;CR;;;WD;(Member_of {WD}))"
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", "invalidSDDLPolicy3",
+                                       "--user-allowed-to-authenticate-from",
+                                       sddl)
+        self.assertEqual(result, -1)
+        self.assertIn("Unable to parse SDDL", err)
+        self.assertIn(sddl, err)
+        self.assertIn(f"\n{'^':>12}", err)
+        self.assertIn("unknown error", err)
+        self.assertNotIn("  File ", err)  # traceback marker
+
     def test_create__already_exists(self):
         """Test creating a new authentication policy that already exists."""
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
