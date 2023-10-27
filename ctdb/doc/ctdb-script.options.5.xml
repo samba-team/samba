@@ -758,8 +758,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       <title>60.nfs</title>
 
       <para>
-	This event script (along with 06.nfs) provides CTDB's NFS
-	service management.
+	This event script provides CTDB's NFS service management.
       </para>
 
       <para>

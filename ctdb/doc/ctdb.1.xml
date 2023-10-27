@@ -656,7 +656,6 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 00.ctdb              OK         0.014 Sat Dec 17 19:39:11 2016
 01.reclock           OK         0.013 Sat Dec 17 19:39:11 2016
 05.system            OK         0.029 Sat Dec 17 19:39:11 2016
-06.nfs               OK         0.014 Sat Dec 17 19:39:11 2016
 10.interface         OK         0.037 Sat Dec 17 19:39:11 2016
 11.natgw             OK         0.011 Sat Dec 17 19:39:11 2016
 11.routing           OK         0.007 Sat Dec 17 19:39:11 2016
@@ -680,7 +679,6 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 00.ctdb              OK         0.011 Sat Dec 17 19:40:46 2016
 01.reclock           OK         0.010 Sat Dec 17 19:40:46 2016
 05.system            OK         0.030 Sat Dec 17 19:40:46 2016
-06.nfs               OK         0.014 Sat Dec 17 19:40:46 2016
 10.interface         OK         0.041 Sat Dec 17 19:40:46 2016
 11.natgw             OK         0.008 Sat Dec 17 19:40:46 2016
 11.routing           OK         0.007 Sat Dec 17 19:40:46 2016
@@ -717,7 +715,6 @@ Interface[2]: Name:eth5 Link:up References:2 (active)
 * 00.ctdb             
 * 01.reclock          
 * 05.system           
-* 06.nfs              
 * 10.interface        
   11.natgw            
   11.routing          

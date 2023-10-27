@@ -7,7 +7,6 @@
 _ctdb_enable_cluster_test_event_scripts ()
 {
 	local scripts="
-		       06.nfs
 		       10.interface
 		       49.winbind
 		       50.samba
