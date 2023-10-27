@@ -254,31 +254,38 @@ service_check ()
 
 #-------------------------------------------------
 
-nfs_releaseip ()
+grace_period()
 {
+	_arg="$1"
+
 	if [ -x "/usr/bin/grace_period" ]; then
-		/usr/bin/grace_period "2:${2}"
+		/usr/bin/grace_period "$_arg"
 	else
 		dbus-send --print-reply --system --dest=org.ganesha.nfsd \
-			  /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
-			  string:"2:${2}"
+			/org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
+			string:"$_arg"
 	fi
+}
+
+nfs_releaseip()
+{
+	_ip="$2"
+
+	# NFS-Ganesha recovery code only processes items matching $_ip
+	grace_period "2:${_ip}"
 }
 
 nfs_takeip ()
 {
+	_ip="$2"
+
 	case  $state_fs in
 	glusterfs)
-		check_ln "$NODESTATEDIR" "${GANSTATEDIR}/${2}"
+		check_ln "$NODESTATEDIR" "${GANSTATEDIR}/${_ip}"
 		;;
 	esac
-	if [ -x "/usr/bin/grace_period" ]; then
-		/usr/bin/grace_period "5:${2}"
-	else
-		dbus-send --print-reply --system --dest=org.ganesha.nfsd \
-			  /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
-			  string:"5:${2}"
-	fi
+
+	grace_period "5:${_ip}"
 }
 
 ##################################################
