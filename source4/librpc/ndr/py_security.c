@@ -564,17 +564,29 @@ static PyMethodDef py_mod_security_extra_methods[] = {
 	{0}
 };
 
-static void py_mod_security_patch(PyObject *m)
+static bool py_mod_security_patch(PyObject *m)
 {
+	int ret;
 	int i;
 	for (i = 0; py_mod_security_extra_methods[i].ml_name; i++) {
 		PyObject *descr = PyCFunction_New(&py_mod_security_extra_methods[i], NULL);
-		PyModule_AddObject(m, py_mod_security_extra_methods[i].ml_name,
-				   descr);
+		ret = PyModule_AddObject(m, py_mod_security_extra_methods[i].ml_name,
+					 descr);
+		if (ret != 0) {
+			return false;
+		}
 	}
+	return true;
 }
 
-#define PY_MOD_SECURITY_PATCH py_mod_security_patch
+#define PY_MOD_SECURITY_PATCH(m)			\
+	do {						\
+		bool _ok = py_mod_security_patch(m);	\
+		if (! _ok) {				\
+			Py_XDECREF(m);			\
+			return NULL;			\
+		}					\
+	} while(0)
 
 static PyObject *py_security_ace_equal(PyObject *py_self, PyObject *py_other, int op)
 {
