@@ -5027,6 +5027,20 @@ br"""
 </PolFile>
 """
 
+multiple_values_multi_sz_reg_pol = \
+br"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="1" signature="PReg" version="1">
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>KeyName</Key>
+        <ValueName>ValueName</ValueName>
+        <Value>Value1</Value>
+        <Value>Value2</Value>
+        <Value>Value3</Value>
+    </Entry>
+</PolFile>
+"""
+
 def days2rel_nttime(val):
     seconds = 60
     minutes = 60
@@ -8044,5 +8058,24 @@ class GPOTests(tests.TestCase):
 
             # Strip whitespace characters due to indentation differences
             expected_xml_data = re.sub(r"\s+", "", empty_multi_sz_reg_pol.decode(), flags=re.UNICODE)
+            actual_xml_data = re.sub(r"\s+", "", pol_xml_data, flags=re.UNICODE)
+            self.assertEqual(expected_xml_data, actual_xml_data, 'XML data mismatch')
+
+    def test_parser_roundtrip_multiple_values_multi_sz(self):
+        with TemporaryDirectory() as dname:
+            reg_pol_xml = os.path.join(dname, 'REGISTRY.POL.XML')
+
+            parser = GPPolParser()
+            try:
+                parser.load_xml(etree.fromstring(multiple_values_multi_sz_reg_pol.strip()))
+            except Exception as e:
+                self.fail(str(e))
+            parser.write_xml(reg_pol_xml)
+
+            with open(reg_pol_xml, 'r') as f:
+                pol_xml_data = f.read()
+
+            # Strip whitespace characters due to indentation differences
+            expected_xml_data = re.sub(r"\s+", "", multiple_values_multi_sz_reg_pol.decode(), flags=re.UNICODE)
             actual_xml_data = re.sub(r"\s+", "", pol_xml_data, flags=re.UNICODE)
             self.assertEqual(expected_xml_data, actual_xml_data, 'XML data mismatch')
