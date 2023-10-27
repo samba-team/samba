@@ -367,7 +367,7 @@ static uint32_t guess_string_array_size(struct ndr_pull *ndr, int ndr_flags)
 	 * Here we could do something clever like count the number of zeros in
 	 * the ndr data, but it is probably sufficient to pick a lowish number
 	 * (compared to the overhead of the talloc header) and let the
-	 * expontential resizing deal with longer arrays.
+	 * exponential resizing deal with longer arrays.
 	 */
 	return 5;
 }
