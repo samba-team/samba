@@ -64,7 +64,7 @@
 		<para>If this option is not set, the default path depends on the
 		configured AV scanning engine.
 		</para>
-		<para>For the <emphasis>sophos</emphasis>backend the default is
+		<para>For the <emphasis>sophos</emphasis> backend the default is
 		<emphasis>/var/run/savdi/sssp.sock</emphasis>.</para>
 		<para>For the <emphasis>fsav</emphasis> backend the default is
 		<emphasis>/tmp/.fsav-0</emphasis>.</para>
