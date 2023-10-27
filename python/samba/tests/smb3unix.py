@@ -20,11 +20,20 @@ from samba import NTSTATUSError,ntstatus
 import samba.tests.libsmb
 from samba.dcerpc import security
 from samba.common import get_string
+from samba.dcerpc import smb3posix
+from samba.ndr import ndr_unpack
+from samba.dcerpc.security import dom_sid
+import os
 
 def posix_context(mode):
     return (libsmb.SMB2_CREATE_TAG_POSIX, mode.to_bytes(4, 'little'))
 
 class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
+
+    def setUp(self):
+        super(Smb3UnixTests, self).setUp()
+
+        self.samsid = os.environ["SAMSID"]
 
     def test_negotiate_context_posix(self):
         c = libsmb.Conn(
@@ -270,3 +279,53 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                          'The group sid for .. was not NULL')
         self.assertEqual(0, dotdot['ino'], 'The ino for .. was not 0')
         self.assertEqual(0, dotdot['dev'], 'The dev for .. was not 0')
+
+    def test_create_context_basic1(self):
+        '''
+        Check basic CreateContexts response
+        '''
+        try:
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            f,_,cc_out = c.create_ex('\\test_create_context_basic1_file',
+                                     DesiredAccess=security.SEC_STD_ALL,
+                                     CreateDisposition=libsmb.FILE_CREATE,
+                                     CreateContexts=[posix_context(0o600)])
+            c.close(f)
+
+            cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
+
+            self.assertEqual(cc.nlinks, 1)
+            self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
+            self.assertEqual(cc.posix_perms, 0o600)
+            self.assertEqual(cc.owner, dom_sid(self.samsid + "-1000"))
+            self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
+
+            f,_,cc_out = c.create_ex('\\test_create_context_basic1_dir',
+                                     DesiredAccess=security.SEC_STD_ALL,
+                                     CreateDisposition=libsmb.FILE_CREATE,
+                                     CreateOptions=libsmb.FILE_DIRECTORY_FILE,
+                                     CreateContexts=[posix_context(0o700)])
+
+            c.close(f)
+
+            cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
+
+            # Note: this fails on btrfs which always reports the link
+            # count of directories as one.
+            self.assertEqual(cc.nlinks, 2)
+
+            self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
+            self.assertEqual(cc.posix_perms, 0o700)
+            self.assertEqual(cc.owner, dom_sid(self.samsid + "-1000"))
+            self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
+
+        finally:
+            self.delete_test_file(c, '\\test_create_context_basic1_file')
+            self.delete_test_file(c, '\\test_create_context_basic1_dir')
