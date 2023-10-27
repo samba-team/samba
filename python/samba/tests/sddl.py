@@ -69,7 +69,7 @@ class SddlDecodeEncodeBase(TestCase):
     def _test_sddl_with_args(self, s, canonical):
         try:
             sd1 = security.descriptor.from_sddl(s, self.domain_sid)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError, security.SDDLValueError) as e:
             self.fail(f"raised {e}")
 
         sddl = sd1.as_sddl(self.domain_sid)
