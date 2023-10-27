@@ -221,7 +221,7 @@ cn: {object_name}
 
         try:
             sd = security.descriptor.from_sddl(sddl, domsid)
-        except ValueError:
+        except (ValueError, security.SDDLValueError):
             # we don't have detail as to what went wrong
             self.assertNotIsInstance(expected_sid, str)
         else:
