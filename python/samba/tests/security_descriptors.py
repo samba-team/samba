@@ -88,8 +88,7 @@ class SDDLvsDescriptorBase(TestCase):
         sdb_win = bytes(sdl)
         try:
             sd_sam = security.descriptor.from_sddl(sddl, self.domain_sid)
-        except (TypeError, ValueError) as e:
-
+        except (TypeError, ValueError, security.SDDLValueError) as e:
             try:
                 sd_win = ndr_unpack(security.descriptor, sdb_win)
                 win_ndr_print = ndr_print(sd_win)
