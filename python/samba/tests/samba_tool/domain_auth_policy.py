@@ -294,8 +294,8 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
                                        "*INVALID SDDL*")
 
         self.assertEqual(result, -1)
-        self.assertIn(
-            "msDS-UserAllowedToAuthenticateFrom: Unable to parse SDDL", err)
+        self.assertIn("Unable to parse SDDL", err)
+        self.assertIn(" *INVALID SDDL*\n ^\n unknown error", err)
 
     def test_create__already_exists(self):
         """Test creating a new authentication policy that already exists."""
