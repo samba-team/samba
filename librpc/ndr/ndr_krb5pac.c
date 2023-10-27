@@ -36,7 +36,7 @@ size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, libndr_flags 
 	}
 }
 
-enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER *r)
+enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct PAC_BUFFER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -75,7 +75,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER *r)
+enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct PAC_BUFFER *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_info_0;

@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_bkupblobs.h"
 
 
-_PUBLIC_ enum ndr_err_code ndr_push_bkup_NTBackupFile(struct ndr_push *ndr, int ndr_flags, const struct bkup_NTBackupFile *r)
+_PUBLIC_ enum ndr_err_code ndr_push_bkup_NTBackupFile(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct bkup_NTBackupFile *r)
 {
 	uint32_t cntr_streams_0;
 	{
@@ -53,7 +53,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_bkup_NTBackupFile(struct ndr_push *ndr, int 
 	} \
 } while (0)
 
-_PUBLIC_ enum ndr_err_code ndr_pull_bkup_NTBackupFile(struct ndr_pull *ndr, int ndr_flags, struct bkup_NTBackupFile *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_bkup_NTBackupFile(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct bkup_NTBackupFile *r)
 {
 	uint32_t cntr_streams_0;
 	{

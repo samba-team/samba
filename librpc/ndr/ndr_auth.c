@@ -31,12 +31,12 @@ _PUBLIC_ void ndr_print_cli_credentials(struct ndr_print *ndr, const char *name,
 /*
   cli_credentials does not have a network representation, just pull/push a NULL pointer
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_cli_credentials(struct ndr_pull *ndr, int ndr_flags, struct cli_credentials *v)
+_PUBLIC_ enum ndr_err_code ndr_pull_cli_credentials(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct cli_credentials *v)
 {
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_cli_credentials(struct ndr_push *ndr, int ndr_flags, struct cli_credentials *v)
+_PUBLIC_ enum ndr_err_code ndr_push_cli_credentials(struct ndr_push *ndr, ndr_flags_type ndr_flags, struct cli_credentials *v)
 {
 	return ndr_push_pointer(ndr, ndr_flags, NULL);
 }

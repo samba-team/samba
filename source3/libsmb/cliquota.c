@@ -584,7 +584,7 @@ NTSTATUS fill_quota_buffer(TALLOC_CTX *mem_ctx,
 			      DATA_BLOB *blob,
 			      SMB_NTQUOTA_LIST **end_ptr)
 {
-	int ndr_flags = NDR_SCALARS | NDR_BUFFERS;
+	ndr_flags_type ndr_flags = NDR_SCALARS | NDR_BUFFERS;
 	struct ndr_push *qndr = NULL;
 	uint32_t start_offset = 0;
 	uint32_t padding = 0;

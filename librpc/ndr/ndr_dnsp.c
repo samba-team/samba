@@ -34,7 +34,7 @@ _PUBLIC_ void ndr_print_dnsp_name(struct ndr_print *ndr, const char *name,
 /*
   pull a dnsp_name
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flags, const char **name)
+_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, ndr_flags_type ndr_flags, const char **name)
 {
 	uint8_t len, count, termination;
 	int i;
@@ -96,7 +96,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const char *name)
+enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char *name)
 {
 	int count, total_len, i;
 
@@ -151,7 +151,7 @@ _PUBLIC_ void ndr_print_dnsp_string(struct ndr_print *ndr, const char *name,
 /*
   pull a dnsp_string
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_flags, const char **string)
+_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, ndr_flags_type ndr_flags, const char **string)
 {
 	uint8_t len;
 	char *ret;
@@ -169,7 +169,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_fl
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, int ndr_flags, const char *string)
+enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char *string)
 {
 	int total_len;
 	total_len = strlen(string);
@@ -206,7 +206,7 @@ _PUBLIC_ void ndr_print_dnsp_string_list(struct ndr_print *ndr, const char *name
 /*
  * pull a dnsp_string_list
  */
-_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string_list(struct ndr_pull *ndr, int ndr_flags, struct dnsp_string_list *list)
+_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string_list(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct dnsp_string_list *list)
 {
 	list->count = 0;
 	list->str = talloc_array(ndr->current_mem_ctx, const char *,
@@ -228,7 +228,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string_list(struct ndr_pull *ndr, int n
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_dnsp_string_list(struct ndr_push *ndr, int ndr_flags, const struct dnsp_string_list *list)
+enum ndr_err_code ndr_push_dnsp_string_list(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct dnsp_string_list *list)
 {
 	uint8_t i;
 

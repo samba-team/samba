@@ -152,7 +152,7 @@ static void ndr_print_nothing(struct ndr_print *ndr, const char *format, ...)
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	uint8_t type;
-	int pull_push_print_flags;
+	ndr_flags_type pull_push_print_flags;
 	uint16_t fuzz_packet_flags, function;
 	TALLOC_CTX *mem_ctx = NULL;
 	libndr_flags ndr_flags = 0;

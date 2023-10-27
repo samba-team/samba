@@ -19,10 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-_PUBLIC_ enum ndr_err_code ndr_push_netr_SamDatabaseID8Bit(struct ndr_push *ndr, int ndr_flags, enum netr_SamDatabaseID8Bit r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_SamDatabaseID8Bit(struct ndr_pull *ndr, int ndr_flags, enum netr_SamDatabaseID8Bit *r);
+_PUBLIC_ enum ndr_err_code ndr_push_netr_SamDatabaseID8Bit(struct ndr_push *ndr, ndr_flags_type ndr_flags, enum netr_SamDatabaseID8Bit r);
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_SamDatabaseID8Bit(struct ndr_pull *ndr, ndr_flags_type ndr_flags, enum netr_SamDatabaseID8Bit *r);
 _PUBLIC_ void ndr_print_netr_SamDatabaseID8Bit(struct ndr_print *ndr, const char *name, enum netr_SamDatabaseID8Bit r);
 
-_PUBLIC_ enum ndr_err_code ndr_push_netr_DeltaEnum8Bit(struct ndr_push *ndr, int ndr_flags, enum netr_DeltaEnum8Bit r);
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_DeltaEnum8Bit(struct ndr_pull *ndr, int ndr_flags, enum netr_DeltaEnum8Bit *r);
+_PUBLIC_ enum ndr_err_code ndr_push_netr_DeltaEnum8Bit(struct ndr_push *ndr, ndr_flags_type ndr_flags, enum netr_DeltaEnum8Bit r);
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_DeltaEnum8Bit(struct ndr_pull *ndr, ndr_flags_type ndr_flags, enum netr_DeltaEnum8Bit *r);
 _PUBLIC_ void ndr_print_netr_DeltaEnum8Bit(struct ndr_print *ndr, const char *name, enum netr_DeltaEnum8Bit r);

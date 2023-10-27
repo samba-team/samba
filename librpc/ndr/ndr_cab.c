@@ -248,7 +248,7 @@ static enum ndr_err_code ndr_push_folder_cfdata(struct ndr_push *ndr,
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags, const struct cab_file *r)
+_PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct cab_file *r)
 {
 	uint32_t cntr_cffolders_0;
 	uint32_t cntr_cffiles_0;
@@ -381,7 +381,7 @@ static enum ndr_err_code ndr_pull_folder_cfdata(struct ndr_pull *ndr,
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_cab_file(struct ndr_pull *ndr, int ndr_flags, struct cab_file *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_cab_file(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct cab_file *r)
 {
 	uint32_t size_cffolders_0 = 0;
 	uint32_t cntr_cffolders_0;

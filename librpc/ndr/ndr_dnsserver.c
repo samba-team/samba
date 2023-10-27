@@ -28,7 +28,7 @@
  */
 
 enum ndr_err_code ndr_pull_DNS_RPC_RECORDS_ARRAY(struct ndr_pull *ndr,
-		int ndr_flags, struct DNS_RPC_RECORDS_ARRAY *rec)
+		ndr_flags_type ndr_flags, struct DNS_RPC_RECORDS_ARRAY *rec)
 {
 	rec->count = 0;
 	rec->rec = talloc_array(ndr->current_mem_ctx, struct DNS_RPC_RECORDS, rec->count);
@@ -50,7 +50,7 @@ enum ndr_err_code ndr_pull_DNS_RPC_RECORDS_ARRAY(struct ndr_pull *ndr,
 }
 
 enum ndr_err_code ndr_push_DNS_RPC_RECORDS_ARRAY(struct ndr_push *ndr,
-		int ndr_flags, const struct DNS_RPC_RECORDS_ARRAY *rec)
+		ndr_flags_type ndr_flags, const struct DNS_RPC_RECORDS_ARRAY *rec)
 {
 	int i;
 
@@ -67,7 +67,7 @@ enum ndr_err_code ndr_push_DNS_RPC_RECORDS_ARRAY(struct ndr_push *ndr,
  */
 
 enum ndr_err_code ndr_pull_DNS_RPC_RECORD_STRING(struct ndr_pull *ndr,
-		int ndr_flags, struct DNS_RPC_RECORD_STRING *rec)
+		ndr_flags_type ndr_flags, struct DNS_RPC_RECORD_STRING *rec)
 {
 	rec->count = 0;
 	rec->str = talloc_array(ndr->current_mem_ctx, struct DNS_RPC_NAME, rec->count);
@@ -88,7 +88,7 @@ enum ndr_err_code ndr_pull_DNS_RPC_RECORD_STRING(struct ndr_pull *ndr,
 }
 
 enum ndr_err_code ndr_push_DNS_RPC_RECORD_STRING(struct ndr_push *ndr,
-		int ndr_flags, const struct DNS_RPC_RECORD_STRING *rec)
+		ndr_flags_type ndr_flags, const struct DNS_RPC_RECORD_STRING *rec)
 {
 	int i;
 

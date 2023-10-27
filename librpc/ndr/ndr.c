@@ -486,7 +486,7 @@ _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_
 /*
   a useful helper function for printing idl function calls via DEBUG()
 */
-_PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int flags, void *ptr)
+_PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, ndr_flags_type flags, void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -562,7 +562,7 @@ failed:
 */
 _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 				ndr_print_function_t fn, const char *name,
-				int flags, void *ptr)
+				ndr_flags_type flags, void *ptr)
 {
 	struct ndr_print *ndr;
 	char *ret = NULL;
@@ -1207,7 +1207,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_steal_array_length(struct ndr_pull *ndr, co
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_pipe_chunk_trailer(struct ndr_push *ndr, int ndr_flags, uint32_t count)
+_PUBLIC_ enum ndr_err_code ndr_push_pipe_chunk_trailer(struct ndr_push *ndr, ndr_flags_type ndr_flags, uint32_t count)
 {
 	if (ndr->flags & LIBNDR_FLAG_NDR64) {
 		int64_t tmp = 0 - (int64_t)count;
@@ -1219,7 +1219,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_pipe_chunk_trailer(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, int ndr_flags, uint32_t count)
+_PUBLIC_ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, ndr_flags_type ndr_flags, uint32_t count)
 {
 	if (ndr->flags & LIBNDR_FLAG_NDR64) {
 		int64_t tmp = 0 - (int64_t)count;

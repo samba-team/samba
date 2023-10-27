@@ -2299,7 +2299,7 @@ static bool rpccli_bh_ref_alloc(struct dcerpc_binding_handle *h)
 }
 
 static void rpccli_bh_do_ndr_print(struct dcerpc_binding_handle *h,
-				   int ndr_flags,
+				   ndr_flags_type ndr_flags,
 				   const void *_struct_ptr,
 				   const struct ndr_interface_call *call)
 {

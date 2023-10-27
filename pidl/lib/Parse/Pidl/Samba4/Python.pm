@@ -543,7 +543,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj, int ndr_inout_flags, libndr_flags ndr_push_flags)");
+	$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj, ndr_flags_type ndr_inout_flags, libndr_flags ndr_push_flags)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$ndr_call");
@@ -658,7 +658,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_unpack(PyObject *py_obj, const DATA_BLOB *blob, int ndr_inout_flags, libndr_flags ndr_pull_flags, bool allow_remaining)");
+	$self->pidl("static PyObject *py_$name\_ndr_unpack(PyObject *py_obj, const DATA_BLOB *blob, ndr_flags_type ndr_inout_flags, libndr_flags ndr_pull_flags, bool allow_remaining)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$ndr_call");
@@ -823,7 +823,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_print(PyObject *py_obj, const char *name, int ndr_inout_flags)");
+	$self->pidl("static PyObject *py_$name\_ndr_print(PyObject *py_obj, const char *name, ndr_flags_type ndr_inout_flags)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$ndr_call");

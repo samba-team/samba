@@ -24,14 +24,14 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
-_PUBLIC_ enum ndr_err_code ndr_push_netr_SamDatabaseID8Bit(struct ndr_push *ndr, int ndr_flags, enum netr_SamDatabaseID8Bit r)
+_PUBLIC_ enum ndr_err_code ndr_push_netr_SamDatabaseID8Bit(struct ndr_push *ndr, ndr_flags_type ndr_flags, enum netr_SamDatabaseID8Bit r)
 {
 	if (r > 0xff) return NDR_ERR_BUFSIZE;
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_SamDatabaseID8Bit(struct ndr_pull *ndr, int ndr_flags, enum netr_SamDatabaseID8Bit *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_SamDatabaseID8Bit(struct ndr_pull *ndr, ndr_flags_type ndr_flags, enum netr_SamDatabaseID8Bit *r)
 {
 	uint8_t v;
 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
@@ -44,14 +44,14 @@ _PUBLIC_ void ndr_print_netr_SamDatabaseID8Bit(struct ndr_print *ndr, const char
 	ndr_print_netr_SamDatabaseID(ndr, name, r);
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_netr_DeltaEnum8Bit(struct ndr_push *ndr, int ndr_flags, enum netr_DeltaEnum8Bit r)
+_PUBLIC_ enum ndr_err_code ndr_push_netr_DeltaEnum8Bit(struct ndr_push *ndr, ndr_flags_type ndr_flags, enum netr_DeltaEnum8Bit r)
 {
 	if (r > 0xff) return NDR_ERR_BUFSIZE;
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_netr_DeltaEnum8Bit(struct ndr_pull *ndr, int ndr_flags, enum netr_DeltaEnum8Bit *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_DeltaEnum8Bit(struct ndr_pull *ndr, ndr_flags_type ndr_flags, enum netr_DeltaEnum8Bit *r)
 {
 	uint8_t v;
 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));

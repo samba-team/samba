@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_witness.h"
 
-_PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr, int ndr_flags, const struct witness_notifyResponse *r)
+_PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct witness_notifyResponse *r)
 {
 	uint32_t cntr_messages_0;
 	{
@@ -58,7 +58,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr,
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr, int ndr_flags, struct witness_notifyResponse *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct witness_notifyResponse *r)
 {
 	libndr_flags _flags_save_STRUCT = ndr->flags;
 	ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);

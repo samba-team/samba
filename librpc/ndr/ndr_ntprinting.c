@@ -37,7 +37,7 @@ _PUBLIC_ libndr_flags ndr_ntprinting_string_flags(libndr_flags string_flags)
 	return flags;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int ndr_flags, struct ntprinting_printer *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct ntprinting_printer *r)
 {
 	uint32_t _ptr_devmode;
 	TALLOC_CTX *_mem_save_devmode_0;

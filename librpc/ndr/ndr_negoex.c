@@ -32,7 +32,7 @@ void ndr_print_negoex_BYTE_VECTOR(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_BYTE_VECTOR *r)
+enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_BYTE_VECTOR *r)
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
@@ -54,7 +54,7 @@ enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, int ndr_flag
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_BYTE_VECTOR *r)
+enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_BYTE_VECTOR *r)
 {
 	uint32_t _ptr_data;
 	uint32_t size_data_1 = 0;
@@ -106,7 +106,7 @@ enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, int ndr_flag
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_negoex_AUTH_SCHEME_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_AUTH_SCHEME_VECTOR *r)
+enum ndr_err_code ndr_push_negoex_AUTH_SCHEME_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_AUTH_SCHEME_VECTOR *r)
 {
 	uint32_t cntr_array_1;
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
@@ -131,7 +131,7 @@ enum ndr_err_code ndr_push_negoex_AUTH_SCHEME_VECTOR(struct ndr_push *ndr, int n
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_negoex_AUTH_SCHEME_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_AUTH_SCHEME_VECTOR *r)
+enum ndr_err_code ndr_pull_negoex_AUTH_SCHEME_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_AUTH_SCHEME_VECTOR *r)
 {
 	uint32_t _ptr_array;
 	uint32_t size_array_1 = 0;
@@ -186,7 +186,7 @@ enum ndr_err_code ndr_pull_negoex_AUTH_SCHEME_VECTOR(struct ndr_pull *ndr, int n
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_negoex_EXTENSION_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_EXTENSION_VECTOR *r)
+enum ndr_err_code ndr_push_negoex_EXTENSION_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_EXTENSION_VECTOR *r)
 {
 	uint32_t cntr_array_1;
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
@@ -214,7 +214,7 @@ enum ndr_err_code ndr_push_negoex_EXTENSION_VECTOR(struct ndr_push *ndr, int ndr
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_negoex_EXTENSION_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_EXTENSION_VECTOR *r)
+enum ndr_err_code ndr_pull_negoex_EXTENSION_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_EXTENSION_VECTOR *r)
 {
 	uint32_t _ptr_array;
 	uint32_t size_array_1 = 0;
@@ -272,7 +272,7 @@ enum ndr_err_code ndr_pull_negoex_EXTENSION_VECTOR(struct ndr_pull *ndr, int ndr
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_negoex_ALERT_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_ALERT_VECTOR *r)
+enum ndr_err_code ndr_push_negoex_ALERT_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_ALERT_VECTOR *r)
 {
 	uint32_t cntr_array_1;
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
@@ -300,7 +300,7 @@ enum ndr_err_code ndr_push_negoex_ALERT_VECTOR(struct ndr_push *ndr, int ndr_fla
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_negoex_ALERT_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_ALERT_VECTOR *r)
+enum ndr_err_code ndr_pull_negoex_ALERT_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_ALERT_VECTOR *r)
 {
 	uint32_t _ptr_array;
 	uint32_t size_array_1 = 0;
@@ -404,7 +404,7 @@ size_t ndr_negoex_MESSAGE_header_length(const struct negoex_MESSAGE *r)
 	return size;
 }
 
-enum ndr_err_code ndr_pull_negoex_MESSAGE(struct ndr_pull *ndr, int ndr_flags, struct negoex_MESSAGE *r)
+enum ndr_err_code ndr_pull_negoex_MESSAGE(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_MESSAGE *r)
 {
 	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
 	uint32_t size_signature_0 = 0;
@@ -448,7 +448,7 @@ enum ndr_err_code ndr_pull_negoex_MESSAGE(struct ndr_pull *ndr, int ndr_flags, s
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_negoex_MESSAGE_ARRAY(struct ndr_push *ndr, int ndr_flags, const struct negoex_MESSAGE_ARRAY *r)
+enum ndr_err_code ndr_push_negoex_MESSAGE_ARRAY(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_MESSAGE_ARRAY *r)
 {
 	uint32_t cntr_messages_0;
 	{
@@ -467,7 +467,7 @@ enum ndr_err_code ndr_push_negoex_MESSAGE_ARRAY(struct ndr_push *ndr, int ndr_fl
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_negoex_MESSAGE_ARRAY(struct ndr_pull *ndr, int ndr_flags, struct negoex_MESSAGE_ARRAY *r)
+enum ndr_err_code ndr_pull_negoex_MESSAGE_ARRAY(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_MESSAGE_ARRAY *r)
 {
 	uint32_t size_messages_0 = 0;
 	uint32_t cntr_messages_0;

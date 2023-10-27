@@ -953,7 +953,7 @@ static bool test_setup_binding_handle(struct torture_context *tctx,
 
 static enum ndr_err_code ndr_push_inout_blob(DATA_BLOB *blob,
 					     TALLOC_CTX *mem_ctx,
-					     int flags,
+					     ndr_flags_type flags,
 					     const void *p,
 					     ndr_push_flags_fn_t fn)
 {

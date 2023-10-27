@@ -49,7 +49,7 @@ static uint32_t backupkeyguid_to_uint(const struct GUID *guid)
 	return BACKUPKEY_INVALID_GUID_INTEGER;
 }
 
-_PUBLIC_ void ndr_print_bkrp_BackupKey(struct ndr_print *ndr, const char *name, int flags, const struct bkrp_BackupKey *r)
+_PUBLIC_ void ndr_print_bkrp_BackupKey(struct ndr_print *ndr, const char *name, ndr_flags_type flags, const struct bkrp_BackupKey *r)
 {
 	ndr_print_struct(ndr, name, "bkrp_BackupKey");
 	if (r == NULL) { ndr_print_null(ndr); return; }
@@ -123,7 +123,7 @@ _PUBLIC_ void ndr_print_bkrp_BackupKey(struct ndr_print *ndr, const char *name, 
  * purely in PIDL as the padding is sized so that the whole access_check_v3
  * struct size is a multiple of 8 (as specified in 2.2.2.3 of ms-bkrp.pdf)
  */
-_PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v2(struct ndr_push *ndr, int ndr_flags, const struct bkrp_access_check_v2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v2(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct bkrp_access_check_v2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		size_t ofs;
@@ -148,7 +148,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v2(struct ndr_push *ndr, i
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_bkrp_access_check_v2(struct ndr_pull *ndr, int ndr_flags, struct bkrp_access_check_v2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_bkrp_access_check_v2(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct bkrp_access_check_v2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		size_t ofs;
@@ -174,7 +174,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_bkrp_access_check_v2(struct ndr_pull *ndr, i
  * purely in PIDL as the padding is sized so that the whole access_check_v3
  * struct size is a multiple of 16 (as specified in 2.2.2.4 of ms-bkrp.pdf)
  */
-_PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v3(struct ndr_push *ndr, int ndr_flags, const struct bkrp_access_check_v3 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v3(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct bkrp_access_check_v3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		size_t ofs;
@@ -199,7 +199,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_bkrp_access_check_v3(struct ndr_push *ndr, i
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_bkrp_access_check_v3(struct ndr_pull *ndr, int ndr_flags, struct bkrp_access_check_v3 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_bkrp_access_check_v3(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct bkrp_access_check_v3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		size_t ofs;

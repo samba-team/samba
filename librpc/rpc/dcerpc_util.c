@@ -1106,7 +1106,7 @@ NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
 */
 void dcerpc_log_packet(const char *packet_log_dir,
 		       const char *interface_name,
-		       uint32_t opnum, uint32_t flags,
+		       uint32_t opnum, ndr_flags_type flags,
 		       const DATA_BLOB *pkt,
 		       const char *why)
 {

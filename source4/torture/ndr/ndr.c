@@ -33,12 +33,12 @@ struct ndr_pull_test_data {
 	ndr_push_flags_fn_t push_fn;
 	ndr_print_fn_t print_fn;
 	ndr_print_function_t print_function;
-	int ndr_flags;
+	ndr_flags_type ndr_flags;
 	libndr_flags flags;
 	enum ndr_err_code ndr_err;
 };
 
-static enum ndr_err_code torture_ndr_push_struct_blob_flags(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t flags, libndr_flags ndr_flags, const void *p, ndr_push_flags_fn_t fn)
+static enum ndr_err_code torture_ndr_push_struct_blob_flags(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, ndr_flags_type flags, libndr_flags ndr_flags, const void *p, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -58,13 +58,13 @@ static enum ndr_err_code torture_ndr_push_struct_blob_flags(DATA_BLOB *blob, TAL
 static bool torture_ndrdump(struct torture_context *tctx,
 			    struct ndr_pull *ndr,
 			    const struct ndr_pull_test_data *data,
-			    uint32_t flags,
+			    ndr_flags_type flags,
 			    void *ds,
 			    const char *name)
 {
 	struct ndr_print *ndr_print;
 	const char *name_raw;
-	uint32_t ndr_flags = data->ndr_flags | flags;
+	ndr_flags_type ndr_flags = data->ndr_flags | flags;
 
 	ndr_print = talloc_zero(tctx, struct ndr_print);
 	torture_assert(tctx, ndr_print, "out of memory");
@@ -155,7 +155,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 	const char *db_name,
 	DATA_BLOB db,
 	size_t struct_size,
-	int ndr_flags,
+	ndr_flags_type ndr_flags,
 	libndr_flags flags,
 	const char *check_fn_name,
 	bool (*check_fn) (struct torture_context *ctx, void *data))
@@ -344,7 +344,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 	const char *db_name,
 	DATA_BLOB db,
 	size_t struct_size,
-	int ndr_flags,
+	ndr_flags_type ndr_flags,
 	libndr_flags flags,
 	enum ndr_err_code ndr_err)
 {

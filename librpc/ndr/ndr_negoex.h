@@ -23,15 +23,15 @@
 #include "librpc/gen_ndr/negoex.h"
 
 _PUBLIC_ void ndr_print_negoex_BYTE_VECTOR(struct ndr_print *ndr, const char *name, const struct negoex_BYTE_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_BYTE_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_BYTE_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_push_negoex_AUTH_SCHEME_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_AUTH_SCHEME_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_negoex_AUTH_SCHEME_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_AUTH_SCHEME_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_push_negoex_EXTENSION_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_EXTENSION_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_negoex_EXTENSION_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_EXTENSION_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_push_negoex_ALERT_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_ALERT_VECTOR *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_negoex_ALERT_VECTOR(struct ndr_pull *ndr, int ndr_flags, struct negoex_ALERT_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_BYTE_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_BYTE_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_push_negoex_AUTH_SCHEME_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_AUTH_SCHEME_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_negoex_AUTH_SCHEME_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_AUTH_SCHEME_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_push_negoex_EXTENSION_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_EXTENSION_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_negoex_EXTENSION_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_EXTENSION_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_push_negoex_ALERT_VECTOR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_ALERT_VECTOR *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_negoex_ALERT_VECTOR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_ALERT_VECTOR *r);
 _PUBLIC_ size_t ndr_negoex_MESSAGE_header_length(const struct negoex_MESSAGE *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_negoex_MESSAGE(struct ndr_pull *ndr, int ndr_flags, struct negoex_MESSAGE *r);
-_PUBLIC_ enum ndr_err_code ndr_push_negoex_MESSAGE_ARRAY(struct ndr_push *ndr, int ndr_flags, const struct negoex_MESSAGE_ARRAY *r);
-_PUBLIC_ enum ndr_err_code ndr_pull_negoex_MESSAGE_ARRAY(struct ndr_pull *ndr, int ndr_flags, struct negoex_MESSAGE_ARRAY *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_negoex_MESSAGE(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_MESSAGE *r);
+_PUBLIC_ enum ndr_err_code ndr_push_negoex_MESSAGE_ARRAY(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct negoex_MESSAGE_ARRAY *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_negoex_MESSAGE_ARRAY(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct negoex_MESSAGE_ARRAY *r);

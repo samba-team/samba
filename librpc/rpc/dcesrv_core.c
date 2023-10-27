@@ -1882,7 +1882,7 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 */
 void _dcesrv_save_ndr_fuzz_seed(DATA_BLOB call_blob,
 				struct dcesrv_call_state *call,
-				int flags)
+				ndr_flags_type flags)
 {
 	const char *dump_dir = lpcfg_parm_string(call->conn->dce_ctx->lp_ctx,
 						 NULL,

@@ -20,5 +20,5 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-enum ndr_err_code ndr_push_BSTR(struct ndr_push *ndr, int ndr_flags, const struct BSTR *r);
-enum ndr_err_code ndr_pull_BSTR(struct ndr_pull *ndr, int ndr_flags, struct BSTR *r);
+enum ndr_err_code ndr_push_BSTR(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct BSTR *r);
+enum ndr_err_code ndr_pull_BSTR(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct BSTR *r);

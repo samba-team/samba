@@ -20,6 +20,6 @@
 */
 
 enum ndr_err_code ndr_pull_DNS_RPC_RECORDS_ARRAY(struct ndr_pull *ndr,
-		int ndr_flags, struct DNS_RPC_RECORDS_ARRAY *rec);
+		ndr_flags_type ndr_flags, struct DNS_RPC_RECORDS_ARRAY *rec);
 enum ndr_err_code ndr_push_DNS_RPC_RECORDS_ARRAY(struct ndr_push *ndr,
-		int ndr_flags, const struct DNS_RPC_RECORDS_ARRAY *rec);
+		ndr_flags_type ndr_flags, const struct DNS_RPC_RECORDS_ARRAY *rec);

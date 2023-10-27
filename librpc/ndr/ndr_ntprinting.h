@@ -24,4 +24,4 @@
 
 _PUBLIC_ libndr_flags ndr_ntprinting_string_flags(libndr_flags string_flags);
 
-_PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int ndr_flags, struct ntprinting_printer *r);
+_PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct ntprinting_printer *r);

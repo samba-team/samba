@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/ndr_auth.h"
 
 struct cli_credentials;
-_PUBLIC_ enum ndr_err_code ndr_pull_cli_credentials(struct ndr_pull *ndr, int ndr_flags, struct cli_credentials *v);
-_PUBLIC_ enum ndr_err_code ndr_push_cli_credentials(struct ndr_push *ndr, int ndr_flags, struct cli_credentials *v);
+_PUBLIC_ enum ndr_err_code ndr_pull_cli_credentials(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct cli_credentials *v);
+_PUBLIC_ enum ndr_err_code ndr_push_cli_credentials(struct ndr_push *ndr, ndr_flags_type ndr_flags, struct cli_credentials *v);
 
 _PUBLIC_ void ndr_print_cli_credentials(struct ndr_print *ndr, const char *name, struct cli_credentials *v);

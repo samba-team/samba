@@ -106,7 +106,7 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 /**
   pull a nbt name from the wire
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct nbt_name *r)
 {
 	uint8_t *scope;
 	char *cname;
@@ -155,7 +155,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags
 /**
   push a nbt name to the wire
 */
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *cname, *fullname;
 	enum ndr_err_code ndr_err;
@@ -326,7 +326,7 @@ _PUBLIC_ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 /**
   pull a nbt name, WINS Replication uses another on wire format for nbt name
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name **_r)
+_PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct nbt_name **_r)
 {
 	struct nbt_name *r;
 	uint8_t *namebuf;
@@ -400,7 +400,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr
 /**
   push a nbt name, WINS Replication uses another on wire format for nbt name
 */
-_PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
+_PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
@@ -478,7 +478,7 @@ _PUBLIC_ void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, 
 	talloc_free(s);
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_nbt_qtype(struct ndr_push *ndr, int ndr_flags, enum nbt_qtype r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_qtype(struct ndr_push *ndr, ndr_flags_type ndr_flags, enum nbt_qtype r)
 {
 	/* For WACK replies, we need to send NBT_QTYPE_NETBIOS on the wire. */
 	NDR_CHECK(ndr_push_enum_uint16(ndr, NDR_SCALARS, (r == NBT_QTYPE_WACK) ? NBT_QTYPE_NETBIOS : r));

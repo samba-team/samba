@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_frsrpc.h"
 
 enum ndr_err_code ndr_push_frsrpc_CommPktChunkCtr(struct ndr_push *ndr,
-					int ndr_flags,
+					ndr_flags_type ndr_flags,
 					const struct frsrpc_CommPktChunkCtr *r)
 {
 	uint32_t cntr_chunks_0;
@@ -54,7 +54,7 @@ enum ndr_err_code ndr_push_frsrpc_CommPktChunkCtr(struct ndr_push *ndr,
 } while (0)
 
 enum ndr_err_code ndr_pull_frsrpc_CommPktChunkCtr(struct ndr_pull *ndr,
-					int ndr_flags,
+					ndr_flags_type ndr_flags,
 					struct frsrpc_CommPktChunkCtr *r)
 {
 	uint32_t cntr_chunks_0;

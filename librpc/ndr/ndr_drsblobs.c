@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "../lib/util/asn1.h"
 
-_PUBLIC_ enum ndr_err_code ndr_push_AuthenticationInformationArray(struct ndr_push *ndr, int ndr_flags, const struct AuthenticationInformationArray *r)
+_PUBLIC_ enum ndr_err_code ndr_push_AuthenticationInformationArray(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct AuthenticationInformationArray *r)
 {
 	uint32_t cntr_array_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -39,7 +39,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AuthenticationInformationArray(struct ndr_pu
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_AuthenticationInformationArray(struct ndr_pull *ndr, int ndr_flags, struct AuthenticationInformationArray *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_AuthenticationInformationArray(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct AuthenticationInformationArray *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		r->count = 0;
@@ -58,7 +58,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AuthenticationInformationArray(struct ndr_pu
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutBlob *r)
+_PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct trustAuthInOutBlob *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -90,7 +90,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int
 }
 
 
-_PUBLIC_ enum ndr_err_code ndr_pull_trustDomainPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustDomainPasswords *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_trustDomainPasswords(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct trustDomainPasswords *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		uint32_t offset;
@@ -150,7 +150,7 @@ _PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const c
 	}
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_supplementalCredentialsSubBlob(struct ndr_push *ndr, int ndr_flags, const struct supplementalCredentialsSubBlob *r)
+_PUBLIC_ enum ndr_err_code ndr_push_supplementalCredentialsSubBlob(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct supplementalCredentialsSubBlob *r)
 {
 	uint32_t cntr_packages_0;
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
@@ -175,7 +175,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_supplementalCredentialsSubBlob(struct ndr_pu
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_supplementalCredentialsSubBlob(struct ndr_pull *ndr, int ndr_flags, struct supplementalCredentialsSubBlob *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_supplementalCredentialsSubBlob(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct supplementalCredentialsSubBlob *r)
 {
 	uint32_t size_prefix_0 = 0;
 	uint32_t size_packages_0 = 0;

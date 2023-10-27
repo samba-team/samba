@@ -112,7 +112,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
   pull a dns_string from the wire
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_dns_string(struct ndr_pull *ndr,
-					       int ndr_flags,
+					       ndr_flags_type ndr_flags,
 					       const char **s)
 {
 	uint32_t offset = ndr->offset;
@@ -157,7 +157,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_string(struct ndr_pull *ndr,
   push a dns string to the wire
 */
 _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
-					       int ndr_flags,
+					       ndr_flags_type ndr_flags,
 					       const char *s)
 {
 	return ndr_push_dns_string_list(ndr,
@@ -167,7 +167,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
 					false);
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_dns_txt_record(struct ndr_pull *ndr, int ndr_flags, struct dns_txt_record *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dns_txt_record(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct dns_txt_record *r)
 {
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
@@ -191,7 +191,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_txt_record(struct ndr_pull *ndr, int ndr
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr,
-						int ndr_flags,
+						ndr_flags_type ndr_flags,
 						const struct dns_res_rec *r)
 {
 	libndr_flags _flags_save_STRUCT = ndr->flags;
@@ -266,7 +266,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr,
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_dns_res_rec(struct ndr_pull *ndr,
-						int ndr_flags,
+						ndr_flags_type ndr_flags,
 						struct dns_res_rec *r)
 {
 	libndr_flags _flags_save_STRUCT = ndr->flags;

@@ -27,6 +27,8 @@
 #include "gen_ndr/dcerpc.h"
 #include "lib/util/attr.h"
 
+#include "librpc/ndr/libndr.h"
+
 struct dcerpc_binding_handle;
 struct GUID;
 struct ndr_interface_table;
@@ -202,7 +204,7 @@ struct dcerpc_binding_handle_ops {
 	bool (*ref_alloc)(struct dcerpc_binding_handle *h);
 	bool (*use_ndr64)(struct dcerpc_binding_handle *h);
 	void (*do_ndr_print)(struct dcerpc_binding_handle *h,
-			     int ndr_flags,
+			     ndr_flags_type ndr_flags,
 			     const void *struct_ptr,
 			     const struct ndr_interface_call *call);
 	void (*ndr_push_failed)(struct dcerpc_binding_handle *h,
@@ -382,7 +384,7 @@ NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
 
 void dcerpc_log_packet(const char *packet_log_dir,
 		       const char *interface_name,
-		       uint32_t opnum, uint32_t flags,
+		       uint32_t opnum, ndr_flags_type flags,
 		       const DATA_BLOB *pkt,
 		       const char *why);
 
@@ -391,7 +393,7 @@ void dcerpc_save_ndr_fuzz_seed(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB raw_blob,
 			       const char *dump_dir,
 			       const char *iface_name,
-			       int flags,
+			       ndr_flags_type flags,
 			       int opnum,
 			       bool ndr64);
 #else
@@ -399,7 +401,7 @@ static inline void dcerpc_save_ndr_fuzz_seed(TALLOC_CTX *mem_ctx,
 					     DATA_BLOB raw_blob,
 					     const char *dump_dir,
 					     const char *iface_name,
-					     int flags,
+					     ndr_flags_type flags,
 					     int opnum,
 					     bool ndr64)
 {

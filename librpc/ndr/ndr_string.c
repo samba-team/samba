@@ -25,7 +25,7 @@
 /**
   pull a general string from the wire
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+_PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type ndr_flags, const char **s)
 {
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
@@ -199,7 +199,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 /**
   push a general string onto the wire
 */
-_PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+_PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len;
 	size_t d_len;
@@ -354,14 +354,14 @@ _PUBLIC_ void ndr_print_string(struct ndr_print *ndr, const char *name, const ch
 	}
 }
 
-_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags)
+_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, ndr_flags_type flags)
 {
 	/* FIXME: Is this correct for all strings ? */
 	if(!(*string)) return ret;
 	return ret+strlen(*string)+1;
 }
 
-static uint32_t guess_string_array_size(struct ndr_pull *ndr, int ndr_flags)
+static uint32_t guess_string_array_size(struct ndr_pull *ndr, ndr_flags_type ndr_flags)
 {
 	/*
 	 * Here we could do something clever like count the number of zeros in
@@ -402,7 +402,7 @@ static enum ndr_err_code extend_string_array(struct ndr_pull *ndr,
 /**
   pull a general string array from the wire
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
+_PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, ndr_flags_type ndr_flags, const char ***_a)
 {
 	const char **a = NULL;
 	uint32_t count;
@@ -509,7 +509,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 /**
   push a general string array onto the wire
 */
-_PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
+_PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char **a)
 {
 	uint32_t count;
 	libndr_flags flags = ndr->flags;
@@ -691,7 +691,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uin
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, ndr_flags_type ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	size_t converted_size;
 
@@ -722,7 +722,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, ndr_flags_type ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	size_t converted_size;
 	uint32_t str_len;
@@ -760,7 +760,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	size_t required;
 
@@ -800,7 +800,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_charset_to_null(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ enum ndr_err_code ndr_push_charset_to_null(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	const char *str = var;
 

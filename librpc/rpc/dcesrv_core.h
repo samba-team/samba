@@ -689,7 +689,7 @@ _PUBLIC_ const struct dcesrv_interface *find_interface_by_syntax_id(
 
 void _dcesrv_save_ndr_fuzz_seed(DATA_BLOB call_blob,
 				struct dcesrv_call_state *call,
-				int flags);
+				ndr_flags_type flags);
 
 #if DEVELOPER
 #define  dcesrv_save_ndr_fuzz_seed(stub, call, flags) \

@@ -22,11 +22,11 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_ads.h"
 
-enum ndr_err_code ndr_pull_ads_struct(struct ndr_pull *ndr, int ndr_flags, struct ads_struct *r)
+enum ndr_err_code ndr_pull_ads_struct(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct ads_struct *r)
 {
 	return NDR_ERR_SUCCESS;
 }
-enum ndr_err_code ndr_push_ads_struct(struct ndr_push *ndr, int ndr_flags, const struct ads_struct *r)
+enum ndr_err_code ndr_push_ads_struct(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct ads_struct *r)
 {
 	return NDR_ERR_SUCCESS;
 }

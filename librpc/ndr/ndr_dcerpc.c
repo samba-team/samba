@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
-_PUBLIC_ enum ndr_err_code ndr_push_ncacn_packet(struct ndr_push *ndr, int ndr_flags, const struct ncacn_packet *r)
+_PUBLIC_ enum ndr_err_code ndr_push_ncacn_packet(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct ncacn_packet *r)
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
@@ -52,7 +52,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ncacn_packet(struct ndr_push *ndr, int ndr_f
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_ncacn_packet(struct ndr_pull *ndr, int ndr_flags, struct ncacn_packet *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_ncacn_packet(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct ncacn_packet *r)
 {
 	uint32_t size_drep_0 = 0;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
@@ -112,7 +112,7 @@ _PUBLIC_ void ndr_print_ncacn_packet(struct ndr_print *ndr, const char *name, co
  *
  * That's why we ignore the 80 char per line limit.
  */
-enum ndr_err_code ndr_pull_dcerpc_bind_nak(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_bind_nak *r)
+enum ndr_err_code ndr_pull_dcerpc_bind_nak(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct dcerpc_bind_nak *r)
 {
 	uint32_t size_versions_0 = 0;
 	uint32_t cntr_versions_0;
@@ -157,14 +157,14 @@ enum ndr_err_code ndr_pull_dcerpc_bind_nak(struct ndr_pull *ndr, int ndr_flags, 
 
 const uint8_t DCERPC_SEC_VT_MAGIC[] = {0x8a,0xe3,0x13,0x71,0x02,0xf4,0x36,0x71};
 
-_PUBLIC_ enum ndr_err_code ndr_push_dcerpc_sec_vt_count(struct ndr_push *ndr, int ndr_flags, const struct dcerpc_sec_vt_count *r)
+_PUBLIC_ enum ndr_err_code ndr_push_dcerpc_sec_vt_count(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct dcerpc_sec_vt_count *r)
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	/* nothing */
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_sec_vt_count(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_sec_vt_count *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_sec_vt_count(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct dcerpc_sec_vt_count *r)
 {
 	uint32_t _saved_ofs = ndr->offset;
 

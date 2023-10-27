@@ -48,7 +48,7 @@ _PUBLIC_ libndr_flags ndr_ntlmssp_negotiated_string_flags(uint32_t negotiate_fla
 	return flags;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_AV_PAIR_LIST(struct ndr_push *ndr, int ndr_flags, const struct AV_PAIR_LIST *r)
+_PUBLIC_ enum ndr_err_code ndr_push_AV_PAIR_LIST(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct AV_PAIR_LIST *r)
 {
 	uint32_t cntr_pair_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -65,7 +65,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AV_PAIR_LIST(struct ndr_push *ndr, int ndr_f
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_AV_PAIR_LIST(struct ndr_pull *ndr, int ndr_flags, struct AV_PAIR_LIST *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_AV_PAIR_LIST(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct AV_PAIR_LIST *r)
 {
 	uint32_t cntr_pair_0;
 	TALLOC_CTX *_mem_save_pair_0;

@@ -46,7 +46,7 @@ static void test_pull_string_zero_len_nul_term(void **state)
 {
 	struct ndr_pull ndr = {0};
 	enum ndr_err_code err;
-	int flags = NDR_SCALARS;
+	ndr_flags_type flags = NDR_SCALARS;
 	uint8_t data[] = {0x0, 0x0};
 	const char *s = NULL;
 
@@ -76,7 +76,7 @@ static void test_pull_string_len_1_nul_term(void **state)
 {
 	struct ndr_pull ndr = {0};
 	enum ndr_err_code err;
-	int flags = NDR_SCALARS;
+	ndr_flags_type flags = NDR_SCALARS;
 	const char *s = NULL;
 	uint8_t data[] = {0x0, 0x0};
 
@@ -103,7 +103,7 @@ static void test_pull_string_len_2_nul_term(void **state)
 {
 	struct ndr_pull ndr = {0};
 	enum ndr_err_code err;
-	int flags = NDR_SCALARS;
+	ndr_flags_type flags = NDR_SCALARS;
 	const char *s;
 	uint8_t data[] = {0x0, 0x0};
 

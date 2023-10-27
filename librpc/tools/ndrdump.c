@@ -280,7 +280,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	struct ndr_pull *ndr_pull;
 	struct ndr_print *ndr_print;
 	TALLOC_CTX *mem_ctx;
-	int flags = 0;
+	ndr_flags_type flags = 0;
 	poptContext pc;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;

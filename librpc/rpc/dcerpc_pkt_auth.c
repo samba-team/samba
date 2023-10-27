@@ -384,7 +384,7 @@ void dcerpc_save_ndr_fuzz_seed(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB raw_blob,
 			       const char *dump_dir,
 			       const char *iface_name,
-			       int flags,
+			       ndr_flags_type flags,
 			       int opnum,
 			       bool ndr64)
 {
