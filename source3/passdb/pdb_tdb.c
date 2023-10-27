@@ -1346,6 +1346,9 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 		}
 		pfile = tdbfile;
 	}
+
+	/* Do not leak memory if the init function is called more than once */
+	SAFE_FREE(tdbsam_filename);
 	tdbsam_filename = SMB_STRDUP(pfile);
 	if (!tdbsam_filename) {
 		return NT_STATUS_NO_MEMORY;
