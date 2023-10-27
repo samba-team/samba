@@ -29,6 +29,7 @@ from samba.auth import system_session
 from samba.getopt import Option, OptionParser
 from samba.logger import get_samba_logger
 from samba.samdb import SamDB
+from samba.dcerpc.security import SDDLValueError
 
 from .encoders import JSONEncoder
 
@@ -115,6 +116,29 @@ class Command(object):
         else:
             print(f"{err}{klass}: {msg} - {evalue}", file=self.errf)
 
+    def _print_sddl_value_error(self, e):
+        generic_msg, specific_msg, position, sddl = e.args
+        print(f"{colour.c_DARK_RED('ERROR')}: {generic_msg}\n",
+              file=self.errf)
+        print(f' {sddl}', file=self.errf)
+        # If the SDDL contains non-ascii characters, the byte offset
+        # provided by the exception won't agree with the visual offset
+        # because those characters will be encoded as multiple bytes.
+        #
+        # To account for this we'll attempt to measure the string
+        # length of the specified number of bytes. That is not quite
+        # the same as the visual length, because the SDDL could
+        # contain zero-width, full-width, or combining characters, but
+        # it is closer.
+        try:
+            position = len((sddl.encode()[:position]).decode())
+        except ValueError:
+            # use the original position
+            pass
+
+        print(f"{colour.c_DARK_YELLOW('^'):>{position + 2}}", file=self.errf)
+        print(f' {specific_msg}', file=self.errf)
+
     def ldb_connect(self, hostopts, sambaopts, credopts):
         """Helper to connect to Ldb database using command line opts."""
         lp = sambaopts.get_loadparm()
@@ -162,6 +186,10 @@ class Command(object):
                 force_traceback = False
             else:
                 self._print_error(message, ldb_emsg, 'ldb')
+
+        elif isinstance(inner_exception, SDDLValueError):
+            self._print_sddl_value_error(inner_exception)
+            force_traceback = False
 
         elif isinstance(inner_exception, AssertionError):
             self._print_error(message, klass='assert')
