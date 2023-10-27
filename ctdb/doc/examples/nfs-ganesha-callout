@@ -267,6 +267,11 @@ grace_period()
 	fi
 }
 
+nfs_startipreallocate()
+{
+	grace_period "0:"
+}
+
 nfs_releaseip()
 {
 	_ip="$2"
@@ -329,6 +334,7 @@ startup
 stop
 start
 check
+startipreallocate
 releaseip
 takeip
 monitor-list-shares
@@ -346,11 +352,12 @@ startup)             nfs_startup             ;;
 stop)                service_stop "$1"       ;;
 start)               service_start "$1"      ;;
 check)               service_check "$1"      ;;
+startipreallocate)   nfs_startipreallocate   ;;
 releaseip)           nfs_releaseip "$@"      ;;
 takeip)              nfs_takeip "$@"         ;;
 monitor-list-shares) nfs_monitor_list_shares ;;
 register)            nfs_register            ;;
-monitor-pre|monitor-post|releaseip-pre|takeip-pre|startipreallocate)
+monitor-pre|monitor-post|releaseip-pre|takeip-pre)
 	# Not required/implemented
 	:
 	;;
