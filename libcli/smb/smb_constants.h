@@ -607,6 +607,7 @@ enum csc_policy {
  * A few values from [MS-FSCC] 2.1.2.1 Reparse Tags
  */
 
+#define IO_REPARSE_TAG_RESERVED_ZERO 0x00000000
 #define IO_REPARSE_TAG_SYMLINK	     0xA000000C
 #define IO_REPARSE_TAG_MOUNT_POINT   0xA0000003
 #define IO_REPARSE_TAG_HSM           0xC0000004
