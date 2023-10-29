@@ -18,10 +18,10 @@ static const char utf8[] = { 0x6b, 0x61, 0x6d, 0x65, 0x6c, 0xc3, 0xa5,
 			     0xc3, 0xb2, 0x00 };
 
 /* purely for convenience */
-static int fl_ascii_null = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM;
-static int fl_ascii_noterm = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING;
-static int fl_utf8_null = LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM;
-static int fl_raw8_null = LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM;
+static const int fl_ascii_null = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM;
+static const int fl_ascii_noterm = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING;
+static const int fl_utf8_null = LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM;
+static const int fl_raw8_null = LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM;
 
 static bool
 test_ndr_push_string (struct torture_context *tctx, const char *string,
