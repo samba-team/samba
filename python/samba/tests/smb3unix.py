@@ -233,9 +233,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 fname = 'testfile%04o' % perm
                 test_files[fname] = perm
                 f,_,cc_out = c.create_ex('\\%s' % fname,
-                                DesiredAccess=security.SEC_STD_ALL,
+                                DesiredAccess=security.SEC_FILE_ALL,
                                 CreateDisposition=libsmb.FILE_CREATE,
                                 CreateContexts=[posix_context(perm)])
+                if perm & 0o200 == 0o200:
+                    c.write(f, buffer=b"data", offset=0)
                 c.close(f)
 
                 dname = 'testdir%04o' % perm
@@ -248,13 +250,33 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 c.close(f)
 
             res = c.list("", info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
-            found_files = {get_string(i['name']): i['perms'] for i in res}
-            for fname, perm in test_files.items():
+
+            found_files = {get_string(i['name']): i for i in res}
+            for fname,perm in test_files.items():
                 self.assertIn(get_string(fname), found_files.keys(),
                               'Test file not found')
-                self.assertEqual(test_files[fname], found_files[fname],
+                self.assertEqual(test_files[fname], found_files[fname]['perms'],
                                  'Requested %04o, Received %04o' % \
-                                         (test_files[fname], found_files[fname]))
+                                         (test_files[fname], found_files[fname]['perms']))
+
+                self.assertEqual(found_files[fname]['reparse_tag'],
+                                 libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
+                self.assertEqual(found_files[fname]['perms'], perm)
+                self.assertEqual(found_files[fname]['owner_sid'],
+                                 self.samsid + "-1000")
+                self.assertTrue(found_files[fname]['group_sid'].startswith("S-1-22-2-"))
+
+                if fname.startswith("testfile"):
+                    self.assertEqual(found_files[fname]['nlink'], 1)
+                    self.assertEqual(found_files[fname]['size'], 4)
+                    self.assertEqual(found_files[fname]['allocaction_size'],
+                                     4096)
+                    self.assertEqual(found_files[fname]['attrib'],
+                                     libsmb.FILE_ATTRIBUTE_ARCHIVE)
+                else:
+                    self.assertEqual(found_files[fname]['nlink'], 2)
+                    self.assertEqual(found_files[fname]['attrib'],
+                                     libsmb.FILE_ATTRIBUTE_DIRECTORY)
 
         finally:
             if len(test_files) > 0:
