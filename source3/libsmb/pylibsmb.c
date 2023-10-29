@@ -1892,12 +1892,10 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 	size = PyLong_FromUnsignedLongLong(finfo->size);
 	/*
 	 * Build a dictionary representing the file info.
-	 * Note: Windows does not always return short_name (so it may be None)
 	 */
-	file = Py_BuildValue("{s:s,s:i,s:s,s:O,s:l,s:i,s:i,s:i,s:s,s:s}",
+	file = Py_BuildValue("{s:s,s:i,s:O,s:l,s:i,s:i,s:i,s:s,s:s}",
 			     "name", finfo->name,
 			     "attrib", (int)finfo->attr,
-			     "short_name", finfo->short_name,
 			     "size", size,
 			     "mtime",
 			     convert_timespec_to_time_t(finfo->mtime_ts),
