@@ -109,7 +109,6 @@ struct file_info {
 	struct timespec ctime_ts;
 	char *name;
 	char *short_name;
-	uint32_t mode;
 	uint32_t reparse_tag;
 	dev_t st_ex_dev;
 	mode_t st_ex_mode;

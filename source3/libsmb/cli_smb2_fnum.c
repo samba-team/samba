@@ -1266,7 +1266,7 @@ static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
 	finfo->ctime_ts = interpret_long_date(info.change_time);
 	finfo->allocated_size = info.allocation_size;
 	finfo->size = info.end_of_file;
-	finfo->mode = info.file_attributes;
+	finfo->attr = info.file_attributes;
 	finfo->ino = info.inode;
 	finfo->st_ex_dev = info.device;
 	finfo->st_ex_nlink = info.cc.nlinks;

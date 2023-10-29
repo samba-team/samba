@@ -1891,9 +1891,9 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 	/*
 	 * Build a dictionary representing the file info.
 	 */
-	file = Py_BuildValue("{s:s,s:i,s:K,s:l,s:i,s:i,s:i,s:s,s:s}",
+	file = Py_BuildValue("{s:s,s:I,s:K,s:l,s:i,s:i,s:i,s:s,s:s}",
 			     "name", finfo->name,
-			     "attrib", (int)finfo->attr,
+			     "attrib", finfo->attr,
 			     "size", finfo->size,
 			     "mtime",
 			     convert_timespec_to_time_t(finfo->mtime_ts),
