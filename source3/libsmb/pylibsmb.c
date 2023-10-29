@@ -2006,7 +2006,6 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 			   const char *base_dir, const char *user_mask,
 			   uint16_t attribute,
 			   unsigned int info_level,
-			   bool posix,
 			   NTSTATUS (*callback_fn)(struct file_info *,
 						   const char *, void *),
 			   void *priv)
@@ -2032,7 +2031,7 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 	dos_format(mask);
 
 	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
-			    info_level, posix);
+			    info_level);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2062,18 +2061,17 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	char *user_mask = NULL;
 	unsigned int attribute = LIST_ATTRIBUTE_MASK;
 	unsigned int info_level = 0;
-	bool posix = false;
 	NTSTATUS status;
 	enum protocol_types proto = smbXcli_conn_protocol(self->cli->conn);
 	PyObject *result = NULL;
-	const char *kwlist[] = { "directory", "mask", "attribs", "posix",
+	const char *kwlist[] = { "directory", "mask", "attribs",
 				 "info_level", NULL };
 	NTSTATUS (*callback_fn)(struct file_info *, const char *, void *) =
 		&list_helper;
 
-	if (!ParseTupleAndKeywords(args, kwds, "z|sIpI:list", kwlist,
+	if (!ParseTupleAndKeywords(args, kwds, "z|sII:list", kwlist,
 				   &base_dir, &user_mask, &attribute,
-				   &posix, &info_level)) {
+				   &info_level)) {
 		return NULL;
 	}
 
@@ -2090,11 +2088,11 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 		}
 	}
 
-	if (posix) {
+	if (info_level == SMB2_FIND_POSIX_INFORMATION) {
 		callback_fn = &list_posix_helper;
 	}
 	status = do_listing(self, base_dir, user_mask, attribute,
-			    info_level, posix, callback_fn, result);
+			    info_level, callback_fn, result);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		Py_XDECREF(result);

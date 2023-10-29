@@ -119,8 +119,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.assertNotEqual(expected_count, 0, 'No files were found')
 
             actual_count = len(c.list('',
-                                info_level=libsmb.SMB2_FIND_POSIX_INFORMATION,
-                                posix=True))
+                                info_level=libsmb.SMB2_FIND_POSIX_INFORMATION))
             self.assertEqual(actual_count-2, expected_count,
                              'SMB2_FIND_POSIX_INFORMATION failed to list contents')
 
@@ -239,7 +238,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                                 CreateContexts=[posix_context(perm)])
                 c.close(f)
 
-            res = c.list("", info_level=libsmb.SMB2_FIND_POSIX_INFORMATION, posix=True)
+            res = c.list("", info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
             found_files = {get_string(i['name']): i['perms'] for i in res}
             for fname, perm in test_files.items():
                 self.assertIn(get_string(fname), found_files.keys(),
@@ -262,7 +261,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             posix=True)
         self.assertTrue(c.have_posix())
 
-        res = c.list("", info_level=libsmb.SMB2_FIND_POSIX_INFORMATION, posix=True)
+        res = c.list("", info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
         found_files = {get_string(i['name']): i for i in res}
         dotdot = found_files['..']
         self.assertEqual('S-1-0-0', dotdot['owner_sid'],

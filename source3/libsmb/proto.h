@@ -772,8 +772,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 struct cli_state *cli,
 				 const char *mask,
 				 uint32_t attribute,
-				 uint16_t info_level,
-				 bool posix);
+				 uint16_t info_level);
 NTSTATUS cli_list_recv(
 	struct tevent_req *req,
 	TALLOC_CTX *mem_ctx,

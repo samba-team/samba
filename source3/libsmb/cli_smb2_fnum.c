@@ -1453,8 +1453,7 @@ struct tevent_req *cli_smb2_list_send(
 	struct tevent_context *ev,
 	struct cli_state *cli,
 	const char *pathname,
-	unsigned int info_level,
-	bool posix)
+	unsigned int info_level)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_smb2_list_state *state = NULL;
@@ -1477,7 +1476,9 @@ struct tevent_req *cli_smb2_list_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (smbXcli_conn_have_posix(cli->conn) && posix) {
+	if (smbXcli_conn_have_posix(cli->conn) &&
+		info_level == SMB2_FIND_POSIX_INFORMATION)
+	{
 		NTSTATUS status;
 
 		/* The mode MUST be 0 when opening an existing file/dir, and
