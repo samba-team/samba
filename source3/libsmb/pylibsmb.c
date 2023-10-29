@@ -1886,17 +1886,15 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 {
 	PyObject *result = (PyObject *)state;
 	PyObject *file = NULL;
-	PyObject *size = NULL;
 	int ret;
 
-	size = PyLong_FromUnsignedLongLong(finfo->size);
 	/*
 	 * Build a dictionary representing the file info.
 	 */
-	file = Py_BuildValue("{s:s,s:i,s:O,s:l,s:i,s:i,s:i,s:s,s:s}",
+	file = Py_BuildValue("{s:s,s:i,s:K,s:l,s:i,s:i,s:i,s:s,s:s}",
 			     "name", finfo->name,
 			     "attrib", (int)finfo->attr,
-			     "size", size,
+			     "size", finfo->size,
 			     "mtime",
 			     convert_timespec_to_time_t(finfo->mtime_ts),
 			     "perms", finfo->st_ex_mode,
@@ -1906,9 +1904,6 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 			     dom_sid_string(finfo, &finfo->owner_sid),
 			     "group_sid",
 			     dom_sid_string(finfo, &finfo->group_sid));
-
-	Py_CLEAR(size);
-
 	if (file == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
