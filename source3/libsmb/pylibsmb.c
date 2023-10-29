@@ -1891,15 +1891,32 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 	/*
 	 * Build a dictionary representing the file info.
 	 */
-	file = Py_BuildValue("{s:s,s:I,s:K,s:l,s:i,s:i,s:i,s:s,s:s}",
+	file = Py_BuildValue("{s:s,s:I,"
+			     "s:K,s:K,"
+			     "s:l,s:l,s:l,s:l,"
+			     "s:i,s:K,s:i,s:i,s:I,"
+			     "s:s,s:s}",
 			     "name", finfo->name,
 			     "attrib", finfo->attr,
+
 			     "size", finfo->size,
+			     "allocaction_size", finfo->allocated_size,
+
+			     "btime",
+			     convert_timespec_to_time_t(finfo->btime_ts),
+			     "atime",
+			     convert_timespec_to_time_t(finfo->atime_ts),
 			     "mtime",
 			     convert_timespec_to_time_t(finfo->mtime_ts),
+			     "ctime",
+			     convert_timespec_to_time_t(finfo->ctime_ts),
+
 			     "perms", finfo->st_ex_mode,
 			     "ino", finfo->ino,
 			     "dev", finfo->st_ex_dev,
+			     "nlink", finfo->st_ex_nlink,
+			     "reparse_tag", finfo->reparse_tag,
+
 			     "owner_sid",
 			     dom_sid_string(finfo, &finfo->owner_sid),
 			     "group_sid",
