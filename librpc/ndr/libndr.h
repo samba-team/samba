@@ -52,9 +52,9 @@ struct ndr_compression_state;
  * If you’re considering changing the size of this type, see also
  * $scalar_alignment in pidl/lib/Parse/Pidl/NDR.pm.
  */
-typedef uint32_t libndr_flags;
-#define PRI_LIBNDR_FLAGS PRIx32
-#define PRI_LIBNDR_FLAGS_DECIMAL PRIu32
+typedef uint64_t libndr_flags;
+#define PRI_LIBNDR_FLAGS PRIx64
+#define PRI_LIBNDR_FLAGS_DECIMAL PRIu64
 
 /*
 * If you’re considering changing the size of this type, see also
