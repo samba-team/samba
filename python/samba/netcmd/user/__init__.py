@@ -21,6 +21,7 @@ from samba.netcmd import SuperCommand
 
 from .add import cmd_user_add
 from .add_unix_attrs import cmd_user_add_unix_attrs
+from .auth import cmd_user_auth
 from .delete import cmd_user_delete
 from .disable import cmd_user_disable
 from .edit import cmd_user_edit
@@ -43,6 +44,7 @@ class cmd_user(SuperCommand):
     """User management."""
 
     subcommands = {}
+    subcommands["auth"] = cmd_user_auth()
     subcommands["add"] = cmd_user_add()
     subcommands["create"] = cmd_user_add()
     subcommands["delete"] = cmd_user_delete()
