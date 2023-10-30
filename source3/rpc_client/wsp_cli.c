@@ -810,7 +810,7 @@ static bool convert_variant_array_to_vector(TALLOC_CTX *ctx,
 		struct wsp_cbasestoragevariant **variant_array,
 		struct wsp_cbasestoragevariant *outval)
 {
-	int i;
+	uint64_t i;
 	uint16_t vtype;
 	union variant_types vvalue = {0};
 	vtype = variant_array[0]->vtype;
@@ -1309,7 +1309,7 @@ enum ndr_err_code extract_rowsarray(
 			uint32_t rows,
 			struct wsp_cbasestoragevariant **rowsarray)
 {
-	int i;
+	uint32_t i;
 	enum ndr_err_code err  = NDR_ERR_SUCCESS;
 
 	for (i = 0; i < rows; i++ ) {
