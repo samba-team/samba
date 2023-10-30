@@ -42,6 +42,15 @@ in a package may locate other dependencies we no longer require.
 REMOVED FEATURES
 ================
 
+Get locally logged on users from utmp
+-------------------------------------
+
+The Workstation Service Remote Protocol [MS-WKST] calls NetWkstaGetInfo
+level 102 and NetWkstaEnumUsers level 0 and 1 return the list of locally
+logged on users. Samba was getting the list from utmp, which is not
+Y2038 safe. This feature has been completely removed and Samba will
+always return an empty list.
+
 
 smb.conf changes
 ================
