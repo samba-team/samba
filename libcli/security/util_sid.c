@@ -444,16 +444,10 @@ NTSTATUS add_sid_to_array_attrs_unique(TALLOC_CTX *mem_ctx,
 				       const struct dom_sid *sid, uint32_t attrs,
 				       struct auth_SidAttr **sids, uint32_t *num_sids)
 {
-	uint32_t i;
+	bool contains;
 
-	for (i=0; i<(*num_sids); i++) {
-		if (attrs != (*sids)[i].attrs) {
-			continue;
-		}
-		if (!dom_sid_equal(sid, &(*sids)[i].sid)) {
-			continue;
-		}
-
+	contains = sids_contains_sid_attrs(*sids, *num_sids, sid, attrs);
+	if (contains) {
 		return NT_STATUS_OK;
 	}
 
