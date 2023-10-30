@@ -437,7 +437,7 @@ NTSTATUS add_sid_to_array_attrs(TALLOC_CTX *mem_ctx,
  * @param [in] sid	The SID to append.
  * @param [in] attrs	SE_GROUP_* flags to go with the SID.
  * @param [inout] sids	A pointer to the auth_SidAttr array.
- * @param [inout] num	A pointer to the size of the auth_SidArray array.
+ * @param [inout] num_sids	A pointer to the size of the auth_SidArray array.
  * @returns NT_STATUS_OK on success.
  */
 NTSTATUS add_sid_to_array_attrs_unique(TALLOC_CTX *mem_ctx,
