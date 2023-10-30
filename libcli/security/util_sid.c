@@ -533,6 +533,28 @@ bool sids_contains_sid(const struct dom_sid *sids,
 }
 
 /**
+ * Return true if an array of auth_SidAttr contains a certain SID.
+ *
+ * @param [in] sids	The auth_SidAttr array.
+ * @param [in] num_sids	The size of the auth_SidArray array.
+ * @param [in] sid	The SID in question.
+ * @returns true if the array contains the SID.
+ */
+bool sid_attrs_contains_sid(const struct auth_SidAttr *sids,
+			    const uint32_t num_sids,
+			    const struct dom_sid *sid)
+{
+	uint32_t i;
+
+	for (i = 0; i < num_sids; i++) {
+		if (dom_sid_equal(&sids[i].sid, sid)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Return true if an array of auth_SidAttr contains a certain SID with certain
  * attributes.
  *

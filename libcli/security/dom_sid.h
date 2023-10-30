@@ -144,6 +144,9 @@ bool is_null_sid(const struct dom_sid *sid);
 bool sids_contains_sid(const struct dom_sid *sids,
 		       const uint32_t num_sids,
 		       const struct dom_sid *sid);
+bool sid_attrs_contains_sid(const struct auth_SidAttr *sids,
+			    const uint32_t num_sids,
+			    const struct dom_sid *sid);
 bool sids_contains_sid_attrs(const struct auth_SidAttr *sids,
 			     const uint32_t num_sids,
 			     const struct dom_sid *sid,
