@@ -28,6 +28,7 @@ from .model import Model
 
 class User(Model):
     username = StringField("sAMAccountName")
+    assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
 
     @staticmethod
