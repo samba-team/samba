@@ -350,7 +350,6 @@ static NTSTATUS create_getrows(TALLOC_CTX *ctx,
 	uint32_t INITIAL_ROWS = 32;
 	uint32_t requested_rows = INITIAL_ROWS;
 	uint32_t rows_printed;
-	uint32_t current_row = 0;
 	TALLOC_CTX *row_ctx;
 	bool loop_again;
 
@@ -426,7 +425,6 @@ static NTSTATUS create_getrows(TALLOC_CTX *ctx,
 			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
-			current_row += rows_printed;
 			data_blob_free(&unread);
 		}
 
