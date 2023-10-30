@@ -163,8 +163,8 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 		}
 
 		/* This is an O(n^2) linear search */
-		already_there = sids_contains_sid(*res_sids, *num_res_sids,
-						  &sid, sid_attrs);
+		already_there = sids_contains_sid_attrs(*res_sids, *num_res_sids,
+							&sid, sid_attrs);
 		if (already_there) {
 			talloc_free(tmp_ctx);
 			return NT_STATUS_OK;
