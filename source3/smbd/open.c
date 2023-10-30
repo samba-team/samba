@@ -4414,7 +4414,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		/* Overwritten files should be initially set as archive */
 		if ((info == FILE_WAS_OVERWRITTEN && lp_map_archive(SNUM(conn))) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
-			(void)fdos_mode(fsp);
 			if (!posix_open) {
 				if (file_set_dosmode(conn, smb_fname,
 					    new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
