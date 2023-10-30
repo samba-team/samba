@@ -487,8 +487,6 @@ void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids,
 	for ( ; i<*num; i++ ) {
 		sid_copy( &sid_list[i], &sid_list[i+1] );
 	}
-
-	return;
 }
 
 bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
