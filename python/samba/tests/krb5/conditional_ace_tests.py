@@ -2680,10 +2680,14 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
         }
 
+        expected_groups = client_sids | {
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
         self._tgs(f'Member_of SID({self.aa_asserted_identity})',
                   client_from_rodc=True,
                   client_sids=client_sids,
-                  expected_groups=client_sids)
+                  expected_groups=expected_groups)
 
     def test_tgs_with_aa_asserted_identity_device_from_rodc(self):
         client_sids = {
@@ -2705,11 +2709,15 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             (self.aa_asserted_identity, SidType.EXTRA_SID, self.default_attrs),
         }
 
+        expected_groups = client_sids | {
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
         self._tgs(f'Member_of SID({self.aa_asserted_identity})',
                   client_from_rodc=True,
                   device_from_rodc=True,
                   client_sids=client_sids,
-                  expected_groups=client_sids,
+                  expected_groups=expected_groups,
                   code=(0, CRASHES_WINDOWS))
 
     def test_tgs_without_service_asserted_identity(self):
@@ -2849,14 +2857,15 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
         }
 
+        expected_groups = client_sids | {
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
         self._tgs(f'Member_of SID({security.SID_CLAIMS_VALID})',
                   client_from_rodc=True,
                   client_sids=client_sids,
-                  code=KDC_ERR_POLICY,
-                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
-                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
-                  reason=AuditReason.ACCESS_DENIED,
-                  edata=self.expect_padata_outer)
+                  expected_groups=expected_groups,
+                  code=0)
 
     def test_tgs_without_claims_valid_device_from_rodc(self):
         client_sids = {
@@ -2879,15 +2888,16 @@ class ConditionalAceTests(ConditionalAceBaseTests):
             (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
         }
 
+        expected_groups = client_sids | {
+            (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, self.default_attrs),
+        }
+
         self._tgs(f'Member_of SID({security.SID_CLAIMS_VALID})',
                   client_from_rodc=True,
                   device_from_rodc=True,
                   client_sids=client_sids,
-                  code=(KDC_ERR_POLICY, CRASHES_WINDOWS),
-                  status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
-                  event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
-                  reason=AuditReason.ACCESS_DENIED,
-                  edata=self.expect_padata_outer)
+                  expected_groups=expected_groups,
+                  code=(0, CRASHES_WINDOWS))
 
     def test_tgs_with_claims_valid(self):
         client_sids = {

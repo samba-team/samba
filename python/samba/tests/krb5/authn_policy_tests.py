@@ -4432,16 +4432,11 @@ class AuthnPolicyTests(AuthnPolicyBaseTests):
         target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
                                        assigned_policy=policy)
 
-        # Show that obtaining a service ticket is not allowed.
-        self._tgs_req(tgt, KDC_ERR_POLICY, client_creds, target_creds,
+        # Show that obtaining a service ticket is allowed.
+        self._tgs_req(tgt, 0, client_creds, target_creds,
                       armor_tgt=mach_tgt)
 
-        self.check_tgs_log(
-            client_creds, target_creds,
-            policy=policy,
-            status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
-            event=AuditEvent.KERBEROS_SERVER_RESTRICTION,
-            reason=AuditReason.ACCESS_DENIED)
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_authn_policy_allowed_to_computer_allow_compounded_authn_from_rodc(self):
         # Create a machine account with which to perform FAST.
