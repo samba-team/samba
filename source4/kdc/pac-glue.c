@@ -1161,6 +1161,60 @@ krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+/*
+ * Check whether a PAC contains the Authentication Authority Asserted Identity
+ * SID.
+ */
+static krb5_error_code samba_kdc_pac_contains_asserted_identity(
+	krb5_context context,
+	const struct samba_kdc_entry_pac entry,
+	bool *contains_out)
+{
+	TALLOC_CTX *frame = NULL;
+	struct auth_user_info_dc *info = NULL;
+	krb5_error_code ret = 0;
+
+	if (contains_out == NULL) {
+		ret = EINVAL;
+		goto out;
+	}
+	*contains_out = false;
+
+	frame = talloc_stackframe();
+
+	/*
+	 * Extract our info from the PAC. This does a bit of unnecessary work,
+	 * setting up fields we don’t care about — we only want the SIDs.
+	 */
+	ret = kerberos_pac_to_user_info_dc(frame,
+					   entry.pac,
+					   context,
+					   &info,
+					   AUTH_EXCLUDE_RESOURCE_GROUPS,
+					   NULL /* pac_srv_sig */,
+					   NULL /* pac_kdc_sig */,
+					   /* Ignore the resource groups. */
+					   NULL /* resource_groups */);
+	if (ret) {
+		const char *krb5err = krb5_get_error_message(context, ret);
+		DBG_ERR("kerberos_pac_to_user_info_dc failed: %s\n",
+			krb5err != NULL ? krb5err : "?");
+		krb5_free_error_message(context, krb5err);
+
+		goto out;
+	}
+
+	/* Determine whether the PAC contains the Asserted Identity SID. */
+	*contains_out = sid_attrs_contains_sid(
+		info->sids,
+		info->num_sids,
+		&global_sid_Asserted_Identity_Authentication_Authority);
+
+out:
+	talloc_free(frame);
+	return ret;
+}
+
 static krb5_error_code samba_kdc_get_user_info_from_pac(TALLOC_CTX *mem_ctx,
 							krb5_context context,
 							struct ldb_context *samdb,
@@ -1266,6 +1320,7 @@ krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 {
 	const struct auth_user_info_dc *info = NULL;
 	struct auth_user_info_dc *info_shallow_copy = NULL;
+	bool pac_contains_asserted_identity = false;
 	krb5_error_code ret = 0;
 	NTSTATUS nt_status;
 
@@ -1323,13 +1378,23 @@ krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 		return map_errno_from_nt_status(nt_status);
 	}
 
-	nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
-						    info_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add asserted identity: %s\n",
-			nt_errstr(nt_status));
-		TALLOC_FREE(info_shallow_copy);
-		return KRB5KDC_ERR_TGT_REVOKED;
+	/* Determine whether the PAC contains the Asserted Identity SID. */
+	ret = samba_kdc_pac_contains_asserted_identity(
+		context, entry, &pac_contains_asserted_identity);
+	if (ret) {
+		return ret;
+	}
+
+	if (pac_contains_asserted_identity) {
+		nt_status = samba_kdc_add_asserted_identity(
+			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+			info_shallow_copy);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add asserted identity: %s\n",
+				nt_errstr(nt_status));
+			TALLOC_FREE(info_shallow_copy);
+			return KRB5KDC_ERR_TGT_REVOKED;
+		}
 	}
 
 	nt_status = samba_kdc_add_claims_valid(info_shallow_copy);
