@@ -517,6 +517,36 @@ bool is_null_sid(const struct dom_sid *sid)
 	return dom_sid_equal(sid, &null_sid);
 }
 
+/**
+ * Return true if an array of auth_SidAttr contains a certain SID with certain
+ * attributes.
+ *
+ * @param [in] sids	The auth_SidAttr array.
+ * @param [in] num_sids	The size of the auth_SidArray array.
+ * @param [in] sid	The SID in question.
+ * @param [in] attrs	The attributes of the SID.
+ * @returns true if the array contains the SID.
+ */
+bool sids_contains_sid(const struct auth_SidAttr *sids,
+		       const uint32_t num_sids,
+		       const struct dom_sid *sid,
+		       uint32_t attrs)
+{
+	uint32_t i;
+
+	for (i = 0; i < num_sids; i++) {
+		if (attrs != sids[i].attrs) {
+			continue;
+		}
+		if (!dom_sid_equal(&sids[i].sid, sid)) {
+			continue;
+		}
+
+		return true;
+	}
+	return false;
+}
+
 /*
  * See [MS-LSAT] 3.1.1.1.1 Predefined Translation Database and Corresponding View
  */
