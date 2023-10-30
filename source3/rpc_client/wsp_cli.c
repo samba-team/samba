@@ -981,7 +981,7 @@ static enum ndr_err_code extract_variant_addresses(TALLOC_CTX *ctx,
 		vec_address[0] = addr;
 	} else {
 		uint64_t array_addr = addr;
-		int i;
+		uint64_t i;
 		for (i = 0; i < count; i++) {
 			if (is_64bit) {
 				vec_address[i] =
