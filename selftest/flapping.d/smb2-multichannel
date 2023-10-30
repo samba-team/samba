@@ -1,0 +1,3 @@
+# https://bugzilla.samba.org/show_bug.cgi?id=15498
+# This test often times out in CI.
+^samba3\.smb2\.multichannel\.bugs\.bug_15346\(nt4_dc\)$
