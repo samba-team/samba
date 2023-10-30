@@ -137,6 +137,8 @@ class GroupType(Enum):
 
 # This simple class encapsulates the DN and SID of a Principal.
 class Principal:
+    __slots__ = ['dn', 'sid']
+
     def __init__(self, dn, sid):
         if dn is not None and not isinstance(dn, ldb.Dn):
             raise AssertionError(f'expected {dn} to be an ldb.Dn')
