@@ -1445,7 +1445,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_c
 static NTSTATUS dcesrv_lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct lsa_CreateTrustedDomain *r)
 {
-	struct lsa_CreateTrustedDomainEx2 r2;
+	struct lsa_CreateTrustedDomainEx2 r2 = {};
 
 	r2.in.policy_handle = r->in.policy_handle;
 	r2.in.info = talloc(mem_ctx, struct lsa_TrustDomainInfoInfoEx);
