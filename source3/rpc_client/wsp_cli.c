@@ -1413,6 +1413,7 @@ static bool process_query_node(TALLOC_CTX *ctx,
 			break;
 		case eVALUE:
 			process_value_node(ctx, crestriction, node);
+			break;
 		default:
 			break;
 	}
