@@ -337,6 +337,11 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
+	if (pac == NULL) {
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
 	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_LOGON_INFO, &k5pac_logon_info_in);
 	if (ret != 0) {
 		talloc_free(tmp_ctx);
