@@ -1170,7 +1170,7 @@ static enum ndr_err_code process_columns(TALLOC_CTX *ctx,
 	enum ndr_err_code err  = NDR_ERR_SUCCESS;
 	struct ndr_pull *ndr_pull = NULL;
 	ndr_flags_type ndr_flags = NDR_SCALARS | NDR_BUFFERS;
-	uint64_t nrow_offset = nrow * bindingin->brow;
+	uint64_t nrow_offset = (uint64_t)nrow * bindingin->brow;
 
 	if (nrow_offset >= rows_buf->length) {
 		DBG_ERR("offset %"PRIu64" outside buffer range (buf len - %zu)\n",
