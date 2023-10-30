@@ -125,6 +125,10 @@
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_and_one_uint_2_0_1___zero_and_one_uint_\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_int_1_0___zero_int_\(ad_dc\)
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_uint_2_0___zero_uint_\(ad_dc\)
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_cmp___contains_literal__\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_cmp___does_not_contain_literal__\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_cmp_foo_contains_literal__\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_cmp_foo_does_not_equal_literal__\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_delegating_proxy_in_network_group_rbcd\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_device_in_network_group_rbcd\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.DeviceRestrictionTests\.test_device_in_network_group\(ad_dc\)$

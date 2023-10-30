@@ -1035,13 +1035,18 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         # String comparisons also work against literals.
         ('foo bar', '==', '"foo bar"', True),
         # Composites can be compared with literals.
+        ((), '==', '{{}}', None),
+        ('foo', '!=', '{{}}', True),
         ('bar', '==', '{{"bar"}}', True),
         (('apple', 'banana'), '==', '{{"APPLE", "BANANA"}}', True),
         (('apple', 'banana'), '==', '{{"BANANA", "APPLE"}}', True),
         (('apple', 'banana'), '==', '{{"apple", "banana", "apple"}}', False),
         # We can test for containment.
+        ((), 'Contains', '{{}}', False),
+        ((), 'Not_Contains', '{{}}', True),
         ((), 'Contains', '{{"foo"}}', None),
         ((), 'Not_Contains', '{{"foo", "bar"}}', None),
+        ('foo', 'Contains', '{{}}', False),
         ('bar', 'Contains', '{{"bar"}}', True),
         (('foo', 'bar'), 'Contains', '{{"foo", "bar"}}', True),
         (('foo', 'bar'), 'Contains', '{{"foo", "bar", "baz"}}', False),
@@ -1052,6 +1057,10 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         # It’s fine if the right‐hand side contains duplicate elements.
         (('foo', 'bar'), 'Contains', '{{"foo", "bar", "bar"}}', True),
         # We can test whether the operands have any elements in common.
+        ((), 'Any_of', '{{}}', None),
+        ((), 'Not_Any_of', '{{}}', None),
+        ('foo', 'Any_of', '{{}}', False),
+        ('foo', 'Not_Any_of', '{{}}', True),
         ('bar', 'Any_of', '{{"bar"}}', True),
         (('foo', 'bar'), 'Any_of', '{{"bar", "baz"}}', True),
         (('foo', 'bar'), 'Any_of', '{{"baz"}}', False),
