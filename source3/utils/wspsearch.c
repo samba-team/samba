@@ -429,7 +429,7 @@ static NTSTATUS create_getrows(TALLOC_CTX *ctx,
 		}
 
 		/*
-		 * response is a talloc child of row_ctz so we need to
+		 * response is a talloc child of row_ctx so we need to
 		 * assign loop_again before we delete row_ctx
 		 */
 		loop_again = response->message.cpmgetrows.rowsreturned;
