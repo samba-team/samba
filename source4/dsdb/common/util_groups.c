@@ -32,7 +32,7 @@ static bool sids_contains_sid(const struct auth_SidAttr *sids,
 			      const struct dom_sid *sid,
 			      uint32_t attrs)
 {
-	unsigned int i;
+	uint32_t i;
 
 	for (i = 0; i < num_sids; i++) {
 		if (attrs != sids[i].attrs) {
