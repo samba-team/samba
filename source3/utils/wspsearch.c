@@ -591,10 +591,16 @@ int main(int argc, char **argv)
 	struct dcerpc_binding_handle *h = NULL;
 	struct cli_state *c = NULL;
 	uint32_t flags = CLI_FULL_CONNECTION_IPC;
+	bool ok;
 
-	samba_cmdline_init(frame,
-			   SAMBA_CMDLINE_CONFIG_CLIENT,
-			   false /* require_smbconf */);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to set up cmdline parser\n");
+		result = -1;
+		goto out;
+	}
 
 	pc = samba_popt_get_context("wspsearch",
 			argc,
