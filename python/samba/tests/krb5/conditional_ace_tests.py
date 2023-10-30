@@ -3062,8 +3062,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         self._tgs(f'Member_of SID({security.SID_CLAIMS_VALID})',
                   client_from_rodc=True,
                   client_sids=client_sids,
-                  expected_groups=expected_groups,
-                  code=0)
+                  expected_groups=expected_groups)
 
     def test_tgs_without_claims_valid_device_from_rodc(self):
         client_sids = {
