@@ -1332,6 +1332,14 @@ krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
+	nt_status = samba_kdc_add_claims_valid(info_shallow_copy);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add Claims Valid: %s\n",
+			nt_errstr(nt_status));
+		TALLOC_FREE(info_shallow_copy);
+		return KRB5KDC_ERR_TGT_REVOKED;
+	}
+
 	*info_out = info_shallow_copy;
 
 	return 0;
