@@ -618,7 +618,7 @@ int main(int argc, char **argv)
 	}
 
 	path = talloc_strdup(talloc_tos(), poptGetArg(pc));
-	if (!path || limit < 0) {
+	if (!path) {
 		DBG_ERR("Invalid argument\n");
 		result = -1;
 		goto out;
