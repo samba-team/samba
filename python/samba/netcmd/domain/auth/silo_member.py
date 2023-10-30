@@ -69,13 +69,9 @@ class cmd_domain_auth_silo_member_add(Command):
         if user is None:
             raise CommandError(f"User '{member}' not found.")
 
-        # Set the assigned silo.
-        user.assigned_silo = silo.dn
-
-        # Add member and save user.
+        # Add member.
         try:
             silo.add_member(ldb, user)
-            user.save(ldb)
         except ModelError as e:
             raise CommandError(e)
 
@@ -172,13 +168,9 @@ class cmd_domain_auth_silo_member_remove(Command):
         if user is None:
             raise CommandError(f"User '{member}' not found.")
 
-        # Unset the assigned silo.
-        user.assigned_silo = None
-
-        # Remove member and save user.
+        # Remove member.
         try:
             silo.remove_member(ldb, user)
-            user.save(ldb)
         except ModelError as e:
             raise CommandError(e)
 
