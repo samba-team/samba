@@ -3728,6 +3728,45 @@ static void open_ntcreate_lock_cleanup_entry(struct share_mode_lock *lck,
 	}
 }
 
+static void possibly_set_archive(struct connection_struct *conn,
+				 struct files_struct *fsp,
+				 struct smb_filename *smb_fname,
+				 struct smb_filename *parent_dir_fname,
+				 int info,
+				 uint32_t dosattrs,
+				 mode_t *unx_mode)
+{
+	bool set_archive = false;
+	int ret;
+
+	if (info == FILE_WAS_OPENED) {
+		return;
+	}
+
+	/* Overwritten files should be initially set as archive */
+	if ((info == FILE_WAS_OVERWRITTEN && lp_map_archive(SNUM(conn)))) {
+		set_archive = true;
+	} else if (lp_store_dos_attributes(SNUM(conn))) {
+		set_archive = true;
+	}
+	if (!set_archive) {
+		return;
+	}
+	if (fsp->fsp_flags & FSP_POSIX_FLAGS_OPEN) {
+		return;
+	}
+
+	ret = file_set_dosmode(conn,
+			       smb_fname,
+			       dosattrs | FILE_ATTRIBUTE_ARCHIVE,
+			       parent_dir_fname,
+			       true);
+	if (ret != 0) {
+		return;
+	}
+	*unx_mode = smb_fname->st.st_ex_mode;
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -4410,19 +4449,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->fsp_flags.initial_delete_on_close = true;
 	}
 
-	if (info != FILE_WAS_OPENED) {
-		/* Overwritten files should be initially set as archive */
-		if ((info == FILE_WAS_OVERWRITTEN && lp_map_archive(SNUM(conn))) ||
-		    lp_store_dos_attributes(SNUM(conn))) {
-			if (!posix_open) {
-				if (file_set_dosmode(conn, smb_fname,
-					    new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
-					    parent_dir_fname, true) == 0) {
-					unx_mode = smb_fname->st.st_ex_mode;
-				}
-			}
-		}
-	}
+	possibly_set_archive(conn,
+			     fsp,
+			     smb_fname,
+			     parent_dir_fname,
+			     info,
+			     new_dos_attributes,
+			     &smb_fname->st.st_ex_mode);
 
 	/* Determine sparse flag. */
 	if (posix_open) {
