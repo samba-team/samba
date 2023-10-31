@@ -56,13 +56,13 @@ pac_generate(void *ctx,
 static krb5_error_code KRB5_CALLCONV
 pac_verify(void *ctx,
 	   astgs_request_t r,
-	   const krb5_principal new_ticket_client,
-	   const krb5_principal delegation_proxy,
+	   krb5_const_principal new_ticket_client,
+	   hdb_entry * delegation_proxy,
 	   hdb_entry * client,
 	   hdb_entry * server,
 	   hdb_entry * krbtgt,
-	   krb5_pac pac,
-	   krb5_boolean *is_trusted)
+	   EncTicketPart *ticket,
+	   krb5_pac pac)
 {
     krb5_context context = kdc_request_get_context((kdc_request_t)r);
     krb5_error_code ret;

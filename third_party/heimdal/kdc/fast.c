@@ -426,12 +426,6 @@ _kdc_fast_mk_e_data(astgs_request_t r,
 	}
 
 	r->e_text = NULL;
-	if (r->fast.flags.requested_hidden_names) {
-	    error_client = NULL;
-	    error_server = NULL;
-	}
-	csec = 0;
-	cusec = 0;
 
 	ret = _kdc_fast_mk_response(r->context, armor_crypto,
 				    error_method, NULL, NULL,
@@ -488,8 +482,8 @@ _kdc_fast_mk_error(astgs_request_t r,
 
     heim_assert(r != NULL, "invalid request in _kdc_fast_mk_error");
 
-    if (r->e_data != NULL) {
-	e_data = r->e_data;
+    if (r->e_data.length) {
+	e_data = &r->e_data;
     } else {
 	ret = _kdc_fast_mk_e_data(r,
 				  error_method,
@@ -507,6 +501,15 @@ _kdc_fast_mk_error(astgs_request_t r,
 	}
 
 	e_data = &_e_data;
+    }
+
+    if (armor_crypto) {
+	if (r->fast.flags.requested_hidden_names) {
+	    error_client = NULL;
+	    error_server = NULL;
+	}
+	csec = 0;
+	cusec = 0;
     }
 
     ret = krb5_mk_error(r->context,

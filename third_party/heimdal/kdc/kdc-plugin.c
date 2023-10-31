@@ -530,6 +530,19 @@ kdc_request_add_pac_buffer(astgs_request_t r,
     return ret;
 }
 
+/*
+ * Override the e-data field to be returned in an error reply. The data will be
+ * owned by the KDC and eventually will be freed with krb5_data_free().
+ */
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
+kdc_request_set_e_data(astgs_request_t r, heim_octet_string e_data)
+{
+    krb5_data_free(&r->e_data);
+    r->e_data = e_data;
+
+    return 0;
+}
+
 #undef _KDC_REQUEST_GET_ACCESSOR
 #define _KDC_REQUEST_GET_ACCESSOR(R, T, f)		    \
     KDC_LIB_FUNCTION T KDC_LIB_CALL			    \

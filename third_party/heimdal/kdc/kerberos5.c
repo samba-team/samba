@@ -505,27 +505,6 @@ _kdc_set_e_text(astgs_request_t r, const char *fmt, ...)
     kdc_log(r->context, r->config, 4, "%s", e_text);
 }
 
-/*
- * Override the e-data field to be returned in an error reply. The data will be
- * owned by the KDC and eventually will be freed with krb5_data_free().
- */
-krb5_error_code
-kdc_set_e_data(astgs_request_t r, heim_octet_string e_data)
-{
-    if (r->e_data == NULL) {
-	ALLOC(r->e_data);
-	if (r->e_data == NULL) {
-	    return ENOMEM;
-	}
-    } else {
-	krb5_data_free(r->e_data);
-    }
-
-    *r->e_data = e_data;
-
-    return 0;
-}
-
 void
 _kdc_log_timestamp(astgs_request_t r, const char *type,
 		   KerberosTime authtime, KerberosTime *starttime,
