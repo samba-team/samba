@@ -221,9 +221,6 @@ NTSTATUS get_ea_names_from_fsp(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	/* should be the case that fsp != NULL */
-	SMB_ASSERT(fsp != NULL);
-
 	sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
 				     ea_namelist_size);
 
