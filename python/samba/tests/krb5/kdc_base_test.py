@@ -1488,16 +1488,17 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return mapped_sids
 
     def issued_by_rodc(self, ticket):
-        krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
+        rodc_krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
+        rodc_krbtgt_key = self.TicketDecryptionKey_from_creds(
+            rodc_krbtgt_creds)
 
-        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
         checksum_keys = {
-            krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: rodc_krbtgt_key,
         }
 
         return self.modified_ticket(
             ticket,
-            new_ticket_key=krbtgt_key,
+            new_ticket_key=rodc_krbtgt_key,
             checksum_keys=checksum_keys)
 
     def signed_by_rodc(self, ticket):
