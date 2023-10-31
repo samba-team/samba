@@ -3182,8 +3182,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *frame = NULL;
 	krb5_error_code code = 0;
 	NTSTATUS nt_status;
-	const struct auth_user_info_dc *device_info_const = NULL;
-	struct auth_user_info_dc *device_info_shallow_copy = NULL;
+	const struct auth_user_info_dc *device_info = NULL;
 	struct authn_audit_info *client_audit_info = NULL;
 	struct auth_claims auth_claims = {};
 
@@ -3227,37 +3226,10 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 					  context,
 					  samdb,
 					  device,
-					  &device_info_const,
+					  &device_info,
 					  NULL);
 	if (code) {
 		goto out;
-	}
-
-	if (!samba_krb5_pac_is_trusted(device)) {
-		/* Make a shallow copy of the user_info_dc structure. */
-		nt_status = authsam_shallow_copy_user_info_dc(frame,
-							      device_info_const,
-							      &device_info_shallow_copy);
-		device_info_const = NULL;
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("Failed to copy user_info_dc: %s\n",
-				nt_errstr(nt_status));
-
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			goto out;
-		}
-
-		nt_status = samba_kdc_add_claims_valid(device_info_shallow_copy);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("Failed to add Claims Valid: %s\n",
-				nt_errstr(nt_status));
-
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			goto out;
-		}
-		/* no more modification required so we can assign to const now */
-		device_info_const = device_info_shallow_copy;
 	}
 
 	/*
@@ -3276,7 +3248,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 	nt_status = authn_policy_authenticate_from_device(frame,
 							  samdb,
 							  lp_ctx,
-							  device_info_const,
+							  device_info,
 							  auth_claims,
 							  client_policy,
 							  &client_audit_info);
