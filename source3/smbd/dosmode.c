@@ -903,6 +903,11 @@ int file_set_dosmode(connection_struct *conn,
 		return -1;
 	}
 
+	if (S_ISLNK(smb_fname->st.st_ex_mode)) {
+		/* A symlink in POSIX context, ignore */
+		return 0;
+	}
+
 	if ((S_ISDIR(smb_fname->st.st_ex_mode)) &&
 	    (dosmode & FILE_ATTRIBUTE_TEMPORARY))
 	{
