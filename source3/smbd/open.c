@@ -4624,7 +4624,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	if (lp_store_dos_attributes(SNUM(conn)) && !posix_open) {
+	if (lp_store_dos_attributes(SNUM(conn))) {
 		file_set_dosmode(conn,
 				 smb_dname,
 				 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
