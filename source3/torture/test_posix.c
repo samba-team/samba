@@ -46,14 +46,15 @@ static NTSTATUS posix_ls_fn(struct file_info *finfo,
 		(struct posix_test_entry *)_state;
 
 	for (; state->name != NULL; state++) {
-		if (strequal(finfo->name, state->expected)) {
-			if (state->attr != finfo->attr) {
-				break;
-			}
-			state->ok = true;
-			state->returned_size = finfo->size;
+		if (!strequal(finfo->name, state->expected)) {
+			continue;
+		}
+		if (state->attr != finfo->attr) {
 			break;
 		}
+		state->ok = true;
+		state->returned_size = finfo->size;
+		break;
 	}
 
 	return NT_STATUS_OK;
