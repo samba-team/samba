@@ -1762,7 +1762,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 				  smb_fname_dst);
 
 		if (!fsp->fsp_flags.is_directory &&
-		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
 		    (lp_map_archive(SNUM(conn)) ||
 		     lp_store_dos_attributes(SNUM(conn))))
 		{
