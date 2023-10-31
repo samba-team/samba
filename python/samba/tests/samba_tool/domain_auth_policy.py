@@ -30,7 +30,7 @@ from samba.netcmd.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
-from .domain_auth_base import SiloTest
+from .silo_base import SiloTest
 
 
 class AuthPolicyCmdTestCase(SiloTest):
