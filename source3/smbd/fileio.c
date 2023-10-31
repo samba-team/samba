@@ -237,9 +237,6 @@ void mark_file_modified(files_struct *fsp)
 
 	fsp->fsp_flags.modified = true;
 
-	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
-		return;
-	}
 	if (!(lp_store_dos_attributes(SNUM(fsp->conn)) ||
 	      MAP_ARCHIVE(fsp->conn))) {
 		return;
