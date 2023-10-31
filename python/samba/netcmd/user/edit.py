@@ -120,7 +120,6 @@ LDAP server using the 'nano' editor.
                 with open(t_file.name) as edited_file:
                     edited_message = edited_file.read()
 
-
         msgs_edited = samdb.parse_ldif(edited_message)
         msg_edited = next(msgs_edited)[1]
 

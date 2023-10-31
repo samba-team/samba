@@ -131,6 +131,7 @@ def get_crypt_value(alg, utf8pw, rounds=0):
             crypt_salt, len(crypt_value), expected_len))
     return crypt_value
 
+
 try:
     import hashlib
     hashlib.sha1()
@@ -450,7 +451,6 @@ class GetPasswordCommand(Command):
                         "WARNING: '%s': SambaGPG can't be decrypted "
                         "into CLEARTEXT: %s\n" % (
                             username or account_name, e))
-
 
         def get_utf8(a, b, username):
             try:
