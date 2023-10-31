@@ -541,7 +541,7 @@ class S4UKerberosTests(KDCBaseTest):
                 'expected_flags': 'forwardable'
             })
 
-    # Do an S4U2Self an check that the service asserted identity is part of
+    # Do an S4U2Self and check that the service asserted identity is part of
     # the sids.
     def test_s4u2self_asserted_identity(self):
         self._run_s4u2self_test(

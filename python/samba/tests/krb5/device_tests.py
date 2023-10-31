@@ -1920,7 +1920,7 @@ class DeviceTests(KDCBaseTest):
         tgs_mach_from_rodc = case.pop('tgs:mach:from_rodc', None)
 
         # Optional groups which the machine is added to or removed from prior
-        # to a TGS-REQ , to test how the groups in the device PAC are expanded.
+        # to a TGS-REQ, to test how the groups in the device PAC are expanded.
         tgs_mach_added = case.pop('tgs:mach:added', None)
         tgs_mach_removed = case.pop('tgs:mach:removed', None)
 
