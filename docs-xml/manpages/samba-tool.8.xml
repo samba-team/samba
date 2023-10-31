@@ -2716,6 +2716,52 @@
 	(typically the PDC-emulator).</para>
 </refsect3>
 
+<refsect3>
+	<title>user auth policy assign <replaceable>username</replaceable> [options]</title>
+	<para>Set assigned authentication policy for user.</para>
+	<variablelist>
+		<varlistentry>
+			<term>--policy</term>
+			<listitem><para>
+				Name of authentication policy to assign or leave empty to remove.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>user auth policy remove <replaceable>username</replaceable></title>
+	<para>Remove assigned authentication policy from user.</para>
+</refsect3>
+
+<refsect3>
+	<title>user auth policy view <replaceable>username</replaceable></title>
+	<para>View the assigned authentication policy for user.</para>
+</refsect3>
+
+<refsect3>
+	<title>user auth silo assign <replaceable>username</replaceable> [options]</title>
+	<para>Set assigned authentication silo for user.</para>
+	<variablelist>
+		<varlistentry>
+			<term>--silo</term>
+			<listitem><para>
+				Name of authentication silo to assign or leave empty to remove.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>user auth silo remove <replaceable>username</replaceable></title>
+	<para>Remove assigned authentication silo from user.</para>
+</refsect3>
+
+<refsect3>
+	<title>user auth silo view <replaceable>username</replaceable></title>
+	<para>View the assigned authentication silo for user.</para>
+</refsect3>
+
 <refsect2>
 	<title>vampire [options] <replaceable>domain</replaceable></title>
 	<para>Join and synchronise a remote AD domain to the local server.
