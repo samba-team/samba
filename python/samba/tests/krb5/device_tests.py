@@ -1774,6 +1774,106 @@ class DeviceTests(KDCBaseTest):
                 # SIDs removed, and our elevation of privilege attack foiled.
             },
         },
+        {
+            'test': 'rodc-issued without claims valid',
+            'as:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:mach:sids': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                # The Claims Valid SID is missing.
+            },
+            # The armor ticket was issued by an RODC.
+            'tgs:mach:from_rodc': True,
+            'tgs:to_krbtgt': False,
+            'tgs:compression': True,
+            'tgs:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (compounded_auth, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                # The Claims Valid SID is still added to the device info.
+                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
+            },
+        },
+        {
+            'test': 'rodc-issued without asserted identity',
+            'as:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:mach:sids': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                # The Asserted Identity SID is missing.
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            # The armor ticket was issued by an RODC.
+            'tgs:mach:from_rodc': True,
+            'tgs:to_krbtgt': False,
+            'tgs:compression': True,
+            'tgs:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (compounded_auth, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                # The Asserted Identity SID is not added to the device info.
+                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
+            },
+        },
+        {
+            'test': 'rodc-issued asserted identity without attributes',
+            'as:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:mach:sids': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                # The Asserted Identity SID has no attributes set.
+                (asserted_identity, SidType.EXTRA_SID, 0),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            # The armor ticket was issued by an RODC.
+            'tgs:mach:from_rodc': True,
+            'tgs:to_krbtgt': False,
+            'tgs:compression': True,
+            'tgs:expected': {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                (compounded_auth, SidType.EXTRA_SID, default_attrs),
+                (security.SID_CLAIMS_VALID, SidType.EXTRA_SID, default_attrs),
+            },
+            'tgs:device:expected': {
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.BASE_SID, default_attrs),
+                (security.DOMAIN_RID_DOMAIN_MEMBERS, SidType.PRIMARY_GID, None),
+                # The Asserted Identity SID appears in the device info with its
+                # attributes as normal.
+                (asserted_identity, SidType.EXTRA_SID, default_attrs),
+                frozenset([(security.SID_CLAIMS_VALID, SidType.RESOURCE_SID, default_attrs)]),
+            },
+        },
     ]
 
     @classmethod

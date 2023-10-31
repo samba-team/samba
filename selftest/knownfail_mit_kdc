@@ -3701,6 +3701,9 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_user_from_trust_domain_local_groups_to_krbtgt.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_user_from_trust_domain_local_groups_to_service_compressed.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_user_from_trust_domain_local_groups_to_service_uncompressed.ad_dc
+^samba\.tests\.krb5\.device_tests\.samba\.tests\.krb5\.device_tests\.DeviceTests\.test_device_info_rodc_issued_asserted_identity_without_attributes\(ad_dc\)$
+^samba\.tests\.krb5\.device_tests\.samba\.tests\.krb5\.device_tests\.DeviceTests\.test_device_info_rodc_issued_without_asserted_identity\(ad_dc\)$
+^samba\.tests\.krb5\.device_tests\.samba\.tests\.krb5\.device_tests\.DeviceTests\.test_device_info_rodc_issued_without_claims_valid\(ad_dc\)$
 #
 # Authentication policy tests
 #
