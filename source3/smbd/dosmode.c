@@ -920,26 +920,24 @@ int file_set_dosmode(connection_struct *conn,
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n",
 		  dosmode, smb_fname_str_dbg(smb_fname)));
 
+	if (smb_fname->fsp == NULL) {
+		errno = ENOENT;
+		return -1;
+	}
+
 	unixmode = smb_fname->st.st_ex_mode;
 
-	if (smb_fname->fsp != NULL) {
-		get_acl_group_bits(
-			conn, smb_fname->fsp, &smb_fname->st.st_ex_mode);
-	}
+	get_acl_group_bits(conn, smb_fname->fsp, &smb_fname->st.st_ex_mode);
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
 	else
 		dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
-	if (smb_fname->fsp != NULL) {
-		/* Store the DOS attributes in an EA by preference. */
-		status = SMB_VFS_FSET_DOS_ATTRIBUTES(
-			conn, metadata_fsp(smb_fname->fsp), dosmode);
-	} else {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
+	/* Store the DOS attributes in an EA by preference. */
+	status = SMB_VFS_FSET_DOS_ATTRIBUTES(conn,
+					     metadata_fsp(smb_fname->fsp),
+					     dosmode);
 	if (NT_STATUS_IS_OK(status)) {
 		smb_fname->st.cached_dos_attributes = dosmode;
 		ret = 0;
